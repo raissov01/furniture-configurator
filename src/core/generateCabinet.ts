@@ -8,7 +8,7 @@
 import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
 import { confirmatJoint, hingeHoles, shelfPinHoles } from './drilling'
-import { calculateCutDimensions, resolveEdges } from './edges'
+import { calculateCutDimensions, resolveEdges, subtractedThickness } from './edges'
 import { ConfigValidationError } from './errors'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
@@ -118,7 +118,8 @@ export function generateCabinet(
       rotation: rotationFor(orientation),
       orientation,
       note,
-      drilling: [], // §4.9 присадка — кейінгі кезең
+      drilling: [],
+      grooves: [],
     }
   }
 
@@ -254,6 +255,23 @@ export function generateCabinet(
     panels.push(...created)
     frontGroups.push({ fronts: created, sectionIndex })
   })
+
+  // ── Паз (арт қабырға «в паз» болғанда) ─────────────────────────────────────
+  if (isGroove) {
+    // Паз корпустың ішкі бетінде, арт жиектен grooveInset шегініп жүреді.
+    // Ұзындығы бойы толық фрезерленеді; тоқтатылған паз — кейінгі жақсарту.
+    const grooveCentreZ = D - settings.grooveInset + backMat.thickness / 2
+    for (const panel of [sideLeft, sideRight, bottom, top, ...dividers]) {
+      const y = grooveCentreZ - subtractedThickness(panel.edges.L1, bands, settings)
+      panel.grooves.push({
+        face: 'inner',
+        x1: 0, y1: y,
+        x2: panel.cutLength, y2: y,
+        width: backMat.thickness,
+        depth: settings.grooveDepth,
+      })
+    }
+  }
 
   // ── Присадка (§4.9) ────────────────────────────────────────────────────────
   const ctx = {

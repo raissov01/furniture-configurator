@@ -13,15 +13,30 @@
 **M3 — 3D + конфигуратор UI (C1) (аяқталды).** Next.js + R3F + Zustand.
 Параметр өзгерсе — 3D те, деталировка да бір `Panel[]` массивінен қайта салынады.
 
+**M4 — присадка (§4.9) + экспорттар (A5) (аяқталды).** DXF, XLSX, PDF, CSV.
+
 ```
 npm install
 npm run dev                             # конфигуратор, http://localhost:3000
-npm test                                # 67 тест
+npm test                                # 101 тест
 npm run typecheck
 npm run cutlist -- examples/wardrobe.json
 npm run cutlist -- examples/wardrobe-3section.json
 npm run cutlist -- examples/wardrobe-v1.json    # ескі схема, автомиграция
+npm run export  -- examples/wardrobe.json --out dist
 ```
+
+### Экспорт (M4)
+
+| Файл | Кімге | Не бар |
+|---|---|---|
+| `dxf/<деталь>.dxf` | станок | рез контуры, әр диаметрге жеке `DRILL_*` қабаты, `GROOVE`, `TEXT`; мм, `$INSUNITS = 4` |
+| `cutlist.xlsx` | цех | материалға бір парақ + қорытынды жол, бөлек «Присадка» парағы |
+| `assembly.pdf` | цех + клиент | фас/бүйір/жоспар өлшемдерімен, ажыратылған изометрия, деталировка |
+| `cutlist.csv` | оптимизатор | тек рез өлшемі, кромка, текстура |
+| `drilling.csv` | присадка станогы | әр тесік жеке жол |
+
+Дәл сол төрт формат браузерден де шығады (жоғарғы жолдағы **ЭКСПОРТ**).
 
 ## Құрылымы
 
@@ -34,7 +49,9 @@ src/core/          таза TS — React/three.js импорты ЖОҚ
   edges.ts         кромка → рез өлшемі (§4.3)
   sections.ts      секцияларға ен бөлу, фасад ұялары (A1)
   generateCabinet.ts   ЖАЛҒЫЗ АҚИҚАТ КӨЗІ: конфиг → Panel[]
+  drilling.ts      присадка: конфирмат, полкодержатель, ілгек (§4.9)
   cutList.ts       Panel[] → деталировка
+  export/          dxf · xlsx · pdf · csv · drawing (проекциялар)
   seed.ts          материал/кромка кітапханасы (A4)
   schema.ts        zod валидация + схема миграциясы (v1 → v2)
 src/cli/           npm run cutlist

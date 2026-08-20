@@ -44,7 +44,23 @@ export const CUT_LIST_COLUMNS: readonly Column[] = [
   { key: 'note', header: 'Примечание', audience: 'both', group: '', align: 'left' },
 ] as const
 
+/** Деталировка жолы + оны құраған панельдер. Позиция нөмірі = индекс + 1. */
+export type CutListGroup = { row: CutListRow; panelIds: string[] }
+
 export function formatCutList(panels: Panel[], catalog: Catalog): CutListRow[] {
+  return groupPanels(panels, catalog).map((g) => g.row)
+}
+
+/** Позиция нөмірлері: сызбадағы белгі мен деталировкадағы жол бір болуы үшін. */
+export function partNumbers(panels: Panel[], catalog: Catalog): Map<string, number> {
+  const numbers = new Map<string, number>()
+  groupPanels(panels, catalog).forEach((group, i) => {
+    for (const id of group.panelIds) numbers.set(id, i + 1)
+  })
+  return numbers
+}
+
+export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
   const materials = new Map(catalog.materials.map((m) => [m.id, m]))
   const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
 
@@ -55,7 +71,7 @@ export function formatCutList(panels: Panel[], catalog: Catalog): CutListRow[] {
     return b.thickness.toFixed(1)
   }
 
-  const rows = new Map<string, CutListRow>()
+  const groups = new Map<string, CutListGroup>()
   for (const p of panels) {
     const material = materials.get(p.materialId)
     if (!material) throw new Error(`Материал табылмады: ${p.materialId}`)
@@ -84,12 +100,16 @@ export function formatCutList(panels: Panel[], catalog: Catalog): CutListRow[] {
       row.edgeL1, row.edgeL2, row.edgeW1, row.edgeW2, row.grain, row.note,
     ].join('|')
 
-    const existing = rows.get(key)
-    if (existing) existing.qty += row.qty
-    else rows.set(key, row)
+    const existing = groups.get(key)
+    if (existing) {
+      existing.row.qty += row.qty
+      existing.panelIds.push(p.id)
+    } else {
+      groups.set(key, { row, panelIds: [p.id] })
+    }
   }
 
-  return [...rows.values()]
+  return [...groups.values()]
 }
 
 /** Барлық кромканың жалпы ұзындығы, лента бойынша — метрмен (§6 үшін). */

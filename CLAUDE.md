@@ -430,7 +430,12 @@ supersedes the milestone list that used to live in this section.
   **cut** dimensions. Undo/redo, exploded slider, camera presets, dimension
   labels, live validation with the offending parameter and its allowed range.
 
-Everything after M3 follows the build order in PHASE-2.md.
+- **M4 — drilling (§4.9) + manufacturing exports (A5).** ✅ done.
+  DXF per panel (one layer per drill diameter), XLSX (one sheet per material),
+  PDF (three dimensioned elevations, exploded isometric, cut list), CSV for
+  third-party optimisers. Available from the CLI and from the browser.
+
+Everything after M4 follows the build order in PHASE-2.md.
 
 ---
 

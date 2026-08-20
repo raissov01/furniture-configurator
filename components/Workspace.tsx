@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Button, Slider } from '@/components/ui'
 import { Configurator } from '@/components/Configurator'
+import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { catalog } from '@/lib/defaults'
 import { usePanels } from '@/lib/usePanels'
@@ -79,6 +80,8 @@ export function Workspace() {
             </Button>
           ))}
         </div>
+
+        <ExportMenu cabinet={cabinet} panels={panels} />
 
         <label className="flex min-w-40 flex-1 items-center gap-2 text-[11px] text-neutral-500">
           Разнести
