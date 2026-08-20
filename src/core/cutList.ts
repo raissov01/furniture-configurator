@@ -7,7 +7,7 @@
  * Экспортта екеуі бөлек топ болып, кімге арналғаны жазылып тұрады.
  */
 
-import type { Audience, Catalog, CutListRow, EdgeSpec, Panel } from './types.js'
+import type { Audience, Catalog, CutListRow, EdgeSpec, Panel } from './types'
 
 export type ColumnKey =
   | 'name' | 'qty'

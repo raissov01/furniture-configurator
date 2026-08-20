@@ -3,9 +3,9 @@
  * §8.3 — паздағы арт қабырға бүйір мен сөрені дұрыс қысқартады.
  */
 import { describe, expect, it } from 'vitest'
-import { boxesOverlap, generateCabinet, panelBox } from '../src/core/index.js'
-import type { Panel } from '../src/core/index.js'
-import { CARCASS_THICKNESS as T, catalog, referenceWardrobe, threeSectionWardrobe, withCabinet } from './fixtures.js'
+import { boxesOverlap, generateCabinet, panelBox } from '../src/core/index'
+import type { Panel } from '../src/core/index'
+import { CARCASS_THICKNESS as T, catalog, referenceWardrobe, threeSectionWardrobe, withCabinet } from './fixtures'
 
 const byId = (panels: Panel[], id: string): Panel => {
   const p = panels.find((x) => x.id === id)

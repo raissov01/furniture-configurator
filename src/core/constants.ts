@@ -6,7 +6,7 @@
  * бірде-бір "сиқырлы сан" болмауы тиіс.
  */
 
-import type { ConstructionSettings, SettingsOverride } from './types.js'
+import type { ConstructionSettings, SettingsOverride } from './types'
 
 export const DEFAULT_SETTINGS: ConstructionSettings = {
   /**

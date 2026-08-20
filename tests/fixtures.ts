@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import type { CabinetConfig, Catalog, ProjectFile, Section } from '../src/core/index.js'
-import { parseProject } from '../src/core/index.js'
+import type { CabinetConfig, Catalog, ProjectFile, Section } from '../src/core/index'
+import { parseProject } from '../src/core/index'
 
 const load = (file: string): ProjectFile =>
   parseProject(JSON.parse(readFileSync(fileURLToPath(new URL(`../examples/${file}`, import.meta.url)), 'utf8')))

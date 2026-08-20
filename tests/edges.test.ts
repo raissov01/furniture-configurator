@@ -1,8 +1,8 @@
 /** CLAUDE.md §8.1 — кромканы шегеру ережесі. Доменнің ең қымбат багы. */
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETTINGS, calculateCutDimensions } from '../src/core/index.js'
-import type { EdgeBand, PanelEdges } from '../src/core/index.js'
-import { PVC04, PVC2, catalog } from './fixtures.js'
+import { DEFAULT_SETTINGS, calculateCutDimensions } from '../src/core/index'
+import type { EdgeBand, PanelEdges } from '../src/core/index'
+import { PVC04, PVC2, catalog } from './fixtures'
 
 const bands = new Map<string, EdgeBand>(catalog.edgeBands.map((b) => [b.id, b]))
 

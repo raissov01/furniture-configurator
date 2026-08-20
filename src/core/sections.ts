@@ -5,9 +5,9 @@
  * Секция ендері W − 2t − dividerCount·t-ға ДӘЛ жиналуы керек.
  */
 
-import { distributeMillimetres } from './distribute.js'
-import { ConfigValidationError } from './errors.js'
-import type { Section } from './types.js'
+import { distributeMillimetres } from './distribute'
+import { ConfigValidationError } from './errors'
+import type { Section } from './types'
 
 /** Бұдан тар секция жарамсыз — ішіне ештеңе сыймайды. */
 export const MIN_SECTION_WIDTH = 100

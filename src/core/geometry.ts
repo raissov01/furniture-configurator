@@ -5,7 +5,7 @@
  * Кабинет өстері: X — солдан оңға, Y — төменнен жоғары, Z — алдыңғы беттен артқа.
  */
 
-import type { Orientation, Panel, Vec3 } from './types.js'
+import type { Orientation, Panel, Vec3 } from './types'
 
 /** Тік панель, бүйірімен тұрады (боковина, перегородка): ұзындығы — биіктік. */
 export const ORIENT_SIDE: Orientation = { length: 'y', width: 'z', thickness: 'x' }

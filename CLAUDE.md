@@ -400,7 +400,13 @@ supersedes the milestone list that used to live in this section.
   Sections, derived dividers, per-section shelves and fronts, seeded libraries,
   `schemaVersion 1 → 2` migration.
 
-Everything after M2 follows the build order in PHASE-2.md.
+- **M3 — 3D view + configurator UI (C1).** ✅ done.
+  Next.js App Router + R3F + Zustand. The scene reads `Panel[]` and renders
+  boxes at **finished** dimensions; the cut list reads the same array and shows
+  **cut** dimensions. Undo/redo, exploded slider, camera presets, dimension
+  labels, live validation with the offending parameter and its allowed range.
+
+Everything after M3 follows the build order in PHASE-2.md.
 
 ---
 

@@ -8,7 +8,7 @@
  * (баға модулі, §6).
  */
 
-import type { EdgeBand, Material } from './types.js'
+import type { EdgeBand, Material } from './types'
 
 /** Кромка декорға байланады: декоры сәйкес келмеген кромка — брак. */
 type Decor = { code: string; name: string; hasGrain: boolean }

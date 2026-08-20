@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod'
-import type { ProjectFile } from './types.js'
+import type { ProjectFile } from './types'
 
 /** Өлшем: мм, бүтін, оң сан. */
 const mm = z.number().int().positive()

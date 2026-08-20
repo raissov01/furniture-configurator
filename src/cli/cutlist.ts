@@ -10,8 +10,8 @@ import { ZodError } from 'zod'
 import {
   CUT_LIST_COLUMNS, ConfigValidationError,
   edgeBandTotals, formatCutList, generateCabinet, parseProject,
-} from '../core/index.js'
-import type { Column, CutListRow } from '../core/index.js'
+} from '../core/index'
+import type { Column, CutListRow } from '../core/index'
 
 function main(): number {
   const file = process.argv[2]

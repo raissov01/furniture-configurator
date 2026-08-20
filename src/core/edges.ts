@@ -5,7 +5,7 @@
 import type {
   ConstructionMethod, ConstructionSettings, EdgeBand, EdgePolicy,
   EdgeSpec, PanelEdges, PanelRole,
-} from './types.js'
+} from './types'
 
 export type EdgeClass = 'visibleFront' | 'visibleSecondary' | 'hidden'
 

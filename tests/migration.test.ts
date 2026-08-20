@@ -5,8 +5,8 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { formatCutList, generateCabinet, parseProject } from '../src/core/index.js'
-import { catalog, referenceWardrobe } from './fixtures.js'
+import { formatCutList, generateCabinet, parseProject } from '../src/core/index'
+import { catalog, referenceWardrobe } from './fixtures'
 
 const v1 = JSON.parse(
   readFileSync(fileURLToPath(new URL('../examples/wardrobe-v1.json', import.meta.url)), 'utf8'),

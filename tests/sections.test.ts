@@ -3,9 +3,9 @@
  * Ендер W − 2t − dividerCount·t-ға ДӘЛ жиналуы керек.
  */
 import { describe, expect, it } from 'vitest'
-import { generateCabinet, layoutSections } from '../src/core/index.js'
-import type { Panel, Section } from '../src/core/index.js'
-import { CARCASS_THICKNESS as T, catalog, threeSectionWardrobe, withCabinet } from './fixtures.js'
+import { generateCabinet, layoutSections } from '../src/core/index'
+import type { Panel, Section } from '../src/core/index'
+import { CARCASS_THICKNESS as T, catalog, threeSectionWardrobe, withCabinet } from './fixtures'
 
 const section = (widthMode: 'fixed' | 'flex', width?: number, id = `s${width ?? widthMode}`): Section => ({
   id,

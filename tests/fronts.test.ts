@@ -3,8 +3,8 @@
  * дөңгелектеу дрейфі болмауы тиіс, фасадтар әрқашан БІРДЕЙ.
  */
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETTINGS, generateCabinet } from '../src/core/index.js'
-import { CARCASS_THICKNESS as T, catalog, oneSection, threeSectionWardrobe, withCabinet } from './fixtures.js'
+import { DEFAULT_SETTINGS, generateCabinet } from '../src/core/index'
+import { CARCASS_THICKNESS as T, catalog, oneSection, threeSectionWardrobe, withCabinet } from './fixtures'
 
 const gap = DEFAULT_SETTINGS.frontGap
 

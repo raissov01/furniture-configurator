@@ -1,7 +1,7 @@
 /** PHASE-2 A4 — материалдар мен кромка кітапханасы. */
 import { describe, expect, it } from 'vitest'
-import { EdgeBandSchema, MaterialSchema, SEED_CATALOG, generateCabinet } from '../src/core/index.js'
-import { referenceWardrobe } from './fixtures.js'
+import { EdgeBandSchema, MaterialSchema, SEED_CATALOG, generateCabinet } from '../src/core/index'
+import { referenceWardrobe } from './fixtures'
 
 describe('seed кітапхана', () => {
   it('әр материал мен кромка схемадан өтеді, id-лері бірегей', () => {

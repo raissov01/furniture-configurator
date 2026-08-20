@@ -5,8 +5,8 @@
  * 11 ДЕТАЛЬ / 6 позиция. Бұл снапшот өзгерсе — өзгеріс ӘДЕЙІ болуы керек.
  */
 import { describe, expect, it } from 'vitest'
-import { formatCutList, generateCabinet } from '../src/core/index.js'
-import { catalog, referenceWardrobe } from './fixtures.js'
+import { formatCutList, generateCabinet } from '../src/core/index'
+import { catalog, referenceWardrobe } from './fixtures'
 
 describe('эталон шкаф-пенал', () => {
   const panels = generateCabinet(referenceWardrobe, catalog)

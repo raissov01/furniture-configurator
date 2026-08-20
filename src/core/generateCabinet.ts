@@ -5,16 +5,16 @@
  * Таза функция: React жоқ, three.js жоқ, күй (state) жоқ.
  */
 
-import { mergeSettings } from './constants.js'
-import { distributeMillimetres, gapFillOrder } from './distribute.js'
-import { calculateCutDimensions, resolveEdges } from './edges.js'
-import { ConfigValidationError } from './errors.js'
-import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry.js'
-import { frontSlots, layoutSections } from './sections.js'
+import { mergeSettings } from './constants'
+import { distributeMillimetres, gapFillOrder } from './distribute'
+import { calculateCutDimensions, resolveEdges } from './edges'
+import { ConfigValidationError } from './errors'
+import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
+import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
   Orientation, Panel, PanelRole, Section, SettingsOverride,
-} from './types.js'
+} from './types'
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
 const MIN_DIMENSION = 100
