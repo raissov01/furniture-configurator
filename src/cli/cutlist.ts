@@ -1,0 +1,112 @@
+#!/usr/bin/env tsx
+/**
+ * CLI: конфиг JSON → деталировка.
+ *   npm run cutlist -- examples/wardrobe.json
+ */
+
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { ZodError } from 'zod'
+import {
+  CUT_LIST_COLUMNS, ConfigValidationError, ProjectFileSchema,
+  edgeBandTotals, formatCutList, generateCabinet,
+} from '../core/index.js'
+import type { Column, CutListRow } from '../core/index.js'
+
+function main(): number {
+  const file = process.argv[2]
+  if (!file) {
+    console.error('Қолдану: npm run cutlist -- <project.json>')
+    return 2
+  }
+
+  let project
+  try {
+    project = ProjectFileSchema.parse(JSON.parse(readFileSync(resolve(file), 'utf8')))
+  } catch (err) {
+    if (err instanceof ZodError) {
+      console.error(`Конфиг қатесі — ${file}:`)
+      for (const issue of err.issues) {
+        console.error(`  ${issue.path.join('.') || '(түбір)'}: ${issue.message}`)
+      }
+      return 1
+    }
+    throw err
+  }
+
+  const catalog = { materials: project.materials, edgeBands: project.edgeBands }
+  console.log(`\nПроект: ${project.name}`)
+
+  for (const cabinet of project.cabinets) {
+    let panels
+    try {
+      panels = generateCabinet(cabinet, catalog, project.settings)
+    } catch (err) {
+      if (err instanceof ConfigValidationError) {
+        console.error(`\n✗ ${cabinet.name}\n  ${err.message}`)
+        return 1
+      }
+      throw err
+    }
+
+    const rows = formatCutList(panels, catalog, {
+      shelfKind: cabinet.shelves.kind,
+      backMode: cabinet.back.mode,
+      frontMount: cabinet.fronts?.mount ?? 'overlay',
+    })
+
+    console.log(`\n${cabinet.name}`)
+    console.log(`Габарит H × W × D: ${cabinet.height} × ${cabinet.width} × ${cabinet.depth} мм`)
+    console.log(`Конструкция: ${cabinet.construction}, задняя стенка: ${cabinet.back.mode}\n`)
+    console.log(renderTable(rows))
+
+    const pieces = rows.reduce((sum, r) => sum + r.qty, 0)
+    console.log(`\nПозиций: ${rows.length}   Деталей: ${pieces}`)
+
+    const bandNames = new Map(project.edgeBands.map((b) => [b.id, b.name]))
+    for (const [bandId, metres] of edgeBandTotals(panels)) {
+      console.log(`${bandNames.get(bandId) ?? bandId}: ${metres.toFixed(2)} м`)
+    }
+  }
+  console.log('')
+  return 0
+}
+
+function cellText(row: CutListRow, col: Column): string {
+  return String(row[col.key])
+}
+
+function pad(text: string, width: number, align: 'left' | 'right'): string {
+  const gap = ' '.repeat(Math.max(0, width - [...text].length))
+  return align === 'right' ? gap + text : text + gap
+}
+
+function renderTable(rows: CutListRow[]): string {
+  const cols = CUT_LIST_COLUMNS
+  const widths = cols.map((c) => {
+    const body = rows.map((r) => [...cellText(r, c)].length)
+    return Math.max([...c.header].length, ...body)
+  })
+
+  // Топ тақырыбы: "ГОТОВЫЙ · клиент" мен "РЕЗ · цех" бөлек тұруы керек —
+  // цех адамы клиенттің готовый өлшемін кесіп алмауы үшін.
+  const groupRow: string[] = []
+  for (let i = 0; i < cols.length; ) {
+    const group = cols[i]?.group ?? ''
+    let span = 1
+    while (i + span < cols.length && (cols[i + span]?.group ?? '') === group && group !== '') span += 1
+    const width = widths.slice(i, i + span).reduce((a, b) => a + b, 0) + (span - 1) * 3
+    const label = group === '' ? '' : group
+    const left = Math.max(0, Math.floor((width - [...label].length) / 2))
+    groupRow.push(pad(' '.repeat(left) + label, width, 'left'))
+    i += span
+  }
+
+  const header = cols.map((c, i) => pad(c.header, widths[i] ?? 0, c.align))
+  const rule = widths.map((w) => '─'.repeat(w))
+  const body = rows.map((r) => cols.map((c, i) => pad(cellText(r, c), widths[i] ?? 0, c.align)).join(' │ '))
+
+  return [groupRow.join(' │ '), header.join(' │ '), rule.join('─┼─'), ...body].join('\n')
+}
+
+process.exit(main())

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "name": "Эталонный шкаф-пенал",
+  "materials": [
+    {
+      "id": "ldsp16-h1145",
+      "name": "ЛДСП Egger H1145 Дуб Бардолино 16",
+      "thickness": 16,
+      "sheetWidth": 2800,
+      "sheetHeight": 2070,
+      "hasGrain": true,
+      "pricePerSheet": 2850000,
+      "trimEdge": 10
+    },
+    {
+      "id": "hdf3-white",
+      "name": "ХДФ 3 мм белый",
+      "thickness": 3,
+      "sheetWidth": 2800,
+      "sheetHeight": 2070,
+      "hasGrain": false,
+      "pricePerSheet": 480000,
+      "trimEdge": 10
+    }
+  ],
+  "edgeBands": [
+    { "id": "pvc2-h1145", "name": "Кромка ПВХ 2 мм H1145", "thickness": 2, "pricePerMeter": 9000 },
+    { "id": "pvc04-h1145", "name": "Кромка ПВХ 0.4 мм H1145", "thickness": 0.4, "pricePerMeter": 3500 }
+  ],
+  "cabinets": [
+    {
+      "id": "wardrobe-ref",
+      "name": "Шкаф-пенал 2000 (H) × 600 (W) × 450 (D)",
+      "construction": "sidesOverlay",
+      "height": 2000,
+      "width": 600,
+      "depth": 450,
+      "carcassMaterialId": "ldsp16-h1145",
+      "frontMaterialId": "ldsp16-h1145",
+      "backMaterialId": "hdf3-white",
+      "back": { "mode": "overlay" },
+      "shelves": { "count": 4, "kind": "adjustable" },
+      "fronts": { "count": 2, "mount": "overlay" },
+      "edging": {
+        "visibleFront": "pvc2-h1145",
+        "visibleSecondary": "pvc04-h1145",
+        "hidden": null
+      }
+    }
+  ]
+}
