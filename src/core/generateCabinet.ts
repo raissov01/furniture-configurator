@@ -10,15 +10,18 @@ import { distributeMillimetres, gapFillOrder } from './distribute.js'
 import { calculateCutDimensions, resolveEdges } from './edges.js'
 import { ConfigValidationError } from './errors.js'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry.js'
+import { frontSlots, layoutSections } from './sections.js'
 import type {
-  CabinetConfig, Catalog, Material,
-  Orientation, Panel, PanelRole, SettingsOverride,
+  CabinetConfig, Catalog, ConstructionSettings, Material,
+  Orientation, Panel, PanelRole, Section, SettingsOverride,
 } from './types.js'
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
 const MIN_DIMENSION = 100
 /** Ең үлкен габарит: бір парақтан ұзын. Бөлу (A2) кейінгі кезеңде. */
 const MAX_DIMENSION = 4000
+/** Фасад бұдан тар болса — ілгек орнатылмайды. */
+const MIN_FRONT_WIDTH = 50
 
 export function generateCabinet(
   config: CabinetConfig,
@@ -52,11 +55,11 @@ export function generateCabinet(
     throw new ConfigValidationError(
       'backMaterialId',
       `материал қалыңдығы ${backMat.thickness} мм, ал settings.backThickness = ${settings.backThickness} мм`,
-      `екеуі тең болуы керек`,
+      'екеуі тең болуы керек',
     )
   }
 
-  /** Бүйір/крышка/дно/полканың нақты тереңдігі. */
+  /** Бүйір/крышка/дно/полка/перегородканың нақты тереңдігі. */
   const carcassDepth = D - backAllowance
   if (carcassDepth < MIN_DIMENSION) {
     throw new ConfigValidationError(
@@ -85,6 +88,7 @@ export function generateCabinet(
     finishedWidth: number,
     position: { x: number; y: number; z: number },
     orientation: Orientation,
+    note = '',
   ): Panel => {
     const edges = resolveEdges(role, config.construction, config.edging)
     const { cutLength, cutWidth } = calculateCutDimensions(
@@ -101,6 +105,7 @@ export function generateCabinet(
       position,
       rotation: rotationFor(orientation),
       orientation,
+      note,
       drilling: [], // §4.9 присадка — кейінгі кезең
     }
   }
@@ -120,13 +125,38 @@ export function generateCabinet(
     panels.push(make('side-right', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: W - t, y: t, z: 0 }, ORIENT_SIDE))
   }
 
-  // ── Сөрелер (§4.6) ─────────────────────────────────────────────────────────
-  const shelfCount = config.shelves.count
-  if (!Number.isInteger(shelfCount) || shelfCount < 0) {
-    throw new ConfigValidationError('shelves.count', `${shelfCount}`, '0..20 бүтін сан')
-  }
-  if (shelfCount > 0) {
-    const shelfLength = innerWidth - settings.shelfGap
+  // ── Секциялар мен перегородкалар (A1) ──────────────────────────────────────
+  const { layouts, dividerPositions } = layoutSections(config.sections, innerWidth, t, t)
+
+  dividerPositions.forEach((x, i) => {
+    panels.push(
+      make(
+        `divider-${i + 1}`, 'divider', 'Перегородка', carcass,
+        innerHeight, carcassDepth, { x, y: t, z: 0 }, ORIENT_SIDE,
+      ),
+    )
+  })
+
+  // ── Секция ішіндегі сөрелер (§4.6) ─────────────────────────────────────────
+  layouts.forEach((layout, sectionIndex) => {
+    const { section } = layout
+    if (section.contents.length > 1) {
+      throw new ConfigValidationError(
+        `sections[${sectionIndex}].contents`,
+        `${section.contents.length} элемент`,
+        'M2-де 0 немесе 1 (тік қабаттау — D1)',
+      )
+    }
+    const content = section.contents[0]
+    if (!content || content.kind !== 'shelves' || content.count === 0) return
+
+    if (!Number.isInteger(content.count) || content.count < 0 || content.count > 20) {
+      throw new ConfigValidationError(
+        `sections[${sectionIndex}].contents[0].count`, `${content.count}`, '0..20 бүтін сан',
+      )
+    }
+
+    const shelfLength = layout.width - settings.shelfGap
     const shelfWidth = carcassDepth - settings.shelfSetback
     if (shelfWidth < MIN_DIMENSION) {
       throw new ConfigValidationError(
@@ -135,30 +165,35 @@ export function generateCabinet(
         `≤ ${carcassDepth - MIN_DIMENSION} мм`,
       )
     }
+
     // Ішкі саңылау: сөрелер соны тең бөледі. Қалдық миллиметр АСТЫҢҒЫ
     // бөліктерден бастап таратылады — көз деңгейінен төмен жер аз көрінеді.
-    const openingTotal = innerHeight - shelfCount * t
-    const openings = distributeMillimetres(openingTotal, shelfCount + 1)
+    const openings = distributeMillimetres(innerHeight - content.count * t, content.count + 1)
+    const note = content.shelfKind === 'fixed'
+      ? 'Фиксированная, конфирмат'
+      : 'На полкодержателях, шаг 32 мм'
+
     let y = t
-    for (let i = 0; i < shelfCount; i += 1) {
+    for (let i = 0; i < content.count; i += 1) {
       y += openings[i] ?? 0
       panels.push(
         make(
-          `shelf-${i + 1}`, 'shelf', 'Полка', carcass,
+          `${section.id}-shelf-${i + 1}`, 'shelf', 'Полка', carcass,
           shelfLength, shelfWidth,
-          { x: t + Math.floor(settings.shelfGap / 2), y, z: settings.shelfSetback },
-          ORIENT_HORIZONTAL,
+          { x: layout.x + Math.floor(settings.shelfGap / 2), y, z: settings.shelfSetback },
+          ORIENT_HORIZONTAL, note,
         ),
       )
       y += t
     }
-  }
+  })
 
   // ── Артқы қабырға (§4.5) ───────────────────────────────────────────────────
   if (config.back.mode === 'overlay') {
     // W × H, корпустың артына скобамен қағылады.
     panels.push(
-      make('back', 'back', 'Задняя стенка', backMat, H, W, { x: 0, y: 0, z: carcassDepth }, ORIENT_FACING),
+      make('back', 'back', 'Задняя стенка', backMat, H, W, { x: 0, y: 0, z: carcassDepth },
+        ORIENT_FACING, 'ХДФ внакладку, на скобы'),
     )
   } else {
     const g = settings.grooveDepth
@@ -167,55 +202,90 @@ export function generateCabinet(
         'back', 'back', 'Задняя стенка', backMat,
         innerHeight + 2 * g, innerWidth + 2 * g,
         { x: t - g, y: t - g, z: carcassDepth - backMat.thickness },
-        ORIENT_FACING,
+        ORIENT_FACING, 'ХДФ в паз 4 мм',
       ),
     )
   }
 
   // ── Фасадтар (§4.7) ────────────────────────────────────────────────────────
-  if (config.fronts && config.fronts.count > 0) {
-    const n = config.fronts.count
-    if (!Number.isInteger(n) || n < 1 || n > 8) {
-      throw new ConfigValidationError('fronts.count', `${n}`, '1..8 бүтін сан')
-    }
-    const gap = settings.frontGap
-    const inset = config.fronts.mount === 'inset'
-    const spanX = inset ? innerWidth : W
-    const spanY = inset ? innerHeight : H
-    const originX = inset ? t : 0
-    const originY = inset ? t : 0
+  const slots = frontSlots(dividerPositions, W, t)
+  layouts.forEach((layout, sectionIndex) => {
+    const fronts = layout.section.fronts
+    if (!fronts || fronts.count === 0) return
 
-    const usableWidth = spanX - (n + 1) * gap
-    // Фасад ені бүтінге ТӨМЕН дөңгеленеді — фасадтар ӘРҚАШАН бірдей болуы керек,
-    // себебі бірдей деталь цехта бір операцияда кесіледі.
-    const frontWidth = Math.floor(usableWidth / n)
-    if (frontWidth < 50) {
-      throw new ConfigValidationError(
-        'fronts.count',
-        `${n} фасадта әрқайсысының ені ${frontWidth} мм болады`,
-        `фасад ені ≥ 50 мм`,
-      )
-    }
-    // Қалған миллиметрлер СЫРТҚЫ саңылаулардан бастап бір-бірлеп таратылады.
-    const gaps = distributeMillimetres(spanX - n * frontWidth, n + 1, gapFillOrder(n + 1))
-    const frontHeight = spanY - 2 * gap
+    const inset = fronts.mount === 'inset'
+    // Накладной фасад боковина/перегородканы жабады → ұясы кеңірек.
+    // Вкладной фасад секцияның ішіне кіреді → ұясы = таза секция ені.
+    const slot = inset
+      ? { x: layout.x, width: layout.width }
+      : slots[sectionIndex] ?? { x: layout.x, width: layout.width }
 
-    let x = originX
-    for (let i = 0; i < n; i += 1) {
-      x += gaps[i] ?? 0
-      panels.push(
-        make(
-          `front-${i + 1}`, 'front', 'Фасад', frontMat,
-          frontHeight, frontWidth,
-          { x, y: originY + gap, z: inset ? 0 : -frontMat.thickness },
-          ORIENT_FACING,
-        ),
-      )
-      x += frontWidth
-    }
-  }
+    panels.push(
+      ...makeFronts(
+        layout.section, sectionIndex, fronts, slot,
+        inset ? innerHeight : H, inset ? t : 0,
+        inset ? 0 : -frontMat.thickness,
+        frontMat, settings, make,
+      ),
+    )
+  })
 
   return panels
+}
+
+type MakePanel = (
+  id: string, role: PanelRole, label: string, material: Material,
+  finishedLength: number, finishedWidth: number,
+  position: { x: number; y: number; z: number },
+  orientation: Orientation, note?: string,
+) => Panel
+
+function makeFronts(
+  section: Section,
+  sectionIndex: number,
+  fronts: { count: number; mount: 'overlay' | 'inset' },
+  slot: { x: number; width: number },
+  spanY: number,
+  originY: number,
+  z: number,
+  material: Material,
+  settings: ConstructionSettings,
+  make: MakePanel,
+): Panel[] {
+  const n = fronts.count
+  if (!Number.isInteger(n) || n < 1 || n > 8) {
+    throw new ConfigValidationError(`sections[${sectionIndex}].fronts.count`, `${n}`, '1..8 бүтін сан')
+  }
+  const gap = settings.frontGap
+  const usableWidth = slot.width - (n + 1) * gap
+  // Фасад ені бүтінге ТӨМЕН дөңгеленеді — бір ұядағы фасадтар ӘРҚАШАН бірдей
+  // болуы керек, себебі бірдей деталь цехта бір операцияда кесіледі.
+  const frontWidth = Math.floor(usableWidth / n)
+  if (frontWidth < MIN_FRONT_WIDTH) {
+    throw new ConfigValidationError(
+      `sections[${sectionIndex}].fronts.count`,
+      `${n} фасадта әрқайсысының ені ${frontWidth} мм болады`,
+      `фасад ені ≥ ${MIN_FRONT_WIDTH} мм`,
+    )
+  }
+  // Қалған миллиметрлер СЫРТҚЫ саңылаулардан бастап бір-бірлеп таратылады.
+  const gaps = distributeMillimetres(slot.width - n * frontWidth, n + 1, gapFillOrder(n + 1))
+  const frontHeight = spanY - 2 * gap
+  const note = fronts.mount === 'inset' ? 'Фасад вкладной' : 'Фасад накладной'
+
+  const out: Panel[] = []
+  let x = slot.x
+  for (let i = 0; i < n; i += 1) {
+    x += gaps[i] ?? 0
+    out.push(
+      make(
+        `${section.id}-front-${i + 1}`, 'front', 'Фасад', material,
+        frontHeight, frontWidth, { x, y: originY + gap, z }, ORIENT_FACING, note,
+      ),
+    )
+    x += frontWidth
+  }
+  return out
 }
 
 function requireMaterial(map: Map<string, Material>, id: string, field: string): Material {

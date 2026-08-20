@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "name": "Эталонный шкаф-пенал",
   "materials": [
     {
@@ -24,18 +24,8 @@
     }
   ],
   "edgeBands": [
-    {
-      "id": "pvc2-h1145",
-      "name": "Кромка ПВХ 2 мм H1145",
-      "thickness": 2,
-      "pricePerMeter": 9000
-    },
-    {
-      "id": "pvc04-h1145",
-      "name": "Кромка ПВХ 0.4 мм H1145",
-      "thickness": 0.4,
-      "pricePerMeter": 3500
-    }
+    { "id": "pvc2-h1145", "name": "Кромка ПВХ 2 мм H1145", "thickness": 2, "pricePerMeter": 9000 },
+    { "id": "pvc04-h1145", "name": "Кромка ПВХ 0.4 мм H1145", "thickness": 0.4, "pricePerMeter": 3500 }
   ],
   "cabinets": [
     {
@@ -48,26 +38,9 @@
       "carcassMaterialId": "ldsp16-h1145",
       "frontMaterialId": "ldsp16-h1145",
       "backMaterialId": "hdf3-white",
-      "back": {
-        "mode": "overlay"
-      },
-      "sections": [
-        {
-          "id": "s1",
-          "widthMode": "flex",
-          "contents": [
-            {
-              "kind": "shelves",
-              "count": 4,
-              "shelfKind": "adjustable"
-            }
-          ],
-          "fronts": {
-            "count": 2,
-            "mount": "overlay"
-          }
-        }
-      ],
+      "back": { "mode": "overlay" },
+      "shelves": { "count": 4, "kind": "adjustable" },
+      "fronts": { "count": 2, "mount": "overlay" },
       "edging": {
         "visibleFront": "pvc2-h1145",
         "visibleSecondary": "pvc04-h1145",

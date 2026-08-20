@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "name": "Эталонный шкаф-пенал",
+  "name": "Шкаф 3 секции — пример распределения ширины",
   "materials": [
     {
       "id": "ldsp16-h1145",
@@ -39,12 +39,12 @@
   ],
   "cabinets": [
     {
-      "id": "wardrobe-ref",
-      "name": "Шкаф-пенал 2000 (H) × 600 (W) × 450 (D)",
+      "id": "wardrobe-3sec",
+      "name": "Шкаф 2100 (H) × 1800 (W) × 500 (D), 3 секции",
       "construction": "sidesOverlay",
-      "height": 2000,
-      "width": 600,
-      "depth": 450,
+      "height": 2100,
+      "width": 1800,
+      "depth": 500,
       "carcassMaterialId": "ldsp16-h1145",
       "frontMaterialId": "ldsp16-h1145",
       "backMaterialId": "hdf3-white",
@@ -54,12 +54,41 @@
       "sections": [
         {
           "id": "s1",
+          "widthMode": "fixed",
+          "width": 400,
+          "contents": [
+            {
+              "kind": "shelves",
+              "count": 5,
+              "shelfKind": "adjustable"
+            }
+          ],
+          "fronts": {
+            "count": 1,
+            "mount": "overlay"
+          }
+        },
+        {
+          "id": "s2",
+          "widthMode": "flex",
+          "contents": [
+            {
+              "kind": "empty"
+            }
+          ],
+          "fronts": {
+            "count": 2,
+            "mount": "overlay"
+          }
+        },
+        {
+          "id": "s3",
           "widthMode": "flex",
           "contents": [
             {
               "kind": "shelves",
-              "count": 4,
-              "shelfKind": "adjustable"
+              "count": 3,
+              "shelfKind": "fixed"
             }
           ],
           "fronts": {

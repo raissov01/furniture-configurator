@@ -196,6 +196,36 @@ Constants: `grooveDepth = 4`, `grooveInset = 10`, `backThickness = 3`.
 > `D − grooveInset` rather than `D`, because nothing sits behind the carcass.
 > Confirm whether `D` should stay the outer dimension there too.
 
+### 4.6a Sections and dividers (PHASE-2 A1)
+
+A cabinet is one or more **sections** separated by vertical **dividers**.
+Dividers are never authored: `dividerCount = sections.length − 1`. A divider
+runs the full internal height (`H − 2·t`), is as deep as the sides, and is
+banded on its front edge only — its ends are never visible in either
+construction method.
+
+```
+sectionSpan = (W − 2·t) − dividerCount·t
+flexPool    = sectionSpan − Σ(fixed section widths)
+flexWidth   = floor(flexPool / flexCount)
+```
+
+**Rounding rule.** Leftover millimetres go to the flex sections **left to
+right**, one at a time. This differs deliberately from the front rule in §4.7:
+fronts must stay identical so the leftover goes into the gaps, but a section has
+no gap to absorb it. Two flex sections may therefore differ by 1 mm.
+
+**Front slots.** An overlay front covers the whole cabinet face, so each
+section's front slot runs from the centre of its left boundary to the centre of
+its right boundary. The outer slots take the **full** side thickness (nothing
+else covers a side); an inner divider is **split** between its two neighbours.
+Equal-width sections at the edge and in the middle therefore get fronts that
+differ by `t/2`, which is correct. An inset front uses the section opening
+itself.
+
+A cabinet with no dividers is one flex section, and produces exactly the M1
+result — the §8.7 snapshot guards this.
+
 ### 4.6 Shelves
 
 ```
@@ -366,8 +396,11 @@ supersedes the milestone list that used to live in this section.
 
 - **M1 — Core panel engine (no UI).** ✅ done.
   CLI: config JSON in → cut list table out. Full test suite.
+- **M2 — Multi-section cabinets (A1) + material/edge libraries (A4).** ✅ done.
+  Sections, derived dividers, per-section shelves and fronts, seeded libraries,
+  `schemaVersion 1 → 2` migration.
 
-Everything after M1 follows the build order in PHASE-2.md.
+Everything after M2 follows the build order in PHASE-2.md.
 
 ---
 

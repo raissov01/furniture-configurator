@@ -4,13 +4,13 @@
  */
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS, generateCabinet } from '../src/core/index.js'
-import { CARCASS_THICKNESS as T, catalog, withCabinet } from './fixtures.js'
+import { CARCASS_THICKNESS as T, catalog, oneSection, threeSectionWardrobe, withCabinet } from './fixtures.js'
 
 const gap = DEFAULT_SETTINGS.frontGap
 
 function fronts(width: number, count: number, mount: 'overlay' | 'inset' = 'overlay') {
   const panels = generateCabinet(
-    withCabinet({ width, fronts: { count, mount } }),
+    withCabinet({ width, sections: oneSection({ fronts: { count, mount } }) }),
     catalog,
   )
   return panels.filter((p) => p.role === 'front')
@@ -89,5 +89,44 @@ describe('сөре орналасуы', () => {
     const shelf = panels.find((p) => p.role === 'shelf')!
     expect(shelf.finishedWidth).toBe(447 - 20)
     expect(shelf.position.z).toBe(20)
+  })
+})
+
+describe('көп секциялы фасад ұялары', () => {
+  const panels = generateCabinet(threeSectionWardrobe, catalog)
+  const f = panels.filter((p) => p.role === 'front')
+
+  it('фасадтар кабинеттің бүкіл алдын жабады, W-ға дәл жиналады', () => {
+    const sorted = [...f].sort((a, b) => a.position.x - b.position.x)
+    const first = sorted[0]!
+    const last = sorted[sorted.length - 1]!
+    expect(first.position.x).toBeGreaterThanOrEqual(gap)
+    expect(last.position.x + last.finishedWidth).toBeLessThanOrEqual(1800 - gap)
+    for (let i = 1; i < sorted.length; i += 1) {
+      const clearance = sorted[i]!.position.x - (sorted[i - 1]!.position.x + sorted[i - 1]!.finishedWidth)
+      expect(clearance).toBeGreaterThanOrEqual(gap)
+    }
+  })
+
+  it('бір ұядағы фасадтар бірдей', () => {
+    const bySection = new Map<string, number[]>()
+    for (const p of f) {
+      const key = p.id.split('-front-')[0]!
+      bySection.set(key, [...(bySection.get(key) ?? []), p.finishedWidth])
+    }
+    for (const [key, widths] of bySection) {
+      expect(new Set(widths).size, `${key}: бірдей емес`).toBe(1)
+    }
+  })
+
+  it('шеткі ұя боковинаны толық жабады, ортаңғысы перегородканы бөліседі', () => {
+    // s2 мен s3 секцияларының ені бірдей (668), бірақ оң шеткі ұя боковинаны
+    // ТОЛЫҚ алады (16), ал ортаңғысы екі жарты перегородка (8+8) алады —
+    // сондықтан фасадтары 4 мм-ге өзгеше. Бұл әдейі: фасад алдындағы бүкіл
+    // бетті жабуы керек.
+    const s2 = f.find((p) => p.id.startsWith('s2-'))!
+    const s3 = f.find((p) => p.id.startsWith('s3-'))!
+    expect(s2.finishedWidth).toBe(337)
+    expect(s3.finishedWidth).toBe(341)
   })
 })

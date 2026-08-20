@@ -44,26 +44,7 @@ export const CUT_LIST_COLUMNS: readonly Column[] = [
   { key: 'note', header: 'Примечание', audience: 'both', group: '', align: 'left' },
 ] as const
 
-const NOTES: Record<string, string> = {
-  'shelf:adjustable': 'На полкодержателях, шаг 32 мм',
-  'shelf:fixed': 'Фиксированная, конфирмат',
-  'back:overlay': 'ХДФ внакладку, на скобы',
-  'back:groove': 'ХДФ в паз 4 мм',
-  'front:overlay': 'Фасад накладной',
-  'front:inset': 'Фасад вкладной',
-}
-
-export type CutListOptions = {
-  shelfKind?: 'adjustable' | 'fixed'
-  backMode?: 'overlay' | 'groove'
-  frontMount?: 'overlay' | 'inset'
-}
-
-export function formatCutList(
-  panels: Panel[],
-  catalog: Catalog,
-  options: CutListOptions = {},
-): CutListRow[] {
+export function formatCutList(panels: Panel[], catalog: Catalog): CutListRow[] {
   const materials = new Map(catalog.materials.map((m) => [m.id, m]))
   const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
 
@@ -79,12 +60,6 @@ export function formatCutList(
     const material = materials.get(p.materialId)
     if (!material) throw new Error(`Материал табылмады: ${p.materialId}`)
 
-    const noteKey =
-      p.role === 'shelf' ? `shelf:${options.shelfKind ?? 'adjustable'}`
-      : p.role === 'back' ? `back:${options.backMode ?? 'overlay'}`
-      : p.role === 'front' ? `front:${options.frontMount ?? 'overlay'}`
-      : ''
-
     const row: CutListRow = {
       name: p.label,
       qty: p.qty,
@@ -99,7 +74,7 @@ export function formatCutList(
       edgeW1: bandLabel(p.edges.W1),
       edgeW2: bandLabel(p.edges.W2),
       grain: material.hasGrain ? (p.grainAlongLength ? 'вдоль длины' : 'поперёк длины') : 'нет',
-      note: NOTES[noteKey] ?? '',
+      note: p.note,
     }
 
     // Бірдей деталь — бір жол. Кілтке орналасу КІРМЕЙДІ: цехқа детальдің

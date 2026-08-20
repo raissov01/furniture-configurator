@@ -24,6 +24,11 @@ export type Material = {
   pricePerSheet: number
   /** Парақтың әр жағынан кесіліп тасталатын жарамсыз жолақ, мм */
   trimEdge: number
+  /**
+   * Осы декордың үнсіз кромка жиынтығы (A4). Декоры сәйкес келмейтін кромка
+   * жабысса — брак, сондықтан материал өз лентасын өзі көрсетеді.
+   */
+  defaultEdging?: EdgePolicy | undefined
 }
 
 export type EdgeBand = {
@@ -111,7 +116,10 @@ export type Panel = {
   /** Рендерге де, тестке де керек: локал өстердің әлем өстеріне картасы */
   orientation: Orientation
 
-  /** M1-де әрқашан бос — присадка кейінгі кезеңде (§4.9) */
+  /** Деталировкадағы «Примечание» бағаны. Контекстті ядро біледі, кесте емес. */
+  note: string
+
+  /** Әзірге әрқашан бос — присадка кейінгі кезеңде (§4.9) */
   drilling: Drill[]
 }
 
@@ -156,6 +164,32 @@ export type SettingsOverride = {
   [K in keyof ConstructionSettings]?: ConstructionSettings[K] | undefined
 }
 
+/**
+ * Секцияның ішкі толтырылуы. M2-де секцияда БІР ғана content болады;
+ * тік қабаттау (үстінде штанга, астында сөре) — D1-де қосылады.
+ */
+export type SectionContent =
+  | { kind: 'shelves'; count: number; shelfKind: ShelfKind }
+  | { kind: 'empty' }
+
+/**
+ * Кабинет тік перегородкалармен секцияларға бөлінеді.
+ *
+ * Перегородка ҚОЛМЕН ЖАЗЫЛМАЙДЫ — ол секциялардан шығады:
+ * `dividerCount = sections.length − 1`. Перегородка құрылымдық: толық ішкі
+ * биіктікте жүреді және оның қалыңдығы екі жағындағы секциядан шегеріледі.
+ */
+export type Section = {
+  id: string
+  /** 'flex' секциялар қалған енді тең бөліседі */
+  widthMode: 'fixed' | 'flex'
+  /** widthMode === 'fixed' болса МІНДЕТТІ. Секцияның ТАЗА ішкі ені. */
+  width?: number | undefined
+  contents: SectionContent[]
+  /** Осы секцияның фасады. null — ашық секция. */
+  fronts?: { count: number; mount: FrontMount } | null | undefined
+}
+
 export type CabinetConfig = {
   id: string
   name: string
@@ -169,8 +203,8 @@ export type CabinetConfig = {
   frontMaterialId: string
   backMaterialId: string
   back: { mode: BackMode }
-  shelves: { count: number; kind: ShelfKind }
-  fronts: { count: number; mount: FrontMount } | null
+  /** Кемінде бір секция. Перегородкасыз кабинет = бір flex секция. */
+  sections: Section[]
   edging: EdgePolicy
   /** Цех константаларын осы кабинет үшін ғана өзгерту */
   settings?: SettingsOverride | undefined
@@ -183,7 +217,8 @@ export type Catalog = {
 }
 
 export type ProjectFile = {
-  schemaVersion: number
+  /** Ағымдағы нұсқа = 2. Ескі файлдар migrateProject() арқылы көтеріледі. */
+  schemaVersion: 2
   name: string
   materials: Material[]
   edgeBands: EdgeBand[]

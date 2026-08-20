@@ -10,11 +10,7 @@ import { catalog, referenceWardrobe } from './fixtures.js'
 
 describe('эталон шкаф-пенал', () => {
   const panels = generateCabinet(referenceWardrobe, catalog)
-  const rows = formatCutList(panels, catalog, {
-    shelfKind: referenceWardrobe.shelves.kind,
-    backMode: referenceWardrobe.back.mode,
-    frontMount: referenceWardrobe.fronts?.mount ?? 'overlay',
-  })
+  const rows = formatCutList(panels, catalog)
 
   it('11 физикалық деталь, 6 позиция', () => {
     expect(panels).toHaveLength(11)

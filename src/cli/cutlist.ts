@@ -8,8 +8,8 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { ZodError } from 'zod'
 import {
-  CUT_LIST_COLUMNS, ConfigValidationError, ProjectFileSchema,
-  edgeBandTotals, formatCutList, generateCabinet,
+  CUT_LIST_COLUMNS, ConfigValidationError,
+  edgeBandTotals, formatCutList, generateCabinet, parseProject,
 } from '../core/index.js'
 import type { Column, CutListRow } from '../core/index.js'
 
@@ -22,7 +22,7 @@ function main(): number {
 
   let project
   try {
-    project = ProjectFileSchema.parse(JSON.parse(readFileSync(resolve(file), 'utf8')))
+    project = parseProject(JSON.parse(readFileSync(resolve(file), 'utf8')))
   } catch (err) {
     if (err instanceof ZodError) {
       console.error(`Конфиг қатесі — ${file}:`)
@@ -49,15 +49,12 @@ function main(): number {
       throw err
     }
 
-    const rows = formatCutList(panels, catalog, {
-      shelfKind: cabinet.shelves.kind,
-      backMode: cabinet.back.mode,
-      frontMount: cabinet.fronts?.mount ?? 'overlay',
-    })
+    const rows = formatCutList(panels, catalog)
 
     console.log(`\n${cabinet.name}`)
     console.log(`Габарит H × W × D: ${cabinet.height} × ${cabinet.width} × ${cabinet.depth} мм`)
-    console.log(`Конструкция: ${cabinet.construction}, задняя стенка: ${cabinet.back.mode}\n`)
+    console.log(`Конструкция: ${cabinet.construction}, задняя стенка: ${cabinet.back.mode}`)
+    console.log(`Секций: ${cabinet.sections.length}, перегородок: ${cabinet.sections.length - 1}\n`)
     console.log(renderTable(rows))
 
     const pieces = rows.reduce((sum, r) => sum + r.qty, 0)

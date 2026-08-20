@@ -15,8 +15,11 @@ export function edgeClasses(
   construction: ConstructionMethod,
 ): Record<keyof PanelEdges, EdgeClass> {
   switch (role) {
-    case 'side':
     case 'divider':
+      // Перегородка ӘРҚАШАН крышка мен дноның арасында тұрады — екі
+      // құрастыру әдісінде де торцтары көрінбейді.
+      return { L1: 'visibleFront', L2: 'hidden', W1: 'hidden', W2: 'hidden' }
+    case 'side':
       return {
         L1: 'visibleFront', // алдыңғы тік жиек
         L2: 'hidden', // арт жиек — ХДФ жауып тұрады

@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { boxesOverlap, generateCabinet, panelBox } from '../src/core/index.js'
 import type { Panel } from '../src/core/index.js'
-import { CARCASS_THICKNESS as T, catalog, referenceWardrobe, withCabinet } from './fixtures.js'
+import { CARCASS_THICKNESS as T, catalog, referenceWardrobe, threeSectionWardrobe, withCabinet } from './fixtures.js'
 
 const byId = (panels: Panel[], id: string): Panel => {
   const p = panels.find((x) => x.id === id)
@@ -34,10 +34,15 @@ describe('корпус жиналымы', () => {
     expect(side.finishedLength + 2 * T).toBe(2000) // H
   })
 
-  it.each(['sidesOverlay', 'topBottomOverlay'] as const)(
-    '%s: барлық панель кабинет габаритінің ішінде',
-    (construction) => {
-      const cfg = withCabinet({ construction })
+  it.each([
+    ['sidesOverlay', referenceWardrobe],
+    ['topBottomOverlay', referenceWardrobe],
+    ['sidesOverlay', threeSectionWardrobe],
+    ['topBottomOverlay', threeSectionWardrobe],
+  ] as const)(
+    '%s (%#): барлық панель кабинет габаритінің ішінде',
+    (construction, base) => {
+      const cfg = { ...base, construction }
       const panels = generateCabinet(cfg, catalog)
       for (const panel of panels) {
         const box = panelBox(panel, materialThickness(panel))
@@ -51,10 +56,15 @@ describe('корпус жиналымы', () => {
     },
   )
 
-  it.each(['sidesOverlay', 'topBottomOverlay'] as const)(
-    '%s: панельдер бір-бірінің көлеміне кірмейді',
-    (construction) => {
-      const panels = generateCabinet(withCabinet({ construction }), catalog)
+  it.each([
+    ['sidesOverlay', referenceWardrobe],
+    ['topBottomOverlay', referenceWardrobe],
+    ['sidesOverlay', threeSectionWardrobe],
+    ['topBottomOverlay', threeSectionWardrobe],
+  ] as const)(
+    '%s (%#): панельдер бір-бірінің көлеміне кірмейді',
+    (construction, base) => {
+      const panels = generateCabinet({ ...base, construction }, catalog)
       const boxes = panels.map((p) => ({ id: p.id, box: panelBox(p, materialThickness(p)) }))
       for (let i = 0; i < boxes.length; i += 1) {
         for (let j = i + 1; j < boxes.length; j += 1) {
@@ -76,8 +86,8 @@ describe('паздағы арт қабырға (§4.5)', () => {
 
     expect(byId(overlayPanels, 'side-left').finishedWidth).toBe(447) // D − 3
     expect(byId(groovePanels, 'side-left').finishedWidth).toBe(440) // D − 10
-    expect(byId(overlayPanels, 'shelf-1').finishedWidth).toBe(447)
-    expect(byId(groovePanels, 'shelf-1').finishedWidth).toBe(440)
+    expect(byId(overlayPanels, 's1-shelf-1').finishedWidth).toBe(447)
+    expect(byId(groovePanels, 's1-shelf-1').finishedWidth).toBe(440)
   })
 
   it('арт қабырға ішкі саңылау + екі жақтан пазға кіретін бөлік', () => {
