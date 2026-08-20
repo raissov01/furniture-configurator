@@ -11,7 +11,16 @@ import {
   CUT_LIST_COLUMNS, ConfigValidationError,
   edgeBandTotals, formatCutList, generateCabinet, parseProject,
 } from '../core/index'
-import type { Column, CutListRow } from '../core/index'
+import type { Column, CutListRow, DrillPurpose } from '../core/index'
+
+const PURPOSE_LABEL: Record<DrillPurpose, string> = {
+  confirmat: 'конфирмат',
+  dowel: 'шкант',
+  minifix: 'минификс',
+  shelfPin: 'полкодержатель',
+  hinge: 'петля',
+  runner: 'направляющая',
+}
 
 function main(): number {
   const file = process.argv[2]
@@ -59,6 +68,18 @@ function main(): number {
 
     const pieces = rows.reduce((sum, r) => sum + r.qty, 0)
     console.log(`\nПозиций: ${rows.length}   Деталей: ${pieces}`)
+
+    const holes = new Map<string, number>()
+    for (const panel of panels) {
+      for (const d of panel.drilling) {
+        const key = `${PURPOSE_LABEL[d.purpose]} Ø${d.diameter}×${d.depth}`
+        holes.set(key, (holes.get(key) ?? 0) + 1)
+      }
+    }
+    if (holes.size > 0) {
+      const total = [...holes.values()].reduce((a, b) => a + b, 0)
+      console.log(`\nПрисадка: ${total} отв. — ${[...holes].map(([k, v]) => `${k}: ${v}`).join(', ')}`)
+    }
 
     const bandNames = new Map(project.edgeBands.map((b) => [b.id, b.name]))
     for (const [bandId, metres] of edgeBandTotals(panels)) {

@@ -7,6 +7,7 @@
 
 import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
+import { confirmatJoint, hingeHoles, shelfPinHoles } from './drilling'
 import { calculateCutDimensions, resolveEdges } from './edges'
 import { ConfigValidationError } from './errors'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
@@ -122,33 +123,43 @@ export function generateCabinet(
   }
 
   // ── Корпус (§4.4) ──────────────────────────────────────────────────────────
-  if (config.construction === 'sidesOverlay') {
-    // Бүйірлер толық биіктікте, крышка мен дно олардың АРАСЫНА кіреді.
-    panels.push(make('side-left', 'side', 'Боковина', carcass, H, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_SIDE))
-    panels.push(make('side-right', 'side', 'Боковина', carcass, H, carcassDepth, { x: W - t, y: 0, z: 0 }, ORIENT_SIDE))
-    panels.push(make('bottom', 'bottom', 'Дно', carcass, innerWidth, carcassDepth, { x: t, y: 0, z: 0 }, ORIENT_HORIZONTAL))
-    panels.push(make('top', 'top', 'Крышка', carcass, innerWidth, carcassDepth, { x: t, y: H - t, z: 0 }, ORIENT_HORIZONTAL))
-  } else {
-    // Крышка мен дно толық енде, бүйірлер олардың АРАСЫНА кіреді.
-    panels.push(make('bottom', 'bottom', 'Дно', carcass, W, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_HORIZONTAL))
-    panels.push(make('top', 'top', 'Крышка', carcass, W, carcassDepth, { x: 0, y: H - t, z: 0 }, ORIENT_HORIZONTAL))
-    panels.push(make('side-left', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: 0, y: t, z: 0 }, ORIENT_SIDE))
-    panels.push(make('side-right', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: W - t, y: t, z: 0 }, ORIENT_SIDE))
-  }
+  const sidesOverlay = config.construction === 'sidesOverlay'
+  const sideLeft = sidesOverlay
+    ? make('side-left', 'side', 'Боковина', carcass, H, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_SIDE)
+    : make('side-left', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: 0, y: t, z: 0 }, ORIENT_SIDE)
+  const sideRight = sidesOverlay
+    ? make('side-right', 'side', 'Боковина', carcass, H, carcassDepth, { x: W - t, y: 0, z: 0 }, ORIENT_SIDE)
+    : make('side-right', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: W - t, y: t, z: 0 }, ORIENT_SIDE)
+  const bottom = sidesOverlay
+    ? make('bottom', 'bottom', 'Дно', carcass, innerWidth, carcassDepth, { x: t, y: 0, z: 0 }, ORIENT_HORIZONTAL)
+    : make('bottom', 'bottom', 'Дно', carcass, W, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_HORIZONTAL)
+  const top = sidesOverlay
+    ? make('top', 'top', 'Крышка', carcass, innerWidth, carcassDepth, { x: t, y: H - t, z: 0 }, ORIENT_HORIZONTAL)
+    : make('top', 'top', 'Крышка', carcass, W, carcassDepth, { x: 0, y: H - t, z: 0 }, ORIENT_HORIZONTAL)
+
+  // Рет деталировкадағы жолдардың ретін анықтайды — өзгертпе, snapshot соған қарайды.
+  if (sidesOverlay) panels.push(sideLeft, sideRight, bottom, top)
+  else panels.push(bottom, top, sideLeft, sideRight)
 
   // ── Секциялар мен перегородкалар (A1) ──────────────────────────────────────
   const { layouts, dividerPositions } = layoutSections(config.sections, innerWidth, t, t)
 
-  dividerPositions.forEach((x, i) => {
-    panels.push(
-      make(
-        `divider-${i + 1}`, 'divider', 'Перегородка', carcass,
-        innerHeight, carcassDepth, { x, y: t, z: 0 }, ORIENT_SIDE,
-      ),
-    )
-  })
+  const dividers = dividerPositions.map((x, i) =>
+    make(
+      `divider-${i + 1}`, 'divider', 'Перегородка', carcass,
+      innerHeight, carcassDepth, { x, y: t, z: 0 }, ORIENT_SIDE,
+    ),
+  )
+  panels.push(...dividers)
+
+  /** Секцияны екі жағынан шектейтін тік панельдер (конфирмат пен присадка үшін). */
+  const boundsOf = (i: number): [Panel, Panel] => [
+    i === 0 ? sideLeft : dividers[i - 1]!,
+    i === layouts.length - 1 ? sideRight : dividers[i]!,
+  ]
 
   // ── Секция ішіндегі сөрелер (§4.6) ─────────────────────────────────────────
+  const shelves: { shelf: Panel; sectionIndex: number; kind: 'adjustable' | 'fixed' }[] = []
   layouts.forEach((layout, sectionIndex) => {
     const { section } = layout
     if (section.contents.length > 1) {
@@ -186,14 +197,14 @@ export function generateCabinet(
     let y = t
     for (let i = 0; i < content.count; i += 1) {
       y += openings[i] ?? 0
-      panels.push(
-        make(
-          `${section.id}-shelf-${i + 1}`, 'shelf', 'Полка', carcass,
-          shelfLength, shelfDepth,
-          { x: layout.x + Math.floor(settings.shelfGap / 2), y, z: settings.shelfSetback },
-          ORIENT_HORIZONTAL, note,
-        ),
+      const shelf = make(
+        `${section.id}-shelf-${i + 1}`, 'shelf', 'Полка', carcass,
+        shelfLength, shelfDepth,
+        { x: layout.x + Math.floor(settings.shelfGap / 2), y, z: settings.shelfSetback },
+        ORIENT_HORIZONTAL, note,
       )
+      panels.push(shelf)
+      shelves.push({ shelf, sectionIndex, kind: content.shelfKind })
       y += t
     }
   })
@@ -222,6 +233,7 @@ export function generateCabinet(
 
   // ── Фасадтар (§4.7) ────────────────────────────────────────────────────────
   const slots = frontSlots(dividerPositions, W, t)
+  const frontGroups: { fronts: Panel[]; sectionIndex: number }[] = []
   layouts.forEach((layout, sectionIndex) => {
     const fronts = layout.section.fronts
     if (!fronts || fronts.count === 0) return
@@ -233,15 +245,64 @@ export function generateCabinet(
       ? { x: layout.x, width: layout.width }
       : slots[sectionIndex] ?? { x: layout.x, width: layout.width }
 
-    panels.push(
-      ...makeFronts(
-        layout.section, sectionIndex, fronts, slot,
-        inset ? innerHeight : H, inset ? t : 0,
-        inset ? 0 : -frontMat.thickness,
-        frontMat, settings, make,
-      ),
+    const created = makeFronts(
+      layout.section, sectionIndex, fronts, slot,
+      inset ? innerHeight : H, inset ? t : 0,
+      inset ? 0 : -frontMat.thickness,
+      frontMat, settings, make,
     )
+    panels.push(...created)
+    frontGroups.push({ fronts: created, sectionIndex })
   })
+
+  // ── Присадка (§4.9) ────────────────────────────────────────────────────────
+  const ctx = {
+    thickness: (p: Panel) => materials.get(p.materialId)?.thickness ?? t,
+    bands,
+    settings,
+  }
+
+  // Конфирмат: корпус буындары
+  if (sidesOverlay) {
+    // Бұранда бүйірдің СЫРТЫНАН кіріп, крышка/дноның торціне барады
+    for (const face of [sideLeft, sideRight]) {
+      for (const edge of [bottom, top]) confirmatJoint(face, edge, ctx)
+    }
+  } else {
+    // Бұранда крышка/дноның СЫРТЫНАН кіріп, бүйірдің торціне барады
+    for (const face of [bottom, top]) {
+      for (const edge of [sideLeft, sideRight]) confirmatJoint(face, edge, ctx)
+    }
+  }
+  // Перегородка екі құрастыруда да крышка мен дноның арасында
+  for (const divider of dividers) {
+    confirmatJoint(bottom, divider, ctx)
+    confirmatJoint(top, divider, ctx)
+  }
+
+  // Сөрелер: фиксированная — конфирмат, жылжымалы — полкодержатель
+  for (const { shelf, sectionIndex, kind } of shelves) {
+    const [left, right] = boundsOf(sectionIndex)
+    if (kind === 'fixed') {
+      confirmatJoint(left, shelf, ctx)
+      confirmatJoint(right, shelf, ctx)
+    } else {
+      shelfPinHoles(left, shelf, t, ctx)
+      shelfPinHoles(right, shelf, t, ctx)
+    }
+  }
+
+  // Ілгектер: шеткі фасадтар секцияның тік панеліне ілінеді.
+  // Ортадағы фасадтардың жанында тік панель жоқ, сондықтан оларға тек чашка.
+  for (const group of frontGroups) {
+    const [left, right] = boundsOf(group.sectionIndex)
+    const last = group.fronts.length - 1
+    group.fronts.forEach((front, i) => {
+      const side: 'left' | 'right' = i === last && last > 0 ? 'right' : i % 2 === 0 ? 'left' : 'right'
+      const carcassPanel = i === 0 ? left : i === last ? right : undefined
+      hingeHoles(front, carcassPanel, side, ctx)
+    })
+  }
 
   return panels
 }

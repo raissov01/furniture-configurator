@@ -73,7 +73,27 @@ export type Vec3 = { x: number; y: number; z: number }
 
 export type DrillPurpose = 'confirmat' | 'dowel' | 'minifix' | 'shelfPin' | 'hinge' | 'runner'
 
+/**
+ * Панельдің локал координаталары (присадка мен DXF үшін):
+ *
+ *   local x — finishedLength бойымен, W1 жиегінен W2 жиегіне қарай
+ *   local y — finishedWidth  бойымен, L1 жиегінен L2 жиегіне қарай
+ *
+ * Әлем өстерімен байланысы: local x = orientation.length өсі,
+ * local y = orientation.width өсі, екеуі де оң бағытта. Сондықтан:
+ *   тік панельде (боковина, перегородка) x төменнен жоғары, y алдан артқа
+ *   жатық панельде (крышка, дно, полка)  x солдан оңға,  y алдан артқа
+ *   алға қараған панельде (фасад, арт)   x төменнен жоғары, y солдан оңға
+ *
+ * Бұрғылау координаталары ӘРҚАШАН РЕЗ панелінде беріледі (станок соны көреді),
+ * яғни готовый координатадан W1/L1 кромкасының қалыңдығы шегерілген.
+ */
 export type Drill = {
+  /**
+   * inner/outer — панельдің кең беттері (inner корпустың ішіне қарайды).
+   * edgeXX — панельдің торц беті; ондағы x сол жиек бойымен, y қалыңдық
+   * бойымен (әдетте t/2 — торцтың дәл ортасы).
+   */
   face: 'inner' | 'outer' | 'edgeL1' | 'edgeL2' | 'edgeW1' | 'edgeW2'
   /** Сол беттің сол-төменгі бұрышынан, мм */
   x: number
@@ -153,6 +173,7 @@ export type ConstructionSettings = {
   grooveInset: number
   minBandSubtract: number
   confirmatSpanForThird: number
+  shelfPinDatum: number
 }
 
 /**

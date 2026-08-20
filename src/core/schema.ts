@@ -48,6 +48,7 @@ export const ConstructionSettingsSchema = z.object({
   grooveInset: z.number().int().nonnegative(),
   minBandSubtract: z.number().nonnegative(),
   confirmatSpanForThird: mm,
+  shelfPinDatum: z.number().int().nonnegative(),
 }).partial()
 
 const FrontsSchema = z.object({

@@ -321,6 +321,21 @@ Every one of these is a named constant in `src/core/constants.ts` with a comment
 explaining what it physically is. A shop owner must be able to change them in
 one place.
 
+**Shelf-pin datum.** The 32 mm column needs a starting point, and there is no
+universal standard for it. `settings.shelfPinDatum` (default 32) is the distance
+from the inner face of the bottom panel to the first hole. Confirm it against
+your own shop's template before the first real cut.
+
+Adjustable shelves get a **group** of `SHELF_PIN_GROUP` holes (5) centred on the
+nominal shelf height and snapped to the grid, not a full-height column — the
+shelf can move a little, and the panel does not spend a minute under the drill.
+The grid is measured from the shelf's **bottom face**, because that is the
+surface that rests on the pin.
+
+Drilling coordinates are always given on the **cut** panel, since that is what
+the machine sees: a coordinate measured from the W1/L1 edges has that edge's
+band thickness subtracted.
+
 ---
 
 ## 5. Nesting (раскрой) — do not use a generic bin-packer
@@ -376,7 +391,8 @@ Unit tests are mandatory for `src/core/`. Specifically:
 3. Groove-back mode shortens shelves and sides correctly
 4. Front widths sum to `W` exactly, including gaps, with no rounding drift, and
    all fronts in a cabinet are identical
-5. Shelf-pin holes land on the 32 mm grid with the 37 mm offset
+5. Shelf-pin holes land on the 32 mm grid with the 37 mm offset, and a face
+   hole in a side lines up with the edge hole it screws into
 6. Nesting: no overlaps, all inside bounds, grain respected
 7. **Snapshot test:** the reference wardrobe — `2000 (H) × 600 (W) × 450 (D)`,
    4 adjustable shelves, 2 overlay fronts, 16 mm ЛДСП, overlay back,
