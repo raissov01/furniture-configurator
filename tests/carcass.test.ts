@@ -80,14 +80,40 @@ describe('корпус жиналымы', () => {
 describe('паздағы арт қабырға (§4.5)', () => {
   const groove = withCabinet({ back: { mode: 'groove' } })
 
-  it('бүйір мен сөре grooveInset-ке қысқарады', () => {
+  it('пазда корпус ТОЛЫҚ D тереңдікте, сөре ғана grooveInset-ке қысқарады', () => {
     const overlayPanels = generateCabinet(referenceWardrobe, catalog)
     const groovePanels = generateCabinet(groove, catalog)
 
-    expect(byId(overlayPanels, 'side-left').finishedWidth).toBe(447) // D − 3
-    expect(byId(groovePanels, 'side-left').finishedWidth).toBe(440) // D − 10
+    // overlay: ХДФ корпустың артына қағылады → корпус D − 3
+    expect(byId(overlayPanels, 'side-left').finishedWidth).toBe(447)
     expect(byId(overlayPanels, 's1-shelf-1').finishedWidth).toBe(447)
+
+    // groove: ХДФ корпустың ішінде → корпус толық D, сөре D − grooveInset
+    expect(byId(groovePanels, 'side-left').finishedWidth).toBe(450)
+    expect(byId(groovePanels, 'top').finishedWidth).toBe(450)
     expect(byId(groovePanels, 's1-shelf-1').finishedWidth).toBe(440)
+  })
+
+  it('жиналған кабинеттің тереңдігі ЕКІ режимде де дәл D', () => {
+    for (const cfg of [referenceWardrobe, groove]) {
+      const panels = generateCabinet(cfg, catalog)
+      const maxZ = Math.max(
+        ...panels
+          .filter((p) => p.role !== 'front') // накладной фасад корпустан бөлек
+          .map((p) => panelBox(p, materialThickness(p)).max.z),
+      )
+      expect(maxZ, cfg.back.mode).toBe(cfg.depth)
+    }
+  })
+
+  it('пазда ХДФ бүйірдің ішіне grooveDepth-ке кіріп тұрады', () => {
+    const panels = generateCabinet(groove, catalog)
+    const back = panelBox(byId(panels, 'back'), 3)
+    const side = panelBox(byId(panels, 'side-left'), T)
+    // Паз — панельден алынған материал, сондықтан көлемдер әдейі қиылысады
+    expect(side.max.x - back.min.x).toBe(4) // grooveDepth
+    expect(back.min.z).toBe(450 - 10) // D − grooveInset
+    expect(back.max.z).toBe(450 - 10 + 3)
   })
 
   it('арт қабырға ішкі саңылау + екі жақтан пазға кіретін бөлік', () => {

@@ -183,18 +183,26 @@ Every carcass panel is `D − backAllowance` deep. The old text said
 
 `backAllowance` = `backThickness` in overlay mode, `grooveInset` in groove mode.
 
-- **`overlay` (внакладку):** `W × H`, stapled to the back. **`D` includes the
-  3 mm**: the carcass is `D − 3` deep and the ХДФ makes up the rest, so the
-  assembled cabinet measures exactly `D`. Cheapest, standard for wardrobes.
-- **`groove` (в паз):** routed 4 mm deep, 10 mm from the rear edge. Back size:
+**In both modes the assembled cabinet measures exactly `D`.** What changes is
+where the back panel sits, and therefore how deep the carcass panels are:
+
+- **`overlay` (внакладку):** `W × H`, stapled to the back. The ХДФ sits *behind*
+  the carcass, so carcass panels are `D − backThickness` deep and the back makes
+  up the remaining 3 mm. Cheapest, standard for wardrobes.
+- **`groove` (в паз):** routed 4 mm deep, 10 mm from the rear edge. The ХДФ sits
+  *inside* the carcass, so **carcass panels are the full `D` deep**. Back size:
   `H − 2·t + 2·grooveDepth` by `W − 2·t + 2·grooveDepth`. Stronger, no edge banding.
-  Carcass depth of sides/shelves shortens by `grooveInset` in this mode.
+
+Only the **shelves** are shortened by `backAllowance`, which is `backThickness`
+(3) in overlay mode and `grooveInset` (10) in groove mode — a shelf must stop
+where the back panel begins, never run into it.
+
+In groove mode the back panel's front face is at `D − grooveInset`, flush with
+the rear edge of the shelves, and it overlaps the routed panels by `grooveDepth`
+on each side. That overlap is the groove itself, so a volume-intersection test
+must exclude the back panel in this mode.
 
 Constants: `grooveDepth = 4`, `grooveInset = 10`, `backThickness = 3`.
-
-> OPEN QUESTION (M2): in groove mode the assembled depth comes out at
-> `D − grooveInset` rather than `D`, because nothing sits behind the carcass.
-> Confirm whether `D` should stay the outer dimension there too.
 
 ### 4.6a Sections and dividers (PHASE-2 A1)
 

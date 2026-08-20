@@ -44,12 +44,25 @@ export function generateCabinet(
   /** Корпус материалының қалыңдығы. ЕШҚАШАН 16 деп қатырылмайды. */
   const t = carcass.thickness
 
+  const isGroove = config.back.mode === 'groove'
+
   /**
-   * Арт қабырғаға берілетін тереңдік:
-   *   overlay — ХДФ корпустың АРТЫНА қағылады, жалпы габарит D болып шығады
-   *   groove  — панельдер арт жиектен grooveInset-ке қысқарады
+   * Сөренің арт жиектен шегінісі — арт қабырға тұратын аймақ:
+   *   overlay — ХДФ корпустың артына қағылады, сөре соған тірелмеуі керек
+   *   groove  — ХДФ панельдің ішіндегі пазда отырады, сөре пазға дейін барады
    */
-  const backAllowance = config.back.mode === 'overlay' ? settings.backThickness : settings.grooveInset
+  const backAllowance = isGroove ? settings.grooveInset : settings.backThickness
+
+  /**
+   * Бүйір/крышка/дно/перегородка тереңдігі. ЕКІ режимде де жиналған кабинеттің
+   * жалпы тереңдігі ДӘЛ D болады:
+   *   overlay — корпус D − backThickness, қалған 3 мм-ді сыртқа қағылған ХДФ толтырады
+   *   groove  — ХДФ корпустың ІШІНДЕ, сондықтан корпус толық D тереңдікте
+   */
+  const carcassDepth = isGroove ? D : D - settings.backThickness
+
+  /** Сөре тереңдігі: арт қабырғаға дейін барады, оның үстіне шықпайды. */
+  const shelfDepth = D - backAllowance - settings.shelfSetback
 
   if (config.back.mode === 'overlay' && backMat.thickness !== settings.backThickness) {
     throw new ConfigValidationError(
@@ -59,13 +72,11 @@ export function generateCabinet(
     )
   }
 
-  /** Бүйір/крышка/дно/полка/перегородканың нақты тереңдігі. */
-  const carcassDepth = D - backAllowance
-  if (carcassDepth < MIN_DIMENSION) {
+  if (carcassDepth < MIN_DIMENSION || shelfDepth < MIN_DIMENSION) {
     throw new ConfigValidationError(
       'cabinet.depth',
-      `арт қабырғаны шегергенде корпус тереңдігі ${carcassDepth} мм қалады`,
-      `≥ ${MIN_DIMENSION + backAllowance} мм`,
+      `арт қабырғаны шегергенде корпус ${carcassDepth} мм, сөре ${shelfDepth} мм қалады`,
+      `≥ ${MIN_DIMENSION + backAllowance + settings.shelfSetback} мм`,
     )
   }
 
@@ -157,12 +168,11 @@ export function generateCabinet(
     }
 
     const shelfLength = layout.width - settings.shelfGap
-    const shelfWidth = carcassDepth - settings.shelfSetback
-    if (shelfWidth < MIN_DIMENSION) {
+    if (shelfDepth < MIN_DIMENSION) {
       throw new ConfigValidationError(
         'settings.shelfSetback',
-        `сөре тереңдігі ${shelfWidth} мм қалады`,
-        `≤ ${carcassDepth - MIN_DIMENSION} мм`,
+        `сөре тереңдігі ${shelfDepth} мм қалады`,
+        `≤ ${D - backAllowance - MIN_DIMENSION} мм`,
       )
     }
 
@@ -179,7 +189,7 @@ export function generateCabinet(
       panels.push(
         make(
           `${section.id}-shelf-${i + 1}`, 'shelf', 'Полка', carcass,
-          shelfLength, shelfWidth,
+          shelfLength, shelfDepth,
           { x: layout.x + Math.floor(settings.shelfGap / 2), y, z: settings.shelfSetback },
           ORIENT_HORIZONTAL, note,
         ),
@@ -197,11 +207,14 @@ export function generateCabinet(
     )
   } else {
     const g = settings.grooveDepth
+    // ХДФ корпустың ішінде, пазда отырады: алдыңғы беті D − grooveInset-те,
+    // яғни сөренің арт жиегімен беттеседі. Артында корпустың
+    // (grooveInset − backThickness) мм-і қалады.
     panels.push(
       make(
         'back', 'back', 'Задняя стенка', backMat,
         innerHeight + 2 * g, innerWidth + 2 * g,
-        { x: t - g, y: t - g, z: carcassDepth - backMat.thickness },
+        { x: t - g, y: t - g, z: D - settings.grooveInset },
         ORIENT_FACING, 'ХДФ в паз 4 мм',
       ),
     )
