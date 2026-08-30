@@ -6,7 +6,8 @@
  */
 
 import { create } from 'zustand'
-import { defaultCabinet } from '@/lib/defaults'
+import { catalog, defaultCabinet, defaultTemplateId } from '@/lib/defaults'
+import { findTemplate, templateToCabinet } from '@/src/core/index'
 import type { CabinetConfig, Section, SectionContent } from '@/src/core/index'
 
 /** Осы уақыт ішіндегі бір өрістің өзгерісі бір undo қадамына біріктіріледі. */
@@ -18,6 +19,10 @@ export type CameraPreset = 'front' | 'three-quarter' | 'inside' | 'plan'
 
 type State = {
   cabinet: CabinetConfig
+  /** Соңғы жүктелген шаблон. Габарит аралығын UI осыдан алады. */
+  templateId: string
+  /** Шаблон галереясы ашық па */
+  galleryOpen: boolean
   past: CabinetConfig[]
   future: CabinetConfig[]
   lastEditKey: string | null
@@ -31,6 +36,8 @@ type State = {
   hovered: string | null
 
   edit(key: string, patch: Partial<CabinetConfig>): void
+  loadTemplate(id: string): void
+  setGalleryOpen(v: boolean): void
   editSection(index: number, patch: Partial<Section>, key: string): void
   addSection(): void
   removeSection(index: number): void
@@ -45,6 +52,8 @@ type State = {
 
 export const useConfigurator = create<State>((set, get) => ({
   cabinet: defaultCabinet,
+  templateId: defaultTemplateId,
+  galleryOpen: false,
   past: [],
   future: [],
   lastEditKey: null,
@@ -68,6 +77,27 @@ export const useConfigurator = create<State>((set, get) => ({
       lastEditAt: now,
     })
   },
+
+  /**
+   * Шаблонды жүктеу. Бұл ТОЛЫҚ ауыстыру: жаңа корпустың секциялары мен
+   * материалдары шаблондікі болады. Undo тарихына бір қадам болып түседі,
+   * сондықтан қате бассаң Ctrl+Z қайтарады.
+   */
+  loadTemplate(id) {
+    const template = findTemplate(id)
+    if (!template) return
+    const s = get()
+    set({
+      cabinet: templateToCabinet(template, catalog),
+      templateId: id,
+      galleryOpen: false,
+      past: [...s.past, s.cabinet].slice(-HISTORY_LIMIT),
+      future: [],
+      lastEditKey: null,
+    })
+  },
+
+  setGalleryOpen: (galleryOpen) => set({ galleryOpen }),
 
   editSection(index, patch, key) {
     const s = get()
@@ -121,7 +151,13 @@ export const useConfigurator = create<State>((set, get) => ({
 
   reset() {
     const s = get()
-    set({ cabinet: defaultCabinet, past: [...s.past, s.cabinet], future: [], lastEditKey: null })
+    set({
+      cabinet: defaultCabinet,
+      templateId: defaultTemplateId,
+      past: [...s.past, s.cabinet],
+      future: [],
+      lastEditKey: null,
+    })
   },
 
   setExploded: (exploded) => set({ exploded }),

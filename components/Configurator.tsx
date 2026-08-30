@@ -7,6 +7,7 @@
 
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { backMaterials, carcassMaterials } from '@/lib/defaults'
+import { findTemplate } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import type { CabinetConfig, Section } from '@/src/core/index'
 
@@ -137,26 +138,42 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
   const addSection = useConfigurator((s) => s.addSection)
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
+  const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
+  const template = findTemplate(useConfigurator((s) => s.templateId))
 
   const invalid = (field: string) => invalidField === field
+  /** Шаблон ұсынған аралық — қатты шектеу емес, тек бағдар. */
+  const hint = (axis: 'height' | 'width' | 'depth') =>
+    template ? `${template.range[axis].min}–${template.range[axis].max}` : undefined
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <SectionTitle>Шаблон</SectionTitle>
+        <Button onClick={() => setGalleryOpen(true)}>Выбрать</Button>
+      </div>
+      <div className="rounded-lg border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-800">
+        <div className="font-medium">{template ? template.name : 'Свой корпус'}</div>
+        {template ? (
+          <div className="mt-0.5 text-[11px] leading-snug text-neutral-400">{template.description}</div>
+        ) : null}
+      </div>
+
       <SectionTitle>Габарит — H × W × D, мм</SectionTitle>
       <div className="grid grid-cols-3 gap-2">
-        <Field label="Высота (H)">
+        <Field label="Высота (H)" hint={hint('height')}>
           <NumberInput
             value={cabinet.height} min={100} max={4000} step={10} invalid={invalid('cabinet.height')}
             onChange={(height) => edit('height', { height })}
           />
         </Field>
-        <Field label="Ширина (W)">
+        <Field label="Ширина (W)" hint={hint('width')}>
           <NumberInput
             value={cabinet.width} min={100} max={4000} step={10} invalid={invalid('cabinet.width')}
             onChange={(width) => edit('width', { width })}
           />
         </Field>
-        <Field label="Глубина (D)">
+        <Field label="Глубина (D)" hint={hint('depth')}>
           <NumberInput
             value={cabinet.depth} min={100} max={4000} step={10} invalid={invalid('cabinet.depth')}
             onChange={(depth) => edit('depth', { depth })}
