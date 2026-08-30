@@ -77,6 +77,10 @@ const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'runner-ball-400', kind: 'runner', name: 'Направляющая шариковая 400 мм' },
   { id: 'handle-128', kind: 'handle', name: 'Ручка-скоба 128 мм' },
   { id: 'leg-100', kind: 'leg', name: 'Ножка регулируемая 100 мм' },
+  { id: 'rod-25', kind: 'other', name: 'Штанга Ø25 (за метр)' },
+  { id: 'rod-bracket', kind: 'other', name: 'Держатель штанги' },
+  { id: 'sliding-track', kind: 'other', name: 'Рельс для дверей-купе (за метр)' },
+  { id: 'sliding-kit', kind: 'other', name: 'Комплект профиля и роликов на дверь' },
 ]
 
 export function defaultHardware(): HardwareItem[] {
@@ -224,6 +228,11 @@ const SettingsOverrideSchema = z.object({
   minBandSubtract: z.number().nonnegative(),
   confirmatSpanForThird: z.number().int().positive(),
   shelfPinDatum: z.number().int().nonnegative(),
+  slidingDoorOverlap: z.number().int().nonnegative(),
+  slidingTrackTopSpace: z.number().int().nonnegative(),
+  slidingTrackBottomSpace: z.number().int().nonnegative(),
+  slidingProfileSide: z.number().int().nonnegative(),
+  slidingProfileTopBottom: z.number().int().nonnegative(),
   drawerRunnerGap: z.number().int().nonnegative(),
   drawerBackGap: z.number().int().nonnegative(),
   drawerBoxDrop: z.number().int().nonnegative(),

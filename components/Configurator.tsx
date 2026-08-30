@@ -23,20 +23,28 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
 
   const shelves = section.contents.find((c) => c.kind === 'shelves')
   const drawers = section.contents.find((c) => c.kind === 'drawers')
+  const rod = section.contents.find((c) => c.kind === 'rod')
 
   /**
    * Толтырылым АСТЫҢҒЫДАН жоғары қарай жиналады: ящиктер төменде, сөрелер
    * үстінде. Нақты жиһаз дәл солай жиналады, ал реті UI-да ойлап табылмайды.
    */
-  const setFill = (next: { shelfCount?: number; shelfKind?: 'adjustable' | 'fixed'; drawerCount?: number }) => {
+  const setFill = (next: {
+    shelfCount?: number
+    shelfKind?: 'adjustable' | 'fixed'
+    drawerCount?: number
+    hasRod?: boolean
+  }) => {
     const shelfCount = next.shelfCount ?? shelves?.count ?? 0
     const shelfKind = next.shelfKind ?? shelves?.shelfKind ?? 'adjustable'
     const drawerCount = next.drawerCount ?? drawers?.count ?? 0
+    const hasRod = next.hasRod ?? rod !== undefined
 
     const contents: SectionContent[] = []
     if (drawerCount > 0) contents.push({ kind: 'drawers', count: drawerCount })
     if (shelfCount > 0) contents.push({ kind: 'shelves', count: shelfCount, shelfKind })
-    else if (drawerCount > 0) contents.push({ kind: 'empty' })
+    // Штанга ең ҮСТІНДЕ: киім ілінетін жер жоғарыда болады.
+    if (hasRod) contents.push({ kind: 'rod' })
     if (contents.length === 0) contents.push({ kind: 'empty' })
 
     editSection(index, { contents }, 'section.fill')
@@ -106,6 +114,15 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
             max={8}
             onChange={(drawerCount) => setFill({ drawerCount })}
           />
+        </Field>
+        <Field label="Штанга" hint={rod ? 'сверху' : undefined}>
+          <div className="pt-1.5">
+            <Toggle
+              checked={rod !== undefined}
+              onChange={(hasRod) => setFill({ hasRod })}
+              label="для одежды"
+            />
+          </div>
         </Field>
         <Field label="Высота ящиков" hint={drawers?.height ? 'мм' : 'делит поровну'}>
           <NumberInput
@@ -230,6 +247,88 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
           options={[
             { value: 'overlay', label: 'Внакладку (на скобы)' },
             { value: 'groove', label: 'В паз 4 мм' },
+          ]}
+        />
+      </Field>
+
+      <SectionTitle>Основание и столешница</SectionTitle>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Основание" hint={cabinet.base ? `${cabinet.base.height} мм` : 'нет'}>
+          <Select
+            value={cabinet.base?.kind ?? 'none'}
+            onChange={(kind) =>
+              edit('base', kind === 'none'
+                ? { base: undefined }
+                : { base: { kind: kind as 'plinth' | 'legs', height: cabinet.base?.height ?? 100 } })
+            }
+            options={[
+              { value: 'none', label: 'Нет' },
+              { value: 'plinth', label: 'Цоколь' },
+              { value: 'legs', label: 'Ножки' },
+            ]}
+          />
+        </Field>
+        <Field label="Высота основания">
+          <NumberInput
+            value={cabinet.base?.height ?? 0}
+            min={0}
+            max={400}
+            step={10}
+            onChange={(height) => {
+              if (!cabinet.base) return
+              edit('base.height', { base: { ...cabinet.base, height } })
+            }}
+          />
+        </Field>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Столешница">
+          <Select
+            value={cabinet.worktop ? 'yes' : 'no'}
+            onChange={(value) =>
+              edit('worktop', value === 'yes'
+                ? { worktop: { overhangFront: 20, overhangSides: 0 } }
+                : { worktop: undefined })
+            }
+            options={[{ value: 'no', label: 'Нет' }, { value: 'yes', label: 'Есть' }]}
+          />
+        </Field>
+        <Field label="Свес вперёд" hint={cabinet.worktop ? 'мм' : undefined}>
+          <NumberInput
+            value={cabinet.worktop?.overhangFront ?? 0}
+            min={0}
+            max={200}
+            step={5}
+            onChange={(overhangFront) => {
+              if (!cabinet.worktop) return
+              edit('worktop.front', { worktop: { ...cabinet.worktop, overhangFront } })
+            }}
+          />
+        </Field>
+      </div>
+
+      <SectionTitle>Двери</SectionTitle>
+      <Field
+        label="Двери-купе"
+        hint={cabinet.sliding ? 'вместо распашных' : 'нет'}
+      >
+        <Select
+          value={String(cabinet.sliding?.count ?? 0)}
+          onChange={(value) => {
+            const count = Number(value)
+            edit('sliding', count > 0
+              ? {
+                  sliding: { count },
+                  // Купе мен ілмелі фасад бір корпуста болмайды.
+                  sections: cabinet.sections.map((sec) => ({ ...sec, fronts: null })),
+                }
+              : { sliding: undefined })
+          }}
+          options={[
+            { value: '0', label: 'Нет, распашные фасады' },
+            { value: '2', label: '2 двери' },
+            { value: '3', label: '3 двери' },
+            { value: '4', label: '4 двери' },
           ]}
         />
       </Field>

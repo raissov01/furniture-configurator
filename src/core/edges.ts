@@ -51,6 +51,9 @@ export function edgeClasses(
       // Ящик қорабының ҮСТІҢГІ жиегі ғана көрінеді — ішіне қол салғанда
       // сол жиек көрінеді әрі тиеді. Қалғаны қораптың ішінде.
       return { L1: 'visibleSecondary', L2: 'hidden', W1: 'hidden', W2: 'hidden' }
+    case 'plinth':
+      // Цокольдің тек ҮСТІҢГІ жиегі жасырын — қалғаны көрінеді әрі аяқ тиеді.
+      return { L1: 'visibleFront', L2: 'hidden', W1: 'visibleSecondary', W2: 'visibleSecondary' }
     case 'drawerBottom':
       // Түбі ХДФ, көрінбейді.
       return { L1: 'hidden', L2: 'hidden', W1: 'hidden', W2: 'hidden' }

@@ -12,6 +12,7 @@ import {
   CONFIRMAT_EDGE_DIAMETER,
   HINGE_CUP_DIAMETER,
 } from './constants'
+import type { HardwarePlacement } from './hardware'
 import type { NestingResult } from './nesting'
 import type { Panel } from './types'
 import type { ShopProfile } from './shop'
@@ -132,6 +133,8 @@ export function priceProject(
   panels: Panel[],
   nesting: NestingResult,
   shop: ShopProfile,
+  /** Панель емес фурнитура: штанга, ұстағыш, рельс. */
+  placements: HardwarePlacement[] = [],
 ): PriceBreakdown {
   const missingPrices: string[] = []
 
@@ -169,7 +172,14 @@ export function priceProject(
     .sort((a, b) => b.cost - a.cost)
 
   const hardwareById = new Map(shop.hardware.map((h) => [h.id, h]))
-  const hardware: PriceLine[] = [...countHardware(panels)]
+  const counts = countHardware(panels)
+  // Штанга МЕТРМЕН сатылады, ұстағыш данамен — сондықтан бірі ұзындықтан,
+  // екіншісі данадан жиналады.
+  for (const item of placements) {
+    const add = item.length > 0 ? item.length / 1000 : item.qty
+    counts.set(item.hardwareId, (counts.get(item.hardwareId) ?? 0) + add)
+  }
+  const hardware: PriceLine[] = [...counts]
     .map(([id, qty]) => {
       const item = hardwareById.get(id)
       const unitPrice = item?.pricePerUnit ?? 0
@@ -177,8 +187,8 @@ export function priceProject(
       return {
         id,
         name: item?.name ?? id,
-        qty,
-        unit: 'шт' as const,
+        qty: Math.round(qty * 100) / 100,
+        unit: (id === 'rod-25' || id === 'sliding-track' ? 'м' : 'шт') as 'м' | 'шт',
         unitPrice,
         cost: roundTenge(qty * unitPrice),
       }

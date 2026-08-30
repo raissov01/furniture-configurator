@@ -55,6 +55,11 @@ export const ConstructionSettingsSchema = z.object({
   minBandSubtract: z.number().nonnegative(),
   confirmatSpanForThird: mm,
   shelfPinDatum: z.number().int().nonnegative(),
+  slidingDoorOverlap: z.number().int().nonnegative(),
+  slidingTrackTopSpace: z.number().int().nonnegative(),
+  slidingTrackBottomSpace: z.number().int().nonnegative(),
+  slidingProfileSide: z.number().int().nonnegative(),
+  slidingProfileTopBottom: z.number().int().nonnegative(),
   drawerRunnerGap: z.number().int().nonnegative(),
   drawerBackGap: z.number().int().nonnegative(),
   drawerBoxDrop: z.number().int().nonnegative(),
@@ -133,6 +138,13 @@ export const SectionSchema = z.object({
 
 export const CabinetConfigSchema = CabinetBaseSchema.extend({
   sections: z.array(SectionSchema).min(1).max(12),
+  sliding: z.object({ count: z.number().int().min(2).max(4) }).optional(),
+  base: z.object({ kind: z.enum(['plinth', 'legs']), height: mm }).optional(),
+  worktop: z.object({
+    materialId: z.string().min(1).optional(),
+    overhangFront: z.number().int().nonnegative(),
+    overhangSides: z.number().int().nonnegative(),
+  }).optional(),
 })
 
 export const ProjectFileV2Schema = z.object({

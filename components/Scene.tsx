@@ -14,8 +14,8 @@ import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
-import { placementFootprint } from '@/src/core/index'
-import type { CabinetConfig, Catalog, Panel, Placement, Room, Vec3 } from '@/src/core/index'
+import { ROD_DIAMETER, placementFootprint } from '@/src/core/index'
+import type { CabinetConfig, Catalog, HardwarePlacement, Panel, Placement, Room, Vec3 } from '@/src/core/index'
 
 type Controls = ComponentRef<typeof OrbitControls>
 
@@ -24,6 +24,8 @@ const MM = 0.001
 export type SceneItem = {
   cabinet: CabinetConfig
   panels: Panel[]
+  /** Панель емес фурнитура: штанга. Деталировкаға кірмейді, бірақ көрінеді. */
+  hardware: HardwarePlacement[]
   placement: Placement
   pose: { position: Vec3; rotationY: number }
 }
@@ -117,6 +119,16 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
           />
         )
       })}
+      {item.hardware.map((h, i) =>
+        h.kind === 'rod' ? (
+          // Штанга секцияның ені бойымен жатады, сондықтан цилиндр Z осінен
+          // X осіне бұрылады.
+          <mesh key={`rod-${i}`} position={[h.position.x, h.position.y, h.position.z]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[ROD_DIAMETER / 2, ROD_DIAMETER / 2, h.length, 16]} />
+            <meshStandardMaterial color="#9aa3ad" roughness={0.35} metalness={0.6} />
+          </mesh>
+        ) : null,
+      )}
       {active && showDimensions ? <DimensionLabels cabinet={item.cabinet} /> : null}
     </group>
   )

@@ -12,7 +12,7 @@
 
 import { useMemo, useState } from 'react'
 import { formatTenge, nestPanels, priceProject } from '@/src/core/index'
-import type { NestedSheet, Panel, PriceLine } from '@/src/core/index'
+import type { HardwarePlacement, NestedSheet, Panel, PriceLine } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -42,7 +42,14 @@ function download(filename: string, data: Uint8Array | string, mime: string): vo
 }
 
 /** `panels` — БҮКІЛ ЖОБАНЫҢ детальдары. Геометрия store-да есептелмейді (§3). */
-export function QuoteView({ panels, projectName }: { panels: Panel[]; projectName: string }) {
+export function QuoteView({
+  panels, hardware, projectName,
+}: {
+  panels: Panel[]
+  /** Панель емес фурнитура: штанга мен ұстағыштар. */
+  hardware: HardwarePlacement[]
+  projectName: string
+}) {
   const open = useConfigurator((s) => s.quoteOpen)
   const setOpen = useConfigurator((s) => s.setQuoteOpen)
   const shop = useConfigurator((s) => s.shop)
@@ -60,8 +67,8 @@ export function QuoteView({ panels, projectName }: { panels: Panel[]; projectNam
   }, [panels, catalog])
 
   const price = useMemo(
-    () => (nesting ? priceProject(panels, nesting, shop) : null),
-    [panels, nesting, shop],
+    () => (nesting ? priceProject(panels, nesting, shop, hardware) : null),
+    [panels, nesting, shop, hardware],
   )
 
   const run = async (kind: string, action: () => Promise<void>) => {

@@ -19,6 +19,11 @@ import type {
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
 const MIN_DIMENSION = 100
+/**
+ * Цокольдің алдыңғы жиектен шегінісі, мм. Аяқ тұратын орын — цех
+ * стандартында әдетте 50 мм.
+ */
+const PLINTH_SETBACK = 50
 /** Ящик қорабының ең аз биіктігі. Бұл — ақылға қонымды еден, цех ережесі емес. */
 const MIN_DRAWER_BOX_HEIGHT = 60
 /** Ең үлкен габарит: бір парақтан ұзын. Бөлу (A2) кейінгі кезеңде. */
@@ -92,6 +97,16 @@ export function generateCabinet(
     throw new ConfigValidationError('cabinet.height', `ішкі биіктігі ${innerHeight} мм`, `≥ ${MIN_DIMENSION + 2 * t} мм`)
   }
 
+  /**
+   * Корпус тіректің ҮСТІНДЕ тұрады, сондықтан барлық панель осыған көтеріледі.
+   * Жалғыз ерекшелік — цокольдің өзі: ол `y = -baseHeight` деп беріледі де,
+   * көтерілгеннен кейін дәл еденге түседі.
+   */
+  const baseHeight = config.base ? config.base.height : 0
+  if (config.base && (!Number.isInteger(baseHeight) || baseHeight < 10 || baseHeight > 400)) {
+    throw new ConfigValidationError('base.height', `${baseHeight} мм`, '10..400 мм')
+  }
+
   const panels: Panel[] = []
   const make = (
     id: string,
@@ -108,6 +123,7 @@ export function generateCabinet(
     const { cutLength, cutWidth } = calculateCutDimensions(
       finishedLength, finishedWidth, edges, bands, settings,
     )
+    const raised = { ...position, y: position.y + baseHeight }
     return {
       id, role, label,
       materialId: material.id,
@@ -116,7 +132,7 @@ export function generateCabinet(
       edges,
       grainAlongLength: material.hasGrain,
       qty: 1,
-      position,
+      position: raised,
       rotation: rotationFor(orientation),
       orientation,
       note,
@@ -311,6 +327,86 @@ export function generateCabinet(
     frontGroups.push({ fronts: created, sectionIndex })
   })
 
+  // ── Цоколь мен столешница ──────────────────────────────────────────────────
+  if (config.base?.kind === 'plinth') {
+    // Цоколь алдыңғы жиектен ішке шегіндіріледі: аяқ тұратын орын.
+    panels.push(
+      make(
+        'plinth', 'plinth', 'Цоколь', carcass,
+        W, baseHeight,
+        { x: 0, y: -baseHeight, z: PLINTH_SETBACK }, ORIENT_FACING,
+        'Цоколь, лицевой',
+      ),
+    )
+  }
+
+  if (config.worktop) {
+    const worktopMat = config.worktop.materialId
+      ? requireMaterial(materials, config.worktop.materialId, 'worktop.materialId')
+      : carcass
+    const overhangFront = config.worktop.overhangFront
+    const overhangSides = config.worktop.overhangSides
+    panels.push(
+      make(
+        'worktop', 'top', 'Столешница', worktopMat,
+        W + 2 * overhangSides, D + overhangFront,
+        { x: -overhangSides, y: H, z: -overhangFront }, ORIENT_HORIZONTAL,
+        'Столешница, накладная',
+      ),
+    )
+  }
+
+  // ── Купе есіктері ──────────────────────────────────────────────────────────
+  //
+  // Купе БҮКІЛ корпустың алдын жабады: есіктер бір-бірін `slidingDoorOverlap`
+  // мөлшерінде жауып, рельспен сырғанайды. Деталировкаға тек ЛДСП ВСТАВКА
+  // түседі — профильдің өзі кесілмейді, сатып алынады.
+  if (config.sliding) {
+    const n = config.sliding.count
+    if (!Number.isInteger(n) || n < 2 || n > 4) {
+      throw new ConfigValidationError('sliding.count', `${n}`, '2..4 бүтін сан')
+    }
+    if (layouts.some((l) => l.section.fronts && l.section.fronts.count > 0)) {
+      throw new ConfigValidationError(
+        'sliding',
+        'на корпусе одновременно двери-купе и распашные фасады',
+        'оставьте что-то одно',
+      )
+    }
+
+    const doorHeight = H - settings.slidingTrackTopSpace - settings.slidingTrackBottomSpace
+    // Есіктер бір-бірін жабады, сондықтан жалпы ені корпустан АРТЫҚ.
+    const doorWidth = Math.floor((W + settings.slidingDoorOverlap * (n - 1)) / n)
+    const fillWidth = doorWidth - 2 * settings.slidingProfileSide
+    const fillHeight = doorHeight - 2 * settings.slidingProfileTopBottom
+    if (fillWidth < MIN_DIMENSION || fillHeight < MIN_DIMENSION) {
+      throw new ConfigValidationError(
+        'sliding.count',
+        `вставка получается ${fillHeight}×${fillWidth} мм`,
+        'каждая сторона ≥ 100 мм — проверьте профиль в настройках цеха',
+      )
+    }
+
+    // Есіктер сатылы тұрады: тақтары алдыңғы рельсте, жұптары артқы рельсте.
+    const trackDepth = 12
+    for (let i = 0; i < n; i += 1) {
+      const x = Math.round((W - doorWidth) * (n === 1 ? 0 : i / (n - 1)))
+      panels.push(
+        make(
+          `sliding-${i + 1}`, 'front', 'Вставка двери-купе', frontMat,
+          fillHeight, fillWidth,
+          {
+            x: x + settings.slidingProfileSide,
+            y: settings.slidingTrackBottomSpace + settings.slidingProfileTopBottom,
+            z: -(i % 2 === 0 ? trackDepth : trackDepth * 2) - frontMat.thickness,
+          },
+          ORIENT_FACING,
+          `Дверь-купе ${i + 1} из ${n}, вставка в профиль`,
+        ),
+      )
+    }
+  }
+
   // ── Паз (арт қабырға «в паз» болғанда) ─────────────────────────────────────
   if (isGroove) {
     // Паз корпустың ішкі бетінде, арт жиектен grooveInset шегініп жүреді.
@@ -360,8 +456,8 @@ export function generateCabinet(
       confirmatJoint(left, shelf, ctx)
       confirmatJoint(right, shelf, ctx)
     } else {
-      shelfPinHoles(left, shelf, t, ctx)
-      shelfPinHoles(right, shelf, t, ctx)
+      shelfPinHoles(left, shelf, t + baseHeight, ctx)
+      shelfPinHoles(right, shelf, t + baseHeight, ctx)
     }
   }
 

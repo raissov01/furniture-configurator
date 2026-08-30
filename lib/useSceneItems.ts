@@ -11,8 +11,8 @@
  */
 
 import { useMemo, useRef } from 'react'
-import { ConfigValidationError, generateCabinet, placementPose } from '@/src/core/index'
-import type { CabinetConfig, Catalog, Panel, Placement, Room, SettingsOverride } from '@/src/core/index'
+import { ConfigValidationError, generateCabinet, generateHardware, placementPose } from '@/src/core/index'
+import type { CabinetConfig, Catalog, HardwarePlacement, Panel, Placement, Room, SettingsOverride } from '@/src/core/index'
 import type { SceneItem } from '@/components/Scene'
 
 export function useSceneItems(
@@ -22,7 +22,7 @@ export function useSceneItems(
   catalog: Catalog,
   settings?: SettingsOverride,
 ): SceneItem[] {
-  const lastValid = useRef<Map<string, { cabinet: CabinetConfig; panels: Panel[] }>>(new Map())
+  const lastValid = useRef<Map<string, { cabinet: CabinetConfig; panels: Panel[]; hardware: HardwarePlacement[] }>>(new Map())
 
   return useMemo(() => {
     const items: SceneItem[] = []
@@ -33,9 +33,13 @@ export function useSceneItems(
       if (!placement) continue
       seen.add(cabinet.id)
 
-      let entry: { cabinet: CabinetConfig; panels: Panel[] } | undefined
+      let entry: { cabinet: CabinetConfig; panels: Panel[]; hardware: HardwarePlacement[] } | undefined
       try {
-        entry = { cabinet, panels: generateCabinet(cabinet, catalog, settings) }
+        entry = {
+          cabinet,
+          panels: generateCabinet(cabinet, catalog, settings),
+          hardware: generateHardware(cabinet, catalog, settings),
+        }
         lastValid.current.set(cabinet.id, entry)
       } catch (error) {
         if (!(error instanceof ConfigValidationError)) throw error
@@ -47,6 +51,7 @@ export function useSceneItems(
       items.push({
         cabinet: entry.cabinet,
         panels: entry.panels,
+        hardware: entry.hardware,
         placement,
         pose: placementPose(room, entry.cabinet, placement),
       })

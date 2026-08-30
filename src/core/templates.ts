@@ -52,6 +52,10 @@ export type CabinetTemplate = {
   frontMaterialId: string
   backMaterialId: string
   sections: Section[]
+  /** Купе есіктері (болса, ілмелі фасад болмайды) */
+  sliding?: { count: number } | undefined
+  base?: { kind: 'plinth' | 'legs'; height: number } | undefined
+  worktop?: { overhangFront: number; overhangSides: number } | undefined
 }
 
 export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string }[] = [
@@ -163,6 +167,20 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
 
   // ── Шкафы ────────────────────────────────────────────────────────────────
   {
+    id: 'kitchen-base-full-600',
+    name: 'Кухня: нижний с цоколем и столешницей',
+    category: 'kitchen',
+    description: 'Готовый модуль: цоколь 100 мм, столешница со свесом 20 мм, 2 фасада.',
+    height: 720, width: 600, depth: 500,
+    range: { height: { min: 600, max: 900 }, width: { min: 300, max: 900 }, depth: { min: 350, max: 600 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_WHITE, frontMaterialId: LDSP_WHITE, backMaterialId: HDF_WHITE,
+    base: { kind: 'plinth', height: 100 },
+    worktop: { overhangFront: 20, overhangSides: 0 },
+    sections: [section(1, 1, 2)],
+  },
+  {
     id: 'kitchen-base-drawers-600',
     name: 'Кухня: нижний с ящиками',
     category: 'kitchen',
@@ -237,6 +255,89 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
   },
 
   {
+    id: 'wardrobe-rod-1000',
+    name: 'Шкаф со штангой 1000',
+    category: 'wardrobe',
+    description: 'Штанга под верхнюю одежду, антресольная полка сверху корпуса.',
+    height: 2200, width: 1000, depth: 600,
+    range: { height: { min: 1600, max: 2700 }, width: { min: 500, max: 1400 }, depth: { min: 450, max: 700 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [{
+      id: 's1',
+      widthMode: 'flex',
+      // Астында сөре, үстінде штанга — киім ілетін бөлік жоғарыда.
+      contents: [{ kind: 'shelves', count: 1, shelfKind: 'fixed', height: 400 }, { kind: 'rod' }],
+      fronts: { count: 2, mount: 'overlay' },
+    }],
+  },
+  {
+    id: 'wardrobe-rod-drawers-1600',
+    name: 'Шкаф со штангой и ящиками 1600',
+    category: 'wardrobe',
+    description: 'Слева штанга и ящики снизу, справа полки. Ходовой набор в спальню.',
+    height: 2200, width: 1600, depth: 600,
+    range: { height: { min: 1700, max: 2700 }, width: { min: 1000, max: 2000 }, depth: { min: 450, max: 700 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [
+      {
+        id: 's1',
+        widthMode: 'flex',
+        contents: [{ kind: 'drawers', count: 2, height: 500 }, { kind: 'rod' }],
+        fronts: { count: 1, mount: 'overlay' },
+      },
+      section(2, 5, 1),
+    ],
+  },
+  {
+    id: 'wardrobe-sliding-1800',
+    name: 'Шкаф-купе 1800',
+    category: 'wardrobe',
+    description: 'Две двери-купе, слева штанга, справа полки. В деталировку идёт вставка ЛДСП.',
+    height: 2400, width: 1800, depth: 600,
+    range: { height: { min: 1800, max: 2700 }, width: { min: 1200, max: 2600 }, depth: { min: 500, max: 750 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sliding: { count: 2 },
+    sections: [
+      {
+        id: 's1', widthMode: 'flex',
+        contents: [{ kind: 'shelves', count: 1, shelfKind: 'fixed', height: 500 }, { kind: 'rod' }],
+        fronts: null,
+      },
+      { id: 's2', widthMode: 'flex', contents: shelves(6), fronts: null },
+    ],
+  },
+  {
+    id: 'wardrobe-sliding-3-2400',
+    name: 'Шкаф-купе 2400, три двери',
+    category: 'wardrobe',
+    description: 'Три двери, три секции: штанга, полки, ящики снизу.',
+    height: 2400, width: 2400, depth: 600,
+    range: { height: { min: 1800, max: 2700 }, width: { min: 1800, max: 3200 }, depth: { min: 500, max: 750 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sliding: { count: 3 },
+    sections: [
+      {
+        id: 's1', widthMode: 'flex',
+        contents: [{ kind: 'shelves', count: 1, shelfKind: 'fixed', height: 500 }, { kind: 'rod' }],
+        fronts: null,
+      },
+      { id: 's2', widthMode: 'flex', contents: shelves(6), fronts: null },
+      {
+        id: 's3', widthMode: 'flex',
+        contents: [{ kind: 'drawers', count: 3, height: 700 }, { kind: 'shelves', count: 3, shelfKind: 'adjustable' }],
+        fronts: null,
+      },
+    ],
+  },
+  {
     id: 'wardrobe-drawers-1200',
     name: 'Шкаф с ящиками 1200',
     category: 'wardrobe',
@@ -295,12 +396,13 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
     id: 'desk-1200',
     name: 'Стол письменный 1200',
     category: 'desk',
-    description: 'Открытый стол-тумба: боковины и крышка, без ящиков.',
+    description: 'Стол-тумба со столешницей: боковины, крышка и свес вперёд.',
     height: 750, width: 1200, depth: 600,
     range: { height: { min: 700, max: 800 }, width: { min: 800, max: 1800 }, depth: { min: 450, max: 800 } },
     construction: 'topBottomOverlay',
     back: 'overlay',
     carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    worktop: { overhangFront: 30, overhangSides: 20 },
     sections: [section(1, 0, 0)],
   },
   {
@@ -479,6 +581,9 @@ export function templateToCabinet(
     backMaterialId: template.backMaterialId,
     back: { mode: template.back },
     // Секциялар терең көшіріледі: шаблон объектісі ортақ, оны UI өзгертпеуі керек.
+    ...(template.sliding ? { sliding: { ...template.sliding } } : {}),
+    ...(template.base ? { base: { ...template.base } } : {}),
+    ...(template.worktop ? { worktop: { ...template.worktop } } : {}),
     sections: template.sections.map((s) => ({
       ...s,
       contents: s.contents.map((c) => ({ ...c })),

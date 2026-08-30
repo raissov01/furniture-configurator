@@ -205,6 +205,18 @@ export type ConstructionSettings = {
   confirmatSpanForThird: number
   shelfPinDatum: number
 
+  // ── Купе (әр профиль жүйесінде басқаша). ЦЕХТЫҢ ТАҢДАУЫ. ────────────────
+  /** Көрші есіктердің бір-бірін жабуы (профильдің қабаттасуы) */
+  slidingDoorOverlap: number
+  /** Жоғарғы рельс пен есіктің үстіндегі алатын орны */
+  slidingTrackTopSpace: number
+  /** Төменгі рельс пен есіктің астындағы алатын орны */
+  slidingTrackBottomSpace: number
+  /** Тік профиль есіктің әр жағынан алатын ені */
+  slidingProfileSide: number
+  /** Көлденең профиль есіктің үсті мен астынан алатын биіктігі */
+  slidingProfileTopBottom: number
+
   // ── Ящик (§4.8). ҮШЕУІ ДЕ ЦЕХТЫҢ ТАҢДАУЫ, әмбебап стандарт емес. ──────────
   /** Направляющая әр жақтан алатын орын. Роликтіде әдетте 12.5–13 мм. */
   drawerRunnerGap: number
@@ -272,6 +284,28 @@ export type CabinetConfig = {
   back: { mode: BackMode }
   /** Кемінде бір секция. Перегородкасыз кабинет = бір flex секция. */
   sections: Section[]
+  /**
+   * Купе есіктері. Олар БҮКІЛ корпустың алдын жабады, секцияға тиесілі емес —
+   * сондықтан мұнда, кабинет деңгейінде тұр. Ілмелі фасадпен БІРГЕ болмайды.
+   */
+  sliding?: { count: number } | undefined
+
+  /**
+   * Корпустың астындағы тірек. Корпус осының ҮСТІНДЕ тұрады, сондықтан
+   * жиһаздың толық биіктігі = `height + base.height` (+ столешница).
+   * `height` бұрынғыдай КОРПУСТЫҢ биіктігі.
+   */
+  base?: { kind: 'plinth' | 'legs'; height: number } | undefined
+
+  /** Столешница — корпустың үстіне жататын бөлек деталь. */
+  worktop?: {
+    /** Берілмесе — корпус материалы */
+    materialId?: string | undefined
+    /** Алдыға шығып тұратын мөлшері, мм */
+    overhangFront: number
+    /** Әр бүйірден шығып тұратын мөлшері, мм */
+    overhangSides: number
+  } | undefined
   edging: EdgePolicy
   /** Цех константаларын осы кабинет үшін ғана өзгерту */
   settings?: SettingsOverride | undefined

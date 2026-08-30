@@ -56,6 +56,17 @@ export const DEFAULT_SETTINGS: ConstructionSettings = {
   shelfPinDatum: 32,
 
   /**
+   * ⚠ КУПЕ ЖҮЙЕСІНІҢ САНДАРЫ. Әр профиль жүйесінде (Aristo, Absolut, Raumplus)
+   * басқаша, сондықтан профильде түзетілуі керек. Әдепкілері — қарапайым
+   * қазақстандық жүйенің шамасы.
+   */
+  slidingDoorOverlap: 30,
+  slidingTrackTopSpace: 45,
+  slidingTrackBottomSpace: 20,
+  slidingProfileSide: 20,
+  slidingProfileTopBottom: 40,
+
+  /**
    * ⚠ ҮШ САН ДА ЦЕХТЫҢ ТАҢДАУЫ. Олар направляющаның маркасына байланысты
    * өзгереді, сондықтан профильде түзетілуі керек.
    *
