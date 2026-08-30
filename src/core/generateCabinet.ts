@@ -107,6 +107,65 @@ export function generateCabinet(
     throw new ConfigValidationError('base.height', `${baseHeight} мм`, '10..400 мм')
   }
 
+  /**
+   * Қиғаш төбе. `height` — БИІК жақ, `slope.lowHeight` — аласа жақ.
+   * Тереңдік бойымен биіктік сызықты кемиді.
+   */
+  const slope = config.slope
+  if (slope) {
+    if (config.construction !== 'sidesOverlay') {
+      throw new ConfigValidationError(
+        'slope',
+        'скошенный корпус пока только со сборкой «боковины накрывают крышку и дно»',
+        'construction: sidesOverlay',
+      )
+    }
+    if (!Number.isInteger(slope.lowHeight) || slope.lowHeight < MIN_DIMENSION) {
+      throw new ConfigValidationError('slope.lowHeight', `${slope.lowHeight} мм`, `≥ ${MIN_DIMENSION} мм`)
+    }
+    if (slope.lowHeight >= H) {
+      throw new ConfigValidationError(
+        'slope.lowHeight', `${slope.lowHeight} мм, ал корпус ${H} мм`, 'аласа жағы биік жағынан КІШІ болуы керек',
+      )
+    }
+  }
+
+  /**
+   * Берілген ТЕРЕҢДІКТЕГІ корпустың биіктігі. Қиғаш жоқ болса — әрқашан H.
+   * `z` — корпустың алдыңғы бетінен есептелетін тереңдік.
+   */
+  /**
+   * Берілген БИІКТІКТЕГІ сөренің орны мен тереңдігі.
+   *
+   * Қиғаштың астында сөре толық тереңдікке сыймайды. Артқа қиғайғанда ол
+   * ҚЫСҚАРАДЫ (арт жиегі төбеге тіреледі), алға қиғайғанда — АРТҚА ЖЫЛЖИДЫ
+   * (алдыңғы жиегі төбеге тіреледі). Екеуі де мансарда шкафының нақты
+   * құрылысы, қате емес.
+   */
+  const shelfSpaceAt = (y: number): { z: number; depth: number } => {
+    const front = settings.shelfSetback
+    const back = D - backAllowance
+    if (!slope) return { z: front, depth: back - front }
+
+    const rise = H - slope.lowHeight
+    if (slope.towards === 'back') {
+      // Төбе артқа қарай төмендейді: сөренің АРТ жиегі шектеледі.
+      const maxBack = Math.min(back, Math.round(((H - y) * D) / rise))
+      return { z: front, depth: maxBack - front }
+    }
+    // Төбе алға қарай төмендейді: сөренің АЛД жиегі шектеледі.
+    const minFront = Math.max(front, Math.round(((y - slope.lowHeight) * D) / rise))
+    return { z: minFront, depth: back - minFront }
+  }
+
+  const heightAtDepth = (z: number): number => {
+    if (!slope) return H
+    const ratio = Math.min(1, Math.max(0, z / D))
+    return slope.towards === 'back'
+      ? H - (H - slope.lowHeight) * ratio
+      : slope.lowHeight + (H - slope.lowHeight) * ratio
+  }
+
   const panels: Panel[] = []
   const make = (
     id: string,
@@ -143,18 +202,51 @@ export function generateCabinet(
 
   // ── Корпус (§4.4) ──────────────────────────────────────────────────────────
   const sidesOverlay = config.construction === 'sidesOverlay'
+  /**
+   * Қиғашта бүйір — ТРАПЕЦИЯ. Өлшемі (заготовка) бұрынғыдай H × тереңдік:
+   * станок алдымен тікбұрышты кеседі, содан кейін қиғашты кеседі.
+   */
+  const heightFront = heightAtDepth(0)
+  const heightBack = heightAtDepth(carcassDepth)
+  const sideBevel = slope ? { lengthAtStart: heightFront, lengthAtEnd: heightBack } : undefined
+  const sideNote = slope ? `Скос ${heightFront} → ${heightBack} мм` : ''
+
   const sideLeft = sidesOverlay
-    ? make('side-left', 'side', 'Боковина', carcass, H, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_SIDE)
+    ? make('side-left', 'side', 'Боковина', carcass, H, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_SIDE, sideNote)
     : make('side-left', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: 0, y: t, z: 0 }, ORIENT_SIDE)
   const sideRight = sidesOverlay
-    ? make('side-right', 'side', 'Боковина', carcass, H, carcassDepth, { x: W - t, y: 0, z: 0 }, ORIENT_SIDE)
+    ? make('side-right', 'side', 'Боковина', carcass, H, carcassDepth, { x: W - t, y: 0, z: 0 }, ORIENT_SIDE, sideNote)
     : make('side-right', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: W - t, y: t, z: 0 }, ORIENT_SIDE)
+  if (sideBevel) {
+    sideLeft.bevel = { ...sideBevel }
+    sideRight.bevel = { ...sideBevel }
+  }
   const bottom = sidesOverlay
     ? make('bottom', 'bottom', 'Дно', carcass, innerWidth, carcassDepth, { x: t, y: 0, z: 0 }, ORIENT_HORIZONTAL)
     : make('bottom', 'bottom', 'Дно', carcass, W, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_HORIZONTAL)
+  /**
+   * Қиғашта крышка КӨЛБЕУ жатады: ені — гипотенуза, ал 3D-де ол X осі
+   * бойынша бұрылады. Деталь ТІКБҰРЫШ болып қалады — цех оны солай кеседі.
+   */
+  const slopeRise = heightFront - heightBack
+  const slopeAngle = slope ? Math.atan2(slopeRise, carcassDepth) : 0
+  const topWidth = slope
+    ? Math.round(Math.sqrt(carcassDepth * carcassDepth + slopeRise * slopeRise))
+    : carcassDepth
+
   const top = sidesOverlay
-    ? make('top', 'top', 'Крышка', carcass, innerWidth, carcassDepth, { x: t, y: H - t, z: 0 }, ORIENT_HORIZONTAL)
+    ? make(
+        'top', 'top', 'Крышка', carcass, innerWidth, topWidth,
+        // Көлбеу крышкада қалыңдық ТӨМЕН қарай кетеді (жатық панельдің
+        // келісімі), сондықтан бастауы дәл биік жиектің деңгейінде.
+        { x: t, y: slope ? heightFront : H - t, z: 0 }, ORIENT_HORIZONTAL,
+        slope ? `Наклонная, ${Math.round((slopeAngle * 180) / Math.PI)}°` : '',
+      )
     : make('top', 'top', 'Крышка', carcass, W, carcassDepth, { x: 0, y: H - t, z: 0 }, ORIENT_HORIZONTAL)
+  if (slope) {
+    // Көлбеуді 3D оқиды: панель өз жазықтығында тікбұрыш күйінде қалады.
+    top.rotation = { ...top.rotation, x: top.rotation.x + (slopeAngle * 180) / Math.PI }
+  }
 
   // Рет деталировкадағы жолдардың ретін анықтайды — өзгертпе, snapshot соған қарайды.
   if (config.openTop) {
@@ -251,11 +343,20 @@ export function generateCabinet(
         let y = band.y
         for (let i = 0; i < content.count; i += 1) {
           y += openings[i] ?? 0
+          const space = shelfSpaceAt(y + t)
+          if (space.depth < MIN_DIMENSION) {
+            throw new ConfigValidationError(
+              `sections[${sectionIndex}].contents[${bandIndex}].count`,
+              `полка на высоте ${y} мм упирается в скос: остаётся ${space.depth} мм глубины`,
+              'уменьшите число полок или поднимите низкую сторону',
+            )
+          }
           const shelf = make(
             `${section.id}${bandTag(bandIndex)}-shelf-${i + 1}`, 'shelf', 'Полка', carcass,
-            layout.width - settings.shelfGap, shelfDepth,
-            { x: layout.x + Math.floor(settings.shelfGap / 2), y, z: settings.shelfSetback },
-            ORIENT_HORIZONTAL, note,
+            layout.width - settings.shelfGap, space.depth,
+            { x: layout.x + Math.floor(settings.shelfGap / 2), y, z: space.z },
+            ORIENT_HORIZONTAL,
+            space.depth < shelfDepth ? `${note}. Укорочена под скос` : note,
           )
           panels.push(shelf)
           shelves.push({ shelf, sectionIndex, kind: content.shelfKind })

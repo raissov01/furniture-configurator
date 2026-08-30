@@ -141,6 +141,10 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
   sliding: z.object({ count: z.number().int().min(2).max(4) }).optional(),
   base: z.object({ kind: z.enum(['plinth', 'legs']), height: mm }).optional(),
   openTop: z.boolean().optional(),
+  slope: z.object({
+    towards: z.enum(['back', 'front']),
+    lowHeight: mm,
+  }).optional(),
   worktop: z.object({
     materialId: z.string().min(1).optional(),
     overhangFront: z.number().int().nonnegative(),

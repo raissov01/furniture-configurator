@@ -51,6 +51,8 @@ export type CabinetTemplate = {
   back: BackMode
   /** Крышкасыз корпус: үстіне матрас не жұмсақ отырғыш тұрады */
   openTop?: boolean | undefined
+  /** Қиғаш төбе (мансарда): `height` — биік жағы */
+  slope?: { towards: 'back' | 'front'; lowHeight: number } | undefined
   /** Осы шаблонға ғана қатысты цех константалары */
   settings?: SettingsOverride | undefined
   carcassMaterialId: string
@@ -342,6 +344,19 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
         fronts: null,
       },
     ],
+  },
+  {
+    id: 'wardrobe-mansard-1200',
+    name: 'Шкаф под скос 1200',
+    category: 'wardrobe',
+    description: 'Мансардный: боковины трапеции, крышка наклонная. Фасады — до низкой стороны.',
+    height: 2400, width: 1200, depth: 600,
+    range: { height: { min: 1600, max: 2800 }, width: { min: 600, max: 1800 }, depth: { min: 400, max: 800 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    slope: { towards: 'back', lowHeight: 1400 },
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [section(1, 3, 0)],
   },
   {
     id: 'wardrobe-drawers-1200',
@@ -649,6 +664,7 @@ export function templateToCabinet(
     backMaterialId: template.backMaterialId,
     back: { mode: template.back },
     ...(template.openTop ? { openTop: true } : {}),
+    ...(template.slope ? { slope: { ...template.slope } } : {}),
     ...(template.settings ? { settings: { ...template.settings } } : {}),
     // Секциялар терең көшіріледі: шаблон объектісі ортақ, оны UI өзгертпеуі керек.
     ...(template.sliding ? { sliding: { ...template.sliding } } : {}),

@@ -108,7 +108,19 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
 
   const entities: Group[] = [g(0, 'SECTION'), g(2, 'ENTITIES')]
 
-  entities.push(...lwpolyline(LAYER_OUTLINE, [[0, 0], [L, 0], [L, Wd], [0, Wd]], true))
+  // Қиғаш деталь: контур ТРАПЕЦИЯ болып шығады. Өлшемі (L × Wd) —
+  // ЗАГОТОВКАНЫҢ габариті, ал станок осы контур бойынша кеседі.
+  if (panel.bevel) {
+    // Кромка рез өлшемін қысқартады — қиғаштың екі ұшы да сонша қысқарады.
+    const shrink = panel.finishedLength - L
+    const startX = Math.max(0, panel.bevel.lengthAtStart - shrink)
+    const endX = Math.max(0, panel.bevel.lengthAtEnd - shrink)
+    entities.push(
+      ...lwpolyline(LAYER_OUTLINE, [[0, 0], [startX, 0], [endX, Wd], [0, Wd]], true),
+    )
+  } else {
+    entities.push(...lwpolyline(LAYER_OUTLINE, [[0, 0], [L, 0], [L, Wd], [0, Wd]], true))
+  }
 
   for (const d of drills) {
     if (isEdgeFace(d.face)) continue // торц тесіктері бөлек операция, контурда салынбайды

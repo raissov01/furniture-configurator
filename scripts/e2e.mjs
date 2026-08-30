@@ -177,6 +177,11 @@ async function run() {
   const session = await connect()
   const h = makeHelpers(session)
 
+  // Тестер бір-бірінен ТӘУЕЛСІЗ болуы керек: алдыңғы жүгіріс сақтаған жоба
+  // мен цех профилі жаңа жүгірісте эталон шкафты ауыстырып жіберер еді.
+  await h.goto('/configurator', 6000)
+  await h.evaluate('localStorage.clear()')
+
   await test('Лендинг ашылады', async () => {
     await h.goto('/', 7000)
     const body = await h.text()

@@ -251,6 +251,44 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         />
       </Field>
 
+      <SectionTitle>Скос (мансарда)</SectionTitle>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Скос потолка" hint={cabinet.slope ? 'боковины трапеции' : 'нет'}>
+          <Select
+            value={cabinet.slope?.towards ?? 'none'}
+            onChange={(value) =>
+              edit('slope', value === 'none'
+                ? { slope: undefined }
+                : {
+                    slope: {
+                      towards: value as 'back' | 'front',
+                      lowHeight: cabinet.slope?.lowHeight ?? Math.round(cabinet.height * 0.6),
+                    },
+                    // Қиғаш тек осы құрастыруда есептеледі.
+                    construction: 'sidesOverlay',
+                  })
+            }
+            options={[
+              { value: 'none', label: 'Нет' },
+              { value: 'back', label: 'Понижается назад' },
+              { value: 'front', label: 'Понижается вперёд' },
+            ]}
+          />
+        </Field>
+        <Field label="Низкая сторона" hint={cabinet.slope ? 'мм' : undefined}>
+          <NumberInput
+            value={cabinet.slope?.lowHeight ?? 0}
+            min={0}
+            max={4000}
+            step={10}
+            onChange={(lowHeight) => {
+              if (!cabinet.slope) return
+              edit('slope.low', { slope: { ...cabinet.slope, lowHeight } })
+            }}
+          />
+        </Field>
+      </div>
+
       <SectionTitle>Основание и столешница</SectionTitle>
       <div className="grid grid-cols-2 gap-2">
         <Field label="Основание" hint={cabinet.base ? `${cabinet.base.height} мм` : 'нет'}>

@@ -7,7 +7,8 @@
 
 import { useMemo } from 'react'
 import { Html } from '@react-three/drei'
-import { panelExtents } from '@/src/core/index'
+import { Shape } from 'three'
+import { panelExtents, rotationFor } from '@/src/core/index'
 import type { Axis, Panel } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
@@ -74,6 +75,60 @@ export function PanelMesh({
 
   const isHovered = hovered === panel.id
 
+  /**
+   * Қиғаш деталь мен көлбеу крышка — жалғыз екі жағдай, онда панель әлем
+   * өстеріне тураланбайды. Ол екеуі өз ЖАЗЫҚТЫҒЫНДА салынып, панельдің өз
+   * бұрылысымен қойылады; қалғаны бұрынғыдай қорап болып қала береді.
+   */
+  const tilted = useMemo(() => {
+    const base = rotationFor(panel.orientation)
+    return panel.rotation.x !== base.x || panel.rotation.y !== base.y || panel.rotation.z !== base.z
+  }, [panel.rotation, panel.orientation])
+
+  const shape = useMemo(() => {
+    if (!panel.bevel) return null
+    const s0 = new Shape()
+    s0.moveTo(0, 0)
+    s0.lineTo(panel.bevel.lengthAtStart, 0)
+    s0.lineTo(panel.bevel.lengthAtEnd, panel.finishedWidth)
+    s0.lineTo(0, panel.finishedWidth)
+    s0.closePath()
+    return s0
+  }, [panel.bevel, panel.finishedWidth])
+
+  const color = isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+
+  if (shape || tilted) {
+    // Панель өз локал жазықтығында салынады: ұзындығы — x, ені — y,
+    // қалыңдығы — z. Содан кейін ядро берген бұрылыспен әлемге қойылады.
+    // Топ панельдің ӨЗ бұрышында тұрады, ал boxGeometry ортасынан салынады —
+    // сондықтан қорап топтың ішінде жартылай ығыстырылады. Экструзия
+    // пішіннің (0,0) нүктесінен басталатындықтан оған ығысу керек емес.
+    return (
+      <group
+        position={[panel.position.x, panel.position.y, panel.position.z]}
+        rotation={[toRad(panel.rotation.x), toRad(panel.rotation.y), toRad(panel.rotation.z)]}
+      >
+        <mesh
+          position={shape ? [0, 0, 0] : [panel.finishedLength / 2, panel.finishedWidth / 2, thickness / 2]}
+          onPointerOver={(e) => {
+            e.stopPropagation()
+            setHovered(panel.id)
+          }}
+          onPointerOut={() => setHovered(null)}
+        >
+          {shape ? (
+            <extrudeGeometry args={[shape, { depth: thickness, bevelEnabled: false }]} />
+          ) : (
+            <boxGeometry args={[panel.finishedLength, panel.finishedWidth, thickness]} />
+          )}
+          <meshStandardMaterial color={color} roughness={0.7} metalness={0} />
+        </mesh>
+      </group>
+    )
+  }
+
   return (
     <mesh
       position={[position.x, position.y, position.z]}
@@ -85,7 +140,7 @@ export function PanelMesh({
     >
       <boxGeometry args={[extents.x, extents.y, extents.z]} />
       <meshStandardMaterial
-        color={isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)}
+        color={color}
         roughness={0.7}
         metalness={0}
       />
