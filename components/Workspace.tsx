@@ -6,11 +6,13 @@ import { Button, Slider } from '@/components/ui'
 import { Configurator } from '@/components/Configurator'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
+import { RoomPlan } from '@/components/RoomPlan'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { catalog } from '@/lib/defaults'
 import { usePanels } from '@/lib/usePanels'
-import { useConfigurator } from '@/store/configurator'
+import { useSceneItems } from '@/lib/useSceneItems'
+import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 
 // R3F тек браузерде жүреді — сервер жағында рендерленбейді.
@@ -24,13 +26,14 @@ const PRESETS: { value: CameraPreset; label: string }[] = [
   { value: 'three-quarter', label: '3/4' },
   { value: 'inside', label: 'Внутри' },
   { value: 'plan', label: 'План' },
+  { value: 'room', label: 'Комната' },
 ]
 
 /** C1 бюджеті: 40 панельге дейін параметр өзгерісі < 100 мс. */
 const BUDGET_MS = 100
 
 export function Workspace() {
-  const cabinet = useConfigurator((s) => s.cabinet)
+  const cabinet = useConfigurator(activeCabinet)
   const undo = useConfigurator((s) => s.undo)
   const redo = useConfigurator((s) => s.redo)
   const reset = useConfigurator((s) => s.reset)
@@ -42,8 +45,14 @@ export function Workspace() {
   const setCameraPreset = useConfigurator((s) => s.setCameraPreset)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
   const setAiOpen = useConfigurator((s) => s.setAiOpen)
+  const setRoomOpen = useConfigurator((s) => s.setRoomOpen)
+  const room = useConfigurator((s) => s.room)
+  const cabinets = useConfigurator((s) => s.cabinets)
+  const placements = useConfigurator((s) => s.placements)
+  const activeId = useConfigurator((s) => s.activeId)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog)
+  const items = useSceneItems(room, cabinets, placements, catalog)
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
@@ -65,6 +74,7 @@ export function Workspace() {
     <div className="flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       <TemplateGallery />
       <AiPanel />
+      <RoomPlan />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <h1 className="text-sm font-semibold">
           {cabinet.name}
@@ -76,6 +86,7 @@ export function Workspace() {
         <div className="flex items-center gap-1">
           <Button onClick={() => setGalleryOpen(true)} title="Готовые шаблоны">Шаблоны</Button>
           <Button onClick={() => setAiOpen(true)} title="Описать задачу словами">Техзадание</Button>
+          <Button onClick={() => setRoomOpen(true)} title="План комнаты и стены">Стены</Button>
           <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
           <Button onClick={reset}>Сброс</Button>
@@ -104,7 +115,7 @@ export function Workspace() {
           }
           title={`Бюджет: ${BUDGET_MS} мс`}
         >
-          {panels.length} панелей{mounted ? ` · ${ms.toFixed(1)} мс` : ''}
+          {panels.length} панелей{cabinets.length > 1 ? ` · корпусов: ${cabinets.length}` : ''}{mounted ? ` · ${ms.toFixed(1)} мс` : ''}
         </span>
       </header>
 
@@ -122,7 +133,7 @@ export function Workspace() {
         <main className="relative min-h-64">
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
-            <Scene panels={panels} cabinet={cabinet} catalog={catalog} />
+            <Scene items={items} room={room} activeId={activeId} catalog={catalog} />
           </div>
         </main>
         <aside className="min-h-0 border-l border-neutral-200 dark:border-neutral-800">

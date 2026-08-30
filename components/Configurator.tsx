@@ -8,7 +8,7 @@
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { backMaterials, carcassMaterials } from '@/lib/defaults'
 import { findTemplate } from '@/src/core/index'
-import { useConfigurator } from '@/store/configurator'
+import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type { CabinetConfig, Section } from '@/src/core/index'
 
 const materialOptions = (list: typeof carcassMaterials) =>
@@ -17,7 +17,7 @@ const materialOptions = (list: typeof carcassMaterials) =>
 function SectionEditor({ section, index }: { section: Section; index: number }) {
   const editSection = useConfigurator((s) => s.editSection)
   const removeSection = useConfigurator((s) => s.removeSection)
-  const canRemove = useConfigurator((s) => s.cabinet.sections.length > 1)
+  const canRemove = useConfigurator((s) => activeCabinet(s).sections.length > 1)
 
   const shelves = section.contents.find((c) => c.kind === 'shelves')
 
@@ -133,7 +133,7 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
 }
 
 export function Configurator({ invalidField }: { invalidField: string | null }) {
-  const cabinet: CabinetConfig = useConfigurator((s) => s.cabinet)
+  const cabinet: CabinetConfig = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
   const addSection = useConfigurator((s) => s.addSection)
   const showDimensions = useConfigurator((s) => s.showDimensions)

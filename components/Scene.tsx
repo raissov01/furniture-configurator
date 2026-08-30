@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * R3F көрінісі. Мұнда бірде-бір өлшем ЕСЕПТЕЛМЕЙДІ — тек Panel[] оқылады.
- * Ядро миллиметрмен жұмыс істейді, сахна метрге келтіріледі (scale 0.001).
+ * R3F көрінісі. Мұнда бірде-бір өлшем ЕСЕПТЕЛМЕЙДІ — тек Panel[] мен
+ * ядродан келген орналастыру оқылады. Ядро миллиметрмен жұмыс істейді,
+ * сахна метрге келтіріледі (scale 0.001).
  */
 
 import { useEffect, useMemo, useRef } from 'react'
@@ -13,14 +14,22 @@ import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
-import type { CabinetConfig, Catalog, Panel } from '@/src/core/index'
+import { placementFootprint } from '@/src/core/index'
+import type { CabinetConfig, Catalog, Panel, Placement, Room, Vec3 } from '@/src/core/index'
 
 type Controls = ComponentRef<typeof OrbitControls>
 
 const MM = 0.001
 
-/** Камера пресеттері: көзқарас нүктесі кабинет габаритіне қатысты есептеледі. */
-function cameraFor(preset: CameraPreset, W: number, H: number, D: number): [number, number, number] {
+export type SceneItem = {
+  cabinet: CabinetConfig
+  panels: Panel[]
+  placement: Placement
+  pose: { position: Vec3; rotationY: number }
+}
+
+/** Камера пресеттері: көзқарас нүктесі нысанның габаритіне қатысты есептеледі. */
+function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [number, number, number] {
   const span = Math.max(W, H, D)
   switch (preset) {
     case 'front':
@@ -29,35 +38,44 @@ function cameraFor(preset: CameraPreset, W: number, H: number, D: number): [numb
       return [0, span * 1.9, 1] // 1 мм — дәл тік қарағанда OrbitControls тұрып қалмас үшін
     case 'inside':
       return [0, 0, D * 0.35]
+    case 'room':
+      // Бүкіл бөлме: биіктен әрі қиғаш — қай қабырғада не тұрғаны көріну керек.
+      return [span * 0.9, span * 1.3, span * 1.3]
     case 'three-quarter':
     default:
       return [span * 0.95, span * 0.55, span * 1.15]
   }
 }
 
-function CameraRig({ cabinet }: { cabinet: CabinetConfig }) {
+/**
+ * Камера белсенді шкафқа қарайды. Шкаф бөлменің қай бұрышында тұрса да,
+ * көрініс сол шкафты ортаға алады — әйтпесе қабырға таңдаған сайын нысан
+ * экраннан шығып кетеді.
+ */
+function CameraRig({ target, box }: { target: Vec3; box: { W: number; H: number; D: number } }) {
   const preset = useConfigurator((s) => s.cameraPreset)
   const camera = useThree((s) => s.camera)
   const invalidate = useThree((s) => s.invalidate)
   const controls = useRef<Controls>(null)
-  const { width: W, height: H, depth: D } = cabinet
+  const { W, H, D } = box
+  const { x: tx, y: ty, z: tz } = target
 
   useEffect(() => {
-    const [x, y, z] = cameraFor(preset, W, H, D)
-    camera.position.set(x * MM, y * MM, z * MM)
-    // OrbitControls әлі тіркелмеген болса да камера кабинетке қарауы керек:
+    const [ox, oy, oz] = cameraOffset(preset, W, H, D)
+    camera.position.set((tx + ox) * MM, (ty + oy) * MM, (tz + oz) * MM)
+    // OrbitControls әлі тіркелмеген болса да камера нысанға қарауы керек:
     // онсыз бірінші кадр бос шығады да, тінтуір қозғалғанша солай тұрады.
-    camera.lookAt(0, 0, 0)
+    camera.lookAt(tx * MM, ty * MM, tz * MM)
     camera.updateProjectionMatrix()
-    controls.current?.target.set(0, 0, 0)
+    controls.current?.target.set(tx * MM, ty * MM, tz * MM)
     controls.current?.update()
     invalidate()
-  }, [preset, camera, invalidate, W, H, D])
+  }, [preset, camera, invalidate, W, H, D, tx, ty, tz])
 
   return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.12} />
 }
 
-function Cabinet({ panels, cabinet, catalog }: { panels: Panel[]; cabinet: CabinetConfig; catalog: Catalog }) {
+function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Catalog; active: boolean }) {
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const thicknessOf = useMemo(() => {
     const map = new Map(catalog.materials.map((m) => [m.id, m.thickness]))
@@ -65,24 +83,91 @@ function Cabinet({ panels, cabinet, catalog }: { panels: Panel[]; cabinet: Cabin
   }, [catalog])
 
   const centre = useMemo(
-    () => ({ x: cabinet.width / 2, y: cabinet.height / 2, z: cabinet.depth / 2 }),
-    [cabinet],
+    () => ({ x: item.cabinet.width / 2, y: item.cabinet.height / 2, z: item.cabinet.depth / 2 }),
+    [item.cabinet],
   )
 
   return (
-    // Кабинетті ортаға келтіру: түбі — еденде, ені мен тереңдігі центрленген.
-    <group position={[-cabinet.width / 2, -cabinet.height / 2, -cabinet.depth / 2]}>
-      {panels.map((p) => (
+    <group
+      position={[item.pose.position.x, 0, item.pose.position.z]}
+      rotation={[0, (item.pose.rotationY * Math.PI) / 180, 0]}
+    >
+      {item.panels.map((p) => (
         <PanelMesh key={p.id} panel={p} thickness={thicknessOf(p.materialId)} centre={centre} />
       ))}
-      {showDimensions ? <DimensionLabels cabinet={cabinet} /> : null}
+      {active && showDimensions ? <DimensionLabels cabinet={item.cabinet} /> : null}
+    </group>
+  )
+}
+
+/**
+ * Еден, плинтус және төрт қабырға.
+ *
+ * Қабырғалар әдейі мөлдір — ішіндегі жиһаз көрінуі керек. Бірақ тек мөлдір
+ * қабырға қара фонда мүлде байқалмайды, сондықтан бөлменің шекарасын
+ * ПЛИНТУС береді: ол әрқашан анық көрінеді әрі қай қабырға қайда екенін
+ * бір қарағанда айтады.
+ */
+function RoomShell({ room }: { room: Room }) {
+  const t = 40 // қабырға қалыңдығы, мм — тек көрініс үшін
+  const skirt = 90 // плинтус биіктігі, мм — тек көрініс үшін
+
+  const boxes: { key: string; pos: [number, number, number]; size: [number, number, number] }[] = [
+    { key: 'n', pos: [room.width / 2, room.height / 2, -t / 2], size: [room.width, room.height, t] },
+    { key: 's', pos: [room.width / 2, room.height / 2, room.depth + t / 2], size: [room.width, room.height, t] },
+    { key: 'w', pos: [-t / 2, room.height / 2, room.depth / 2], size: [t, room.height, room.depth] },
+    { key: 'e', pos: [room.width + t / 2, room.height / 2, room.depth / 2], size: [t, room.height, room.depth] },
+  ]
+
+  return (
+    <group>
+      {/* Еден торлы Grid-тен сәл жоғары: әйтпесе екеуі бір жазықтықта жыпылықтайды. */}
+      <mesh position={[room.width / 2, 2, room.depth / 2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[room.width, room.depth]} />
+        <meshStandardMaterial color="#333c4b" />
+      </mesh>
+      {boxes.map((b) => (
+        <group key={b.key}>
+          <mesh position={b.pos}>
+            <boxGeometry args={b.size} />
+            <meshStandardMaterial color="#9fb0c9" transparent opacity={0.1} depthWrite={false} />
+          </mesh>
+          <mesh position={[b.pos[0], skirt / 2, b.pos[2]]}>
+            <boxGeometry args={[b.size[0], skirt, b.size[2]]} />
+            <meshStandardMaterial color="#94a3b8" />
+          </mesh>
+        </group>
+      ))}
     </group>
   )
 }
 
 export default function Scene({
-  panels, cabinet, catalog,
-}: { panels: Panel[]; cabinet: CabinetConfig; catalog: Catalog }) {
+  items, room, activeId, catalog,
+}: {
+  items: SceneItem[]
+  room: Room
+  activeId: string
+  catalog: Catalog
+}) {
+  const active = items.find((i) => i.cabinet.id === activeId) ?? items[0]
+  const preset = useConfigurator((s) => s.cameraPreset)
+
+  // «Комната» пресеті бүкіл бөлмеге қарайды, қалғаны — белсенді шкафқа.
+  const view = useMemo<{ target: Vec3; box: { W: number; H: number; D: number } }>(() => {
+    if (preset === 'room' || !active) {
+      return {
+        target: { x: room.width / 2, y: room.height / 3, z: room.depth / 2 },
+        box: { W: room.width, H: room.height, D: room.depth },
+      }
+    }
+    const fp = placementFootprint(room, active.cabinet, active.placement)
+    return {
+      target: { x: fp.x + fp.width / 2, y: active.cabinet.height / 2, z: fp.z + fp.depth / 2 },
+      box: { W: active.cabinet.width, H: active.cabinet.height, D: active.cabinet.depth },
+    }
+  }, [active, room, preset])
+
   return (
     <Canvas
       dpr={[1, 2]}
@@ -96,19 +181,27 @@ export default function Scene({
       <directionalLight position={[3, 5, 4]} intensity={1.5} />
       <directionalLight position={[-4, 2, -3]} intensity={0.5} />
       <group scale={MM}>
-        <Cabinet panels={panels} cabinet={cabinet} catalog={catalog} />
+        <RoomShell room={room} />
+        {items.map((item) => (
+          <CabinetGroup
+            key={item.cabinet.id}
+            item={item}
+            catalog={catalog}
+            active={item.cabinet.id === activeId}
+          />
+        ))}
       </group>
       <Grid
         args={[10, 10]}
-        position={[0, -cabinet.height / 2 * MM, 0]}
+        position={[0, -0.005, 0]}
         cellSize={0.1}
         cellColor="#b8b8b8"
         sectionSize={1}
         sectionColor="#8f8f8f"
         infiniteGrid
-        fadeDistance={12}
+        fadeDistance={14}
       />
-      <CameraRig cabinet={cabinet} />
+      <CameraRig target={view.target} box={view.box} />
     </Canvas>
   )
 }
