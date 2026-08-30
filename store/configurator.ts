@@ -23,6 +23,8 @@ type State = {
   templateId: string
   /** Шаблон галереясы ашық па */
   galleryOpen: boolean
+  /** Чат-бот панелі ашық па */
+  aiOpen: boolean
   past: CabinetConfig[]
   future: CabinetConfig[]
   lastEditKey: string | null
@@ -37,7 +39,9 @@ type State = {
 
   edit(key: string, patch: Partial<CabinetConfig>): void
   loadTemplate(id: string): void
+  loadCabinet(cabinet: CabinetConfig): void
   setGalleryOpen(v: boolean): void
+  setAiOpen(v: boolean): void
   editSection(index: number, patch: Partial<Section>, key: string): void
   addSection(): void
   removeSection(index: number): void
@@ -54,6 +58,7 @@ export const useConfigurator = create<State>((set, get) => ({
   cabinet: defaultCabinet,
   templateId: defaultTemplateId,
   galleryOpen: false,
+  aiOpen: false,
   past: [],
   future: [],
   lastEditKey: null,
@@ -97,7 +102,24 @@ export const useConfigurator = create<State>((set, get) => ({
     })
   },
 
+  /**
+   * Дайын конфигті жүктеу — чат-боттың варианты осы жолмен түседі.
+   * Шаблон байланысы үзіледі: бұл енді «свой корпус», габарит аралығы жоқ.
+   */
+  loadCabinet(cabinet) {
+    const s = get()
+    set({
+      cabinet,
+      templateId: '',
+      aiOpen: false,
+      past: [...s.past, s.cabinet].slice(-HISTORY_LIMIT),
+      future: [],
+      lastEditKey: null,
+    })
+  },
+
   setGalleryOpen: (galleryOpen) => set({ galleryOpen }),
+  setAiOpen: (aiOpen) => set({ aiOpen }),
 
   editSection(index, patch, key) {
     const s = get()

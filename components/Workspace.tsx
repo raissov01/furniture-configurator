@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { Button, Slider } from '@/components/ui'
 import { Configurator } from '@/components/Configurator'
 import { TemplateGallery } from '@/components/TemplateGallery'
+import { AiPanel } from '@/components/AiPanel'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { catalog } from '@/lib/defaults'
@@ -40,6 +41,7 @@ export function Workspace() {
   const cameraPreset = useConfigurator((s) => s.cameraPreset)
   const setCameraPreset = useConfigurator((s) => s.setCameraPreset)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
+  const setAiOpen = useConfigurator((s) => s.setAiOpen)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog)
 
@@ -62,6 +64,7 @@ export function Workspace() {
   return (
     <div className="flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       <TemplateGallery />
+      <AiPanel />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <h1 className="text-sm font-semibold">
           {cabinet.name}
@@ -72,6 +75,7 @@ export function Workspace() {
 
         <div className="flex items-center gap-1">
           <Button onClick={() => setGalleryOpen(true)} title="Готовые шаблоны">Шаблоны</Button>
+          <Button onClick={() => setAiOpen(true)} title="Описать задачу словами">Техзадание</Button>
           <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
           <Button onClick={reset}>Сброс</Button>
