@@ -23,7 +23,8 @@ import {
   templateToCabinet,
 } from '@/src/core/index'
 import type {
-  CabinetConfig, Catalog, Placement, ProjectFile, Room, Section, SectionContent, ShopProfile, WallId,
+  CabinetConfig, Catalog, Material, Placement, ProjectFile, Room, Section, SectionContent,
+  ShopProfile, WallId,
 } from '@/src/core/index'
 
 /** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
@@ -93,6 +94,8 @@ type State = Snapshot & {
 
   setShop(shop: ShopProfile): void
   editShop(patch: Partial<ShopProfile>): void
+  addMaterial(material: Material): void
+  removeMaterial(id: string): void
   hydrateShop(): void
   setShopOpen(v: boolean): void
   setQuoteOpen(v: boolean): void
@@ -349,6 +352,26 @@ export const useConfigurator = create<State>((set, get) => ({
 
   editShop(patch) {
     get().setShop({ ...get().shop, ...patch })
+  },
+
+  addMaterial(material) {
+    const s = get()
+    if (s.shop.materials.some((m) => m.id === material.id)) return
+    get().setShop({ ...s.shop, materials: [...s.shop.materials, material] })
+  },
+
+  /**
+   * Материалды өшіру. ЖОБАДА ҚОЛДАНЫЛЫП ТҰРҒАНЫ өшірілмейді: әйтпесе
+   * корпус «материал табылмады» деп құлайды да, пайдаланушы себебін
+   * түсінбей қалады.
+   */
+  removeMaterial(id) {
+    const s = get()
+    const used = s.cabinets.some(
+      (c) => c.carcassMaterialId === id || c.frontMaterialId === id || c.backMaterialId === id,
+    )
+    if (used || s.shop.materials.length <= 1) return
+    get().setShop({ ...s.shop, materials: s.shop.materials.filter((m) => m.id !== id) })
   },
 
   /**

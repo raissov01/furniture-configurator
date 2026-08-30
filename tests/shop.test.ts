@@ -8,10 +8,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_SETTINGS,
+  SHEET_FORMATS,
   catalogOf,
   defaultShopProfile,
   findTemplate,
   generateCabinet,
+  makeMaterial,
   mergeSettings,
   parseShopProfile,
   shelfSpanWarnings,
@@ -119,5 +121,49 @@ describe('профильді сақтау', () => {
   it('баға бүтін тиын болуы керек, float емес', () => {
     const broken = { ...shop, materials: shop.materials.map((m) => ({ ...m, pricePerSheet: 1250.5 })) }
     expect(() => parseShopProfile(broken)).toThrow()
+  })
+})
+
+describe('цехтың өз материалы', () => {
+  it('жаңа материалдың бағасы ӘРҚАШАН нөлден басталады', () => {
+    const m = makeMaterial({
+      id: 'own-1', name: 'ЛДСП Дуб Сонома 16 мм', thickness: 16,
+      sheetWidth: 2800, sheetHeight: 2070, hasGrain: true, color: '#c9a227',
+    })
+    expect(m.pricePerSheet).toBe(0)
+    expect(m.decor).toEqual({ color: '#c9a227', kind: 'wood' })
+  })
+
+  it('текстурасыз материал solid болады — раскройда бұруға болады', () => {
+    const m = makeMaterial({
+      id: 'own-2', name: 'ЛДСП Белый 16 мм', thickness: 16,
+      sheetWidth: 2800, sheetHeight: 2070, hasGrain: false, color: '#eeece7',
+    })
+    expect(m.decor!.kind).toBe('solid')
+    expect(m.hasGrain).toBe(false)
+  })
+
+  it('қосылған материалмен шкаф жиналады', () => {
+    const own = makeMaterial({
+      id: 'own-3', name: 'ЛДСП Свой 18 мм', thickness: 18,
+      sheetWidth: 2750, sheetHeight: 1830, hasGrain: false, color: '#9c9a94',
+      edging: { visibleFront: shop.edgeBands[0]!.id, visibleSecondary: null },
+    })
+    const withOwn: ShopProfile = { ...shop, materials: [...shop.materials, own] }
+    const cabinet = {
+      ...templateToCabinet(findTemplate('wardrobe-penal-600')!, catalogOf(withOwn)),
+      carcassMaterialId: own.id,
+      frontMaterialId: own.id,
+    }
+    expect(() => generateCabinet(cabinet, catalogOf(withOwn))).not.toThrow()
+  })
+
+  it('стандарт форматтар тізімі бос емес әрі өлшемдері бүтін', () => {
+    expect(SHEET_FORMATS.length).toBeGreaterThan(4)
+    for (const f of SHEET_FORMATS) {
+      expect(Number.isInteger(f.width)).toBe(true)
+      expect(Number.isInteger(f.height)).toBe(true)
+      expect(f.width).toBeGreaterThan(f.height)
+    }
   })
 })

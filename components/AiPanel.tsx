@@ -176,7 +176,7 @@ export function AiPanel() {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') void submit()
           }}
           rows={3}
-          placeholder="Например: прихожая 1800 мм, шкаф под верхнюю одежду, глубина 450"
+          placeholder="Тумба с двумя ящиками и открытой полкой сверху. Высота 750 мм, ширина 1000 мм, глубина 450 мм."
           className="w-full rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-300"
         />
 

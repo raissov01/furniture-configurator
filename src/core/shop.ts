@@ -83,6 +83,60 @@ const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'sliding-kit', kind: 'other', name: 'Комплект профиля и роликов на дверь' },
 ]
 
+/**
+ * Парақтың стандарт форматтары, мм (ұзындық × ен).
+ *
+ * Бұлар — нарықтағы нақты форматтар, ойдан алынған сан емес: жеткізушіге
+ * қарай әртүрлі болғандықтан, цех өз материалына керегін таңдайды.
+ */
+export const SHEET_FORMATS: { width: number; height: number; label: string }[] = [
+  { width: 2800, height: 2070, label: '2800 × 2070 (Egger, Kronospan)' },
+  { width: 2750, height: 1830, label: '2750 × 1830 (Kronospan RU)' },
+  { width: 3660, height: 1830, label: '3660 × 1830' },
+  { width: 2750, height: 1850, label: '2750 × 1850' },
+  { width: 2440, height: 1830, label: '2440 × 1830' },
+  { width: 2438, height: 1219, label: '2438 × 1219' },
+  { width: 2800, height: 2100, label: '2800 × 2100' },
+  { width: 2440, height: 2150, label: '2440 × 2150' },
+]
+
+/** Цех қоса алатын қалыңдықтар, мм. */
+export const SHEET_THICKNESSES = [3, 4, 8, 10, 12, 16, 18, 19, 22, 25, 26] as const
+
+/**
+ * Цехтың өз материалы. Каталог цехтікі болғандықтан, оны толықтыру да
+ * цехтың ісі: біз ойдан декор кітапханасын жаза алмаймыз — коды мен реңкі
+ * жеткізушіден келеді.
+ */
+export function makeMaterial(input: {
+  id: string
+  name: string
+  thickness: number
+  sheetWidth: number
+  sheetHeight: number
+  hasGrain: boolean
+  color: string
+  edging?: { visibleFront: string | null; visibleSecondary: string | null } | undefined
+}): Material {
+  return {
+    id: input.id,
+    name: input.name,
+    thickness: input.thickness,
+    sheetWidth: input.sheetWidth,
+    sheetHeight: input.sheetHeight,
+    hasGrain: input.hasGrain,
+    // Баға ӘРҚАШАН 0-ден басталады — ойдан жазылған баға КП-ға түседі.
+    pricePerSheet: 0,
+    trimEdge: 10,
+    defaultEdging: {
+      visibleFront: input.edging?.visibleFront ?? null,
+      visibleSecondary: input.edging?.visibleSecondary ?? null,
+      hidden: null,
+    },
+    decor: { color: input.color, kind: input.hasGrain ? 'wood' : 'solid' },
+  }
+}
+
 export function defaultHardware(): HardwareItem[] {
   return SEED_HARDWARE.map((h) => ({ ...h, pricePerUnit: 0 }))
 }

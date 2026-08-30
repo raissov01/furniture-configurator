@@ -8,10 +8,16 @@
  */
 
 import { useMemo, useState } from 'react'
-import { DEFAULT_SETTINGS, shopReadiness } from '@/src/core/index'
+import {
+  DEFAULT_SETTINGS,
+  SHEET_FORMATS,
+  SHEET_THICKNESSES,
+  makeMaterial,
+  shopReadiness,
+} from '@/src/core/index'
 import type { ConstructionSettings, ShopProfile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
-import { Button, Field, NumberInput, SectionTitle } from '@/components/ui'
+import { Button, Field, NumberInput, SectionTitle, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
 
 type Tab = 'profile' | 'materials' | 'bands' | 'hardware' | 'rules'
@@ -104,8 +110,10 @@ export function ShopSettings() {
         ) : null}
 
         {tab === 'materials' ? (
-          <PriceTable
-            head={['Материал', 'Толщина', 'Лист, мм', 'Цена листа, ₸']}
+          <div className="space-y-3">
+            <AddMaterial />
+            <PriceTable
+            head={['Материал', 'Толщина', 'Лист, мм', 'Цена листа, ₸', '']}
             rows={shop.materials.map((m) => ({
               id: m.id,
               name: m.name,
@@ -120,9 +128,11 @@ export function ShopSettings() {
                 <NumberInput key="p" value={toTenge(m.pricePerSheet)} min={0} step={100}
                   invalid={m.pricePerSheet <= 0}
                   onChange={(v) => setPriceSheet(m.id, v)} />,
+                <RemoveMaterial key="x" id={m.id} />,
               ],
             }))}
-          />
+            />
+          </div>
         ) : null}
 
         {tab === 'bands' ? (
@@ -212,6 +222,118 @@ export function ShopSettings() {
         ) : null}
       </div>
     </div>
+  )
+}
+
+/**
+ * Цехтың өз материалын қосу.
+ *
+ * Декор кітапханасын біз жаза алмаймыз: коды мен реңкі жеткізушіден келеді,
+ * әр цехта басқаша. Сондықтан бос жол береміз де, цех өзінікін қосады.
+ */
+function AddMaterial() {
+  const shop = useConfigurator((s) => s.shop)
+  const addMaterial = useConfigurator((s) => s.addMaterial)
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState({
+    name: '',
+    thickness: 16,
+    format: 0,
+    color: '#c9a227',
+    hasGrain: true,
+  })
+
+  const bands = shop.edgeBands
+  const front = bands.find((b) => b.thickness === 2)?.id ?? null
+  const secondary = bands.find((b) => b.thickness === 0.4)?.id ?? null
+
+  if (!open) {
+    return (
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] text-neutral-500">
+          Каталог ваш: добавьте декоры, с которыми реально работаете.
+        </p>
+        <Button onClick={() => setOpen(true)}>+ материал</Button>
+      </div>
+    )
+  }
+
+  const format = SHEET_FORMATS[draft.format]!
+  const canSave = draft.name.trim().length > 0
+
+  return (
+    <div className="space-y-2 rounded-lg border border-neutral-300 p-3 dark:border-neutral-700">
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_7rem_minmax(0,1.4fr)_6rem]">
+        <Field label="Название">
+          <input className={text} value={draft.name} placeholder="ЛДСП Дуб Сонома 16 мм"
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+        </Field>
+        <Field label="Толщина, мм">
+          <select className={text} value={draft.thickness}
+            onChange={(e) => setDraft({ ...draft, thickness: Number(e.target.value) })}>
+            {SHEET_THICKNESSES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </Field>
+        <Field label="Формат листа">
+          <select className={text} value={draft.format}
+            onChange={(e) => setDraft({ ...draft, format: Number(e.target.value) })}>
+            {SHEET_FORMATS.map((f, i) => <option key={f.label} value={i}>{f.label}</option>)}
+          </select>
+        </Field>
+        <Field label="Цвет">
+          <input type="color" className="h-9 w-full rounded-md border border-neutral-300 dark:border-neutral-700"
+            value={draft.color} onChange={(e) => setDraft({ ...draft, color: e.target.value })} />
+        </Field>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Toggle
+          checked={draft.hasGrain}
+          onChange={(hasGrain) => setDraft({ ...draft, hasGrain })}
+          label="Текстура (деталь нельзя поворачивать в раскрое)"
+        />
+        <div className="ml-auto flex gap-1">
+          <Button onClick={() => setOpen(false)}>Отмена</Button>
+          <Button
+            active
+            disabled={!canSave}
+            onClick={() => {
+              addMaterial(makeMaterial({
+                id: `shop-${Date.now().toString(36)}`,
+                name: draft.name.trim(),
+                thickness: draft.thickness,
+                sheetWidth: format.width,
+                sheetHeight: format.height,
+                hasGrain: draft.hasGrain,
+                color: draft.color,
+                edging: { visibleFront: front, visibleSecondary: secondary },
+              }))
+              setDraft({ ...draft, name: '' })
+              setOpen(false)
+            }}
+          >
+            Добавить
+          </Button>
+        </div>
+      </div>
+      <p className="text-[11px] text-neutral-400">
+        Цена всегда начинается с нуля — её задаёте вы.
+      </p>
+    </div>
+  )
+}
+
+function RemoveMaterial({ id }: { id: string }) {
+  const removeMaterial = useConfigurator((s) => s.removeMaterial)
+  const used = useConfigurator((s) =>
+    s.cabinets.some((c) => c.carcassMaterialId === id || c.frontMaterialId === id || c.backMaterialId === id))
+  return (
+    <Button
+      onClick={() => removeMaterial(id)}
+      disabled={used}
+      title={used ? 'Используется в проекте' : 'Удалить из каталога'}
+    >
+      ✕
+    </Button>
   )
 }
 
