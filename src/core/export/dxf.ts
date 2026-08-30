@@ -9,6 +9,7 @@
  *     аспапқа байлайды, сондықтан диаметрлерді араластыруға болмайды
  */
 
+import type { NestedSheet, NestingResult } from '../nesting'
 import type { Drill, Groove, Panel } from '../types'
 
 export const LAYER_OUTLINE = 'OUTLINE'
@@ -165,6 +166,69 @@ export function cabinetToDxfFiles(panels: Panel[], options?: DxfOptions): Map<st
   const files = new Map<string, string>()
   for (const panel of panels) {
     files.set(`${panel.id}.dxf`, panelToDxf(panel, options))
+  }
+  return files
+}
+
+// ── Раскрой картасы ──────────────────────────────────────────────────────────
+
+export const LAYER_SHEET = 'SHEET'
+export const LAYER_USABLE = 'USABLE'
+export const LAYER_PART = 'PART'
+export const LAYER_OFFCUT = 'OFFCUT'
+
+/**
+ * Бір парақтың раскрой картасы.
+ *
+ * Бұл — деталь файлы ЕМЕС: мұнда присадка да, паз да жоқ. Оператор параққа
+ * не қалай жататынын көреді, ал кесу бағдарламасын осыдан жасайды. Сондықтан
+ * әр нәрсе бөлек қабатта: парақ контуры, подрезкадан кейінгі аймақ, детальдар,
+ * деловой отход.
+ */
+export function nestedSheetToDxf(sheet: NestedSheet, materialName: string): string {
+  const layers = [LAYER_SHEET, LAYER_USABLE, LAYER_PART, LAYER_OFFCUT, LAYER_TEXT]
+  const entities: Group[] = [g(0, 'SECTION'), g(2, 'ENTITIES')]
+
+  const rect = (layer: string, x: number, y: number, w: number, h: number): Group[] =>
+    lwpolyline(layer, [[x, y], [x + w, y], [x + w, y + h], [x, y + h]], true)
+
+  entities.push(...rect(LAYER_SHEET, 0, 0, sheet.sheetWidth, sheet.sheetHeight))
+  entities.push(...rect(LAYER_USABLE, sheet.usable.x, sheet.usable.y, sheet.usable.width, sheet.usable.height))
+
+  for (const part of sheet.parts) {
+    entities.push(...rect(LAYER_PART, part.x, part.y, part.width, part.height))
+    // Мәтін детальдің ішінде, сол-төменгі бұрышынан сәл шегініп тұрады.
+    entities.push(
+      ...text(LAYER_TEXT, part.x + 15, part.y + 15, Math.min(40, part.height / 4),
+        `${transliterate(part.label)} ${part.width}x${part.height}`),
+    )
+  }
+
+  for (const off of sheet.offcuts) {
+    entities.push(...rect(LAYER_OFFCUT, off.x, off.y, off.width, off.height))
+    entities.push(
+      ...text(LAYER_OFFCUT, off.x + 15, off.y + 15, Math.min(40, off.height / 4),
+        `OSTATOK ${off.width}x${off.height}`),
+    )
+  }
+
+  entities.push(
+    ...text(LAYER_TEXT, 0, sheet.sheetHeight + 40, 60,
+      `${transliterate(materialName)}  LIST ${sheet.index}  ${sheet.sheetWidth}x${sheet.sheetHeight}`),
+  )
+
+  entities.push(g(0, 'ENDSEC'))
+  return render([...header(), ...tables(layers), ...entities, g(0, 'EOF')])
+}
+
+/** Әр параққа бір файл: аты → мазмұны. */
+export function nestingToDxfFiles(nesting: NestingResult): Map<string, string> {
+  const files = new Map<string, string>()
+  for (const group of nesting.byMaterial) {
+    for (const sheet of group.sheets) {
+      const name = `${transliterate(group.materialId)}-list-${sheet.index}.dxf`
+      files.set(name, nestedSheetToDxf(sheet, group.materialName))
+    }
   }
   return files
 }

@@ -1,0 +1,171 @@
+/**
+ * Раскрой картасы мен КП экспорты.
+ *
+ * КП-ның басты ережесі осында да күзетіледі: бағасы толтырылмаған позиция
+ * болса, құжат МҮЛДЕ шықпайды. Тексеру UI-да ғана болса, оны айналып өтіп
+ * шақыруға болады да, ойдан жазылған баға клиентке кетеді.
+ */
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { PDFDocument } from 'pdf-lib'
+import { describe, expect, it } from 'vitest'
+import {
+  defaultShopProfile,
+  findTemplate,
+  formatTenge,
+  generateCabinet,
+  nestPanels,
+  nestedSheetToDxf,
+  nestingPdf,
+  nestingToDxfFiles,
+  priceProject,
+  quotePdf,
+  templateToCabinet,
+} from '../src/core/index'
+import type { ShopProfile } from '../src/core/index'
+
+const font = (name: string) =>
+  new Uint8Array(readFileSync(fileURLToPath(new URL(`../public/fonts/${name}`, import.meta.url))))
+
+const fonts = { regular: font('DejaVuSans-subset.ttf'), bold: font('DejaVuSans-Bold-subset.ttf') }
+
+const base = defaultShopProfile()
+const catalog = { materials: base.materials, edgeBands: base.edgeBands }
+const panels = generateCabinet(templateToCabinet(findTemplate('wardrobe-3sec-1800')!, catalog), catalog)
+const nesting = nestPanels(panels, catalog)
+
+const pricedShop: ShopProfile = {
+  ...base,
+  name: 'Цех «Алаш»',
+  city: 'Астана',
+  phone: '+7 700 000 00 00',
+  materials: base.materials.map((m) => ({ ...m, pricePerSheet: 2850000 })),
+  edgeBands: base.edgeBands.map((b) => ({ ...b, pricePerMeter: 9000 })),
+  hardware: base.hardware.map((h) => ({ ...h, pricePerUnit: 6000 })),
+  labour: { perSquareMetre: 150000, perHole: 3000, perEdgeMetre: 5000 },
+  markupPercent: 20,
+}
+
+describe('раскрой DXF', () => {
+  const files = nestingToDxfFiles(nesting)
+
+  it('әр параққа бір файл', () => {
+    expect(files.size).toBe(nesting.sheetCount)
+    for (const name of files.keys()) expect(name.endsWith('.dxf')).toBe(true)
+  })
+
+  it('миллиметрде әрі дұрыс жабылады', () => {
+    for (const content of files.values()) {
+      expect(content).toMatch(/\$INSUNITS\n\s*70\n4/)
+      expect(content.startsWith('0\nSECTION')).toBe(true)
+      expect(content.trimEnd().endsWith('EOF')).toBe(true)
+    }
+  })
+
+  it('парақ, деталь мен отход БӨЛЕК қабатта — станок қабатты аспапқа байлайды', () => {
+    const sheet = nesting.byMaterial[0]!.sheets[0]!
+    const dxf = nestedSheetToDxf(sheet, 'ЛДСП')
+    expect(dxf).toContain('SHEET')
+    expect(dxf).toContain('USABLE')
+    expect(dxf).toContain('PART')
+    expect(dxf).toContain('TEXT')
+  })
+
+  it('әр деталь контур болып шығады', () => {
+    const sheet = nesting.byMaterial[0]!.sheets[0]!
+    const dxf = nestedSheetToDxf(sheet, 'ЛДСП')
+    const partOutlines = dxf.split('LWPOLYLINE').filter((chunk) => chunk.startsWith('\n8\nPART'))
+    expect(partOutlines).toHaveLength(sheet.parts.length)
+  })
+
+  it('мәтін латынға аударылады — ескі оқығыш кириллицаны бұзады', () => {
+    const dxf = nestedSheetToDxf(nesting.byMaterial[0]!.sheets[0]!, 'ЛДСП Дуб')
+    expect(dxf).toContain('LDSP')
+    expect(dxf).not.toMatch(/[А-Яа-я]/)
+  })
+})
+
+describe('раскрой PDF', () => {
+  it('қорытынды беті + әр параққа бір бет', async () => {
+    const bytes = await nestingPdf({ nesting, projectName: 'Шкаф 3 секции', fonts })
+    const doc = await PDFDocument.load(bytes)
+    expect(doc.getPageCount()).toBe(1 + nesting.sheetCount)
+  })
+
+  it('нағыз PDF файлы шығады', async () => {
+    const bytes = await nestingPdf({ nesting, projectName: 'Тест', fonts })
+    expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe('%PDF-')
+    expect(bytes.length).toBeGreaterThan(1000)
+  })
+})
+
+describe('КП PDF', () => {
+  it('бағасы толтырылмаса ҚҰЖАТ ШЫҚПАЙДЫ', async () => {
+    const price = priceProject(panels, nesting, base)
+    await expect(
+      quotePdf({ price, shop: base, projectName: 'Тест', date: '30.08.2026', fonts }),
+    ).rejects.toThrow(/shop\.prices/)
+  })
+
+  it('бағасы бар болса құжат шығады', async () => {
+    const price = priceProject(panels, nesting, pricedShop)
+    const bytes = await quotePdf({
+      price, shop: pricedShop, projectName: 'Шкаф 3 секции', date: '30.08.2026',
+      customer: 'Айгүл', fonts,
+    })
+    expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe('%PDF-')
+    const doc = await PDFDocument.load(bytes)
+    expect(doc.getPageCount()).toBeGreaterThanOrEqual(1)
+  })
+
+  it('күн сырттан беріледі — бірдей жобадан бірдей құжат шығуы керек', async () => {
+    const price = priceProject(panels, nesting, pricedShop)
+    const make = () =>
+      quotePdf({ price, shop: pricedShop, projectName: 'Тест', date: '01.01.2026', fonts })
+    const [a, b] = await Promise.all([make(), make()])
+    // Метадеректегі уақыт белгісін есептемегенде мазмұны бірдей болуы керек.
+    expect(a.length).toBe(b.length)
+  })
+})
+
+describe('қаріп жиынтығы', () => {
+  /**
+   * ₸ таңбасы қаріпте жоқ болып шықты: PDF-те ол ҮНСІЗ түсіп қалады да,
+   * клиентке валютасы көрсетілмеген КП кетеді. Бұл тест кез келген жаңа
+   * таңба үшін дәл сол қатені қайталанбауын күзетеді.
+   */
+  it('КП-дағы ӘР таңбаны қаріп сала алады', async () => {
+    const fontkit = (await import('@pdf-lib/fontkit')).default
+    const price = priceProject(panels, nesting, pricedShop)
+    const strings = [
+      'Коммерческое предложение', 'Позиция', 'Кол-во', 'Цена', 'Сумма',
+      'Материалы', 'Кромка', 'Фурнитура', 'Работа', 'Себестоимость', 'Итого',
+      `Наценка ${price.markupPercent}%`,
+      pricedShop.name, pricedShop.city, pricedShop.phone,
+      ...price.materials.map((l) => l.name),
+      ...price.edges.map((l) => l.name),
+      ...price.hardware.map((l) => l.name),
+      ...price.labour.map((l) => `${l.name} ${l.qty} ${l.unit}`),
+      ...[...price.materials, ...price.labour].map((l) => formatTenge(l.cost, 'тг')),
+    ]
+
+    for (const [name, bytes] of [['regular', fonts.regular], ['bold', fonts.bold]] as const) {
+      const font = fontkit.create(Buffer.from(bytes))
+      for (const value of strings) {
+        for (const ch of value) {
+          if (ch === ' ' || ch === ' ' || ch === ' ') continue
+          const glyph = font.glyphsForString(ch)[0]
+          expect(glyph?.id, `${name}: «${ch}» (U+${ch.codePointAt(0)!.toString(16)}) в «${value}»`).not.toBe(0)
+        }
+      }
+    }
+  })
+
+  it('₸ таңбасы қаріпте ЖОҚ — сондықтан PDF-те «тг» жазылады', async () => {
+    const fontkit = (await import('@pdf-lib/fontkit')).default
+    const font = fontkit.create(Buffer.from(fonts.regular))
+    expect(font.glyphsForString('₸')[0]?.id).toBe(0)
+    expect(formatTenge(100)).toContain('₸')
+    expect(formatTenge(100, 'тг')).toContain('тг')
+  })
+})

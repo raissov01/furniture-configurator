@@ -22,13 +22,34 @@ type Tab = 'nesting' | 'price'
 /** Парақ сызбасының экрандағы ені, пиксель. */
 const SHEET_PX = 460
 
+/** Қаріп pdf-lib-ке сырттан беріледі: стандарт қаріптері кириллицаны білмейді. */
+async function loadFonts(): Promise<{ regular: Uint8Array; bold: Uint8Array }> {
+  const [regular, bold] = await Promise.all([
+    fetch('/fonts/DejaVuSans-subset.ttf').then((r) => r.arrayBuffer()),
+    fetch('/fonts/DejaVuSans-Bold-subset.ttf').then((r) => r.arrayBuffer()),
+  ])
+  return { regular: new Uint8Array(regular), bold: new Uint8Array(bold) }
+}
+
+function download(filename: string, data: Uint8Array | string, mime: string): void {
+  const blob = new Blob([data as BlobPart], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 /** `panels` — БҮКІЛ ЖОБАНЫҢ детальдары. Геометрия store-да есептелмейді (§3). */
-export function QuoteView({ panels }: { panels: Panel[] }) {
+export function QuoteView({ panels, projectName }: { panels: Panel[]; projectName: string }) {
   const open = useConfigurator((s) => s.quoteOpen)
   const setOpen = useConfigurator((s) => s.setQuoteOpen)
   const shop = useConfigurator((s) => s.shop)
   const catalog = useConfigurator((s) => s.catalog)
   const [tab, setTab] = useState<Tab>('nesting')
+  const [customer, setCustomer] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
 
   const nesting = useMemo(() => {
     try {
@@ -42,6 +63,15 @@ export function QuoteView({ panels }: { panels: Panel[] }) {
     () => (nesting ? priceProject(panels, nesting, shop) : null),
     [panels, nesting, shop],
   )
+
+  const run = async (kind: string, action: () => Promise<void>) => {
+    setBusy(kind)
+    try {
+      await action()
+    } finally {
+      setBusy(null)
+    }
+  }
 
   if (!open) return null
 
@@ -61,7 +91,53 @@ export function QuoteView({ panels }: { panels: Panel[] }) {
           <span className="text-[11px] text-neutral-400">
             {panels.length > 0 ? `деталей в проекте: ${panels.length}` : null}
           </span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <Button
+              disabled={busy !== null || !nesting}
+              title="Карта раскроя для цеха, по листу на страницу"
+              onClick={() => void run('map', async () => {
+                const { nestingPdf } = await import('@/src/core/export/nestingPdf')
+                const bytes = await nestingPdf({ nesting: nesting!, projectName, fonts: await loadFonts() })
+                download(`${projectName}-раскрой.pdf`, bytes, 'application/pdf')
+              })}
+            >
+              {busy === 'map' ? '…' : 'PDF карты'}
+            </Button>
+            <Button
+              disabled={busy !== null || !nesting}
+              title="По одному DXF на лист, всё в архиве"
+              onClick={() => void run('dxf', async () => {
+                const [{ nestingToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
+                  import('@/src/core/export/dxf'),
+                  import('fflate'),
+                ])
+                const entries: Record<string, Uint8Array> = {}
+                for (const [name, content] of nestingToDxfFiles(nesting!)) entries[name] = strToU8(content)
+                download(`${projectName}-раскрой-dxf.zip`, zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }), 'application/zip')
+              })}
+            >
+              {busy === 'dxf' ? '…' : 'DXF'}
+            </Button>
+            <Button
+              disabled={busy !== null || !price || price.missingPrices.length > 0}
+              title={
+                price && price.missingPrices.length > 0
+                  ? 'Пока не заданы все цены, КП выпускать нельзя'
+                  : 'Коммерческое предложение для клиента'
+              }
+              onClick={() => void run('quote', async () => {
+                const { quotePdf } = await import('@/src/core/export/quotePdf')
+                const bytes = await quotePdf({
+                  price: price!, shop, projectName,
+                  date: new Date().toLocaleDateString('ru-RU'),
+                  ...(customer.trim() ? { customer: customer.trim() } : {}),
+                  fonts: await loadFonts(),
+                })
+                download(`${projectName}-КП.pdf`, bytes, 'application/pdf')
+              })}
+            >
+              {busy === 'quote' ? '…' : 'КП'}
+            </Button>
             <Button onClick={() => setOpen(false)}>Закрыть</Button>
           </div>
         </div>
@@ -99,7 +175,18 @@ export function QuoteView({ panels }: { panels: Panel[] }) {
             ))}
           </div>
         ) : (
-          <PriceTable price={price!} shopName={shop.name} />
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-xs">
+              <span className="text-neutral-500">Заказчик</span>
+              <input
+                value={customer}
+                onChange={(e) => setCustomer(e.target.value)}
+                placeholder="имя клиента — попадёт в КП"
+                className="w-64 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
+              />
+            </label>
+            <PriceTable price={price!} shopName={shop.name} />
+          </div>
         )}
       </div>
     </div>

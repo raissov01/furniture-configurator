@@ -226,8 +226,14 @@ export function priceProject(
  */
 const roundTenge = (minor: number) => Math.round(minor / 100) * 100
 
-/** Тиынды теңгеге келтіріп, көрсетуге дайын жол қайтарады. */
-export function formatTenge(minor: number): string {
+/**
+ * Тиынды теңгеге келтіріп, көрсетуге дайын жол қайтарады.
+ *
+ * `currency` неге параметр: PDF-тегі қаріп жиынтығында **₸ таңбасы жоқ** —
+ * ол үнсіз түсіп қалады да, клиентке валютасы жоқ КП кетеді. Сондықтан
+ * экранда «₸», ал PDF-те «тг» жазылады.
+ */
+export function formatTenge(minor: number, currency = '₸'): string {
   const tenge = Math.round(minor / 100)
-  return `${tenge.toLocaleString('ru-RU')} ₸`
+  return `${tenge.toLocaleString('ru-RU')} ${currency}`
 }

@@ -75,6 +75,7 @@ export function Workspace() {
 
   // Смета БҮКІЛ жоба бойынша: цех парақты бір тапсырысқа бірге сатып алады.
   const projectPanels = useMemo(() => items.flatMap((i) => i.panels), [items])
+  const projectName = cabinets.length === 1 ? cabinets[0]!.name : `Проект (${cabinets.length} корпуса)`
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -93,7 +94,7 @@ export function Workspace() {
       <AiPanel />
       <RoomPlan />
       <ShopSettings />
-      <QuoteView panels={projectPanels} />
+      <QuoteView panels={projectPanels} projectName={projectName} />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <h1 className="text-sm font-semibold">
           {cabinet.name}
