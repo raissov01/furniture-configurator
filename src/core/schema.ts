@@ -55,6 +55,9 @@ export const ConstructionSettingsSchema = z.object({
   minBandSubtract: z.number().nonnegative(),
   confirmatSpanForThird: mm,
   shelfPinDatum: z.number().int().nonnegative(),
+  drawerRunnerGap: z.number().int().nonnegative(),
+  drawerBackGap: z.number().int().nonnegative(),
+  drawerBoxDrop: z.number().int().nonnegative(),
 }).partial()
 
 const FrontsSchema = z.object({
@@ -99,13 +102,22 @@ export const ProjectFileV1Schema = z.object({
 
 // ── schemaVersion 2 — көп секциялы (PHASE-2 A1) ──────────────────────────────
 
+const bandHeight = mm.optional()
+
 export const SectionContentSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('shelves'),
     count: z.number().int().min(0).max(20),
     shelfKind: z.enum(['adjustable', 'fixed']),
+    height: bandHeight,
   }),
-  z.object({ kind: z.literal('empty') }),
+  z.object({
+    kind: z.literal('drawers'),
+    count: z.number().int().min(1).max(8),
+    height: bandHeight,
+  }),
+  z.object({ kind: z.literal('rod'), height: bandHeight }),
+  z.object({ kind: z.literal('empty'), height: bandHeight }),
 ])
 
 export const SectionSchema = z.object({

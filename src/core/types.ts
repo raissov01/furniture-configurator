@@ -204,6 +204,14 @@ export type ConstructionSettings = {
   minBandSubtract: number
   confirmatSpanForThird: number
   shelfPinDatum: number
+
+  // ── Ящик (§4.8). ҮШЕУІ ДЕ ЦЕХТЫҢ ТАҢДАУЫ, әмбебап стандарт емес. ──────────
+  /** Направляющая әр жақтан алатын орын. Роликтіде әдетте 12.5–13 мм. */
+  drawerRunnerGap: number
+  /** Ящик қорабының арт жағында қалатын саңылау (направляющая ұзындығына) */
+  drawerBackGap: number
+  /** Қораптың бүйірі фасадтан осынша ТӨМЕН болады */
+  drawerBoxDrop: number
 }
 
 /**
@@ -216,12 +224,20 @@ export type SettingsOverride = {
 }
 
 /**
- * Секцияның ішкі толтырылуы. M2-де секцияда БІР ғана content болады;
- * тік қабаттау (үстінде штанга, астында сөре) — D1-де қосылады.
+ * Секцияның ішкі толтырылуы.
+ *
+ * Массив — ТІК ҚАБАТТАУ: [0] АСТЫҢҒЫ жолақ, соңғысы — ең үстіңгі.
+ * Жолақтар арасына бекітілген сөре (разделитель) қойылады — нақты жиһазда
+ * ящиктің үстіндегі сөре сол.
+ *
+ * `height` берілсе — жолақ дәл сонша мм алады; берілмесе, қалған биіктікті
+ * басқа еркін жолақтармен тең бөліседі.
  */
 export type SectionContent =
-  | { kind: 'shelves'; count: number; shelfKind: ShelfKind }
-  | { kind: 'empty' }
+  | { kind: 'shelves'; count: number; shelfKind: ShelfKind; height?: number | undefined }
+  | { kind: 'drawers'; count: number; height?: number | undefined }
+  | { kind: 'rod'; height?: number | undefined }
+  | { kind: 'empty'; height?: number | undefined }
 
 /**
  * Кабинет тік перегородкалармен секцияларға бөлінеді.

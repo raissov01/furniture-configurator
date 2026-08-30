@@ -86,14 +86,32 @@ describe('секция валидациясы', () => {
       .toThrow(/≥ 100 мм/)
   })
 
-  it('M2-де секцияда бір ғана content', () => {
+  it('секция тігінен жолақтарға бөлінеді, араларына бекітілген сөре тұрады', () => {
     const cfg = withCabinet({
       sections: [{
         id: 's1', widthMode: 'flex',
-        contents: [{ kind: 'shelves', count: 2, shelfKind: 'adjustable' }, { kind: 'empty' }],
+        contents: [
+          { kind: 'shelves', count: 2, shelfKind: 'adjustable' },
+          { kind: 'empty' },
+        ],
       }],
     })
-    expect(() => generateCabinet(cfg, catalog)).toThrow(/тік қабаттау/)
+    const panels = generateCabinet(cfg, catalog)
+    const shelves = panels.filter((x: Panel) => x.role === 'shelf')
+    // 2 сөре + жолақтар арасындағы 1 разделитель.
+    expect(shelves).toHaveLength(3)
+    expect(shelves.filter((x) => x.note.includes('Разделитель'))).toHaveLength(1)
+  })
+
+  it('жолақтарға орын жетпесе — түсінікті қате', () => {
+    const cfg = withCabinet({
+      height: 400,
+      sections: [{
+        id: 's1', widthMode: 'flex',
+        contents: [{ kind: 'empty', height: 300 }, { kind: 'empty', height: 300 }],
+      }],
+    })
+    expect(() => generateCabinet(cfg, catalog)).toThrow(/sections\[0\].contents/)
   })
 })
 

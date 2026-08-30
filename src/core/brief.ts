@@ -24,6 +24,7 @@ export const BRIEF_LIMITS = {
   dimension: { min: 100, max: 4000 },
   sections: { min: 1, max: 12 },
   shelves: { min: 0, max: 20 },
+  drawers: { min: 0, max: 8 },
   fronts: { min: 0, max: 8 },
 } as const
 
@@ -33,6 +34,8 @@ export const BriefSectionSchema = z.object({
   width: z.number().int().nullable(),
   shelfCount: z.number().int(),
   shelfKind: z.enum(['adjustable', 'fixed']),
+  /** Секцияның АСТЫНДАҒЫ ящиктер. 0 — ящик жоқ. */
+  drawerCount: z.number().int(),
   frontCount: z.number().int(),
   frontMount: z.enum(['overlay', 'inset']),
 })
@@ -107,6 +110,7 @@ export function briefToCabinet(brief: CabinetBrief, catalog: Catalog, id = 'cabi
 
   const sections: Section[] = brief.sections.map((s, i) => {
     requireRange(`sections[${i}].shelfCount`, s.shelfCount, BRIEF_LIMITS.shelves.min, BRIEF_LIMITS.shelves.max)
+    requireRange(`sections[${i}].drawerCount`, s.drawerCount, BRIEF_LIMITS.drawers.min, BRIEF_LIMITS.drawers.max)
     requireRange(`sections[${i}].frontCount`, s.frontCount, BRIEF_LIMITS.fronts.min, BRIEF_LIMITS.fronts.max)
 
     if (s.widthMode === 'fixed') {
@@ -121,10 +125,14 @@ export function briefToCabinet(brief: CabinetBrief, catalog: Catalog, id = 'cabi
       widthMode: s.widthMode,
       // exactOptionalPropertyTypes: flex секцияда өріс МҮЛДЕ болмауы керек.
       ...(s.widthMode === 'fixed' ? { width: s.width as number } : {}),
-      contents:
-        s.shelfCount > 0
+      // Толтырылым АСТЫҢҒЫДАН жоғары: ящиктер төменде, сөрелер үстінде.
+      contents: [
+        ...(s.drawerCount > 0 ? [{ kind: 'drawers' as const, count: s.drawerCount }] : []),
+        ...(s.shelfCount > 0
           ? [{ kind: 'shelves' as const, count: s.shelfCount, shelfKind: s.shelfKind }]
-          : [{ kind: 'empty' as const }],
+          : []),
+        ...(s.drawerCount === 0 && s.shelfCount === 0 ? [{ kind: 'empty' as const }] : []),
+      ],
       fronts: s.frontCount > 0 ? { count: s.frontCount, mount: s.frontMount } : null,
     }
   })

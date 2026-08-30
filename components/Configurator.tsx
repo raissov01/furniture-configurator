@@ -9,7 +9,7 @@ import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/comp
 import { DecorPicker } from '@/components/DecorPicker'
 import { findTemplate } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
-import type { CabinetConfig, Material, Section } from '@/src/core/index'
+import type { CabinetConfig, Material, Section, SectionContent } from '@/src/core/index'
 
 const materialOptions = (list: Material[]) => list.map((m) => ({ value: m.id, label: m.name }))
 
@@ -22,6 +22,25 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
   const canRemove = useConfigurator((s) => activeCabinet(s).sections.length > 1)
 
   const shelves = section.contents.find((c) => c.kind === 'shelves')
+  const drawers = section.contents.find((c) => c.kind === 'drawers')
+
+  /**
+   * Толтырылым АСТЫҢҒЫДАН жоғары қарай жиналады: ящиктер төменде, сөрелер
+   * үстінде. Нақты жиһаз дәл солай жиналады, ал реті UI-да ойлап табылмайды.
+   */
+  const setFill = (next: { shelfCount?: number; shelfKind?: 'adjustable' | 'fixed'; drawerCount?: number }) => {
+    const shelfCount = next.shelfCount ?? shelves?.count ?? 0
+    const shelfKind = next.shelfKind ?? shelves?.shelfKind ?? 'adjustable'
+    const drawerCount = next.drawerCount ?? drawers?.count ?? 0
+
+    const contents: SectionContent[] = []
+    if (drawerCount > 0) contents.push({ kind: 'drawers', count: drawerCount })
+    if (shelfCount > 0) contents.push({ kind: 'shelves', count: shelfCount, shelfKind })
+    else if (drawerCount > 0) contents.push({ kind: 'empty' })
+    if (contents.length === 0) contents.push({ kind: 'empty' })
+
+    editSection(index, { contents }, 'section.fill')
+  }
 
   return (
     <div className="space-y-2 rounded-lg border border-neutral-200 p-2.5 dark:border-neutral-800">
@@ -67,33 +86,39 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
             value={shelves?.count ?? 0}
             min={0}
             max={20}
-            onChange={(count) =>
-              editSection(
-                index,
-                {
-                  contents: count > 0
-                    ? [{ kind: 'shelves', count, shelfKind: shelves?.shelfKind ?? 'adjustable' }]
-                    : [{ kind: 'empty' }],
-                },
-                'section.shelves',
-              )
-            }
+            onChange={(shelfCount) => setFill({ shelfCount })}
           />
         </Field>
         <Field label="Тип полки">
           <Select
             value={shelves?.shelfKind ?? 'adjustable'}
-            onChange={(shelfKind) =>
-              editSection(
-                index,
-                { contents: [{ kind: 'shelves', count: shelves?.count ?? 1, shelfKind }] },
-                'section.shelfKind',
-              )
-            }
+            onChange={(shelfKind) => setFill({ shelfKind })}
             options={[
               { value: 'adjustable', label: 'На полкодержателях' },
               { value: 'fixed', label: 'Фиксированная' },
             ]}
+          />
+        </Field>
+        <Field label="Ящиков" hint={drawers ? 'снизу' : undefined}>
+          <NumberInput
+            value={drawers?.count ?? 0}
+            min={0}
+            max={8}
+            onChange={(drawerCount) => setFill({ drawerCount })}
+          />
+        </Field>
+        <Field label="Высота ящиков" hint={drawers?.height ? 'мм' : 'делит поровну'}>
+          <NumberInput
+            value={drawers?.height ?? 0}
+            min={0}
+            step={10}
+            onChange={(height) => {
+              if (!drawers) return
+              const contents = section.contents.map((c) =>
+                c.kind === 'drawers' ? { ...c, ...(height > 0 ? { height } : { height: undefined }) } : c,
+              )
+              editSection(index, { contents }, 'section.drawerHeight')
+            }}
           />
         </Field>
       </div>

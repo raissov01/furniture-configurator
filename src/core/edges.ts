@@ -46,6 +46,14 @@ export function edgeClasses(
     case 'back':
       // ХДФ-қа кромка жабыспайды.
       return { L1: 'hidden', L2: 'hidden', W1: 'hidden', W2: 'hidden' }
+    case 'drawerSide':
+    case 'drawerBack':
+      // Ящик қорабының ҮСТІҢГІ жиегі ғана көрінеді — ішіне қол салғанда
+      // сол жиек көрінеді әрі тиеді. Қалғаны қораптың ішінде.
+      return { L1: 'visibleSecondary', L2: 'hidden', W1: 'hidden', W2: 'hidden' }
+    case 'drawerBottom':
+      // Түбі ХДФ, көрінбейді.
+      return { L1: 'hidden', L2: 'hidden', W1: 'hidden', W2: 'hidden' }
     default:
       return { L1: 'hidden', L2: 'hidden', W1: 'hidden', W2: 'hidden' }
   }

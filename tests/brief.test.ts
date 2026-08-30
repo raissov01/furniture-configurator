@@ -24,9 +24,9 @@ const base: CabinetBrief = {
   frontMaterialId: 'ldsp16-h1145',
   backMaterialId: 'hdf3-white',
   sections: [
-    { widthMode: 'flex', width: null, shelfCount: 4, shelfKind: 'adjustable', frontCount: 1, frontMount: 'overlay' },
-    { widthMode: 'flex', width: null, shelfCount: 4, shelfKind: 'adjustable', frontCount: 1, frontMount: 'overlay' },
-    { widthMode: 'flex', width: null, shelfCount: 4, shelfKind: 'adjustable', frontCount: 1, frontMount: 'overlay' },
+    { widthMode: 'flex', width: null, shelfCount: 4, shelfKind: 'adjustable', drawerCount: 0, frontCount: 1, frontMount: 'overlay' },
+    { widthMode: 'flex', width: null, shelfCount: 4, shelfKind: 'adjustable', drawerCount: 0, frontCount: 1, frontMount: 'overlay' },
+    { widthMode: 'flex', width: null, shelfCount: 4, shelfKind: 'adjustable', drawerCount: 0, frontCount: 1, frontMount: 'overlay' },
   ],
 }
 
@@ -51,7 +51,7 @@ describe('бриф → конфиг', () => {
     const cabinet = briefToCabinet(
       withBrief({
         sections: [
-          { widthMode: 'flex', width: null, shelfCount: 0, shelfKind: 'adjustable', frontCount: 0, frontMount: 'overlay' },
+          { widthMode: 'flex', width: null, shelfCount: 0, shelfKind: 'adjustable', drawerCount: 0, frontCount: 0, frontMount: 'overlay' },
         ],
       }),
       SEED_CATALOG,
@@ -71,7 +71,7 @@ describe('бриф → конфиг', () => {
       briefToCabinet(
         withBrief({
           sections: [
-            { widthMode: 'fixed', width: null, shelfCount: 1, shelfKind: 'adjustable', frontCount: 1, frontMount: 'overlay' },
+            { widthMode: 'fixed', width: null, shelfCount: 1, shelfKind: 'adjustable', drawerCount: 0, frontCount: 1, frontMount: 'overlay' },
           ],
         }),
         SEED_CATALOG,
@@ -84,8 +84,8 @@ describe('бриф → конфиг', () => {
       withBrief({
         width: 1200,
         sections: [
-          { widthMode: 'fixed', width: 500, shelfCount: 2, shelfKind: 'adjustable', frontCount: 1, frontMount: 'overlay' },
-          { widthMode: 'flex', width: null, shelfCount: 2, shelfKind: 'adjustable', frontCount: 1, frontMount: 'overlay' },
+          { widthMode: 'fixed', width: 500, shelfCount: 2, shelfKind: 'adjustable', drawerCount: 0, frontCount: 1, frontMount: 'overlay' },
+          { widthMode: 'flex', width: null, shelfCount: 2, shelfKind: 'adjustable', drawerCount: 0, frontCount: 1, frontMount: 'overlay' },
         ],
       }),
       SEED_CATALOG,
@@ -119,7 +119,7 @@ describe('бриф → конфиг', () => {
     expect(() =>
       briefToCabinet(
         withBrief({
-          sections: [{ widthMode: 'flex', width: null, shelfCount: 40, shelfKind: 'adjustable', frontCount: 1, frontMount: 'overlay' }],
+          sections: [{ widthMode: 'flex', width: null, shelfCount: 40, shelfKind: 'adjustable', drawerCount: 0, frontCount: 1, frontMount: 'overlay' }],
         }),
         SEED_CATALOG,
       ),
@@ -130,5 +130,38 @@ describe('бриф → конфиг', () => {
     const partial = { name: 'Шкаф', height: 2000 }
     expect(CabinetBriefSchema.safeParse(partial).success).toBe(false)
     expect(CabinetBriefSchema.safeParse(base).success).toBe(true)
+  })
+})
+
+describe('чат-бот ұсынған ящиктер', () => {
+  it('ящиктер секцияның АСТЫНА, сөрелер үстіне түседі', () => {
+    const cabinet = briefToCabinet(
+      withBrief({
+        height: 850, width: 800, depth: 450,
+        sections: [{
+          widthMode: 'flex', width: null,
+          shelfCount: 1, shelfKind: 'adjustable', drawerCount: 3,
+          frontCount: 0, frontMount: 'overlay',
+        }],
+      }),
+      SEED_CATALOG,
+    )
+    expect(cabinet.sections[0]!.contents.map((c) => c.kind)).toEqual(['drawers', 'shelves'])
+    expect(() => generateCabinet(cabinet, SEED_CATALOG)).not.toThrow()
+  })
+
+  it('ящик саны шектен асса қате береді', () => {
+    expect(() =>
+      briefToCabinet(
+        withBrief({
+          sections: [{
+            widthMode: 'flex', width: null,
+            shelfCount: 0, shelfKind: 'adjustable', drawerCount: 40,
+            frontCount: 0, frontMount: 'overlay',
+          }],
+        }),
+        SEED_CATALOG,
+      ),
+    ).toThrow(/drawerCount/)
   })
 })

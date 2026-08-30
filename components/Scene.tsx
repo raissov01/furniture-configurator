@@ -32,18 +32,19 @@ export type SceneItem = {
 function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [number, number, number] {
   const span = Math.max(W, H, D)
   switch (preset) {
+    // Z ТЕРІС — корпустың АЛДЫ сол жақта (локал z алдынан артына қарай өседі).
     case 'front':
-      return [0, 0, span * 1.6]
+      return [0, 0, -span * 1.6]
     case 'plan':
       return [0, span * 1.9, 1] // 1 мм — дәл тік қарағанда OrbitControls тұрып қалмас үшін
     case 'inside':
-      return [0, 0, D * 0.35]
+      return [0, 0, -D * 0.35]
     case 'room':
       // Бүкіл бөлме: биіктен әрі қиғаш — қай қабырғада не тұрғаны көріну керек.
       return [span * 0.9, span * 1.3, span * 1.3]
     case 'three-quarter':
     default:
-      return [span * 0.95, span * 0.55, span * 1.15]
+      return [span * 0.95, span * 0.55, -span * 1.15]
   }
 }
 
@@ -52,7 +53,14 @@ function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [n
  * көрініс сол шкафты ортаға алады — әйтпесе қабырға таңдаған сайын нысан
  * экраннан шығып кетеді.
  */
-function CameraRig({ target, box }: { target: Vec3; box: { W: number; H: number; D: number } }) {
+function CameraRig({
+  target, box, facingY,
+}: {
+  target: Vec3
+  box: { W: number; H: number; D: number }
+  /** Шкафтың бұрылу бұрышы: камера оның АЛДЫНА шығуы керек. */
+  facingY: number
+}) {
   const preset = useConfigurator((s) => s.cameraPreset)
   const camera = useThree((s) => s.camera)
   const invalidate = useThree((s) => s.invalidate)
@@ -61,7 +69,12 @@ function CameraRig({ target, box }: { target: Vec3; box: { W: number; H: number;
   const { x: tx, y: ty, z: tz } = target
 
   useEffect(() => {
-    const [ox, oy, oz] = cameraOffset(preset, W, H, D)
+    const [lx, oy, lz] = cameraOffset(preset, W, H, D)
+    // Ығысу шкафтың ЛОКАЛ өсінде есептеледі де, сол бұрышпен бұрылады:
+    // әйтпесе қабырғаға қарай бұрылған шкафқа камера АРТ жағынан қарайды.
+    const a = (facingY * Math.PI) / 180
+    const ox = lx * Math.cos(a) + lz * Math.sin(a)
+    const oz = -lx * Math.sin(a) + lz * Math.cos(a)
     camera.position.set((tx + ox) * MM, (ty + oy) * MM, (tz + oz) * MM)
     // OrbitControls әлі тіркелмеген болса да камера нысанға қарауы керек:
     // онсыз бірінші кадр бос шығады да, тінтуір қозғалғанша солай тұрады.
@@ -70,7 +83,7 @@ function CameraRig({ target, box }: { target: Vec3; box: { W: number; H: number;
     controls.current?.target.set(tx * MM, ty * MM, tz * MM)
     controls.current?.update()
     invalidate()
-  }, [preset, camera, invalidate, W, H, D, tx, ty, tz])
+  }, [preset, camera, invalidate, W, H, D, tx, ty, tz, facingY])
 
   return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.12} />
 }
@@ -163,17 +176,19 @@ export default function Scene({
   const preset = useConfigurator((s) => s.cameraPreset)
 
   // «Комната» пресеті бүкіл бөлмеге қарайды, қалғаны — белсенді шкафқа.
-  const view = useMemo<{ target: Vec3; box: { W: number; H: number; D: number } }>(() => {
+  const view = useMemo<{ target: Vec3; box: { W: number; H: number; D: number }; facingY: number }>(() => {
     if (preset === 'room' || !active) {
       return {
         target: { x: room.width / 2, y: room.height / 3, z: room.depth / 2 },
         box: { W: room.width, H: room.height, D: room.depth },
+        facingY: 0,
       }
     }
     const fp = placementFootprint(room, active.cabinet, active.placement)
     return {
       target: { x: fp.x + fp.width / 2, y: active.cabinet.height / 2, z: fp.z + fp.depth / 2 },
       box: { W: active.cabinet.width, H: active.cabinet.height, D: active.cabinet.depth },
+      facingY: active.pose.rotationY,
     }
   }, [active, room, preset])
 
@@ -210,7 +225,7 @@ export default function Scene({
         infiniteGrid
         fadeDistance={14}
       />
-      <CameraRig target={view.target} box={view.box} />
+      <CameraRig target={view.target} box={view.box} facingY={view.facingY} />
     </Canvas>
   )
 }

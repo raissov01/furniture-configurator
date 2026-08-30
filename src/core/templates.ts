@@ -28,7 +28,7 @@ import type {
   ShelfKind,
 } from './types'
 
-export type TemplateCategory = 'kitchen' | 'wardrobe' | 'living' | 'storage'
+export type TemplateCategory = 'kitchen' | 'wardrobe' | 'living' | 'desk' | 'storage'
 
 /** UI-да көрсетілетін ұсынылған аралық. Қатты шектеу емес. */
 export type SizeRange = { min: number; max: number }
@@ -58,6 +58,7 @@ export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string }[] =
   { value: 'kitchen', label: 'Кухня' },
   { value: 'wardrobe', label: 'Шкафы' },
   { value: 'living', label: 'Гостиная' },
+  { value: 'desk', label: 'Столы' },
   { value: 'storage', label: 'Хранение' },
 ]
 
@@ -71,6 +72,36 @@ const section = (index: number, shelfCount: number, frontCount: number): Section
   contents: shelves(shelfCount),
   fronts: frontCount > 0 ? { count: frontCount, mount: 'overlay' } : null,
 })
+
+/**
+ * Ящикті секция. Толтырылым АСТЫҢҒЫДАН жоғары: ящиктер төменде, сөре үстінде —
+ * нақты жиһаз дәл солай жиналады.
+ */
+const drawerSection = (
+  index: number,
+  drawerCount: number,
+  options: { shelfCount?: number; drawerHeight?: number; frontCount?: number } = {},
+): Section => {
+  const contents: SectionContent[] = [
+    {
+      kind: 'drawers',
+      count: drawerCount,
+      ...(options.drawerHeight === undefined ? {} : { height: options.drawerHeight }),
+    },
+  ]
+  // Сөре сұралмаса, БОС жолақ қосылмайды: әйтпесе биіктік екіге бөлініп,
+  // ящиктер жарты орынға қысылып қалады.
+  const shelfCount = options.shelfCount ?? 0
+  if (shelfCount > 0) {
+    contents.push({ kind: 'shelves', count: shelfCount, shelfKind: 'adjustable' })
+  }
+  return {
+    id: `s${index}`,
+    widthMode: 'flex',
+    contents,
+    fronts: options.frontCount ? { count: options.frontCount, mount: 'overlay' } : null,
+  }
+}
 
 const LDSP_WHITE = 'ldsp16-w980'
 const LDSP_OAK = 'ldsp16-h1145'
@@ -132,6 +163,43 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
 
   // ── Шкафы ────────────────────────────────────────────────────────────────
   {
+    id: 'kitchen-base-drawers-600',
+    name: 'Кухня: нижний с ящиками',
+    category: 'kitchen',
+    description: '3 ящика на роликовых направляющих. Самый ходовой нижний модуль.',
+    height: 720, width: 600, depth: 500,
+    range: { height: { min: 600, max: 900 }, width: { min: 300, max: 900 }, depth: { min: 350, max: 600 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_WHITE, frontMaterialId: LDSP_WHITE, backMaterialId: HDF_WHITE,
+    sections: [drawerSection(1, 3)],
+  },
+  {
+    id: 'kitchen-sink-800',
+    name: 'Кухня: под мойку 800',
+    category: 'kitchen',
+    description: 'Без полок — внутри сифон. 2 фасада.',
+    height: 720, width: 800, depth: 500,
+    range: { height: { min: 600, max: 900 }, width: { min: 500, max: 1000 }, depth: { min: 400, max: 600 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_WHITE, frontMaterialId: LDSP_WHITE, backMaterialId: HDF_WHITE,
+    sections: [section(1, 0, 2)],
+  },
+  {
+    id: 'kitchen-tall-600',
+    name: 'Кухня: пенал 600',
+    category: 'kitchen',
+    description: 'Высокий модуль под встройку или продукты, 5 полок.',
+    height: 2100, width: 600, depth: 560,
+    range: { height: { min: 1600, max: 2600 }, width: { min: 400, max: 900 }, depth: { min: 400, max: 700 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_WHITE, frontMaterialId: LDSP_WHITE, backMaterialId: HDF_WHITE,
+    sections: [section(1, 5, 2)],
+  },
+
+  {
     id: 'wardrobe-penal-600',
     name: 'Шкаф-пенал 600',
     category: 'wardrobe',
@@ -168,6 +236,19 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
     sections: [section(1, 5, 1), section(2, 5, 0), section(3, 5, 1)],
   },
 
+  {
+    id: 'wardrobe-drawers-1200',
+    name: 'Шкаф с ящиками 1200',
+    category: 'wardrobe',
+    description: 'Слева 3 ящика снизу и полки сверху, справа полки под фасадом.',
+    height: 2200, width: 1200, depth: 500,
+    range: { height: { min: 1400, max: 2700 }, width: { min: 800, max: 1600 }, depth: { min: 400, max: 700 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [drawerSection(1, 3, { drawerHeight: 700, shelfCount: 3 }), section(2, 5, 1)],
+  },
+
   // ── Гостиная ─────────────────────────────────────────────────────────────
   {
     id: 'tv-stand-1200',
@@ -194,7 +275,114 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
     sections: [section(1, 5, 0), section(2, 5, 0)],
   },
 
+  {
+    id: 'tv-stand-drawers-1600',
+    name: 'Тумба под ТВ с ящиками',
+    category: 'living',
+    description: 'По центру 2 ящика, по краям открытые секции.',
+    height: 500, width: 1600, depth: 400,
+    range: { height: { min: 350, max: 700 }, width: { min: 1000, max: 2400 }, depth: { min: 300, max: 550 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [section(1, 1, 0), drawerSection(2, 2), section(3, 1, 0)],
+  },
+
+  // ── Столы ────────────────────────────────────────────────────────────────
+  // Стол-тумба: боковины стоят на полу, сверху крышка. Отдельных ножек и
+  // столешницы конструктор пока не делает — это честная граница.
+  {
+    id: 'desk-1200',
+    name: 'Стол письменный 1200',
+    category: 'desk',
+    description: 'Открытый стол-тумба: боковины и крышка, без ящиков.',
+    height: 750, width: 1200, depth: 600,
+    range: { height: { min: 700, max: 800 }, width: { min: 800, max: 1800 }, depth: { min: 450, max: 800 } },
+    construction: 'topBottomOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [section(1, 0, 0)],
+  },
+  {
+    id: 'desk-drawers-1400',
+    name: 'Стол с тумбой 1400',
+    category: 'desk',
+    description: 'Слева ноги-открыто, справа тумба с 3 ящиками.',
+    height: 750, width: 1400, depth: 600,
+    range: { height: { min: 700, max: 800 }, width: { min: 1000, max: 2000 }, depth: { min: 450, max: 800 } },
+    construction: 'topBottomOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [
+      { id: 's1', widthMode: 'flex', contents: [{ kind: 'empty' }], fronts: null },
+      { ...drawerSection(2, 3), widthMode: 'fixed' as const, width: 400 },
+    ],
+  },
+  {
+    id: 'desk-computer-1000',
+    name: 'Стол компьютерный 1000',
+    category: 'desk',
+    description: 'Узкий стол с одной полкой в правой секции.',
+    height: 750, width: 1000, depth: 550,
+    range: { height: { min: 700, max: 800 }, width: { min: 700, max: 1600 }, depth: { min: 450, max: 700 } },
+    construction: 'topBottomOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [
+      { id: 's1', widthMode: 'flex', contents: [{ kind: 'empty' }], fronts: null },
+      { id: 's2', widthMode: 'fixed', width: 350, contents: shelves(1), fronts: null },
+    ],
+  },
+
   // ── Хранение ─────────────────────────────────────────────────────────────
+  {
+    id: 'chest-800',
+    name: 'Комод 800',
+    category: 'storage',
+    description: '4 ящика во всю ширину.',
+    height: 850, width: 800, depth: 450,
+    range: { height: { min: 500, max: 1300 }, width: { min: 400, max: 1200 }, depth: { min: 350, max: 600 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [drawerSection(1, 4)],
+  },
+  {
+    id: 'chest-wide-1200',
+    name: 'Комод широкий 1200',
+    category: 'storage',
+    description: 'Две секции по 3 ящика — фасады уже, ящики ходят легче.',
+    height: 850, width: 1200, depth: 450,
+    range: { height: { min: 500, max: 1300 }, width: { min: 800, max: 1800 }, depth: { min: 350, max: 600 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [drawerSection(1, 3), drawerSection(2, 3)],
+  },
+  {
+    id: 'bedside-drawers-450',
+    name: 'Тумба прикроватная с ящиками',
+    category: 'storage',
+    description: '2 ящика вместо фасада.',
+    height: 500, width: 450, depth: 400,
+    range: { height: { min: 350, max: 800 }, width: { min: 300, max: 700 }, depth: { min: 300, max: 550 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [drawerSection(1, 2)],
+  },
+  {
+    id: 'bathroom-600',
+    name: 'Шкаф в ванную 600',
+    category: 'storage',
+    description: 'Неглубокий белый корпус, 2 полки, 2 фасада.',
+    height: 800, width: 600, depth: 250,
+    range: { height: { min: 400, max: 1600 }, width: { min: 300, max: 900 }, depth: { min: 200, max: 400 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    carcassMaterialId: LDSP_WHITE, frontMaterialId: LDSP_WHITE, backMaterialId: HDF_WHITE,
+    sections: [section(1, 2, 2)],
+  },
   {
     id: 'shelving-open-800',
     name: 'Стеллаж открытый 800',

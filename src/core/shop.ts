@@ -224,6 +224,9 @@ const SettingsOverrideSchema = z.object({
   minBandSubtract: z.number().nonnegative(),
   confirmatSpanForThird: z.number().int().positive(),
   shelfPinDatum: z.number().int().nonnegative(),
+  drawerRunnerGap: z.number().int().nonnegative(),
+  drawerBackGap: z.number().int().nonnegative(),
+  drawerBoxDrop: z.number().int().nonnegative(),
 }).partial()
 
 const LabourRatesSchema = z.object({

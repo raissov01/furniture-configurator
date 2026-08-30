@@ -20,6 +20,9 @@ const FILL: Record<string, string> = {
   shelf: '#e8d089',
   divider: '#bd9520',
   back: '#efe3c4',
+  drawerSide: '#d6c48c',
+  drawerBack: '#d6c48c',
+  drawerBottom: '#efe3c4',
   front: '#b8862a',
 }
 
@@ -59,7 +62,7 @@ export function CabinetThumb({
       })
     }
     // Артқы қабырға → корпус → фасад ретімен салынады: соңғысы үстінде тұрады.
-    const order = ['back', 'side', 'top', 'bottom', 'divider', 'shelf', 'front']
+    const order = ['back', 'side', 'top', 'bottom', 'divider', 'shelf', 'drawerBottom', 'drawerSide', 'drawerBack', 'front']
     const depth = (role: string) => {
       const i = order.indexOf(role)
       return i === -1 ? order.length : i

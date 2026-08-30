@@ -85,9 +85,11 @@ export function countHardware(panels: Panel[]): Map<string, number> {
   let confirmats = 0
   let hinges = 0
   let shelves = 0
+  let drawerSides = 0
 
   for (const p of panels) {
     if (p.role === 'shelf') shelves += 1
+    if (p.role === 'drawerSide') drawerSides += 1
     for (const d of p.drilling) {
       if (d.purpose === 'confirmat' && d.diameter === CONFIRMAT_EDGE_DIAMETER) confirmats += 1
       if (d.purpose === 'hinge' && d.diameter === HINGE_CUP_DIAMETER) hinges += 1
@@ -103,6 +105,9 @@ export function countHardware(panels: Panel[]): Map<string, number> {
     add('hinge-plate', hinges)
   }
   if (shelves > 0) add('shelf-pin-5', shelves * 4)
+  // Бір ящикте екі бүйір, ал направляющая ЖҰП болып сатылады: сондықтан
+  // жиынтық саны = ящик саны, бүйір саны емес.
+  if (drawerSides > 0) add('runner-roller-400', drawerSides / 2)
 
   return counts
 }

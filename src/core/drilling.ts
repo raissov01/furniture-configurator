@@ -12,6 +12,7 @@ import {
   HINGE_COUNT_BY_HEIGHT, HINGE_CUP_DEPTH, HINGE_CUP_DIAMETER, HINGE_CUP_FROM_EDGE,
   HINGE_END_OFFSET, HINGE_PLATE_DEPTH, HINGE_PLATE_DIAMETER,
   HINGE_PLATE_FROM_FRONT, HINGE_PLATE_HOLE_SPACING,
+  RUNNER_FIRST_HOLE_OFFSET, RUNNER_SCREW_DEPTH, RUNNER_SCREW_DIAMETER,
   SHELF_PIN_BACK_OFFSET, SHELF_PIN_DEPTH, SHELF_PIN_DIAMETER, SHELF_PIN_FRONT_OFFSET,
   SHELF_PIN_GROUP, SHELF_PIN_PITCH,
 } from './constants'
@@ -224,5 +225,37 @@ export function hingeHoles(
         HINGE_PLATE_DIAMETER, HINGE_PLATE_DEPTH, 'hinge', ctx,
       )
     }
+  }
+}
+
+// ── Направляющая (ящик) ──────────────────────────────────────────────────────
+
+/**
+ * Ящиктің направляющаясы бекітілетін тесіктер: тік панельдің ІШКІ бетінде,
+ * қораптың астыңғы деңгейінде, алдыңғы жиектен 37 мм-ден бастап.
+ *
+ * Роликті направляющаның корпустық жартысы қорап ТҮБІНІҢ деңгейінде тұрады —
+ * сондықтан биіктік қораптың астынан алынады, фасадтан емес.
+ */
+export function runnerHoles(
+  verticalPanel: Panel,
+  boxBottomWorldY: number,
+  boxFrontWorldZ: number,
+  boxDepth: number,
+  ctx: Ctx,
+): void {
+  // Екі бекіту нүктесі: алдында және артында. Ортаңғысы қысқа
+  // направляющада болмайды, сондықтан екеуімен шектелеміз.
+  const columns = [
+    boxFrontWorldZ + RUNNER_FIRST_HOLE_OFFSET,
+    boxFrontWorldZ + boxDepth - RUNNER_FIRST_HOLE_OFFSET,
+  ]
+  for (const worldZ of columns) {
+    pushFace(
+      verticalPanel, 'inner',
+      localX(verticalPanel, boxBottomWorldY),
+      localY(verticalPanel, worldZ),
+      RUNNER_SCREW_DIAMETER, RUNNER_SCREW_DEPTH, 'runner', ctx,
+    )
   }
 }

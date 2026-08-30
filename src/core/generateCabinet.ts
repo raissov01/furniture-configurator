@@ -7,18 +7,20 @@
 
 import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
-import { confirmatJoint, hingeHoles, shelfPinHoles } from './drilling'
+import { confirmatJoint, hingeHoles, runnerHoles, shelfPinHoles } from './drilling'
 import { calculateCutDimensions, resolveEdges, subtractedThickness } from './edges'
 import { ConfigValidationError } from './errors'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
-  Orientation, Panel, PanelRole, Section, SettingsOverride,
+  Orientation, Panel, PanelRole, Section, SectionContent, SettingsOverride,
 } from './types'
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
 const MIN_DIMENSION = 100
+/** Ящик қорабының ең аз биіктігі. Бұл — ақылға қонымды еден, цех ережесі емес. */
+const MIN_DRAWER_BOX_HEIGHT = 60
 /** Ең үлкен габарит: бір парақтан ұзын. Бөлу (A2) кейінгі кезеңде. */
 const MAX_DIMENSION = 4000
 /** Фасад бұдан тар болса — ілгек орнатылмайды. */
@@ -159,27 +161,26 @@ export function generateCabinet(
     i === layouts.length - 1 ? sideRight : dividers[i]!,
   ]
 
-  // ── Секция ішіндегі сөрелер (§4.6) ─────────────────────────────────────────
+  // Накладной фасадтың ұясы: ол боковина/перегородканы жабады. Ящик фасады
+  // да сол ұяны алады — әйтпесе ілмелі фасадпен бір қатарда тұрмайды.
+  const slots = frontSlots(dividerPositions, W, t)
+
+  // ── Секция ішіндегі толтырылым: тік жолақтар (D1) ──────────────────────────
+  //
+  // Секцияның ішкі биіктігі жолақтарға бөлінеді: [0] АСТЫҢҒЫ. Жолақтар
+  // арасында бекітілген сөре тұрады — нақты жиһазда ящиктің үстіндегі сөре сол.
   const shelves: { shelf: Panel; sectionIndex: number; kind: 'adjustable' | 'fixed' }[] = []
+  /** Секцияға ілмелі фасад қай биіктіктен басталады (ящик жолағының үстінен). */
+  const hingedFrontFrom: number[] = layouts.map(() => t)
+  const drawerRuns: {
+    sectionIndex: number
+    boxBottomY: number
+    boxFrontZ: number
+    boxDepth: number
+  }[] = []
+
   layouts.forEach((layout, sectionIndex) => {
     const { section } = layout
-    if (section.contents.length > 1) {
-      throw new ConfigValidationError(
-        `sections[${sectionIndex}].contents`,
-        `${section.contents.length} элемент`,
-        'M2-де 0 немесе 1 (тік қабаттау — D1)',
-      )
-    }
-    const content = section.contents[0]
-    if (!content || content.kind !== 'shelves' || content.count === 0) return
-
-    if (!Number.isInteger(content.count) || content.count < 0 || content.count > 20) {
-      throw new ConfigValidationError(
-        `sections[${sectionIndex}].contents[0].count`, `${content.count}`, '0..20 бүтін сан',
-      )
-    }
-
-    const shelfLength = layout.width - settings.shelfGap
     if (shelfDepth < MIN_DIMENSION) {
       throw new ConfigValidationError(
         'settings.shelfSetback',
@@ -188,26 +189,74 @@ export function generateCabinet(
       )
     }
 
-    // Ішкі саңылау: сөрелер соны тең бөледі. Қалдық миллиметр АСТЫҢҒЫ
-    // бөліктерден бастап таратылады — көз деңгейінен төмен жер аз көрінеді.
-    const openings = distributeMillimetres(innerHeight - content.count * t, content.count + 1)
-    const note = content.shelfKind === 'fixed'
-      ? 'Фиксированная, конфирмат'
-      : 'На полкодержателях, шаг 32 мм'
+    const bands = layoutBands(section.contents, innerHeight, t, sectionIndex)
+    // Бір ғана жолақ болса, id-лер БҰРЫНҒЫДАЙ қалады: сақталған жобалар мен
+    // экспорт файлдарындағы сілтемелер сынбауы керек.
+    const bandTag = (index: number) => (bands.length > 1 ? `-b${index + 1}` : '')
 
-    let y = t
-    for (let i = 0; i < content.count; i += 1) {
-      y += openings[i] ?? 0
-      const shelf = make(
-        `${section.id}-shelf-${i + 1}`, 'shelf', 'Полка', carcass,
-        shelfLength, shelfDepth,
-        { x: layout.x + Math.floor(settings.shelfGap / 2), y, z: settings.shelfSetback },
-        ORIENT_HORIZONTAL, note,
+    // Жолақтардың арасындағы бекітілген сөре (разделитель).
+    for (let i = 0; i < bands.length - 1; i += 1) {
+      const band = bands[i]!
+      const divider = make(
+        `${section.id}-band-${i + 1}-divider`, 'shelf', 'Полка', carcass,
+        layout.width - settings.shelfGap, shelfDepth,
+        { x: layout.x + Math.floor(settings.shelfGap / 2), y: band.y + band.height, z: settings.shelfSetback },
+        ORIENT_HORIZONTAL, 'Разделитель, фиксированная',
       )
-      panels.push(shelf)
-      shelves.push({ shelf, sectionIndex, kind: content.shelfKind })
-      y += t
+      panels.push(divider)
+      shelves.push({ shelf: divider, sectionIndex, kind: 'fixed' })
     }
+
+    bands.forEach((band, bandIndex) => {
+      const content = band.content
+
+      if (content.kind === 'shelves' && content.count > 0) {
+        if (!Number.isInteger(content.count) || content.count < 0 || content.count > 20) {
+          throw new ConfigValidationError(
+            `sections[${sectionIndex}].contents[${bandIndex}].count`, `${content.count}`, '0..20 бүтін сан',
+          )
+        }
+        // Ішкі саңылау: сөрелер соны тең бөледі. Қалдық миллиметр АСТЫҢҒЫ
+        // бөліктерден бастап таратылады — көз деңгейінен төмен жер аз көрінеді.
+        const openings = distributeMillimetres(band.height - content.count * t, content.count + 1)
+        const note = content.shelfKind === 'fixed'
+          ? 'Фиксированная, конфирмат'
+          : 'На полкодержателях, шаг 32 мм'
+
+        let y = band.y
+        for (let i = 0; i < content.count; i += 1) {
+          y += openings[i] ?? 0
+          const shelf = make(
+            `${section.id}${bandTag(bandIndex)}-shelf-${i + 1}`, 'shelf', 'Полка', carcass,
+            layout.width - settings.shelfGap, shelfDepth,
+            { x: layout.x + Math.floor(settings.shelfGap / 2), y, z: settings.shelfSetback },
+            ORIENT_HORIZONTAL, note,
+          )
+          panels.push(shelf)
+          shelves.push({ shelf, sectionIndex, kind: content.shelfKind })
+          y += t
+        }
+        return
+      }
+
+      if (content.kind === 'drawers') {
+        const created = makeDrawers({
+          section, sectionIndex, bandIndex, band, layout,
+          slot: slots[sectionIndex] ?? { x: layout.x, width: layout.width },
+          settings, carcass, frontMat, backMat, shelfDepth, make,
+        })
+        panels.push(...created.panels)
+        for (const run of created.runs) {
+          drawerRuns.push({ ...run, sectionIndex })
+        }
+        // Ілмелі фасад ящиктердің ҮСТІНЕН басталады: әйтпесе екеуі бір
+        // жерді жауып, бірінің үстіне бірі шығады.
+        hingedFrontFrom[sectionIndex] = Math.max(
+          hingedFrontFrom[sectionIndex] ?? t,
+          band.y + band.height + t,
+        )
+      }
+    })
   })
 
   // ── Артқы қабырға (§4.5) ───────────────────────────────────────────────────
@@ -233,7 +282,6 @@ export function generateCabinet(
   }
 
   // ── Фасадтар (§4.7) ────────────────────────────────────────────────────────
-  const slots = frontSlots(dividerPositions, W, t)
   const frontGroups: { fronts: Panel[]; sectionIndex: number }[] = []
   layouts.forEach((layout, sectionIndex) => {
     const fronts = layout.section.fronts
@@ -246,9 +294,16 @@ export function generateCabinet(
       ? { x: layout.x, width: layout.width }
       : slots[sectionIndex] ?? { x: layout.x, width: layout.width }
 
+    // Секцияда ящик болса, ілмелі фасад солардың ҮСТІНЕН басталады —
+    // әйтпесе екі фасад бір жерді жауып, бірінің үстіне бірі шығады.
+    const from = hingedFrontFrom[sectionIndex] ?? t
+    const stacked = from > t
+    const originY = stacked ? from : (inset ? t : 0)
+    const spanY = stacked ? (inset ? H - t - from : H - from) : (inset ? innerHeight : H)
+
     const created = makeFronts(
       layout.section, sectionIndex, fronts, slot,
-      inset ? innerHeight : H, inset ? t : 0,
+      spanY, originY,
       inset ? 0 : -frontMat.thickness,
       frontMat, settings, make,
     )
@@ -308,6 +363,13 @@ export function generateCabinet(
       shelfPinHoles(left, shelf, t, ctx)
       shelfPinHoles(right, shelf, t, ctx)
     }
+  }
+
+  // Направляющая: ящиктің екі жағындағы тік панельге
+  for (const run of drawerRuns) {
+    const [left, right] = boundsOf(run.sectionIndex)
+    runnerHoles(left, run.boxBottomY, run.boxFrontZ, run.boxDepth, ctx)
+    runnerHoles(right, run.boxBottomY, run.boxFrontZ, run.boxDepth, ctx)
   }
 
   // Ілгектер: шеткі фасадтар секцияның тік панеліне ілінеді.
@@ -395,4 +457,184 @@ function validateDimension(value: number, field: string): void {
   if (value < MIN_DIMENSION || value > MAX_DIMENSION) {
     throw new ConfigValidationError(field, `${value} мм`, `${MIN_DIMENSION}..${MAX_DIMENSION} мм`)
   }
+}
+
+// ── Тік жолақтар мен ящиктер (D1) ────────────────────────────────────────────
+
+type Band = { content: SectionContent; y: number; height: number }
+
+/**
+ * Секцияның ішкі биіктігін жолақтарға бөлу.
+ *
+ * `height` берілген жолақ дәл сонша алады, қалғандары қалған биіктікті тең
+ * бөліседі. Жолақтар арасында бекітілген сөре тұрады — оның қалыңдығы да
+ * есептен шығарылады, әйтпесе ішкі өлшемдер бір сөре қалыңдығына жылжып кетеді.
+ */
+export function layoutBands(
+  contents: SectionContent[],
+  innerHeight: number,
+  thickness: number,
+  sectionIndex: number,
+): Band[] {
+  const list: SectionContent[] = contents.length > 0 ? contents : [{ kind: 'empty' }]
+  const free = innerHeight - (list.length - 1) * thickness
+  if (free < MIN_DIMENSION) {
+    throw new ConfigValidationError(
+      `sections[${sectionIndex}].contents`,
+      `${list.length} полос(ы) в высоте ${innerHeight} мм`,
+      `на полосы остаётся ≥ ${MIN_DIMENSION} мм`,
+    )
+  }
+
+  const fixedTotal = list.reduce((sum, c) => sum + (c.height ?? 0), 0)
+  const flexIndexes = list.map((c, i) => (c.height === undefined ? i : -1)).filter((i) => i >= 0)
+
+  if (fixedTotal > free || (flexIndexes.length === 0 && fixedTotal !== free)) {
+    throw new ConfigValidationError(
+      `sections[${sectionIndex}].contents`,
+      `заданные высоты полос дают ${fixedTotal} мм`,
+      `доступно ${free} мм`,
+    )
+  }
+
+  const heights = list.map((c) => c.height ?? 0)
+  if (flexIndexes.length > 0) {
+    const shares = distributeMillimetres(free - fixedTotal, flexIndexes.length)
+    flexIndexes.forEach((index, k) => {
+      heights[index] = shares[k] ?? 0
+    })
+  }
+
+  const out: Band[] = []
+  let y = thickness
+  list.forEach((content, i) => {
+    out.push({ content, y, height: heights[i] ?? 0 })
+    y += (heights[i] ?? 0) + thickness
+  })
+  return out
+}
+
+/**
+ * Бір жолақтағы ящиктер: сыртқы фасад + қорап (2 бүйір, алды, арты, түбі).
+ *
+ * ⚠ Қораптың өлшемі ЦЕХТЫҢ направляющаясына байланысты (`drawerRunnerGap`,
+ * `drawerBackGap`, `drawerBoxDrop`). Олар профильде түзетіледі.
+ */
+function makeDrawers(input: {
+  section: Section
+  sectionIndex: number
+  bandIndex: number
+  band: Band
+  layout: { x: number; width: number }
+  /** Накладной фасадтың ұясы (корпустың жиегін жабады) */
+  slot: { x: number; width: number }
+  settings: ConstructionSettings
+  carcass: Material
+  frontMat: Material
+  backMat: Material
+  shelfDepth: number
+  make: MakePanel
+}): { panels: Panel[]; runs: { boxBottomY: number; boxFrontZ: number; boxDepth: number }[] } {
+  const { section, sectionIndex, bandIndex, band, layout, slot, settings, carcass, frontMat, backMat, shelfDepth, make } = input
+  const content = band.content
+  if (content.kind !== 'drawers') return { panels: [], runs: [] }
+
+  const n = content.count
+  if (!Number.isInteger(n) || n < 1 || n > 8) {
+    throw new ConfigValidationError(
+      `sections[${sectionIndex}].contents[${bandIndex}].count`, `${n}`, '1..8 бүтін сан',
+    )
+  }
+
+  const gap = settings.frontGap
+  const t = carcass.thickness
+  // Фасадтар жолақты тең бөледі. Биіктік бүтінге ТӨМЕН дөңгеленеді — бір
+  // жолақтағы фасадтар әрқашан бірдей болуы керек.
+  const frontHeight = Math.floor((band.height - (n + 1) * gap) / n)
+  if (frontHeight < MIN_DIMENSION) {
+    throw new ConfigValidationError(
+      `sections[${sectionIndex}].contents[${bandIndex}].count`,
+      `${n} ящика дают фасад высотой ${frontHeight} мм`,
+      `высота фасада ≥ ${MIN_DIMENSION} мм`,
+    )
+  }
+  const gaps = distributeMillimetres(band.height - n * frontHeight, n + 1)
+
+  const boxWidth = layout.width - 2 * settings.drawerRunnerGap
+  const boxDepth = shelfDepth - settings.drawerBackGap
+  const boxHeight = frontHeight - settings.drawerBoxDrop
+  // Қораптың БИІКТІГІНЕ бөлек еден: 60–80 мм ұсақ заттарға арналған ящик —
+  // қалыпты нәрсе, ал ені мен тереңдігі 100 мм-ден кем болса, ол ящик емес.
+  if (boxWidth < MIN_DIMENSION || boxDepth < MIN_DIMENSION || boxHeight < MIN_DRAWER_BOX_HEIGHT) {
+    throw new ConfigValidationError(
+      `sections[${sectionIndex}].contents[${bandIndex}]`,
+      `короб получается ${boxHeight}×${boxWidth}×${boxDepth} мм`,
+      'каждая сторона ≥ 100 мм — проверьте зазоры ящика в профиле цеха',
+    )
+  }
+  /** Алды мен арты бүйірлердің АРАСЫНА кіреді. */
+  const wallLength = boxWidth - 2 * t
+
+  const panels: Panel[] = []
+  const runs: { boxBottomY: number; boxFrontZ: number; boxDepth: number }[] = []
+  let y = band.y
+
+  for (let i = 0; i < n; i += 1) {
+    y += gaps[i] ?? 0
+    const id = `${section.id}-b${bandIndex + 1}-drawer-${i + 1}`
+
+    // Фасад: накладной, корпустың алдында.
+    const front = make(
+      `${id}-front`, 'front', 'Фасад ящика', frontMat,
+      frontHeight, slot.width - 2 * gap,
+      { x: slot.x + gap, y, z: -frontMat.thickness }, ORIENT_FACING, 'Фасад ящика, накладной',
+    )
+    panels.push(front)
+
+    const boxX = layout.x + settings.drawerRunnerGap
+    const boxY = y + settings.drawerBoxDrop / 2
+
+    for (const [side, offsetX] of [['левая', 0], ['правая', boxWidth - t]] as const) {
+      panels.push(
+        make(
+          `${id}-side-${side === 'левая' ? 'l' : 'r'}`, 'drawerSide', 'Боковина ящика', carcass,
+          // ORIENT_SIDE: ұзындық Y (биіктік), ені Z (тереңдік) — корпустың
+          // боковинасындағы келісіммен бірдей.
+          boxHeight, boxDepth,
+          { x: boxX + offsetX, y: boxY, z: settings.shelfSetback }, ORIENT_SIDE,
+          'Короб ящика',
+        ),
+      )
+    }
+
+    for (const [wall, z] of [['front', settings.shelfSetback], ['back', settings.shelfSetback + boxDepth - t]] as const) {
+      panels.push(
+        make(
+          // `-wall-` міндетті: фасадтың id-і `${id}-front`, ал ол екеуі бір
+          // болса, DXF архивінде файл бірін-бірі басып кетеді.
+          `${id}-wall-${wall}`, 'drawerBack',
+          wall === 'front' ? 'Передняя стенка ящика' : 'Задняя стенка ящика', carcass,
+          // ORIENT_FACING: ұзындық Y (биіктік), ені X.
+          boxHeight, wallLength,
+          { x: boxX + t, y: boxY, z }, ORIENT_FACING, 'Короб ящика',
+        ),
+      )
+    }
+
+    // Түбі ХДФ, қораптың астынан қағылады.
+    panels.push(
+      make(
+        `${id}-bottom`, 'drawerBottom', 'Дно ящика', backMat,
+        // ORIENT_HORIZONTAL: ұзындық X (ен), ені Z (тереңдік).
+        boxWidth, boxDepth,
+        { x: boxX, y: boxY - backMat.thickness, z: settings.shelfSetback }, ORIENT_HORIZONTAL,
+        'Дно ящика, ХДФ',
+      ),
+    )
+
+    runs.push({ boxBottomY: boxY, boxFrontZ: settings.shelfSetback, boxDepth })
+    y += frontHeight
+  }
+
+  return { panels, runs }
 }
