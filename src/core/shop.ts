@@ -26,8 +26,18 @@ export type HardwareItem = {
   pricePerUnit: number
 }
 
+/** Жұмыс ақысы. Бәрі ТИЫНМЕН. Цех өз мөлшерлемесін өзі қояды. */
+export type LabourRates = {
+  /** Панель ауданының бір м²-і үшін (кесу + өңдеу) */
+  perSquareMetre: number
+  /** Бір бұрғылау тесігі үшін (присадка) */
+  perHole: number
+  /** Кромканың бір метрі үшін */
+  perEdgeMetre: number
+}
+
 export type ShopProfile = {
-  schemaVersion: 1
+  schemaVersion: 2
   id: string
   /** КП-да тұратын атау */
   name: string
@@ -40,6 +50,9 @@ export type ShopProfile = {
   materials: Material[]
   edgeBands: EdgeBand[]
   hardware: HardwareItem[]
+  labour: LabourRates
+  /** Үстеме пайыз. КП-дағы соңғы сан осымен көбейеді. */
+  markupPercent: number
 
   /**
    * ЛДСП сөренің шекті пролёті, мм. `null` — тексеру ӨШІРУЛІ.
@@ -76,7 +89,7 @@ export function defaultHardware(): HardwareItem[] {
  */
 export function defaultShopProfile(id = 'shop-1'): ShopProfile {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id,
     name: '',
     city: '',
@@ -85,6 +98,8 @@ export function defaultShopProfile(id = 'shop-1'): ShopProfile {
     materials: SEED_MATERIALS.map((m) => ({ ...m })),
     edgeBands: SEED_EDGE_BANDS.map((b) => ({ ...b })),
     hardware: defaultHardware(),
+    labour: { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 },
+    markupPercent: 0,
     maxShelfSpan: null,
   }
 }
@@ -207,8 +222,14 @@ const SettingsOverrideSchema = z.object({
   shelfPinDatum: z.number().int().nonnegative(),
 }).partial()
 
+const LabourRatesSchema = z.object({
+  perSquareMetre: minorUnits,
+  perHole: minorUnits,
+  perEdgeMetre: minorUnits,
+})
+
 export const ShopProfileSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(2),
   id: z.string().min(1),
   name: z.string(),
   city: z.string(),
@@ -217,10 +238,25 @@ export const ShopProfileSchema = z.object({
   materials: z.array(MaterialSchema).min(1),
   edgeBands: z.array(EdgeBandSchema),
   hardware: z.array(HardwareItemSchema),
+  labour: LabourRatesSchema,
+  markupPercent: z.number().int().min(0).max(1000),
   maxShelfSpan: z.number().int().positive().nullable(),
 })
 
-/** Сақталған профильді оқу. Пішіні бұзылса — түсінікті қате. */
+/**
+ * Сақталған профильді оқу. Ескі нұсқа жаңасына КӨТЕРІЛЕДІ — цех бір рет
+ * толтырған бағалары нұсқа ауысқанда жоғалмауы керек (§7).
+ */
 export function parseShopProfile(raw: unknown): ShopProfile {
-  return ShopProfileSchema.parse(raw) as ShopProfile
+  const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion
+  const migrated =
+    version === 1
+      ? {
+          ...(raw as object),
+          schemaVersion: 2,
+          labour: { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 },
+          markupPercent: 0,
+        }
+      : raw
+  return ShopProfileSchema.parse(migrated) as ShopProfile
 }

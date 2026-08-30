@@ -169,6 +169,26 @@ export function ShopSettings() {
               <Rule label="Первое отверстие полкодержателя" k="shelfPinDatum" shop={shop} onChange={setRule} />
             </div>
 
+            <SectionTitle>Работа и наценка</SectionTitle>
+            <div className="grid gap-2 sm:grid-cols-4">
+              <Field label="Раскрой, ₸ за м²">
+                <NumberInput value={toTenge(shop.labour.perSquareMetre)} min={0} step={100}
+                  onChange={(v) => editShop({ labour: { ...shop.labour, perSquareMetre: toMinor(v) } })} />
+              </Field>
+              <Field label="Присадка, ₸ за отверстие">
+                <NumberInput value={toTenge(shop.labour.perHole)} min={0} step={5}
+                  onChange={(v) => editShop({ labour: { ...shop.labour, perHole: toMinor(v) } })} />
+              </Field>
+              <Field label="Кромление, ₸ за метр">
+                <NumberInput value={toTenge(shop.labour.perEdgeMetre)} min={0} step={10}
+                  onChange={(v) => editShop({ labour: { ...shop.labour, perEdgeMetre: toMinor(v) } })} />
+              </Field>
+              <Field label="Наценка, %">
+                <NumberInput value={shop.markupPercent} min={0} max={1000} step={1}
+                  onChange={(v) => editShop({ markupPercent: v })} />
+              </Field>
+            </div>
+
             <SectionTitle>Предел прогиба полки</SectionTitle>
             <div className="flex flex-wrap items-end gap-3">
               <Field label="Максимальный пролёт полки, мм" hint={shop.maxShelfSpan === null ? 'выключено' : undefined}>

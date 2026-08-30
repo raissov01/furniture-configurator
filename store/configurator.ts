@@ -50,6 +50,7 @@ type State = Snapshot & {
   shop: ShopProfile
   catalog: Catalog
   shopOpen: boolean
+  quoteOpen: boolean
   /** Соңғы жүктелген шаблон. Габарит аралығын UI осыдан алады. */
   templateId: string
   /** Жоспарда таңдалған қабырға — жаңа шкаф соған қойылады. */
@@ -83,6 +84,7 @@ type State = Snapshot & {
   editShop(patch: Partial<ShopProfile>): void
   hydrateShop(): void
   setShopOpen(v: boolean): void
+  setQuoteOpen(v: boolean): void
 
   editRoom(patch: Partial<Room>): void
   setSelectedWall(wall: WallId): void
@@ -126,6 +128,7 @@ export const useConfigurator = create<State>((set, get) => ({
   shop: defaultShop,
   catalog: catalogOf(defaultShop),
   shopOpen: false,
+  quoteOpen: false,
   templateId: defaultTemplateId,
   selectedWall: 'south',
 
@@ -251,6 +254,7 @@ export const useConfigurator = create<State>((set, get) => ({
   },
 
   setShopOpen: (shopOpen) => set({ shopOpen }),
+  setQuoteOpen: (quoteOpen) => set({ quoteOpen }),
 
   editRoom(patch) {
     const s = get()

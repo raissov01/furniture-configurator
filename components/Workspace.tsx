@@ -8,6 +8,7 @@ import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
 import { RoomPlan } from '@/components/RoomPlan'
 import { ShopSettings } from '@/components/ShopSettings'
+import { QuoteView } from '@/components/QuoteView'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { usePanels } from '@/lib/usePanels'
@@ -55,6 +56,7 @@ export function Workspace() {
   const shop = useConfigurator((s) => s.shop)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
   const hydrateShop = useConfigurator((s) => s.hydrateShop)
+  const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
   const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
@@ -70,6 +72,9 @@ export function Workspace() {
 
   // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
   const spanWarnings = useMemo(() => shelfSpanWarnings(panels, shop), [panels, shop])
+
+  // Смета БҮКІЛ жоба бойынша: цех парақты бір тапсырысқа бірге сатып алады.
+  const projectPanels = useMemo(() => items.flatMap((i) => i.panels), [items])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -88,6 +93,7 @@ export function Workspace() {
       <AiPanel />
       <RoomPlan />
       <ShopSettings />
+      <QuoteView panels={projectPanels} />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <h1 className="text-sm font-semibold">
           {cabinet.name}
@@ -101,6 +107,7 @@ export function Workspace() {
           <Button onClick={() => setAiOpen(true)} title="Описать задачу словами">Техзадание</Button>
           <Button onClick={() => setRoomOpen(true)} title="План комнаты и стены">Стены</Button>
           <Button onClick={() => setShopOpen(true)} title="Материалы, цены и правила цеха">Цех</Button>
+          <Button onClick={() => setQuoteOpen(true)} title="Раскрой и стоимость по всему проекту">Смета</Button>
           <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
           <Button onClick={reset}>Сброс</Button>
