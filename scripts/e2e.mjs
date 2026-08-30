@@ -235,6 +235,41 @@ async function run() {
     check(/корпусов: [2-9]/.test(body), `бірнеше корпус жүктелді (${body.match(/корпусов: \d+/)?.[0] ?? '—'})`)
   })
 
+  await test('Нарисовать: перегородка, ящики, штанга', async () => {
+    await h.goto('/configurator', 11000)
+    check(await h.clickText('Нарисовать', 1200), 'эскиз ашылды')
+
+    const rect = await h.evaluate(`(() => {
+      const s = document.querySelector('svg[aria-label="Эскиз корпуса"]')
+      if (!s) return null
+      const r = s.getBoundingClientRect()
+      return JSON.stringify({ x: r.x, y: r.y, w: r.width, h: r.height })
+    })()`)
+    check(rect, 'сурет салынды')
+    if (!rect) return
+    const box = JSON.parse(rect)
+    const at = async (fx, fy) => {
+      const x = box.x + box.w * fx
+      const y = box.y + box.h * fy
+      await session.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 })
+      await session.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 })
+      await h.wait(700)
+    }
+    const sections = () => h.evaluate(`(document.body.innerText.match(/Секции \\((\\d+)\\)/i) || [])[1]`)
+
+    const before = await sections()
+    await h.clickText('Перегородка', 500)
+    await at(0.5, 0.5)
+    const after = await sections()
+    check(Number(after) === Number(before) + 1, `перегородка қосылды: ${before} → ${after}`)
+
+    await h.clickText('Ящики', 500)
+    await at(0.75, 0.7)
+    await h.clickText('Закрыть', 900)
+    const rows = await h.cutListRows()
+    check(rows.some((r) => r[0].includes('ящика')), 'деталировкада ящик пайда болды')
+  })
+
   await test('Смета: раскрой мен баға', async () => {
     check(await h.clickText('Смета', 3000), 'смета ашылды')
     const body = await h.text()

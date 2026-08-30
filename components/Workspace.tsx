@@ -11,6 +11,7 @@ import { RoomPlan } from '@/components/RoomPlan'
 import { ShopSettings } from '@/components/ShopSettings'
 import { ProjectMenu } from '@/components/ProjectMenu'
 import { QuoteView } from '@/components/QuoteView'
+import { SketchEditor } from '@/components/SketchEditor'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { usePanels } from '@/lib/usePanels'
@@ -61,6 +62,7 @@ export function Workspace() {
   const hydrateProject = useConfigurator((s) => s.hydrateProject)
   const saveProjectLocally = useConfigurator((s) => s.saveProjectLocally)
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
+  const setSketchOpen = useConfigurator((s) => s.setSketchOpen)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
   const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
@@ -114,6 +116,7 @@ export function Workspace() {
       <AiPanel />
       <RoomPlan />
       <ShopSettings />
+      <SketchEditor />
       <QuoteView panels={projectPanels} hardware={projectHardware} projectName={projectName} />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <Link
@@ -138,6 +141,7 @@ export function Workspace() {
         <div className="flex items-center gap-1">
           <Button onClick={() => setGalleryOpen(true)} title="Готовые шаблоны">Шаблоны</Button>
           <Button onClick={() => setAiOpen(true)} title="Описать задачу словами">Техзадание</Button>
+          <Button onClick={() => setSketchOpen(true)} title="Нарисовать корпус мышью">Нарисовать</Button>
           <Button onClick={() => setRoomOpen(true)} title="План комнаты и стены">Стены</Button>
           <Button onClick={() => setShopOpen(true)} title="Материалы, цены и правила цеха">Цех</Button>
           <Button onClick={() => setQuoteOpen(true)} title="Раскрой и стоимость по всему проекту">Смета</Button>
