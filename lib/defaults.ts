@@ -1,5 +1,11 @@
-import { SEED_CATALOG, findTemplate, templateToCabinet } from '@/src/core/index'
-import type { CabinetConfig, Catalog } from '@/src/core/index'
+import { SEED_CATALOG, catalogOf, defaultShopProfile, findTemplate, templateToCabinet } from '@/src/core/index'
+import type { CabinetConfig, Catalog, ShopProfile } from '@/src/core/index'
+
+/**
+ * Каталог енді ЦЕХТЫҢ профилінен келеді — код бір цехтың материалын да,
+ * бағасын да білмейді. Мұндағы `catalog` тек бастапқы жүктеу үшін.
+ */
+export const defaultShop: ShopProfile = defaultShopProfile()
 
 export const catalog: Catalog = SEED_CATALOG
 
@@ -12,10 +18,7 @@ export const defaultTemplateId = 'wardrobe-penal-600'
  * қалпында қалды.
  */
 export const defaultCabinet: CabinetConfig = {
-  ...templateToCabinet(findTemplate(defaultTemplateId)!, catalog),
+  ...templateToCabinet(findTemplate(defaultTemplateId)!, catalogOf(defaultShop)),
   id: 'cabinet-1',
   name: 'Шкаф-пенал',
 }
-
-export const carcassMaterials = catalog.materials.filter((m) => m.thickness >= 10)
-export const backMaterials = catalog.materials.filter((m) => m.thickness < 10)

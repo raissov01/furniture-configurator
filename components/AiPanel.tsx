@@ -9,7 +9,6 @@
  */
 
 import { useState } from 'react'
-import { catalog } from '@/lib/defaults'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
 import { Button } from '@/components/ui'
@@ -31,6 +30,7 @@ export function AiPanel() {
   const open = useConfigurator((s) => s.aiOpen)
   const setOpen = useConfigurator((s) => s.setAiOpen)
   const loadCabinet = useConfigurator((s) => s.loadCabinet)
+  const catalog = useConfigurator((s) => s.catalog)
 
   const [prompt, setPrompt] = useState('')
   const [busy, setBusy] = useState(false)

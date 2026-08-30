@@ -10,7 +10,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui'
-import { catalog } from '@/lib/defaults'
+import { useConfigurator } from '@/store/configurator'
 import type { CabinetConfig, Panel } from '@/src/core/index'
 
 function download(filename: string, data: Uint8Array | string, mime: string): void {
@@ -24,6 +24,7 @@ function download(filename: string, data: Uint8Array | string, mime: string): vo
 }
 
 export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels: Panel[] }) {
+  const catalog = useConfigurator((s) => s.catalog)
   const [busy, setBusy] = useState<string | null>(null)
   const base = cabinet.id || 'cabinet'
 

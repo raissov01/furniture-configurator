@@ -6,13 +6,14 @@
  */
 
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
-import { backMaterials, carcassMaterials } from '@/lib/defaults'
 import { findTemplate } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
-import type { CabinetConfig, Section } from '@/src/core/index'
+import type { CabinetConfig, Material, Section } from '@/src/core/index'
 
-const materialOptions = (list: typeof carcassMaterials) =>
-  list.map((m) => ({ value: m.id, label: m.name }))
+const materialOptions = (list: Material[]) => list.map((m) => ({ value: m.id, label: m.name }))
+
+/** Корпус пен фасадқа — қалың плита, арт қабырғаға — жұқа. */
+const isCarcass = (m: Material) => m.thickness >= 10
 
 function SectionEditor({ section, index }: { section: Section; index: number }) {
   const editSection = useConfigurator((s) => s.editSection)
@@ -139,6 +140,10 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
+  // Материалдар тізімі цехтың профилінен келеді, кодтан емес.
+  const materials = useConfigurator((s) => s.shop.materials)
+  const carcassMaterials = materials.filter(isCarcass)
+  const backMaterials = materials.filter((m) => !isCarcass(m))
   const template = findTemplate(useConfigurator((s) => s.templateId))
 
   const invalid = (field: string) => invalidField === field

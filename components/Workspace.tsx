@@ -1,17 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Button, Slider } from '@/components/ui'
 import { Configurator } from '@/components/Configurator'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
 import { RoomPlan } from '@/components/RoomPlan'
+import { ShopSettings } from '@/components/ShopSettings'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
-import { catalog } from '@/lib/defaults'
 import { usePanels } from '@/lib/usePanels'
 import { useSceneItems } from '@/lib/useSceneItems'
+import { shelfSpanWarnings } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 
@@ -50,14 +51,25 @@ export function Workspace() {
   const cabinets = useConfigurator((s) => s.cabinets)
   const placements = useConfigurator((s) => s.placements)
   const activeId = useConfigurator((s) => s.activeId)
+  const catalog = useConfigurator((s) => s.catalog)
+  const shop = useConfigurator((s) => s.shop)
+  const setShopOpen = useConfigurator((s) => s.setShopOpen)
+  const hydrateShop = useConfigurator((s) => s.hydrateShop)
 
-  const { panels, error, ms, stale } = usePanels(cabinet, catalog)
-  const items = useSceneItems(room, cabinets, placements, catalog)
+  const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
+  const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  // Сақталған цех профилі тек браузерде оқылады: серверде оқысақ, гидратация
+  // сәйкессіздігі шығады.
+  useEffect(() => hydrateShop(), [hydrateShop])
+
+  // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
+  const spanWarnings = useMemo(() => shelfSpanWarnings(panels, shop), [panels, shop])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -75,6 +87,7 @@ export function Workspace() {
       <TemplateGallery />
       <AiPanel />
       <RoomPlan />
+      <ShopSettings />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <h1 className="text-sm font-semibold">
           {cabinet.name}
@@ -87,6 +100,7 @@ export function Workspace() {
           <Button onClick={() => setGalleryOpen(true)} title="Готовые шаблоны">Шаблоны</Button>
           <Button onClick={() => setAiOpen(true)} title="Описать задачу словами">Техзадание</Button>
           <Button onClick={() => setRoomOpen(true)} title="План комнаты и стены">Стены</Button>
+          <Button onClick={() => setShopOpen(true)} title="Материалы, цены и правила цеха">Цех</Button>
           <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
           <Button onClick={reset}>Сброс</Button>
@@ -123,6 +137,13 @@ export function Workspace() {
         <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <b className="font-mono">{error.field}</b> — {error.message.replace(`${error.field}: `, '')}
           {stale ? <span className="ml-2 opacity-70">Показана последняя корректная модель.</span> : null}
+        </div>
+      ) : null}
+
+      {spanWarnings.length > 0 ? (
+        <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          Полка длиннее предела цеха ({spanWarnings[0]!.limit} мм):{' '}
+          {spanWarnings.map((w) => `${w.label} ${w.span}`).join(', ')} — поставьте перегородку.
         </div>
       ) : null}
 

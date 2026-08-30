@@ -10,14 +10,21 @@
  */
 
 import { create } from 'zustand'
-import { catalog, defaultCabinet, defaultTemplateId } from '@/lib/defaults'
+import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import {
   DEFAULT_ROOM,
+  catalogOf,
   findTemplate,
   nextFreeOffset,
+  parseShopProfile,
   templateToCabinet,
 } from '@/src/core/index'
-import type { CabinetConfig, Placement, Room, Section, SectionContent, WallId } from '@/src/core/index'
+import type {
+  CabinetConfig, Catalog, Placement, Room, Section, SectionContent, ShopProfile, WallId,
+} from '@/src/core/index'
+
+/** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
+const SHOP_KEY = 'furniture-configurator:shop'
 
 /** Осы уақыт ішіндегі бір өрістің өзгерісі бір undo қадамына біріктіріледі. */
 const COALESCE_MS = 500
@@ -35,6 +42,14 @@ type Snapshot = {
 }
 
 type State = Snapshot & {
+  /**
+   * Цех профилі: материалдар, бағалар, зазорлар, фурнитура.
+   * `catalog` — содан туындайтын мән; әр set()-те бірге жаңарады, әйтпесе
+   * селектор әр рендерде жаңа объект қайтарып, шексіз рендер шақырады.
+   */
+  shop: ShopProfile
+  catalog: Catalog
+  shopOpen: boolean
   /** Соңғы жүктелген шаблон. Габарит аралығын UI осыдан алады. */
   templateId: string
   /** Жоспарда таңдалған қабырға — жаңа шкаф соған қойылады. */
@@ -63,6 +78,11 @@ type State = Snapshot & {
 
   loadTemplate(id: string): void
   loadCabinet(cabinet: CabinetConfig): void
+
+  setShop(shop: ShopProfile): void
+  editShop(patch: Partial<ShopProfile>): void
+  hydrateShop(): void
+  setShopOpen(v: boolean): void
 
   editRoom(patch: Partial<Room>): void
   setSelectedWall(wall: WallId): void
@@ -103,6 +123,9 @@ export const activeCabinet = (s: State): CabinetConfig =>
 
 export const useConfigurator = create<State>((set, get) => ({
   ...initial,
+  shop: defaultShop,
+  catalog: catalogOf(defaultShop),
+  shopOpen: false,
   templateId: defaultTemplateId,
   selectedWall: 'south',
 
@@ -168,7 +191,7 @@ export const useConfigurator = create<State>((set, get) => ({
     const template = findTemplate(id)
     if (!template) return
     const s = get()
-    const next = { ...templateToCabinet(template, catalog), id: s.activeId }
+    const next = { ...templateToCabinet(template, s.catalog), id: s.activeId }
     set({
       cabinets: s.cabinets.map((c) => (c.id === s.activeId ? next : c)),
       templateId: id,
@@ -192,6 +215,42 @@ export const useConfigurator = create<State>((set, get) => ({
       lastEditKey: null,
     })
   },
+
+  setShop(shop) {
+    set({ shop, catalog: catalogOf(shop) })
+    // Сақтау сәтсіз болса (жабық режим, толған қойма) — жұмыс тоқтамауы керек.
+    try {
+      window.localStorage.setItem(SHOP_KEY, JSON.stringify(shop))
+    } catch {
+      // қоймаға жазылмады: профиль осы сеанста ғана тұрады
+    }
+  },
+
+  editShop(patch) {
+    get().setShop({ ...get().shop, ...patch })
+  },
+
+  /**
+   * Сақталған профильді оқу. Тек браузерде шақырылады: серверде оқысақ,
+   * гидратация сәйкессіздігі шығады.
+   */
+  hydrateShop() {
+    let raw: string | null = null
+    try {
+      raw = window.localStorage.getItem(SHOP_KEY)
+    } catch {
+      return
+    }
+    if (!raw) return
+    try {
+      const shop = parseShopProfile(JSON.parse(raw))
+      set({ shop, catalog: catalogOf(shop) })
+    } catch {
+      // Ескі не бүлінген жазба: үнсіз ЖОЙМАЙМЫЗ, әдепкімен жұмыс істей береміз.
+    }
+  },
+
+  setShopOpen: (shopOpen) => set({ shopOpen }),
 
   editRoom(patch) {
     const s = get()

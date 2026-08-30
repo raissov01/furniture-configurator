@@ -7,7 +7,7 @@
 
 import { useMemo, useRef } from 'react'
 import { ConfigValidationError, generateCabinet } from '@/src/core/index'
-import type { CabinetConfig, Catalog, Panel } from '@/src/core/index'
+import type { CabinetConfig, Catalog, Panel, SettingsOverride } from '@/src/core/index'
 
 export type PanelsResult = {
   panels: Panel[]
@@ -19,13 +19,18 @@ export type PanelsResult = {
   stale: boolean
 }
 
-export function usePanels(cabinet: CabinetConfig, catalog: Catalog): PanelsResult {
+/** `settings` — цехтың константалары: зазорлар, паз тереңдігі, присадка қадамы. */
+export function usePanels(
+  cabinet: CabinetConfig,
+  catalog: Catalog,
+  settings?: SettingsOverride,
+): PanelsResult {
   const lastValid = useRef<Panel[]>([])
 
   return useMemo(() => {
     const started = performance.now()
     try {
-      const panels = generateCabinet(cabinet, catalog)
+      const panels = generateCabinet(cabinet, catalog, settings)
       lastValid.current = panels
       return { panels, error: null, ms: performance.now() - started, stale: false }
     } catch (err) {
@@ -39,5 +44,5 @@ export function usePanels(cabinet: CabinetConfig, catalog: Catalog): PanelsResul
       }
       throw err
     }
-  }, [cabinet, catalog])
+  }, [cabinet, catalog, settings])
 }

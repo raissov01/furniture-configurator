@@ -8,7 +8,6 @@
 import { useMemo, useState } from 'react'
 import { SEED_TEMPLATES, TEMPLATE_CATEGORIES, templateToCabinet } from '@/src/core/index'
 import type { TemplateCategory } from '@/src/core/index'
-import { catalog } from '@/lib/defaults'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
 import { Button } from '@/components/ui'
@@ -36,6 +35,7 @@ export function TemplateGallery() {
   const loadTemplate = useConfigurator((s) => s.loadTemplate)
   const activeId = useConfigurator((s) => s.templateId)
   const [filter, setFilter] = useState<Filter>('all')
+  const catalog = useConfigurator((s) => s.catalog)
 
   const shown = useMemo(
     () => (filter === 'all' ? SEED_TEMPLATES : SEED_TEMPLATES.filter((t) => t.category === filter)),
