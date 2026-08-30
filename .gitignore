@@ -10,3 +10,6 @@ dist/
 .env
 .env.local
 .env*.local
+
+# Серверлік дерек (SQLite)
+.data/

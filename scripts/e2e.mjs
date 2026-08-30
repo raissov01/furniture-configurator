@@ -75,6 +75,7 @@ async function connect() {
 
   await send('Runtime.enable')
   await send('Page.enable')
+  await send('Network.enable')
   await send('Emulation.setDeviceMetricsOverride', {
     width: 1500, height: 1000, deviceScaleFactor: 1, mobile: false,
   })
@@ -167,7 +168,24 @@ function makeHelpers({ send }) {
     return done
   }
 
-  return { evaluate, wait, goto, text, clickText, clickContains, cutListRows, setNumberByLabel }
+  /**
+   * Ашық қалған терезені жабу. Бір тест құласа, келесілері оның
+   * терезесіне тіреліп қалмауы керек — тестер бір-бірінен тәуелсіз.
+   */
+  const closeModals = async () => {
+    for (let i = 0; i < 3; i += 1) {
+      const closed = await evaluate(`(() => {
+        const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Закрыть')
+        if (!b) return false
+        b.click()
+        return true
+      })()`)
+      if (!closed) return
+      await wait(500)
+    }
+  }
+
+  return { evaluate, wait, goto, text, clickText, clickContains, cutListRows, setNumberByLabel, closeModals }
 }
 
 // ── Тестер ───────────────────────────────────────────────────────────────────
@@ -181,6 +199,9 @@ async function run() {
   // мен цех профилі жаңа жүгірісте эталон шкафты ауыстырып жіберер еді.
   await h.goto('/configurator', 6000)
   await h.evaluate('localStorage.clear()')
+  // Сессия cookie-і де тазаланады: алдыңғы жүгіріс кірген күйде қалдырса,
+  // тіркелу тесті «шыққан» экранды таппай қалады.
+  await session.send('Network.clearBrowserCookies')
 
   await test('Лендинг ашылады', async () => {
     await h.goto('/', 7000)
@@ -217,6 +238,7 @@ async function run() {
   })
 
   await test('Шаблон галереясы: ящикті комод', async () => {
+    await h.closeModals()
     check(await h.clickText('Шаблоны', 1500), 'галерея ашылды')
     const cards = await h.evaluate(`[...document.querySelectorAll('button')]
       .filter((b) => b.querySelector('svg[role=img]')).length`)
@@ -228,14 +250,18 @@ async function run() {
   })
 
   await test('Жиынтық: бұрыштық шкаф екі корпус қояды', async () => {
+    await h.closeModals()
     check(await h.clickText('Шаблоны', 1200), 'галерея ашылды')
     check(await h.clickText('Наборы', 1200), 'наборы табы ашылды')
-    check(await h.clickContains('Угловой шкаф', 3000), 'жиынтық таңдалды')
+    check(await h.clickContains('Угловой шкаф', 3500), 'жиынтық таңдалды')
+    await h.closeModals()
+    // Тақырыптағы белгі: «N панелей · корпусов: M».
     const body = await h.text()
     check(/корпусов: [2-9]/.test(body), `бірнеше корпус жүктелді (${body.match(/корпусов: \d+/)?.[0] ?? '—'})`)
   })
 
   await test('Нарисовать: перегородка, ящики, штанга', async () => {
+    await h.closeModals()
     await h.goto('/configurator', 11000)
     check(await h.clickText('Нарисовать', 1200), 'эскиз ашылды')
 
@@ -271,6 +297,7 @@ async function run() {
   })
 
   await test('Смета: раскрой мен баға', async () => {
+    await h.closeModals()
     check(await h.clickText('Смета', 3000), 'смета ашылды')
     const body = await h.text()
     check(body.includes('Листов всего'), 'парақ саны көрсетілген')
@@ -283,6 +310,7 @@ async function run() {
   })
 
   await test('Цех профилі: баға сақталады', async () => {
+    await h.closeModals()
     check(await h.clickText('Цех', 1200), 'цех терезесі ашылды')
     check(await h.clickText('Материалы', 900), 'материалдар табы')
     const filled = await h.evaluate(`(() => {
@@ -328,6 +356,7 @@ async function run() {
   })
 
   await test('Бөлме: қабырғаға корпус қосу', async () => {
+    await h.closeModals()
     check(await h.clickText('Стены', 1500), 'бөлме терезесі ашылды')
     // CSS `text-transform: uppercase` innerText-ке де әсер етеді, сондықтан
     // тіркес регистрсіз ізделеді.
@@ -337,6 +366,50 @@ async function run() {
     const after = await count()
     check(Number(after) === Number(before) + 1, `корпус саны ${before} → ${after}`)
     await h.clickText('Закрыть', 800)
+  })
+
+  await test('Аккаунт: тіркелу, бұлтқа сақтау, қайта кіру', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+    check(await h.clickText('Аккаунт', 1200), 'аккаунт терезесі ашылды')
+    check(await h.clickText('Регистрация', 700), 'тіркелу табы')
+
+    // Әр жүгірісте бөлек пошта: база тесттен кейін де қалады.
+    const email = `e2e-${Math.floor(Date.now() / 1000)}@example.kz`
+    const fill = async (label, value) => h.evaluate(`(() => {
+      const l = [...document.querySelectorAll('label')].find((x) => x.textContent.includes(${JSON.stringify(label)}))
+      if (!l) return false
+      const i = l.querySelector('input')
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      setter.call(i, ${JSON.stringify('')} + ${JSON.stringify(value)})
+      i.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    })()`)
+    await fill('Название цеха', 'Цех E2E')
+    await fill('Почта', email)
+    await fill('Пароль', 'password123')
+    await h.wait(400)
+    check(await h.clickText('Создать аккаунт', 2500), 'аккаунт жасалды')
+
+    const body = await h.text()
+    check(body.includes('Цех E2E'), 'цех аты көрінді')
+    // CSS `uppercase` innerText-ке де әсер етеді — регистрсіз тексереміз.
+    check(/Проекты в облаке/i.test(body), 'бұлттағы жобалар бөлімі')
+
+    check(await h.clickText('Сохранить текущий', 2500), 'жоба сақталды')
+    const saved = await h.text()
+    check(!saved.includes('Пока пусто'), 'жоба тізімде пайда болды')
+
+    check(await h.clickText('Выйти', 1500), 'шығу')
+    check(await h.clickText('Вход', 600), 'кіру табы')
+    await fill('Почта', email)
+    await fill('Пароль', 'password123')
+    await h.wait(400)
+    check(await h.clickText('Войти', 2500), 'қайта кірді')
+    const back = await h.text()
+    check(back.includes('Цех E2E'), 'аккаунт қалпына келді')
+    check(!back.includes('Пока пусто'), 'сақталған жоба орнында')
+    await h.clickText('Закрыть', 700)
   })
 
   await test('Консольде қате жоқ', async () => {

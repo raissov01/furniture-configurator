@@ -12,6 +12,7 @@ import { ShopSettings } from '@/components/ShopSettings'
 import { ProjectMenu } from '@/components/ProjectMenu'
 import { QuoteView } from '@/components/QuoteView'
 import { SketchEditor } from '@/components/SketchEditor'
+import { AccountPanel } from '@/components/AccountPanel'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { usePanels } from '@/lib/usePanels'
@@ -63,6 +64,7 @@ export function Workspace() {
   const saveProjectLocally = useConfigurator((s) => s.saveProjectLocally)
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
   const setSketchOpen = useConfigurator((s) => s.setSketchOpen)
+  const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
   const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
@@ -117,6 +119,7 @@ export function Workspace() {
       <RoomPlan />
       <ShopSettings />
       <SketchEditor />
+      <AccountPanel />
       <QuoteView panels={projectPanels} hardware={projectHardware} projectName={projectName} />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <Link
@@ -151,6 +154,8 @@ export function Workspace() {
         </div>
 
         <ProjectMenu />
+
+        <Button onClick={() => setAccountOpen(true)} title="Аккаунт и проекты в облаке">Аккаунт</Button>
 
         <div className="flex items-center gap-1">
           {PRESETS.map((p) => (
