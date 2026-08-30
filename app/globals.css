@@ -1,4 +1,73 @@
 @import "tailwindcss";
 
+/**
+ * Түс палитрасы цехтың өз материалынан алынған:
+ * фон — ЛДСП «Белый платиновый» реңкі, акцент — «Дуб Бардолино» мен кромка,
+ * ал көк — сызбадағы өлшем сызығының түсі. Ойдан алынған бренд түсі жоқ.
+ */
+:root {
+  --ink: #17191e;
+  --ink-soft: #4b4f58;
+  --panel: #dad5cb;
+  --paper: #f7f5f0;
+  --oak: #c9a227;
+  --oak-deep: #7c5f14;
+  --blueprint: #2e4fa8;
+  --rule: #a9a296;
+}
+
 html, body { height: 100%; }
 body { margin: 0; -webkit-font-smoothing: antialiased; }
+
+/* Лендинг «сызба парағы» болып оқылады: фон — плита, блоктар — қағаз. */
+.site {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.sheet {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+}
+
+/* Өлшем сызығы: екі ұшында штрих, ортасында сан. Бөлімдерді осы бөледі —
+   бұл әшекей емес, өнімнің өз тілі. */
+.dimline {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--blueprint);
+}
+.dimline > .dimline-track {
+  position: relative;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+.dimline > .dimline-track::before,
+.dimline > .dimline-track::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  width: 1px;
+  height: 9px;
+  background: currentColor;
+}
+.dimline > .dimline-track::before { left: 0; }
+.dimline > .dimline-track::after { right: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+:where(a, button):focus-visible {
+  outline: 2px solid var(--blueprint);
+  outline-offset: 2px;
+}

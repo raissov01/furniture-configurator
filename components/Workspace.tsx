@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Button, Slider } from '@/components/ui'
@@ -96,6 +97,18 @@ export function Workspace() {
       <ShopSettings />
       <QuoteView panels={projectPanels} projectName={projectName} />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
+        <Link
+          href="/"
+          title="На главную"
+          className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500 transition hover:text-neutral-900 dark:hover:text-neutral-100"
+        >
+          <svg width="18" height="14" viewBox="0 0 26 20" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="25" height="19" fill="#c9a227" fillOpacity="0.85" stroke="#7c5f14" />
+            <rect x="0.5" y="0.5" width="4" height="19" fill="#7c5f14" />
+          </svg>
+          РЕЗ
+        </Link>
+
         <h1 className="text-sm font-semibold">
           {cabinet.name}
           <span className="ml-2 font-normal tabular-nums text-neutral-500">
