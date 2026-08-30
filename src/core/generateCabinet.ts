@@ -157,8 +157,17 @@ export function generateCabinet(
     : make('top', 'top', 'Крышка', carcass, W, carcassDepth, { x: 0, y: H - t, z: 0 }, ORIENT_HORIZONTAL)
 
   // Рет деталировкадағы жолдардың ретін анықтайды — өзгертпе, snapshot соған қарайды.
-  if (sidesOverlay) panels.push(sideLeft, sideRight, bottom, top)
-  else panels.push(bottom, top, sideLeft, sideRight)
+  if (config.openTop) {
+    // Үсті ашық корпуста крышка ЖОҚ, бірақ ол әлі де геометрия үшін керек:
+    // сөрелер мен фасадтардың есебі ішкі биіктікке сүйенеді, ал ол крышканың
+    // қалыңдығын есептейді. Сондықтан деталь тізімге түспейді, есеп өзгермейді.
+    if (sidesOverlay) panels.push(sideLeft, sideRight, bottom)
+    else panels.push(bottom, sideLeft, sideRight)
+  } else if (sidesOverlay) {
+    panels.push(sideLeft, sideRight, bottom, top)
+  } else {
+    panels.push(bottom, top, sideLeft, sideRight)
+  }
 
   // ── Секциялар мен перегородкалар (A1) ──────────────────────────────────────
   const { layouts, dividerPositions } = layoutSections(config.sections, innerWidth, t, t)
@@ -276,7 +285,10 @@ export function generateCabinet(
   })
 
   // ── Артқы қабырға (§4.5) ───────────────────────────────────────────────────
-  if (config.back.mode === 'overlay') {
+  if (config.back.mode === 'none') {
+    // Арт қабырғасыз: ашық стеллаж, стол, кереует каркасы. Қатаңдықты
+    // цех өзі шешеді (бұрыштық бекітпе, қабырғаға бұрандалау).
+  } else if (config.back.mode === 'overlay') {
     // W × H, корпустың артына скобамен қағылады.
     panels.push(
       make('back', 'back', 'Задняя стенка', backMat, H, W, { x: 0, y: 0, z: carcassDepth },

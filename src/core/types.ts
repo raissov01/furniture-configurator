@@ -176,7 +176,7 @@ export type Panel = {
 // ── Конфигурация ─────────────────────────────────────────────────────────────
 
 export type ConstructionMethod = 'sidesOverlay' | 'topBottomOverlay'
-export type BackMode = 'overlay' | 'groove'
+export type BackMode = 'overlay' | 'groove' | 'none'
 export type FrontMount = 'overlay' | 'inset'
 export type ShelfKind = 'adjustable' | 'fixed'
 
@@ -296,6 +296,12 @@ export type CabinetConfig = {
    * `height` бұрынғыдай КОРПУСТЫҢ биіктігі.
    */
   base?: { kind: 'plinth' | 'legs'; height: number } | undefined
+
+  /**
+   * Крышканы БОЛДЫРМАУ. Кереует каркасы мен банкеткада үсті ашық: оның
+   * орнына матрас не жұмсақ отырғыш тұрады, ал ол парақтан кесілмейді.
+   */
+  openTop?: boolean | undefined
 
   /** Столешница — корпустың үстіне жататын бөлек деталь. */
   worktop?: {

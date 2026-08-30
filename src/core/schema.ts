@@ -81,7 +81,7 @@ const CabinetBaseSchema = z.object({
   carcassMaterialId: z.string().min(1),
   frontMaterialId: z.string().min(1),
   backMaterialId: z.string().min(1),
-  back: z.object({ mode: z.enum(['overlay', 'groove']) }),
+  back: z.object({ mode: z.enum(['overlay', 'groove', 'none']) }),
   edging: EdgePolicySchema,
   settings: ConstructionSettingsSchema.optional(),
 })
@@ -140,6 +140,7 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
   sections: z.array(SectionSchema).min(1).max(12),
   sliding: z.object({ count: z.number().int().min(2).max(4) }).optional(),
   base: z.object({ kind: z.enum(['plinth', 'legs']), height: mm }).optional(),
+  openTop: z.boolean().optional(),
   worktop: z.object({
     materialId: z.string().min(1).optional(),
     overhangFront: z.number().int().nonnegative(),

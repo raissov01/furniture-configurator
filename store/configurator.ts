@@ -14,10 +14,12 @@ import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import {
   DEFAULT_ROOM,
   catalogOf,
+  findSet,
   findTemplate,
   nextFreeOffset,
   parseProject,
   parseShopProfile,
+  setToProject,
   templateToCabinet,
 } from '@/src/core/index'
 import type {
@@ -81,6 +83,7 @@ type State = Snapshot & {
   removeSection(index: number): void
 
   loadTemplate(id: string): void
+  loadSet(id: string): void
   loadCabinet(cabinet: CabinetConfig): void
 
   exportProject(): ProjectFile
@@ -206,6 +209,34 @@ export const useConfigurator = create<State>((set, get) => ({
     set({
       cabinets: s.cabinets.map((c) => (c.id === s.activeId ? next : c)),
       templateId: id,
+      galleryOpen: false,
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [],
+      lastEditKey: null,
+    })
+  },
+
+  /**
+   * Жиынтықты жүктеу: бірнеше корпус пен олардың орны бірден келеді.
+   * Бөлме жиынтық сұраған өлшемге дейін ҰЛҒАЯДЫ, кішірейтілмейді —
+   * пайдаланушының бөлмесі үлкенірек болса, ол сақталады.
+   */
+  loadSet(id) {
+    // `set` — zustand-тың өз функциясы, сондықтан жиынтық `preset` деп аталады.
+    const preset = findSet(id)
+    if (!preset) return
+    const s = get()
+    const { cabinets, placements } = setToProject(preset, s.catalog)
+    set({
+      room: {
+        width: Math.max(s.room.width, preset.room.width),
+        depth: Math.max(s.room.depth, preset.room.depth),
+        height: Math.max(s.room.height, preset.room.height),
+      },
+      cabinets,
+      placements,
+      activeId: cabinets[0]!.id,
+      templateId: '',
       galleryOpen: false,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],

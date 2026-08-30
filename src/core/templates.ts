@@ -25,10 +25,11 @@ import type {
   ConstructionMethod,
   Section,
   SectionContent,
+  SettingsOverride,
   ShelfKind,
 } from './types'
 
-export type TemplateCategory = 'kitchen' | 'wardrobe' | 'living' | 'desk' | 'storage'
+export type TemplateCategory = 'kitchen' | 'wardrobe' | 'living' | 'desk' | 'bed' | 'storage'
 
 /** UI-да көрсетілетін ұсынылған аралық. Қатты шектеу емес. */
 export type SizeRange = { min: number; max: number }
@@ -48,6 +49,10 @@ export type CabinetTemplate = {
 
   construction: ConstructionMethod
   back: BackMode
+  /** Крышкасыз корпус: үстіне матрас не жұмсақ отырғыш тұрады */
+  openTop?: boolean | undefined
+  /** Осы шаблонға ғана қатысты цех константалары */
+  settings?: SettingsOverride | undefined
   carcassMaterialId: string
   frontMaterialId: string
   backMaterialId: string
@@ -63,6 +68,7 @@ export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string }[] =
   { value: 'wardrobe', label: 'Шкафы' },
   { value: 'living', label: 'Гостиная' },
   { value: 'desk', label: 'Столы' },
+  { value: 'bed', label: 'Кровати' },
   { value: 'storage', label: 'Хранение' },
 ]
 
@@ -436,7 +442,69 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
     ],
   },
 
+  // ── Кровати ──────────────────────────────────────────────────────────────
+  // ЛДСП каркас: царги, изножье и основание. Матрас, поролон и ткань —
+  // ПОКУПНЫЕ, из листа не выкраиваются и в деталировку не входят.
+  {
+    id: 'bed-frame-1600',
+    name: 'Кровать: каркас 1600×2000',
+    category: 'bed',
+    description: 'Царги, изножье и сплошное основание. Матрас и мягкая обивка — покупные.',
+    height: 350, width: 1600, depth: 2000,
+    range: { height: { min: 250, max: 500 }, width: { min: 800, max: 2000 }, depth: { min: 1800, max: 2200 } },
+    construction: 'sidesOverlay',
+    // Изножье из ЛДСП, а не из ХДФ: на него опирается основание.
+    back: 'overlay',
+    openTop: true,
+    // Изножье ЛДСП-дан: оған негіз тіреледі, ХДФ көтермейді. Сондықтан
+    // арт қабырғаның қалыңдығы да сол материалға теңестіріледі.
+    settings: { backThickness: 16 },
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: LDSP_OAK,
+    sections: [section(1, 0, 0)],
+  },
+  {
+    id: 'bed-frame-900',
+    name: 'Кровать: каркас 900×2000',
+    category: 'bed',
+    description: 'Односпальная. Царги, изножье, основание. Матрас покупной.',
+    height: 350, width: 900, depth: 2000,
+    range: { height: { min: 250, max: 500 }, width: { min: 700, max: 1200 }, depth: { min: 1600, max: 2200 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    openTop: true,
+    // Изножье ЛДСП-дан: оған негіз тіреледі, ХДФ көтермейді. Сондықтан
+    // арт қабырғаның қалыңдығы да сол материалға теңестіріледі.
+    settings: { backThickness: 16 },
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: LDSP_OAK,
+    sections: [section(1, 0, 0)],
+  },
+  {
+    id: 'bench-1200',
+    name: 'Банкетка 1200',
+    category: 'bed',
+    description: 'Открытый короб под мягкое сиденье. Поролон и ткань — покупные.',
+    height: 400, width: 1200, depth: 400,
+    range: { height: { min: 300, max: 550 }, width: { min: 600, max: 1800 }, depth: { min: 300, max: 500 } },
+    construction: 'sidesOverlay',
+    back: 'overlay',
+    openTop: true,
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [section(1, 0, 0)],
+  },
+
   // ── Хранение ─────────────────────────────────────────────────────────────
+  {
+    id: 'shelving-no-back-800',
+    name: 'Стеллаж без задней стенки 800',
+    category: 'storage',
+    description: 'Сквозной стеллаж: задней стенки нет, видно обе стороны.',
+    height: 1800, width: 800, depth: 300,
+    range: { height: { min: 600, max: 2400 }, width: { min: 300, max: 1000 }, depth: { min: 200, max: 500 } },
+    construction: 'sidesOverlay',
+    back: 'none',
+    carcassMaterialId: LDSP_OAK, frontMaterialId: LDSP_OAK, backMaterialId: HDF_WHITE,
+    sections: [section(1, 4, 0)],
+  },
   {
     id: 'chest-800',
     name: 'Комод 800',
@@ -580,6 +648,8 @@ export function templateToCabinet(
     frontMaterialId: template.frontMaterialId,
     backMaterialId: template.backMaterialId,
     back: { mode: template.back },
+    ...(template.openTop ? { openTop: true } : {}),
+    ...(template.settings ? { settings: { ...template.settings } } : {}),
     // Секциялар терең көшіріледі: шаблон объектісі ортақ, оны UI өзгертпеуі керек.
     ...(template.sliding ? { sliding: { ...template.sliding } } : {}),
     ...(template.base ? { base: { ...template.base } } : {}),

@@ -170,3 +170,36 @@ describe('цоколь, ножки, столешница', () => {
     for (const d of raised.drilling) expect(d.x).toBeGreaterThanOrEqual(0)
   })
 })
+
+describe('крышкасыз және арт қабырғасыз корпус', () => {
+  it('кереует каркасында крышка ЖОҚ — оның орнында матрас', () => {
+    const bed = templateToCabinet(findTemplate('bed-frame-1600')!, catalog)
+    const panels = generateCabinet(bed, catalog)
+    expect(panels.some((p: Panel) => p.role === 'top')).toBe(false)
+    expect(panels.some((p: Panel) => p.role === 'bottom')).toBe(true)
+    expect(panels.filter((p: Panel) => p.role === 'side')).toHaveLength(2)
+  })
+
+  it('крышка алынғанда ішкі есеп ӨЗГЕРМЕЙДІ', () => {
+    const closed = templateToCabinet(findTemplate('shelving-open-800')!, catalog)
+    const open = { ...closed, openTop: true }
+    const shelvesOf = (c: typeof closed) =>
+      generateCabinet(c, catalog).filter((p: Panel) => p.role === 'shelf').map((p) => p.position.y)
+    // Сөрелердің орны сол күйінде қалады: ішкі биіктік крышка қалыңдығын
+    // бұрынғыдай есептейді.
+    expect(shelvesOf(open)).toEqual(shelvesOf(closed))
+  })
+
+  it('арт қабырғасыз корпуста ол деталь мүлде жоқ', () => {
+    const through = templateToCabinet(findTemplate('shelving-no-back-800')!, catalog)
+    const panels = generateCabinet(through, catalog)
+    expect(panels.some((p: Panel) => p.role === 'back')).toBe(false)
+  })
+
+  it('кереуеттің изножьесі ЛДСП-дан, ХДФ-тан емес', () => {
+    const bed = templateToCabinet(findTemplate('bed-frame-1600')!, catalog)
+    const back = generateCabinet(bed, catalog).find((p: Panel) => p.role === 'back')!
+    const material = catalog.materials.find((m) => m.id === back.materialId)!
+    expect(material.thickness).toBeGreaterThanOrEqual(16)
+  })
+})

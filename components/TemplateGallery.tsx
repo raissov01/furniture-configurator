@@ -6,14 +6,14 @@
  */
 
 import { useMemo, useState } from 'react'
-import { SEED_TEMPLATES, TEMPLATE_CATEGORIES, templateToCabinet } from '@/src/core/index'
+import { SEED_SETS, SEED_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
 import type { TemplateCategory } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 
-type Filter = TemplateCategory | 'all'
+type Filter = TemplateCategory | 'all' | 'sets'
 
 /** Ең биік шаблон карточкада осынша пиксель болады. */
 const THUMB_MAX_PX = 104
@@ -33,12 +33,15 @@ export function TemplateGallery() {
   const open = useConfigurator((s) => s.galleryOpen)
   const setOpen = useConfigurator((s) => s.setGalleryOpen)
   const loadTemplate = useConfigurator((s) => s.loadTemplate)
+  const loadSet = useConfigurator((s) => s.loadSet)
   const activeId = useConfigurator((s) => s.templateId)
   const [filter, setFilter] = useState<Filter>('all')
   const catalog = useConfigurator((s) => s.catalog)
 
   const shown = useMemo(
-    () => (filter === 'all' ? SEED_TEMPLATES : SEED_TEMPLATES.filter((t) => t.category === filter)),
+    () => (filter === 'all' || filter === 'sets'
+      ? SEED_TEMPLATES
+      : SEED_TEMPLATES.filter((t) => t.category === filter)),
     [filter],
   )
 
@@ -61,11 +64,43 @@ export function TemplateGallery() {
               {c.label}
             </Button>
           ))}
+          <Button active={filter === 'sets'} onClick={() => setFilter('sets')}>Наборы</Button>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)}>Закрыть</Button>
           </div>
         </div>
 
+        {filter === 'sets' ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SEED_SETS.map((preset) => {
+              const { cabinets } = setToProject(preset, catalog)
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => loadSet(preset.id)}
+                  className="flex flex-col items-start gap-2 rounded-lg border border-neutral-200 p-3 text-left transition hover:border-neutral-500 hover:shadow-sm dark:border-neutral-700"
+                >
+                  <div className="flex flex-wrap items-end gap-2">
+                    {cabinets.map((cabinet) => (
+                      <CabinetThumb
+                        key={cabinet.id}
+                        cabinet={cabinet}
+                        catalog={catalog}
+                        pxPerMm={thumbScale(cabinet.height) * 0.8}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-xs font-medium">{preset.name}</div>
+                  <div className="tabular-nums text-[11px] text-neutral-500">
+                    корпусов: {cabinets.length} · комната от {preset.room.width}×{preset.room.depth}
+                  </div>
+                  <div className="text-[11px] leading-snug text-neutral-400">{preset.description}</div>
+                </button>
+              )
+            })}
+          </div>
+        ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {shown.map((t) => (
             <button
@@ -94,9 +129,12 @@ export function TemplateGallery() {
             </button>
           ))}
         </div>
+        )}
 
         <p className="mt-3 text-[11px] text-neutral-400">
-          Шаблон полностью заменяет текущий корпус. Ctrl+Z возвращает предыдущий.
+          {filter === 'sets'
+            ? 'Набор заменяет весь проект и расставляет корпуса по стенам. Ctrl+Z возвращает предыдущий.'
+            : 'Шаблон полностью заменяет текущий корпус. Ctrl+Z возвращает предыдущий.'}
         </p>
       </div>
     </div>
