@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "cutlist": "tsx src/cli/cutlist.ts",
-    "export": "tsx src/cli/export.ts"
+    "export": "tsx src/cli/export.ts",
+    "test:e2e": "node scripts/e2e.mjs"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

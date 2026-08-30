@@ -15,7 +15,7 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { usePanels } from '@/lib/usePanels'
 import { useSceneItems } from '@/lib/useSceneItems'
-import { shelfSpanWarnings } from '@/src/core/index'
+import { mergeProjectPanels, shelfSpanWarnings } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 
@@ -88,7 +88,12 @@ export function Workspace() {
   const spanWarnings = useMemo(() => shelfSpanWarnings(panels, shop), [panels, shop])
 
   // Смета БҮКІЛ жоба бойынша: цех парақты бір тапсырысқа бірге сатып алады.
-  const projectPanels = useMemo(() => items.flatMap((i) => i.panels), [items])
+  // id-лер корпустың атауымен префиксталады: бір жобадағы екі шкафта да
+  // `side-left` бар, ал экспортта олар бөлек файл болуы керек.
+  const projectPanels = useMemo(
+    () => mergeProjectPanels(items.map((i) => ({ cabinetId: i.cabinet.id, panels: i.panels }))),
+    [items],
+  )
   const projectHardware = useMemo(() => items.flatMap((i) => i.hardware), [items])
   const projectName = cabinets.length === 1 ? cabinets[0]!.name : `Проект (${cabinets.length} корпуса)`
 

@@ -290,10 +290,23 @@ export function generateCabinet(
     // цех өзі шешеді (бұрыштық бекітпе, қабырғаға бұрандалау).
   } else if (config.back.mode === 'overlay') {
     // W × H, корпустың артына скобамен қағылады.
-    panels.push(
-      make('back', 'back', 'Задняя стенка', backMat, H, W, { x: 0, y: 0, z: carcassDepth },
-        ORIENT_FACING, 'ХДФ внакладку, на скобы'),
-    )
+    //
+    // Кең шкафта арт қабырға бір парақтан ШЫҚПАЙДЫ (2400 мм ені 2070 мм
+    // параққа сыймайды). Цех оны бірнеше бөліктен қағады — біз де солай
+    // істейміз, әйтпесе раскрой «сыймайды» деп тұрып алады.
+    const pieces = backPieceCount(H, W, backMat)
+    const widths = distributeMillimetres(W, pieces)
+    let x = 0
+    widths.forEach((pieceWidth, i) => {
+      panels.push(
+        make(
+          pieces === 1 ? 'back' : `back-${i + 1}`, 'back', 'Задняя стенка', backMat,
+          H, pieceWidth, { x, y: 0, z: carcassDepth }, ORIENT_FACING,
+          pieces === 1 ? 'ХДФ внакладку, на скобы' : `ХДФ внакладку, часть ${i + 1} из ${pieces}`,
+        ),
+      )
+      x += pieceWidth
+    })
   } else {
     const g = settings.grooveDepth
     // ХДФ корпустың ішінде, пазда отырады: алдыңғы беті D − grooveInset-те,
@@ -565,6 +578,45 @@ function validateDimension(value: number, field: string): void {
   if (value < MIN_DIMENSION || value > MAX_DIMENSION) {
     throw new ConfigValidationError(field, `${value} мм`, `${MIN_DIMENSION}..${MAX_DIMENSION} мм`)
   }
+}
+
+/**
+ * Бірнеше корпустың панельдерін БІР тізімге жинау.
+ *
+ * `generateCabinet` id-лерді бір корпустың ішінде ғана бірегей етеді
+ * (`side-left`, `back`, …) — олай болмаса, сақталған жоба мен эталон тестер
+ * әр өзгерісте сынар еді. Ал жоба бойынша раскрой мен экспортта БАРЛЫҚ
+ * деталь бір тізімге түседі, сонда id-лер қабаттасады да, DXF архивінде
+ * бір файл екіншісін үнсіз басып кетеді.
+ *
+ * Сондықтан жобаға жинағанда id корпустың атауымен префиксталады.
+ */
+export function mergeProjectPanels(items: { cabinetId: string; panels: Panel[] }[]): Panel[] {
+  if (items.length === 1) return items[0]!.panels
+  return items.flatMap(({ cabinetId, panels }) =>
+    panels.map((panel) => ({ ...panel, id: `${cabinetId}--${panel.id}` })),
+  )
+}
+
+/**
+ * Арт қабырға неше бөліктен жасалады.
+ *
+ * Парақтан шықпайтын деталь — қате емес: цехта кең шкафтың арты әрқашан
+ * бірнеше кесіндіден қағылады. Ең аз бөлікті іздейміз, себебі әр қосымша
+ * түйіс — қосымша жұмыс.
+ */
+export function backPieceCount(height: number, width: number, material: Material): number {
+  const usableWidth = material.sheetWidth - 2 * material.trimEdge
+  const usableHeight = material.sheetHeight - 2 * material.trimEdge
+  const fits = (l: number, w: number): boolean =>
+    (l <= usableWidth && w <= usableHeight) ||
+    (!material.hasGrain && l <= usableHeight && w <= usableWidth)
+
+  for (let pieces = 1; pieces <= 8; pieces += 1) {
+    if (fits(height, Math.ceil(width / pieces))) return pieces
+  }
+  // Сыймаса да бір бөлік болып қалады — оны раскрой «сыймайды» деп айтады.
+  return 1
 }
 
 // ── Тік жолақтар мен ящиктер (D1) ────────────────────────────────────────────

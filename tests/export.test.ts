@@ -63,8 +63,8 @@ describe('CSV', () => {
   it('тек РЕЗ өлшемі — оптимизаторға готовый керек емес', () => {
     const csv = cutListToCsv(panels, catalog)
     const [header, first] = csv.trim().split('\n')
-    expect(header).toBe('length,width,qty,material,edgeL1,edgeL2,edgeW1,edgeW2,grain')
-    expect(first).toMatch(/^2000,445,2,/)
+    expect(header).toBe('name,length,width,qty,material,edgeL1,edgeL2,edgeW1,edgeW2,grain')
+    expect(first).toMatch(/^Боковина,2000,445,2,/)
     expect(csv).not.toContain('447') // готовый ені шықпауы керек
   })
 
