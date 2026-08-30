@@ -14,18 +14,8 @@
  * болғандықтан). Жоспарда `offset = 0` нүктесі белгіленіп тұрады.
  */
 
-import type { CabinetConfig, Vec3 } from './types'
+import type { CabinetConfig, Placement, Room, Vec3, WallId } from './types'
 
-export type WallId = 'north' | 'east' | 'south' | 'west'
-
-export type Room = {
-  /** X бойымен, мм */
-  width: number
-  /** Z бойымен, мм */
-  depth: number
-  /** Y бойымен, мм — тек 3D көрініс үшін */
-  height: number
-}
 
 export type Wall = {
   id: WallId
@@ -42,13 +32,6 @@ export type Wall = {
   rotationY: number
 }
 
-/** Шкафтың бөлмедегі орны. Бір шкаф — бір орын. */
-export type Placement = {
-  cabinetId: string
-  wall: WallId
-  /** Қабырға басынан, мм */
-  offset: number
-}
 
 export const WALL_LABELS: Record<WallId, string> = {
   north: 'Верхняя',

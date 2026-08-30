@@ -6,6 +6,7 @@
  */
 
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
+import { DecorPicker } from '@/components/DecorPicker'
 import { findTemplate } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type { CabinetConfig, Material, Section } from '@/src/core/index'
@@ -210,23 +211,24 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
 
       <SectionTitle>Материалы</SectionTitle>
       <Field label="Корпус">
-        <Select
+        <DecorPicker
+          materials={carcassMaterials}
           value={cabinet.carcassMaterialId}
           onChange={(id) => {
             const m = carcassMaterials.find((x) => x.id === id)
             edit('carcassMaterial', {
               carcassMaterialId: id,
+              // Кромка декорға байланады: декоры сәйкес келмеген кромка — брак.
               ...(m?.defaultEdging ? { edging: m.defaultEdging } : {}),
             })
           }}
-          options={materialOptions(carcassMaterials)}
         />
       </Field>
       <Field label="Фасад">
-        <Select
+        <DecorPicker
+          materials={carcassMaterials}
           value={cabinet.frontMaterialId}
           onChange={(frontMaterialId) => edit('frontMaterial', { frontMaterialId })}
-          options={materialOptions(carcassMaterials)}
         />
       </Field>
       <Field label="Задняя стенка">

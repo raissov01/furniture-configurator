@@ -16,15 +16,18 @@ import {
   catalogOf,
   findTemplate,
   nextFreeOffset,
+  parseProject,
   parseShopProfile,
   templateToCabinet,
 } from '@/src/core/index'
 import type {
-  CabinetConfig, Catalog, Placement, Room, Section, SectionContent, ShopProfile, WallId,
+  CabinetConfig, Catalog, Placement, ProjectFile, Room, Section, SectionContent, ShopProfile, WallId,
 } from '@/src/core/index'
 
 /** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
 const SHOP_KEY = 'furniture-configurator:shop'
+/** Ағымдағы жоба — бетті жаңартқанда жұмыс жоғалмауы үшін. */
+const PROJECT_KEY = 'furniture-configurator:project'
 
 /** Осы уақыт ішіндегі бір өрістің өзгерісі бір undo қадамына біріктіріледі. */
 const COALESCE_MS = 500
@@ -79,6 +82,11 @@ type State = Snapshot & {
 
   loadTemplate(id: string): void
   loadCabinet(cabinet: CabinetConfig): void
+
+  exportProject(): ProjectFile
+  loadProject(file: ProjectFile): void
+  saveProjectLocally(): void
+  hydrateProject(): void
 
   setShop(shop: ShopProfile): void
   editShop(patch: Partial<ShopProfile>): void
@@ -217,6 +225,85 @@ export const useConfigurator = create<State>((set, get) => ({
       future: [],
       lastEditKey: null,
     })
+  },
+
+  /** Жоба ФАЙЛЫ: конфиг қана сақталады, панельдер әрқашан қайта есептеледі (§7). */
+  exportProject() {
+    const s = get()
+    return {
+      schemaVersion: 3 as const,
+      name: s.cabinets.length === 1 ? s.cabinets[0]!.name : 'Проект',
+      materials: s.shop.materials,
+      edgeBands: s.shop.edgeBands,
+      settings: s.shop.settings,
+      cabinets: s.cabinets,
+      room: s.room,
+      placements: s.placements,
+    }
+  },
+
+  /**
+   * Жобаны ашу. Файлдағы материал цехта жоқ болса — ол цех каталогына
+   * БАҒАСЫЗ қосылады: әйтпесе бөтен цехтан келген жоба мүлде ашылмайды да,
+   * пайдаланушы себебін түсінбей қалады.
+   */
+  loadProject(file) {
+    const s = get()
+    const known = new Set(s.shop.materials.map((m) => m.id))
+    const missing = file.materials.filter((m) => !known.has(m.id)).map((m) => ({ ...m, pricePerSheet: 0 }))
+    const knownBands = new Set(s.shop.edgeBands.map((b) => b.id))
+    const missingBands = file.edgeBands.filter((b) => !knownBands.has(b.id)).map((b) => ({ ...b, pricePerMeter: 0 }))
+
+    const shop: ShopProfile = missing.length > 0 || missingBands.length > 0
+      ? {
+          ...s.shop,
+          materials: [...s.shop.materials, ...missing],
+          edgeBands: [...s.shop.edgeBands, ...missingBands],
+        }
+      : s.shop
+
+    set({
+      shop,
+      catalog: catalogOf(shop),
+      room: file.room,
+      cabinets: file.cabinets,
+      placements: file.placements,
+      activeId: file.cabinets[0]!.id,
+      templateId: '',
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [],
+      lastEditKey: null,
+    })
+  },
+
+  saveProjectLocally() {
+    try {
+      window.localStorage.setItem(PROJECT_KEY, JSON.stringify(get().exportProject()))
+    } catch {
+      // қоймаға жазылмады: жұмыс тоқтамауы керек
+    }
+  },
+
+  /** Сақталған жобаны қайтару. Тек браузерде шақырылады. */
+  hydrateProject() {
+    let raw: string | null = null
+    try {
+      raw = window.localStorage.getItem(PROJECT_KEY)
+    } catch {
+      return
+    }
+    if (!raw) return
+    try {
+      const file = parseProject(JSON.parse(raw))
+      set({
+        room: file.room,
+        cabinets: file.cabinets,
+        placements: file.placements,
+        activeId: file.cabinets[0]!.id,
+      })
+    } catch {
+      // Ескі не бүлінген жазба: үнсіз ЖОЙМАЙМЫЗ, әдепкі жобамен ашылады.
+    }
   },
 
   setShop(shop) {

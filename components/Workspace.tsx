@@ -9,6 +9,7 @@ import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
 import { RoomPlan } from '@/components/RoomPlan'
 import { ShopSettings } from '@/components/ShopSettings'
+import { ProjectMenu } from '@/components/ProjectMenu'
 import { QuoteView } from '@/components/QuoteView'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
@@ -57,6 +58,8 @@ export function Workspace() {
   const shop = useConfigurator((s) => s.shop)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
   const hydrateShop = useConfigurator((s) => s.hydrateShop)
+  const hydrateProject = useConfigurator((s) => s.hydrateProject)
+  const saveProjectLocally = useConfigurator((s) => s.saveProjectLocally)
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
@@ -69,7 +72,17 @@ export function Workspace() {
 
   // Сақталған цех профилі тек браузерде оқылады: серверде оқысақ, гидратация
   // сәйкессіздігі шығады.
-  useEffect(() => hydrateShop(), [hydrateShop])
+  useEffect(() => {
+    hydrateShop()
+    hydrateProject()
+  }, [hydrateShop, hydrateProject])
+
+  // Автосақтау: бетті жаңартқанда жұмыс жоғалмауы керек. Кідіріс — өріске
+  // сан теріп жатқанда әр таңбаға жазбау үшін.
+  useEffect(() => {
+    const timer = setTimeout(saveProjectLocally, 500)
+    return () => clearTimeout(timer)
+  }, [room, cabinets, placements, saveProjectLocally])
 
   // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
   const spanWarnings = useMemo(() => shelfSpanWarnings(panels, shop), [panels, shop])
@@ -126,6 +139,8 @@ export function Workspace() {
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
           <Button onClick={reset}>Сброс</Button>
         </div>
+
+        <ProjectMenu />
 
         <div className="flex items-center gap-1">
           {PRESETS.map((p) => (

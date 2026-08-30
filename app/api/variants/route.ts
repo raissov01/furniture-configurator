@@ -133,6 +133,69 @@ const RESPONSE_SCHEMA = {
 type Variant = { brief: CabinetBrief; cabinet: CabinetConfig; panelCount: number }
 type Dropped = { name: string; reason: string }
 
+/**
+ * Пайдаланушы өрістермен қойған шектеулер. Олар МОДЕЛЬГЕ АЙТЫЛАДЫ, әрі
+ * жауап келгеннен кейін ҮСТІНЕН БЕКІТІЛЕДІ: адам 1800 деп жазса, шкаф 1800
+ * болуы керек — модельдің «жақсырақ біледі» деп өзгертуіне жол жоқ.
+ */
+type Constraints = {
+  kind?: string | undefined
+  height?: number | undefined
+  width?: number | undefined
+  depth?: number | undefined
+  materialId?: string | undefined
+}
+
+const dimension = (value: unknown): number | undefined => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+  const rounded = Math.round(value)
+  return rounded >= BRIEF_LIMITS.dimension.min && rounded <= BRIEF_LIMITS.dimension.max
+    ? rounded
+    : undefined
+}
+
+function readConstraints(raw: unknown): Constraints {
+  const c = (raw ?? {}) as Record<string, unknown>
+  const materialId = typeof c['materialId'] === 'string' && materialIds.includes(c['materialId'])
+    ? c['materialId']
+    : undefined
+  return {
+    kind: typeof c['kind'] === 'string' && c['kind'].length <= 60 ? c['kind'] : undefined,
+    height: dimension(c['height']),
+    width: dimension(c['width']),
+    depth: dimension(c['depth']),
+    materialId,
+  }
+}
+
+/** Шектеулерді модель оқитын мәтінге айналдыру. */
+function constraintsText(c: Constraints): string {
+  const lines: string[] = []
+  if (c.kind) lines.push(`Тип изделия: ${c.kind}.`)
+  const dims = [
+    c.height ? `высота ${c.height}` : null,
+    c.width ? `ширина ${c.width}` : null,
+    c.depth ? `глубина ${c.depth}` : null,
+  ].filter(Boolean)
+  if (dims.length > 0) lines.push(`Заданные размеры, мм: ${dims.join(', ')}. Их менять нельзя.`)
+  if (c.materialId) {
+    const m = SEED_CATALOG.materials.find((x) => x.id === c.materialId)
+    lines.push(`Материал корпуса и фасадов: ${c.materialId}${m ? ` (${m.name})` : ''}. Другой не предлагай.`)
+  }
+  return lines.length > 0 ? `\n\nОбязательные условия:\n${lines.join('\n')}` : ''
+}
+
+/** Шектеулерді брифке бекіту — сұрағанын алу керек, «жуықтап» емес. */
+function applyConstraints(brief: CabinetBrief, c: Constraints): CabinetBrief {
+  return {
+    ...brief,
+    ...(c.height ? { height: c.height } : {}),
+    ...(c.width ? { width: c.width } : {}),
+    ...(c.depth ? { depth: c.depth } : {}),
+    ...(c.materialId ? { carcassMaterialId: c.materialId, frontMaterialId: c.materialId } : {}),
+  }
+}
+
 /** Модельден бір жауап алу. `repair` берілсе — өткен қатені түзетуді сұрайды. */
 async function askModel(
   client: OpenAI,
@@ -178,10 +241,10 @@ function parseBriefs(raw: string): CabinetBrief[] | null {
  * шығып, себебі бөлек қайтарылады: жиналмайтын шкафты клиентке көрсеткеннен
  * гөрі, екі вариант көрсеткен дұрыс.
  */
-function toVariants(briefs: CabinetBrief[]): { variants: Variant[]; dropped: Dropped[] } {
+function toVariants(briefs: CabinetBrief[], constraints: Constraints): { variants: Variant[]; dropped: Dropped[] } {
   const variants: Variant[] = []
   const dropped: Dropped[] = []
-  briefs.forEach((brief, i) => {
+  briefs.map((b) => applyConstraints(b, constraints)).forEach((brief, i) => {
     try {
       const cabinet = briefToCabinet(brief, SEED_CATALOG, `cabinet-ai-${i + 1}`)
       const panels = generateCabinet(cabinet, SEED_CATALOG)
@@ -210,13 +273,16 @@ function apiErrorResponse(error: unknown): Response {
 
 export async function POST(request: Request): Promise<Response> {
   let prompt: string
+  let constraints: Constraints
   try {
-    const body: unknown = await request.json()
-    const value = (body as { prompt?: unknown } | null)?.prompt
-    if (typeof value !== 'string' || value.trim().length === 0) {
-      return Response.json({ error: 'Опишите задачу текстом.' }, { status: 400 })
+    const body = (await request.json()) as { prompt?: unknown; constraints?: unknown } | null
+    const value = body?.prompt
+    constraints = readConstraints(body?.constraints)
+    const hasConstraints = Object.values(constraints).some((v) => v !== undefined)
+    if (typeof value !== 'string' || (value.trim().length === 0 && !hasConstraints)) {
+      return Response.json({ error: 'Опишите задачу текстом или задайте параметры.' }, { status: 400 })
     }
-    prompt = value.trim().slice(0, 4000)
+    prompt = `${typeof value === 'string' ? value.trim().slice(0, 4000) : ''}${constraintsText(constraints)}`
   } catch {
     return Response.json({ error: 'Некорректный запрос.' }, { status: 400 })
   }
@@ -242,7 +308,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'Модель вернула ответ не по форме. Повторите запрос.' }, { status: 502 })
   }
 
-  let { variants, dropped } = toVariants(briefs)
+  let { variants, dropped } = toVariants(briefs, constraints)
 
   // Бір рет қана қайта сұраймыз: қатенің өзін модельге қайтарып беру
   // «fixed секциялардың қосындысы сыймайды» деген типтік қатені жөндейді.
@@ -252,7 +318,7 @@ export async function POST(request: Request): Promise<Response> {
       const retryRaw = await askModel(client, prompt, { previous: raw, errors: dropped })
       const retryBriefs = parseBriefs(retryRaw)
       if (retryBriefs) {
-        const retry = toVariants(retryBriefs)
+        const retry = toVariants(retryBriefs, constraints)
         if (retry.variants.length > variants.length) {
           variants = retry.variants
           dropped = retry.dropped

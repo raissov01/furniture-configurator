@@ -20,6 +20,11 @@ export const EdgePolicySchema = z.object({
   hidden: z.string().nullable(),
 })
 
+export const DecorSchema = z.object({
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  kind: z.enum(['solid', 'wood']),
+})
+
 export const MaterialSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -30,6 +35,7 @@ export const MaterialSchema = z.object({
   pricePerSheet: minorUnits,
   trimEdge: z.number().int().nonnegative(),
   defaultEdging: EdgePolicySchema.optional(),
+  decor: DecorSchema.optional(),
 })
 
 export const EdgeBandSchema = z.object({
@@ -117,7 +123,7 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
   sections: z.array(SectionSchema).min(1).max(12),
 })
 
-export const ProjectFileSchema = z.object({
+export const ProjectFileV2Schema = z.object({
   schemaVersion: z.literal(2),
   name: z.string().min(1),
   materials: z.array(MaterialSchema).min(1),
@@ -126,7 +132,23 @@ export const ProjectFileSchema = z.object({
   cabinets: z.array(CabinetConfigSchema).min(1),
 })
 
-export const CURRENT_SCHEMA_VERSION = 2
+// ── schemaVersion 3 — бөлме мен орналастыру (C фаза) ─────────────────────────
+
+export const RoomSchema = z.object({ width: mm, depth: mm, height: mm })
+
+export const PlacementSchema = z.object({
+  cabinetId: z.string().min(1),
+  wall: z.enum(['north', 'east', 'south', 'west']),
+  offset: z.number().int(),
+})
+
+export const ProjectFileSchema = ProjectFileV2Schema.extend({
+  schemaVersion: z.literal(3),
+  room: RoomSchema,
+  placements: z.array(PlacementSchema),
+})
+
+export const CURRENT_SCHEMA_VERSION = 3
 
 // ── Миграция ─────────────────────────────────────────────────────────────────
 
@@ -137,7 +159,9 @@ type ProjectV1 = z.infer<typeof ProjectFileV1Schema>
  * Нәтижесі миллиметрге дейін бұрынғымен бірдей болуы керек — оны
  * snapshot тесті қорғайды.
  */
-export function migrateV1ToV2(project: ProjectV1): ProjectFile {
+type ProjectV2 = z.infer<typeof ProjectFileV2Schema>
+
+export function migrateV1ToV2(project: ProjectV1): ProjectV2 {
   return {
     ...project,
     schemaVersion: 2,
@@ -157,6 +181,23 @@ export function migrateV1ToV2(project: ProjectV1): ProjectFile {
   }
 }
 
+/** Бөлме — v2-де мұндай ұғым болмаған, әдепкі бөлме беріледі. */
+const DEFAULT_PROJECT_ROOM = { width: 4000, depth: 3000, height: 2700 }
+
+/**
+ * v2 → v3: бөлме әдепкі болады, шкафтар бір қабырғаға қатарынан тізіледі.
+ * Ені белгісіз қалмайды: әрқайсысының өз ені бойынша жылжытылады.
+ */
+export function migrateV2ToV3(project: ProjectV2): ProjectFile {
+  let offset = 0
+  const placements = project.cabinets.map((cabinet) => {
+    const placement = { cabinetId: cabinet.id, wall: 'south' as const, offset }
+    offset += cabinet.width
+    return placement
+  })
+  return { ...project, schemaVersion: 3, room: { ...DEFAULT_PROJECT_ROOM }, placements }
+}
+
 /**
  * Кез келген нұсқадағы жоба файлын оқып, ағымдағы пішінге келтіру.
  * Белгісіз нұсқа — үнсіз өтпейді, қате лақтырады.
@@ -165,12 +206,14 @@ export function parseProject(raw: unknown): ProjectFile {
   const version = (raw as { schemaVersion?: unknown })?.schemaVersion
   switch (version) {
     case 1:
-      return migrateV1ToV2(ProjectFileV1Schema.parse(raw))
+      return migrateV2ToV3(migrateV1ToV2(ProjectFileV1Schema.parse(raw)))
     case 2:
+      return migrateV2ToV3(ProjectFileV2Schema.parse(raw))
+    case 3:
       return ProjectFileSchema.parse(raw)
     default:
       throw new Error(
-        `Белгісіз schemaVersion: ${String(version)}. Қолдау бар нұсқалар: 1, ${CURRENT_SCHEMA_VERSION}`,
+        `Белгісіз schemaVersion: ${String(version)}. Қолдау бар нұсқалар: 1, 2, ${CURRENT_SCHEMA_VERSION}`,
       )
   }
 }

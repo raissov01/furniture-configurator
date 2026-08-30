@@ -201,6 +201,10 @@ const MaterialSchema = z.object({
   pricePerSheet: minorUnits,
   trimEdge: z.number().int().nonnegative(),
   defaultEdging: EdgePolicySchema.optional(),
+  decor: z.object({
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    kind: z.enum(['solid', 'wood']),
+  }).optional(),
 })
 
 const EdgeBandSchema = z.object({

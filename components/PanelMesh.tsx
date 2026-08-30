@@ -11,26 +11,45 @@ import { panelExtents } from '@/src/core/index'
 import type { Axis, Panel } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
-/** Рөл бойынша түс — материал текстурасы емес, оқылатын схема. */
-const COLORS: Record<string, string> = {
-  side: '#c9a227',
-  top: '#d9b642',
-  bottom: '#d9b642',
-  shelf: '#e3c76a',
-  divider: '#bd9520',
-  back: '#8a6f3a',
-  front: '#a8791f',
+/**
+ * Панельдің түсі МАТЕРИАЛДЫҢ декорынан алынады — цех қай плитаны таңдаса,
+ * 3D-де сол көрінеді. Рөл тек РЕҢКІН өзгертеді: бүйір сәл қою, сөре сәл
+ * ашық — әйтпесе бір түсті шкаф жалпақ қорап болып, құрылымы оқылмайды.
+ */
+const ROLE_SHADE: Record<string, number> = {
+  side: 0.9,
+  divider: 0.86,
+  top: 1.0,
+  bottom: 1.0,
+  shelf: 1.08,
+  back: 0.78,
+  front: 1.03,
+}
+
+/** Декоры жоқ материал — бейтарап сұр. */
+const NEUTRAL = '#b8b4ac'
+
+function shade(hex: string, factor: number): string {
+  const value = hex.replace('#', '')
+  if (value.length !== 6) return hex
+  const channels = [0, 2, 4].map((i) => {
+    const n = Number.parseInt(value.slice(i, i + 2), 16)
+    return Math.max(0, Math.min(255, Math.round(n * factor)))
+  })
+  return `#${channels.map((c) => c.toString(16).padStart(2, '0')).join('')}`
 }
 
 /** Ажыратылған көріністе панель өз ҚАЛЫҢДЫҒЫ өсі бойымен ортадан ажырайды. */
 const EXPLODE_DISTANCE = 260
 
 export function PanelMesh({
-  panel, thickness, centre,
+  panel, thickness, centre, decorColor,
 }: {
   panel: Panel
   thickness: number
   centre: { x: number; y: number; z: number }
+  /** Панель материалының декор түсі. Болмаса — бейтарап сұр. */
+  decorColor?: string | undefined
 }) {
   const exploded = useConfigurator((s) => s.exploded)
   const hovered = useConfigurator((s) => s.hovered)
@@ -66,7 +85,7 @@ export function PanelMesh({
     >
       <boxGeometry args={[extents.x, extents.y, extents.z]} />
       <meshStandardMaterial
-        color={isHovered ? '#ffffff' : (COLORS[panel.role] ?? '#bbbbbb')}
+        color={isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)}
         roughness={0.7}
         metalness={0}
       />

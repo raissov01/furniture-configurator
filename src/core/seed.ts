@@ -11,15 +11,19 @@
 import type { EdgeBand, Material } from './types'
 
 /** Кромка декорға байланады: декоры сәйкес келмеген кромка — брак. */
-type Decor = { code: string; name: string; hasGrain: boolean }
+type DecorSeed = { code: string; name: string; hasGrain: boolean; color: string }
 
-const DECORS: Decor[] = [
+/**
+ * Түстер — сол декорлардың нақты реңкіне жуықтатылған. Олар ӨНДІРІСКЕ әсер
+ * етпейді: тек 3D мен таңдағышта плита шын түсімен көрінуі үшін.
+ */
+const DECORS: DecorSeed[] = [
   // Бір түсті декорда текстура ЖОҚ → раскройда детальді 90°-қа бұруға болады,
   // қалдық азаяды. Ағаш декорда бұруға БОЛМАЙДЫ. Осыны шатастыру тікелей ақша.
-  { code: 'w980', name: 'Белый платиновый W980', hasGrain: false },
-  { code: 'u104', name: 'Серый пыльный U104', hasGrain: false },
-  { code: 'h1145', name: 'Дуб Бардолино H1145', hasGrain: true },
-  { code: 'h3303', name: 'Дуб Небраска H3303', hasGrain: true },
+  { code: 'w980', name: 'Белый платиновый W980', hasGrain: false, color: '#eeece7' },
+  { code: 'u104', name: 'Серый пыльный U104', hasGrain: false, color: '#9c9a94' },
+  { code: 'h1145', name: 'Дуб Бардолино H1145', hasGrain: true, color: '#b98d57' },
+  { code: 'h3303', name: 'Дуб Небраска H3303', hasGrain: true, color: '#8d6c47' },
 ]
 
 /** ПВХ кромка қалыңдықтары. 0.4 — жасырын жиек, 2 — көрінетін/қол тиетін жиек. */
@@ -59,6 +63,7 @@ export const SEED_MATERIALS: Material[] = [
       pricePerSheet: 0,
       trimEdge: 10,
       defaultEdging: edgingFor(d.code),
+      decor: { color: d.color, kind: d.hasGrain ? 'wood' : 'solid' },
     },
     {
       id: `ldsp18-${d.code}`,
@@ -69,6 +74,7 @@ export const SEED_MATERIALS: Material[] = [
       pricePerSheet: 0,
       trimEdge: 10,
       defaultEdging: edgingFor(d.code),
+      decor: { color: d.color, kind: d.hasGrain ? 'wood' : 'solid' },
     },
   ]),
   {
@@ -80,6 +86,7 @@ export const SEED_MATERIALS: Material[] = [
     pricePerSheet: 0,
     trimEdge: 10,
     defaultEdging: edgingFor('w980'),
+    decor: { color: '#eeece7', kind: 'solid' },
   },
   {
     id: 'hdf3-white',
@@ -91,6 +98,7 @@ export const SEED_MATERIALS: Material[] = [
     trimEdge: 10,
     // Арт қабырғаға кромка жабыспайды.
     defaultEdging: { visibleFront: null, visibleSecondary: null, hidden: null },
+    decor: { color: '#f2f1ec', kind: 'solid' },
   },
   {
     id: 'hdf3-brown',
@@ -101,6 +109,7 @@ export const SEED_MATERIALS: Material[] = [
     pricePerSheet: 0,
     trimEdge: 10,
     defaultEdging: { visibleFront: null, visibleSecondary: null, hidden: null },
+    decor: { color: '#6f5741', kind: 'solid' },
   },
   {
     id: 'mdf16-paint',
@@ -111,6 +120,7 @@ export const SEED_MATERIALS: Material[] = [
     pricePerSheet: 0,
     trimEdge: 10,
     defaultEdging: { visibleFront: 'abs2-paint', visibleSecondary: 'abs2-paint', hidden: null },
+    decor: { color: '#e6e3dd', kind: 'solid' },
   },
   {
     id: 'mdf19-paint',
@@ -121,6 +131,7 @@ export const SEED_MATERIALS: Material[] = [
     pricePerSheet: 0,
     trimEdge: 10,
     defaultEdging: { visibleFront: 'abs2-paint', visibleSecondary: 'abs2-paint', hidden: null },
+    decor: { color: '#e6e3dd', kind: 'solid' },
   },
 ]
 

@@ -77,9 +77,9 @@ function CameraRig({ target, box }: { target: Vec3; box: { W: number; H: number;
 
 function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Catalog; active: boolean }) {
   const showDimensions = useConfigurator((s) => s.showDimensions)
-  const thicknessOf = useMemo(() => {
-    const map = new Map(catalog.materials.map((m) => [m.id, m.thickness]))
-    return (id: string) => map.get(id) ?? 16
+  const materialOf = useMemo(() => {
+    const map = new Map(catalog.materials.map((m) => [m.id, m]))
+    return (id: string) => map.get(id)
   }, [catalog])
 
   const centre = useMemo(
@@ -92,9 +92,18 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
       position={[item.pose.position.x, 0, item.pose.position.z]}
       rotation={[0, (item.pose.rotationY * Math.PI) / 180, 0]}
     >
-      {item.panels.map((p) => (
-        <PanelMesh key={p.id} panel={p} thickness={thicknessOf(p.materialId)} centre={centre} />
-      ))}
+      {item.panels.map((p) => {
+        const material = materialOf(p.materialId)
+        return (
+          <PanelMesh
+            key={p.id}
+            panel={p}
+            thickness={material?.thickness ?? 16}
+            centre={centre}
+            decorColor={material?.decor?.color}
+          />
+        )
+      })}
       {active && showDimensions ? <DimensionLabels cabinet={item.cabinet} /> : null}
     </group>
   )

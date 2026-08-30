@@ -29,6 +29,19 @@ export type Material = {
    * жабысса — брак, сондықтан материал өз лентасын өзі көрсетеді.
    */
   defaultEdging?: EdgePolicy | undefined
+  /**
+   * Декордың КӨРІНІСІ: түсі мен түрі. Бұл өндіріске әсер етпейді — тек 3D мен
+   * материал таңдағышта плитаның шын түсін көрсету үшін. Болмаса, көрініс
+   * бейтарап сұр түспен салынады.
+   */
+  decor?: Decor | undefined
+}
+
+/** Плитаның сырт көрінісі. `wood` — текстуралы, `solid` — біртүсті. */
+export type Decor = {
+  /** Негізгі түсі, CSS hex */
+  color: string
+  kind: 'solid' | 'wood'
 }
 
 export type EdgeBand = {
@@ -254,14 +267,42 @@ export type Catalog = {
   edgeBands: EdgeBand[]
 }
 
+// ── Бөлме (C фаза) ───────────────────────────────────────────────────────────
+
+export type WallId = 'north' | 'east' | 'south' | 'west'
+
+/** Тікбұрышты еден: X ∈ [0, width], Z ∈ [0, depth], биіктік Y бойымен. */
+export type Room = {
+  /** X бойымен, мм */
+  width: number
+  /** Z бойымен, мм */
+  depth: number
+  /** Y бойымен, мм — тек 3D көрініс үшін */
+  height: number
+}
+
+/** Шкафтың бөлмедегі орны. Бір шкаф — бір орын. */
+export type Placement = {
+  cabinetId: string
+  wall: WallId
+  /** Қабырға басынан, мм */
+  offset: number
+}
+
 export type ProjectFile = {
-  /** Ағымдағы нұсқа = 2. Ескі файлдар migrateProject() арқылы көтеріледі. */
-  schemaVersion: 2
+  /** Ағымдағы нұсқа = 3. Ескі файлдар parseProject() арқылы көтеріледі. */
+  schemaVersion: 3
   name: string
   materials: Material[]
   edgeBands: EdgeBand[]
   settings?: SettingsOverride | undefined
   cabinets: CabinetConfig[]
+  /**
+   * Бөлме мен шкафтардың орны (C фаза). Ескі файлда болмайды — миграция
+   * бөлмені әдепкі етіп қояды да, шкафтарды бір қабырғаға тізеді.
+   */
+  room: Room
+  placements: Placement[]
 }
 
 // ── Деталировка ──────────────────────────────────────────────────────────────

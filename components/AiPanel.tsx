@@ -11,7 +11,9 @@
 import { useState } from 'react'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
-import { Button } from '@/components/ui'
+import { Button, Field, NumberInput } from '@/components/ui'
+import { DecorPicker } from '@/components/DecorPicker'
+import { cn } from '@/lib/cn'
 import type { CabinetBrief, CabinetConfig } from '@/src/core/index'
 
 type Variant = { brief: CabinetBrief; cabinet: CabinetConfig; panelCount: number }
@@ -23,6 +25,19 @@ const EXAMPLES = [
   'Балконға стеллаж керек, биіктігі 2 метр, ені 900',
 ]
 
+/** Тек конфигуратор ШЫНЫМЕН жасай алатын түрлер. Ящик пен купе әлі жоқ. */
+const KINDS = [
+  'Кухонный модуль',
+  'Шкаф',
+  'Тумба',
+  'Стеллаж',
+  'Обувница',
+  'Антресоль',
+]
+
+/** 0 — «не задано»: сан қоймаса, оны модель өзі шешеді. */
+const UNSET = 0
+
 /** Карточкадағы фас суретінің биіктігі, пиксель. */
 const THUMB_PX = 120
 
@@ -32,7 +47,13 @@ export function AiPanel() {
   const loadCabinet = useConfigurator((s) => s.loadCabinet)
   const catalog = useConfigurator((s) => s.catalog)
 
+  const materials = useConfigurator((s) => s.shop.materials)
+  const carcassMaterials = materials.filter((m) => m.thickness >= 10)
+
   const [prompt, setPrompt] = useState('')
+  const [kind, setKind] = useState<string | null>(null)
+  const [size, setSize] = useState({ height: UNSET, width: UNSET, depth: UNSET })
+  const [materialId, setMaterialId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [variants, setVariants] = useState<Variant[]>([])
@@ -41,7 +62,7 @@ export function AiPanel() {
   if (!open) return null
 
   const submit = async () => {
-    if (!prompt.trim() || busy) return
+    if ((!prompt.trim() && !kind) || busy) return
     setBusy(true)
     setError(null)
     setDropped([])
@@ -49,7 +70,16 @@ export function AiPanel() {
       const res = await fetch('/api/variants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({
+          prompt,
+          constraints: {
+            ...(kind ? { kind } : {}),
+            ...(size.height > UNSET ? { height: size.height } : {}),
+            ...(size.width > UNSET ? { width: size.width } : {}),
+            ...(size.depth > UNSET ? { depth: size.depth } : {}),
+            ...(materialId ? { materialId } : {}),
+          },
+        }),
       })
       const data: unknown = await res.json()
       const payload = data as { variants?: Variant[]; dropped?: Dropped[]; error?: string }
@@ -85,6 +115,56 @@ export function AiPanel() {
           </div>
         </div>
 
+        <div className="mb-3 space-y-3 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
+          <div>
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+              Что делаем
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {KINDS.map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setKind(kind === k ? null : k)}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs transition',
+                    kind === k
+                      ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+                      : 'border-neutral-300 text-neutral-600 hover:border-neutral-500 dark:border-neutral-700 dark:text-neutral-400',
+                  )}
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[repeat(3,minmax(0,7rem))_minmax(0,1fr)]">
+            <Field label="Высота (H)" hint={size.height === UNSET ? 'любая' : undefined}>
+              <NumberInput value={size.height} min={0} step={10}
+                onChange={(height) => setSize((s0) => ({ ...s0, height }))} />
+            </Field>
+            <Field label="Ширина (W)" hint={size.width === UNSET ? 'любая' : undefined}>
+              <NumberInput value={size.width} min={0} step={10}
+                onChange={(width) => setSize((s0) => ({ ...s0, width }))} />
+            </Field>
+            <Field label="Глубина (D)" hint={size.depth === UNSET ? 'любая' : undefined}>
+              <NumberInput value={size.depth} min={0} step={10}
+                onChange={(depth) => setSize((s0) => ({ ...s0, depth }))} />
+            </Field>
+            <Field label="Декор" hint={materialId ? undefined : 'на усмотрение'}>
+              <DecorPicker
+                materials={carcassMaterials}
+                value={materialId ?? ''}
+                onChange={setMaterialId}
+              />
+            </Field>
+          </div>
+          <p className="text-[11px] text-neutral-400">
+            Заданные размеры и декор соблюдаются точно. Пустое поле — решает бот.
+          </p>
+        </div>
+
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -97,7 +177,7 @@ export function AiPanel() {
         />
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Button onClick={() => void submit()} disabled={busy || !prompt.trim()} active>
+          <Button onClick={() => void submit()} disabled={busy || (!prompt.trim() && !kind)} active>
             {busy ? 'Считаю…' : 'Предложить варианты'}
           </Button>
           <span className="text-[11px] text-neutral-400">Ctrl+Enter</span>
