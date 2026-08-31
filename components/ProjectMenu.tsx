@@ -7,6 +7,7 @@
  * `parseProject()` арқылы жаңа пішінге көтеріледі де, жоба сынбайды.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useRef } from 'react'
 import { parseProject } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -45,8 +46,8 @@ export function ProjectMenu() {
 
   return (
     <div className="flex items-center gap-1">
-      <Button onClick={save} title="Скачать проект файлом">Сохранить</Button>
-      <Button onClick={() => input.current?.click()} title="Открыть проект из файла">Открыть</Button>
+      <Button onClick={save} title={tr('Скачать проект файлом')}>{tr('Сохранить')}</Button>
+      <Button onClick={() => input.current?.click()} title={tr('Открыть проект из файла')}>{tr('Открыть')}</Button>
       <input
         ref={input}
         type="file"

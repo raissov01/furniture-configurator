@@ -7,6 +7,7 @@
  * істей алмайтын нәрсені уәде ете алмайды.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { formatTenge } from '@/src/core/index'
 import { demoNesting, demoPrice, demoRows, demoSheet } from '@/lib/demo'
 import { SITE, TARIFFS } from '@/lib/site'
@@ -17,19 +18,19 @@ import { Cta, Dimension, Eyebrow, H2, Section, Titled } from '@/components/site/
 
 const STEPS = [
   {
-    title: 'Опишите задачу или возьмите шаблон',
+    title: tr('Опишите задачу или возьмите шаблон'),
     text: 'Пишете словами: «прихожая 1800, шкаф под верхнюю одежду». Получаете три готовых варианта корпуса. Или берёте шаблон из библиотеки и меняете размеры.',
   },
   {
-    title: 'Правите корпус',
+    title: tr('Правите корпус'),
     text: 'Секции, полки, фасады, задняя стенка внакладку или в паз. Модель и деталировка пересчитываются на каждое изменение.',
   },
   {
-    title: 'Ставите корпуса в комнату',
+    title: tr('Ставите корпуса в комнату'),
     text: 'Задаёте стены, выбираете, на какой стене что стоит. Пересечения и корпуса, которые не влезли, подсвечиваются сразу.',
   },
   {
-    title: 'Забираете раскрой и смету',
+    title: tr('Забираете раскрой и смету'),
     text: 'Карта раскроя на печать, DXF по листу на станок, коммерческое предложение клиенту. Всё по одной кнопке.',
   },
 ]
@@ -74,7 +75,7 @@ export default function Page() {
         <Section className="pb-4 pt-12 sm:pt-20">
           <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
             <div className="rise">
-              <Eyebrow>Для мебельных цехов · ЛДСП</Eyebrow>
+              <Eyebrow>{tr('Для мебельных цехов · ЛДСП')}</Eyebrow>
               <h1
                 className="text-[2.6rem] leading-[0.98] sm:text-6xl lg:text-[4.2rem]"
                 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.015em' }}
@@ -87,8 +88,8 @@ export default function Page() {
                 по вашим ценам и вашим правилам сборки.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <Cta href="/configurator">Открыть конфигуратор</Cta>
-                <Cta href="#artifacts" tone="ghost">Посмотреть, что забирает цех</Cta>
+                <Cta href="/configurator">{tr('Открыть конфигуратор')}</Cta>
+                <Cta href="#artifacts" tone="ghost">{tr('Посмотреть, что забирает цех')}</Cta>
               </div>
               <p className="mt-4 text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>
                 Без установки. Считает в браузере.
@@ -109,12 +110,12 @@ export default function Page() {
           </div>
         </Section>
 
-        <Section><Dimension label="Лист" value={`${demoSheet.sheet.sheetWidth} × ${demoSheet.sheet.sheetHeight} мм`} /></Section>
+        <Section><Dimension label={tr('Лист')} value={`${demoSheet.sheet.sheetWidth} × ${demoSheet.sheet.sheetHeight} мм`} /></Section>
 
         {/* ── Артефакты ────────────────────────────────────────────────────── */}
         <Section id="artifacts" className="py-8 sm:py-14">
-          <Eyebrow>01 — на выходе</Eyebrow>
-          <H2>Три документа, которые цех правда отдаёт</H2>
+          <Eyebrow>{tr('01 — на выходе')}</Eyebrow>
+          <H2>{tr('Три документа, которые цех правда отдаёт')}</H2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Не «3D-визуализация», а бумаги, по которым режут, сверлят и выставляют счёт.
             Ниже — настоящий вывод по шкафу из {demoRows.reduce((s, r) => s + r.qty, 0)} деталей.
@@ -132,10 +133,10 @@ export default function Page() {
                 <table className="w-full text-xs" style={{ fontFamily: 'var(--font-mono)' }}>
                   <thead>
                     <tr style={{ color: 'var(--ink-soft)' }}>
-                      <th className="px-4 py-2 text-left font-normal">Наименование</th>
-                      <th className="px-2 py-2 text-right font-normal">Кол-во</th>
-                      <th className="px-2 py-2 text-right font-normal" colSpan={2}>Готовый · клиент</th>
-                      <th className="px-2 py-2 text-right font-normal" colSpan={2}>Рез · цех</th>
+                      <th className="px-4 py-2 text-left font-normal">{tr('Наименование')}</th>
+                      <th className="px-2 py-2 text-right font-normal">{tr('Кол-во')}</th>
+                      <th className="px-2 py-2 text-right font-normal" colSpan={2}>{tr('Готовый · клиент')}</th>
+                      <th className="px-2 py-2 text-right font-normal" colSpan={2}>{tr('Рез · цех')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -182,7 +183,7 @@ export default function Page() {
                     className="flex items-baseline justify-between gap-4 border-t pt-2 text-base"
                     style={{ borderColor: 'var(--rule)', fontFamily: 'var(--font-display)', fontWeight: 700 }}
                   >
-                    <dt>Итого клиенту</dt>
+                    <dt>{tr('Итого клиенту')}</dt>
                     <dd>{formatTenge(demoPrice.total)}</dd>
                   </div>
                 </dl>
@@ -200,22 +201,22 @@ export default function Page() {
                   Файлы на станок
                 </figcaption>
                 <ul className="space-y-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
-                  <li><b style={{ color: 'var(--ink)' }}>PDF карты раскроя</b> — по листу на страницу, с подписями деталей.</li>
-                  <li><b style={{ color: 'var(--ink)' }}>DXF по листу</b> — лист, область реза, детали и отход на разных слоях.</li>
-                  <li><b style={{ color: 'var(--ink)' }}>DXF по детали</b> — присадка отдельным слоем на каждый диаметр.</li>
-                  <li><b style={{ color: 'var(--ink)' }}>XLSX и CSV</b> — деталировка в вашей таблице.</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('PDF карты раскроя')}</b> {tr('— по листу на страницу, с подписями деталей.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по листу')}</b> {tr('— лист, область реза, детали и отход на разных слоях.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по детали')}</b> {tr('— присадка отдельным слоем на каждый диаметр.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('XLSX и CSV')}</b> {tr('— деталировка в вашей таблице.')}</li>
                 </ul>
               </figure>
             </div>
           </div>
         </Section>
 
-        <Section><Dimension label="Пропил" value="4 мм" /></Section>
+        <Section><Dimension label={tr('Пропил')} value="4 мм" /></Section>
 
         {/* ── Как это работает ─────────────────────────────────────────────── */}
         <Section id="how" className="py-8 sm:py-14">
-          <Eyebrow>02 — порядок работы</Eyebrow>
-          <H2>Четыре шага от разговора до реза</H2>
+          <Eyebrow>{tr('02 — порядок работы')}</Eyebrow>
+          <H2>{tr('Четыре шага от разговора до реза')}</H2>
           <div className="mt-8 grid gap-8 sm:grid-cols-2">
             {STEPS.map((s, i) => (
               <Titled key={s.title} mark={`Шаг ${i + 1}`} title={s.title}>
@@ -225,12 +226,12 @@ export default function Page() {
           </div>
         </Section>
 
-        <Section><Dimension label="Кромка" value="2.0 / 0.4 мм" /></Section>
+        <Section><Dimension label={tr('Кромка')} value="2.0 / 0.4 мм" /></Section>
 
         {/* ── Правила цеха ─────────────────────────────────────────────────── */}
         <Section id="rules" className="py-8 sm:py-14">
-          <Eyebrow>03 — почему это не «ещё один конструктор»</Eyebrow>
-          <H2>Мы не выдумываем ваши числа</H2>
+          <Eyebrow>{tr('03 — почему это не «ещё один конструктор»')}</Eyebrow>
+          <H2>{tr('Мы не выдумываем ваши числа')}</H2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             Каждый цех собирает по-своему. Если зашить одно значение в код, у остальных
             тихо получится мебель, которая не собирается. Поэтому все константы —
@@ -252,12 +253,12 @@ export default function Page() {
           </div>
         </Section>
 
-        <Section><Dimension label="Раскрой" value={`${demoNesting.sheetCount} листа · отход ${ldsp.wastePercent.toFixed(1)}%`} /></Section>
+        <Section><Dimension label={tr('Раскрой')} value={`${demoNesting.sheetCount} листа · отход ${ldsp.wastePercent.toFixed(1)}%`} /></Section>
 
         {/* ── Тарифы ───────────────────────────────────────────────────────── */}
         <Section id="pricing" className="py-8 sm:py-14">
-          <Eyebrow>04 — подписка</Eyebrow>
-          <H2>Тарифы</H2>
+          <Eyebrow>{tr('04 — подписка')}</Eyebrow>
+          <H2>{tr('Тарифы')}</H2>
           <div className="mt-8 grid gap-4 lg:grid-cols-3">
             {TARIFFS.map((t) => (
               <div
@@ -279,7 +280,7 @@ export default function Page() {
                   ))}
                 </ul>
                 <div className="mt-5">
-                  <Cta href="/configurator" tone={t.highlighted ? 'solid' : 'ghost'}>Попробовать</Cta>
+                  <Cta href="/configurator" tone={t.highlighted ? 'solid' : 'ghost'}>{tr('Попробовать')}</Cta>
                 </div>
               </div>
             ))}
@@ -288,8 +289,8 @@ export default function Page() {
 
         {/* ── FAQ ──────────────────────────────────────────────────────────── */}
         <Section className="py-8 sm:py-14">
-          <Eyebrow>05 — вопросы</Eyebrow>
-          <H2>Что обычно спрашивают</H2>
+          <Eyebrow>{tr('05 — вопросы')}</Eyebrow>
+          <H2>{tr('Что обычно спрашивают')}</H2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2">
             {FAQ.map((item) => (
               <div key={item.q}>

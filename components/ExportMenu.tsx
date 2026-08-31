@@ -8,6 +8,7 @@
  * бюджеті 500 КБ, ал pdf-lib жалғыз өзі соның жартысын жеп қояды.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useState } from 'react'
 import { Button } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
@@ -39,7 +40,7 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
 
   return (
     <div className="flex items-center gap-1">
-      <span className="mr-1 text-[10px] uppercase tracking-wider text-neutral-400">Экспорт</span>
+      <span className="mr-1 text-[10px] uppercase tracking-wider text-neutral-400">{tr('Экспорт')}</span>
 
       <Button
         disabled={busy !== null}
@@ -64,7 +65,7 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
 
       <Button
         disabled={busy !== null}
-        title="Каждая деталь — отдельный DXF, всё в одном архиве"
+        title={tr('Каждая деталь — отдельный DXF, всё в одном архиве')}
         onClick={() => run('dxf', async () => {
           const [{ cabinetToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
             import('@/src/core/export/dxf'),
@@ -81,7 +82,7 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
 
       <Button
         disabled={busy !== null}
-        title="Проекции, сборка и деталировка"
+        title={tr('Проекции, сборка и деталировка')}
         onClick={() => run('pdf', async () => {
           const { assemblyDrawingPdf } = await import('@/src/core/export/pdf')
           const [regular, bold] = await Promise.all([

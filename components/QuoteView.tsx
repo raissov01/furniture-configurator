@@ -10,6 +10,7 @@
  * `priceProject`), сондықтан экрандағы сан мен экспорттағы сан ажырамайды.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import { SERVICE_IDS, SERVICE_NAMES, formatTenge, nestPanels, priceProject } from '@/src/core/index'
 import type { HardwarePlacement, NestedSheet, Panel, PriceLine } from '@/src/core/index'
@@ -94,16 +95,16 @@ export function QuoteView({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h2 className="mr-2 text-sm font-semibold">Смета по проекту</h2>
-          <Button active={tab === 'nesting'} onClick={() => setTab('nesting')}>Раскрой</Button>
-          <Button active={tab === 'price'} onClick={() => setTab('price')}>Стоимость</Button>
+          <h2 className="mr-2 text-sm font-semibold">{tr('Смета по проекту')}</h2>
+          <Button active={tab === 'nesting'} onClick={() => setTab('nesting')}>{tr('Раскрой')}</Button>
+          <Button active={tab === 'price'} onClick={() => setTab('price')}>{tr('Стоимость')}</Button>
           <span className="text-[11px] text-neutral-400">
             {panels.length > 0 ? `деталей в проекте: ${panels.length}` : null}
           </span>
           <div className="ml-auto flex items-center gap-1">
             <Button
               disabled={busy !== null || !nesting}
-              title="Карта раскроя для цеха, по листу на страницу"
+              title={tr('Карта раскроя для цеха, по листу на страницу')}
               onClick={() => void run('map', async () => {
                 const { nestingPdf } = await import('@/src/core/export/nestingPdf')
                 const bytes = await nestingPdf({ nesting: nesting!, projectName, fonts: await loadFonts() })
@@ -114,7 +115,7 @@ export function QuoteView({
             </Button>
             <Button
               disabled={busy !== null || !nesting}
-              title="По одному DXF на лист, всё в архиве"
+              title={tr('По одному DXF на лист, всё в архиве')}
               onClick={() => void run('dxf', async () => {
                 const [{ nestingToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
                   import('@/src/core/export/dxf'),
@@ -149,7 +150,7 @@ export function QuoteView({
             </Button>
             <Button
               disabled={busy !== null}
-              title="Что закупить в цех. Выпускается и без заполненных цен"
+              title={tr('Что закупить в цех. Выпускается и без заполненных цен')}
               onClick={() => void run('fittings', async () => {
                 const { hardwareList, hardwareListPdf } = await import('@/src/core/export/hardwareList')
                 const list = hardwareList(panels, hardware, shop)
@@ -165,7 +166,7 @@ export function QuoteView({
             </Button>
             <Button
               disabled={busy !== null}
-              title="Список фурнитуры в CSV — отправить поставщику"
+              title={tr('Список фурнитуры в CSV — отправить поставщику')}
               onClick={() => void run('fittings-csv', async () => {
                 const { hardwareList, hardwareListToCsv } = await import('@/src/core/export/hardwareList')
                 const csv = hardwareListToCsv(hardwareList(panels, hardware, shop))
@@ -179,12 +180,12 @@ export function QuoteView({
             >
               {busy === 'fittings-csv' ? '…' : 'Фурнитура CSV'}
             </Button>
-            <Button onClick={() => setOpen(false)}>Закрыть</Button>
+            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
         {!nesting ? (
-          <p className="text-xs text-neutral-500">Нет деталей для раскроя.</p>
+          <p className="text-xs text-neutral-500">{tr('Нет деталей для раскроя.')}</p>
         ) : tab === 'nesting' ? (
           <div className="space-y-4">
             {nesting.unplaced.length > 0 ? (
@@ -194,7 +195,7 @@ export function QuoteView({
             ) : null}
 
             <div className="flex flex-wrap gap-2 text-xs">
-              <Chip label="Листов всего" value={String(nesting.sheetCount)} />
+              <Chip label={tr('Листов всего')} value={String(nesting.sheetCount)} />
               {nesting.byMaterial.map((m) => (
                 <Chip
                   key={m.materialId}
@@ -218,11 +219,11 @@ export function QuoteView({
         ) : (
           <div className="space-y-3">
             <label className="flex items-center gap-2 text-xs">
-              <span className="text-neutral-500">Заказчик</span>
+              <span className="text-neutral-500">{tr('Заказчик')}</span>
               <input
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
-                placeholder="имя клиента — попадёт в КП"
+                placeholder={tr('имя клиента — попадёт в КП')}
                 className="w-64 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
               />
             </label>
@@ -290,10 +291,10 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
 
 function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject>; shopName: string }) {
   const groups: { title: string; lines: PriceLine[] }[] = [
-    { title: 'Материалы', lines: price.materials },
-    { title: 'Кромка', lines: price.edges },
-    { title: 'Фурнитура', lines: price.hardware },
-    { title: 'Услуги цеха', lines: price.services },
+    { title: tr('Материалы'), lines: price.materials },
+    { title: tr('Кромка'), lines: price.edges },
+    { title: tr('Фурнитура'), lines: price.hardware },
+    { title: tr('Услуги цеха'), lines: price.services },
   ]
 
   return (
@@ -312,15 +313,15 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
         <table className="w-full min-w-[620px] text-xs">
           <thead className="text-left text-[11px] uppercase tracking-wide text-neutral-500">
             <tr>
-              <th className="py-1.5 font-medium">Материал</th>
-              <th className="py-1.5 text-right font-medium">Площадь</th>
-              <th className="py-1.5 text-right font-medium">Листы</th>
-              <th className="py-1.5 text-right font-medium">Материал</th>
-              <th className="py-1.5 text-right font-medium">Кромка</th>
+              <th className="py-1.5 font-medium">{tr('Материал')}</th>
+              <th className="py-1.5 text-right font-medium">{tr('Площадь')}</th>
+              <th className="py-1.5 text-right font-medium">{tr('Листы')}</th>
+              <th className="py-1.5 text-right font-medium">{tr('Материал')}</th>
+              <th className="py-1.5 text-right font-medium">{tr('Кромка')}</th>
               {SERVICE_IDS.map((sid) => (
                 <th key={sid} className="py-1.5 text-right font-medium">{SERVICE_NAMES[sid]}</th>
               ))}
-              <th className="py-1.5 text-right font-medium">Итого</th>
+              <th className="py-1.5 text-right font-medium">{tr('Итого')}</th>
             </tr>
           </thead>
           <tbody>
@@ -344,10 +345,10 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
       <table className="w-full text-xs">
         <thead className="text-left text-[11px] uppercase tracking-wide text-neutral-500">
           <tr>
-            <th className="py-1.5 font-medium">Позиция</th>
-            <th className="py-1.5 text-right font-medium">Кол-во</th>
-            <th className="py-1.5 text-right font-medium">Цена</th>
-            <th className="py-1.5 text-right font-medium">Сумма</th>
+            <th className="py-1.5 font-medium">{tr('Позиция')}</th>
+            <th className="py-1.5 text-right font-medium">{tr('Кол-во')}</th>
+            <th className="py-1.5 text-right font-medium">{tr('Цена')}</th>
+            <th className="py-1.5 text-right font-medium">{tr('Сумма')}</th>
           </tr>
         </thead>
         <tbody>
@@ -382,8 +383,8 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
       </table>
 
       <div className="ml-auto w-full max-w-sm space-y-1 border-t border-neutral-200 pt-2 text-xs dark:border-neutral-700">
-        <Row label="Материалы, кромка, фурнитура" value={formatTenge(price.goods)} />
-        <Row label="Услуги цеха" value={formatTenge(price.servicesTotal)} />
+        <Row label={tr('Материалы, кромка, фурнитура')} value={formatTenge(price.goods)} />
+        <Row label={tr('Услуги цеха')} value={formatTenge(price.servicesTotal)} />
         {price.coefficientAmount !== 0 ? (
           <Row label={`Коэффициент ×${price.coefficient}`} value={formatTenge(price.coefficientAmount)} />
         ) : null}
@@ -393,10 +394,10 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
             value={formatTenge(price.installation.cost)}
           />
         ) : null}
-        <Row label="Себестоимость" value={formatTenge(price.subtotal)} />
+        <Row label={tr('Себестоимость')} value={formatTenge(price.subtotal)} />
         <Row label={`Наценка ${price.markupPercent}%`} value={formatTenge(price.markup)} />
         <div className="flex items-baseline justify-between border-t border-neutral-200 pt-1.5 text-sm font-semibold dark:border-neutral-700">
-          <span>Итого клиенту</span>
+          <span>{tr('Итого клиенту')}</span>
           <span className="tabular-nums">{formatTenge(price.total)}</span>
         </div>
         {shopName ? <p className="pt-1 text-[11px] text-neutral-400">{shopName}</p> : null}

@@ -5,6 +5,7 @@
  * ағынының бірінші қадамы.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import { SEED_SETS, SEED_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
 import type { TemplateCategory } from '@/src/core/index'
@@ -57,16 +58,16 @@ export function TemplateGallery() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h2 className="mr-2 text-sm font-semibold">Готовые шаблоны</h2>
-          <Button active={filter === 'all'} onClick={() => setFilter('all')}>Все</Button>
+          <h2 className="mr-2 text-sm font-semibold">{tr('Готовые шаблоны')}</h2>
+          <Button active={filter === 'all'} onClick={() => setFilter('all')}>{tr('Все')}</Button>
           {TEMPLATE_CATEGORIES.map((c) => (
             <Button key={c.value} active={filter === c.value} onClick={() => setFilter(c.value)}>
               {c.label}
             </Button>
           ))}
-          <Button active={filter === 'sets'} onClick={() => setFilter('sets')}>Наборы</Button>
+          <Button active={filter === 'sets'} onClick={() => setFilter('sets')}>{tr('Наборы')}</Button>
           <div className="ml-auto">
-            <Button onClick={() => setOpen(false)}>Закрыть</Button>
+            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
 

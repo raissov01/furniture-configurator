@@ -5,6 +5,7 @@
  * өзгереді, қалғанын ядро жасайды (CLAUDE.md §3).
  */
 
+import { t as tr } from '@/lib/i18n'
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import {
@@ -74,13 +75,13 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
     <div className="space-y-2 rounded-lg border border-neutral-200 p-2.5 dark:border-neutral-800">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-neutral-500">Секция {index + 1}</span>
-        <Button onClick={() => removeSection(index)} disabled={!canRemove} title="Удалить секцию">
+        <Button onClick={() => removeSection(index)} disabled={!canRemove} title={tr('Удалить секцию')}>
           ✕
         </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Ширина">
+        <Field label={tr('Ширина')}>
           <Select
             value={section.widthMode}
             onChange={(widthMode) =>
@@ -93,12 +94,12 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
               )
             }
             options={[
-              { value: 'flex', label: 'Гибкая (делит остаток)' },
-              { value: 'fixed', label: 'Фиксированная' },
+              { value: 'flex', label: tr('Гибкая (делит остаток)') },
+              { value: 'fixed', label: tr('Фиксированная') },
             ]}
           />
         </Field>
-        <Field label="мм" hint={section.widthMode === 'flex' ? 'считается' : undefined}>
+        <Field label={tr('мм')} hint={section.widthMode === 'flex' ? 'считается' : undefined}>
           <NumberInput
             value={section.width ?? 0}
             min={100}
@@ -109,7 +110,7 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Полок">
+        <Field label={tr('Полок')}>
           <NumberInput
             value={shelves?.count ?? 0}
             min={0}
@@ -117,17 +118,17 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
             onChange={(shelfCount) => setFill({ shelfCount })}
           />
         </Field>
-        <Field label="Тип полки">
+        <Field label={tr('Тип полки')}>
           <Select
             value={shelves?.shelfKind ?? 'adjustable'}
             onChange={(shelfKind) => setFill({ shelfKind })}
             options={[
-              { value: 'adjustable', label: 'На полкодержателях' },
-              { value: 'fixed', label: 'Фиксированная' },
+              { value: 'adjustable', label: tr('На полкодержателях') },
+              { value: 'fixed', label: tr('Фиксированная') },
             ]}
           />
         </Field>
-        <Field label="Ящиков" hint={drawers ? 'снизу' : undefined}>
+        <Field label={tr('Ящиков')} hint={drawers ? 'снизу' : undefined}>
           <NumberInput
             value={drawers?.count ?? 0}
             min={0}
@@ -135,16 +136,16 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
             onChange={(drawerCount) => setFill({ drawerCount })}
           />
         </Field>
-        <Field label="Штанга" hint={rod ? 'сверху' : undefined}>
+        <Field label={tr('Штанга')} hint={rod ? 'сверху' : undefined}>
           <div className="pt-1.5">
             <Toggle
               checked={rod !== undefined}
               onChange={(hasRod) => setFill({ hasRod })}
-              label="для одежды"
+              label={tr('для одежды')}
             />
           </div>
         </Field>
-        <Field label="Высота ящиков" hint={drawers?.height ? 'мм' : 'делит поровну'}>
+        <Field label={tr('Высота ящиков')} hint={drawers?.height ? 'мм' : 'делит поровну'}>
           <NumberInput
             value={drawers?.height ?? 0}
             min={0}
@@ -161,22 +162,22 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Наполнение">
+        <Field label={tr('Наполнение')}>
           <Select
             value={filling?.kind === 'filling' ? filling.filling : 'none'}
             onChange={(v) => setFill({ filling: v === 'none' ? null : (v as FillingKind) })}
             options={[
-              { value: 'none', label: '— Нет —' },
+              { value: 'none', label: tr('— Нет —') },
               ...FILLINGS.map((f) => ({ value: f.id, label: f.name })),
             ]}
           />
         </Field>
-        <Field label="Техника">
+        <Field label={tr('Техника')}>
           <Select
             value={appliance?.kind === 'appliance' ? appliance.appliance : 'none'}
             onChange={(v) => setFill({ appliance: v === 'none' ? null : (v as ApplianceKind) })}
             options={[
-              { value: 'none', label: '— Нет —' },
+              { value: 'none', label: tr('— Нет —') },
               ...APPLIANCES.map((a) => ({ value: a.id, label: a.name })),
             ]}
           />
@@ -184,7 +185,7 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Фасадов">
+        <Field label={tr('Фасадов')}>
           <NumberInput
             value={section.fronts?.count ?? 0}
             min={0}
@@ -200,7 +201,7 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
             }
           />
         </Field>
-        <Field label="Тип фасада">
+        <Field label={tr('Тип фасада')}>
           <Select
             value={section.fronts?.mount ?? 'overlay'}
             onChange={(mount) =>
@@ -211,8 +212,8 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
               )
             }
             options={[
-              { value: 'overlay', label: 'Накладной' },
-              { value: 'inset', label: 'Вкладной' },
+              { value: 'overlay', label: tr('Накладной') },
+              { value: 'inset', label: tr('Вкладной') },
             ]}
           />
         </Field>
@@ -273,7 +274,7 @@ function FrontFittings({
 
   return (
     <div className="mt-2 flex flex-col gap-2 border-t border-neutral-200 pt-2 dark:border-neutral-800">
-      <Field label="Фрезеровка">
+      <Field label={tr('Фрезеровка')}>
         <Select
           value={milling?.patternId ?? 'plain'}
           onChange={(id) =>
@@ -288,7 +289,7 @@ function FrontFittings({
 
       {milling ? (
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Глубина, мм">
+          <Field label={tr('Глубина, мм')}>
             <NumberInput
               value={milling.depth}
               min={1}
@@ -297,7 +298,7 @@ function FrontFittings({
             />
           </Field>
           {pattern?.usesInset ? (
-            <Field label="Отступ от края, мм">
+            <Field label={tr('Отступ от края, мм')}>
               <NumberInput
                 value={milling.inset}
                 min={0}
@@ -307,7 +308,7 @@ function FrontFittings({
             </Field>
           ) : null}
           {pattern?.usesCount ? (
-            <Field label="Количество">
+            <Field label={tr('Количество')}>
               <NumberInput
                 value={milling.count}
                 min={1}
@@ -320,7 +321,7 @@ function FrontFittings({
       ) : null}
 
       {milling?.patternId === 'custom' ? (
-        <Field label="Файл SVG">
+        <Field label={tr('Файл SVG')}>
           <div className="flex items-center gap-2">
             <input
               type="file"
@@ -335,7 +336,7 @@ function FrontFittings({
         </Field>
       ) : null}
 
-      <Field label="Петля">
+      <Field label={tr('Петля')}>
         <Select
           value={hingeId}
           onChange={(hingeSystemId) => onChange({ hingeSystemId }, 'section.hinge')}
@@ -343,7 +344,7 @@ function FrontFittings({
         />
       </Field>
 
-      <Field label="Ручка">
+      <Field label={tr('Ручка')}>
         <Select
           value={handleSpec ? handleSpec.handleId : 'none'}
           onChange={(id) =>
@@ -356,21 +357,21 @@ function FrontFittings({
           }
           options={[
             ...handles.map((h) => ({ value: h.id, label: h.name })),
-            { value: 'none', label: '— Без ручки —' },
+            { value: 'none', label: tr('— Без ручки —') },
           ]}
         />
       </Field>
 
       {handleSpec && spacings.length > 0 ? (
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Межцентровое, мм">
+          <Field label={tr('Межцентровое, мм')}>
             <Select
               value={String(handleSpec.boreSpacing)}
               onChange={(v) => setHandle({ boreSpacing: Number(v) }, 'section.handleBore')}
               options={spacings.map((n) => ({ value: String(n), label: String(n) }))}
             />
           </Field>
-          <Field label="Расположение">
+          <Field label={tr('Расположение')}>
             <Select
               value={handleSpec.position}
               onChange={(position) =>
@@ -379,14 +380,14 @@ function FrontFittings({
               options={HANDLE_POSITIONS.map((p) => ({ value: p, label: handlePositionName(p) }))}
             />
           </Field>
-          <Field label="Отступ от края, мм">
+          <Field label={tr('Отступ от края, мм')}>
             <NumberInput
               value={handleSpec.edgeOffset}
               min={0}
               onChange={(edgeOffset) => setHandle({ edgeOffset }, 'section.handleEdgeOffset')}
             />
           </Field>
-          <Field label="Отступ от торца, мм">
+          <Field label={tr('Отступ от торца, мм')}>
             <NumberInput
               value={handleSpec.endOffset}
               min={0}
@@ -420,31 +421,31 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <SectionTitle>Шаблон</SectionTitle>
-        <Button onClick={() => setGalleryOpen(true)}>Выбрать</Button>
+        <SectionTitle>{tr('Шаблон')}</SectionTitle>
+        <Button onClick={() => setGalleryOpen(true)}>{tr('Выбрать')}</Button>
       </div>
       <div className="rounded-lg border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-800">
-        <div className="font-medium">{template ? template.name : 'Свой корпус'}</div>
+        <div className="font-medium">{template ? template.name: tr('Свой корпус')}</div>
         {template ? (
           <div className="mt-0.5 text-[11px] leading-snug text-neutral-400">{template.description}</div>
         ) : null}
       </div>
 
-      <SectionTitle>Габарит — H × W × D, мм</SectionTitle>
+      <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
       <div className="grid grid-cols-3 gap-2">
-        <Field label="Высота (H)" hint={hint('height')}>
+        <Field label={tr('Высота (H)')} hint={hint('height')}>
           <NumberInput
             value={cabinet.height} min={100} max={4000} step={10} invalid={invalid('cabinet.height')}
             onChange={(height) => edit('height', { height })}
           />
         </Field>
-        <Field label="Ширина (W)" hint={hint('width')}>
+        <Field label={tr('Ширина (W)')} hint={hint('width')}>
           <NumberInput
             value={cabinet.width} min={100} max={4000} step={10} invalid={invalid('cabinet.width')}
             onChange={(width) => edit('width', { width })}
           />
         </Field>
-        <Field label="Глубина (D)" hint={hint('depth')}>
+        <Field label={tr('Глубина (D)')} hint={hint('depth')}>
           <NumberInput
             value={cabinet.depth} min={100} max={4000} step={10} invalid={invalid('cabinet.depth')}
             onChange={(depth) => edit('depth', { depth })}
@@ -452,31 +453,31 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>Конструкция</SectionTitle>
-      <Field label="Метод сборки">
+      <SectionTitle>{tr('Конструкция')}</SectionTitle>
+      <Field label={tr('Метод сборки')}>
         <Select
           value={cabinet.construction}
           onChange={(construction) => edit('construction', { construction })}
           options={[
-            { value: 'sidesOverlay', label: 'Боковины накрывают крышку и дно' },
-            { value: 'topBottomOverlay', label: 'Крышка и дно накрывают боковины' },
+            { value: 'sidesOverlay', label: tr('Боковины накрывают крышку и дно') },
+            { value: 'topBottomOverlay', label: tr('Крышка и дно накрывают боковины') },
           ]}
         />
       </Field>
-      <Field label="Задняя стенка">
+      <Field label={tr('Задняя стенка')}>
         <Select
           value={cabinet.back.mode}
           onChange={(mode) => edit('back', { back: { mode } })}
           options={[
-            { value: 'overlay', label: 'Внакладку (на скобы)' },
-            { value: 'groove', label: 'В паз 4 мм' },
+            { value: 'overlay', label: tr('Внакладку (на скобы)') },
+            { value: 'groove', label: tr('В паз 4 мм') },
           ]}
         />
       </Field>
 
-      <SectionTitle>Скос (мансарда)</SectionTitle>
+      <SectionTitle>{tr('Скос (мансарда)')}</SectionTitle>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Скос потолка" hint={cabinet.slope ? 'боковины трапеции' : 'нет'}>
+        <Field label={tr('Скос потолка')} hint={cabinet.slope ? 'боковины трапеции' : 'нет'}>
           <Select
             value={cabinet.slope?.towards ?? 'none'}
             onChange={(value) =>
@@ -492,13 +493,13 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
                   })
             }
             options={[
-              { value: 'none', label: 'Нет' },
-              { value: 'back', label: 'Понижается назад' },
-              { value: 'front', label: 'Понижается вперёд' },
+              { value: 'none', label: tr('Нет') },
+              { value: 'back', label: tr('Понижается назад') },
+              { value: 'front', label: tr('Понижается вперёд') },
             ]}
           />
         </Field>
-        <Field label="Низкая сторона" hint={cabinet.slope ? 'мм' : undefined}>
+        <Field label={tr('Низкая сторона')} hint={cabinet.slope ? 'мм' : undefined}>
           <NumberInput
             value={cabinet.slope?.lowHeight ?? 0}
             min={0}
@@ -512,7 +513,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>Угловой (переходной)</SectionTitle>
+      <SectionTitle>{tr('Угловой (переходной)')}</SectionTitle>
       <p className="text-[11px] text-neutral-500">
         Глубина меняется слева направо, задняя стенка встаёт к стене. Пока такой корпус
         делается открытым: фасады, ящики, перегородки и задняя стенка на скошенной
@@ -520,7 +521,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         наполовину верно.
       </p>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Переходной корпус">
+        <Field label={tr('Переходной корпус')}>
           <Select
             value={cabinet.corner ? 'yes' : 'no'}
             onChange={(v) =>
@@ -534,10 +535,10 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
                 }
                 : { corner: undefined })
             }
-            options={[{ value: 'no', label: 'Нет' }, { value: 'yes', label: 'Есть' }]}
+            options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
           />
         </Field>
-        <Field label="Глубина справа, мм" hint={cabinet.corner ? `слева ${cabinet.depth}` : undefined}>
+        <Field label={tr('Глубина справа, мм')} hint={cabinet.corner ? `слева ${cabinet.depth}` : undefined}>
           <NumberInput
             value={cabinet.corner?.depthAtRight ?? 0}
             min={100}
@@ -551,9 +552,9 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>Основание и столешница</SectionTitle>
+      <SectionTitle>{tr('Основание и столешница')}</SectionTitle>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Основание" hint={cabinet.base ? `${cabinet.base.height} мм` : 'нет'}>
+        <Field label={tr('Основание')} hint={cabinet.base ? `${cabinet.base.height} мм` : 'нет'}>
           <Select
             value={cabinet.base?.kind ?? 'none'}
             onChange={(kind) =>
@@ -562,13 +563,13 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
                 : { base: { kind: kind as 'plinth' | 'legs', height: cabinet.base?.height ?? 100 } })
             }
             options={[
-              { value: 'none', label: 'Нет' },
-              { value: 'plinth', label: 'Цоколь' },
-              { value: 'legs', label: 'Ножки' },
+              { value: 'none', label: tr('Нет') },
+              { value: 'plinth', label: tr('Цоколь') },
+              { value: 'legs', label: tr('Ножки') },
             ]}
           />
         </Field>
-        <Field label="Высота основания">
+        <Field label={tr('Высота основания')}>
           <NumberInput
             value={cabinet.base?.height ?? 0}
             min={0}
@@ -582,7 +583,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Столешница">
+        <Field label={tr('Столешница')}>
           <Select
             value={cabinet.worktop ? 'yes' : 'no'}
             onChange={(value) =>
@@ -590,10 +591,10 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
                 ? { worktop: { overhangFront: 20, overhangSides: 0 } }
                 : { worktop: undefined })
             }
-            options={[{ value: 'no', label: 'Нет' }, { value: 'yes', label: 'Есть' }]}
+            options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
           />
         </Field>
-        <Field label="Свес вперёд" hint={cabinet.worktop ? 'мм' : undefined}>
+        <Field label={tr('Свес вперёд')} hint={cabinet.worktop ? 'мм' : undefined}>
           <NumberInput
             value={cabinet.worktop?.overhangFront ?? 0}
             min={0}
@@ -607,7 +608,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>Планки и фартук</SectionTitle>
+      <SectionTitle>{tr('Планки и фартук')}</SectionTitle>
       <p className="text-[11px] text-neutral-500">
         Планка (царга) ставится вместо сплошной крышки: под столешницей она не нужна.
         Фальш-панель закрывает зазор сбоку от корпуса.
@@ -620,14 +621,14 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
                 {r.kind === 'filler' ? 'Фальш-панель' : 'Планка'} {i + 1}
               </span>
               <Button
-                title="Удалить"
+                title={tr('Удалить')}
                 onClick={() => edit('rails', { rails: (cabinet.rails ?? []).filter((x) => x.id !== r.id) })}
               >
                 ✕
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Тип">
+              <Field label={tr('Тип')}>
                 <Select
                   value={r.kind}
                   onChange={(kind) =>
@@ -647,13 +648,13 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
                     })
                   }
                   options={[
-                    { value: 'carcass', label: 'Корпусная' },
-                    { value: 'facade', label: 'Фасадная' },
-                    { value: 'filler', label: 'Фальш-панель' },
+                    { value: 'carcass', label: tr('Корпусная') },
+                    { value: 'facade', label: tr('Фасадная') },
+                    { value: 'filler', label: tr('Фальш-панель') },
                   ]}
                 />
               </Field>
-              <Field label="Расположение">
+              <Field label={tr('Расположение')}>
                 <Select
                   value={r.position}
                   onChange={(position) =>
@@ -664,17 +665,17 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
                   }
                   options={
                     r.kind === 'filler'
-                      ? [{ value: 'left', label: 'Слева' }, { value: 'right', label: 'Справа' }]
+                      ? [{ value: 'left', label: tr('Слева') }, { value: 'right', label: tr('Справа') }]
                       : [
-                        { value: 'top', label: 'Сверху' },
-                        { value: 'bottom', label: 'Снизу' },
-                        { value: 'left', label: 'Слева' },
-                        { value: 'right', label: 'Справа' },
+                        { value: 'top', label: tr('Сверху') },
+                        { value: 'bottom', label: tr('Снизу') },
+                        { value: 'left', label: tr('Слева') },
+                        { value: 'right', label: tr('Справа') },
                       ]
                   }
                 />
               </Field>
-              <Field label="Ширина, мм">
+              <Field label={tr('Ширина, мм')}>
                 <NumberInput
                   value={r.width}
                   min={20}
@@ -699,7 +700,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
                 />
               </Field>
               {r.kind === 'carcass' ? (
-                <Field label="Отступ от фронта, мм">
+                <Field label={tr('Отступ от фронта, мм')}>
                   <NumberInput
                     value={r.depthOffset}
                     min={0}
@@ -737,7 +738,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Фартук">
+        <Field label={tr('Фартук')}>
           <Select
             value={cabinet.backsplash ? 'yes' : 'no'}
             onChange={(v) =>
@@ -745,10 +746,10 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
                 ? { backsplash: { height: 600 } }
                 : { backsplash: undefined })
             }
-            options={[{ value: 'no', label: 'Нет' }, { value: 'yes', label: 'Есть' }]}
+            options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
           />
         </Field>
-        <Field label="Высота фартука, мм">
+        <Field label={tr('Высота фартука, мм')}>
           <NumberInput
             value={cabinet.backsplash?.height ?? 0}
             min={100}
@@ -762,9 +763,9 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>Двери</SectionTitle>
+      <SectionTitle>{tr('Двери')}</SectionTitle>
       <Field
-        label="Двери-купе"
+        label={tr('Двери-купе')}
         hint={cabinet.sliding ? 'вместо распашных' : 'нет'}
       >
         <Select
@@ -780,16 +781,16 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
               : { sliding: undefined })
           }}
           options={[
-            { value: '0', label: 'Нет, распашные фасады' },
-            { value: '2', label: '2 двери' },
-            { value: '3', label: '3 двери' },
-            { value: '4', label: '4 двери' },
+            { value: '0', label: tr('Нет, распашные фасады') },
+            { value: '2', label: tr('2 двери') },
+            { value: '3', label: tr('3 двери') },
+            { value: '4', label: tr('4 двери') },
           ]}
         />
       </Field>
 
-      <SectionTitle>Материалы</SectionTitle>
-      <Field label="Корпус">
+      <SectionTitle>{tr('Материалы')}</SectionTitle>
+      <Field label={tr('Корпус')}>
         <DecorPicker
           materials={carcassMaterials}
           value={cabinet.carcassMaterialId}
@@ -803,14 +804,14 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
           }}
         />
       </Field>
-      <Field label="Фасад">
+      <Field label={tr('Фасад')}>
         <DecorPicker
           materials={carcassMaterials}
           value={cabinet.frontMaterialId}
           onChange={(frontMaterialId) => edit('frontMaterial', { frontMaterialId })}
         />
       </Field>
-      <Field label="Задняя стенка">
+      <Field label={tr('Задняя стенка')}>
         <Select
           value={cabinet.backMaterialId}
           onChange={(backMaterialId) => edit('backMaterial', { backMaterialId })}
@@ -830,8 +831,8 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         ))}
       </div>
 
-      <SectionTitle>Вид</SectionTitle>
-      <Toggle checked={showDimensions} onChange={setShowDimensions} label="Показывать габариты" />
+      <SectionTitle>{tr('Вид')}</SectionTitle>
+      <Toggle checked={showDimensions} onChange={setShowDimensions} label={tr('Показывать габариты')} />
     </div>
   )
 }

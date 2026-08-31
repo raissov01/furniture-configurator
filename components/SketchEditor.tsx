@@ -9,6 +9,7 @@
  * да бірден дайын: аудару қажет емес.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import { layoutBands, layoutSections } from '@/src/core/index'
 import type { CabinetConfig, Section, SectionContent } from '@/src/core/index'
@@ -19,13 +20,13 @@ import { cn } from '@/lib/cn'
 type Tool = 'divider' | 'band' | 'shelf' | 'drawer' | 'rod' | 'front' | 'erase'
 
 const TOOLS: { value: Tool; label: string; hint: string }[] = [
-  { value: 'divider', label: 'Перегородка', hint: 'кликните там, где нужна вертикальная стойка' },
-  { value: 'band', label: 'Полка-разделитель', hint: 'кликните на высоте, где делим секцию' },
-  { value: 'shelf', label: 'Полки', hint: 'клик по отсеку добавляет полку' },
-  { value: 'drawer', label: 'Ящики', hint: 'клик по отсеку добавляет ящик' },
-  { value: 'rod', label: 'Штанга', hint: 'клик по отсеку ставит штангу' },
-  { value: 'front', label: 'Фасад', hint: 'клик по секции включает или снимает фасад' },
-  { value: 'erase', label: 'Стереть', hint: 'клик по перегородке или разделителю убирает его' },
+  { value: 'divider', label: tr('Перегородка'), hint: tr('кликните там, где нужна вертикальная стойка') },
+  { value: 'band', label: tr('Полка-разделитель'), hint: tr('кликните на высоте, где делим секцию') },
+  { value: 'shelf', label: tr('Полки'), hint: tr('клик по отсеку добавляет полку') },
+  { value: 'drawer', label: tr('Ящики'), hint: tr('клик по отсеку добавляет ящик') },
+  { value: 'rod', label: tr('Штанга'), hint: tr('клик по отсеку ставит штангу') },
+  { value: 'front', label: tr('Фасад'), hint: tr('клик по секции включает или снимает фасад') },
+  { value: 'erase', label: tr('Стереть'), hint: tr('клик по перегородке или разделителю убирает его') },
 ]
 
 /** Сурет экранда осынша биік болады. */
@@ -176,14 +177,14 @@ export function SketchEditor() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h2 className="mr-2 text-sm font-semibold">Нарисовать корпус</h2>
+          <h2 className="mr-2 text-sm font-semibold">{tr('Нарисовать корпус')}</h2>
           {TOOLS.map((x) => (
             <Button key={x.value} active={tool === x.value} onClick={() => setTool(x.value)}>
               {x.label}
             </Button>
           ))}
           <div className="ml-auto">
-            <Button onClick={() => setOpen(false)}>Закрыть</Button>
+            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
@@ -197,7 +198,7 @@ export function SketchEditor() {
               height={CANVAS_PX}
               className="cursor-crosshair"
               role="img"
-              aria-label="Эскиз корпуса"
+              aria-label={tr('Эскиз корпуса')}
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const xMm = ((e.clientX - rect.left) / rect.width) * cabinet.width
@@ -237,7 +238,7 @@ export function SketchEditor() {
             </svg>
           </div>
         ) : (
-          <p className="text-xs text-neutral-500">Проверьте размеры — корпус сейчас не собирается.</p>
+          <p className="text-xs text-neutral-500">{tr('Проверьте размеры — корпус сейчас не собирается.')}</p>
         )}
 
         <p className="mt-3 text-[11px] text-neutral-400">

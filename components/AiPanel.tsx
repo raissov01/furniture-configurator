@@ -8,6 +8,7 @@
  * оны 3D те, деталировка да, карточкадағы сурет те бірдей оқиды.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useState } from 'react'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
@@ -112,10 +113,10 @@ export function AiPanel() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-sm font-semibold">Техзадание</h2>
-          <span className="text-[11px] text-neutral-400">опишите задачу словами — предложу варианты</span>
+          <h2 className="text-sm font-semibold">{tr('Техзадание')}</h2>
+          <span className="text-[11px] text-neutral-400">{tr('опишите задачу словами — предложу варианты')}</span>
           <div className="ml-auto">
-            <Button onClick={() => setOpen(false)}>Закрыть</Button>
+            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
@@ -144,19 +145,19 @@ export function AiPanel() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-[repeat(3,minmax(0,7rem))_minmax(0,1fr)]">
-            <Field label="Высота (H)" hint={size.height === UNSET ? 'любая' : undefined}>
+            <Field label={tr('Высота (H)')} hint={size.height === UNSET ? 'любая' : undefined}>
               <NumberInput value={size.height} min={0} step={10}
                 onChange={(height) => setSize((s0) => ({ ...s0, height }))} />
             </Field>
-            <Field label="Ширина (W)" hint={size.width === UNSET ? 'любая' : undefined}>
+            <Field label={tr('Ширина (W)')} hint={size.width === UNSET ? 'любая' : undefined}>
               <NumberInput value={size.width} min={0} step={10}
                 onChange={(width) => setSize((s0) => ({ ...s0, width }))} />
             </Field>
-            <Field label="Глубина (D)" hint={size.depth === UNSET ? 'любая' : undefined}>
+            <Field label={tr('Глубина (D)')} hint={size.depth === UNSET ? 'любая' : undefined}>
               <NumberInput value={size.depth} min={0} step={10}
                 onChange={(depth) => setSize((s0) => ({ ...s0, depth }))} />
             </Field>
-            <Field label="Декор" hint={materialId ? undefined : 'на усмотрение'}>
+            <Field label={tr('Декор')} hint={materialId ? undefined : 'на усмотрение'}>
               <DecorPicker
                 materials={carcassMaterials}
                 value={materialId ?? ''}
@@ -176,7 +177,7 @@ export function AiPanel() {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') void submit()
           }}
           rows={3}
-          placeholder="Тумба с двумя ящиками и открытой полкой сверху. Высота 750 мм, ширина 1000 мм, глубина 450 мм."
+          placeholder={tr('Тумба с двумя ящиками и открытой полкой сверху. Высота 750 мм, ширина 1000 мм, глубина 450 мм.')}
           className="w-full rounded-md border border-neutral-300 bg-white px-2.5 py-2 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-300"
         />
 

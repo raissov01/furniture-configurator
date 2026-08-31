@@ -1,5 +1,6 @@
 'use client'
 
+import { t as tr } from '@/lib/i18n'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
@@ -13,6 +14,7 @@ import { ProjectMenu } from '@/components/ProjectMenu'
 import { QuoteView } from '@/components/QuoteView'
 import { SketchEditor } from '@/components/SketchEditor'
 import { AccountPanel } from '@/components/AccountPanel'
+import { LangSwitch } from '@/components/LangSwitch'
 import { cloudEnabled } from '@/lib/cloud'
 import { SHARE_LINK_WARN_LENGTH, shareLink } from '@/src/core/index'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -30,11 +32,11 @@ const Scene = dynamic(() => import('@/components/Scene'), {
 })
 
 const PRESETS: { value: CameraPreset; label: string }[] = [
-  { value: 'front', label: 'Фас' },
+  { value: 'front', label: tr('Фас') },
   { value: 'three-quarter', label: '3/4' },
-  { value: 'inside', label: 'Внутри' },
-  { value: 'plan', label: 'План' },
-  { value: 'room', label: 'Комната' },
+  { value: 'inside', label: tr('Внутри') },
+  { value: 'plan', label: tr('План') },
+  { value: 'room', label: tr('Комната') },
 ]
 
 /** C1 бюджеті: 40 панельге дейін параметр өзгерісі < 100 мс. */
@@ -140,7 +142,7 @@ export function Workspace() {
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <Link
           href="/"
-          title="На главную"
+          title={tr('На главную')}
           className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500 transition hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           <svg width="18" height="14" viewBox="0 0 26 20" aria-hidden="true">
@@ -158,17 +160,17 @@ export function Workspace() {
         </h1>
 
         <div className="flex items-center gap-1">
-          <Button onClick={() => setGalleryOpen(true)} title="Готовые шаблоны">Шаблоны</Button>
-          <Button onClick={() => setAiOpen(true)} title="Описать задачу словами">Техзадание</Button>
-          <Button onClick={() => setSketchOpen(true)} title="Нарисовать корпус мышью">Нарисовать</Button>
-          <Button onClick={() => setRoomOpen(true)} title="План комнаты и стены">Стены</Button>
-          <Button onClick={() => setShopOpen(true)} title="Материалы, цены и правила цеха">Цех</Button>
-          <Button onClick={() => setQuoteOpen(true)} title="Раскрой и стоимость по всему проекту">Смета</Button>
+          <Button onClick={() => setGalleryOpen(true)} title={tr('Готовые шаблоны')}>{tr('Шаблоны')}</Button>
+          <Button onClick={() => setAiOpen(true)} title={tr('Описать задачу словами')}>{tr('Техзадание')}</Button>
+          <Button onClick={() => setSketchOpen(true)} title={tr('Нарисовать корпус мышью')}>{tr('Нарисовать')}</Button>
+          <Button onClick={() => setRoomOpen(true)} title={tr('План комнаты и стены')}>{tr('Стены')}</Button>
+          <Button onClick={() => setShopOpen(true)} title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
+          <Button onClick={() => setQuoteOpen(true)} title={tr('Раскрой и стоимость по всему проекту')}>{tr('Смета')}</Button>
           <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
-          <Button onClick={reset}>Сброс</Button>
+          <Button onClick={reset}>{tr('Сброс')}</Button>
           <Button
-            title="Ссылка для клиента: проект едет в самой ссылке, на сервер не попадает"
+            title={tr('Ссылка для клиента: проект едет в самой ссылке, на сервер не попадает')}
             onClick={() => {
               const link = shareLink(window.location.origin, exportProject())
               void navigator.clipboard.writeText(link).then(
@@ -188,8 +190,10 @@ export function Workspace() {
 
         <ProjectMenu />
 
+        <LangSwitch />
+
         {cloudEnabled && (
-          <Button onClick={() => setAccountOpen(true)} title="Аккаунт и проекты в облаке">Аккаунт</Button>
+          <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
         )}
 
         <div className="flex items-center gap-1">
@@ -222,7 +226,7 @@ export function Workspace() {
       {error ? (
         <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <b className="font-mono">{error.field}</b> — {error.message.replace(`${error.field}: `, '')}
-          {stale ? <span className="ml-2 opacity-70">Показана последняя корректная модель.</span> : null}
+          {stale ? <span className="ml-2 opacity-70">{tr('Показана последняя корректная модель.')}</span> : null}
         </div>
       ) : null}
 

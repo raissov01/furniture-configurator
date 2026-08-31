@@ -8,6 +8,7 @@
  * (`placementFootprint`), сондықтан жоспар мен 3D ешқашан алшақтамайды.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useMemo } from 'react'
 import {
   WALL_LABELS,
@@ -75,12 +76,12 @@ export function RoomPlan() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-sm font-semibold">Комната</h2>
+          <h2 className="text-sm font-semibold">{tr('Комната')}</h2>
           <span className="text-[11px] text-neutral-400">
             выберите стену, поставьте на неё корпус
           </span>
           <div className="ml-auto">
-            <Button onClick={() => setOpen(false)}>Закрыть</Button>
+            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
@@ -96,23 +97,23 @@ export function RoomPlan() {
           />
 
           <div className="space-y-3">
-            <SectionTitle>Размеры комнаты, мм</SectionTitle>
+            <SectionTitle>{tr('Размеры комнаты, мм')}</SectionTitle>
             <div className="grid grid-cols-3 gap-2">
-              <Field label="Ширина">
+              <Field label={tr('Ширина')}>
                 <NumberInput value={room.width} min={500} max={20000} step={50}
                   onChange={(width) => editRoom({ width })} />
               </Field>
-              <Field label="Глубина">
+              <Field label={tr('Глубина')}>
                 <NumberInput value={room.depth} min={500} max={20000} step={50}
                   onChange={(depth) => editRoom({ depth })} />
               </Field>
-              <Field label="Высота">
+              <Field label={tr('Высота')}>
                 <NumberInput value={room.height} min={2000} max={4000} step={50}
                   onChange={(height) => editRoom({ height })} />
               </Field>
             </div>
 
-            <SectionTitle>Стена</SectionTitle>
+            <SectionTitle>{tr('Стена')}</SectionTitle>
             <div className="flex flex-wrap gap-1">
               {roomWalls(room).map((w) => (
                 <Button key={w.id} active={selectedWall === w.id} onClick={() => setSelectedWall(w.id)}>
@@ -121,9 +122,9 @@ export function RoomPlan() {
               ))}
             </div>
 
-            <SectionTitle>Текущий корпус</SectionTitle>
+            <SectionTitle>{tr('Текущий корпус')}</SectionTitle>
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Стена">
+              <Field label={tr('Стена')}>
                 <select
                   className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                   value={activePlacement.wall}
@@ -135,7 +136,7 @@ export function RoomPlan() {
                 </select>
               </Field>
               <Field
-                label="Смещение"
+                label={tr('Смещение')}
                 hint={`0..${Math.max(0, wallById(room, activePlacement.wall).length - active.width)}`}
               >
                 <NumberInput
@@ -149,7 +150,7 @@ export function RoomPlan() {
 
             <div className="flex items-center justify-between">
               <SectionTitle>Корпуса ({cabinets.length})</SectionTitle>
-              <Button onClick={addCabinet}>+ корпус</Button>
+              <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             </div>
             <ul className="space-y-1">
               {entries.map(({ cabinet, placement }) => {
@@ -213,7 +214,7 @@ function PlanSvg({
       height={(room.depth + pad * 2) * scale}
       className="shrink-0 rounded-lg bg-neutral-50 dark:bg-neutral-950"
       role="img"
-      aria-label="План комнаты"
+      aria-label={tr('План комнаты')}
     >
       <rect x={0} y={0} width={room.width} height={room.depth} fill="#ffffff" fillOpacity={0.04} stroke="#94a3b8" strokeWidth={8} />
 

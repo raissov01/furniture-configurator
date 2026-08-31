@@ -8,6 +8,7 @@
  * жиһаздың өзін көреді, ал цехтың өзіндік құны оның ісі емес.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -24,8 +25,8 @@ const Scene = dynamic(() => import('@/components/Scene'), { ssr: false })
 /** Клиентке керегі осы үшеуі: жалпы көрініс, фас және бөлме. */
 const PRESETS: { value: CameraPreset; label: string }[] = [
   { value: 'three-quarter', label: '3/4' },
-  { value: 'front', label: 'Фас' },
-  { value: 'room', label: 'Комната' },
+  { value: 'front', label: tr('Фас') },
+  { value: 'room', label: tr('Комната') },
 ]
 
 export function ViewerPage() {
@@ -67,12 +68,12 @@ function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; messa
     <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-200">
       <div className="max-w-md space-y-3 text-center">
         {state.kind === 'loading' ? (
-          <p className="text-sm text-neutral-400">Открываем проект…</p>
+          <p className="text-sm text-neutral-400">{tr('Открываем проект…')}</p>
         ) : (
           <>
-            <h1 className="text-lg font-semibold">Ссылка не открылась</h1>
+            <h1 className="text-lg font-semibold">{tr('Ссылка не открылась')}</h1>
             <p className="text-sm text-neutral-400">{state.message}</p>
-            <Link href="/" className="inline-block text-sm text-sky-400 underline">На главную</Link>
+            <Link href="/" className="inline-block text-sm text-sky-400 underline">{tr('На главную')}</Link>
           </>
         )}
       </div>
@@ -126,10 +127,10 @@ function Viewer({
         <table className="w-full text-xs">
           <thead className="text-left text-[11px] uppercase tracking-wide text-neutral-500">
             <tr>
-              <th className="py-1 font-medium">Корпус</th>
-              <th className="py-1 font-medium">Размер, H × W × D</th>
-              <th className="py-1 font-medium">Корпус</th>
-              <th className="py-1 font-medium">Фасад</th>
+              <th className="py-1 font-medium">{tr('Корпус')}</th>
+              <th className="py-1 font-medium">{tr('Размер, H × W × D')}</th>
+              <th className="py-1 font-medium">{tr('Корпус')}</th>
+              <th className="py-1 font-medium">{tr('Фасад')}</th>
             </tr>
           </thead>
           <tbody>

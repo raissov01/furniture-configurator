@@ -8,6 +8,7 @@
  * қайта орнатқаннан кейін де сол жерде тұрады.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useCallback, useEffect, useState } from 'react'
 import { parseProject, parseShopProfile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -157,7 +158,7 @@ export function AccountPanel() {
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-sm font-semibold">{account ? account.shopName : 'Вход в аккаунт'}</h2>
           <div className="ml-auto">
-            <Button onClick={() => setOpen(false)}>Закрыть</Button>
+            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
@@ -225,22 +226,22 @@ export function AccountPanel() {
         ) : (
           <div className="space-y-3">
             <div className="flex gap-1">
-              <Button active={mode === 'login'} onClick={() => setMode('login')}>Вход</Button>
-              <Button active={mode === 'register'} onClick={() => setMode('register')}>Регистрация</Button>
+              <Button active={mode === 'login'} onClick={() => setMode('login')}>{tr('Вход')}</Button>
+              <Button active={mode === 'register'} onClick={() => setMode('register')}>{tr('Регистрация')}</Button>
             </div>
 
             {mode === 'register' ? (
-              <Field label="Название цеха">
-                <input className={input} value={form.shopName} placeholder="Цех «Алаш»"
+              <Field label={tr('Название цеха')}>
+                <input className={input} value={form.shopName} placeholder={tr('Цех «Алаш»')}
                   onChange={(e) => setForm({ ...form, shopName: e.target.value })} />
               </Field>
             ) : null}
 
-            <Field label="Почта">
+            <Field label={tr('Почта')}>
               <input className={input} type="email" autoComplete="email" value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </Field>
-            <Field label="Пароль" hint={mode === 'register' ? 'от 8 символов' : undefined}>
+            <Field label={tr('Пароль')} hint={mode === 'register' ? 'от 8 символов' : undefined}>
               <input className={input} type="password"
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 value={form.password}

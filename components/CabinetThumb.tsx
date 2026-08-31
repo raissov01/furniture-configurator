@@ -8,6 +8,7 @@
  * Шаблон галереясы да, чат-боттың варианттары да осыны қолданады.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useMemo } from 'react'
 import { generateCabinet, panelExtents } from '@/src/core/index'
 import type { CabinetConfig, Catalog, Panel } from '@/src/core/index'
@@ -72,7 +73,7 @@ export function CabinetThumb({
   }, [cabinet, catalog])
 
   if (!view) {
-    return <div className="grid h-full place-items-center text-[10px] text-neutral-400">нет превью</div>
+    return <div className="grid h-full place-items-center text-[10px] text-neutral-400">{tr('нет превью')}</div>
   }
 
   const width = view.w * pxPerMm

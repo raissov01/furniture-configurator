@@ -7,6 +7,7 @@
  * экраннан келеді. Жаңа цех тіркелгенде істейтіні: бағаларын енгізу.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import {
   DEFAULT_SETTINGS,
@@ -26,12 +27,12 @@ import { cn } from '@/lib/cn'
 type Tab = 'profile' | 'materials' | 'bands' | 'hardware' | 'hinges' | 'rules'
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'profile', label: 'Цех' },
-  { value: 'materials', label: 'Материалы' },
-  { value: 'bands', label: 'Кромки' },
-  { value: 'hardware', label: 'Фурнитура' },
-  { value: 'hinges', label: 'Петли' },
-  { value: 'rules', label: 'Правила цеха' },
+  { value: 'profile', label: tr('Цех') },
+  { value: 'materials', label: tr('Материалы') },
+  { value: 'bands', label: tr('Кромки') },
+  { value: 'hardware', label: tr('Фурнитура') },
+  { value: 'hinges', label: tr('Петли') },
+  { value: 'rules', label: tr('Правила цеха') },
 ]
 
 /** Баға ішінде ТИЫНМЕН сақталады, экранда теңгемен көрсетіледі. */
@@ -78,12 +79,12 @@ export function ShopSettings() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h2 className="mr-2 text-sm font-semibold">Настройки цеха</h2>
+          <h2 className="mr-2 text-sm font-semibold">{tr('Настройки цеха')}</h2>
           {TABS.map((t) => (
             <Button key={t.value} active={tab === t.value} onClick={() => setTab(t.value)}>{t.label}</Button>
           ))}
           <div className="ml-auto">
-            <Button onClick={() => setOpen(false)}>Закрыть</Button>
+            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
@@ -96,17 +97,17 @@ export function ShopSettings() {
 
         {tab === 'profile' ? (
           <div className="space-y-3">
-            <SectionTitle>Реквизиты — попадут в КП</SectionTitle>
+            <SectionTitle>{tr('Реквизиты — попадут в КП')}</SectionTitle>
             <div className="grid gap-2 sm:grid-cols-3">
-              <Field label="Название цеха">
-                <input className={text} value={shop.name} placeholder="Цех «Алаш»"
+              <Field label={tr('Название цеха')}>
+                <input className={text} value={shop.name} placeholder={tr('Цех «Алаш»')}
                   onChange={(e) => editShop({ name: e.target.value })} />
               </Field>
-              <Field label="Город">
-                <input className={text} value={shop.city} placeholder="Астана"
+              <Field label={tr('Город')}>
+                <input className={text} value={shop.city} placeholder={tr('Астана')}
                   onChange={(e) => editShop({ city: e.target.value })} />
               </Field>
-              <Field label="Телефон">
+              <Field label={tr('Телефон')}>
                 <input className={text} value={shop.phone} placeholder="+7 ___ ___ __ __"
                   onChange={(e) => editShop({ phone: e.target.value })} />
               </Field>
@@ -176,7 +177,7 @@ export function ShopSettings() {
           <div className="space-y-3">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               K — расстояние от центра чашки до края фасада. Оно зависит от бренда и от
-              накладки, поэтому <strong>сверьте его со своим шаблоном</strong>: 22 мм здесь —
+              накладки, поэтому <strong>{tr('сверьте его со своим шаблоном')}</strong>: 22 мм здесь —
               самое частое значение, а не гарантия. Присадка считается по этому числу.
             </p>
             <PriceTable
@@ -197,20 +198,20 @@ export function ShopSettings() {
 
         {tab === 'rules' ? (
           <div className="space-y-3">
-            <SectionTitle>Как собирает ваш цех, мм</SectionTitle>
+            <SectionTitle>{tr('Как собирает ваш цех, мм')}</SectionTitle>
             <div className="grid gap-2 sm:grid-cols-3">
-              <Rule label="Зазор полки" hint="общий, на обе стороны" k="shelfGap" shop={shop} onChange={setRule} />
-              <Rule label="Отступ полки от фронта" k="shelfSetback" shop={shop} onChange={setRule} />
-              <Rule label="Зазор фасадов" k="frontGap" shop={shop} onChange={setRule} />
-              <Rule label="Толщина задней стенки" k="backThickness" shop={shop} onChange={setRule} />
-              <Rule label="Глубина паза" k="grooveDepth" shop={shop} onChange={setRule} />
-              <Rule label="Отступ паза от края" k="grooveInset" shop={shop} onChange={setRule} />
-              <Rule label="Кромка вычитается от" hint="0.4 обычно не вычитается" k="minBandSubtract" shop={shop} onChange={setRule} />
-              <Rule label="3-й конфирмат при длине" k="confirmatSpanForThird" shop={shop} onChange={setRule} />
-              <Rule label="Первое отверстие полкодержателя" k="shelfPinDatum" shop={shop} onChange={setRule} />
+              <Rule label={tr('Зазор полки')} hint={tr('общий, на обе стороны')} k="shelfGap" shop={shop} onChange={setRule} />
+              <Rule label={tr('Отступ полки от фронта')} k="shelfSetback" shop={shop} onChange={setRule} />
+              <Rule label={tr('Зазор фасадов')} k="frontGap" shop={shop} onChange={setRule} />
+              <Rule label={tr('Толщина задней стенки')} k="backThickness" shop={shop} onChange={setRule} />
+              <Rule label={tr('Глубина паза')} k="grooveDepth" shop={shop} onChange={setRule} />
+              <Rule label={tr('Отступ паза от края')} k="grooveInset" shop={shop} onChange={setRule} />
+              <Rule label={tr('Кромка вычитается от')} hint={tr('0.4 обычно не вычитается')} k="minBandSubtract" shop={shop} onChange={setRule} />
+              <Rule label={tr('3-й конфирмат при длине')} k="confirmatSpanForThird" shop={shop} onChange={setRule} />
+              <Rule label={tr('Первое отверстие полкодержателя')} k="shelfPinDatum" shop={shop} onChange={setRule} />
             </div>
 
-            <SectionTitle>Услуги цеха</SectionTitle>
+            <SectionTitle>{tr('Услуги цеха')}</SectionTitle>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               Каждую услугу считайте так, как считаете её у себя: один цех берёт за лист,
               другой за метр кромки, третий за отверстие. Услуга с нулевой ставкой в смету
@@ -259,25 +260,25 @@ export function ShopSettings() {
               </table>
             </div>
 
-            <SectionTitle>Коэффициент, монтаж и наценка</SectionTitle>
+            <SectionTitle>{tr('Коэффициент, монтаж и наценка')}</SectionTitle>
             <div className="grid gap-2 sm:grid-cols-3">
-              <Field label="Коэффициент" hint="умножает материалы, услуги и фурнитуру">
+              <Field label={tr('Коэффициент')} hint={tr('умножает материалы, услуги и фурнитуру')}>
                 <NumberInput value={shop.coefficient} min={0.1} max={10} step={0.05}
                   onChange={(v) => editShop({ coefficient: v > 0 ? v : 1 })} />
               </Field>
-              <Field label="Монтаж, ₸ за 1 м ширины" hint="в коэффициент не входит">
+              <Field label={tr('Монтаж, ₸ за 1 м ширины')} hint={tr('в коэффициент не входит')}>
                 <NumberInput value={toTenge(shop.installation.ratePerMetreWidth)} min={0} step={500}
                   onChange={(v) => editShop({ installation: { ratePerMetreWidth: toMinor(v) } })} />
               </Field>
-              <Field label="Наценка, %">
+              <Field label={tr('Наценка, %')}>
                 <NumberInput value={shop.markupPercent} min={0} max={1000} step={1}
                   onChange={(v) => editShop({ markupPercent: v })} />
               </Field>
             </div>
 
-            <SectionTitle>Предел прогиба полки</SectionTitle>
+            <SectionTitle>{tr('Предел прогиба полки')}</SectionTitle>
             <div className="flex flex-wrap items-end gap-3">
-              <Field label="Максимальный пролёт полки, мм" hint={shop.maxShelfSpan === null ? 'выключено' : undefined}>
+              <Field label={tr('Максимальный пролёт полки, мм')} hint={shop.maxShelfSpan === null ? 'выключено' : undefined}>
                 <NumberInput
                   value={shop.maxShelfSpan ?? 0}
                   min={0}
@@ -329,7 +330,7 @@ function AddMaterial() {
         <p className="text-[11px] text-neutral-500">
           Каталог ваш: добавьте декоры, с которыми реально работаете.
         </p>
-        <Button onClick={() => setOpen(true)}>+ материал</Button>
+        <Button onClick={() => setOpen(true)}>{tr('+ материал')}</Button>
       </div>
     )
   }
@@ -340,23 +341,23 @@ function AddMaterial() {
   return (
     <div className="space-y-2 rounded-lg border border-neutral-300 p-3 dark:border-neutral-700">
       <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_7rem_minmax(0,1.4fr)_6rem]">
-        <Field label="Название">
-          <input className={text} value={draft.name} placeholder="ЛДСП Дуб Сонома 16 мм"
+        <Field label={tr('Название')}>
+          <input className={text} value={draft.name} placeholder={tr('ЛДСП Дуб Сонома 16 мм')}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
         </Field>
-        <Field label="Толщина, мм">
+        <Field label={tr('Толщина, мм')}>
           <select className={text} value={draft.thickness}
             onChange={(e) => setDraft({ ...draft, thickness: Number(e.target.value) })}>
             {SHEET_THICKNESSES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </Field>
-        <Field label="Формат листа">
+        <Field label={tr('Формат листа')}>
           <select className={text} value={draft.format}
             onChange={(e) => setDraft({ ...draft, format: Number(e.target.value) })}>
             {SHEET_FORMATS.map((f, i) => <option key={f.label} value={i}>{f.label}</option>)}
           </select>
         </Field>
-        <Field label="Цвет">
+        <Field label={tr('Цвет')}>
           <input type="color" className="h-9 w-full rounded-md border border-neutral-300 dark:border-neutral-700"
             value={draft.color} onChange={(e) => setDraft({ ...draft, color: e.target.value })} />
         </Field>
@@ -365,10 +366,10 @@ function AddMaterial() {
         <Toggle
           checked={draft.hasGrain}
           onChange={(hasGrain) => setDraft({ ...draft, hasGrain })}
-          label="Текстура (деталь нельзя поворачивать в раскрое)"
+          label={tr('Текстура (деталь нельзя поворачивать в раскрое)')}
         />
         <div className="ml-auto flex gap-1">
-          <Button onClick={() => setOpen(false)}>Отмена</Button>
+          <Button onClick={() => setOpen(false)}>{tr('Отмена')}</Button>
           <Button
             active
             disabled={!canSave}

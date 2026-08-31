@@ -5,6 +5,7 @@
  * керек — цехтағы адам клиенттің готовый өлшемін кесіп алмауы үшін.
  */
 
+import { t as tr } from '@/lib/i18n'
 import { useMemo } from 'react'
 import { CUT_LIST_COLUMNS, formatCutList } from '@/src/core/index'
 import type { Catalog, CutListRow, Panel } from '@/src/core/index'
@@ -30,7 +31,7 @@ export function CutListTable({ panels, catalog }: { panels: Panel[]; catalog: Ca
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-baseline justify-between border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Деталировка</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{tr('Деталировка')}</h2>
         <span className="text-[11px] tabular-nums text-neutral-500">
           Позиций: {rows.length} · Деталей: {pieces}
         </span>
