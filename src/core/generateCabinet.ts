@@ -20,11 +20,20 @@ import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './ge
 import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
-  Orientation, Panel, PanelRole, Section, SectionContent, SettingsOverride,
+  Orientation, Panel, PanelRole, Rail, Section, SectionContent, SettingsOverride,
 } from './types'
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
 const MIN_DIMENSION = 100
+/**
+ * Планканың ең кіші ені, мм.
+ *
+ * Бұл өндірістік ЕРЕЖЕ ЕМЕС, тек мағынасыздықтан сақтайтын шек: одан тар
+ * жолақты кесу де, кромкалау да қиын. Корпустың `MIN_DIMENSION`-ы мұнда
+ * жарамайды — царга 80–120 мм, ал фальш-панельдің саңылауы одан да тар
+ * болуы мүмкін.
+ */
+const MIN_RAIL_WIDTH = 20
 /**
  * Цокольдің алдыңғы жиектен шегінісі, мм. Аяқ тұратын орын — цех
  * стандартында әдетте 50 мм.
@@ -485,6 +494,104 @@ export function generateCabinet(
         W + 2 * overhangSides, D + overhangFront,
         { x: -overhangSides, y: H, z: -overhangFront }, ORIENT_HORIZONTAL,
         'Столешница, накладная',
+      ),
+    )
+  }
+
+  // ── Планкалар мен фальш-панельдер ──────────────────────────────────────────
+  //
+  // Планка — тар деталь, сондықтан оның ҚАЙ ЖЕРДЕ тұратыны түріне байланысты.
+  // Ережелер осында, бір жерде жазылған: кейін оқыған адам «неге бұлай» деп
+  // кодты қуалап жүрмеуі керек.
+  const makeRail = (rail: Rail): Panel => {
+    if (rail.width < MIN_RAIL_WIDTH) {
+      throw new ConfigValidationError(`rails.${rail.id}.width`, `${rail.width}`, `≥ ${MIN_RAIL_WIDTH} мм`)
+    }
+    const mat = rail.materialId
+      ? requireMaterial(materials, rail.materialId, `rails.${rail.id}.materialId`)
+      : rail.kind === 'carcass'
+        ? carcass
+        : requireMaterial(materials, config.frontMaterialId, 'frontMaterialId')
+
+    const label = rail.kind === 'filler' ? 'Фальш-панель' : 'Планка'
+    const id = `rail-${rail.id}`
+
+    if (rail.kind === 'filler') {
+      // Фальш-панель корпустың ЖАНЫНДА, фасадтың жазықтығында тұрады.
+      if (rail.position !== 'left' && rail.position !== 'right') {
+        throw new ConfigValidationError(
+          `rails.${rail.id}.position`, rail.position, 'фальш-панель тек left/right',
+        )
+      }
+      const x = rail.position === 'left' ? -rail.width - rail.inset : W + rail.inset
+      return make(
+        id, 'rail', label, mat, H, rail.width,
+        { x, y: baseHeight, z: -mat.thickness }, ORIENT_FACING,
+        `${label}, ${rail.position === 'left' ? 'слева' : 'справа'}`,
+      )
+    }
+
+    // Фасадтық планка корпустың АЛДЫНДА, корпустық — ІШІНДЕ.
+    const z = rail.kind === 'facade' ? -mat.thickness : rail.depthOffset
+
+    if (rail.position === 'top' || rail.position === 'bottom') {
+      const span = W - 2 * t - 2 * rail.inset
+      if (span < MIN_DIMENSION) {
+        throw new ConfigValidationError(
+          `rails.${rail.id}.inset`, `просвет ${span} мм`, `≥ ${MIN_DIMENSION} мм`,
+        )
+      }
+      // Царганың ҮСТІҢГІ беті корпустың сол деңгейімен беттеседі.
+      const y = rail.position === 'top' ? H - t + baseHeight : baseHeight
+      return make(
+        id, 'rail', label, mat, span, rail.width,
+        { x: t + rail.inset, y, z }, ORIENT_HORIZONTAL,
+        `${label}, ${rail.position === 'top' ? 'верхняя' : 'нижняя'}`,
+      )
+    }
+
+    const span = H - 2 * t - 2 * rail.inset
+    if (span < MIN_DIMENSION) {
+      throw new ConfigValidationError(
+        `rails.${rail.id}.inset`, `просвет ${span} мм`, `≥ ${MIN_DIMENSION} мм`,
+      )
+    }
+    const x = rail.position === 'left' ? t : W - t - mat.thickness
+    return make(
+      id, 'rail', label, mat, span, rail.width,
+      { x, y: t + rail.inset + baseHeight, z }, ORIENT_SIDE,
+      `${label}, ${rail.position === 'left' ? 'левая' : 'правая'}`,
+    )
+  }
+
+  for (const rail of config.rails ?? []) {
+    panels.push(makeRail(rail))
+  }
+
+  // ── Фартук ─────────────────────────────────────────────────────────────────
+  if (config.backsplash) {
+    const mat = config.backsplash.materialId
+      ? requireMaterial(materials, config.backsplash.materialId, 'backsplash.materialId')
+      : requireMaterial(materials, config.frontMaterialId, 'frontMaterialId')
+    if (config.backsplash.height < MIN_DIMENSION) {
+      throw new ConfigValidationError(
+        'backsplash.height', `${config.backsplash.height}`, `≥ ${MIN_DIMENSION} мм`,
+      )
+    }
+    // Фартук столешницаның ҮСТІНЕ отырады: онсыз ол столешницаның артына
+    // тығылып қалар еді.
+    const worktopThickness = config.worktop
+      ? (config.worktop.materialId
+        ? requireMaterial(materials, config.worktop.materialId, 'worktop.materialId').thickness
+        : carcass.thickness)
+      : 0
+    panels.push(
+      make(
+        'backsplash', 'rail', 'Фартук', mat,
+        config.backsplash.height, W,
+        { x: 0, y: H + baseHeight + worktopThickness, z: D - mat.thickness },
+        ORIENT_FACING,
+        'Фартук, к стене',
       ),
     )
   }

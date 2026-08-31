@@ -14,7 +14,7 @@ import {
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type {
   ApplianceKind, CabinetConfig, FillingKind, HandleSpec, Material, MillingSpec,
-  Section, SectionContent, SectionFronts,
+  RailKind, RailPosition, Section, SectionContent, SectionFronts,
 } from '@/src/core/index'
 
 const materialOptions = (list: Material[]) => list.map((m) => ({ value: m.id, label: m.name }))
@@ -563,6 +563,161 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
             onChange={(overhangFront) => {
               if (!cabinet.worktop) return
               edit('worktop.front', { worktop: { ...cabinet.worktop, overhangFront } })
+            }}
+          />
+        </Field>
+      </div>
+
+      <SectionTitle>Планки и фартук</SectionTitle>
+      <p className="text-[11px] text-neutral-500">
+        Планка (царга) ставится вместо сплошной крышки: под столешницей она не нужна.
+        Фальш-панель закрывает зазор сбоку от корпуса.
+      </p>
+      <div className="space-y-2">
+        {(cabinet.rails ?? []).map((r, i) => (
+          <div key={r.id} className="space-y-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-neutral-500">
+                {r.kind === 'filler' ? 'Фальш-панель' : 'Планка'} {i + 1}
+              </span>
+              <Button
+                title="Удалить"
+                onClick={() => edit('rails', { rails: (cabinet.rails ?? []).filter((x) => x.id !== r.id) })}
+              >
+                ✕
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Тип">
+                <Select
+                  value={r.kind}
+                  onChange={(kind) =>
+                    edit('rails', {
+                      rails: (cabinet.rails ?? []).map((x) =>
+                        x.id === r.id
+                          // Фальш-панель тек бүйірде тұрады: түрін ауыстырғанда
+                          // орнын да дұрыстаймыз, әйтпесе қате шығар еді.
+                          ? {
+                            ...x,
+                            kind: kind as RailKind,
+                            position: kind === 'filler' && (x.position === 'top' || x.position === 'bottom')
+                              ? 'left'
+                              : x.position,
+                          }
+                          : x),
+                    })
+                  }
+                  options={[
+                    { value: 'carcass', label: 'Корпусная' },
+                    { value: 'facade', label: 'Фасадная' },
+                    { value: 'filler', label: 'Фальш-панель' },
+                  ]}
+                />
+              </Field>
+              <Field label="Расположение">
+                <Select
+                  value={r.position}
+                  onChange={(position) =>
+                    edit('rails', {
+                      rails: (cabinet.rails ?? []).map((x) =>
+                        x.id === r.id ? { ...x, position: position as RailPosition } : x),
+                    })
+                  }
+                  options={
+                    r.kind === 'filler'
+                      ? [{ value: 'left', label: 'Слева' }, { value: 'right', label: 'Справа' }]
+                      : [
+                        { value: 'top', label: 'Сверху' },
+                        { value: 'bottom', label: 'Снизу' },
+                        { value: 'left', label: 'Слева' },
+                        { value: 'right', label: 'Справа' },
+                      ]
+                  }
+                />
+              </Field>
+              <Field label="Ширина, мм">
+                <NumberInput
+                  value={r.width}
+                  min={20}
+                  step={10}
+                  onChange={(width) =>
+                    edit('rails.width', {
+                      rails: (cabinet.rails ?? []).map((x) => (x.id === r.id ? { ...x, width } : x)),
+                    })
+                  }
+                />
+              </Field>
+              <Field label={r.kind === 'filler' ? 'Отступ от корпуса, мм' : 'Отступ по краю, мм'}>
+                <NumberInput
+                  value={r.inset}
+                  min={0}
+                  step={5}
+                  onChange={(inset) =>
+                    edit('rails.inset', {
+                      rails: (cabinet.rails ?? []).map((x) => (x.id === r.id ? { ...x, inset } : x)),
+                    })
+                  }
+                />
+              </Field>
+              {r.kind === 'carcass' ? (
+                <Field label="Отступ от фронта, мм">
+                  <NumberInput
+                    value={r.depthOffset}
+                    min={0}
+                    step={5}
+                    onChange={(depthOffset) =>
+                      edit('rails.depth', {
+                        rails: (cabinet.rails ?? []).map((x) => (x.id === r.id ? { ...x, depthOffset } : x)),
+                      })
+                    }
+                  />
+                </Field>
+              ) : null}
+            </div>
+          </div>
+        ))}
+        <Button
+          onClick={() =>
+            edit('rails', {
+              rails: [
+                ...(cabinet.rails ?? []),
+                {
+                  id: `r${Date.now().toString(36)}`,
+                  kind: 'carcass' as const,
+                  position: 'top' as const,
+                  width: 100,
+                  inset: 0,
+                  depthOffset: 0,
+                },
+              ],
+            })
+          }
+        >
+          + Планка
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Фартук">
+          <Select
+            value={cabinet.backsplash ? 'yes' : 'no'}
+            onChange={(v) =>
+              edit('backsplash', v === 'yes'
+                ? { backsplash: { height: 600 } }
+                : { backsplash: undefined })
+            }
+            options={[{ value: 'no', label: 'Нет' }, { value: 'yes', label: 'Есть' }]}
+          />
+        </Field>
+        <Field label="Высота фартука, мм">
+          <NumberInput
+            value={cabinet.backsplash?.height ?? 0}
+            min={100}
+            max={1200}
+            step={10}
+            onChange={(height) => {
+              if (!cabinet.backsplash) return
+              edit('backsplash.height', { backsplash: { ...cabinet.backsplash, height } })
             }}
           />
         </Field>

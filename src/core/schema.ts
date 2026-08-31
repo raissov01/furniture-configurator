@@ -78,6 +78,16 @@ const FrontsSchema = z.object({
   milling: MillingSpecSchema.nullable().optional(),
 }).nullable()
 
+const RailSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(['carcass', 'facade', 'filler']),
+  position: z.enum(['top', 'bottom', 'left', 'right']),
+  materialId: z.string().min(1).optional(),
+  width: z.number().positive(),
+  inset: z.number().min(0),
+  depthOffset: z.number().min(0),
+})
+
 const CabinetBaseSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -92,6 +102,11 @@ const CabinetBaseSchema = z.object({
   back: z.object({ mode: z.enum(['overlay', 'groove', 'none']) }),
   edging: EdgePolicySchema,
   settings: ConstructionSettingsSchema.optional(),
+  rails: z.array(RailSchema).optional(),
+  backsplash: z.object({
+    materialId: z.string().min(1).optional(),
+    height: z.number().positive(),
+  }).optional(),
 })
 
 // ── schemaVersion 1 — секцияларға дейінгі пішін ──────────────────────────────

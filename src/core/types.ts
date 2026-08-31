@@ -286,6 +286,23 @@ export type SettingsOverride = {
  * `height` берілсе — жолақ дәл сонша мм алады; берілмесе, қалған биіктікті
  * басқа еркін жолақтармен тең бөліседі.
  */
+export type RailPosition = 'top' | 'bottom' | 'left' | 'right'
+export type RailKind = 'carcass' | 'facade' | 'filler'
+
+export type Rail = {
+  id: string
+  kind: RailKind
+  position: RailPosition
+  /** Берілмесе: `facade`/`filler` — фасад материалы, `carcass` — корпустікі. */
+  materialId?: string | undefined
+  /** Планканың ТАР өлшемі, мм. */
+  width: number
+  /** Тұрған жиегінен БОЙЛЫҚ бағытта ішке шегініс, мм. */
+  inset: number
+  /** Тереңдік бойынша алдыңғы жиектен шегініс, мм. Тек `carcass` үшін. */
+  depthOffset: number
+}
+
 /**
  * Секцияның фасады.
  *
@@ -365,6 +382,27 @@ export type CabinetConfig = {
    * `height` бұрынғыдай КОРПУСТЫҢ биіктігі.
    */
   base?: { kind: 'plinth' | 'legs'; height: number } | undefined
+
+  /**
+   * Планкалар мен фальш-панельдер.
+   *
+   * Планка (царга) — толық крышканың ОРНЫНА қойылатын тар деталь: төменгі
+   * ас үй шкафында столешница үстінен жабатындықтан, толық крышка керек
+   * емес, екі царга жетеді. Фальш-панель — шкаф пен қабырғаның арасындағы
+   * саңылауды жабатын панель.
+   *
+   * ГЕОМЕТРИЯСЫ ТҮРІНЕ БАЙЛАНЫСТЫ, сондықтан ол айқын жазылған:
+   *   `carcass` — корпустың ІШІНДЕ, `depthOffset` тереңдігінде тұрады
+   *   `facade`  — корпустың АЛДЫНДА (z < 0), материалы әдепкіде фасадтікі
+   *   `filler`  — корпустың ЖАНЫНДА тік тұрады, тек left/right
+   */
+  rails?: Rail[] | undefined
+
+  /**
+   * Фартук — столешницаның үстіндегі, қабырғадағы панель.
+   * Корпустың ішіне кірмейді: ол қабырғаны жабады.
+   */
+  backsplash?: { materialId?: string | undefined; height: number } | undefined
 
   /**
    * Қиғаш төбе (мансарда). `height` — БИІК жағының биіктігі.

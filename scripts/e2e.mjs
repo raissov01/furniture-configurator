@@ -296,6 +296,43 @@ async function run() {
     check(rows.some((r) => r[0].includes('ящика')), 'деталировкада ящик пайда болды')
   })
 
+  await test('Планка, фальш-панель, фартук', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+
+    const before = await h.cutListRows()
+    check(await h.clickText('+ Планка', 1500), 'планка қосылды')
+
+    const pick = async (label, value, settle = 1200) => {
+      const done = await h.evaluate(`(() => {
+        const l = [...document.querySelectorAll('label')]
+          .find((x) => x.textContent.includes(${JSON.stringify(label)}))
+        if (!l) return false
+        const sel = l.querySelector('select')
+        if (!sel) return false
+        const opt = [...sel.options].find((o) => o.value === ${JSON.stringify(value)})
+        if (!opt) return false
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
+        setter.call(sel, opt.value)
+        sel.dispatchEvent(new Event('change', { bubbles: true }))
+        return true
+      })()`)
+      await h.wait(settle)
+      return done
+    }
+
+    check(await pick('Фартук', 'yes'), 'фартук қосылды')
+
+    const after = await h.cutListRows()
+    check(after.length > before.length, `деталировкаға түсті (${before.length} → ${after.length})`)
+    const names = after.map((r) => r[0]).join(' | ')
+    check(/Планка/i.test(names), 'кестеде «Планка» бар')
+    check(/Фартук/i.test(names), 'кестеде «Фартук» бар')
+
+    const body = await h.text()
+    check(!/не помести|Ошибка/i.test(body), 'қате жоқ')
+  })
+
   await test('Наполнение: техника мен механизм', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
