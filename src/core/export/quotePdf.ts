@@ -116,7 +116,7 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
     { title: 'Материалы', lines: input.price.materials },
     { title: 'Кромка', lines: input.price.edges },
     { title: 'Фурнитура', lines: input.price.hardware },
-    { title: 'Работа', lines: input.price.labour },
+    { title: 'Услуги цеха', lines: input.price.services },
   ]
 
   for (const group of groups) {

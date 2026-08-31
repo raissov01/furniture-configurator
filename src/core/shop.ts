@@ -42,8 +42,66 @@ export type LabourRates = {
   perEdgeMetre: number
 }
 
+/**
+ * Қызмет НЕГЕ қарап саналады.
+ *
+ * Бұл ӘДЕЙІ баптау: бір цех распилды ПАРАҚПЕН алады («парағы 2 000 ₸»),
+ * екіншісі АУДАНМЕН («м² 500 ₸»), үшіншісі детальмен. Бір цехтың әдетін
+ * бүкіл жүйеге жазсақ, қалғандарының сметасы жалған болып шығады.
+ */
+export type ServiceBasis = 'sheet' | 'squareMetre' | 'hole' | 'edgeMetre' | 'panel'
+
+export type ServiceRate = {
+  basis: ServiceBasis
+  /** Бір бірліктің бағасы, ТИЫН. */
+  rate: number
+}
+
+export type ServiceId = 'cutting' | 'drilling' | 'edging' | 'packing' | 'assembly'
+
+export const SERVICE_IDS: ServiceId[] = ['cutting', 'drilling', 'edging', 'packing', 'assembly']
+
+export const SERVICE_NAMES: Record<ServiceId, string> = {
+  cutting: 'Распил',
+  drilling: 'Присадка',
+  edging: 'Облицовка кромкой',
+  packing: 'Упаковка',
+  assembly: 'Сборка',
+}
+
+export const SERVICE_BASIS_NAMES: Record<ServiceBasis, string> = {
+  sheet: 'за лист',
+  squareMetre: 'за м²',
+  hole: 'за отверстие',
+  edgeMetre: 'за метр кромки',
+  panel: 'за деталь',
+}
+
+export type Services = Record<ServiceId, ServiceRate>
+
+/**
+ * Монтаж. qdesign-дегідей: модуль ЕНІНІҢ бір метріне мөлшерлеме.
+ * Бұл цехтың жұмысы емес, БӨЛЕК қызмет — сондықтан коэффициенттен тыс
+ * қосылады (төмендегі `priceProject` түсініктемесін қара).
+ */
+export type Installation = {
+  /** 1 метр еніне, ТИЫН. 0 — монтажсыз. */
+  ratePerMetreWidth: number
+}
+
+export function defaultServices(): Services {
+  return {
+    // Әдепкі негіздер — ең жиі кездесетіні; бағалары ӘРҚАШАН 0.
+    cutting: { basis: 'sheet', rate: 0 },
+    drilling: { basis: 'hole', rate: 0 },
+    edging: { basis: 'edgeMetre', rate: 0 },
+    packing: { basis: 'sheet', rate: 0 },
+    assembly: { basis: 'squareMetre', rate: 0 },
+  }
+}
+
 export type ShopProfile = {
-  schemaVersion: 3
+  schemaVersion: 4
   id: string
   /** КП-да тұратын атау */
   name: string
@@ -63,7 +121,20 @@ export type ShopProfile = {
   hingeSystems: HingeSystem[]
   /** Тұтқа модельдері. Артикул мен баға — цехтың жеткізушісінен. */
   handles: HandleModel[]
+  /**
+   * ⚠ ЕСКІРГЕН (v3-ке дейінгі). Жаңа есеп `services`-пен жүреді; бұл өріс
+   * ескі профильдерді оқу үшін ғана қалды әрі көшу кезінде `services`-ке
+   * айналады.
+   */
   labour: LabourRates
+  /** Цехтың қызметтері. Әрқайсысының өз өлшем бірлігі бар. */
+  services: Services
+  installation: Installation
+  /**
+   * Цехтың өз коэффициенті: материал + қызмет + фурнитура сомасы осыған
+   * көбейеді. Монтаж бен үстеме бұған КІРМЕЙДІ.
+   */
+  coefficient: number
   /** Үстеме пайыз. КП-дағы соңғы сан осымен көбейеді. */
   markupPercent: number
 
@@ -186,7 +257,7 @@ export function defaultHardware(): HardwareItem[] {
  */
 export function defaultShopProfile(id = 'shop-1'): ShopProfile {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     id,
     name: '',
     city: '',
@@ -198,6 +269,9 @@ export function defaultShopProfile(id = 'shop-1'): ShopProfile {
     hingeSystems: defaultHingeSystems(),
     handles: defaultHandles(),
     labour: { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 },
+    services: defaultServices(),
+    installation: { ratePerMetreWidth: 0 },
+    coefficient: 1,
     markupPercent: 0,
     maxShelfSpan: null,
   }
@@ -282,6 +356,11 @@ export function shelfSpanWarnings(panels: Panel[], shop: ShopProfile): ShelfSpan
 
 const minorUnits = z.number().int().nonnegative()
 
+export const ServiceRateSchema = z.object({
+  basis: z.enum(['sheet', 'squareMetre', 'hole', 'edgeMetre', 'panel']),
+  rate: z.number().min(0),
+})
+
 export const HardwareItemSchema = z.object({
   id: z.string().min(1),
   kind: z.enum(['confirmat', 'dowel', 'minifix', 'shelfPin', 'hinge', 'runner', 'handle', 'leg', 'other']),
@@ -345,7 +424,7 @@ const LabourRatesSchema = z.object({
 })
 
 export const ShopProfileSchema = z.object({
-  schemaVersion: z.literal(3),
+  schemaVersion: z.literal(4),
   id: z.string().min(1),
   name: z.string(),
   city: z.string(),
@@ -356,6 +435,15 @@ export const ShopProfileSchema = z.object({
   hardware: z.array(HardwareItemSchema),
   hingeSystems: z.array(HingeSystemSchema),
   handles: z.array(HandleModelSchema),
+  services: z.object({
+    cutting: ServiceRateSchema,
+    drilling: ServiceRateSchema,
+    edging: ServiceRateSchema,
+    packing: ServiceRateSchema,
+    assembly: ServiceRateSchema,
+  }),
+  installation: z.object({ ratePerMetreWidth: z.number().min(0) }),
+  coefficient: z.number().positive(),
   labour: LabourRatesSchema,
   markupPercent: z.number().int().min(0).max(1000),
   maxShelfSpan: z.number().int().positive().nullable(),
@@ -381,8 +469,8 @@ export function parseShopProfile(raw: unknown): ShopProfile {
   // v2 → v3: ілгек жүйелері мен тұтқа модельдері. Ескі профильде олар жоқ,
   // сондықтан каталог та, оларға сәйкес сметалық позициялар да қосылады —
   // әйтпесе жоба ашылғанда фасад ілгексіз қалар еді.
-  const v = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
-  if (v === 2) {
+  const v2 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
+  if (v2 === 2) {
     const old = migrated as ShopProfile & { hardware: HardwareItem[] }
     const have = new Set(old.hardware.map((h) => h.id))
     const added = defaultHardware().filter((h) => !have.has(h.id))
@@ -392,6 +480,28 @@ export function parseShopProfile(raw: unknown): ShopProfile {
       hardware: [...old.hardware, ...added],
       hingeSystems: defaultHingeSystems(),
       handles: defaultHandles(),
+    }
+  }
+
+  // v3 → v4: жұмыс ақысы ҚЫЗМЕТТЕРГЕ бөлінді. Ескі үш мөлшерлеме дәл сол
+  // мағынасымен көшеді (аудан → распил, тесік → присадка, метр → кромка),
+  // сондықтан цехтың бұрын енгізген сандары ЖОҒАЛМАЙДЫ.
+  const v3 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
+  if (v3 === 3) {
+    const old = migrated as ShopProfile
+    const labour = old.labour ?? { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 }
+    migrated = {
+      ...old,
+      schemaVersion: 4,
+      services: {
+        cutting: { basis: 'squareMetre', rate: labour.perSquareMetre },
+        drilling: { basis: 'hole', rate: labour.perHole },
+        edging: { basis: 'edgeMetre', rate: labour.perEdgeMetre },
+        packing: { basis: 'sheet', rate: 0 },
+        assembly: { basis: 'squareMetre', rate: 0 },
+      },
+      installation: { ratePerMetreWidth: 0 },
+      coefficient: 1,
     }
   }
 

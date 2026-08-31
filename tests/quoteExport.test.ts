@@ -145,8 +145,8 @@ describe('қаріп жиынтығы', () => {
       ...price.materials.map((l) => l.name),
       ...price.edges.map((l) => l.name),
       ...price.hardware.map((l) => l.name),
-      ...price.labour.map((l) => `${l.name} ${l.qty} ${l.unit}`),
-      ...[...price.materials, ...price.labour].map((l) => formatTenge(l.cost, 'тг')),
+      ...price.services.map((l) => `${l.name} ${l.qty} ${l.unit}`),
+      ...[...price.materials, ...price.services].map((l) => formatTenge(l.cost, 'тг')),
     ]
 
     for (const [name, bytes] of [['regular', fonts.regular], ['bold', fonts.bold]] as const) {

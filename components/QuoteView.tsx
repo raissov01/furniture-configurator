@@ -11,7 +11,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import { formatTenge, nestPanels, priceProject } from '@/src/core/index'
+import { SERVICE_IDS, SERVICE_NAMES, formatTenge, nestPanels, priceProject } from '@/src/core/index'
 import type { HardwarePlacement, NestedSheet, Panel, PriceLine } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
@@ -43,12 +43,14 @@ function download(filename: string, data: Uint8Array | string, mime: string): vo
 
 /** `panels` — БҮКІЛ ЖОБАНЫҢ детальдары. Геометрия store-да есептелмейді (§3). */
 export function QuoteView({
-  panels, hardware, projectName,
+  panels, hardware, projectName, moduleWidths,
 }: {
   panels: Panel[]
   /** Панель емес фурнитура: штанга мен ұстағыштар. */
   hardware: HardwarePlacement[]
   projectName: string
+  /** Корпустардың ені, мм — монтаж мөлшерлемесі осыдан саналады. */
+  moduleWidths: number[]
 }) {
   const open = useConfigurator((s) => s.quoteOpen)
   const setOpen = useConfigurator((s) => s.setQuoteOpen)
@@ -67,8 +69,8 @@ export function QuoteView({
   }, [panels, catalog])
 
   const price = useMemo(
-    () => (nesting ? priceProject(panels, nesting, shop, hardware) : null),
-    [panels, nesting, shop, hardware],
+    () => (nesting ? priceProject(panels, nesting, shop, hardware, moduleWidths) : null),
+    [panels, nesting, shop, hardware, moduleWidths],
   )
 
   const run = async (kind: string, action: () => Promise<void>) => {
@@ -259,7 +261,7 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
     { title: 'Материалы', lines: price.materials },
     { title: 'Кромка', lines: price.edges },
     { title: 'Фурнитура', lines: price.hardware },
-    { title: 'Работа', lines: price.labour },
+    { title: 'Услуги цеха', lines: price.services },
   ]
 
   return (
@@ -270,6 +272,42 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
           {[...new Set(price.missingPrices)].join('; ')}. Заполните их во вкладке «Цех».
         </div>
       ) : null}
+
+      <div className="overflow-x-auto">
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
+          Листы по материалам
+        </div>
+        <table className="w-full min-w-[620px] text-xs">
+          <thead className="text-left text-[11px] uppercase tracking-wide text-neutral-500">
+            <tr>
+              <th className="py-1.5 font-medium">Материал</th>
+              <th className="py-1.5 text-right font-medium">Площадь</th>
+              <th className="py-1.5 text-right font-medium">Листы</th>
+              <th className="py-1.5 text-right font-medium">Материал</th>
+              <th className="py-1.5 text-right font-medium">Кромка</th>
+              {SERVICE_IDS.map((sid) => (
+                <th key={sid} className="py-1.5 text-right font-medium">{SERVICE_NAMES[sid]}</th>
+              ))}
+              <th className="py-1.5 text-right font-medium">Итого</th>
+            </tr>
+          </thead>
+          <tbody>
+            {price.byMaterial.map((r) => (
+              <tr key={r.materialId} className="border-t border-neutral-100 dark:border-neutral-800">
+                <td className="py-1">{r.materialName}</td>
+                <td className="py-1 text-right tabular-nums text-neutral-500">{r.areaSquareMetres} м²</td>
+                <td className="py-1 text-right tabular-nums text-neutral-500">{r.sheets}</td>
+                <td className="py-1 text-right tabular-nums">{formatTenge(r.materialCost)}</td>
+                <td className="py-1 text-right tabular-nums">{formatTenge(r.edgeCost)}</td>
+                {SERVICE_IDS.map((sid) => (
+                  <td key={sid} className="py-1 text-right tabular-nums">{formatTenge(r.services[sid])}</td>
+                ))}
+                <td className="py-1 text-right tabular-nums font-medium">{formatTenge(r.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <table className="w-full text-xs">
         <thead className="text-left text-[11px] uppercase tracking-wide text-neutral-500">
@@ -312,6 +350,17 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
       </table>
 
       <div className="ml-auto w-full max-w-sm space-y-1 border-t border-neutral-200 pt-2 text-xs dark:border-neutral-700">
+        <Row label="Материалы, кромка, фурнитура" value={formatTenge(price.goods)} />
+        <Row label="Услуги цеха" value={formatTenge(price.servicesTotal)} />
+        {price.coefficientAmount !== 0 ? (
+          <Row label={`Коэффициент ×${price.coefficient}`} value={formatTenge(price.coefficientAmount)} />
+        ) : null}
+        {price.installation.cost > 0 ? (
+          <Row
+            label={`Монтаж · ${price.installation.metres} м ширины`}
+            value={formatTenge(price.installation.cost)}
+          />
+        ) : null}
         <Row label="Себестоимость" value={formatTenge(price.subtotal)} />
         <Row label={`Наценка ${price.markupPercent}%`} value={formatTenge(price.markup)} />
         <div className="flex items-baseline justify-between border-t border-neutral-200 pt-1.5 text-sm font-semibold dark:border-neutral-700">

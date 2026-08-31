@@ -101,6 +101,8 @@ export function Workspace() {
   )
   const projectHardware = useMemo(() => items.flatMap((i) => i.hardware), [items])
   const projectName = cabinets.length === 1 ? cabinets[0]!.name : `Проект (${cabinets.length} корпуса)`
+  // Монтаж корпустардың ЕНІНІҢ қосындысымен саналады.
+  const moduleWidths = useMemo(() => cabinets.map((c) => c.width), [cabinets])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -121,7 +123,12 @@ export function Workspace() {
       <ShopSettings />
       <SketchEditor />
       {cloudEnabled && <AccountPanel />}
-      <QuoteView panels={projectPanels} hardware={projectHardware} projectName={projectName} />
+      <QuoteView
+        panels={projectPanels}
+        hardware={projectHardware}
+        projectName={projectName}
+        moduleWidths={moduleWidths}
+      />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <Link
           href="/"

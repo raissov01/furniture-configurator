@@ -10,14 +10,17 @@
 import { useMemo, useState } from 'react'
 import {
   DEFAULT_SETTINGS,
+  SERVICE_BASIS_NAMES,
+  SERVICE_IDS,
+  SERVICE_NAMES,
   SHEET_FORMATS,
   SHEET_THICKNESSES,
   makeMaterial,
   shopReadiness,
 } from '@/src/core/index'
-import type { ConstructionSettings, ShopProfile } from '@/src/core/index'
+import type { ConstructionSettings, ServiceBasis, ShopProfile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
-import { Button, Field, NumberInput, SectionTitle, Toggle } from '@/components/ui'
+import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
 
 type Tab = 'profile' | 'materials' | 'bands' | 'hardware' | 'hinges' | 'rules'
@@ -207,19 +210,64 @@ export function ShopSettings() {
               <Rule label="Первое отверстие полкодержателя" k="shelfPinDatum" shop={shop} onChange={setRule} />
             </div>
 
-            <SectionTitle>Работа и наценка</SectionTitle>
-            <div className="grid gap-2 sm:grid-cols-4">
-              <Field label="Раскрой, ₸ за м²">
-                <NumberInput value={toTenge(shop.labour.perSquareMetre)} min={0} step={100}
-                  onChange={(v) => editShop({ labour: { ...shop.labour, perSquareMetre: toMinor(v) } })} />
+            <SectionTitle>Услуги цеха</SectionTitle>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Каждую услугу считайте так, как считаете её у себя: один цех берёт за лист,
+              другой за метр кромки, третий за отверстие. Услуга с нулевой ставкой в смету
+              не попадает и не считается незаполненной.
+            </p>
+            <div className="max-h-[40vh] overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+              <table className="w-full text-xs">
+                <tbody>
+                  {SERVICE_IDS.map((sid) => (
+                    <tr key={sid} className="border-b border-neutral-100 last:border-0 dark:border-neutral-900">
+                      <td className="px-2 py-1.5">{SERVICE_NAMES[sid]}</td>
+                      <td className="w-44 px-2 py-1.5">
+                        <Select
+                          value={shop.services[sid].basis}
+                          onChange={(basis) =>
+                            editShop({
+                              services: {
+                                ...shop.services,
+                                [sid]: { ...shop.services[sid], basis: basis as ServiceBasis },
+                              },
+                            })
+                          }
+                          options={(Object.keys(SERVICE_BASIS_NAMES) as ServiceBasis[]).map((b) => ({
+                            value: b, label: SERVICE_BASIS_NAMES[b],
+                          }))}
+                        />
+                      </td>
+                      <td className="w-32 px-2 py-1.5">
+                        <NumberInput
+                          value={toTenge(shop.services[sid].rate)}
+                          min={0}
+                          step={100}
+                          onChange={(v) =>
+                            editShop({
+                              services: {
+                                ...shop.services,
+                                [sid]: { ...shop.services[sid], rate: toMinor(v) },
+                              },
+                            })
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <SectionTitle>Коэффициент, монтаж и наценка</SectionTitle>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Field label="Коэффициент" hint="умножает материалы, услуги и фурнитуру">
+                <NumberInput value={shop.coefficient} min={0.1} max={10} step={0.05}
+                  onChange={(v) => editShop({ coefficient: v > 0 ? v : 1 })} />
               </Field>
-              <Field label="Присадка, ₸ за отверстие">
-                <NumberInput value={toTenge(shop.labour.perHole)} min={0} step={5}
-                  onChange={(v) => editShop({ labour: { ...shop.labour, perHole: toMinor(v) } })} />
-              </Field>
-              <Field label="Кромление, ₸ за метр">
-                <NumberInput value={toTenge(shop.labour.perEdgeMetre)} min={0} step={10}
-                  onChange={(v) => editShop({ labour: { ...shop.labour, perEdgeMetre: toMinor(v) } })} />
+              <Field label="Монтаж, ₸ за 1 м ширины" hint="в коэффициент не входит">
+                <NumberInput value={toTenge(shop.installation.ratePerMetreWidth)} min={0} step={500}
+                  onChange={(v) => editShop({ installation: { ratePerMetreWidth: toMinor(v) } })} />
               </Field>
               <Field label="Наценка, %">
                 <NumberInput value={shop.markupPercent} min={0} max={1000} step={1}

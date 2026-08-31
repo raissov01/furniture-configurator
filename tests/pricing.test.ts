@@ -102,7 +102,7 @@ describe('есеп', () => {
 
   it('үстеме сомадан есептеледі, қорытынды дұрыс жиналады', () => {
     const p = priceProject(panels, nesting, pricedShop)
-    const lines = [...p.materials, ...p.edges, ...p.hardware, ...p.labour]
+    const lines = [...p.materials, ...p.edges, ...p.hardware, ...p.services]
     expect(p.subtotal).toBe(lines.reduce((s, l) => s + l.cost, 0))
     // Үстеме де бүтін теңгеге дөңгелектенеді — КП-да тиын болмауы керек.
     expect(p.markup).toBe(Math.round((p.subtotal * 20) / 100 / 100) * 100)
@@ -111,7 +111,7 @@ describe('есеп', () => {
 
   it('барлық сома БҮТІН тиын', () => {
     const p = priceProject(panels, nesting, pricedShop)
-    for (const line of [...p.materials, ...p.edges, ...p.hardware, ...p.labour]) {
+    for (const line of [...p.materials, ...p.edges, ...p.hardware, ...p.services]) {
       expect(Number.isInteger(line.cost), line.name).toBe(true)
       expect(Number.isInteger(line.unitPrice), line.name).toBe(true)
     }
@@ -130,7 +130,7 @@ describe('есеп', () => {
       ...pricedShop,
       labour: { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 },
     })
-    expect(p.labour.every((l) => l.cost === 0)).toBe(true)
+    expect(p.services.every((l) => l.cost === 0)).toBe(true)
   })
 
   it('теңгеге келтіру дөңгелектейді', () => {
@@ -150,9 +150,10 @@ describe('профиль нұсқасы', () => {
     delete (old as Record<string, unknown>)['markupPercent']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(3)
+    expect(migrated.schemaVersion).toBe(4)
     expect(migrated.markupPercent).toBe(0)
-    expect(migrated.labour).toEqual({ perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 })
+    expect(migrated.services.cutting.rate).toBe(0)
+    expect(migrated.coefficient).toBe(1)
     expect(migrated.materials[0]!.pricePerSheet).toBe(111)
   })
 
@@ -162,7 +163,7 @@ describe('профиль нұсқасы', () => {
     delete (old as Record<string, unknown>)['handles']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(3)
+    expect(migrated.schemaVersion).toBe(4)
     expect(migrated.hingeSystems.length).toBeGreaterThan(0)
     expect(migrated.handles.length).toBeGreaterThan(0)
     // Жаңа фурнитура сметада да болуы керек, әйтпесе бағасын қоятын жер жоқ.
@@ -183,6 +184,7 @@ describe('профиль нұсқасы', () => {
     delete (old as Record<string, unknown>)['handles']
 
     const migrated = parseShopProfile(old)
+    expect(migrated.schemaVersion).toBe(4)
     for (const h of base.hardware) {
       expect(migrated.hardware.find((x) => x.id === h.id)?.pricePerUnit, h.id).toBe(777)
     }
@@ -192,7 +194,7 @@ describe('профиль нұсқасы', () => {
 describe('КП құжат ретінде', () => {
   it('бағандағы сандар ДӘЛ қосылады — цех қолмен тексереді', () => {
     const p = priceProject(panels, nesting, pricedShop)
-    const lines = [...p.materials, ...p.edges, ...p.hardware, ...p.labour]
+    const lines = [...p.materials, ...p.edges, ...p.hardware, ...p.services]
 
     // Әр жол — бүтін теңге (яғни тиынға еселік 100).
     for (const l of lines) expect(l.cost % 100, l.name).toBe(0)

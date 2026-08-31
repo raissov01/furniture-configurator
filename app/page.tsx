@@ -171,7 +171,7 @@ export default function Page() {
                     ['Материалы', demoPrice.materials.reduce((s, l) => s + l.cost, 0)],
                     ['Кромка', demoPrice.edges.reduce((s, l) => s + l.cost, 0)],
                     ['Фурнитура', demoPrice.hardware.reduce((s, l) => s + l.cost, 0)],
-                    ['Работа', demoPrice.labour.reduce((s, l) => s + l.cost, 0)],
+                    ['Услуги цеха', demoPrice.services.reduce((s, l) => s + l.cost, 0)],
                   ].map(([label, cost]) => (
                     <div key={String(label)} className="flex items-baseline justify-between gap-4">
                       <dt style={{ color: 'var(--ink-soft)' }}>{label}</dt>

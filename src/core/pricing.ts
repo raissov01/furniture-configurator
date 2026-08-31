@@ -15,7 +15,8 @@ import {
 import type { HardwarePlacement } from './hardware'
 import type { NestingResult } from './nesting'
 import type { Panel } from './types'
-import type { ShopProfile } from './shop'
+import { SERVICE_IDS, SERVICE_NAMES } from './shop'
+import type { ServiceId, ServiceRate, ShopProfile } from './shop'
 
 export type PriceLine = {
   id: string
@@ -29,11 +30,50 @@ export type PriceLine = {
   cost: number
 }
 
+/**
+ * Бір материалдың жолы — цехтың негізгі кестесі.
+ *
+ * ДӨҢГЕЛЕКТЕУ ОСЫ ЖЕРДЕ, БІР РЕТ жүреді: төмендегі `materials` / `edges` /
+ * `services` жолдары дәл осы ұяшықтардың ҚОСЫНДЫСЫ болып жиналады.
+ * Сондықтан цех қай бағанды қосса да, қорытынды тиынға дейін дәл шығады.
+ */
+export type MaterialRow = {
+  materialId: string
+  materialName: string
+  /** Готовый ауданы, м² */
+  areaSquareMetres: number
+  sheets: number
+  panels: number
+  holes: number
+  edgeMetres: number
+  /** Парақтардың құны, тиын */
+  materialCost: number
+  /** Осы материалдың детальдарындағы кромканың құны, тиын */
+  edgeCost: number
+  /** Қызмет → сома, тиын */
+  services: Record<ServiceId, number>
+  /** Жолдың бәрі қосылғаны, тиын */
+  total: number
+}
+
 export type PriceBreakdown = {
   materials: PriceLine[]
   edges: PriceLine[]
   hardware: PriceLine[]
-  labour: PriceLine[]
+  /** Цехтың қызметтері: распил, присадка, кромка, упаковка, сборка. */
+  services: PriceLine[]
+  /** Материал бойынша жіктеме — цех осы кестені оқиды. */
+  byMaterial: MaterialRow[]
+
+  /** Сатып алынатыны: материал + кромка + фурнитура, тиын */
+  goods: number
+  /** Қызметтердің сомасы, тиын */
+  servicesTotal: number
+  coefficient: number
+  /** Коэффициент ҚОСҚАН сома (base × (k − 1)), тиын */
+  coefficientAmount: number
+  installation: { metres: number; rate: number; cost: number }
+
   /** Үстемесіз сома, тиын */
   subtotal: number
   markupPercent: number
@@ -153,42 +193,164 @@ export function priceProject(
   shop: ShopProfile,
   /** Панель емес фурнитура: штанга, ұстағыш, рельс. */
   placements: HardwarePlacement[] = [],
+  /** Монтаж үшін: корпустардың ені, мм. Бос болса монтаж есептелмейді. */
+  moduleWidths: number[] = [],
 ): PriceBreakdown {
   const missingPrices: string[] = []
 
   const materialById = new Map(shop.materials.map((m) => [m.id, m]))
-  const materials: PriceLine[] = nesting.byMaterial.map((group) => {
-    const material = materialById.get(group.materialId)
-    const unitPrice = material?.pricePerSheet ?? 0
-    const qty = group.sheets.length
-    if (unitPrice <= 0) missingPrices.push(`${group.materialName}: цена листа`)
-    return {
-      id: group.materialId,
-      name: group.materialName,
-      qty,
-      unit: 'лист',
-      unitPrice,
-      cost: roundTenge(qty * unitPrice),
-    }
-  })
-
   const bandById = new Map(shop.edgeBands.map((b) => [b.id, b]))
-  const edges: PriceLine[] = [...edgeMetresByBand(panels)]
-    .map(([bandId, metres]) => {
+
+  // ── Материал бойынша статистика ───────────────────────────────────────────
+  // Әр материалдың ауданы, детальдары, тесіктері мен кромкасы. Қызметтің
+  // қайсысы неге қарап саналатыны цех баптауында, сондықтан бәрін жинаймыз.
+  type Stats = {
+    area: number
+    panels: number
+    holes: number
+    /** bandId → метр */
+    edges: Map<string, number>
+  }
+  const stats = new Map<string, Stats>()
+  const statFor = (id: string): Stats => {
+    let v = stats.get(id)
+    if (!v) {
+      v = { area: 0, panels: 0, holes: 0, edges: new Map() }
+      stats.set(id, v)
+    }
+    return v
+  }
+
+  for (const p of panels) {
+    const st = statFor(p.materialId)
+    st.area += (p.finishedLength * p.finishedWidth) / 1_000_000
+    st.panels += 1
+    st.holes += p.drilling.length
+    const sides: [keyof Panel['edges'], number][] = [
+      ['L1', p.finishedLength], ['L2', p.finishedLength],
+      ['W1', p.finishedWidth], ['W2', p.finishedWidth],
+    ]
+    for (const [side, length] of sides) {
+      const spec = p.edges[side]
+      if (!spec) continue
+      st.edges.set(spec.bandId, (st.edges.get(spec.bandId) ?? 0) + length / 1000)
+    }
+  }
+
+  const sheetsByMaterial = new Map(nesting.byMaterial.map((g) => [g.materialId, g.sheets.length]))
+  const nameByMaterial = new Map(nesting.byMaterial.map((g) => [g.materialId, g.materialName]))
+
+  /** Қызметтің осы материалдағы саны — негізіне қарай. */
+  const serviceQty = (rate: ServiceRate, id: string, st: Stats): number => {
+    switch (rate.basis) {
+      case 'sheet': return sheetsByMaterial.get(id) ?? 0
+      case 'squareMetre': return st.area
+      case 'hole': return st.holes
+      case 'panel': return st.panels
+      case 'edgeMetre': return [...st.edges.values()].reduce((sum, m) => sum + m, 0)
+    }
+  }
+
+  // ── Ұяшықтар: дөңгелектеу ТЕК осы жерде ───────────────────────────────────
+  /** materialId → bandId → тиын */
+  const edgeCells = new Map<string, Map<string, number>>()
+  const materialRows: MaterialRow[] = []
+
+  const materialIds = [...new Set([...stats.keys(), ...sheetsByMaterial.keys()])]
+  for (const id of materialIds) {
+    const st = statFor(id)
+    const material = materialById.get(id)
+    const name = material?.name ?? nameByMaterial.get(id) ?? id
+    const sheets = sheetsByMaterial.get(id) ?? 0
+
+    const sheetPrice = material?.pricePerSheet ?? 0
+    if (sheets > 0 && sheetPrice <= 0) missingPrices.push(`${name}: цена листа`)
+    const materialCost = roundTenge(sheets * sheetPrice)
+
+    const cells = new Map<string, number>()
+    let edgeCost = 0
+    for (const [bandId, metres] of st.edges) {
       const band = bandById.get(bandId)
-      const unitPrice = band?.pricePerMeter ?? 0
-      if (unitPrice <= 0) missingPrices.push(`${band?.name ?? bandId}: цена за метр`)
-      return {
-        id: bandId,
-        name: band?.name ?? bandId,
-        qty: Math.round(metres * 100) / 100,
-        unit: 'м' as const,
-        unitPrice,
-        cost: roundTenge(metres * unitPrice),
-      }
+      const price = band?.pricePerMeter ?? 0
+      if (price <= 0) missingPrices.push(`${band?.name ?? bandId}: цена за метр`)
+      const cell = roundTenge(metres * price)
+      cells.set(bandId, cell)
+      edgeCost += cell
+    }
+    edgeCells.set(id, cells)
+
+    const services = {} as Record<ServiceId, number>
+    for (const sid of SERVICE_IDS) {
+      const rate = shop.services[sid]
+      services[sid] = roundTenge(serviceQty(rate, id, st) * rate.rate)
+    }
+
+    const servicesSum = SERVICE_IDS.reduce((sum, sid) => sum + services[sid], 0)
+    materialRows.push({
+      materialId: id,
+      materialName: name,
+      areaSquareMetres: Math.round(st.area * 100) / 100,
+      sheets,
+      panels: st.panels,
+      holes: st.holes,
+      edgeMetres: Math.round([...st.edges.values()].reduce((s2, m) => s2 + m, 0) * 100) / 100,
+      materialCost,
+      edgeCost,
+      services,
+      total: materialCost + edgeCost + servicesSum,
     })
+  }
+  materialRows.sort((a, b) => b.total - a.total)
+
+  // ── Жолдар: ұяшықтардың ҚОСЫНДЫСЫ ─────────────────────────────────────────
+  const materials: PriceLine[] = materialRows
+    .filter((r) => r.sheets > 0)
+    .map((r) => ({
+      id: r.materialId,
+      name: r.materialName,
+      qty: r.sheets,
+      unit: 'лист' as const,
+      unitPrice: materialById.get(r.materialId)?.pricePerSheet ?? 0,
+      cost: r.materialCost,
+    }))
+
+  const edgeMetresTotal = new Map<string, number>()
+  const edgeCostTotal = new Map<string, number>()
+  for (const [materialId, cells] of edgeCells) {
+    const st = statFor(materialId)
+    for (const [bandId, cost] of cells) {
+      edgeCostTotal.set(bandId, (edgeCostTotal.get(bandId) ?? 0) + cost)
+      edgeMetresTotal.set(bandId, (edgeMetresTotal.get(bandId) ?? 0) + (st.edges.get(bandId) ?? 0))
+    }
+  }
+  const edges: PriceLine[] = [...edgeCostTotal]
+    .map(([bandId, cost]) => ({
+      id: bandId,
+      name: bandById.get(bandId)?.name ?? bandId,
+      qty: Math.round((edgeMetresTotal.get(bandId) ?? 0) * 100) / 100,
+      unit: 'м' as const,
+      unitPrice: bandById.get(bandId)?.pricePerMeter ?? 0,
+      cost,
+    }))
     .sort((a, b) => b.cost - a.cost)
 
+  const services: PriceLine[] = SERVICE_IDS
+    .map((sid) => {
+      const rate = shop.services[sid]
+      const qty = materialIds.reduce((sum, id) => sum + serviceQty(rate, id, statFor(id)), 0)
+      const cost = materialRows.reduce((sum, r) => sum + r.services[sid], 0)
+      return {
+        id: `service-${sid}`,
+        name: SERVICE_NAMES[sid],
+        qty: Math.round(qty * 100) / 100,
+        unit: SERVICE_UNITS[rate.basis],
+        unitPrice: rate.rate,
+        cost,
+      }
+    })
+    .filter((line) => line.qty > 0 && line.unitPrice > 0)
+
+  // ── Фурнитура ─────────────────────────────────────────────────────────────
   const hardwareById = new Map(shop.hardware.map((h) => [h.id, h]))
   const counts = countHardware(panels)
   // Штанга МЕТРМЕН сатылады, ұстағыш данамен — сондықтан бірі ұзындықтан,
@@ -216,40 +378,59 @@ export function priceProject(
     })
     .sort((a, b) => b.cost - a.cost)
 
-  const area = panelAreaSquareMetres(panels)
-  const holes = countHoles(panels)
-  const edgeMetres = [...edgeMetresByBand(panels).values()].reduce((s, m) => s + m, 0)
+  // ── Қорытынды ─────────────────────────────────────────────────────────────
+  //
+  // РЕТІ МАҢЫЗДЫ, ол ақшаны өзгертеді:
+  //   goods + services            — цехтың өз шығыны
+  //   × coefficient               — цехтың өз түзетуі (тек шығынға)
+  //   + монтаж                    — БӨЛЕК қызмет, коэффициентке кірмейді
+  //   + үстеме %                  — бәрінің үстінен
+  const goods =
+    materials.reduce((sum, l) => sum + l.cost, 0)
+    + edges.reduce((sum, l) => sum + l.cost, 0)
+    + hardware.reduce((sum, l) => sum + l.cost, 0)
+  const servicesTotal = services.reduce((sum, l) => sum + l.cost, 0)
 
-  const labour: PriceLine[] = [
-    {
-      id: 'labour-area', name: 'Раскрой и обработка', qty: Math.round(area * 100) / 100,
-      unit: 'м²' as const, unitPrice: shop.labour.perSquareMetre, cost: roundTenge(area * shop.labour.perSquareMetre),
-    },
-    {
-      id: 'labour-holes', name: 'Присадка', qty: holes,
-      unit: 'отв' as const, unitPrice: shop.labour.perHole, cost: roundTenge(holes * shop.labour.perHole),
-    },
-    {
-      id: 'labour-edge', name: 'Кромление', qty: Math.round(edgeMetres * 100) / 100,
-      unit: 'м' as const, unitPrice: shop.labour.perEdgeMetre, cost: roundTenge(edgeMetres * shop.labour.perEdgeMetre),
-    },
-  ].filter((line) => line.qty > 0)
+  const base = goods + servicesTotal
+  const coefficient = shop.coefficient > 0 ? shop.coefficient : 1
+  const coefficientAmount = roundTenge(base * (coefficient - 1))
 
-  const subtotal =
-    [...materials, ...edges, ...hardware, ...labour].reduce((sum, l) => sum + l.cost, 0)
+  const metres = moduleWidths.reduce((sum, w) => sum + w, 0) / 1000
+  const installationCost = roundTenge(metres * shop.installation.ratePerMetreWidth)
+
+  const subtotal = base + coefficientAmount + installationCost
   const markup = roundTenge((subtotal * shop.markupPercent) / 100)
 
   return {
     materials,
     edges,
     hardware,
-    labour,
+    services,
+    byMaterial: materialRows,
+    goods,
+    servicesTotal,
+    coefficient,
+    coefficientAmount,
+    installation: {
+      metres: Math.round(metres * 100) / 100,
+      rate: shop.installation.ratePerMetreWidth,
+      cost: installationCost,
+    },
     subtotal,
     markupPercent: shop.markupPercent,
     markup,
     total: subtotal + markup,
     missingPrices,
   }
+}
+
+/** Қызметтің негізіне сай өлшем бірлігі. */
+const SERVICE_UNITS: Record<ServiceRate['basis'], PriceLine['unit']> = {
+  sheet: 'лист',
+  squareMetre: 'м²',
+  hole: 'отв',
+  edgeMetre: 'м',
+  panel: 'шт',
 }
 
 /**
