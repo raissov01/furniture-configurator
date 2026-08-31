@@ -83,6 +83,7 @@ export type Axis = 'x' | 'y' | 'z'
 export type Orientation = { length: Axis; width: Axis; thickness: Axis }
 
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
+import type { ApplianceKind, FillingKind } from './filling'
 import type { MillingPath, MillingSpec } from './milling'
 
 export type Vec3 = { x: number; y: number; z: number }
@@ -307,6 +308,16 @@ export type SectionContent =
   | { kind: 'shelves'; count: number; shelfKind: ShelfKind; height?: number | undefined }
   | { kind: 'drawers'; count: number; height?: number | undefined }
   | { kind: 'rod'; height?: number | undefined }
+  /**
+   * Механизм (брючница, пантограф, …). Панель шықпайды — жолақ бос қалады,
+   * ал механизмнің өзі фурнитура болып сметаға түседі.
+   */
+  | { kind: 'filling'; filling: FillingKind; height?: number | undefined }
+  /**
+   * Техниканың ҰЯСЫ. Мұнда да панель жоқ: цехтың міндеті — дұрыс өлшемді
+   * орын қалдыру. Техниканың ӨЗІ сметаға КІРМЕЙДІ (клиент өзі алады).
+   */
+  | { kind: 'appliance'; appliance: ApplianceKind; height?: number | undefined }
   | { kind: 'empty'; height?: number | undefined }
 
 /**

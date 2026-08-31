@@ -8,12 +8,13 @@
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import {
-  HANDLE_POSITIONS, MILLING_PATTERNS, defaultHandleSpec, defaultMillingSpec,
-  findTemplate, handlePositionName, millingPattern,
+  APPLIANCES, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS, defaultHandleSpec,
+  defaultMillingSpec, findTemplate, handlePositionName, millingPattern,
 } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type {
-  CabinetConfig, HandleSpec, Material, MillingSpec, Section, SectionContent, SectionFronts,
+  ApplianceKind, CabinetConfig, FillingKind, HandleSpec, Material, MillingSpec,
+  Section, SectionContent, SectionFronts,
 } from '@/src/core/index'
 
 const materialOptions = (list: Material[]) => list.map((m) => ({ value: m.id, label: m.name }))
@@ -29,6 +30,8 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
   const shelves = section.contents.find((c) => c.kind === 'shelves')
   const drawers = section.contents.find((c) => c.kind === 'drawers')
   const rod = section.contents.find((c) => c.kind === 'rod')
+  const filling = section.contents.find((c) => c.kind === 'filling')
+  const appliance = section.contents.find((c) => c.kind === 'appliance')
 
   /**
    * Толтырылым АСТЫҢҒЫДАН жоғары қарай жиналады: ящиктер төменде, сөрелер
@@ -39,15 +42,27 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
     shelfKind?: 'adjustable' | 'fixed'
     drawerCount?: number
     hasRod?: boolean
+    filling?: FillingKind | null
+    appliance?: ApplianceKind | null
   }) => {
     const shelfCount = next.shelfCount ?? shelves?.count ?? 0
     const shelfKind = next.shelfKind ?? shelves?.shelfKind ?? 'adjustable'
     const drawerCount = next.drawerCount ?? drawers?.count ?? 0
     const hasRod = next.hasRod ?? rod !== undefined
+    const fillingKind = next.filling === undefined
+      ? (filling?.kind === 'filling' ? filling.filling : null)
+      : next.filling
+    const applianceKind = next.appliance === undefined
+      ? (appliance?.kind === 'appliance' ? appliance.appliance : null)
+      : next.appliance
 
     const contents: SectionContent[] = []
+    // Техника ең ТӨМЕНДЕ: духовка мен посудомойка еденге жақын тұрады.
+    if (applianceKind) contents.push({ kind: 'appliance', appliance: applianceKind })
     if (drawerCount > 0) contents.push({ kind: 'drawers', count: drawerCount })
     if (shelfCount > 0) contents.push({ kind: 'shelves', count: shelfCount, shelfKind })
+    // Механизм сөренің үстінде, штанганың астында.
+    if (fillingKind) contents.push({ kind: 'filling', filling: fillingKind })
     // Штанга ең ҮСТІНДЕ: киім ілінетін жер жоғарыда болады.
     if (hasRod) contents.push({ kind: 'rod' })
     if (contents.length === 0) contents.push({ kind: 'empty' })
@@ -141,6 +156,29 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
               )
               editSection(index, { contents }, 'section.drawerHeight')
             }}
+          />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Наполнение">
+          <Select
+            value={filling?.kind === 'filling' ? filling.filling : 'none'}
+            onChange={(v) => setFill({ filling: v === 'none' ? null : (v as FillingKind) })}
+            options={[
+              { value: 'none', label: '— Нет —' },
+              ...FILLINGS.map((f) => ({ value: f.id, label: f.name })),
+            ]}
+          />
+        </Field>
+        <Field label="Техника">
+          <Select
+            value={appliance?.kind === 'appliance' ? appliance.appliance : 'none'}
+            onChange={(v) => setFill({ appliance: v === 'none' ? null : (v as ApplianceKind) })}
+            options={[
+              { value: 'none', label: '— Нет —' },
+              ...APPLIANCES.map((a) => ({ value: a.id, label: a.name })),
+            ]}
           />
         </Field>
       </div>

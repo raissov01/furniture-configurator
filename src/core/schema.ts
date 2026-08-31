@@ -7,6 +7,7 @@
  */
 
 import { z } from 'zod'
+import { ApplianceKindSchema, FillingKindSchema } from './filling'
 import { HandleSpecSchema } from './fittings'
 import { MillingSpecSchema } from './milling'
 import type { ProjectFile } from './types'
@@ -129,6 +130,8 @@ export const SectionContentSchema = z.discriminatedUnion('kind', [
     height: bandHeight,
   }),
   z.object({ kind: z.literal('rod'), height: bandHeight }),
+  z.object({ kind: z.literal('filling'), filling: FillingKindSchema, height: bandHeight }),
+  z.object({ kind: z.literal('appliance'), appliance: ApplianceKindSchema, height: bandHeight }),
   z.object({ kind: z.literal('empty'), height: bandHeight }),
 ])
 

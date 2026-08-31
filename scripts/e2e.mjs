@@ -296,6 +296,54 @@ async function run() {
     check(rows.some((r) => r[0].includes('ящика')), 'деталировкада ящик пайда болды')
   })
 
+  await test('Наполнение: техника мен механизм', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+
+    const pick = async (label, value, settle = 1200) => {
+      const done = await h.evaluate(`(() => {
+        const l = [...document.querySelectorAll('label')]
+          .find((x) => x.textContent.includes(${JSON.stringify(label)}))
+        if (!l) return false
+        const sel = l.querySelector('select')
+        if (!sel) return false
+        const opt = [...sel.options].find((o) => o.value === ${JSON.stringify(value)})
+        if (!opt) return false
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
+        setter.call(sel, opt.value)
+        sel.dispatchEvent(new Event('change', { bubbles: true }))
+        return true
+      })()`)
+      await h.wait(settle)
+      return done
+    }
+
+    const before = await h.cutListRows()
+    check(await pick('Наполнение', 'trousers'), 'брючница қосылды')
+    check(await pick('Техника', 'oven'), 'духовка қосылды')
+
+    const after = await h.cutListRows()
+    // Ұя мен механизмнің ӨЗ панелі жоқ; айырма тек БӨЛГІШ сөрелерден.
+    check(after.length >= before.length, `деталировка сынбады (${before.length} → ${after.length})`)
+    const body = await h.text()
+    check(!/Ошибка|не помести/i.test(body), 'валидация қатесі жоқ')
+
+    check(await h.clickText('Смета', 3000), 'смета ашылды')
+    check(await h.clickText('Стоимость', 1500), 'стоимость табы ашылды')
+    // ТЕК терезенің ішін оқимыз: астындағы «Техника» селекті де «Духовка»
+    // деп тұр, ал ол сметаның мазмұны емес.
+    const quote = await h.evaluate(`(() => {
+      const box = [...document.querySelectorAll('div')]
+        .filter((e) => getComputedStyle(e).position === 'fixed')
+        .find((e) => /Стоимость|Раскрой/.test(e.innerText))
+      return box ? box.innerText : ''
+    })()`)
+    check(/Брючница/i.test(quote), 'механизм сметада бар')
+    // ЕҢ БАСТЫСЫ: техниканы клиент өзі алады — ол КП-ға түспеуі керек.
+    check(!/Духовка/i.test(quote), 'техника сметада ЖОҚ')
+    await h.clickText('Закрыть', 700)
+  })
+
   await test('Фасад фурнитурасы: өрнек, тұтқа, петля', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)

@@ -194,6 +194,9 @@ export function priceProject(
   // Штанга МЕТРМЕН сатылады, ұстағыш данамен — сондықтан бірі ұзындықтан,
   // екіншісі данадан жиналады.
   for (const item of placements) {
+    // Техника сметаға ТҮСПЕЙДІ: оны клиент өзі алады, ал ойдан жазылған
+    // баға клиентке кеткен КП-ға түсер еді.
+    if (!item.priced) continue
     const add = item.length > 0 ? item.length / 1000 : item.qty
     counts.set(item.hardwareId, (counts.get(item.hardwareId) ?? 0) + add)
   }

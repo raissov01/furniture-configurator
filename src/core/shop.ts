@@ -12,6 +12,7 @@
  */
 
 import { z } from 'zod'
+import { fillingHardware } from './filling'
 import {
   HANDLE_BORE_SPACINGS, HandleModelSchema, HingeSystemSchema, defaultHandles,
   defaultHingeSystems, hingeBrandName,
@@ -77,6 +78,13 @@ export type ShopProfile = {
 }
 
 /**
+ * Наполнение механизмдері. ТЕХНИКА мұнда ЖОҚ: оны клиент өзі алады,
+ * ал ойдан жазылған баға клиентке кеткен КП-ға түсер еді.
+ */
+const FILLING_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = fillingHardware()
+  .map((f) => ({ id: f.id, kind: 'other' as const, name: f.name }))
+
+/**
  * Ілгектің сметадағы позициясы брендпен де, жабылу түрімен де ерекшеленеді:
  * доводчикті Blum пен серіппесіз Boyard бір жолда тұра алмайды.
  */
@@ -111,6 +119,7 @@ const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'sliding-track', kind: 'other', name: 'Рельс для дверей-купе (за метр)' },
   { id: 'sliding-kit', kind: 'other', name: 'Комплект профиля и роликов на дверь' },
   ...HINGE_HARDWARE,
+  ...FILLING_HARDWARE,
 ]
 
 /**

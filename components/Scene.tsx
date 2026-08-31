@@ -120,16 +120,39 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
           />
         )
       })}
-      {item.hardware.map((h, i) =>
-        h.kind === 'rod' ? (
+      {item.hardware.map((h, i) => {
+        if (h.kind === 'rod') {
           // Штанга секцияның ені бойымен жатады, сондықтан цилиндр Z осінен
           // X осіне бұрылады.
-          <mesh key={`rod-${i}`} position={[h.position.x, h.position.y, h.position.z]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[ROD_DIAMETER / 2, ROD_DIAMETER / 2, h.length, 16]} />
-            <meshStandardMaterial color="#9aa3ad" roughness={0.35} metalness={0.6} />
-          </mesh>
-        ) : null,
-      )}
+          return (
+            <mesh key={`rod-${i}`} position={[h.position.x, h.position.y, h.position.z]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[ROD_DIAMETER / 2, ROD_DIAMETER / 2, h.length, 16]} />
+              <meshStandardMaterial color="#9aa3ad" roughness={0.35} metalness={0.6} />
+            </mesh>
+          )
+        }
+
+        // Техника мен механизм — қорап. Техника ҚОЮ әрі мөлдір емес: клиент
+        // оны плитадан бірден ажыратуы керек. Механизм жеңіл әрі жартылай
+        // мөлдір — ол шкафтың ішін жаппайды.
+        if ((h.kind === 'appliance' || h.kind === 'filling') && h.size) {
+          const appliance = h.kind === 'appliance'
+          return (
+            <mesh key={`${h.kind}-${i}`} position={[h.position.x, h.position.y, h.position.z]}>
+              <boxGeometry args={[h.size.x, h.size.y, h.size.z]} />
+              <meshStandardMaterial
+                color={h.color ?? '#9aa3ad'}
+                roughness={appliance ? 0.35 : 0.5}
+                metalness={appliance ? 0.5 : 0.35}
+                transparent={!appliance}
+                opacity={appliance ? 1 : 0.55}
+              />
+            </mesh>
+          )
+        }
+
+        return null
+      })}
       {active && showDimensions ? <DimensionLabels cabinet={item.cabinet} /> : null}
     </group>
   )

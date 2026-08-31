@@ -11,6 +11,7 @@ import {
   applyMilling, confirmatJoint, handleHoles, hingeHoles, runnerHoles, shelfPinHoles,
 } from './drilling'
 import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
+import { fillingBandHeight } from './filling'
 import { millingPaths, validateMilling } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import { calculateCutDimensions, resolveEdges, subtractedThickness } from './edges'
@@ -788,7 +789,31 @@ export function layoutBands(
   thickness: number,
   sectionIndex: number,
 ): Band[] {
-  const list: SectionContent[] = contents.length > 0 ? contents : [{ kind: 'empty' }]
+  const list: SectionContent[] = contents.length > 0 ? [...contents] : [{ kind: 'empty' }]
+
+  /**
+   * Механизм мен техниканың ӨЗ табиғи биіктігі бар: духовканың ұясы шкафтың
+   * қалған бос орнына созылмауы керек. Сондықтан олар биіктігі көрсетілмесе
+   * де БЕКІТІЛГЕН болып саналады.
+   */
+  const isNatural = (c: SectionContent): boolean =>
+    c.height === undefined && (c.kind === 'filling' || c.kind === 'appliance')
+
+  /**
+   * Бірақ бәрі бекітілген болса, артық орынды алатын ешкім қалмайды. Ол —
+   * қате емес: духовканың үстінде жай ғана ашық орын тұрады. Сол орынды
+   * АЙҚЫН жолақ етіп қосамыз — сонда оның астына бөлгіш сөре шығады, ал
+   * нақты жиһаз дәл солай жиналады.
+   *
+   * Пайдаланушы биіктікті ӨЗІ жазған жағдайға бұл ереже ТИМЕЙДІ: онда
+   * сандар қосылмаса, бұл шынымен де қате.
+   */
+  if (list.length > 0 && list.every(isNatural)) {
+    const used = list.reduce<number>((sum, c) => sum + fillingBandHeight(c), 0)
+    const available = innerHeight - list.length * thickness
+    if (used < available - MIN_DIMENSION) list.push({ kind: 'empty' })
+  }
+
   const free = innerHeight - (list.length - 1) * thickness
   if (free < MIN_DIMENSION) {
     throw new ConfigValidationError(
@@ -798,8 +823,16 @@ export function layoutBands(
     )
   }
 
-  const fixedTotal = list.reduce((sum, c) => sum + (c.height ?? 0), 0)
-  const flexIndexes = list.map((c, i) => (c.height === undefined ? i : -1)).filter((i) => i >= 0)
+  /** `height` жоқ жолақ бос орынды бөліседі; табиғи биіктік — бекітілген. */
+  const naturalHeight = (c: SectionContent): number | undefined => {
+    if (c.height !== undefined) return c.height
+    if (isNatural(c)) return fillingBandHeight(c)
+    return undefined
+  }
+  const wanted = list.map(naturalHeight)
+
+  const fixedTotal = wanted.reduce<number>((sum, h) => sum + (h ?? 0), 0)
+  const flexIndexes = wanted.map((h, i) => (h === undefined ? i : -1)).filter((i) => i >= 0)
 
   if (fixedTotal > free || (flexIndexes.length === 0 && fixedTotal !== free)) {
     throw new ConfigValidationError(
@@ -809,7 +842,7 @@ export function layoutBands(
     )
   }
 
-  const heights = list.map((c) => c.height ?? 0)
+  const heights = wanted.map((h) => h ?? 0)
   if (flexIndexes.length > 0) {
     const shares = distributeMillimetres(free - fixedTotal, flexIndexes.length)
     flexIndexes.forEach((index, k) => {
