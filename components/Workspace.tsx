@@ -13,6 +13,7 @@ import { ProjectMenu } from '@/components/ProjectMenu'
 import { QuoteView } from '@/components/QuoteView'
 import { SketchEditor } from '@/components/SketchEditor'
 import { AccountPanel } from '@/components/AccountPanel'
+import { cloudEnabled } from '@/lib/cloud'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { usePanels } from '@/lib/usePanels'
@@ -119,7 +120,7 @@ export function Workspace() {
       <RoomPlan />
       <ShopSettings />
       <SketchEditor />
-      <AccountPanel />
+      {cloudEnabled && <AccountPanel />}
       <QuoteView panels={projectPanels} hardware={projectHardware} projectName={projectName} />
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <Link
@@ -155,7 +156,9 @@ export function Workspace() {
 
         <ProjectMenu />
 
-        <Button onClick={() => setAccountOpen(true)} title="Аккаунт и проекты в облаке">Аккаунт</Button>
+        {cloudEnabled && (
+          <Button onClick={() => setAccountOpen(true)} title="Аккаунт и проекты в облаке">Аккаунт</Button>
+        )}
 
         <div className="flex items-center gap-1">
           {PRESETS.map((p) => (

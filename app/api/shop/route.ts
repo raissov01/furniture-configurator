@@ -2,14 +2,21 @@ import { NextResponse } from 'next/server'
 import { parseShopProfile } from '@/src/core/index'
 import { currentAccount } from '@/lib/server/session'
 import { readShopProfile, writeShopProfile } from '@/lib/server/store'
+import { cloudOff } from '@/lib/server/cloud'
 
 export async function GET(): Promise<Response> {
+  const off = cloudOff()
+  if (off) return off
+
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
   return NextResponse.json({ profile: readShopProfile(account.shopId) })
 }
 
 export async function PUT(request: Request): Promise<Response> {
+  const off = cloudOff()
+  if (off) return off
+
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
 

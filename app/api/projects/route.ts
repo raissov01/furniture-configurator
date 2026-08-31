@@ -2,14 +2,21 @@ import { NextResponse } from 'next/server'
 import { parseProject } from '@/src/core/index'
 import { currentAccount } from '@/lib/server/session'
 import { listProjects, writeProject } from '@/lib/server/store'
+import { cloudOff } from '@/lib/server/cloud'
 
 export async function GET(): Promise<Response> {
+  const off = cloudOff()
+  if (off) return off
+
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
   return NextResponse.json({ projects: listProjects(account.shopId) })
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const off = cloudOff()
+  if (off) return off
+
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
 

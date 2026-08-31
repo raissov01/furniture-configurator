@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { SESSION_COOKIE, login, sessionCookieOptions } from '@/lib/server/auth'
+import { cloudOff } from '@/lib/server/cloud'
 
 export async function POST(request: Request): Promise<Response> {
+  const off = cloudOff()
+  if (off) return off
+
   const body = (await request.json().catch(() => null)) as
     | { email?: unknown; password?: unknown }
     | null
