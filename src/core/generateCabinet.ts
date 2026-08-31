@@ -20,7 +20,7 @@ import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './ge
 import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
-  Orientation, Panel, PanelRole, Rail, Section, SectionContent, SettingsOverride,
+  Orientation, Panel, PanelBevel, PanelRole, Rail, Section, SectionContent, SettingsOverride,
 } from './types'
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
@@ -74,7 +74,10 @@ export function generateCabinet(
    *   overlay — ХДФ корпустың артына қағылады, сөре соған тірелмеуі керек
    *   groove  — ХДФ панельдің ішіндегі пазда отырады, сөре пазға дейін барады
    */
-  const backAllowance = isGroove ? settings.grooveInset : settings.backThickness
+  // Арт қабырға ЖОҚ болса, шегеретін де ештеңе жоқ: корпус толық тереңдікте.
+  const backAllowance = config.back.mode === 'none'
+    ? 0
+    : isGroove ? settings.grooveInset : settings.backThickness
 
   /**
    * Бүйір/крышка/дно/перегородка тереңдігі. ЕКІ режимде де жиналған кабинеттің
@@ -82,10 +85,75 @@ export function generateCabinet(
    *   overlay — корпус D − backThickness, қалған 3 мм-ді сыртқа қағылған ХДФ толтырады
    *   groove  — ХДФ корпустың ІШІНДЕ, сондықтан корпус толық D тереңдікте
    */
-  const carcassDepth = isGroove ? D : D - settings.backThickness
+  /**
+   * Корпус детальдерінің тереңдігі.
+   *
+   * ⚠ ТҮЗЕТІЛДІ: «Без стенки» режимінде бұрын да `backThickness` шегеріліп
+   * тұрған. Ол қате еді — арт қабырға болмаса, шегеретін де ештеңе жоқ, ал
+   * корпус сұралғаннан 3 мм тайыз болып шығатын.
+   */
+  const carcassDepthOf = (d: number): number =>
+    config.back.mode === 'none' ? d : isGroove ? d : d - settings.backThickness
+  const carcassDepth = carcassDepthOf(D)
 
   /** Сөре тереңдігі: арт қабырғаға дейін барады, оның үстіне шықпайды. */
   const shelfDepth = D - backAllowance - settings.shelfSetback
+
+  /**
+   * Бұрыштық (переходной) корпус: тереңдігі солдан оңға өзгереді.
+   *
+   * Шектеулер ОСЫ ЖЕРДЕ, бір рет тексеріледі. Әрқайсысы қиғаш жазықтықтағы
+   * бөлек геометрияны талап етеді, ал жартылай дұрыс присадканы цехтан басқа
+   * ешкім байқамайды — сондықтан «болмайды» деп айқын айтқан адал.
+   */
+  const corner = config.corner
+  if (corner) {
+    if (corner.depthAtRight < MIN_DIMENSION || corner.depthAtRight > D) {
+      throw new ConfigValidationError(
+        'corner.depthAtRight', `${corner.depthAtRight}`,
+        `${MIN_DIMENSION}..${D} мм (сол жақтың тереңдігінен аспауы керек)`,
+      )
+    }
+    if (config.back.mode !== 'none') {
+      throw new ConfigValidationError(
+        'back.mode', config.back.mode,
+        'бұрыштық корпуста арт қабырға әзірге жасалмайды — "none" қойыңыз',
+      )
+    }
+    if (config.sections.length > 1) {
+      throw new ConfigValidationError(
+        'sections', `${config.sections.length}`,
+        'бұрыштық корпуста перегородка әзірге жасалмайды — бір секция',
+      )
+    }
+    for (const [i, section] of config.sections.entries()) {
+      if (section.fronts && section.fronts.count > 0) {
+        throw new ConfigValidationError(
+          `sections[${i}].fronts`, 'есть',
+          'қиғаш бетке ілгек присадкасы әзірге жасалмайды — фасадсыз қалдырыңыз',
+        )
+      }
+      if (section.contents.some((c) => c.kind === 'drawers')) {
+        throw new ConfigValidationError(
+          `sections[${i}].contents`, 'ящики',
+          'қиғаш корпуста направляющая әзірге жасалмайды',
+        )
+      }
+    }
+  }
+
+  /** Оң жақтағы корпус тереңдігі. Бұрыштық емес корпуста — сол жақтікімен тең. */
+  const carcassDepthRight = corner ? carcassDepthOf(corner.depthAtRight) : carcassDepth
+  const shelfDepthRight = corner
+    ? corner.depthAtRight - backAllowance - settings.shelfSetback
+    : shelfDepth
+
+  /**
+   * Жатық детальдің (крышка, дно, сөре) қиғашы. Арты ҚАБЫРҒАҒА тіреледі,
+   * сондықтан материал ен осінің СОҢЫНА тураланады.
+   */
+  const widthBevel = (left: number, right: number): PanelBevel | undefined =>
+    corner ? { widthAtStart: left, widthAtEnd: right, alignWidth: 'end' } : undefined
 
   if (config.back.mode === 'overlay' && backMat.thickness !== settings.backThickness) {
     throw new ConfigValidationError(
@@ -230,9 +298,13 @@ export function generateCabinet(
   const sideLeft = sidesOverlay
     ? make('side-left', 'side', 'Боковина', carcass, H, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_SIDE, sideNote)
     : make('side-left', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: 0, y: t, z: 0 }, ORIENT_SIDE)
+  // Бұрыштық корпуста оң бүйір ТАРЫРАҚ: ол өз тереңдігінде тұрады да,
+  // қабырғаға тірелу үшін артқа жылжиды.
+  const rightZ = corner ? carcassDepth - carcassDepthRight : 0
+  const rightNote = corner ? `Глубина ${carcassDepthRight} мм` : sideNote
   const sideRight = sidesOverlay
-    ? make('side-right', 'side', 'Боковина', carcass, H, carcassDepth, { x: W - t, y: 0, z: 0 }, ORIENT_SIDE, sideNote)
-    : make('side-right', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: W - t, y: t, z: 0 }, ORIENT_SIDE)
+    ? make('side-right', 'side', 'Боковина', carcass, H, carcassDepthRight, { x: W - t, y: 0, z: rightZ }, ORIENT_SIDE, rightNote)
+    : make('side-right', 'side', 'Боковина', carcass, innerHeight, carcassDepthRight, { x: W - t, y: t, z: rightZ }, ORIENT_SIDE)
   if (sideBevel) {
     sideLeft.bevel = { ...sideBevel }
     sideRight.bevel = { ...sideBevel }
@@ -240,6 +312,8 @@ export function generateCabinet(
   const bottom = sidesOverlay
     ? make('bottom', 'bottom', 'Дно', carcass, innerWidth, carcassDepth, { x: t, y: 0, z: 0 }, ORIENT_HORIZONTAL)
     : make('bottom', 'bottom', 'Дно', carcass, W, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_HORIZONTAL)
+  const cornerBevel = widthBevel(carcassDepth, carcassDepthRight)
+  if (cornerBevel) bottom.bevel = { ...cornerBevel }
   /**
    * Қиғашта крышка КӨЛБЕУ жатады: ені — гипотенуза, ал 3D-де ол X осі
    * бойынша бұрылады. Деталь ТІКБҰРЫШ болып қалады — цех оны солай кеседі.
@@ -263,6 +337,7 @@ export function generateCabinet(
     // Көлбеуді 3D оқиды: панель өз жазықтығында тікбұрыш күйінде қалады.
     top.rotation = { ...top.rotation, x: top.rotation.x + (slopeAngle * 180) / Math.PI }
   }
+  if (cornerBevel) top.bevel = { ...cornerBevel }
 
   // Рет деталировкадағы жолдардың ретін анықтайды — өзгертпе, snapshot соған қарайды.
   if (config.openTop) {
@@ -336,6 +411,8 @@ export function generateCabinet(
         { x: layout.x + Math.floor(settings.shelfGap / 2), y: band.y + band.height, z: settings.shelfSetback },
         ORIENT_HORIZONTAL, 'Разделитель, фиксированная',
       )
+      const dividerBevel = widthBevel(shelfDepth, shelfDepthRight)
+      if (dividerBevel) divider.bevel = { ...dividerBevel }
       panels.push(divider)
       shelves.push({ shelf: divider, sectionIndex, kind: 'fixed' })
     }
@@ -374,6 +451,10 @@ export function generateCabinet(
             ORIENT_HORIZONTAL,
             space.depth < shelfDepth ? `${note}. Укорочена под скос` : note,
           )
+          // Бұрыштық корпуста сөре де ТРАПЕЦИЯ: тереңдігі бүйірлерімен бірге
+          // өзгереді, әйтпесе оң жағы қиғаш алдыңғы жиектен шығып тұрар еді.
+          const shelfBevel = widthBevel(space.depth, shelfDepthRight)
+          if (shelfBevel) shelf.bevel = { ...shelfBevel }
           panels.push(shelf)
           shelves.push({ shelf, sectionIndex, kind: content.shelfKind })
           y += t

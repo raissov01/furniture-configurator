@@ -8,7 +8,7 @@
 import { useMemo } from 'react'
 import { Html } from '@react-three/drei'
 import { BufferAttribute, BufferGeometry, Shape } from 'three'
-import { cutOrigin, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
+import { cutOrigin, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import type { Axis, Catalog, Panel, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
@@ -145,13 +145,32 @@ export function PanelMesh({
   const shape = useMemo(() => {
     if (!panel.bevel) return null
     const s0 = new Shape()
+    if (isWidthBevel(panel.bevel)) {
+      // Ен ұзындық бойымен өзгереді; `alignWidth` қай жиекке тірелетінін айтады.
+      const { widthAtStart: w0, widthAtEnd: w1, alignWidth } = panel.bevel
+      const Wd = panel.finishedWidth
+      const L = panel.finishedLength
+      if (alignWidth === 'end') {
+        s0.moveTo(0, Wd - w0)
+        s0.lineTo(L, Wd - w1)
+        s0.lineTo(L, Wd)
+        s0.lineTo(0, Wd)
+      } else {
+        s0.moveTo(0, 0)
+        s0.lineTo(L, 0)
+        s0.lineTo(L, w1)
+        s0.lineTo(0, w0)
+      }
+      s0.closePath()
+      return s0
+    }
     s0.moveTo(0, 0)
     s0.lineTo(panel.bevel.lengthAtStart, 0)
     s0.lineTo(panel.bevel.lengthAtEnd, panel.finishedWidth)
     s0.lineTo(0, panel.finishedWidth)
     s0.closePath()
     return s0
-  }, [panel.bevel, panel.finishedWidth])
+  }, [panel.bevel, panel.finishedWidth, panel.finishedLength])
 
   const color = isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
   const toRad = (deg: number) => (deg * Math.PI) / 180

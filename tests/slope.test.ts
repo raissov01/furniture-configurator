@@ -8,6 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  isWidthBevel,
   SEED_CATALOG,
   findTemplate,
   formatCutList,
@@ -28,6 +29,19 @@ const sloped = (patch: Partial<CabinetConfig> = {}): CabinetConfig => ({
   ...patch,
 })
 
+/**
+ * Мансардада қиғаш ӘРҚАШАН ҰЗЫНДЫҚ бойынша болады. Ен бойынша қиғаш — бұл
+ * бұрыштық корпустың түрі; екеуін шатастырсақ, деталь 90°-қа бұрылып кетеді.
+ */
+function lengthBevel(p: Panel): { lengthAtStart: number; lengthAtEnd: number } {
+  const b = p.bevel
+  expect(b, p.label).toBeDefined()
+  if (!b || isWidthBevel(b)) {
+    throw new Error(`${p.label}: қиғаш ЕН бойынша — мансардада олай болмауы керек`)
+  }
+  return b
+}
+
 describe('қиғаш корпус', () => {
   const panels = generateCabinet(sloped(), catalog)
   const sides = panels.filter((p: Panel) => p.role === 'side')
@@ -36,15 +50,15 @@ describe('қиғаш корпус', () => {
     expect(sides).toHaveLength(2)
     for (const side of sides) {
       expect(side.bevel).toBeDefined()
-      expect(side.bevel!.lengthAtStart).toBeGreaterThan(side.bevel!.lengthAtEnd)
+      expect(lengthBevel(side).lengthAtStart).toBeGreaterThan(lengthBevel(side).lengthAtEnd)
     }
   })
 
   it('өлшемі — ЗАГОТОВКАНЫҢ габариті, яғни биік жағы', () => {
     for (const side of sides) {
       expect(side.finishedLength).toBe(2400)
-      expect(side.bevel!.lengthAtStart).toBeLessThanOrEqual(side.finishedLength)
-      expect(side.bevel!.lengthAtEnd).toBeLessThanOrEqual(side.finishedLength)
+      expect(lengthBevel(side).lengthAtStart).toBeLessThanOrEqual(side.finishedLength)
+      expect(lengthBevel(side).lengthAtEnd).toBeLessThanOrEqual(side.finishedLength)
     }
   })
 
@@ -84,7 +98,7 @@ describe('қиғаш корпус', () => {
   it('алдыға қарай да қиғайта алады', () => {
     const forward = generateCabinet(sloped({ slope: { towards: 'front', lowHeight: 1400 } }), catalog)
     const side = forward.find((p: Panel) => p.role === 'side')!
-    expect(side.bevel!.lengthAtStart).toBeLessThan(side.bevel!.lengthAtEnd)
+    expect(lengthBevel(side).lengthAtStart).toBeLessThan(lengthBevel(side).lengthAtEnd)
   })
 })
 

@@ -512,6 +512,45 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
+      <SectionTitle>Угловой (переходной)</SectionTitle>
+      <p className="text-[11px] text-neutral-500">
+        Глубина меняется слева направо, задняя стенка встаёт к стене. Пока такой корпус
+        делается открытым: фасады, ящики, перегородки и задняя стенка на скошенной
+        плоскости требуют своей присадки, и лучше сказать «нельзя», чем присадить
+        наполовину верно.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Переходной корпус">
+          <Select
+            value={cabinet.corner ? 'yes' : 'no'}
+            onChange={(v) =>
+              edit('corner', v === 'yes'
+                ? {
+                  corner: { depthAtRight: Math.round(cabinet.depth / 2) },
+                  // Шектеулерді UI-дың өзінде орындаймыз: әйтпесе қосқан бойда
+                  // қате шығып, пайдаланушы себебін іздеп отырар еді.
+                  back: { mode: 'none' as const },
+                  sections: [{ ...cabinet.sections[0]!, fronts: null }],
+                }
+                : { corner: undefined })
+            }
+            options={[{ value: 'no', label: 'Нет' }, { value: 'yes', label: 'Есть' }]}
+          />
+        </Field>
+        <Field label="Глубина справа, мм" hint={cabinet.corner ? `слева ${cabinet.depth}` : undefined}>
+          <NumberInput
+            value={cabinet.corner?.depthAtRight ?? 0}
+            min={100}
+            max={cabinet.depth}
+            step={10}
+            onChange={(depthAtRight) => {
+              if (!cabinet.corner) return
+              edit('corner.depth', { corner: { depthAtRight } })
+            }}
+          />
+        </Field>
+      </div>
+
       <SectionTitle>Основание и столешница</SectionTitle>
       <div className="grid grid-cols-2 gap-2">
         <Field label="Основание" hint={cabinet.base ? `${cabinet.base.height} мм` : 'нет'}>

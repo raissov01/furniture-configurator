@@ -10,6 +10,7 @@
  */
 
 import type { NestedSheet, NestingResult } from '../nesting'
+import { isWidthBevel } from '../types'
 import type { Drill, Groove, Panel } from '../types'
 
 export const LAYER_OUTLINE = 'OUTLINE'
@@ -116,7 +117,17 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
 
   // Қиғаш деталь: контур ТРАПЕЦИЯ болып шығады. Өлшемі (L × Wd) —
   // ЗАГОТОВКАНЫҢ габариті, ал станок осы контур бойынша кеседі.
-  if (panel.bevel) {
+  if (panel.bevel && isWidthBevel(panel.bevel)) {
+    // Ен ұзындық бойымен өзгереді (бұрыштық корпустың крышкасы).
+    const shrink = panel.finishedWidth - Wd
+    const w0 = Math.max(0, panel.bevel.widthAtStart - shrink)
+    const w1 = Math.max(0, panel.bevel.widthAtEnd - shrink)
+    // `alignWidth` материал ен осінің қай ұшына тірелетінін айтады.
+    const points: [number, number][] = panel.bevel.alignWidth === 'end'
+      ? [[0, Wd - w0], [L, Wd - w1], [L, Wd], [0, Wd]]
+      : [[0, 0], [L, 0], [L, w1], [0, w0]]
+    entities.push(...lwpolyline(LAYER_OUTLINE, points, true))
+  } else if (panel.bevel) {
     // Кромка рез өлшемін қысқартады — қиғаштың екі ұшы да сонша қысқарады.
     const shrink = panel.finishedLength - L
     const startX = Math.max(0, panel.bevel.lengthAtStart - shrink)

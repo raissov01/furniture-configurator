@@ -102,6 +102,7 @@ const CabinetBaseSchema = z.object({
   back: z.object({ mode: z.enum(['overlay', 'groove', 'none']) }),
   edging: EdgePolicySchema,
   settings: ConstructionSettingsSchema.optional(),
+  corner: z.object({ depthAtRight: mm }).optional(),
   rails: z.array(RailSchema).optional(),
   backsplash: z.object({
     materialId: z.string().min(1).optional(),

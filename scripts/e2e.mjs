@@ -296,6 +296,45 @@ async function run() {
     check(rows.some((r) => r[0].includes('ящика')), 'деталировкада ящик пайда болды')
   })
 
+  await test('Бұрыштық (переходной) корпус', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+
+    const pick = async (label, value, settle = 1500) => {
+      const done = await h.evaluate(`(() => {
+        const l = [...document.querySelectorAll('label')]
+          .find((x) => x.textContent.includes(${JSON.stringify(label)}))
+        if (!l) return false
+        const sel = l.querySelector('select')
+        if (!sel) return false
+        const opt = [...sel.options].find((o) => o.value === ${JSON.stringify(value)})
+        if (!opt) return false
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
+        setter.call(sel, opt.value)
+        sel.dispatchEvent(new Event('change', { bubbles: true }))
+        return true
+      })()`)
+      await h.wait(settle)
+      return done
+    }
+
+    check(await pick('Переходной корпус', 'yes'), 'бұрыштық режим қосылды')
+
+    const rows = await h.cutListRows()
+    check(rows.length > 0, `деталировка бар (${rows.length} жол)`)
+    // ЕҢ БАСТЫСЫ: қосқан бойда қате шықпауы керек — UI шектеулерді өзі орындайды.
+    const body = await h.text()
+    check(!/арт қабырға|ілгек присадкасы|перегородка әзірге/i.test(body), 'валидация қатесі жоқ')
+
+    // Бүйірлер әртүрлі тереңдікте: кестеде екі бөлек боковина болуы керек.
+    const sides = rows.filter((r) => /Боковина/i.test(r[0] ?? ''))
+    check(sides.length === 2, `екі түрлі боковина (${sides.length})`)
+
+    // Бұрыштық режим фасадты алып тастайды әрі жоба автосақталады, сондықтан
+    // күйді КЕЛЕСІ сценарийге қалдыруға болмайды.
+    check(await h.clickText('Сброс', 2000), 'жоба ысырылды')
+  })
+
   await test('Планка, фальш-панель, фартук', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
