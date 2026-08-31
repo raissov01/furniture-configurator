@@ -7,7 +7,9 @@
 
 import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
-import { confirmatJoint, hingeHoles, runnerHoles, shelfPinHoles } from './drilling'
+import { confirmatJoint, handleHoles, hingeHoles, runnerHoles, shelfPinHoles } from './drilling'
+import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
+import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import { calculateCutDimensions, resolveEdges, subtractedThickness } from './edges'
 import { ConfigValidationError } from './errors'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
@@ -599,14 +601,54 @@ export function generateCabinet(
   for (const group of frontGroups) {
     const [left, right] = boundsOf(group.sectionIndex)
     const last = group.fronts.length - 1
+    const spec = layouts[group.sectionIndex]?.section.fronts
+    const hingeSystem = resolveHingeSystem(catalog, spec?.hingeSystemId)
+    const handle = resolveHandle(catalog, spec?.handle)
+
     group.fronts.forEach((front, i) => {
       const side: 'left' | 'right' = i === last && last > 0 ? 'right' : i % 2 === 0 ? 'left' : 'right'
       const carcassPanel = i === 0 ? left : i === last ? right : undefined
-      hingeHoles(front, carcassPanel, side, ctx)
+      hingeHoles(front, carcassPanel, side, ctx, hingeSystem)
+      if (handle) handleHoles(front, handle.model, handle.spec, ctx)
     })
   }
 
   return panels
+}
+
+/**
+ * Секцияның ілгек жүйесі. Каталогта жүйе болмаса (ескі шақыру) —
+ * `undefined`, ол кезде `hingeHoles` §4.9 константаларымен жүреді.
+ */
+function resolveHingeSystem(catalog: Catalog, id: string | undefined): HingeSystem | undefined {
+  const list = catalog.hingeSystems
+  if (!list || list.length === 0) return undefined
+  if (!id) return list[0]
+  const found = list.find((h) => h.id === id)
+  if (!found) {
+    throw new ConfigValidationError('fronts.hingeSystemId', `жүйе табылмады: "${id}"`)
+  }
+  return found
+}
+
+/**
+ * Секцияның тұтқасы. `null` — әдейі тұтқасыз; `undefined` — цехтың әдепкісі.
+ * Каталогта тұтқа болмаса тесік те бұрғыланбайды.
+ */
+function resolveHandle(
+  catalog: Catalog,
+  spec: HandleSpec | null | undefined,
+): { model: HandleModel; spec: HandleSpec } | undefined {
+  const list = catalog.handles
+  if (!list || list.length === 0) return undefined
+  if (spec === null) return undefined
+  const wanted = spec ?? defaultHandleSpec()
+  const model = list.find((h) => h.id === wanted.handleId)
+    ?? (spec ? undefined : list.find((h) => h.id === DEFAULT_HANDLE_ID) ?? list[0])
+  if (!model) {
+    throw new ConfigValidationError('fronts.handle.handleId', `тұтқа табылмады: "${wanted.handleId}"`)
+  }
+  return { model, spec: wanted }
 }
 
 type MakePanel = (

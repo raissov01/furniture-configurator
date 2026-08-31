@@ -84,26 +84,44 @@ export function countHardware(panels: Panel[]): Map<string, number> {
   const add = (id: string, n: number) => counts.set(id, (counts.get(id) ?? 0) + n)
 
   let confirmats = 0
-  let hinges = 0
   let shelves = 0
   let drawerSides = 0
+  /** Ілгек пен тұтқа брендке қарай әртүрлі позицияға түседі — id бойынша. */
+  const byHardwareId = new Map<string, number>()
+  const bump = (id: string) => byHardwareId.set(id, (byHardwareId.get(id) ?? 0) + 1)
 
   for (const p of panels) {
     if (p.role === 'shelf') shelves += 1
     if (p.role === 'drawerSide') drawerSides += 1
     for (const d of p.drilling) {
       if (d.purpose === 'confirmat' && d.diameter === CONFIRMAT_EDGE_DIAMETER) confirmats += 1
-      if (d.purpose === 'hinge' && d.diameter === HINGE_CUP_DIAMETER) hinges += 1
+      // Чашка = бір ілгек. Планканың тесіктері сол ілгектің екінші ұшы,
+      // оларды қайта санауға болмайды.
+      if (d.purpose === 'hinge' && d.diameter === HINGE_CUP_DIAMETER) {
+        bump(d.hardwareId ?? 'hinge-overlay')
+      }
+      // Тұтқа: скобаға екі тесік, кнопкаға бір. Тесік санынан тұтқа санын
+      // шығару үшін ұзындығын білу керек, сондықтан ПАНЕЛЬМЕН санаймыз —
+      // төменде.
     }
+  }
+
+  // Бір фасадта тұтқа біреу: тесік саны 1 де, 2 де болуы мүмкін.
+  for (const p of panels) {
+    const ids = new Set(
+      p.drilling.filter((d) => d.purpose === 'handle').map((d) => d.hardwareId ?? 'handle-bar'),
+    )
+    for (const id of ids) bump(id)
   }
 
   if (confirmats > 0) {
     add('confirmat-7x50', confirmats)
     add('confirmat-cap', confirmats)
   }
-  if (hinges > 0) {
-    add('hinge-overlay', hinges)
-    add('hinge-plate', hinges)
+  for (const [id, n] of byHardwareId) {
+    add(id, n)
+    // Әр ілгекке бір жауап планка.
+    if (id.startsWith('hinge-')) add('hinge-plate', n)
   }
   if (shelves > 0) add('shelf-pin-5', shelves * 4)
   // Бір ящикте екі бүйір, ал направляющая ЖҰП болып сатылады: сондықтан

@@ -20,13 +20,14 @@ import { useConfigurator } from '@/store/configurator'
 import { Button, Field, NumberInput, SectionTitle, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
 
-type Tab = 'profile' | 'materials' | 'bands' | 'hardware' | 'rules'
+type Tab = 'profile' | 'materials' | 'bands' | 'hardware' | 'hinges' | 'rules'
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'profile', label: 'Цех' },
   { value: 'materials', label: 'Материалы' },
   { value: 'bands', label: 'Кромки' },
   { value: 'hardware', label: 'Фурнитура' },
+  { value: 'hinges', label: 'Петли' },
   { value: 'rules', label: 'Правила цеха' },
 ]
 
@@ -57,6 +58,10 @@ export function ShopSettings() {
     editShop({ edgeBands: shop.edgeBands.map((b) => (b.id === id ? { ...b, pricePerMeter: toMinor(tenge) } : b)) })
   const setHardwarePrice = (id: string, tenge: number) =>
     editShop({ hardware: shop.hardware.map((h) => (h.id === id ? { ...h, pricePerUnit: toMinor(tenge) } : h)) })
+  const setHingeK = (id: string, cupFromEdge: number) =>
+    editShop({ hingeSystems: shop.hingeSystems.map((h) => (h.id === id ? { ...h, cupFromEdge } : h)) })
+  const setHingeEnd = (id: string, endOffset: number) =>
+    editShop({ hingeSystems: shop.hingeSystems.map((h) => (h.id === id ? { ...h, endOffset } : h)) })
   const setRule = (key: keyof ConstructionSettings, value: number) =>
     editShop({ settings: { ...shop.settings, [key]: value } })
 
@@ -162,6 +167,29 @@ export function ShopSettings() {
               ],
             }))}
           />
+        ) : null}
+
+        {tab === 'hinges' ? (
+          <div className="space-y-3">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              K — расстояние от центра чашки до края фасада. Оно зависит от бренда и от
+              накладки, поэтому <strong>сверьте его со своим шаблоном</strong>: 22 мм здесь —
+              самое частое значение, а не гарантия. Присадка считается по этому числу.
+            </p>
+            <PriceTable
+              head={['Система', 'K, мм', 'От края фасада, мм']}
+              rows={shop.hingeSystems.map((h) => ({
+                id: h.id,
+                name: h.name,
+                cells: [
+                  <NumberInput key="k" value={h.cupFromEdge} min={0} max={60}
+                    onChange={(v) => setHingeK(h.id, v)} />,
+                  <NumberInput key="e" value={h.endOffset} min={0} max={300} step={5}
+                    onChange={(v) => setHingeEnd(h.id, v)} />,
+                ],
+              }))}
+            />
+          </div>
         ) : null}
 
         {tab === 'rules' ? (

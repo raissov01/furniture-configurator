@@ -20,6 +20,7 @@ const PURPOSE_LABEL: Record<DrillPurpose, string> = {
   shelfPin: 'полкодержатель',
   hinge: 'петля',
   runner: 'направляющая',
+  handle: 'ручка',
 }
 
 function main(): number {

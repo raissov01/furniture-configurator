@@ -16,6 +16,8 @@ import {
   SHELF_PIN_BACK_OFFSET, SHELF_PIN_DEPTH, SHELF_PIN_DIAMETER, SHELF_PIN_FRONT_OFFSET,
   SHELF_PIN_GROUP, SHELF_PIN_PITCH,
 } from './constants'
+import { handleBorePoints } from './fittings'
+import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import { subtractedThickness } from './edges'
 import { panelExtents } from './geometry'
 import type { Axis, ConstructionSettings, Drill, EdgeBand, Panel } from './types'
@@ -51,9 +53,13 @@ const localY = (panel: Panel, world: number): number => world - panel.position[p
 function pushFace(
   panel: Panel, face: 'inner' | 'outer', x: number, y: number,
   diameter: number, depth: number, purpose: Drill['purpose'], ctx: Ctx,
+  hardwareId?: string,
 ): void {
   const p = toCut(panel, x, y, ctx)
-  panel.drilling.push({ face, x: Math.round(p.x), y: Math.round(p.y), diameter, depth, purpose })
+  panel.drilling.push({
+    face, x: Math.round(p.x), y: Math.round(p.y), diameter, depth, purpose,
+    ...(hardwareId ? { hardwareId } : {}),
+  })
 }
 
 /**
@@ -197,34 +203,69 @@ export function hingeHoles(
   carcassPanel: Panel | undefined,
   hingeSide: 'left' | 'right',
   ctx: Ctx,
+  system?: HingeSystem,
 ): void {
+  // Жүйе берілмесе — §4.9-дағы константалар (ескі шақырулар осылай жүреді).
+  const cupDiameter = system?.cupDiameter ?? HINGE_CUP_DIAMETER
+  const cupDepth = system?.cupDepth ?? HINGE_CUP_DEPTH
+  const cupFromEdge = system?.cupFromEdge ?? HINGE_CUP_FROM_EDGE
+  const endOffset = system?.endOffset ?? HINGE_END_OFFSET
+  const plateSpacing = system?.plateHoleSpacing ?? HINGE_PLATE_HOLE_SPACING
+  const plateFromFront = system?.plateFromFront ?? HINGE_PLATE_FROM_FRONT
+
   const n = hingeCount(front.finishedLength)
-  // Шеткі ілгектер фасадтың үсті мен астынан HINGE_END_OFFSET, қалғаны аралыққа
-  const positions = spreadAlongJoint(front.finishedLength, n, HINGE_END_OFFSET)
+  // Шеткі ілгектер фасадтың үсті мен астынан endOffset, қалғаны аралыққа
+  const positions = spreadAlongJoint(front.finishedLength, n, endOffset)
 
   // Фасадтың локал y-і солдан оңға (ORIENT_FACING), сондықтан:
-  const cupY = hingeSide === 'left'
-    ? HINGE_CUP_FROM_EDGE
-    : front.finishedWidth - HINGE_CUP_FROM_EDGE
+  const cupY = hingeSide === 'left' ? cupFromEdge : front.finishedWidth - cupFromEdge
 
   for (const x of positions) {
-    pushFace(front, 'inner', x, cupY, HINGE_CUP_DIAMETER, HINGE_CUP_DEPTH, 'hinge', ctx)
+    pushFace(front, 'inner', x, cupY, cupDiameter, cupDepth, 'hinge', ctx, system?.hardwareId)
   }
 
   if (!carcassPanel) return
-  // Планка бүйірдің ішкі бетінде: алдыңғы жиектен 37 мм, чашка ортасына
-  // симметриялы екі тесік.
+  // Планка бүйірдің ішкі бетінде: алдыңғы жиектен plateFromFront, чашка
+  // ортасына симметриялы екі тесік.
   const frontWorldY = front.position.y
   for (const x of positions) {
     const worldY = frontWorldY + x
-    for (const d of [-HINGE_PLATE_HOLE_SPACING / 2, HINGE_PLATE_HOLE_SPACING / 2]) {
+    for (const d of [-plateSpacing / 2, plateSpacing / 2]) {
       pushFace(
         carcassPanel, 'inner',
         localX(carcassPanel, worldY + d),
-        localY(carcassPanel, HINGE_PLATE_FROM_FRONT),
-        HINGE_PLATE_DIAMETER, HINGE_PLATE_DEPTH, 'hinge', ctx,
+        localY(carcassPanel, plateFromFront),
+        HINGE_PLATE_DIAMETER, HINGE_PLATE_DEPTH, 'hinge', ctx, system?.plateHardwareId,
       )
     }
+  }
+}
+
+// ── Тұтқа ────────────────────────────────────────────────────────────────────
+
+/**
+ * Тұтқаның ӨТПЕЛІ тесіктері фасадта.
+ *
+ * Тесік өтпелі болғандықтан беті `outer` — станок фасадты сыртқы бетімен
+ * жоғары қаратып бұрғылайды, ал тұтқаның бұрандасы дәл сол жақтан кіреді.
+ * Тереңдігі = фасадтың қалыңдығы.
+ *
+ * Фасадтың локал өстері: x — биіктік бойымен (астынан), y — ені бойымен
+ * (сол жақтан). `handleBorePoints` дәл осы тәртіпте қайтарады.
+ */
+export function handleHoles(
+  front: Panel,
+  model: HandleModel,
+  spec: HandleSpec,
+  ctx: Ctx,
+): void {
+  const points = handleBorePoints(model, spec, front.finishedLength, front.finishedWidth)
+  if (points.length === 0) return
+  for (const pt of points) {
+    pushFace(
+      front, 'outer', pt.along, pt.across,
+      model.boreDiameter, ctx.thickness(front), 'handle', ctx, model.hardwareId,
+    )
   }
 }
 

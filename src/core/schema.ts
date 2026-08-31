@@ -7,6 +7,7 @@
  */
 
 import { z } from 'zod'
+import { HandleSpecSchema } from './fittings'
 import type { ProjectFile } from './types'
 
 /** Өлшем: мм, бүтін, оң сан. */
@@ -68,6 +69,10 @@ export const ConstructionSettingsSchema = z.object({
 const FrontsSchema = z.object({
   count: z.number().int().min(1).max(8),
   mount: z.enum(['overlay', 'inset']),
+  // Екеуі де ЕРІКТІ: ілгек жүйесі мен тұтқа кейін қосылды, ал бұрын
+  // сақталған жобаларда бұл өрістер жоқ. Болмаса цехтың әдепкісі алынады.
+  hingeSystemId: z.string().min(1).optional(),
+  handle: HandleSpecSchema.nullable().optional(),
 }).nullable()
 
 const CabinetBaseSchema = z.object({

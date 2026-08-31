@@ -82,9 +82,12 @@ export type Axis = 'x' | 'y' | 'z'
 /** Панельдің локал өстері (ұзындық/ені/қалыңдығы) әлем өстеріне қалай түседі */
 export type Orientation = { length: Axis; width: Axis; thickness: Axis }
 
+import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
+
 export type Vec3 = { x: number; y: number; z: number }
 
-export type DrillPurpose = 'confirmat' | 'dowel' | 'minifix' | 'shelfPin' | 'hinge' | 'runner'
+export type DrillPurpose =
+  | 'confirmat' | 'dowel' | 'minifix' | 'shelfPin' | 'hinge' | 'runner' | 'handle'
 
 /**
  * Панельдің локал координаталары (присадка мен DXF үшін):
@@ -114,6 +117,14 @@ export type Drill = {
   diameter: number
   depth: number
   purpose: DrillPurpose
+  /**
+   * Осы тесік қай фурнитураға арналған (`ShopProfile.hardware[].id`).
+   *
+   * Смета тесіктен фурнитураны САНАЙДЫ, ал бренд фасадқа қарай әртүрлі
+   * болуы мүмкін. Диаметр бойынша қайта болжаудың орнына тесіктің өзі
+   * қай позицияға тиесілі екенін алып жүреді.
+   */
+  hardwareId?: string | undefined
 }
 
 /**
@@ -263,6 +274,22 @@ export type SettingsOverride = {
  * `height` берілсе — жолақ дәл сонша мм алады; берілмесе, қалған биіктікті
  * басқа еркін жолақтармен тең бөліседі.
  */
+/**
+ * Секцияның фасады.
+ *
+ * `hingeSystemId` мен `handle` — ЕРІКТІ. Болмаса цехтың әдепкі жүйесі мен
+ * әдепкі тұтқасы алынады: ескі жобалар осы өріссіз сақталған, ал оларды
+ * ашқанда фасад ілгексіз қалып қоймауы керек.
+ */
+export type SectionFronts = {
+  count: number
+  mount: FrontMount
+  /** `ShopProfile.hingeSystems[].id`. Болмаса — цехтың әдепкісі. */
+  hingeSystemId?: string | undefined
+  /** `null` — тұтқа әдейі жоқ. `undefined` — цехтың әдепкісі. */
+  handle?: HandleSpec | null | undefined
+}
+
 export type SectionContent =
   | { kind: 'shelves'; count: number; shelfKind: ShelfKind; height?: number | undefined }
   | { kind: 'drawers'; count: number; height?: number | undefined }
@@ -284,7 +311,7 @@ export type Section = {
   width?: number | undefined
   contents: SectionContent[]
   /** Осы секцияның фасады. null — ашық секция. */
-  fronts?: { count: number; mount: FrontMount } | null | undefined
+  fronts?: SectionFronts | null | undefined
 }
 
 export type CabinetConfig = {
@@ -347,6 +374,15 @@ export type CabinetConfig = {
 export type Catalog = {
   materials: Material[]
   edgeBands: EdgeBand[]
+  /**
+   * Ілгек жүйелері мен тұтқа модельдері — ЕРІКТІ.
+   *
+   * Присадка брендке тәуелді болғандықтан бұлар генерацияға керек, бірақ
+   * ескі шақырулар (тест, CLI) оларсыз жүреді: сол кезде §4.9 константалары
+   * қолданылады да, нәтиже бұрынғыдай қалады.
+   */
+  hingeSystems?: HingeSystem[] | undefined
+  handles?: HandleModel[] | undefined
 }
 
 // ── Бөлме (C фаза) ───────────────────────────────────────────────────────────

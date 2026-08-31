@@ -140,7 +140,7 @@ describe('есеп', () => {
 })
 
 describe('профиль нұсқасы', () => {
-  it('1-нұсқадағы профиль 2-ге көтеріледі, бағалары сақталады', () => {
+  it('1-нұсқадағы профиль соңғысына көтеріледі, бағалары сақталады', () => {
     const old = {
       ...base,
       schemaVersion: 1,
@@ -150,10 +150,42 @@ describe('профиль нұсқасы', () => {
     delete (old as Record<string, unknown>)['markupPercent']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(2)
+    expect(migrated.schemaVersion).toBe(3)
     expect(migrated.markupPercent).toBe(0)
     expect(migrated.labour).toEqual({ perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 })
     expect(migrated.materials[0]!.pricePerSheet).toBe(111)
+  })
+
+  it('2-нұсқадан көшкенде ілгек пен тұтқа каталогы пайда болады', () => {
+    const old = { ...base, schemaVersion: 2 }
+    delete (old as Record<string, unknown>)['hingeSystems']
+    delete (old as Record<string, unknown>)['handles']
+
+    const migrated = parseShopProfile(old)
+    expect(migrated.schemaVersion).toBe(3)
+    expect(migrated.hingeSystems.length).toBeGreaterThan(0)
+    expect(migrated.handles.length).toBeGreaterThan(0)
+    // Жаңа фурнитура сметада да болуы керек, әйтпесе бағасын қоятын жер жоқ.
+    const ids = new Set(migrated.hardware.map((h) => h.id))
+    for (const sys of migrated.hingeSystems) {
+      if (sys.arm === 'cross' && sys.mount === 'overlay') expect(ids.has(sys.hardwareId)).toBe(true)
+    }
+    for (const h of migrated.handles) expect(ids.has(h.hardwareId)).toBe(true)
+  })
+
+  it('ескі профильдегі бағалар көшу кезінде жоғалмайды', () => {
+    const old = {
+      ...base,
+      schemaVersion: 2,
+      hardware: base.hardware.map((h) => ({ ...h, pricePerUnit: 777 })),
+    }
+    delete (old as Record<string, unknown>)['hingeSystems']
+    delete (old as Record<string, unknown>)['handles']
+
+    const migrated = parseShopProfile(old)
+    for (const h of base.hardware) {
+      expect(migrated.hardware.find((x) => x.id === h.id)?.pricePerUnit, h.id).toBe(777)
+    }
   })
 })
 

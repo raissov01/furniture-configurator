@@ -13,3 +13,4 @@ dist/
 
 # Серверлік дерек (SQLite)
 .data/
+.vercel

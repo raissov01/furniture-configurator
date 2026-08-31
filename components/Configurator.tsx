@@ -7,9 +7,13 @@
 
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
-import { findTemplate } from '@/src/core/index'
+import {
+  HANDLE_POSITIONS, defaultHandleSpec, findTemplate, handlePositionName,
+} from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
-import type { CabinetConfig, Material, Section, SectionContent } from '@/src/core/index'
+import type {
+  CabinetConfig, HandleSpec, Material, Section, SectionContent, SectionFronts,
+} from '@/src/core/index'
 
 const materialOptions = (list: Material[]) => list.map((m) => ({ value: m.id, label: m.name }))
 
@@ -149,7 +153,9 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
             onChange={(count) =>
               editSection(
                 index,
-                { fronts: count > 0 ? { count, mount: section.fronts?.mount ?? 'overlay' } : null },
+                // Ілгек пен тұтқа САҚТАЛАДЫ: санды өзгерту оларды тастап
+                // кетсе, баптау үнсіз әдепкіге қайтар еді.
+                { fronts: count > 0 ? { ...(section.fronts ?? { mount: 'overlay' }), count } : null },
                 'section.fronts',
               )
             }
@@ -161,7 +167,7 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
             onChange={(mount) =>
               editSection(
                 index,
-                { fronts: { count: section.fronts?.count ?? 1, mount } },
+                { fronts: { ...(section.fronts ?? { count: 1 }), mount } },
                 'section.frontMount',
               )
             }
@@ -172,6 +178,107 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
           />
         </Field>
       </div>
+
+      {section.fronts ? (
+        <FrontFittings
+          fronts={section.fronts}
+          onChange={(patch, field) => editSection(index, { fronts: { ...section.fronts!, ...patch } }, field)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * Фасадтың фурнитурасы: ілгек жүйесі мен тұтқа.
+ *
+ * Каталог ЦЕХТІКІ (`shop.hingeSystems` / `shop.handles`), сондықтан мұнда
+ * тізім ойдан жасалмайды — цех қандай бренд қосса, сол көрінеді.
+ */
+function FrontFittings({
+  fronts,
+  onChange,
+}: {
+  fronts: SectionFronts
+  onChange: (patch: Partial<SectionFronts>, field: string) => void
+}) {
+  const shop = useConfigurator((s) => s.shop)
+  const systems = shop.hingeSystems
+  const handles = shop.handles
+
+  const hingeId = fronts.hingeSystemId ?? systems[0]?.id ?? ''
+  // undefined — цехтың әдепкісі, null — әдейі тұтқасыз.
+  const handleSpec: HandleSpec | null = fronts.handle === null ? null : fronts.handle ?? defaultHandleSpec()
+  const model = handleSpec ? handles.find((h) => h.id === handleSpec.handleId) : undefined
+  const spacings = model?.boreSpacings ?? []
+
+  const setHandle = (patch: Partial<HandleSpec>, field: string) => {
+    if (!handleSpec) return
+    onChange({ handle: { ...handleSpec, ...patch } }, field)
+  }
+
+  return (
+    <div className="mt-2 flex flex-col gap-2 border-t border-neutral-200 pt-2 dark:border-neutral-800">
+      <Field label="Петля">
+        <Select
+          value={hingeId}
+          onChange={(hingeSystemId) => onChange({ hingeSystemId }, 'section.hinge')}
+          options={systems.map((h) => ({ value: h.id, label: h.name }))}
+        />
+      </Field>
+
+      <Field label="Ручка">
+        <Select
+          value={handleSpec ? handleSpec.handleId : 'none'}
+          onChange={(id) =>
+            onChange(
+              id === 'none'
+                ? { handle: null }
+                : { handle: { ...(handleSpec ?? defaultHandleSpec()), handleId: id } },
+              'section.handle',
+            )
+          }
+          options={[
+            ...handles.map((h) => ({ value: h.id, label: h.name })),
+            { value: 'none', label: '— Без ручки —' },
+          ]}
+        />
+      </Field>
+
+      {handleSpec && spacings.length > 0 ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Межцентровое, мм">
+            <Select
+              value={String(handleSpec.boreSpacing)}
+              onChange={(v) => setHandle({ boreSpacing: Number(v) }, 'section.handleBore')}
+              options={spacings.map((n) => ({ value: String(n), label: String(n) }))}
+            />
+          </Field>
+          <Field label="Расположение">
+            <Select
+              value={handleSpec.position}
+              onChange={(position) =>
+                setHandle({ position: position as HandleSpec['position'] }, 'section.handlePosition')
+              }
+              options={HANDLE_POSITIONS.map((p) => ({ value: p, label: handlePositionName(p) }))}
+            />
+          </Field>
+          <Field label="Отступ от края, мм">
+            <NumberInput
+              value={handleSpec.edgeOffset}
+              min={0}
+              onChange={(edgeOffset) => setHandle({ edgeOffset }, 'section.handleEdgeOffset')}
+            />
+          </Field>
+          <Field label="Отступ от торца, мм">
+            <NumberInput
+              value={handleSpec.endOffset}
+              min={0}
+              onChange={(endOffset) => setHandle({ endOffset }, 'section.handleEndOffset')}
+            />
+          </Field>
+        </div>
+      ) : null}
     </div>
   )
 }

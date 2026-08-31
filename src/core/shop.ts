@@ -12,6 +12,11 @@
  */
 
 import { z } from 'zod'
+import {
+  HANDLE_BORE_SPACINGS, HandleModelSchema, HingeSystemSchema, defaultHandles,
+  defaultHingeSystems, hingeBrandName,
+} from './fittings'
+import type { HandleModel, HingeSystem } from './fittings'
 import { SEED_EDGE_BANDS, SEED_MATERIALS } from './seed'
 import type { Catalog, EdgeBand, Material, Panel, SettingsOverride } from './types'
 
@@ -37,7 +42,7 @@ export type LabourRates = {
 }
 
 export type ShopProfile = {
-  schemaVersion: 2
+  schemaVersion: 3
   id: string
   /** КП-да тұратын атау */
   name: string
@@ -50,6 +55,13 @@ export type ShopProfile = {
   materials: Material[]
   edgeBands: EdgeBand[]
   hardware: HardwareItem[]
+  /**
+   * Ілгек жүйелері. Бренд ПРИСАДКАҒА әсер етеді (чашканың K өлшемі),
+   * сондықтан бұл сметаның жолы емес, геометрияның кірісі.
+   */
+  hingeSystems: HingeSystem[]
+  /** Тұтқа модельдері. Артикул мен баға — цехтың жеткізушісінен. */
+  handles: HandleModel[]
   labour: LabourRates
   /** Үстеме пайыз. КП-дағы соңғы сан осымен көбейеді. */
   markupPercent: number
@@ -64,6 +76,18 @@ export type ShopProfile = {
   maxShelfSpan: number | null
 }
 
+/**
+ * Ілгектің сметадағы позициясы брендпен де, жабылу түрімен де ерекшеленеді:
+ * доводчикті Blum пен серіппесіз Boyard бір жолда тұра алмайды.
+ */
+const HINGE_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = defaultHingeSystems()
+  .filter((sys) => sys.arm === 'cross' && sys.mount === 'overlay')
+  .map((sys) => ({
+    id: sys.hardwareId,
+    kind: 'hinge' as const,
+    name: `Петля ${hingeBrandName(sys.brand)} ${sys.closing === 'soft' ? 'с доводчиком' : 'без пружины'}`,
+  }))
+
 /** Қазақстан цехтары нақты сатып алатын позициялар. Бағалары 0 — цех толтырады. */
 const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'confirmat-7x50', kind: 'confirmat', name: 'Конфирмат (евровинт) 7×50' },
@@ -71,16 +95,22 @@ const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'dowel-8x30', kind: 'dowel', name: 'Шкант 8×30' },
   { id: 'minifix-15', kind: 'minifix', name: 'Стяжка эксцентриковая (минификс) 15 мм' },
   { id: 'shelf-pin-5', kind: 'shelfPin', name: 'Полкодержатель Ø5' },
-  { id: 'hinge-overlay', kind: 'hinge', name: 'Петля накладная Ø35, 4 отверстия' },
+  // Бренді көрсетілмеген жоба үшін жалпы позиция (ескі CLI осылай жүреді).
+  { id: 'hinge-overlay', kind: 'hinge', name: 'Петля накладная Ø35 (без бренда)' },
   { id: 'hinge-plate', kind: 'hinge', name: 'Планка ответная под петлю' },
   { id: 'runner-roller-400', kind: 'runner', name: 'Направляющая роликовая 400 мм' },
   { id: 'runner-ball-400', kind: 'runner', name: 'Направляющая шариковая 400 мм' },
-  { id: 'handle-128', kind: 'handle', name: 'Ручка-скоба 128 мм' },
+  { id: 'handle-bar', kind: 'handle', name: 'Ручка-скоба' },
+  { id: 'handle-rail', kind: 'handle', name: 'Ручка-рейлинг' },
+  { id: 'handle-knob', kind: 'handle', name: 'Ручка-кнопка' },
+  { id: 'handle-profile', kind: 'handle', name: 'Профиль-ручка (врезная), за метр' },
+  { id: 'handle-none', kind: 'handle', name: 'Механизм push-to-open' },
   { id: 'leg-100', kind: 'leg', name: 'Ножка регулируемая 100 мм' },
   { id: 'rod-25', kind: 'other', name: 'Штанга Ø25 (за метр)' },
   { id: 'rod-bracket', kind: 'other', name: 'Держатель штанги' },
   { id: 'sliding-track', kind: 'other', name: 'Рельс для дверей-купе (за метр)' },
   { id: 'sliding-kit', kind: 'other', name: 'Комплект профиля и роликов на дверь' },
+  ...HINGE_HARDWARE,
 ]
 
 /**
@@ -147,7 +177,7 @@ export function defaultHardware(): HardwareItem[] {
  */
 export function defaultShopProfile(id = 'shop-1'): ShopProfile {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     id,
     name: '',
     city: '',
@@ -156,6 +186,8 @@ export function defaultShopProfile(id = 'shop-1'): ShopProfile {
     materials: SEED_MATERIALS.map((m) => ({ ...m })),
     edgeBands: SEED_EDGE_BANDS.map((b) => ({ ...b })),
     hardware: defaultHardware(),
+    hingeSystems: defaultHingeSystems(),
+    handles: defaultHandles(),
     labour: { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 },
     markupPercent: 0,
     maxShelfSpan: null,
@@ -164,7 +196,12 @@ export function defaultShopProfile(id = 'shop-1'): ShopProfile {
 
 /** Генерацияға керегі — материалдар мен кромкалар. Профильдің қалғаны кірмейді. */
 export function catalogOf(shop: ShopProfile): Catalog {
-  return { materials: shop.materials, edgeBands: shop.edgeBands }
+  return {
+    materials: shop.materials,
+    edgeBands: shop.edgeBands,
+    hingeSystems: shop.hingeSystems,
+    handles: shop.handles,
+  }
 }
 
 export type ReadinessIssue = {
@@ -299,7 +336,7 @@ const LabourRatesSchema = z.object({
 })
 
 export const ShopProfileSchema = z.object({
-  schemaVersion: z.literal(2),
+  schemaVersion: z.literal(3),
   id: z.string().min(1),
   name: z.string(),
   city: z.string(),
@@ -308,6 +345,8 @@ export const ShopProfileSchema = z.object({
   materials: z.array(MaterialSchema).min(1),
   edgeBands: z.array(EdgeBandSchema),
   hardware: z.array(HardwareItemSchema),
+  hingeSystems: z.array(HingeSystemSchema),
+  handles: z.array(HandleModelSchema),
   labour: LabourRatesSchema,
   markupPercent: z.number().int().min(0).max(1000),
   maxShelfSpan: z.number().int().positive().nullable(),
@@ -319,14 +358,33 @@ export const ShopProfileSchema = z.object({
  */
 export function parseShopProfile(raw: unknown): ShopProfile {
   const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion
-  const migrated =
-    version === 1
-      ? {
-          ...(raw as object),
-          schemaVersion: 2,
-          labour: { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 },
-          markupPercent: 0,
-        }
-      : raw
+
+  // v1 → v2: жұмыс ақысы мен үстеме пайда болды.
+  let migrated: unknown = version === 1
+    ? {
+        ...(raw as object),
+        schemaVersion: 2,
+        labour: { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 },
+        markupPercent: 0,
+      }
+    : raw
+
+  // v2 → v3: ілгек жүйелері мен тұтқа модельдері. Ескі профильде олар жоқ,
+  // сондықтан каталог та, оларға сәйкес сметалық позициялар да қосылады —
+  // әйтпесе жоба ашылғанда фасад ілгексіз қалар еді.
+  const v = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
+  if (v === 2) {
+    const old = migrated as ShopProfile & { hardware: HardwareItem[] }
+    const have = new Set(old.hardware.map((h) => h.id))
+    const added = defaultHardware().filter((h) => !have.has(h.id))
+    migrated = {
+      ...old,
+      schemaVersion: 3,
+      hardware: [...old.hardware, ...added],
+      hingeSystems: defaultHingeSystems(),
+      handles: defaultHandles(),
+    }
+  }
+
   return ShopProfileSchema.parse(migrated) as ShopProfile
 }
