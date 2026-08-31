@@ -17,6 +17,7 @@ import {
   SHELF_PIN_GROUP, SHELF_PIN_PITCH,
 } from './constants'
 import { handleBorePoints } from './fittings'
+import type { MillingPath } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import { subtractedThickness } from './edges'
 import { panelExtents } from './geometry'
@@ -298,5 +299,45 @@ export function runnerHoles(
       localY(verticalPanel, worldZ),
       RUNNER_SCREW_DIAMETER, RUNNER_SCREW_DEPTH, 'runner', ctx,
     )
+  }
+}
+
+// ── Фрезеровка ───────────────────────────────────────────────────────────────
+
+/**
+ * Фасадтың өрнегін панельге жазу.
+ *
+ * `millingPaths` фасадтың КӨРІНІСІНДЕ береді (x — ені бойымен, y — биіктігі
+ * бойымен), ал панельдің локал өстері керісінше: x — ұзындық (биіктік),
+ * y — ен. Сондықтан осьтер ауыстырылады да, `drilling` сияқты РЕЗ
+ * кеңістігіне көшіріледі.
+ */
+export function applyMilling(front: Panel, paths: MillingPath[], ctx: Ctx): void {
+  for (const path of paths) {
+    front.milling.push({
+      closed: path.closed,
+      points: path.points.map((pt) => {
+        const c = toCut(front, pt.y, pt.x, ctx)
+        return { x: Math.round(c.x * 10) / 10, y: Math.round(c.y * 10) / 10 }
+      }),
+    })
+  }
+}
+
+/**
+ * РЕЗ координатасының ГОТОВЫЙ координатадағы басы.
+ *
+ * `drilling` мен `milling` станок үшін РЕЗ кеңістігінде сақталады, ал 3D
+ * ЖИНАЛҒАН детальді көрсетеді. Экранда салу үшін осы ығысуды қосу керек —
+ * әйтпесе өрнек кромканың қалыңдығына жылжып тұрар еді.
+ */
+export function cutOrigin(
+  panel: Panel,
+  bands: Map<string, EdgeBand>,
+  settings: ConstructionSettings,
+): { x: number; y: number } {
+  return {
+    x: subtractedThickness(panel.edges.W1, bands, settings),
+    y: subtractedThickness(panel.edges.L1, bands, settings),
   }
 }

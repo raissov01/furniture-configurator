@@ -8,11 +8,12 @@
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import {
-  HANDLE_POSITIONS, defaultHandleSpec, findTemplate, handlePositionName,
+  HANDLE_POSITIONS, MILLING_PATTERNS, defaultHandleSpec, defaultMillingSpec,
+  findTemplate, handlePositionName, millingPattern,
 } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type {
-  CabinetConfig, HandleSpec, Material, Section, SectionContent, SectionFronts,
+  CabinetConfig, HandleSpec, Material, MillingSpec, Section, SectionContent, SectionFronts,
 } from '@/src/core/index'
 
 const materialOptions = (list: Material[]) => list.map((m) => ({ value: m.id, label: m.name }))
@@ -217,8 +218,85 @@ function FrontFittings({
     onChange({ handle: { ...handleSpec, ...patch } }, field)
   }
 
+  const milling: MillingSpec | null = fronts.milling ?? null
+  const pattern = milling ? millingPattern(milling.patternId) : null
+  const setMilling = (patch: Partial<MillingSpec>, field: string) => {
+    if (!milling) return
+    onChange({ milling: { ...milling, ...patch } }, field)
+  }
+
+  /** SVG файлды мәтін күйінде оқимыз: ядро оны өзі талдайды. */
+  const readSvg = (file: File | undefined) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setMilling({ svg: String(reader.result ?? '') }, 'section.millingSvg')
+    reader.readAsText(file)
+  }
+
   return (
     <div className="mt-2 flex flex-col gap-2 border-t border-neutral-200 pt-2 dark:border-neutral-800">
+      <Field label="Фрезеровка">
+        <Select
+          value={milling?.patternId ?? 'plain'}
+          onChange={(id) =>
+            onChange(
+              { milling: id === 'plain' ? null : { ...(milling ?? defaultMillingSpec()), patternId: id } },
+              'section.milling',
+            )
+          }
+          options={MILLING_PATTERNS.map((p) => ({ value: p.id, label: p.name }))}
+        />
+      </Field>
+
+      {milling ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Глубина, мм">
+            <NumberInput
+              value={milling.depth}
+              min={1}
+              max={20}
+              onChange={(depth) => setMilling({ depth }, 'section.millingDepth')}
+            />
+          </Field>
+          {pattern?.usesInset ? (
+            <Field label="Отступ от края, мм">
+              <NumberInput
+                value={milling.inset}
+                min={0}
+                step={5}
+                onChange={(inset) => setMilling({ inset }, 'section.millingInset')}
+              />
+            </Field>
+          ) : null}
+          {pattern?.usesCount ? (
+            <Field label="Количество">
+              <NumberInput
+                value={milling.count}
+                min={1}
+                max={24}
+                onChange={(count) => setMilling({ count }, 'section.millingCount')}
+              />
+            </Field>
+          ) : null}
+        </div>
+      ) : null}
+
+      {milling?.patternId === 'custom' ? (
+        <Field label="Файл SVG">
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              accept=".svg,image/svg+xml"
+              onChange={(e) => readSvg(e.target.files?.[0])}
+              className="w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-neutral-200 file:px-2 file:py-1 file:text-xs dark:file:bg-neutral-800 dark:file:text-neutral-200"
+            />
+            <span className="whitespace-nowrap text-[11px] text-neutral-500">
+              {milling.svg ? 'загружен' : 'не выбран'}
+            </span>
+          </div>
+        </Field>
+      ) : null}
+
       <Field label="Петля">
         <Select
           value={hingeId}

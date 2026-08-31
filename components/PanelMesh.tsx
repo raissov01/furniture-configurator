@@ -7,9 +7,9 @@
 
 import { useMemo } from 'react'
 import { Html } from '@react-three/drei'
-import { Shape } from 'three'
-import { panelExtents, rotationFor } from '@/src/core/index'
-import type { Axis, Panel } from '@/src/core/index'
+import { BufferAttribute, BufferGeometry, Shape } from 'three'
+import { cutOrigin, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
+import type { Axis, Catalog, Panel, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
 /**
@@ -40,14 +40,71 @@ function shade(hex: string, factor: number): string {
   return `#${channels.map((c) => c.toString(16).padStart(2, '0')).join('')}`
 }
 
+/**
+ * Фасадтың беттік өрнегі.
+ *
+ * Ядро жолдарды РЕЗ кеңістігінде сақтайды (станок соны көреді), ал 3D
+ * ЖИНАЛҒАН детальді көрсетеді — сондықтан `cutOrigin` ығысуы қосылады.
+ *
+ * Өрнек фасадтың СЫРТҚЫ бетінде, яғни ең кіші z-те. Сызық беттің дәл үстінде
+ * тұрса z-fighting шығады, сол үшін бір миллиметрге алға шығарылады.
+ */
+function MillingLines({ panel, catalog, settings, extents }: {
+  panel: Panel
+  catalog: Catalog
+  settings: SettingsOverride | undefined
+  /** Панельдің әлем өстеріндегі габариті — жергілікті нөлді табу үшін. */
+  extents: { x: number; y: number; z: number }
+}) {
+  const geometry = useMemo(() => {
+    if (panel.milling.length === 0) return null
+    const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
+    const origin = cutOrigin(panel, bands, mergeSettings(settings))
+
+    const vertices: number[] = []
+    for (const path of panel.milling) {
+      const pts = path.points
+      const last = path.closed ? pts.length : pts.length - 1
+      for (let i = 0; i < last; i += 1) {
+        const a = pts[i]!
+        const b = pts[(i + 1) % pts.length]!
+        // Фасадтың локал өстері: x — биіктік (әлемде Y), y — ені (әлемде X).
+        vertices.push(a.y + origin.y, a.x + origin.x, 0)
+        vertices.push(b.y + origin.y, b.x + origin.x, 0)
+      }
+    }
+    if (vertices.length === 0) return null
+    const g = new BufferGeometry()
+    g.setAttribute('position', new BufferAttribute(new Float32Array(vertices), 3))
+    return g
+  }, [panel, catalog, settings])
+
+  if (!geometry) return null
+
+  return (
+    // Ата-мешь панельдің ОРТАСЫНДА тұр, ал жолдар панельдің БҰРЫШЫНАН
+    // саналған — сондықтан жартылай габаритке кері ығысамыз. z бойынша
+    // сыртқы бетке шығып, беттен 1 мм алға: әйтпесе z-fighting болады.
+    <lineSegments
+      geometry={geometry}
+      position={[-extents.x / 2, -extents.y / 2, -extents.z / 2 - 1]}
+    >
+      <lineBasicMaterial color="#5a5148" transparent opacity={0.85} />
+    </lineSegments>
+  )
+}
+
 /** Ажыратылған көріністе панель өз ҚАЛЫҢДЫҒЫ өсі бойымен ортадан ажырайды. */
 const EXPLODE_DISTANCE = 260
 
 export function PanelMesh({
-  panel, thickness, centre, decorColor,
+  panel, thickness, centre, decorColor, catalog, settings,
 }: {
   panel: Panel
   thickness: number
+  /** Өрнекті салу үшін керек: кромка қалыңдығы РЕЗ ығысуын береді. */
+  catalog: Catalog
+  settings?: SettingsOverride | undefined
   centre: { x: number; y: number; z: number }
   /** Панель материалының декор түсі. Болмаса — бейтарап сұр. */
   decorColor?: string | undefined
@@ -144,6 +201,9 @@ export function PanelMesh({
         roughness={0.7}
         metalness={0}
       />
+      {panel.role === 'front' && panel.milling.length > 0 ? (
+        <MillingLines panel={panel} catalog={catalog} settings={settings} extents={extents} />
+      ) : null}
       {isHovered ? (
         <Html center zIndexRange={[10, 0]}>
           <div className="pointer-events-none whitespace-nowrap rounded bg-neutral-900/90 px-2 py-1 text-[11px] text-white shadow">

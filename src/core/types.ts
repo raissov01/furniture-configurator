@@ -83,6 +83,7 @@ export type Axis = 'x' | 'y' | 'z'
 export type Orientation = { length: Axis; width: Axis; thickness: Axis }
 
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
+import type { MillingPath, MillingSpec } from './milling'
 
 export type Vec3 = { x: number; y: number; z: number }
 
@@ -198,6 +199,16 @@ export type Panel = {
   drilling: Drill[]
   /** Арт қабырға «в паз» болғанда ғана толады */
   grooves: Groove[]
+  /**
+   * Беттегі фрезеровка (фасадтың өрнегі). ӘРҚАШАН СЫРТҚЫ бетте — оны клиент
+   * көреді, ал ішкі бетті фрезерлеудің мағынасы жоқ.
+   *
+   * Панельдің ӨЛШЕМІНЕ әсер етпейді:
+   * деталировка да, раскрой да мұны көрмейді — тек 3D, DXF және цехтың
+   * фрезері көреді. Координаталар `drilling` сияқты РЕЗ кеңістігінде,
+   * панельдің локал өстерімен.
+   */
+  milling: MillingPath[]
   /** Қиғаш кесік — тек мансарда корпустарында толады */
   bevel?: PanelBevel | undefined
 }
@@ -288,6 +299,8 @@ export type SectionFronts = {
   hingeSystemId?: string | undefined
   /** `null` — тұтқа әдейі жоқ. `undefined` — цехтың әдепкісі. */
   handle?: HandleSpec | null | undefined
+  /** Фасадтың өрнегі. Болмаса — гладкий. */
+  milling?: MillingSpec | null | undefined
 }
 
 export type SectionContent =

@@ -296,6 +296,54 @@ async function run() {
     check(rows.some((r) => r[0].includes('ящика')), 'деталировкада ящик пайда болды')
   })
 
+  await test('Фасад фурнитурасы: өрнек, тұтқа, петля', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+
+    // Селектті белгісі бойынша тауып, мәнін қоямыз.
+    const pick = async (label, value, settle = 900) => {
+      const done = await h.evaluate(`(() => {
+        const l = [...document.querySelectorAll('label')]
+          .find((x) => x.textContent.includes(${JSON.stringify(label)}))
+        if (!l) return false
+        const sel = l.querySelector('select')
+        if (!sel) return false
+        const opt = [...sel.options].find((o) => o.value === ${JSON.stringify(value)}
+          || o.text.trim() === ${JSON.stringify(value)})
+        if (!opt) return false
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set
+        setter.call(sel, opt.value)
+        sel.dispatchEvent(new Event('change', { bubbles: true }))
+        return true
+      })()`)
+      await h.wait(settle)
+      return done
+    }
+
+    const before = await h.cutListRows()
+    check(before.length > 0, `деталировка бар (${before.length} жол)`)
+
+    check(await pick('Фрезеровка', 'grid'), 'өрнек таңдалды')
+    const after = await h.cutListRows()
+    // ЕҢ БАСТЫСЫ: өрнек — беттегі ойық, ол детальдің ӨЛШЕМІН өзгертпейді.
+    check(
+      JSON.stringify(after) === JSON.stringify(before),
+      `деталировка ӨЗГЕРМЕДІ (${before.length} → ${after.length})`,
+    )
+
+    check(await pick('Ручка', 'handle-knob'), 'тұтқа кнопкаға ауысты')
+    check(await pick('Петля', 'hinge-hettich-soft-cross-overlay'), 'петля бренді ауысты')
+
+    const body = await h.text()
+    check(/Межцентровое|Расположение|Глубина/.test(body), 'фурнитура өрістері көрінеді')
+
+    // Смета жаңа фурнитураны көруі керек.
+    check(await h.clickText('Смета', 3000), 'смета ашылды')
+    const quote = await h.text()
+    check(/Hettich/i.test(quote), 'сметада Hettich петлясы бар')
+    await h.clickText('Закрыть', 700)
+  })
+
   await test('Смета: раскрой мен баға', async () => {
     await h.closeModals()
     check(await h.clickText('Смета', 3000), 'смета ашылды')

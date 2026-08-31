@@ -14,6 +14,8 @@ import type { Drill, Groove, Panel } from '../types'
 
 export const LAYER_OUTLINE = 'OUTLINE'
 export const LAYER_GROOVE = 'GROOVE'
+/** Фасадтың беттік өрнегі — БӨЛЕК қабат: ол контур емес, кесуге жатпайды. */
+export const LAYER_MILLING = 'MILLING'
 export const LAYER_TEXT = 'TEXT'
 
 /** Ø12.5 → "DRILL_12_5" (DXF қабат атауында нүкте болмағаны жөн). */
@@ -98,11 +100,15 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
 
   const drills = panel.drilling.filter((d) => d.face === face || isEdgeFace(d.face))
   const grooves = panel.grooves.filter((gr) => gr.face === face)
+  // Өрнек ӘРҚАШАН сыртқы бетте: оны клиент көреді, ал ішкі бетте
+  // фрезерлеудің мағынасы жоқ.
+  const milling = face === 'outer' ? panel.milling : []
 
   const layers = [
     LAYER_OUTLINE,
     ...[...new Set(drills.map((d) => drillLayerName(d.diameter)))].sort(),
     ...(grooves.length > 0 ? [LAYER_GROOVE] : []),
+    ...(milling.length > 0 ? [LAYER_MILLING] : []),
     LAYER_TEXT,
   ]
 
@@ -134,6 +140,12 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
     entities.push(
       ...text(LAYER_GROOVE, gr.x1 + 10, gr.y1 + 3, textHeight * 0.6,
         `PAZ ${gr.width}x${gr.depth}`),
+    )
+  }
+
+  for (const path of milling) {
+    entities.push(
+      ...lwpolyline(LAYER_MILLING, path.points.map((pt) => [pt.x, pt.y] as [number, number]), path.closed),
     )
   }
 

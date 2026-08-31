@@ -8,6 +8,7 @@
 
 import { z } from 'zod'
 import { HandleSpecSchema } from './fittings'
+import { MillingSpecSchema } from './milling'
 import type { ProjectFile } from './types'
 
 /** Өлшем: мм, бүтін, оң сан. */
@@ -73,6 +74,7 @@ const FrontsSchema = z.object({
   // сақталған жобаларда бұл өрістер жоқ. Болмаса цехтың әдепкісі алынады.
   hingeSystemId: z.string().min(1).optional(),
   handle: HandleSpecSchema.nullable().optional(),
+  milling: MillingSpecSchema.nullable().optional(),
 }).nullable()
 
 const CabinetBaseSchema = z.object({

@@ -111,6 +111,7 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
         const material = materialOf(p.materialId)
         return (
           <PanelMesh
+            catalog={catalog}
             key={p.id}
             panel={p}
             thickness={material?.thickness ?? 16}

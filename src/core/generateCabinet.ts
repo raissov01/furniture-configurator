@@ -7,8 +7,11 @@
 
 import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
-import { confirmatJoint, handleHoles, hingeHoles, runnerHoles, shelfPinHoles } from './drilling'
+import {
+  applyMilling, confirmatJoint, handleHoles, hingeHoles, runnerHoles, shelfPinHoles,
+} from './drilling'
 import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
+import { millingPaths, validateMilling } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import { calculateCutDimensions, resolveEdges, subtractedThickness } from './edges'
 import { ConfigValidationError } from './errors'
@@ -199,6 +202,7 @@ export function generateCabinet(
       note,
       drilling: [],
       grooves: [],
+      milling: [],
     }
   }
 
@@ -604,12 +608,17 @@ export function generateCabinet(
     const spec = layouts[group.sectionIndex]?.section.fronts
     const hingeSystem = resolveHingeSystem(catalog, spec?.hingeSystemId)
     const handle = resolveHandle(catalog, spec?.handle)
+    const milling = spec?.milling ?? null
 
     group.fronts.forEach((front, i) => {
       const side: 'left' | 'right' = i === last && last > 0 ? 'right' : i % 2 === 0 ? 'left' : 'right'
       const carcassPanel = i === 0 ? left : i === last ? right : undefined
       hingeHoles(front, carcassPanel, side, ctx, hingeSystem)
       if (handle) handleHoles(front, handle.model, handle.spec, ctx)
+      if (milling) {
+        validateMilling(milling, ctx.thickness(front))
+        applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)
+      }
     })
   }
 
