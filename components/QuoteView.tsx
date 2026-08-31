@@ -147,6 +147,38 @@ export function QuoteView({
             >
               {busy === 'quote' ? '…' : 'КП'}
             </Button>
+            <Button
+              disabled={busy !== null}
+              title="Что закупить в цех. Выпускается и без заполненных цен"
+              onClick={() => void run('fittings', async () => {
+                const { hardwareList, hardwareListPdf } = await import('@/src/core/export/hardwareList')
+                const list = hardwareList(panels, hardware, shop)
+                const bytes = await hardwareListPdf({
+                  list, shop, projectName,
+                  date: new Date().toLocaleDateString('ru-RU'),
+                  fonts: await loadFonts(),
+                })
+                download(`${projectName}-фурнитура.pdf`, bytes, 'application/pdf')
+              })}
+            >
+              {busy === 'fittings' ? '…' : 'Фурнитура'}
+            </Button>
+            <Button
+              disabled={busy !== null}
+              title="Список фурнитуры в CSV — отправить поставщику"
+              onClick={() => void run('fittings-csv', async () => {
+                const { hardwareList, hardwareListToCsv } = await import('@/src/core/export/hardwareList')
+                const csv = hardwareListToCsv(hardwareList(panels, hardware, shop))
+                // BOM: Excel онсыз кириллицаны бұзып ашады.
+                download(
+                  `${projectName}-фурнитура.csv`,
+                  new TextEncoder().encode(`\ufeff${csv}`),
+                  'text/csv;charset=utf-8',
+                )
+              })}
+            >
+              {busy === 'fittings-csv' ? '…' : 'Фурнитура CSV'}
+            </Button>
             <Button onClick={() => setOpen(false)}>Закрыть</Button>
           </div>
         </div>

@@ -405,6 +405,34 @@ async function run() {
     await h.clickText('Закрыть', 800)
   })
 
+  await test('Смета: қызметтер, коэффициент, фурнитура тізімі', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+
+    check(await h.clickText('Смета', 3000), 'смета ашылды')
+    check(await h.clickText('Стоимость', 1500), 'стоимость табы ашылды')
+
+    const modal = () => h.evaluate(`(() => {
+      const box = [...document.querySelectorAll('div')]
+        .filter((e) => getComputedStyle(e).position === 'fixed')
+        .find((e) => /Стоимость|Раскрой/.test(e.innerText))
+      return box ? box.innerText : ''
+    })()`)
+
+    const body = await modal()
+    check(/Листы по материалам/i.test(body), 'материал бойынша кесте бар')
+    check(/Услуги цеха/i.test(body), 'қызметтер бөлімі бар')
+    check(/Материалы, кромка, фурнитура/i.test(body), 'қорытынды жіктемесі бар')
+
+    // Фурнитура тізімі бағасыз да шығуы керек — ол клиентке емес, цехқа.
+    const btn = await h.evaluate(`(() => {
+      const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Фурнитура')
+      return b ? !b.disabled : null
+    })()`)
+    check(btn === true, `«Фурнитура» батырмасы белсенді (${btn})`)
+    await h.clickText('Закрыть', 700)
+  })
+
   await test('Цех профилі: баға сақталады', async () => {
     await h.closeModals()
     check(await h.clickText('Цех', 1200), 'цех терезесі ашылды')
