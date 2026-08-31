@@ -468,6 +468,25 @@ async function run() {
     await h.clickText('Закрыть', 700)
   })
 
+  await test('Клиентке сілтеме: /view ашылады', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+
+    check(await h.clickText('Ссылка клиенту', 1500), 'батырма басылды')
+    const notice = await h.text()
+    // Буферге жазу headless-те тыйылуы мүмкін — екі жағдайда да хабар шығады.
+    check(/Ссылка скопирована|скопировать/i.test(notice), 'хабарлама шықты')
+
+    // Бос хешпен ашылған /view ТҮСІНІКТІ қате беруі керек: клиент «бет
+    // ашылмады» дегеннен басқа ештеңе көрмесе, цехқа қоңырау шалады.
+    await h.goto('/view', 5000)
+    const empty = await h.text()
+    check(/Ссылка не открылась|нет проекта/i.test(empty), 'бос сілтемеде түсінікті қате')
+
+    // Келесі сценарийлер конфигуратордың ашық тұрғанына сүйенеді.
+    await h.goto('/configurator', 11000)
+  })
+
   await test('Смета: раскрой мен баға', async () => {
     await h.closeModals()
     check(await h.clickText('Смета', 3000), 'смета ашылды')

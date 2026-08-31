@@ -14,6 +14,7 @@ import { QuoteView } from '@/components/QuoteView'
 import { SketchEditor } from '@/components/SketchEditor'
 import { AccountPanel } from '@/components/AccountPanel'
 import { cloudEnabled } from '@/lib/cloud'
+import { SHARE_LINK_WARN_LENGTH, shareLink } from '@/src/core/index'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { usePanels } from '@/lib/usePanels'
@@ -63,6 +64,7 @@ export function Workspace() {
   const hydrateShop = useConfigurator((s) => s.hydrateShop)
   const hydrateProject = useConfigurator((s) => s.hydrateProject)
   const saveProjectLocally = useConfigurator((s) => s.saveProjectLocally)
+  const exportProject = useConfigurator((s) => s.exportProject)
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
   const setSketchOpen = useConfigurator((s) => s.setSketchOpen)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
@@ -103,6 +105,12 @@ export function Workspace() {
   const projectName = cabinets.length === 1 ? cabinets[0]!.name : `Проект (${cabinets.length} корпуса)`
   // Монтаж корпустардың ЕНІНІҢ қосындысымен саналады.
   const moduleWidths = useMemo(() => cabinets.map((c) => c.width), [cabinets])
+  const [shared, setShared] = useState<string | null>(null)
+  useEffect(() => {
+    if (!shared) return
+    const timer = setTimeout(() => setShared(null), 5000)
+    return () => clearTimeout(timer)
+  }, [shared])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -159,6 +167,23 @@ export function Workspace() {
           <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
           <Button onClick={reset}>Сброс</Button>
+          <Button
+            title="Ссылка для клиента: проект едет в самой ссылке, на сервер не попадает"
+            onClick={() => {
+              const link = shareLink(window.location.origin, exportProject())
+              void navigator.clipboard.writeText(link).then(
+                () => setShared(
+                  link.length > SHARE_LINK_WARN_LENGTH
+                    // Мессенджерлер ұзын сілтемені үзіп жібереді — цех оны білуі керек.
+                    ? 'Ссылка скопирована, но она длинная: мессенджер может её обрезать. Надёжнее отправить файл проекта.'
+                    : 'Ссылка скопирована',
+                ),
+                () => setShared('Не удалось скопировать — разрешите доступ к буферу обмена'),
+              )
+            }}
+          >
+            Ссылка клиенту
+          </Button>
         </div>
 
         <ProjectMenu />
@@ -198,6 +223,15 @@ export function Workspace() {
         <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <b className="font-mono">{error.field}</b> — {error.message.replace(`${error.field}: `, '')}
           {stale ? <span className="ml-2 opacity-70">Показана последняя корректная модель.</span> : null}
+        </div>
+      ) : null}
+
+      {shared ? (
+        <div
+          role="status"
+          className="border-b border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200"
+        >
+          {shared}
         </div>
       ) : null}
 

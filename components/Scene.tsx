@@ -6,7 +6,7 @@
  * сахна метрге келтіріледі (scale 0.001).
  */
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { ComponentRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Grid, OrbitControls } from '@react-three/drei'
@@ -56,12 +56,18 @@ function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [n
  * экраннан шығып кетеді.
  */
 function CameraRig({
-  target, box, facingY,
+  target, box, facingY, contentKey,
 }: {
   target: Vec3
   box: { W: number; H: number; D: number }
   /** Шкафтың бұрылу бұрышы: камера оның АЛДЫНА шығуы керек. */
   facingY: number
+  /**
+   * Сахнаның МАЗМҰНЫ өзгергенін білдіретін кілт. Нысанның координатасы
+   * кездейсоқ бірдей болып қалуы мүмкін (мыс. екі шкаф та басында тұрса),
+   * ал камера жаңа мазмұнға бәрібір қайта бағытталуы керек.
+   */
+  contentKey: string
 }) {
   const preset = useConfigurator((s) => s.cameraPreset)
   const camera = useThree((s) => s.camera)
@@ -70,7 +76,7 @@ function CameraRig({
   const { W, H, D } = box
   const { x: tx, y: ty, z: tz } = target
 
-  useEffect(() => {
+  const fit = useCallback(() => {
     const [lx, oy, lz] = cameraOffset(preset, W, H, D)
     // Ығысу шкафтың ЛОКАЛ өсінде есептеледі де, сол бұрышпен бұрылады:
     // әйтпесе қабырғаға қарай бұрылған шкафқа камера АРТ жағынан қарайды.
@@ -85,7 +91,25 @@ function CameraRig({
     controls.current?.target.set(tx * MM, ty * MM, tz * MM)
     controls.current?.update()
     invalidate()
-  }, [preset, camera, invalidate, W, H, D, tx, ty, tz, facingY])
+  }, [preset, camera, invalidate, W, H, D, tx, ty, tz, facingY, contentKey])
+
+  useEffect(() => { fit() }, [fit])
+
+  /**
+   * ⚠ БІР РЕТТІК ҚАЙТА БАҒЫТТАУ.
+   *
+   * Бірінші кадрда канвастың өлшемі әлі түпкілікті емес, ал сахна мазмұны
+   * (жоба) кейінірек келуі мүмкін — сілтемемен ашылған бетте ол әрқашан
+   * солай. Сол сәтте бағытталған камера ЕДЕНГЕ қарап қалады да, пайдаланушы
+   * пресетті қолмен баспайынша солай тұрады. Клиент сілтемені ашқанда бос
+   * еден көрсе, ол қайта баспайды — жай ғана жабады.
+   *
+   * Сондықтан келесі кадрда бір рет қайта бағыттаймыз.
+   */
+  useEffect(() => {
+    const id = requestAnimationFrame(() => fit())
+    return () => cancelAnimationFrame(id)
+  }, [fit])
 
   return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.12} />
 }
@@ -261,7 +285,12 @@ export default function Scene({
         infiniteGrid
         fadeDistance={14}
       />
-      <CameraRig target={view.target} box={view.box} facingY={view.facingY} />
+      <CameraRig
+        target={view.target}
+        box={view.box}
+        facingY={view.facingY}
+        contentKey={items.map((i) => i.cabinet.id).join(',')}
+      />
     </Canvas>
   )
 }
