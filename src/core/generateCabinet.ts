@@ -15,6 +15,7 @@ import { fillingBandHeight } from './filling'
 import { millingPaths, validateMilling } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import { calculateCutDimensions, resolveEdges, subtractedThickness } from './edges'
+import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
@@ -810,6 +811,10 @@ export function generateCabinet(
       }
     })
   }
+
+  // Қолмен түзетілген присадка — ЕҢ СОҢЫНДА. Осылай 3D те, DXF те, смета да
+  // бірдей тесіктерді көреді: панель — жалғыз ақиқат көзі (§3).
+  applyDrillEdits(panels, config.drillEdits)
 
   return panels
 }

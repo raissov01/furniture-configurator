@@ -84,6 +84,7 @@ export type Orientation = { length: Axis; width: Axis; thickness: Axis }
 
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import type { ApplianceKind, FillingKind } from './filling'
+import type { DrillEdits } from './drillEdits'
 import type { MillingPath, MillingSpec } from './milling'
 
 export type Vec3 = { x: number; y: number; z: number }
@@ -470,6 +471,12 @@ export type CabinetConfig = {
   edging: EdgePolicy
   /** Цех константаларын осы кабинет үшін ғана өзгерту */
   settings?: SettingsOverride | undefined
+
+  /**
+   * Присадканы ҚОЛМЕН түзету, панельдің id-і бойынша (`drillEdits.ts`).
+   * Панель емес, КОНФИГ сақталады (§7) — сондықтан түзету де осында тұрады.
+   */
+  drillEdits?: DrillEdits | undefined
 }
 
 /** generateCabinet-ке керек анықтамалықтар */

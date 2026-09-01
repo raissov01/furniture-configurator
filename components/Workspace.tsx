@@ -13,6 +13,7 @@ import { ShopSettings } from '@/components/ShopSettings'
 import { ProjectMenu } from '@/components/ProjectMenu'
 import { QuoteView } from '@/components/QuoteView'
 import { SketchEditor } from '@/components/SketchEditor'
+import { DrillEditor } from '@/components/DrillEditor'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { cloudEnabled } from '@/lib/cloud'
@@ -69,6 +70,7 @@ export function Workspace() {
   const exportProject = useConfigurator((s) => s.exportProject)
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
   const setSketchOpen = useConfigurator((s) => s.setSketchOpen)
+  const setDrillOpen = useConfigurator((s) => s.setDrillOpen)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
@@ -132,6 +134,7 @@ export function Workspace() {
       <RoomPlan />
       <ShopSettings />
       <SketchEditor />
+      <DrillEditor panels={panels} catalog={catalog} />
       {cloudEnabled && <AccountPanel />}
       <QuoteView
         panels={projectPanels}
@@ -163,6 +166,7 @@ export function Workspace() {
           <Button onClick={() => setGalleryOpen(true)} title={tr('Готовые шаблоны')}>{tr('Шаблоны')}</Button>
           <Button onClick={() => setAiOpen(true)} title={tr('Описать задачу словами')}>{tr('Техзадание')}</Button>
           <Button onClick={() => setSketchOpen(true)} title={tr('Нарисовать корпус мышью')}>{tr('Нарисовать')}</Button>
+          <Button onClick={() => setDrillOpen(true)} title={tr('Развёртка детали: добавить или убрать отверстие')}>{tr('Присадка')}</Button>
           <Button onClick={() => setRoomOpen(true)} title={tr('План комнаты и стены')}>{tr('Стены')}</Button>
           <Button onClick={() => setShopOpen(true)} title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
           <Button onClick={() => setQuoteOpen(true)} title={tr('Раскрой и стоимость по всему проекту')}>{tr('Смета')}</Button>

@@ -162,6 +162,26 @@ export const SectionSchema = z.object({
   path: ['width'],
 })
 
+/**
+ * Присадканың қолмен түзетілуі. Координата бүтін миллиметр (§0.2), ал
+ * ТЕРЕҢДІК бүтін емес болуы мүмкін: ілгектің чашкасы 12,5 мм — ол физикалық
+ * константа, туынды өлшем емес.
+ */
+const DrillSchema = z.object({
+  face: z.enum(['inner', 'outer', 'edgeL1', 'edgeL2', 'edgeW1', 'edgeW2']),
+  x: z.number().int(),
+  y: z.number().int(),
+  diameter: z.number().positive(),
+  depth: z.number().positive(),
+  purpose: z.enum(['confirmat', 'dowel', 'minifix', 'shelfPin', 'hinge', 'runner', 'handle']),
+  hardwareId: z.string().min(1).optional(),
+})
+
+const DrillEditSchema = z.object({
+  added: z.array(DrillSchema),
+  removed: z.array(z.string().min(1)),
+})
+
 export const CabinetConfigSchema = CabinetBaseSchema.extend({
   sections: z.array(SectionSchema).min(1).max(12),
   sliding: z.object({ count: z.number().int().min(2).max(4) }).optional(),
@@ -176,6 +196,14 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
     overhangFront: z.number().int().nonnegative(),
     overhangSides: z.number().int().nonnegative(),
   }).optional(),
+  /**
+   * Присадканың қолмен түзетілуі, панель id-і бойынша.
+   *
+   * Өріс ЕРІКТІ, сондықтан `schemaVersion` көтерілмейді: түзетуі жоқ ескі
+   * жоба дәл сол күйінде оқылады, ал жаңа жоба ескі нұсқада ашылса, тек
+   * түзетуін жоғалтады да, корпустың өзі бүтін қалады.
+   */
+  drillEdits: z.record(z.string().min(1), DrillEditSchema).optional(),
 })
 
 export const ProjectFileV2Schema = z.object({
