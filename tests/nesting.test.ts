@@ -167,3 +167,74 @@ describe('раскрой', () => {
     expect(ldsp.sheets).toHaveLength(1)
   })
 })
+
+/**
+ * Баптаулар: пропил, подрезка, іздеу тереңдігі. Бұлар цехтың станогына
+ * байланысты — бір цехтың саны кодта тұрмайды.
+ */
+describe('раскрой баптаулары', () => {
+  const panels = manyPanels()
+
+  it('подрезка пайдалы аймақты дәл сонша қысады', () => {
+    const wide = nestPanels(panels, SEED_CATALOG, { trimEdge: 0 })
+    const tight = nestPanels(panels, SEED_CATALOG, { trimEdge: 25 })
+    const usableOf = (r: ReturnType<typeof nestPanels>) => r.byMaterial[0]!.sheets[0]!.usable
+    const sheet = (r: ReturnType<typeof nestPanels>) => r.byMaterial[0]!.sheets[0]!
+
+    expect(usableOf(wide)).toMatchObject({ x: 0, y: 0 })
+    expect(usableOf(wide).width).toBe(sheet(wide).sheetWidth)
+    expect(usableOf(tight)).toMatchObject({ x: 25, y: 25 })
+    expect(usableOf(tight).width).toBe(sheet(tight).sheetWidth - 50)
+  })
+
+  it('подрезкасыз парақ детальға кем дегенде сонша орын береді', () => {
+    const wide = nestPanels(panels, SEED_CATALOG, { trimEdge: 0 })
+    const tight = nestPanels(panels, SEED_CATALOG, { trimEdge: 25 })
+    expect(wide.sheetCount).toBeLessThanOrEqual(tight.sheetCount)
+  })
+
+  it('пропил кеңейгенде детальдар бір-біріне жабыспайды', () => {
+    const out = nestPanels(panels, SEED_CATALOG, { kerf: 12 })
+    for (const m of out.byMaterial) {
+      for (const sheet of m.sheets) {
+        for (let i = 0; i < sheet.parts.length; i += 1) {
+          for (let k = i + 1; k < sheet.parts.length; k += 1) {
+            expect(overlaps(sheet.parts[i]!, sheet.parts[k]!)).toBe(false)
+          }
+        }
+        expect(isGuillotine(sheet.parts)).toBe(true)
+      }
+    }
+  })
+
+  it('терең іздеу жылдамнан ЕШҚАШАН нашар емес', () => {
+    const fast = nestPanels(panels, SEED_CATALOG, { optimization: 'fast' })
+    const standard = nestPanels(panels, SEED_CATALOG, { optimization: 'standard' })
+    const deep = nestPanels(panels, SEED_CATALOG, { optimization: 'deep' })
+    expect(standard.sheetCount).toBeLessThanOrEqual(fast.sheetCount)
+    expect(deep.sheetCount).toBeLessThanOrEqual(standard.sheetCount)
+
+    const waste = (r: ReturnType<typeof nestPanels>) =>
+      r.byMaterial.reduce((sum, m) => sum + (m.usableArea - m.partArea), 0)
+    if (deep.sheetCount === standard.sheetCount) {
+      expect(waste(deep)).toBeLessThanOrEqual(waste(standard))
+    }
+  })
+
+  it('нәтиже ТҰРАҚТЫ: бірдей кіріс — бірдей сызба', () => {
+    expect(nestPanels(panels, SEED_CATALOG, { optimization: 'deep' }))
+      .toEqual(nestPanels(panels, SEED_CATALOG, { optimization: 'deep' }))
+  })
+
+  it('әр деңгейдің сызбасы гильотиндік болып қалады', () => {
+    for (const optimization of ['fast', 'standard', 'deep'] as const) {
+      const out = nestPanels(panels, SEED_CATALOG, { optimization })
+      for (const m of out.byMaterial) {
+        for (const sheet of m.sheets) {
+          expect(isGuillotine(sheet.parts), `${optimization}: ${m.materialName} ${sheet.index}`).toBe(true)
+          for (const part of sheet.parts) expect(inside(part, sheet.usable)).toBe(true)
+        }
+      }
+    }
+  })
+})

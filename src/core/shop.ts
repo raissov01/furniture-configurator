@@ -12,12 +12,14 @@
  */
 
 import { z } from 'zod'
+import { KERF } from './constants'
 import { fillingHardware } from './filling'
 import {
   HANDLE_BORE_SPACINGS, HandleModelSchema, HingeSystemSchema, defaultHandles,
   defaultHingeSystems, hingeBrandName,
 } from './fittings'
 import type { HandleModel, HingeSystem } from './fittings'
+import type { NestingOptions, OptimizationLevel } from './nesting'
 import { SEED_EDGE_BANDS, SEED_MATERIALS } from './seed'
 import type { Catalog, EdgeBand, Material, Panel, SettingsOverride } from './types'
 
@@ -89,6 +91,38 @@ export type Installation = {
   ratePerMetreWidth: number
 }
 
+/**
+ * Раскрой баптаулары — цехтың СТАНОГЫ туралы, жобасы туралы емес.
+ *
+ * Пропил араның қалыңдығына, подрезка парақтың сапасына, іздеу тереңдігі
+ * компьютердің шыдамына байланысты. Үшеуі де бір цехта бір рет қойылады да,
+ * бүкіл жобаға қолданылады.
+ */
+export type CuttingSettings = {
+  /** Пропил (араның жолы), мм. */
+  kerf: number
+  /**
+   * Подрезка, мм. `null` — МАТЕРИАЛДАҒЫ `trimEdge` қалады: жаңа парақ пен
+   * қоймадағы ескі парақтың шеті бірдей емес.
+   */
+  trimEdge: number | null
+  optimization: OptimizationLevel
+}
+
+export function defaultCutting(): CuttingSettings {
+  return { kerf: KERF, trimEdge: null, optimization: 'standard' }
+}
+
+/** Профильден раскройға берілетін баптаулар. */
+export function nestingOptionsOf(shop: ShopProfile): NestingOptions {
+  const cutting = shop.cutting ?? defaultCutting()
+  return {
+    kerf: cutting.kerf,
+    optimization: cutting.optimization,
+    ...(cutting.trimEdge === null ? {} : { trimEdge: cutting.trimEdge }),
+  }
+}
+
 export function defaultServices(): Services {
   return {
     // Әдепкі негіздер — ең жиі кездесетіні; бағалары ӘРҚАШАН 0.
@@ -101,7 +135,7 @@ export function defaultServices(): Services {
 }
 
 export type ShopProfile = {
-  schemaVersion: 4
+  schemaVersion: 5
   id: string
   /** КП-да тұратын атау */
   name: string
@@ -129,6 +163,8 @@ export type ShopProfile = {
   labour: LabourRates
   /** Цехтың қызметтері. Әрқайсысының өз өлшем бірлігі бар. */
   services: Services
+  /** Раскройдың станоктық баптаулары. */
+  cutting: CuttingSettings
   installation: Installation
   /**
    * Цехтың өз коэффициенті: материал + қызмет + фурнитура сомасы осыған
@@ -257,7 +293,7 @@ export function defaultHardware(): HardwareItem[] {
  */
 export function defaultShopProfile(id = 'shop-1'): ShopProfile {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     id,
     name: '',
     city: '',
@@ -270,6 +306,7 @@ export function defaultShopProfile(id = 'shop-1'): ShopProfile {
     handles: defaultHandles(),
     labour: { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 },
     services: defaultServices(),
+    cutting: defaultCutting(),
     installation: { ratePerMetreWidth: 0 },
     coefficient: 1,
     markupPercent: 0,
@@ -423,8 +460,14 @@ const LabourRatesSchema = z.object({
   perEdgeMetre: minorUnits,
 })
 
+const CuttingSettingsSchema = z.object({
+  kerf: z.number().int().nonnegative().max(20),
+  trimEdge: z.number().int().nonnegative().max(200).nullable(),
+  optimization: z.enum(['fast', 'standard', 'deep']),
+})
+
 export const ShopProfileSchema = z.object({
-  schemaVersion: z.literal(4),
+  schemaVersion: z.literal(5),
   id: z.string().min(1),
   name: z.string(),
   city: z.string(),
@@ -442,6 +485,7 @@ export const ShopProfileSchema = z.object({
     packing: ServiceRateSchema,
     assembly: ServiceRateSchema,
   }),
+  cutting: CuttingSettingsSchema,
   installation: z.object({ ratePerMetreWidth: z.number().min(0) }),
   coefficient: z.number().positive(),
   labour: LabourRatesSchema,
@@ -503,6 +547,14 @@ export function parseShopProfile(raw: unknown): ShopProfile {
       installation: { ratePerMetreWidth: 0 },
       coefficient: 1,
     }
+  }
+
+  // v4 → v5: раскрой баптаулары. Ескі профильде олар жоқ, ал бұрынғы мінез —
+  // дәл осы әдепкі сандар (пропил 4, материалдағы подрезка), сондықтан цехтың
+  // ескі жобасы жаңа нұсқада басқаша кесілмейді.
+  const v4 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
+  if (v4 === 4) {
+    migrated = { ...(migrated as ShopProfile), schemaVersion: 5, cutting: defaultCutting() }
   }
 
   return ShopProfileSchema.parse(migrated) as ShopProfile

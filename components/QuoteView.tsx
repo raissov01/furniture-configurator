@@ -12,7 +12,9 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
-import { SERVICE_IDS, SERVICE_NAMES, formatTenge, nestPanels, priceProject } from '@/src/core/index'
+import {
+  SERVICE_IDS, SERVICE_NAMES, formatTenge, nestPanels, nestingOptionsOf, priceProject,
+} from '@/src/core/index'
 import type { HardwarePlacement, NestedSheet, Panel, PriceLine } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
@@ -63,11 +65,11 @@ export function QuoteView({
 
   const nesting = useMemo(() => {
     try {
-      return nestPanels(panels, catalog)
+      return nestPanels(panels, catalog, nestingOptionsOf(shop))
     } catch {
       return null
     }
-  }, [panels, catalog])
+  }, [panels, catalog, shop])
 
   const price = useMemo(
     () => (nesting ? priceProject(panels, nesting, shop, hardware, moduleWidths) : null),

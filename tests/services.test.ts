@@ -10,11 +10,13 @@ import { describe, expect, it } from 'vitest'
 import {
   SERVICE_IDS,
   catalogOf,
+  defaultCutting,
   defaultShopProfile,
   findTemplate,
   generateCabinet,
   generateHardware,
   nestPanels,
+  nestingOptionsOf,
   parseShopProfile,
   priceProject,
   templateToCabinet,
@@ -225,7 +227,7 @@ describe('3-нұсқадан көшу', () => {
     delete (old as Record<string, unknown>)['coefficient']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(4)
+    expect(migrated.schemaVersion).toBe(5)
     // Аудан → распил, тесік → присадка, метр → кромка.
     expect(migrated.services.cutting).toEqual({ basis: 'squareMetre', rate: 150000 })
     expect(migrated.services.drilling).toEqual({ basis: 'hole', rate: 3000 })
@@ -234,5 +236,35 @@ describe('3-нұсқадан көшу', () => {
     expect(migrated.services.packing.rate).toBe(0)
     expect(migrated.coefficient).toBe(1)
     expect(migrated.installation.ratePerMetreWidth).toBe(0)
+  })
+})
+
+/**
+ * Раскрой баптаулары. Ең маңыздысы — ЕСКІ профиль жаңа нұсқада БАСҚАША
+ * кесілмеуі: v5-тің әдепкі сандары v4-тің мінезімен дәл сол.
+ */
+describe('4-нұсқадан көшу — раскрой баптаулары', () => {
+  it('ескі профильге әдепкі баптаулар қосылады, қалғаны тимейді', () => {
+    const old = { ...base, schemaVersion: 4 }
+    delete (old as Record<string, unknown>)['cutting']
+
+    const migrated = parseShopProfile(old)
+    expect(migrated.schemaVersion).toBe(5)
+    expect(migrated.cutting).toEqual({ kerf: 4, trimEdge: null, optimization: 'standard' })
+    expect(migrated.services).toEqual(base.services)
+    expect(migrated.materials).toEqual(base.materials)
+  })
+
+  it('баптаулар раскройға сол күйінде беріледі', () => {
+    const shop = {
+      ...defaultShopProfile(),
+      cutting: { kerf: 3, trimEdge: 15, optimization: 'deep' as const },
+    }
+    expect(nestingOptionsOf(shop)).toEqual({ kerf: 3, trimEdge: 15, optimization: 'deep' })
+  })
+
+  it('подрезка null болса, МАТЕРИАЛДАҒЫ саны қалады', () => {
+    const shop = { ...defaultShopProfile(), cutting: defaultCutting() }
+    expect(nestingOptionsOf(shop)).toEqual({ kerf: 4, optimization: 'standard' })
   })
 })
