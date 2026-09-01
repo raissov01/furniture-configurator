@@ -21,8 +21,8 @@ import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './ge
 import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
-  Orientation, Panel, PanelBevel, PanelEdges, PanelRole, Rail, Section, SectionContent,
-  SettingsOverride,
+  FrontGaps, Orientation, Panel, PanelBevel, PanelEdges, PanelRole, Rail, Section,
+  SectionContent, SettingsOverride,
 } from './types'
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
@@ -802,9 +802,22 @@ export function generateCabinet(
     const handle = resolveHandle(catalog, spec?.handle)
     const milling = spec?.milling ?? null
 
+    /*
+     * Ілгектің жағы. `auto` — бұрынғы мінез: бірінші фасад солдан, соңғысы
+     * оңнан ашылады. Цех оны нақты таңдай алады: бір қатардағы барлық есік
+     * бір жаққа ашылатын жиһаз жиі кездеседі (мыс. қабырғаға тірелген шкаф).
+     */
+    const opening = spec?.opening ?? 'auto'
     group.fronts.forEach((front, i) => {
-      const side: 'left' | 'right' = i === last && last > 0 ? 'right' : i % 2 === 0 ? 'left' : 'right'
-      const carcassPanel = i === 0 ? left : i === last ? right : undefined
+      const side: 'left' | 'right' = opening === 'auto'
+        ? (i === last && last > 0 ? 'right' : i % 2 === 0 ? 'left' : 'right')
+        : opening
+      // Планка ілгек ілінетін тік панельге бұрғыланады, сондықтан ол
+      // ілгектің ЖАҒЫМЕН таңдалады — әйтпесе сол жақтан ашылатын фасадтың
+      // планкасы оң жақтағы панельге түсіп кетер еді.
+      const carcassPanel = side === 'left'
+        ? (i === 0 ? left : undefined)
+        : (i === last ? right : undefined)
       hingeHoles(front, carcassPanel, side, ctx, hingeSystem)
       if (handle) handleHoles(front, handle.model, handle.spec, ctx)
       if (milling) {
@@ -896,7 +909,7 @@ type MakePanel = (
 function makeFronts(
   section: Section,
   sectionIndex: number,
-  fronts: { count: number; mount: 'overlay' | 'inset' },
+  fronts: { count: number; mount: 'overlay' | 'inset'; gaps?: FrontGaps | undefined },
   slot: { x: number; width: number },
   spanY: number,
   originY: number,
@@ -909,8 +922,29 @@ function makeFronts(
   if (!Number.isInteger(n) || n < 1 || n > 8) {
     throw new ConfigValidationError(`sections[${sectionIndex}].fronts.count`, `${n}`, '1..8 бүтін сан')
   }
-  const gap = settings.frontGap
-  const usableWidth = slot.width - (n + 1) * gap
+
+  /*
+   * Зазорлар. Берілмеген жағы цехтың бір санынан алынады, сондықтан ескі
+   * жоба дәл бұрынғыдай есептеледі. Тек СЫРТҚЫ зазорлар (сол, оң, үст, аст)
+   * пен ІШКІ зазор (фасадтар арасы) бөлек: ас үй қатарында олар шынымен
+   * әртүрлі болады.
+   */
+  const g = fronts.gaps ?? {}
+  const gapDefault = settings.frontGap
+  const between = g.between ?? gapDefault
+  const gapLeft = g.left ?? gapDefault
+  const gapRight = g.right ?? gapDefault
+  const gapTop = g.top ?? gapDefault
+  const gapBottom = g.bottom ?? gapDefault
+  for (const [name, value] of Object.entries({ between, left: gapLeft, right: gapRight, top: gapTop, bottom: gapBottom })) {
+    if (!Number.isInteger(value) || value < 0 || value > 50) {
+      throw new ConfigValidationError(
+        `sections[${sectionIndex}].fronts.gaps.${name}`, `${value}`, '0..50 мм, бүтін сан',
+      )
+    }
+  }
+
+  const usableWidth = slot.width - gapLeft - gapRight - (n - 1) * between
   // Фасад ені бүтінге ТӨМЕН дөңгеленеді — бір ұядағы фасадтар ӘРҚАШАН бірдей
   // болуы керек, себебі бірдей деталь цехта бір операцияда кесіледі.
   const frontWidth = Math.floor(usableWidth / n)
@@ -921,9 +955,17 @@ function makeFronts(
       `фасад ені ≥ ${MIN_FRONT_WIDTH} мм`,
     )
   }
-  // Қалған миллиметрлер СЫРТҚЫ саңылаулардан бастап бір-бірлеп таратылады.
-  const gaps = distributeMillimetres(slot.width - n * frontWidth, n + 1, gapFillOrder(n + 1))
-  const frontHeight = spanY - 2 * gap
+  /*
+   * Қалған миллиметрлер СЫРТҚЫ саңылаулардан бастап бір-бірлеп таратылады
+   * (§4.7). Зазорлар әртүрлі болғанда да ереже сол: фасадтар БІРДЕЙ қалады,
+   * ал айырма саңылауға сіңеді. Таратылатыны — берілген зазорлардан АРТЫҚ
+   * қалған бөлігі ғана.
+   */
+  const base = [gapLeft, ...Array.from({ length: n - 1 }, () => between), gapRight]
+  const leftover = slot.width - n * frontWidth - base.reduce((sum, v) => sum + v, 0)
+  const extra = distributeMillimetres(leftover, n + 1, gapFillOrder(n + 1))
+  const gaps = base.map((v, i) => v + (extra[i] ?? 0))
+  const frontHeight = spanY - gapTop - gapBottom
   const note = fronts.mount === 'inset' ? 'Фасад вкладной' : 'Фасад накладной'
 
   const out: Panel[] = []
@@ -933,7 +975,7 @@ function makeFronts(
     out.push(
       make(
         `${section.id}-front-${i + 1}`, 'front', 'Фасад', material,
-        frontHeight, frontWidth, { x, y: originY + gap, z }, ORIENT_FACING, note,
+        frontHeight, frontWidth, { x, y: originY + gapBottom, z }, ORIENT_FACING, note,
       ),
     )
     x += frontWidth

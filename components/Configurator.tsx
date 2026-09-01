@@ -9,8 +9,8 @@ import { t as tr } from '@/lib/i18n'
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import {
-  APPLIANCES, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS, defaultHandleSpec,
-  defaultMillingSpec, findTemplate, handlePositionName, millingPattern,
+  APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
+  defaultHandleSpec, defaultMillingSpec, findTemplate, handlePositionName, millingPattern,
 } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type {
@@ -272,8 +272,46 @@ function FrontFittings({
     reader.readAsText(file)
   }
 
+  const gaps = fronts.gaps ?? {}
+  const setGap = (key: keyof NonNullable<SectionFronts['gaps']>, value: number) =>
+    onChange({ gaps: { ...gaps, [key]: value } }, `section.frontGap.${key}`)
+  const shopGap = shop.settings.frontGap ?? DEFAULT_SETTINGS.frontGap
+
   return (
     <div className="mt-2 flex flex-col gap-2 border-t border-neutral-200 pt-2 dark:border-neutral-800">
+      <Field label={tr('Открывание')} hint={tr('сторона петель')}>
+        <Select
+          value={fronts.opening ?? 'auto'}
+          onChange={(opening) => onChange({ opening }, 'section.opening')}
+          options={[
+            { value: 'auto' as const, label: tr('Автоматически') },
+            { value: 'left' as const, label: tr('Все влево') },
+            { value: 'right' as const, label: tr('Все вправо') },
+          ]}
+        />
+      </Field>
+
+      {/* Зазорлар: бос өріс = цехтың әдепкісі. Ас үй қатарында олар шынымен
+          әртүрлі болады, сондықтан әр жағы бөлек. */}
+      <div className="grid grid-cols-3 gap-2">
+        {([
+          ['between', 'Между'],
+          ['left', 'Слева'],
+          ['right', 'Справа'],
+          ['top', 'Сверху'],
+          ['bottom', 'Снизу'],
+        ] as const).map(([key, label]) => (
+          <Field key={key} label={tr(label)} hint={gaps[key] === undefined ? `${shopGap}` : undefined}>
+            <NumberInput
+              value={gaps[key] ?? shopGap}
+              min={0}
+              max={50}
+              onChange={(v) => setGap(key, v)}
+            />
+          </Field>
+        ))}
+      </div>
+
       <Field label={tr('Фрезеровка')}>
         <Select
           value={milling?.patternId ?? 'plain'}

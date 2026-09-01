@@ -76,6 +76,14 @@ const FrontsSchema = z.object({
   hingeSystemId: z.string().min(1).optional(),
   handle: HandleSpecSchema.nullable().optional(),
   milling: MillingSpecSchema.nullable().optional(),
+  opening: z.enum(['auto', 'left', 'right']).optional(),
+  gaps: z.object({
+    between: z.number().int().min(0).max(50).optional(),
+    left: z.number().int().min(0).max(50).optional(),
+    right: z.number().int().min(0).max(50).optional(),
+    top: z.number().int().min(0).max(50).optional(),
+    bottom: z.number().int().min(0).max(50).optional(),
+  }).optional(),
 }).nullable()
 
 const RailSchema = z.object({
