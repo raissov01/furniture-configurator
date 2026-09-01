@@ -23,6 +23,7 @@ import {
   mergeProjectPanels,
   nestPanels,
   nestingOptionsOf,
+  partLabels,
   unplacedAdvice,
 } from '@/src/core/index'
 import type {
@@ -174,6 +175,58 @@ export function CutPage() {
               })}
             >
               {busy === 'dxf' ? '…' : 'DXF'}
+            </Button>
+            <Button
+              disabled={busy !== null || !nesting}
+              title={tr('Бирки на детали: позиция, размер реза, кромка по кромкам')}
+              onClick={() => void run('labels', async () => {
+                const { labelsPdf } = await import('@/src/core/export/labels')
+                const bytes = await labelsPdf({
+                  labels: partLabels(panels, catalog, nesting!),
+                  projectName,
+                  fonts: await loadFonts(),
+                })
+                download(`${projectName}-бирки.pdf`, bytes, 'application/pdf')
+              })}
+            >
+              {busy === 'labels' ? '…' : tr('Бирки')}
+            </Button>
+            <Button
+              disabled={busy !== null || !nesting}
+              title={tr('Всё для цеха одним архивом: карта, DXF листов, DXF деталей с присадкой, деталировка и бирки')}
+              onClick={() => void run('bundle', async () => {
+                const [
+                  { nestingToDxfFiles, cabinetToDxfFiles }, { cutListToCsv },
+                  { labelsPdf, labelsToCsv }, { nestingPdf }, { zipSync, strToU8 },
+                ] = await Promise.all([
+                  import('@/src/core/export/dxf'),
+                  import('@/src/core/export/csv'),
+                  import('@/src/core/export/labels'),
+                  import('@/src/core/export/nestingPdf'),
+                  import('fflate'),
+                ])
+                const fonts = await loadFonts()
+                const labels = partLabels(panels, catalog, nesting!)
+                const entries: Record<string, Uint8Array> = {}
+                // Бума ІШІНДЕ бума: цехта раскрой мен присадка әр басқа адамға кетеді.
+                for (const [name, content] of nestingToDxfFiles(nesting!)) {
+                  entries[`raskroy/${name}`] = strToU8(content)
+                }
+                for (const [name, content] of cabinetToDxfFiles(panels)) {
+                  entries[`detali/${name}`] = strToU8(content)
+                }
+                entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(panels, catalog)}`)
+                entries['birki.csv'] = strToU8(`\ufeff${labelsToCsv(labels)}`)
+                entries['karta-raskroya.pdf'] = await nestingPdf({ nesting: nesting!, projectName, fonts })
+                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts })
+                download(
+                  `${projectName}-цех.zip`,
+                  zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
+                  'application/zip',
+                )
+              })}
+            >
+              {busy === 'bundle' ? '…' : tr('Пакет для цеха')}
             </Button>
           </div>
         </div>
