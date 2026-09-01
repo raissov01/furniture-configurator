@@ -1,11 +1,19 @@
 'use client'
 
 /**
- * Чат-бот: техзадание жазасың — бірнеше конструкция варианты шығады,
+ * Техзадание: тапсырманы сөзбен жазасың — бірнеше конструкция варианты шығады,
  * таңдағаның бірден конфигуратордың ішіне түседі (B фаза).
  *
- * Мұнда геометрия ЕСЕПТЕЛМЕЙДІ. Сервер дайын `CabinetConfig` қайтарады,
- * оны 3D те, деталировка да, карточкадағы сурет те бірдей оқиды.
+ * ЕКІ ЖОЛ БАР, әрі әдепкісі — БІРІНШІСІ:
+ *
+ *   «Без интернета» — `ruleVariants()`: кілт сөздер + шаблондар кітапханасы.
+ *     Кілт те, ақша да, желі де керек емес; нәтиже ӘРҚАШАН жиналады, себебі
+ *     варианттар нағыз шаблоннан шығып, ядромен тексеріледі.
+ *   «ИИ» — `/api/variants`: модель сөзді еркін түсінеді, бірақ кілт керек
+ *     әрі кейде жиналмайтын нұсқа ұсынады (ол тізімнен шығарылады).
+ *
+ * Екеуінде де геометрияны ЯДРО есептейді: модель де, ереже де тек «қандай
+ * шкаф» дегенді айтады, ал «қалай кесіледі» дегенді `generateCabinet` шешеді.
  */
 
 import { t as tr } from '@/lib/i18n'
@@ -15,8 +23,12 @@ import { CabinetThumb } from '@/components/CabinetThumb'
 import { Button, Field, NumberInput } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import { cn } from '@/lib/cn'
-import type { CabinetBrief, CabinetConfig } from '@/src/core/index'
+import {
+  TEMPLATE_CATEGORIES, generateCabinet, parseBriefRequest, ruleVariants,
+} from '@/src/core/index'
+import type { CabinetBrief, CabinetConfig, TemplateCategory } from '@/src/core/index'
 
+type Mode = 'rules' | 'ai'
 type Variant = { brief: CabinetBrief; cabinet: CabinetConfig; panelCount: number }
 type Dropped = { name: string; reason: string }
 
@@ -55,8 +67,10 @@ export function AiPanel() {
   const materials = useConfigurator((s) => s.shop.materials)
   const carcassMaterials = materials.filter((m) => m.thickness >= 10)
 
+  const [mode, setMode] = useState<Mode>('rules')
   const [prompt, setPrompt] = useState('')
   const [kind, setKind] = useState<string | null>(null)
+  const [category, setCategory] = useState<TemplateCategory | null>(null)
   const [size, setSize] = useState({ height: UNSET, width: UNSET, depth: UNSET })
   const [materialId, setMaterialId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -66,8 +80,41 @@ export function AiPanel() {
 
   if (!open) return null
 
+  /** Ережемен: бәрі БРАУЗЕРДЕ, серверге де, кілтке де бармайды. */
+  const submitRules = () => {
+    setError(null)
+    setDropped([])
+    const parsed = parseBriefRequest(prompt)
+    const request = {
+      ...parsed,
+      ...(category ? { kind: category } : {}),
+      ...(size.height > UNSET ? { height: size.height } : {}),
+      ...(size.width > UNSET ? { width: size.width } : {}),
+      ...(size.depth > UNSET ? { depth: size.depth } : {}),
+    }
+    const found = ruleVariants(request, catalog).map((v) => {
+      const cabinet = materialId
+        ? { ...v.cabinet, carcassMaterialId: materialId, frontMaterialId: materialId }
+        : v.cabinet
+      return {
+        brief: { name: v.name, rationale: v.rationale } as CabinetBrief,
+        cabinet,
+        panelCount: generateCabinet(cabinet, catalog).length,
+      }
+    })
+    setVariants(found)
+    if (found.length === 0) {
+      setError('По такому запросу шаблон не нашёлся. Уточните тип мебели или размеры.')
+    }
+  }
+
   const submit = async () => {
-    if ((!prompt.trim() && !kind) || busy) return
+    if (busy) return
+    if (mode === 'rules') {
+      submitRules()
+      return
+    }
+    if (!prompt.trim() && !kind) return
     setBusy(true)
     setError(null)
     setDropped([])
@@ -114,6 +161,14 @@ export function AiPanel() {
       >
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-sm font-semibold">{tr('Техзадание')}</h2>
+          <Button active={mode === 'rules'} onClick={() => setMode('rules')}
+            title={tr('Подбор по библиотеке шаблонов: без интернета и без ключа')}>
+            {tr('Без интернета')}
+          </Button>
+          <Button active={mode === 'ai'} onClick={() => setMode('ai')}
+            title={tr('Свободный текст понимает лучше, но нужен ключ и сеть')}>
+            {tr('ИИ')}
+          </Button>
           <span className="text-[11px] text-neutral-400">{tr('опишите задачу словами — предложу варианты')}</span>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
@@ -126,21 +181,39 @@ export function AiPanel() {
               Что делаем
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {KINDS.map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setKind(kind === k ? null : k)}
-                  className={cn(
-                    'rounded-full border px-3 py-1 text-xs transition',
-                    kind === k
-                      ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
-                      : 'border-neutral-300 text-neutral-600 hover:border-neutral-500 dark:border-neutral-700 dark:text-neutral-400',
-                  )}
-                >
-                  {k}
-                </button>
-              ))}
+              {/* Ереже жолында түрлер кітапхананың ӨЗ санаттары: ойдан
+                  шыққан түрді ұсынып, соңынан «таппадым» деп қалмаймыз. */}
+              {mode === 'rules'
+                ? TEMPLATE_CATEGORIES.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setCategory(category === c.value ? null : c.value)}
+                    className={cn(
+                      'rounded-full border px-3 py-1 text-xs transition',
+                      category === c.value
+                        ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+                        : 'border-neutral-300 text-neutral-600 hover:border-neutral-500 dark:border-neutral-700 dark:text-neutral-400',
+                    )}
+                  >
+                    {c.label}
+                  </button>
+                ))
+                : KINDS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setKind(kind === k ? null : k)}
+                    className={cn(
+                      'rounded-full border px-3 py-1 text-xs transition',
+                      kind === k
+                        ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+                        : 'border-neutral-300 text-neutral-600 hover:border-neutral-500 dark:border-neutral-700 dark:text-neutral-400',
+                    )}
+                  >
+                    {k}
+                  </button>
+                ))}
             </div>
           </div>
 
@@ -182,7 +255,11 @@ export function AiPanel() {
         />
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Button onClick={() => void submit()} disabled={busy || (!prompt.trim() && !kind)} active>
+          <Button
+            onClick={() => void submit()}
+            disabled={busy || (mode === 'ai' && !prompt.trim() && !kind)}
+            active
+          >
             {busy ? 'Считаю…' : 'Предложить варианты'}
           </Button>
           <span className="text-[11px] text-neutral-400">Ctrl+Enter</span>

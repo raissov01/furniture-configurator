@@ -88,7 +88,10 @@ export function Workspace() {
   useEffect(() => {
     hydrateShop()
     hydrateProject()
-  }, [hydrateShop, hydrateProject])
+    // Бірінші рет ашылған браузерде бірден шкаф тұрмауы керек: алдымен
+    // ЖИҺАЗДЫҢ ТҮРІН таңдау. Әйтпесе құрал «шкаф жасайтын» болып көрінеді.
+    if (useConfigurator.getState().firstRun) setGalleryOpen(true)
+  }, [hydrateShop, hydrateProject, setGalleryOpen])
 
   // Автосақтау: бетті жаңартқанда жұмыс жоғалмауы керек. Кідіріс — өріске
   // сан теріп жатқанда әр таңбаға жазбау үшін.

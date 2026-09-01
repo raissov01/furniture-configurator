@@ -63,6 +63,14 @@ type State = Snapshot & {
   drillOpen: boolean
   /** Ерікті детальдар терезесі ашық па. */
   partsOpen: boolean
+  /**
+   * Бұл браузерде сақталған жоба ЖОҚ па. `hydrateProject()` шешеді.
+   *
+   * Керегі: конфигуратор алғаш ашылғанда бірден шкаф болып тұрмауы керек —
+   * әйтпесе бүкіл құрал «шкаф жасайтын» болып көрінеді. Бос болса, алдымен
+   * ЖИҺАЗДЫҢ ТҮРІН таңдау экраны ашылады.
+   */
+  firstRun: boolean
   /** Соңғы жүктелген шаблон. Габарит аралығын UI осыдан алады. */
   templateId: string
   /** Жоспарда таңдалған қабырға — жаңа шкаф соған қойылады. */
@@ -108,6 +116,7 @@ type State = Snapshot & {
   setSketchOpen(v: boolean): void
   setDrillOpen(v: boolean): void
   setPartsOpen(v: boolean): void
+  setFirstRun(v: boolean): void
   setAccountOpen(v: boolean): void
 
   editRoom(patch: Partial<Room>): void
@@ -156,6 +165,7 @@ export const useConfigurator = create<State>((set, get) => ({
   sketchOpen: false,
   drillOpen: false,
   partsOpen: false,
+  firstRun: true,
   accountOpen: false,
   templateId: defaultTemplateId,
   selectedWall: 'south',
@@ -348,6 +358,8 @@ export const useConfigurator = create<State>((set, get) => ({
         cabinets: file.cabinets,
         placements: file.placements,
         activeId: file.cabinets[0]!.id,
+        // Жұмыс табылды — бастау экранын көрсетудің қажеті жоқ.
+        firstRun: false,
       })
     } catch {
       // Ескі не бүлінген жазба: үнсіз ЖОЙМАЙМЫЗ, әдепкі жобамен ашылады.
@@ -413,6 +425,7 @@ export const useConfigurator = create<State>((set, get) => ({
   setSketchOpen: (sketchOpen) => set({ sketchOpen }),
   setDrillOpen: (drillOpen) => set({ drillOpen }),
   setPartsOpen: (partsOpen) => set({ partsOpen }),
+  setFirstRun: (firstRun) => set({ firstRun }),
   setAccountOpen: (accountOpen) => set({ accountOpen }),
 
   editRoom(patch) {

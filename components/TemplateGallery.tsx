@@ -32,12 +32,26 @@ const thumbScale = (heightMm: number) =>
 
 export function TemplateGallery() {
   const open = useConfigurator((s) => s.galleryOpen)
-  const setOpen = useConfigurator((s) => s.setGalleryOpen)
+  const setOpenRaw = useConfigurator((s) => s.setGalleryOpen)
+  const firstRun = useConfigurator((s) => s.firstRun)
+  const setFirstRun = useConfigurator((s) => s.setFirstRun)
+  // Галерея бір рет жабылса, бастау режимі де бітеді: пайдаланушы таңдауын
+  // жасады (не «кейін» деді), енді оны әр ашқанда қайталамаймыз.
+  const setOpen = (v: boolean) => {
+    if (!v) setFirstRun(false)
+    setOpenRaw(v)
+  }
   const loadTemplate = useConfigurator((s) => s.loadTemplate)
   const loadSet = useConfigurator((s) => s.loadSet)
   const activeId = useConfigurator((s) => s.templateId)
   const [filter, setFilter] = useState<Filter>('all')
   const catalog = useConfigurator((s) => s.catalog)
+
+  const counts = useMemo(() => {
+    const map = new Map<TemplateCategory, number>()
+    for (const t of SEED_TEMPLATES) map.set(t.category, (map.get(t.category) ?? 0) + 1)
+    return map
+  }, [])
 
   const shown = useMemo(
     () => (filter === 'all' || filter === 'sets'
@@ -58,7 +72,9 @@ export function TemplateGallery() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h2 className="mr-2 text-sm font-semibold">{tr('Готовые шаблоны')}</h2>
+          <h2 className="mr-2 text-sm font-semibold">
+            {firstRun ? tr('С чего начнём?') : tr('Готовые шаблоны')}
+          </h2>
           <Button active={filter === 'all'} onClick={() => setFilter('all')}>{tr('Все')}</Button>
           {TEMPLATE_CATEGORIES.map((c) => (
             <Button key={c.value} active={filter === c.value} onClick={() => setFilter(c.value)}>
@@ -71,6 +87,29 @@ export function TemplateGallery() {
           </div>
         </div>
 
+        {firstRun ? (
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {TEMPLATE_CATEGORIES.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setFilter(c.value)}
+                className={cn(
+                  'rounded-lg border px-3 py-2 text-left transition hover:border-neutral-500',
+                  filter === c.value
+                    ? 'border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800'
+                    : 'border-neutral-200 dark:border-neutral-700',
+                )}
+              >
+                <div className="text-xs font-medium">{c.label}</div>
+                <div className="tabular-nums text-[11px] text-neutral-500">
+                  {counts.get(c.value) ?? 0} {tr('шаблонов')}
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         {filter === 'sets' ? (
           <div className="grid gap-3 sm:grid-cols-2">
             {SEED_SETS.map((preset) => {
@@ -79,7 +118,7 @@ export function TemplateGallery() {
                 <button
                   key={preset.id}
                   type="button"
-                  onClick={() => loadSet(preset.id)}
+                  onClick={() => { setFirstRun(false); loadSet(preset.id) }}
                   className="flex flex-col items-start gap-2 rounded-lg border border-neutral-200 p-3 text-left transition hover:border-neutral-500 hover:shadow-sm dark:border-neutral-700"
                 >
                   <div className="flex flex-wrap items-end gap-2">
@@ -107,7 +146,7 @@ export function TemplateGallery() {
             <button
               key={t.id}
               type="button"
-              onClick={() => loadTemplate(t.id)}
+              onClick={() => { setFirstRun(false); loadTemplate(t.id) }}
               className={cn(
                 'flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition',
                 'hover:border-neutral-500 hover:shadow-sm',
