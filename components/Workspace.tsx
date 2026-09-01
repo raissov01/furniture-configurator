@@ -166,6 +166,14 @@ export function Workspace() {
           <Button onClick={() => setRoomOpen(true)} title={tr('План комнаты и стены')}>{tr('Стены')}</Button>
           <Button onClick={() => setShopOpen(true)} title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
           <Button onClick={() => setQuoteOpen(true)} title={tr('Раскрой и стоимость по всему проекту')}>{tr('Смета')}</Button>
+          {/* Раскрой — БӨЛЕК бет: цехтың станок жанындағы адамы оны басып шығарады. */}
+          <Link
+            href="/cut"
+            title={tr('Отдельный экран раскроя: КИМ, резы, бирки')}
+            className="rounded-md border border-neutral-300 px-2 py-1 text-xs transition hover:border-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-300"
+          >
+            {tr('Раскрой')}
+          </Link>
           <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
           <Button onClick={reset}>{tr('Сброс')}</Button>
