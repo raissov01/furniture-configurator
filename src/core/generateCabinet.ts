@@ -14,14 +14,15 @@ import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
 import { fillingBandHeight } from './filling'
 import { millingPaths, validateMilling } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
-import { calculateCutDimensions, resolveEdges, subtractedThickness } from './edges'
+import { calculateCutDimensions, customPartEdges, resolveEdges, subtractedThickness } from './edges'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
-  Orientation, Panel, PanelBevel, PanelRole, Rail, Section, SectionContent, SettingsOverride,
+  Orientation, Panel, PanelBevel, PanelEdges, PanelRole, Rail, Section, SectionContent,
+  SettingsOverride,
 } from './types'
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
@@ -261,8 +262,9 @@ export function generateCabinet(
     position: { x: number; y: number; z: number },
     orientation: Orientation,
     note = '',
+    edgesOverride?: PanelEdges,
   ): Panel => {
-    const edges = resolveEdges(role, config.construction, config.edging)
+    const edges = edgesOverride ?? resolveEdges(role, config.construction, config.edging)
     const { cutLength, cutWidth } = calculateCutDimensions(
       finishedLength, finishedWidth, edges, bands, settings,
     )
@@ -812,6 +814,36 @@ export function generateCabinet(
     })
   }
 
+  // ── Ерікті детальдар («Деталь») ────────────────────────────────────────────
+  // Параметрлі модель жетпей қалғанда цех детальді ӨЗІ қояды. Ол мұнда,
+  // корпустың панельдері дайын болғаннан кейін қосылады — сондықтан
+  // деталировка да, раскрой да, смета да оны қалғанымен БІРДЕЙ көреді.
+  const usedIds = new Set(panels.map((p) => p.id))
+  ;(config.customParts ?? []).forEach((part, i) => {
+    const field = `customParts[${i}]`
+    if (usedIds.has(part.id)) {
+      throw new ConfigValidationError(`${field}.id`, `id қайталанды: "${part.id}"`, 'бірегей id')
+    }
+    usedIds.add(part.id)
+
+    validateCustomDimension(part.length, `${field}.length`)
+    validateCustomDimension(part.width, `${field}.width`)
+
+    const material = part.materialId
+      ? requireMaterial(materials, part.materialId, `${field}.materialId`)
+      : carcass
+
+    const orientation = part.plane === 'horizontal'
+      ? ORIENT_HORIZONTAL
+      : part.plane === 'vertical' ? ORIENT_SIDE : ORIENT_FACING
+
+    panels.push(make(
+      part.id, 'custom', part.label, material,
+      part.length, part.width, part.position, orientation, part.note ?? '',
+      customPartEdges(part.edging, config.edging),
+    ))
+  })
+
   // Қолмен түзетілген присадка — ЕҢ СОҢЫНДА. Осылай 3D те, DXF те, смета да
   // бірдей тесіктерді көреді: панель — жалғыз ақиқат көзі (§3).
   applyDrillEdits(panels, config.drillEdits)
@@ -915,6 +947,21 @@ function requireMaterial(map: Map<string, Material>, id: string, field: string):
     throw new ConfigValidationError(field, `материал табылмады: "${id}"`, [...map.keys()].join(' | '))
   }
   return m
+}
+
+/**
+ * Ерікті детальдің өлшемі. Шегі корпустікінен КЕҢ: царга 80 мм, қатырғыш
+ * одан да тар болуы мүмкін, ал ондай деталь нақты жиһазда бар. Төменгі шек —
+ * планканікімен бір (`MIN_RAIL_WIDTH`): одан тар жолақты кесу де, кромкалау
+ * да мағынасыз.
+ */
+function validateCustomDimension(value: number, field: string): void {
+  if (!Number.isInteger(value)) {
+    throw new ConfigValidationError(field, `${value} — бүтін сан емес`, 'мм, бүтін сан')
+  }
+  if (value < MIN_RAIL_WIDTH || value > MAX_DIMENSION) {
+    throw new ConfigValidationError(field, `${value} мм`, `${MIN_RAIL_WIDTH}..${MAX_DIMENSION} мм`)
+  }
 }
 
 function validateDimension(value: number, field: string): void {

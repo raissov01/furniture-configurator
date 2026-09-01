@@ -61,6 +61,8 @@ type State = Snapshot & {
   accountOpen: boolean
   /** Присадка редакторы ашық па. */
   drillOpen: boolean
+  /** Ерікті детальдар терезесі ашық па. */
+  partsOpen: boolean
   /** Соңғы жүктелген шаблон. Габарит аралығын UI осыдан алады. */
   templateId: string
   /** Жоспарда таңдалған қабырға — жаңа шкаф соған қойылады. */
@@ -105,6 +107,7 @@ type State = Snapshot & {
   setQuoteOpen(v: boolean): void
   setSketchOpen(v: boolean): void
   setDrillOpen(v: boolean): void
+  setPartsOpen(v: boolean): void
   setAccountOpen(v: boolean): void
 
   editRoom(patch: Partial<Room>): void
@@ -152,6 +155,7 @@ export const useConfigurator = create<State>((set, get) => ({
   quoteOpen: false,
   sketchOpen: false,
   drillOpen: false,
+  partsOpen: false,
   accountOpen: false,
   templateId: defaultTemplateId,
   selectedWall: 'south',
@@ -408,6 +412,7 @@ export const useConfigurator = create<State>((set, get) => ({
   setQuoteOpen: (quoteOpen) => set({ quoteOpen }),
   setSketchOpen: (sketchOpen) => set({ sketchOpen }),
   setDrillOpen: (drillOpen) => set({ drillOpen }),
+  setPartsOpen: (partsOpen) => set({ partsOpen }),
   setAccountOpen: (accountOpen) => set({ accountOpen }),
 
   editRoom(patch) {

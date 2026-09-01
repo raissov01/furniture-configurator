@@ -95,6 +95,32 @@ export function subtractedThickness(
   return band.thickness >= settings.minBandSubtract ? band.thickness : 0
 }
 
+/**
+ * Ерікті детальдің кромкасы. Мұнда рөл бойынша БОЛЖАМАЙМЫЗ: детальді цех
+ * өзі қойған, қай жиегі көрінетінін де сол біледі. Сондықтан таңдау үш-ақ
+ * түрлі, әрі әрқайсысы корпустың бар ережесімен сәйкес:
+ *   none  — торцы көрінбейді (ішкі қатырғыш)
+ *   front — бір алдыңғы жиек, сөренің ережесі (§4.6)
+ *   all   — төрт жиегі де, фасадтың ережесі (§4.7)
+ */
+export function customPartEdges(
+  edging: 'none' | 'front' | 'all',
+  policy: EdgePolicy,
+): PanelEdges {
+  const pick = (c: EdgeClass): EdgeSpec => {
+    const bandId = policy[c]
+    return bandId ? { bandId } : null
+  }
+  switch (edging) {
+    case 'all':
+      return { L1: pick('visibleFront'), L2: pick('visibleFront'), W1: pick('visibleFront'), W2: pick('visibleFront') }
+    case 'front':
+      return { L1: pick('visibleFront'), L2: pick('hidden'), W1: pick('hidden'), W2: pick('hidden') }
+    case 'none':
+      return { L1: null, L2: null, W1: null, W2: null }
+  }
+}
+
 export type CutDimensions = { cutLength: number; cutWidth: number }
 
 /**

@@ -204,6 +204,20 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
    * түзетуін жоғалтады да, корпустың өзі бүтін қалады.
    */
   drillEdits: z.record(z.string().min(1), DrillEditSchema).optional(),
+  /**
+   * Ерікті детальдар. Бұл да ЕРІКТІ өріс — ескі жоба сол күйінде оқылады.
+   */
+  customParts: z.array(z.object({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    materialId: z.string().min(1).optional(),
+    length: mm,
+    width: mm,
+    position: z.object({ x: z.number().int(), y: z.number().int(), z: z.number().int() }),
+    plane: z.enum(['horizontal', 'vertical', 'front']),
+    edging: z.enum(['none', 'front', 'all']),
+    note: z.string().optional(),
+  })).optional(),
 })
 
 export const ProjectFileV2Schema = z.object({
