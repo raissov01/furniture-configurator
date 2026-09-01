@@ -71,13 +71,42 @@ function CameraRig({
 }) {
   const preset = useConfigurator((s) => s.cameraPreset)
   const camera = useThree((s) => s.camera)
+  const size = useThree((s) => s.size)
   const invalidate = useThree((s) => s.invalidate)
   const controls = useRef<Controls>(null)
   const { W, H, D } = box
   const { x: tx, y: ty, z: tz } = target
 
   const fit = useCallback(() => {
-    const [lx, oy, lz] = cameraOffset(preset, W, H, D)
+    const [lx0, oy0, lz0] = cameraOffset(preset, W, H, D)
+
+    /*
+     * Қашықтықты КАДРҒА қарап түзетеміз.
+     *
+     * Пресеттің ығысуы габариттің ең үлкен өлшемінен есептеледі, ал экранға
+     * не сыятынын fov мен канвастың ара қатынасы шешеді. Биік шкаф жалпақ
+     * канваста жоғарыдан да, төменнен де қиылып қалатын. Сондықтан бағыт
+     * пресеттен алынады, ал ҚАШЫҚТЫҚ нысанды толық сыйдыратындай етіп
+     * қайта саналады. «Ішінен» пресеті ӘДЕЙІ ішінде қалады.
+     */
+    const scale = (() => {
+      if (preset === 'inside') return 1
+      const aspect = size.height > 0 ? size.width / size.height : 1.6
+      // Сахнада перспективалық камера ғана бар (Canvas оны `fov`-пен құрады);
+      // ортографиялық болып қалса, кадрлаудың мағынасы жоқ, пресет қалады.
+      if (!('fov' in camera)) return 1
+      const fovV = ((camera as { fov: number }).fov * Math.PI) / 180
+      const fovH = 2 * Math.atan(Math.tan(fovV / 2) * aspect)
+      // Нысанның экрандағы биіктігі мен ені, мм.
+      const needV = (H / 2) / Math.tan(fovV / 2)
+      const needH = (Math.max(W, D) / 2) / Math.tan(fovH / 2)
+      // 1.15 — шеттегі тыныс: өлшем жазуы мен көлеңке қиылмауы үшін.
+      const need = Math.max(needV, needH) * 1.15
+      const preset0 = Math.hypot(lx0, oy0, lz0)
+      return preset0 > 0 ? Math.max(1, need / preset0) : 1
+    })()
+
+    const [lx, oy, lz] = [lx0 * scale, oy0 * scale, lz0 * scale]
     // Ығысу шкафтың ЛОКАЛ өсінде есептеледі де, сол бұрышпен бұрылады:
     // әйтпесе қабырғаға қарай бұрылған шкафқа камера АРТ жағынан қарайды.
     const a = (facingY * Math.PI) / 180
@@ -91,7 +120,7 @@ function CameraRig({
     controls.current?.target.set(tx * MM, ty * MM, tz * MM)
     controls.current?.update()
     invalidate()
-  }, [preset, camera, invalidate, W, H, D, tx, ty, tz, facingY, contentKey])
+  }, [preset, camera, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, contentKey])
 
   useEffect(() => { fit() }, [fit])
 
@@ -255,9 +284,17 @@ export default function Scene({
   return (
     <Canvas
       dpr={[1, 2]}
-      // Әдепкі 200 мс debounce-та Next гидратациясынан кейін алғашқы өлшеу
-      // жоғалып кетеді де, сахна тінтуір қозғалғанша бос тұрады.
-      resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
+      /*
+       * Өлшеу: debounce нөл әрі `offsetSize`.
+       *
+       * R3F контейнердің өлшемін `react-use-measure`-мен өлшейді де, өлшемі
+       * нөл болса тамырды МОНТАЖДАМАЙДЫ. Гидратациядан кейінгі бірінші өлшеу
+       * жайманың алдында жүрсе, `getBoundingClientRect` нөл қайтарады, ал
+       * контейнердің өлшемі одан әрі өзгермейтіндіктен бақылаушы қайта
+       * оянбайды. `offsetSize: true` өлшемді `offsetWidth/offsetHeight`-тен
+       * алады — олар бірінші кадрда-ақ дұрыс.
+       */
+      resize={{ scroll: false, debounce: { scroll: 0, resize: 0 }, offsetSize: true }}
       camera={{ fov: 40, near: 0.01, far: 100, position: [2, 1.4, 2.4] }}
     >
       <color attach="background" args={['#20242c']} />
