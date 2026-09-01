@@ -91,6 +91,8 @@ export function CutPage() {
 
   const [showCuts, setShowCuts] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
+  /** Экспорттың ескертуі (мыс. Базис қазақ әріптерін оқымайды). */
+  const [notice, setNotice] = useState<string | null>(null)
 
   const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
   const panels = useMemo(
@@ -228,11 +230,51 @@ export function CutPage() {
             >
               {busy === 'bundle' ? '…' : tr('Пакет для цеха')}
             </Button>
+            <Button
+              disabled={busy !== null}
+              title={tr('Список деталей и присадки для Базиса: CSV в Windows-1251 плюс DXF деталей')}
+              onClick={() => void run('basis', async () => {
+                const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfFiles }, { zipSync, strToU8 }] =
+                  await Promise.all([
+                    import('@/src/core/export/basis'),
+                    import('@/src/core/export/dxf'),
+                    import('fflate'),
+                  ])
+                const options = { projectName }
+                const entries: Record<string, Uint8Array> = {}
+                for (const [name, bytes] of basisFiles(panels, catalog, options)) entries[name] = bytes
+                for (const [name, content] of cabinetToDxfFiles(panels)) {
+                  entries[`dxf/${name}`] = strToU8(content)
+                }
+                download(
+                  `${projectName}-базис.zip`,
+                  zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
+                  'application/zip',
+                )
+
+                // Базис Windows-1251 оқиды, ал онда қазақ әріптері ЖОҚ.
+                // Үнсіз «?» қылып жіберсек, цех детальді танымай қалады.
+                const names = [projectName, ...panels.map((p) => p.label)].join(' ')
+                const bad = unsupportedInCp1251(names)
+                setNotice(bad.length > 0
+                  ? `${tr('Базис читает Windows-1251, в ней нет казахских букв')}: ${bad.join(' ')} → «?». ${tr('Переименуйте детали латиницей или по-русски.')}`
+                  : null)
+              })}
+            >
+              {busy === 'basis' ? '…' : tr('Базис')}
+            </Button>
           </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-4">
+        {notice ? (
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+            <span className="flex-1">{notice}</span>
+            <button type="button" onClick={() => setNotice(null)} className="text-amber-700 dark:text-amber-300">✕</button>
+          </div>
+        ) : null}
+
         {!mounted ? (
           <p className="text-xs text-neutral-500">{tr('Загрузка проекта…')}</p>
         ) : !nesting || !plan ? (
