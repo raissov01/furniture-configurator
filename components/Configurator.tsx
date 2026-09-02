@@ -784,6 +784,24 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
           />
         </Field>
       </div>
+
+      {cabinet.base?.kind === 'legs' ? (
+        <Field label={tr('Тип ножки')} hint={tr('отдельный артикул в смете')}>
+          <Select
+            value={cabinet.base.legType ?? 'cylinder'}
+            onChange={(legType) => edit('base.legType', {
+              base: { ...cabinet.base!, legType },
+            })}
+            options={[
+              { value: 'cylinder' as const, label: tr('Цилиндр (регулируемая)') },
+              { value: 'cone' as const, label: tr('Конус') },
+              { value: 'square' as const, label: tr('Квадратная') },
+              { value: 'hidden' as const, label: tr('Скрытая (под цоколь)') },
+            ]}
+          />
+        </Field>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Столешница')}>
           <Select

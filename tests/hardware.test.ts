@@ -153,14 +153,17 @@ describe('цоколь, ножки, столешница', () => {
   it('ножки таңдалса — цоколь ДЕТАЛІ болмайды, фурнитура болады', () => {
     const onLegs = { ...full, base: { kind: 'legs' as const, height: 100 } }
     expect(generateCabinet(onLegs, catalog).some((p: Panel) => p.role === 'plinth')).toBe(false)
-    const legs = generateHardware(onLegs, catalog).find((h) => h.kind === 'leg')!
-    expect(legs.qty).toBeGreaterThanOrEqual(4)
+    // ⚠ 2026-09-03-тен бері әр аяқ БӨЛЕК позиция: 3D оны сол координатадан
+    // салады, ал координата присадкамен бір көзден (`legCentres`) алынады.
+    const legs = generateHardware(onLegs, catalog).filter((h) => h.kind === 'leg')
+    expect(legs.length).toBeGreaterThanOrEqual(4)
+    expect(legs.every((l) => l.qty === 1)).toBe(true)
   })
 
   it('кең корпусқа аяқ көбірек керек', () => {
     const wide = { ...full, width: 1800, base: { kind: 'legs' as const, height: 100 } }
     const narrow = { ...full, width: 600, base: { kind: 'legs' as const, height: 100 } }
-    const qty = (c: typeof wide) => generateHardware(c, catalog).find((h) => h.kind === 'leg')!.qty
+    const qty = (c: typeof wide) => generateHardware(c, catalog).filter((h) => h.kind === 'leg').length
     expect(qty(wide)).toBeGreaterThan(qty(narrow))
   })
 

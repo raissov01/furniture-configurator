@@ -227,7 +227,11 @@ const DrillEditSchema = z.object({
 export const CabinetConfigSchema = CabinetBaseSchema.extend({
   sections: z.array(SectionSchema).min(1).max(12),
   sliding: z.object({ count: z.number().int().min(2).max(4) }).optional(),
-  base: z.object({ kind: z.enum(['plinth', 'legs']), height: mm }).optional(),
+  base: z.object({
+    kind: z.enum(['plinth', 'legs']),
+    height: mm,
+    legType: z.enum(['cylinder', 'cone', 'square', 'hidden']).optional(),
+  }).optional(),
   openTop: z.boolean().optional(),
   topRails: z.object({
     width: z.number().int().positive(),

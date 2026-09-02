@@ -199,6 +199,34 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
           )
         }
 
+        /*
+         * Аяқ. Пішіні түріне қарай: цилиндр, конус, шаршы. Жасырын тірек
+         * ҚАСАҚАНА сұр әрі жіңішке — ол цокольдің артында тұрады, клиент
+         * оны көрмеуі керек, бірақ конструктор оның бар екенін көруі керек.
+         */
+        if (h.kind === 'leg' && h.size) {
+          const d = h.size.x
+          const height = h.size.y
+          const y = h.position.y
+          const common = <meshStandardMaterial color={h.legType === 'hidden' ? '#6b7280' : '#8b9199'} roughness={0.4} metalness={0.55} />
+          if (h.legType === 'square') {
+            return (
+              <mesh key={`leg-${i}`} position={[h.position.x, y, h.position.z]}>
+                <boxGeometry args={[d, height, d]} />
+                {common}
+              </mesh>
+            )
+          }
+          // Конуста асты ТАРЫРАҚ: нақты аяқ дәл солай көрінеді.
+          const bottomRadius = h.legType === 'cone' ? d * 0.28 : d / 2
+          return (
+            <mesh key={`leg-${i}`} position={[h.position.x, y, h.position.z]}>
+              <cylinderGeometry args={[d / 2, bottomRadius, height, 20]} />
+              {common}
+            </mesh>
+          )
+        }
+
         // Техника мен механизм — қорап. Техника ҚОЮ әрі мөлдір емес: клиент
         // оны плитадан бірден ажыратуы керек. Механизм жеңіл әрі жартылай
         // мөлдір — ол шкафтың ішін жаппайды.

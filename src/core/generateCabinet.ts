@@ -9,7 +9,7 @@ import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
 import {
   applyMilling, confirmatJoint, drawerBottomJoints, drawerFacadeScrews, handleHoles, hingeHoles,
-  legScrewHoles, minifixJoint, runnerHoles, shelfPinHoles,
+  legPairsFor, legScrewHoles, minifixJoint, runnerHoles, shelfPinHoles,
 } from './drilling'
 import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
 import { fillingBandHeight } from './filling'
@@ -28,6 +28,26 @@ import type {
   FrontGaps, Orientation, Panel, PanelBevel, PanelEdges, PanelMount, PanelRole, Rail,
   Section, SectionContent, SettingsOverride,
 } from './types'
+
+/**
+ * Корпус детальдерінің (бүйір, дно, крыша) ТЕРЕҢДІГІ.
+ *
+ * ⚠ Модульден ТЫС қажет: аяқтың орны да, фурнитураның координатасы да осы
+ * тереңдікте есептеледі. Бұрын оны `hardware.ts` өз бетінше есептейтін де,
+ * накладной арт қабырғада 3 мм-ге алшақтап кететін — 3D-дегі аяқ пен
+ * присадканың арасында дәл сол айырма пайда болатын.
+ */
+export function carcassDepthAt(
+  config: CabinetConfig,
+  settings: { backThickness: number; grooveInset: number },
+  depth: number = config.depth,
+): number {
+  const isGroove = config.back.mode === 'groove'
+  const isInsetBack = config.back.mode === 'inset'
+  return config.back.mode === 'none' || isGroove || isInsetBack
+    ? depth
+    : depth - settings.backThickness
+}
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
 const MIN_DIMENSION = 100
@@ -111,8 +131,7 @@ export function generateCabinet(
    * тұрған. Ол қате еді — арт қабырға болмаса, шегеретін де ештеңе жоқ, ал
    * корпус сұралғаннан 3 мм тайыз болып шығатын.
    */
-  const carcassDepthOf = (d: number): number =>
-    config.back.mode === 'none' || isGroove || isInsetBack ? d : d - settings.backThickness
+  const carcassDepthOf = (d: number): number => carcassDepthAt(config, settings, d)
   const carcassDepth = carcassDepthOf(D)
 
   /** Сөре тереңдігі: арт қабырғаға дейін барады, оның үстіне шықпайды. */
@@ -1063,7 +1082,9 @@ export function generateCabinet(
    * `hardware.ts`-тегі ережемен бір: әр 600 мм-ге бір жұп.
    */
   if (config.base?.kind === 'legs') {
-    legScrewHoles(bottom, Math.max(2, Math.ceil(W / 600)), ctx)
+    // Дно ВКЛАДНОЙ болса, оның нөлі корпустың нөлінен `t` жылжыған — аяқтың
+    // орны сол шегерумен беріледі, әйтпесе саңылаулар қисаяды.
+    legScrewHoles(bottom, legPairsFor(W), ctx, { x: bottom.position.x, z: bottom.position.z })
   }
 
   /*

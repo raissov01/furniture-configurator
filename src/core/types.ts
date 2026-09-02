@@ -530,6 +530,9 @@ export type Section = {
  */
 export type PanelMount = 'inset' | 'overlay' | 'overlayLeft' | 'overlayRight'
 
+/** Реттелетін аяқтың түрі (`CabinetConfig.base.legType`). */
+export type LegType = 'cylinder' | 'cone' | 'square' | 'hidden'
+
 export type CabinetConfig = {
   id: string
   name: string
@@ -595,7 +598,20 @@ export type CabinetConfig = {
    * жиһаздың толық биіктігі = `height + base.height` (+ столешница).
    * `height` бұрынғыдай КОРПУСТЫҢ биіктігі.
    */
-  base?: { kind: 'plinth' | 'legs'; height: number } | undefined
+  base?: {
+    kind: 'plinth' | 'legs'
+    height: number
+    /**
+     * Аяқтың ТҮРІ. Тек көрініс емес: әрқайсысы бөлек артикул, сондықтан
+     * сметада да, фурнитура тізімінде де бөлек жолмен тұрады.
+     *
+     *   cylinder — реттелетін цилиндр (әдепкі, ең жиі)
+     *   cone     — конус, көрінетін аяқ (тумба, комод)
+     *   square   — шаршы профиль
+     *   hidden   — жасырын тірек: цоколь оны жауып тұрады
+     */
+    legType?: LegType | undefined
+  } | undefined
 
   /**
    * Планкалар мен фальш-панельдер.

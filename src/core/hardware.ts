@@ -13,9 +13,10 @@
 import { mergeSettings } from './constants'
 import { findAppliance, findFilling } from './filling'
 import { ConfigValidationError } from './errors'
-import { layoutBands } from './generateCabinet'
+import { carcassDepthAt, layoutBands } from './generateCabinet'
+import { legCentres, legPairsFor } from './drilling'
 import { layoutSections } from './sections'
-import type { CabinetConfig, Catalog, SettingsOverride, Vec3 } from './types'
+import type { CabinetConfig, Catalog, LegType, SettingsOverride, Vec3 } from './types'
 
 export type HardwareKindPlaced =
   | 'rod' | 'rodBracket' | 'slidingTrack' | 'slidingDoorKit' | 'leg'
@@ -40,6 +41,8 @@ export type HardwarePlacement = {
   size?: Vec3 | undefined
   /** 3D реңкі; болмаса қалыпты фурнитура түсі. */
   color?: string | undefined
+  /** Аяққа — оның түрі: 3D пішінді содан алады. */
+  legType?: LegType | undefined
   /**
    * Сметаға түсе ме. Техника — КЛИЕНТТІКІ, сондықтан `false`: ойдан жазылған
    * баға клиентке кеткен КП-ға түсер еді.
@@ -57,6 +60,24 @@ const ROD_DROP_FROM_TOP = 60
 
 /** Штанганың диаметрі, мм — тек 3D үшін. */
 export const ROD_DIAMETER = 25
+
+/**
+ * Аяқтың түрлері: артикулы, атауы, диаметрі.
+ *
+ * Диаметр тек 3D үшін емес — цоколь клипсасы аяқтың диаметріне қарай
+ * таңдалады, сондықтан ол мұнда БІР жерде тұр.
+ */
+export const LEG_SPECS: Record<LegType, {
+  hardwareId: string
+  label: string
+  diameter: number
+}> = {
+  // ⚠ Артикулы ЕСКІ күйінде: бұрыннан сақталған жобаның сметасы өзгермеуі керек.
+  cylinder: { hardwareId: 'leg-100', label: 'Ножка регулируемая', diameter: 50 },
+  cone: { hardwareId: 'leg-cone', label: 'Ножка коническая', diameter: 60 },
+  square: { hardwareId: 'leg-square', label: 'Ножка квадратная', diameter: 50 },
+  hidden: { hardwareId: 'leg-hidden', label: 'Опора скрытая (под цоколь)', diameter: 40 },
+}
 
 export function generateHardware(
   config: CabinetConfig,
@@ -85,18 +106,31 @@ export function generateHardware(
   const baseHeight = config.base ? config.base.height : 0
 
   if (config.base?.kind === 'legs') {
-    // Әр 600 мм-ге бір жұп аяқ: кең корпус ортасынан майысады.
-    const pairs = Math.max(2, Math.ceil(config.width / 600))
-    out.push({
-      kind: 'leg',
-      priced: true,
-      hardwareId: 'leg-100',
-      label: 'Ножка регулируемая',
-      qty: pairs * 2,
-      length: 0,
-      position: { x: config.width / 2, y: baseHeight / 2, z: config.depth / 2 },
-      axis: 'x',
-    })
+    const legType: LegType = config.base.legType ?? 'cylinder'
+    const spec = LEG_SPECS[legType]
+    /*
+     * ⚠ Аяқтың орны ПРИСАДКАМЕН бір көзден алынады (`legCentres`). Бұрын
+     * мұнда бір ғана «шоғырланған» позиция тұратын: 3D-де аяқ мүлде
+     * көрінбейтін де, оның бұрандамен бір жерде екенін ешкім тексере
+     * алмайтын. Енді әр аяқ бөлек тұр — 3D де, жинау нұсқауы да соны оқиды.
+     */
+    // ⚠ Тереңдік — КОРПУСТЫҚІ (`carcassDepthAt`), габарит емес: накладной
+    // арт қабырға дноның артында тұрады, ал аяқ дноға бұралады.
+    const legDepth = carcassDepthAt(config, settings)
+    for (const centre of legCentres(config.width, legDepth, legPairsFor(config.width))) {
+      out.push({
+        kind: 'leg',
+        priced: true,
+        hardwareId: spec.hardwareId,
+        label: spec.label,
+        qty: 1,
+        length: 0,
+        position: { x: centre.x, y: baseHeight / 2, z: centre.z },
+        axis: 'x',
+        size: { x: spec.diameter, y: baseHeight, z: spec.diameter },
+        legType,
+      })
+    }
   }
 
   // Купе: екі рельс (жоғарғы, төменгі) + әр есікке профиль мен ролик жиынтығы.

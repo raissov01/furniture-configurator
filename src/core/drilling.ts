@@ -433,33 +433,72 @@ export function drawerFacadeScrews(wall: Panel, facade: Panel, ctx: Ctx): void {
  * `legPairs` — аяқтардың ЖҰБЫ (алдыңғы-артқы), ені бойынша қанша тұрғаны;
  * ол `hardware.ts`-те есептеледі де, екеуі бір саннан жүреді.
  */
-export function legScrewHoles(bottom: Panel, legPairs: number, ctx: Ctx): void {
+/**
+ * Аяқ жұптарының саны.
+ *
+ * Әр 600 мм-ге бір жұп: одан кең корпустың дносы ортасынан майысады, ал
+ * майысқан дно ящиктің направляющасын қысады. Кемінде екі жұп — төрт аяқ.
+ */
+export function legPairsFor(width: number): number {
+  return Math.max(2, Math.ceil(width / 600))
+}
+
+/**
+ * Аяқтардың ОРТАЛАРЫ, кабинеттің сыртқы габаритінде (X — ені, Z — тереңдігі).
+ *
+ * ⚠ Бұл функция БІРЕУ, әрі әдейі солай: аяқтың бұрандасы (присадка) мен
+ * 3D-дегі аяқтың өзі бір нүктеден алынады. Екі жерде бөлек есептелсе, олар
+ * бір-бірінен жылжып кетер еді де, клиент 3D-де бір жерде тұрған аяқтың
+ * сызбада басқа жерге бұрғыланғанын тек цехта білер еді.
+ */
+export function legCentres(
+  width: number,
+  depth: number,
+  legPairs: number,
+): { x: number; z: number }[] {
+  const first = LEG_CENTRE_FROM_SIDE
+  const last = width - LEG_CENTRE_FROM_SIDE
+  if (last <= first) return []
+  const xs = legPairs <= 1
+    ? [(first + last) / 2]
+    : Array.from({ length: legPairs }, (_, i) => first + ((last - first) * i) / (legPairs - 1))
+
+  const zs = [LEG_CENTRE_FROM_FRONT, depth - LEG_CENTRE_FROM_FRONT]
+  if (zs[1]! <= zs[0]!) return []
+
+  return xs.flatMap((x) => zs.map((z) => ({ x, z })))
+}
+
+/**
+ * Аяқтың бұрандалары.
+ *
+ * `offset` — дноның кабинеттегі орны: дно ВКЛАДНОЙ болса, оның нөлі
+ * корпустың нөлінен `t` мм жылжыған, ал аяқ корпустың сыртқы жиегінен
+ * саналады. Осы шегеру болмаса, вкладной дноның саңылаулары бір қалыңдыққа
+ * қисайып бұрғыланар еді.
+ */
+export function legScrewHoles(
+  bottom: Panel,
+  legPairs: number,
+  ctx: Ctx,
+  offset: { x: number; z: number } = { x: 0, z: 0 },
+): void {
   const length = bottom.finishedLength
   const width = bottom.finishedWidth
   const half = LEG_SCREW_SQUARE / 2
 
-  // Ені бойынша аяқтардың ортасы: шеттегілері жиектен LEG_CENTRE_FROM_SIDE,
-  // қалғандары солардың арасына тең таралады.
-  const first = LEG_CENTRE_FROM_SIDE
-  const last = length - LEG_CENTRE_FROM_SIDE
-  if (last <= first) return
-  const centresX = legPairs <= 1
-    ? [(first + last) / 2]
-    : Array.from({ length: legPairs }, (_, i) => first + ((last - first) * i) / (legPairs - 1))
+  const centres = legCentres(length + offset.x * 2, width + offset.z * 2, legPairs)
 
-  const centresY = [LEG_CENTRE_FROM_FRONT, width - LEG_CENTRE_FROM_FRONT]
-  if (centresY[1]! <= centresY[0]!) return
-
-  for (const cx of centresX) {
-    for (const cy of centresY) {
-      for (const dx of [-half, half]) {
-        for (const dy of [-half, half]) {
-          const x = Math.round(cx + dx)
-          const y = Math.round(cy + dy)
-          if (x < 0 || x > length || y < 0 || y > width) continue
-          // Аяқ дноның АСТЫНА бұралады, сондықтан сыртқы бет.
-          pushFace(bottom, 'outer', x, y, LEG_SCREW_DIAMETER, LEG_SCREW_DEPTH, 'leg', ctx)
-        }
+  for (const centre of centres) {
+    const cx = centre.x - offset.x
+    const cy = centre.z - offset.z
+    for (const dx of [-half, half]) {
+      for (const dy of [-half, half]) {
+        const x = Math.round(cx + dx)
+        const y = Math.round(cy + dy)
+        if (x < 0 || x > length || y < 0 || y > width) continue
+        // Аяқ дноның АСТЫНА бұралады, сондықтан сыртқы бет.
+        pushFace(bottom, 'outer', x, y, LEG_SCREW_DIAMETER, LEG_SCREW_DEPTH, 'leg', ctx)
       }
     }
   }
