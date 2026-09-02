@@ -257,6 +257,20 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
               </Field>
             ))}
           </div>
+          <Field label={tr('Фасад ящика')} hint={tr('вкладной сидит в нише')}>
+            <Select
+              value={drawers.frontMount ?? 'overlay'}
+              onChange={(frontMount) => {
+                const contents = section.contents.map((c) =>
+                  c.kind === 'drawers' ? { ...c, frontMount } : c)
+                editSection(index, { contents }, 'section.drawerFrontMount')
+              }}
+              options={[
+                { value: 'overlay' as const, label: tr('Накладной') },
+                { value: 'inset' as const, label: tr('Вкладной') },
+              ]}
+            />
+          </Field>
           <div className="grid grid-cols-2 gap-2">
             {([['left', 'Планка слева'], ['right', 'Планка справа']] as const).map(([side, label]) => (
               <Field key={side} label={tr(label)} hint={tr('сужает нишу, мм')}>

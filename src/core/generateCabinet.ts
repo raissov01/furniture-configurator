@@ -1633,6 +1633,11 @@ function makeDrawers(input: {
   const openingX = layout.x + fillerLeft
   const openingWidth = layout.width - fillerLeft - fillerRight
 
+  // Вкладной фасад секцияның ТАЗА ұясында отырады, накладной — кеңірек ұяда
+  // (ілмелі фасадтағы ережемен бірдей).
+  const insetFront = content.frontMount === 'inset'
+  const frontSlot = insetFront ? { x: layout.x, width: layout.width } : slot
+
   const clearance = system ? system.sideClearance : settings.drawerRunnerGap
   const boxWidth = Math.floor(openingWidth - 2 * clearance)
   const available = shelfDepth - settings.drawerBackGap
@@ -1691,11 +1696,16 @@ function makeDrawers(input: {
     y += gaps[i] ?? 0
     const id = `${section.id}-b${bandIndex + 1}-drawer-${i + 1}`
 
-    // Фасад: накладной, корпустың алдында.
+    /*
+     * Фасад: накладной корпустың АЛДЫНДА тұрады да, бүйірлерді жабады;
+     * вкладной ұяның ІШІНДЕ отырады да, алдыңғы жиекпен беттеседі.
+     */
     const front = make(
       `${id}-front`, 'front', 'Фасад ящика', frontMat,
-      frontHeight, slot.width - gapLeft - gapRight,
-      { x: slot.x + gapLeft, y, z: -frontMat.thickness }, ORIENT_FACING, 'Фасад ящика, накладной',
+      frontHeight, frontSlot.width - gapLeft - gapRight,
+      { x: frontSlot.x + gapLeft, y, z: insetFront ? 0 : -frontMat.thickness },
+      ORIENT_FACING,
+      insetFront ? 'Фасад ящика, вкладной' : 'Фасад ящика, накладной',
     )
     panels.push(front)
 

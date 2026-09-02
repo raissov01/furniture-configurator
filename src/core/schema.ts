@@ -177,6 +177,7 @@ export const SectionContentSchema = z.discriminatedUnion('kind', [
     count: z.number().int().min(1).max(8),
     height: bandHeight,
     gaps: FrontGapsSchema.optional(),
+    frontMount: z.enum(['overlay', 'inset']).optional(),
     fillers: z.object({
       left: z.number().int().min(0).max(200).optional(),
       right: z.number().int().min(0).max(200).optional(),

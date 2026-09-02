@@ -114,3 +114,32 @@ describe('жанама планкалар', () => {
     expect(() => gen({ fillers: { left: 20 } })).toThrow(/еселік/)
   })
 })
+
+/**
+ * Ящиктің фасады НАКЛАДНОЙ ма, ВКЛАДНОЙ ма (qdesign: «Жәшік фасады»).
+ *
+ * Вкладной фасад ұяның ІШІНДЕ отырады: корпустың алдыңғы жиегімен беттеседі
+ * де, бүйірлерді жаппайды. Сондықтан ол тарырақ — бұл раскройға да әсер етеді.
+ */
+describe('ящиктің фасадының бекітілуі', () => {
+  it('әдепкі — накладной, ескі мінез', () => {
+    const front = fronts(gen())[0]!
+    expect(front.note).toContain('накладной')
+    expect(front.position.z).toBeLessThan(0)
+  })
+
+  it('вкладной фасад ТАРЫРАҚ әрі корпустың ІШІНДЕ', () => {
+    const inset = fronts(gen({ frontMount: 'inset' }))[0]!
+    const overlay = fronts(gen())[0]!
+    expect(inset.note).toContain('вкладной')
+    expect(inset.finishedWidth).toBeLessThan(overlay.finishedWidth)
+    // Алдыңғы жиекпен беттеседі: корпустан алға шықпайды.
+    expect(inset.position.z).toBe(0)
+    expect(inset.position.x).toBeGreaterThan(overlay.position.x)
+  })
+
+  it('биіктігі өзгермейді — жолақ сол күйінде', () => {
+    expect(fronts(gen({ frontMount: 'inset' }))[0]!.finishedLength)
+      .toBe(fronts(gen())[0]!.finishedLength)
+  })
+})
