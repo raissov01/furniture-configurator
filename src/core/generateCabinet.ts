@@ -8,8 +8,8 @@
 import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
 import {
-  applyMilling, confirmatJoint, drawerFacadeScrews, handleHoles, hingeHoles, legScrewHoles,
-  minifixJoint, runnerHoles, shelfPinHoles,
+  applyMilling, confirmatJoint, drawerBottomJoints, drawerFacadeScrews, handleHoles, hingeHoles,
+  legScrewHoles, minifixJoint, runnerHoles, shelfPinHoles,
 } from './drilling'
 import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
 import { fillingBandHeight } from './filling'
@@ -1029,6 +1029,22 @@ export function generateCabinet(
   }
 
   /*
+   * Ящиктің ТҮБІ (ЛДСП): бүйірлерге минификспен, ал алдыңғы/артқы қабырғаға
+   * конфирматпен. Қабырғалар түптің ҮСТІНДЕ тұрғандықтан, бұранда түпті
+   * тесіп өтіп, олардың АСТЫҢҒЫ торціне кіреді.
+   */
+  for (const bottom of panels) {
+    if (bottom.role !== 'drawerBottom') continue
+    const prefix = bottom.id.slice(0, bottom.id.lastIndexOf('-bottom'))
+    const sides = panels.filter((p) => p.id === `${prefix}-side-l` || p.id === `${prefix}-side-r`)
+    drawerBottomJoints(bottom, sides, ctx)
+    for (const wall of ['-wall-front', '-wall-back']) {
+      const panel = panels.find((p) => p.id === `${prefix}${wall}`)
+      if (panel) confirmatJoint(bottom, panel, ctx)
+    }
+  }
+
+  /*
    * Ящиктің фасадын қорапқа бекітетін еврошуруптар. Жұп id-мен табылады:
    * қораптың алдыңғы қабырғасы `…-wall-front`, ал оның фасады `…-front`.
    */
@@ -1487,6 +1503,12 @@ function makeDrawers(input: {
       )
     }
 
+    /*
+     * Алдыңғы және артқы қабырға ТҮБІНІҢ ҮСТІНДЕ тұрады (түбі 16 мм ЛДСП,
+     * төменде қара). Сондықтан олардың биіктігі бір қалыңдыққа қысқарады да,
+     * бастауы сол қалыңдыққа көтеріледі — әйтпесе қабырға түбімен қабаттасып,
+     * қорап сұралғаннан биік болып шығар еді.
+     */
     for (const [wall, z] of [['front', settings.shelfSetback], ['back', settings.shelfSetback + boxDepth - t]] as const) {
       panels.push(
         make(
@@ -1495,20 +1517,27 @@ function makeDrawers(input: {
           `${id}-wall-${wall}`, 'drawerBack',
           wall === 'front' ? 'Передняя стенка ящика' : 'Задняя стенка ящика', carcass,
           // ORIENT_FACING: ұзындық Y (биіктік), ені X.
-          boxHeight, wallLength,
-          { x: boxX + t, y: boxY, z }, ORIENT_FACING, 'Короб ящика',
+          boxHeight - t, wallLength,
+          { x: boxX + t, y: boxY + t, z }, ORIENT_FACING, 'Короб ящика',
         ),
       )
     }
 
-    // Түбі ХДФ, қораптың астынан қағылады.
+    /*
+     * Түбі — КОРПУС материалы (ЛДСП), бүйірлердің АРАСЫНДА жатады.
+     *
+     * Бұрын 3 мм ХДФ қораптың астынан қағылатын. Онда түп буынға қатыспайтын
+     * да, қорап тек төрт қабырғамен ұсталатын. Енді түп те жүктеме көтереді:
+     * бүйірлерге минификспен, алды-артына конфирматпен бекітіледі
+     * (`drilling.ts` қара) — бұл qdesign-нің де схемасы.
+     */
     panels.push(
       make(
-        `${id}-bottom`, 'drawerBottom', 'Дно ящика', backMat,
+        `${id}-bottom`, 'drawerBottom', 'Дно ящика', carcass,
         // ORIENT_HORIZONTAL: ұзындық X (ен), ені Z (тереңдік).
-        boxWidth, boxDepth,
-        { x: boxX, y: boxY - backMat.thickness, z: settings.shelfSetback }, ORIENT_HORIZONTAL,
-        'Дно ящика, ХДФ',
+        wallLength, boxDepth,
+        { x: boxX + t, y: boxY, z: settings.shelfSetback }, ORIENT_HORIZONTAL,
+        'Дно ящика, ЛДСП',
       ),
     )
 

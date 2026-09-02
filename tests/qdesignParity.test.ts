@@ -128,11 +128,14 @@ describe('ящиктің қорабы: минификс', () => {
     }
   })
 
-  it('бүйірде штифт бұралатын Ø5 × 13 тесік бар', () => {
+  /**
+   * qdesign-нің экспортында бүйірде дәл АЛТЫ Ø5 тесік бар: алдыңғы қабырғаға
+   * 2, артқыға 2, ТҮБІНЕ 2. Бізде де дәл солай — түп ЛДСП болғаннан кейін.
+   */
+  it('бүйірде штифт бұралатын АЛТЫ Ø5 × 13 тесік бар', () => {
     for (const side of sides) {
       const screws = of(side).filter((d) => d.diameter === 5)
-      // Алдыңғы және артқы қабырға × екі стяжка.
-      expect(screws).toHaveLength(4)
+      expect(screws).toHaveLength(6)
       for (const d of screws) {
         expect(d.depth).toBe(13)
         expect(d.face).toBe('inner')

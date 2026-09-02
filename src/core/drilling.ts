@@ -16,8 +16,9 @@ import {
   HINGE_PLATE_FROM_FRONT, HINGE_PLATE_HOLE_SPACING,
   LEG_CENTRE_FROM_FRONT, LEG_CENTRE_FROM_SIDE, LEG_SCREW_DEPTH, LEG_SCREW_DIAMETER,
   LEG_SCREW_SQUARE,
+  DRAWER_BOTTOM_DOWEL_DEPTH, DRAWER_BOTTOM_DOWEL_DIAMETER, DRAWER_BOTTOM_DOWEL_FROM_END,
   MINIFIX_CAM_DEPTH, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_FROM_EDGE,
-  MINIFIX_DOWEL_DEPTH, MINIFIX_DOWEL_DIAMETER, MINIFIX_PAIR_SPACING,
+  MINIFIX_DOWEL_DEPTH, MINIFIX_DOWEL_DIAMETER, MINIFIX_FROM_END, MINIFIX_PAIR_SPACING,
   MINIFIX_SCREW_DEPTH, MINIFIX_SCREW_DIAMETER,
   RUNNER_FIRST_HOLE_OFFSET, RUNNER_SCREW_DEPTH, RUNNER_SCREW_DIAMETER,
   RUNNER_TANDEM_DEPTH, RUNNER_TANDEM_DIAMETER, RUNNER_TANDEM_OFFSETS,
@@ -521,5 +522,69 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
       localX(side, worldY), localY(side, worldZ),
       MINIFIX_SCREW_DIAMETER, MINIFIX_SCREW_DEPTH, 'minifix', ctx,
     )
+  }
+}
+
+
+/**
+ * Ящиктің ТҮБІ (16 мм ЛДСП) — бүйірлерге минификспен, алды-артына
+ * конфирматпен бекітіледі, әрі алдыңғы жиегінде екі дәлдеу шканты бар.
+ *
+ * Түп 3 мм ХДФ болғанда бұл буындардың бірде-бірі болмайтын: түп тек
+ * қағылатын да, қорап төрт қабырғамен ұсталатын. Түп ЛДСП болғанда ол
+ * жүктеме көтереді, ал жүктеме көтеретін буын БҰРҒЫЛАНУЫ керек.
+ *
+ * `bottom` — ORIENT_HORIZONTAL: локал x — ЕНІ (әлемдік X), локал y —
+ * ТЕРЕҢДІГІ (әлемдік Z). Сол себепті W1/W2 — сол/оң торцы, L1 — алдыңғы.
+ */
+export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): void {
+  const t = ctx.thickness(bottom)
+  const width = bottom.finishedLength
+  const depth = bottom.finishedWidth
+
+  // Тереңдік бойынша екі стяжка: жиектен MINIFIX_FROM_END шегініп.
+  const positions = spreadAlongJoint(depth, 2, MINIFIX_FROM_END)
+
+  for (const side of sides) {
+    // Бүйір түптің қай ұшында тұр: сол жақта ма, оң жақта ма.
+    const atLeft = side.position.x < bottom.position.x
+    const camX = atLeft ? MINIFIX_CAM_FROM_EDGE : width - MINIFIX_CAM_FROM_EDGE
+    const edgeFace: Drill['face'] = atLeft ? 'edgeW1' : 'edgeW2'
+
+    for (const along of positions) {
+      // 1. Эксцентриктің ұясы — түптің ҮСТІҢГІ бетінде.
+      pushFace(bottom, 'inner', camX, along, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
+
+      // 2. Штифттің тесігі — түптің сол/оң ТОРЦІНДЕ.
+      bottom.drilling.push({
+        face: edgeFace,
+        x: Math.round(along),
+        y: Math.round(t / 2),
+        diameter: MINIFIX_DOWEL_DIAMETER,
+        depth: MINIFIX_DOWEL_DEPTH,
+        purpose: 'minifix',
+      })
+
+      // 3. Бүйірдің ішкі бетінде — штифт бұралатын тесік.
+      const worldZ = bottom.position.z + along
+      const worldY = bottom.position.y + t / 2
+      pushFace(
+        side, 'inner',
+        localX(side, worldY), localY(side, worldZ),
+        MINIFIX_SCREW_DIAMETER, MINIFIX_SCREW_DEPTH, 'minifix', ctx,
+      )
+    }
+  }
+
+  // Алдыңғы жиектегі дәлдеу шканттары.
+  for (const x of [DRAWER_BOTTOM_DOWEL_FROM_END, width - DRAWER_BOTTOM_DOWEL_FROM_END]) {
+    bottom.drilling.push({
+      face: 'edgeL1',
+      x: Math.round(x),
+      y: Math.round(t / 2),
+      diameter: DRAWER_BOTTOM_DOWEL_DIAMETER,
+      depth: DRAWER_BOTTOM_DOWEL_DEPTH,
+      purpose: 'dowel',
+    })
   }
 }

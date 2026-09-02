@@ -203,6 +203,21 @@ export const MINIFIX_SCREW_DIAMETER = 5
 export const MINIFIX_SCREW_DEPTH = 13
 /** Бір буындағы екі стяжканың ара қашықтығы, мм (32 мм жүйесі). */
 export const MINIFIX_PAIR_SPACING = 32
+/**
+ * Ұзын буында (ящиктің ТҮБІ мен бүйірі) екі стяжка жиектен осынша шегініп
+ * қойылады — 32 мм жүйесі мұнда жүрмейді, өйткені буын ұзын.
+ * qdesign-де 250 мм тереңдікте 60 және 180 болып шыққан.
+ */
+export const MINIFIX_FROM_END = 60
+
+/**
+ * Ящиктің ТҮБІН алдыңғы қабырғаға дәлдейтін шкант: Ø6 × 10, жиектен 7 мм.
+ * qdesign-де тек ТҮПТІҢ өзінде тұр (қабырғада жұбы жоқ) — сол күйінде
+ * көшірілді.
+ */
+export const DRAWER_BOTTOM_DOWEL_DIAMETER = 6
+export const DRAWER_BOTTOM_DOWEL_DEPTH = 10
+export const DRAWER_BOTTOM_DOWEL_FROM_END = 7
 /** Направляющаны бекітетін бұранда тесігі: Ø5, 12 мм тереңдік. */
 export const RUNNER_SCREW_DIAMETER = 5
 export const RUNNER_SCREW_DEPTH = 12

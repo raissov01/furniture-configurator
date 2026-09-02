@@ -72,10 +72,20 @@ describe('ящик', () => {
     }
   })
 
-  it('түбі ХДФ-тан', () => {
+  /**
+   * ⚠ 2026-09-02-де ӨЗГЕРДІ: түбі 3 мм ХДФ-тан 16 мм ЛДСП-ға көшті
+   * (qdesign-нің схемасы). Себебі: ХДФ түп буынға қатыспайтын да, қорапты
+   * тек төрт қабырға ұстайтын. Енді түп те жүктеме көтереді — оған минификс
+   * пен конфирмат бұрғыланады.
+   */
+  it('түбі КОРПУС материалынан, бүйірлердің арасында', () => {
     const bottom = byRole('drawerBottom')[0]!
+    const side = byRole('drawerSide')[0]!
+    expect(bottom.materialId).toBe(side.materialId)
     const material = catalog.materials.find((m) => m.id === bottom.materialId)!
-    expect(material.thickness).toBeLessThan(10)
+    expect(material.thickness).toBeGreaterThanOrEqual(16)
+    // Бүйірлердің арасында: түптің ені қораптың енінен екі қалыңдыққа кіші.
+    expect(bottom.finishedLength).toBe(byRole('drawerBack')[0]!.finishedWidth)
   })
 
   it('фасадтар бірдей әрі бір-бірін жаппайды', () => {
