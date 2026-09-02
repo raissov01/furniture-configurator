@@ -854,10 +854,14 @@ export function generateCabinet(
 
   // ── Цоколь мен столешница ──────────────────────────────────────────────────
   if (config.base?.kind === 'plinth') {
+    // Цоколь — КӨРІНЕТІН деталь: көбіне фасадпен бір түсте болады.
+    const plinthMat = config.base.plinthMaterialId
+      ? requireMaterial(materials, config.base.plinthMaterialId, 'base.plinthMaterialId')
+      : carcass
     // Цоколь алдыңғы жиектен ішке шегіндіріледі: аяқ тұратын орын.
     panels.push(
       make(
-        'plinth', 'plinth', 'Цоколь', carcass,
+        'plinth', 'plinth', 'Цоколь', plinthMat,
         W, baseHeight,
         { x: 0, y: -baseHeight, z: settings.plinthSetback }, ORIENT_FACING,
         'Цоколь, лицевой',

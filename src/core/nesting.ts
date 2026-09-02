@@ -376,3 +376,48 @@ export function nestPanels(
   }
   return best!
 }
+
+/**
+ * ПАРАҚҚА СЫЙМАЙТЫН детальдер.
+ *
+ * Раскрой мұны бәрібір көрсетеді (`unplacedAdvice`), бірақ ол — раскрой
+ * бетінде, ал габаритті адам ДЕТАЛИРОВКА бетінде тереді. Сыймайтын деталь
+ * сол жерде, теру кезінде айтылуы керек: кеш айтылған «сыймайды» бүкіл
+ * жобаны қайта теруге мәжбүр етеді.
+ *
+ * ⚠ Бұл ҚАТЕ ЕМЕС: цех ұзын детальді екіге бөліп, жинау кезінде жалғауы
+ * мүмкін. Сондықтан мұнда тек ескерту қайтарылады.
+ */
+export type PanelFitWarning = {
+  panelId: string
+  label: string
+  /** Не сыймады: детальдің өлшемі мен парақтың пайдалы аймағы, мм. */
+  message: string
+}
+
+export function panelFitWarnings(
+  panels: Panel[],
+  catalog: Catalog,
+  options: NestingOptions = {},
+): PanelFitWarning[] {
+  const materials = new Map(catalog.materials.map((m) => [m.id, m]))
+  const out: PanelFitWarning[] = []
+
+  for (const panel of panels) {
+    const material = materials.get(panel.materialId)
+    if (!material) continue
+    const area = usableAreaOf(material, options.trimEdge)
+    const fits = orientationsOf(panel, material)
+      .some((o) => o.w <= area.width && o.h <= area.height)
+    if (fits) continue
+
+    out.push({
+      panelId: panel.id,
+      label: panel.label,
+      message: `${panel.cutLength}×${panel.cutWidth} мм не помещается на лист `
+        + `${material.name} (полезно ${Math.round(area.width)}×${Math.round(area.height)} мм`
+        + `${material.hasGrain ? ', текстура не даёт повернуть' : ''})`,
+    })
+  }
+  return out
+}

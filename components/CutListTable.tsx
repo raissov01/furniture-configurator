@@ -7,7 +7,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useMemo } from 'react'
-import { CUT_LIST_COLUMNS, formatCutList } from '@/src/core/index'
+import { CUT_LIST_COLUMNS, formatCutList, panelFitWarnings } from '@/src/core/index'
 import type { Catalog, CutListRow, Panel } from '@/src/core/index'
 import { cn } from '@/lib/cn'
 
@@ -20,6 +20,12 @@ const GROUP_STYLE: Record<string, string> = {
 export function CutListTable({ panels, catalog }: { panels: Panel[]; catalog: Catalog }) {
   const rows: CutListRow[] = useMemo(() => formatCutList(panels, catalog), [panels, catalog])
   const pieces = rows.reduce((s, r) => s + r.qty, 0)
+  /*
+   * Параққа сыймайтын деталь ОСЫ ЖЕРДЕ айтылады. Раскрой да айтады, бірақ ол
+   * — басқа бет: габаритті терген адам оны кеш көреді де, бүкіл жобаны қайта
+   * теруге мәжбүр болады.
+   */
+  const fitWarnings = useMemo(() => panelFitWarnings(panels, catalog), [panels, catalog])
 
   const groups: { label: string; span: number }[] = []
   for (const col of CUT_LIST_COLUMNS) {
@@ -36,6 +42,21 @@ export function CutListTable({ panels, catalog }: { panels: Panel[]; catalog: Ca
           Позиций: {rows.length} · Деталей: {pieces}
         </span>
       </div>
+      {fitWarnings.length > 0 ? (
+        <div className="border-b border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <div className="font-semibold">{tr('Не помещается на лист')}</div>
+          <ul className="mt-1 list-disc pl-4">
+            {fitWarnings.map((w) => (
+              <li key={w.panelId}>
+                {w.label}: {w.message}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-1 opacity-80">
+            {tr('Это не ошибка: деталь можно разделить и состыковать при сборке.')}
+          </div>
+        </div>
+      ) : null}
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full border-collapse text-[11px]">
           <thead className="sticky top-0 z-10">
