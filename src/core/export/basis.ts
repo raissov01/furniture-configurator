@@ -149,6 +149,7 @@ const DRILL_PURPOSE_RU: Record<Drill['purpose'], string> = {
   hinge: 'петля',
   runner: 'направляющая',
   handle: 'ручка',
+  leg: 'ножка',
 }
 
 const DRILL_FACE_RU: Record<Drill['face'], string> = {

@@ -72,7 +72,7 @@ describe('направляющая: Blum Tandem схемасы', () => {
 describe('аяқтардың бұрандасы', () => {
   const withLegs = build({ base: { kind: 'legs', height: 100 } })
   const bottom = withLegs.find((p) => p.id === 'bottom')!
-  const legHoles = bottom.drilling.filter((d) => d.diameter === 3 && d.depth === 3)
+  const legHoles = bottom.drilling.filter((d) => d.purpose === 'leg')
 
   it('әр аяққа ТӨРТ бұранда, дноның АСТЫҢҒЫ бетіне', () => {
     expect(legHoles.length).toBeGreaterThanOrEqual(8)
@@ -90,7 +90,7 @@ describe('аяқтардың бұрандасы', () => {
   it('аяқсыз корпуста бұл тесіктер ЖОҚ', () => {
     const plinth = build({ base: { kind: 'plinth', height: 100 } })
     const bottomPanel = plinth.find((p) => p.id === 'bottom')!
-    expect(bottomPanel.drilling.filter((d) => d.diameter === 3 && d.depth === 3)).toEqual([])
+    expect(bottomPanel.drilling.filter((d) => d.purpose === 'leg')).toEqual([])
   })
 
   it('тесік дноның шегінен шықпайды', () => {

@@ -93,6 +93,8 @@ export type Vec3 = { x: number; y: number; z: number }
 
 export type DrillPurpose =
   | 'confirmat' | 'dowel' | 'minifix' | 'shelfPin' | 'hinge' | 'runner' | 'handle'
+  /** Реттелетін аяқтың бұрандасы — дноның астында. */
+  | 'leg'
 
 /**
  * Панельдің локал координаталары (присадка мен DXF үшін):

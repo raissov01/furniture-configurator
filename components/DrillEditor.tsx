@@ -48,6 +48,7 @@ const PURPOSE_COLOR: Record<Drill['purpose'], string> = {
   hinge: '#059669',
   runner: '#ea580c',
   handle: '#0891b2',
+  leg: '#64748b',
 }
 
 const PURPOSE_NAME: Record<Drill['purpose'], string> = {
@@ -58,6 +59,7 @@ const PURPOSE_NAME: Record<Drill['purpose'], string> = {
   hinge: 'Петля',
   runner: 'Направляющая',
   handle: 'Ручка',
+  leg: 'Ножка',
 }
 
 const EDGE_FACES = ['edgeL1', 'edgeL2', 'edgeW1', 'edgeW2'] as const

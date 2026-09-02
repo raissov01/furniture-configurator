@@ -455,7 +455,7 @@ export function legScrewHoles(bottom: Panel, legPairs: number, ctx: Ctx): void {
           const y = Math.round(cy + dy)
           if (x < 0 || x > length || y < 0 || y > width) continue
           // Аяқ дноның АСТЫНА бұралады, сондықтан сыртқы бет.
-          pushFace(bottom, 'outer', x, y, LEG_SCREW_DIAMETER, LEG_SCREW_DEPTH, 'runner', ctx)
+          pushFace(bottom, 'outer', x, y, LEG_SCREW_DIAMETER, LEG_SCREW_DEPTH, 'leg', ctx)
         }
       }
     }
