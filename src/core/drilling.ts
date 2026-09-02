@@ -85,7 +85,9 @@ export function spreadAlongJoint(length: number, count: number, endOffset: numbe
 }
 
 function confirmatCount(jointLength: number, settings: ConstructionSettings): number {
-  return jointLength > settings.confirmatSpanForThird
+  const span = settings.confirmatSpanForThird
+  // `null` — ереже ӨШІРУЛІ: ұзын буында да екі конфирмат (types.ts қара).
+  return span !== null && jointLength > span
     ? CONFIRMAT_MIN_PER_JOINT + 1
     : CONFIRMAT_MIN_PER_JOINT
 }

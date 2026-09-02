@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS: ConstructionSettings = {
   minBandSubtract: 1,
 
   /** Буын осыдан ұзын болса — конфирмат 2 емес, 3 болады (§4.9). */
-  confirmatSpanForThird: 400,
+  confirmatSpanForThird: null,
 
   /**
    * Полкодержатель тесіктері бағанының БАСТАУ нүктесі: дноның үстіңгі бетінен
@@ -266,7 +266,9 @@ export function mergeSettings(...layers: (SettingsOverride | undefined)[]): Cons
     if (!layer) continue
     for (const [key, value] of Object.entries(layer)) {
       if (value !== undefined) {
-        result[key as keyof ConstructionSettings] = value
+        // `confirmatSpanForThird` — жалғыз nullable өріс, сондықтан жалпы
+        // қабаттау мұнда типті кеңірек көреді.
+        ;(result as Record<string, number | null>)[key] = value as number | null
       }
     }
   }

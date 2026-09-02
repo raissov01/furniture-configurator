@@ -67,7 +67,14 @@ export function ShopSettings() {
   const setHingeEnd = (id: string, endOffset: number) =>
     editShop({ hingeSystems: shop.hingeSystems.map((h) => (h.id === id ? { ...h, endOffset } : h)) })
   const setRule = (key: keyof ConstructionSettings, value: number) =>
-    editShop({ settings: { ...shop.settings, [key]: value } })
+    editShop({
+      settings: {
+        ...shop.settings,
+        // «3-ші конфирмат» ережесінде 0 = ӨШІРУЛІ (`null`). Қалған
+        // константаларда 0 — жай ғана нөл.
+        [key]: key === 'confirmatSpanForThird' && value === 0 ? null : value,
+      },
+    })
 
   return (
     <div
@@ -210,7 +217,13 @@ export function ShopSettings() {
               <Rule label={tr('Глубина паза')} k="grooveDepth" shop={shop} onChange={setRule} />
               <Rule label={tr('Отступ паза от края')} k="grooveInset" shop={shop} onChange={setRule} />
               <Rule label={tr('Кромка вычитается от')} hint={tr('0.4 обычно не вычитается')} k="minBandSubtract" shop={shop} onChange={setRule} />
-              <Rule label={tr('3-й конфирмат при длине')} k="confirmatSpanForThird" shop={shop} onChange={setRule} />
+              <Rule
+                label={tr('3-й конфирмат при длине')}
+                hint={tr('0 — не ставить')}
+                k="confirmatSpanForThird"
+                shop={shop}
+                onChange={setRule}
+              />
               <Rule label={tr('Первое отверстие полкодержателя')} k="shelfPinDatum" shop={shop} onChange={setRule} />
             </div>
 
@@ -426,10 +439,14 @@ function Rule({
   shop: ShopProfile
   onChange: (k: keyof ConstructionSettings, v: number) => void
 }) {
-  const value = shop.settings[k] ?? DEFAULT_SETTINGS[k]
+  const raw = shop.settings[k] ?? DEFAULT_SETTINGS[k]
   const overridden = shop.settings[k] !== undefined
+  // `null` — ереже өшірулі (қазір `confirmatSpanForThird`-те ғана болады).
+  // Экранда ол 0 болып көрінеді: 0 қойса, ереже өшіп қалады.
+  const value = raw ?? 0
+  const fallback = DEFAULT_SETTINGS[k] ?? tr('выключено')
   return (
-    <Field label={label} hint={hint ?? (overridden ? 'своё' : `по умолчанию ${DEFAULT_SETTINGS[k]}`)}>
+    <Field label={label} hint={hint ?? (overridden ? 'своё' : `по умолчанию ${fallback}`)}>
       <NumberInput value={value} min={0} step={1} onChange={(v) => onChange(k, v)} />
     </Field>
   )

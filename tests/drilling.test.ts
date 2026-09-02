@@ -15,7 +15,13 @@ describe('конфирмат (§4.9)', () => {
   const side = byId('side-left')
   const top = byId('top')
 
-  it('447 мм буын > 400 → 3 бұранда, шеткілері жиектен 50 мм', () => {
+  /**
+   * `spreadAlongJoint` — таза функция: неше бұранда керегін ол шешпейді,
+   * тек берілген санды буын бойына таратады. Үшінші бұранданың ЕРЕЖЕСІ
+   * цехтың баптауында (`confirmatSpanForThird`) әрі 2026-09-02-ден бері
+   * ӘДЕПКІДЕ ӨШІРУЛІ — qdesign 826 мм буында да екеуін қояды.
+   */
+  it('берілген сан буын бойына таралады, шеткілері жиектен 50 мм', () => {
     expect(spreadAlongJoint(447, 3, 50)).toEqual([50, 224, 397])
     expect(spreadAlongJoint(300, 2, 50)).toEqual([50, 250])
   })
@@ -28,14 +34,15 @@ describe('конфирмат (§4.9)', () => {
    */
   it('бүйірде Ø8 өтпелі, крышканың торцінде Ø5×35', () => {
     const faceHoles = of(side, 'confirmat')
-    expect(faceHoles).toHaveLength(6) // крышка + дно, әрқайсысына 3
+    // Крышка + дно, әрқайсысына ЕКІ (үшінші бұранда ережесі әдепкіде өшірулі).
+    expect(faceHoles).toHaveLength(4)
     for (const d of faceHoles) {
       expect(d.face).toBe('outer')
       expect(d.diameter).toBe(8)
       expect(d.depth).toBe(T) // өтпелі
     }
     const edgeHoles = of(top, 'confirmat')
-    expect(edgeHoles).toHaveLength(6) // екі торц × 3
+    expect(edgeHoles).toHaveLength(4) // екі торц × 2
     for (const d of edgeHoles) {
       expect(d.diameter).toBe(5)
       expect(d.depth).toBe(35)

@@ -57,7 +57,7 @@ export const ConstructionSettingsSchema = z.object({
   grooveDepth: z.number().int().nonnegative(),
   grooveInset: z.number().int().nonnegative(),
   minBandSubtract: z.number().nonnegative(),
-  confirmatSpanForThird: mm,
+  confirmatSpanForThird: mm.nullable(),
   shelfPinDatum: z.number().int().nonnegative(),
   slidingDoorOverlap: z.number().int().nonnegative(),
   slidingTrackTopSpace: z.number().int().nonnegative(),
