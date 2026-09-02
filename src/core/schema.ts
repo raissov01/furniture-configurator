@@ -69,6 +69,14 @@ export const ConstructionSettingsSchema = z.object({
   drawerBoxDrop: z.number().int().nonnegative(),
 }).partial()
 
+const FrontGapsSchema = z.object({
+  between: z.number().int().min(0).max(50).optional(),
+  left: z.number().int().min(0).max(50).optional(),
+  right: z.number().int().min(0).max(50).optional(),
+  top: z.number().int().min(0).max(50).optional(),
+  bottom: z.number().int().min(0).max(50).optional(),
+})
+
 const FrontsSchema = z.object({
   count: z.number().int().min(1).max(8),
   mount: z.enum(['overlay', 'inset']),
@@ -78,13 +86,7 @@ const FrontsSchema = z.object({
   handle: HandleSpecSchema.nullable().optional(),
   milling: MillingSpecSchema.nullable().optional(),
   opening: z.enum(['auto', 'left', 'right']).optional(),
-  gaps: z.object({
-    between: z.number().int().min(0).max(50).optional(),
-    left: z.number().int().min(0).max(50).optional(),
-    right: z.number().int().min(0).max(50).optional(),
-    top: z.number().int().min(0).max(50).optional(),
-    bottom: z.number().int().min(0).max(50).optional(),
-  }).optional(),
+  gaps: FrontGapsSchema.optional(),
 }).nullable()
 
 const RailSchema = z.object({
@@ -174,6 +176,11 @@ export const SectionContentSchema = z.discriminatedUnion('kind', [
     kind: z.literal('drawers'),
     count: z.number().int().min(1).max(8),
     height: bandHeight,
+    gaps: FrontGapsSchema.optional(),
+    fillers: z.object({
+      left: z.number().int().min(0).max(200).optional(),
+      right: z.number().int().min(0).max(200).optional(),
+    }).optional(),
   }),
   z.object({
     kind: z.literal('stand'),

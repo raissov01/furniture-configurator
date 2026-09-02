@@ -1551,9 +1551,33 @@ function makeDrawers(input: {
 
   const gap = settings.frontGap
   const t = carcass.thickness
+  /*
+   * Саңылаулар. Берілмегені цехтың `frontGap`-ынан алынады — сондықтан
+   * ештеңе берілмесе, есеп ЕСКІ жолмен, миллиметрі-миллиметрімен бірдей
+   * жүреді (§8.7 эталоны соны күзетеді).
+   */
+  const g = content.gaps ?? {}
+  const gapTop = g.top ?? gap
+  const gapBottom = g.bottom ?? gap
+  const gapBetween = g.between ?? gap
+  const gapLeft = g.left ?? gap
+  const gapRight = g.right ?? gap
+  for (const [name, value] of Object.entries({
+    top: gapTop, bottom: gapBottom, between: gapBetween, left: gapLeft, right: gapRight,
+  })) {
+    if (!Number.isInteger(value) || value < 0 || value > 50) {
+      throw new ConfigValidationError(
+        `sections[${sectionIndex}].contents[${bandIndex}].gaps.${name}`,
+        `${value} мм`, '0..50 мм, бүтін сан',
+      )
+    }
+  }
+
   // Фасадтар жолақты тең бөледі. Биіктік бүтінге ТӨМЕН дөңгеленеді — бір
   // жолақтағы фасадтар әрқашан бірдей болуы керек.
-  const frontHeight = Math.floor((band.height - (n + 1) * gap) / n)
+  const frontHeight = Math.floor(
+    (band.height - gapTop - gapBottom - (n - 1) * gapBetween) / n,
+  )
   if (frontHeight < MIN_DIMENSION) {
     throw new ConfigValidationError(
       `sections[${sectionIndex}].contents[${bandIndex}].count`,
@@ -1561,7 +1585,16 @@ function makeDrawers(input: {
       `высота фасада ≥ ${MIN_DIMENSION} мм`,
     )
   }
-  const gaps = distributeMillimetres(band.height - n * frontHeight, n + 1)
+  const leftover = band.height - n * frontHeight
+  const customVertical = g.top !== undefined || g.bottom !== undefined || g.between !== undefined
+  const gaps = customVertical
+    // Артық миллиметрлер саңылауларға ҮСТЕМЕ болып таралады: жолақ әрқашан
+    // толық жабылуы керек, әйтпесе астында түсініксіз саңылау қалады.
+    ? distributeMillimetres(leftover - gapTop - gapBottom - (n - 1) * gapBetween, n + 1)
+      // ⚠ Реті ТӨМЕННЕН жоғары: `y` жолақтың астынан өседі, сондықтан бірінші
+      // саңылау — АСТЫҢҒЫСЫ.
+      .map((extra, i) => extra + (i === 0 ? gapBottom : i === n ? gapTop : gapBetween))
+    : distributeMillimetres(leftover, n + 1)
 
   /*
    * Қораптың ені мен тереңдігі — направляющаның ӨЛШЕМІ.
@@ -1571,8 +1604,33 @@ function makeDrawers(input: {
    * сатылады, ал қорап оған дәл тең болуы керек. Жүйе таңдалмаса — бәрі
    * бұрынғыдай, цехтың профилінен.
    */
+  /*
+   * ЖАНАМА ПЛАНКАЛАР ұяны тарылтады: направляющая соларға бекітіледі.
+   * Фасад тарылмайды — планка фасадтың артында қалады.
+   */
+  const fillerLeft = content.fillers?.left ?? 0
+  const fillerRight = content.fillers?.right ?? 0
+  /*
+   * ⚠ Планка КОРПУС материалынан кесіледі, сондықтан оның қалыңдығы — сол
+   * материалдың қалыңдығы. Одан қалыңы қажет болса, цех оны қабаттап
+   * желімдейді, сондықтан рұқсат етілгені — қалыңдықтың ЕСЕЛІГІ. Кез келген
+   * санды қабылдап, содан соң 16 мм деталь беру — ұяны дұрыс тарылтпайтын,
+   * бірақ тек цехта байқалатын қате болар еді.
+   */
+  for (const [name, value] of Object.entries({ left: fillerLeft, right: fillerRight })) {
+    if (!Number.isInteger(value) || value < 0 || value > 200 || value % t !== 0) {
+      throw new ConfigValidationError(
+        `sections[${sectionIndex}].contents[${bandIndex}].fillers.${name}`,
+        `${value} мм`,
+        `0..200 мм, ${t} мм-ге еселік (планка корпус материалынан кесіледі)`,
+      )
+    }
+  }
+  const openingX = layout.x + fillerLeft
+  const openingWidth = layout.width - fillerLeft - fillerRight
+
   const clearance = system ? system.sideClearance : settings.drawerRunnerGap
-  const boxWidth = Math.floor(layout.width - 2 * clearance)
+  const boxWidth = Math.floor(openingWidth - 2 * clearance)
   const available = shelfDepth - settings.drawerBackGap
   const nominal = system ? nominalRunnerLength(system, available) : available
   if (nominal === null) {
@@ -1598,6 +1656,31 @@ function makeDrawers(input: {
 
   const panels: Panel[] = []
   const runs: { boxBottomY: number; boxFrontZ: number; boxDepth: number }[] = []
+
+  /*
+   * Планканың өзі — ДЕТАЛЬ: ол парақтан кесіледі әрі сметаға түседі.
+   * Жолақтың толық биіктігінде тұрады да, тереңдігі қораппен бірдей:
+   * направляющая соның бойымен бекітіледі.
+   */
+  for (const [side, width, x0] of [
+    ['левая', fillerLeft, layout.x],
+    ['правая', fillerRight, layout.x + layout.width - fillerRight],
+  ] as const) {
+    const layers = width / t
+    for (let layer = 0; layer < layers; layer += 1) {
+      const suffix = side === 'левая' ? 'l' : 'r'
+      panels.push(make(
+        `${section.id}-b${bandIndex + 1}-filler-${suffix}${layers > 1 ? `-${layer + 1}` : ''}`,
+        'rail', 'Планка ящика', carcass,
+        band.height, boxDepth,
+        { x: x0 + layer * t, y: band.y, z: settings.shelfSetback }, ORIENT_SIDE,
+        layers > 1
+          ? `Планка под направляющую, ${side}, слой ${layer + 1} из ${layers}`
+          : `Планка под направляющую, ${side}`,
+      ))
+    }
+  }
+
   let y = band.y
 
   for (let i = 0; i < n; i += 1) {
@@ -1607,12 +1690,12 @@ function makeDrawers(input: {
     // Фасад: накладной, корпустың алдында.
     const front = make(
       `${id}-front`, 'front', 'Фасад ящика', frontMat,
-      frontHeight, slot.width - 2 * gap,
-      { x: slot.x + gap, y, z: -frontMat.thickness }, ORIENT_FACING, 'Фасад ящика, накладной',
+      frontHeight, slot.width - gapLeft - gapRight,
+      { x: slot.x + gapLeft, y, z: -frontMat.thickness }, ORIENT_FACING, 'Фасад ящика, накладной',
     )
     panels.push(front)
 
-    const boxX = layout.x + settings.drawerRunnerGap
+    const boxX = Math.round(openingX + clearance)
     const boxY = y + settings.drawerBoxDrop / 2
 
     for (const [side, offsetX] of [['левая', 0], ['правая', boxWidth - t]] as const) {

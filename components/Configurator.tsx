@@ -28,6 +28,8 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
   const removeSection = useConfigurator((s) => s.removeSection)
   const canRemove = useConfigurator((s) => activeCabinet(s).sections.length > 1)
 
+  const shopGap = useConfigurator((s) => s.shop.settings.frontGap ?? DEFAULT_SETTINGS.frontGap)
+
   const shelves = section.contents.find((c) => c.kind === 'shelves')
   const stand = section.contents.find((c) => c.kind === 'stand')
   const drawers = section.contents.find((c) => c.kind === 'drawers')
@@ -226,6 +228,56 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
           />
         </Field>
       </div>
+
+      {/* Ящиктің САҢЫЛАУЛАРЫ мен ЖАНАМА ПЛАНКАЛАРЫ — тек ящик бар секцияда.
+          qdesign-де де осы екеуі ящиктің өз терезесінде тұр. */}
+      {drawers ? (
+        <>
+          <div className="grid grid-cols-5 gap-1">
+            {([
+              ['between', 'Между'],
+              ['left', 'Слева'],
+              ['right', 'Справа'],
+              ['top', 'Сверху'],
+              ['bottom', 'Снизу'],
+            ] as const).map(([key, label]) => (
+              <Field key={key} label={tr(label)} hint={key === 'between' ? tr('зазоры, мм') : undefined}>
+                <NumberInput
+                  value={drawers.gaps?.[key] ?? shopGap}
+                  min={0}
+                  max={50}
+                  onChange={(value) => {
+                    const contents = section.contents.map((c) =>
+                      c.kind === 'drawers'
+                        ? { ...c, gaps: { ...c.gaps, [key]: value } }
+                        : c)
+                    editSection(index, { contents }, `section.drawerGap.${key}`)
+                  }}
+                />
+              </Field>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {([['left', 'Планка слева'], ['right', 'Планка справа']] as const).map(([side, label]) => (
+              <Field key={side} label={tr(label)} hint={tr('сужает нишу, мм')}>
+                <NumberInput
+                  value={drawers.fillers?.[side] ?? 0}
+                  min={0}
+                  max={200}
+                  step={16}
+                  onChange={(value) => {
+                    const contents = section.contents.map((c) =>
+                      c.kind === 'drawers'
+                        ? { ...c, fillers: { ...c.fillers, [side]: value } }
+                        : c)
+                    editSection(index, { contents }, `section.drawerFiller.${side}`)
+                  }}
+                />
+              </Field>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Наполнение')}>
