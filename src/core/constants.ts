@@ -182,6 +182,27 @@ export const LEG_SCREW_SQUARE = 65
 export const LEG_CENTRE_FROM_SIDE = 88
 /** Аяқтың ортасы: алдыңғы және арт жиектен, мм. */
 export const LEG_CENTRE_FROM_FRONT = 100
+
+/**
+ * МИНИФИКС (эксцентриктік стяжка) — ящиктің қорабын жинайтын буын.
+ *
+ * Үш тесіктен тұрады, әрқайсысы бөлек панельде:
+ *   • Ø15 × 12,7 — эксцентриктің ҰЯСЫ, көлденең панельдің БЕТІНДЕ;
+ *   • Ø8 × 34   — сол панельдің ТОРЦІНДЕ, ұяға қарай (штифт сонда кіреді);
+ *   • Ø5 × 13   — сыбайлас панельдің БЕТІНДЕ, штифт бұралатын жер.
+ *
+ * Сандар qdesign-нің CNC экспортынан (2026-09-02). Ұяның ортасы торцтан
+ * 34 мм — бұл 8 мм штифтке арналған нарықтық стандарт.
+ */
+export const MINIFIX_CAM_DIAMETER = 15
+export const MINIFIX_CAM_DEPTH = 12.7
+export const MINIFIX_CAM_FROM_EDGE = 34
+export const MINIFIX_DOWEL_DIAMETER = 8
+export const MINIFIX_DOWEL_DEPTH = 34
+export const MINIFIX_SCREW_DIAMETER = 5
+export const MINIFIX_SCREW_DEPTH = 13
+/** Бір буындағы екі стяжканың ара қашықтығы, мм (32 мм жүйесі). */
+export const MINIFIX_PAIR_SPACING = 32
 /** Направляющаны бекітетін бұранда тесігі: Ø5, 12 мм тереңдік. */
 export const RUNNER_SCREW_DIAMETER = 5
 export const RUNNER_SCREW_DEPTH = 12

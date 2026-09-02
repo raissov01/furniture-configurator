@@ -9,7 +9,7 @@ import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
 import {
   applyMilling, confirmatJoint, drawerFacadeScrews, handleHoles, hingeHoles, legScrewHoles,
-  runnerHoles, shelfPinHoles,
+  minifixJoint, runnerHoles, shelfPinHoles,
 } from './drilling'
 import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
 import { fillingBandHeight } from './filling'
@@ -1012,6 +1012,20 @@ export function generateCabinet(
    */
   if (config.base?.kind === 'legs') {
     legScrewHoles(bottom, Math.max(2, Math.ceil(W / 600)), ctx)
+  }
+
+  /*
+   * Ящиктің ҚОРАБЫН жинайтын минификс: алдыңғы және артқы қабырға екі
+   * бүйірге де осылай бекітіледі. Бұрын қораптың буындарында присадка
+   * МҮЛДЕ жоқ еді.
+   */
+  for (const wall of panels) {
+    if (wall.role !== 'drawerBack') continue
+    const prefix = wall.id.slice(0, wall.id.indexOf('-wall-'))
+    for (const suffix of ['-side-l', '-side-r']) {
+      const side = panels.find((p) => p.id === `${prefix}${suffix}`)
+      if (side) minifixJoint(wall, side, ctx)
+    }
   }
 
   /*

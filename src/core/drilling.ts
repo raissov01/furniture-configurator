@@ -16,6 +16,9 @@ import {
   HINGE_PLATE_FROM_FRONT, HINGE_PLATE_HOLE_SPACING,
   LEG_CENTRE_FROM_FRONT, LEG_CENTRE_FROM_SIDE, LEG_SCREW_DEPTH, LEG_SCREW_DIAMETER,
   LEG_SCREW_SQUARE,
+  MINIFIX_CAM_DEPTH, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_FROM_EDGE,
+  MINIFIX_DOWEL_DEPTH, MINIFIX_DOWEL_DIAMETER, MINIFIX_PAIR_SPACING,
+  MINIFIX_SCREW_DEPTH, MINIFIX_SCREW_DIAMETER,
   RUNNER_FIRST_HOLE_OFFSET, RUNNER_SCREW_DEPTH, RUNNER_SCREW_DIAMETER,
   RUNNER_TANDEM_DEPTH, RUNNER_TANDEM_DIAMETER, RUNNER_TANDEM_OFFSETS,
   SHELF_PIN_BACK_OFFSET, SHELF_PIN_DEPTH, SHELF_PIN_DIAMETER, SHELF_PIN_FRONT_OFFSET,
@@ -456,5 +459,67 @@ export function legScrewHoles(bottom: Panel, legPairs: number, ctx: Ctx): void {
         }
       }
     }
+  }
+}
+
+
+/**
+ * МИНИФИКС буыны: ящиктің қорабын жинайды.
+ *
+ * Бұрын қораптың буындарында присадка МҮЛДЕ жоқ еді — цех оны қолмен өлшеп
+ * бұрғылайтын, ал қорап қисайса, ящик тартылмай қалады.
+ *
+ * `wall` — көлденең панель (қораптың алдыңғы не артқы қабырғасы): оның
+ * бетінде эксцентриктің ұясы, торцінде штифттің тесігі.
+ * `side` — қораптың бүйірі: оның бетінде штифт бұралатын Ø5.
+ *
+ * Екі стяжка қойылады: биіктік бойынша ортадан 32 мм-ге ажыратылып
+ * (`MINIFIX_PAIR_SPACING`) — бір стяжка панельді айналдырып жібереді.
+ */
+export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
+  const wallT = ctx.thickness(wall)
+  const sideT = ctx.thickness(side)
+
+  // Қабырға ORIENT_FACING: локал x — БИІКТІК, локал y — ЕН (types.ts).
+  const wallHeight = wall.finishedLength
+  const wallWidth = wall.finishedWidth
+  const rows = [
+    Math.round(wallHeight / 2 - MINIFIX_PAIR_SPACING / 2),
+    Math.round(wallHeight / 2 + MINIFIX_PAIR_SPACING / 2),
+  ]
+  if (rows[0]! <= 0 || rows[1]! >= wallHeight) return
+
+  // Қабырғаның қай ұшы осы бүйірге тіреледі: жақынырағы.
+  const wallLeftWorld = wall.position.x
+  const wallRightWorld = wall.position.x + wallWidth
+  const sideCentreWorld = side.position.x + sideT / 2
+  const atLeft = Math.abs(sideCentreWorld - wallLeftWorld) < Math.abs(sideCentreWorld - wallRightWorld)
+
+  // Ұяның ортасы — торцтан 34 мм ішке қарай.
+  const camY = atLeft ? MINIFIX_CAM_FROM_EDGE : wallWidth - MINIFIX_CAM_FROM_EDGE
+  const edgeFace: Drill['face'] = atLeft ? 'edgeW1' : 'edgeW2'
+
+  for (const x of rows) {
+    // 1. Эксцентриктің ұясы — қабырғаның ішкі бетінде.
+    pushFace(wall, 'inner', x, camY, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
+
+    // 2. Штифттің тесігі — сол қабырғаның ТОРЦІНДЕ, қалыңдықтың ортасында.
+    wall.drilling.push({
+      face: edgeFace,
+      x: Math.round(x),
+      y: Math.round(wallT / 2),
+      diameter: MINIFIX_DOWEL_DIAMETER,
+      depth: MINIFIX_DOWEL_DEPTH,
+      purpose: 'minifix',
+    })
+
+    // 3. Штифт бұралатын тесік — бүйірдің ІШКІ бетінде, дәл сол биіктікте.
+    const worldY = wall.position.y + x
+    const worldZ = wall.position.z + wallT / 2
+    pushFace(
+      side, 'inner',
+      localX(side, worldY), localY(side, worldZ),
+      MINIFIX_SCREW_DIAMETER, MINIFIX_SCREW_DEPTH, 'minifix', ctx,
+    )
   }
 }

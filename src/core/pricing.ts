@@ -10,7 +10,7 @@
 
 import {
   CONFIRMAT_EDGE_DIAMETER,
-  HINGE_CUP_DIAMETER,
+  HINGE_CUP_DIAMETER, MINIFIX_CAM_DIAMETER,
 } from './constants'
 import type { HardwarePlacement } from './hardware'
 import type { NestingResult } from './nesting'
@@ -124,6 +124,8 @@ export function countHardware(panels: Panel[]): Map<string, number> {
   const add = (id: string, n: number) => counts.set(id, (counts.get(id) ?? 0) + n)
 
   let confirmats = 0
+  /** Минификс: бір стяжка = ұя + штифт + бұранда, сондықтан ҰЯМЕН саналады. */
+  let minifixes = 0
   let shelves = 0
   let drawerSides = 0
   /** Ілгек пен тұтқа брендке қарай әртүрлі позицияға түседі — id бойынша. */
@@ -140,6 +142,9 @@ export function countHardware(panels: Panel[]): Map<string, number> {
        * (диаметрлер 2026-09-02-де ауысты), ал беті-торцы ешқашан ауыспайды.
        */
       if (d.purpose === 'confirmat' && d.face.startsWith('edge')) confirmats += 1
+      // Эксцентриктің ҰЯСЫ — бір стяжка. Штифт пен бұранданың тесіктері сол
+      // стяжканың басқа бөліктері, оларды қайта санауға болмайды.
+      if (d.purpose === 'minifix' && d.diameter === MINIFIX_CAM_DIAMETER) minifixes += 1
       // Чашка = бір ілгек. Планканың тесіктері сол ілгектің екінші ұшы,
       // оларды қайта санауға болмайды.
       if (d.purpose === 'hinge' && d.diameter === HINGE_CUP_DIAMETER) {
@@ -163,6 +168,7 @@ export function countHardware(panels: Panel[]): Map<string, number> {
     add('confirmat-7x50', confirmats)
     add('confirmat-cap', confirmats)
   }
+  if (minifixes > 0) add('minifix-15', minifixes)
   for (const [id, n] of byHardwareId) {
     add(id, n)
     // Әр ілгекке бір жауап планка.

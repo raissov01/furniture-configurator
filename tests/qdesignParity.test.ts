@@ -102,3 +102,63 @@ describe('аяқтардың бұрандасы', () => {
     }
   })
 })
+
+describe('ящиктің қорабы: минификс', () => {
+  const panels = build()
+  const walls = panels.filter((p) => p.role === 'drawerBack')
+  const sides = panels.filter((p) => p.role === 'drawerSide')
+  const of = (p: Panel) => p.drilling.filter((d) => d.purpose === 'minifix')
+
+  it('әр қабырғада ЕКІ ұя мен ЕКІ штифт тесігі — әр бүйірге', () => {
+    for (const wall of walls) {
+      const holes = of(wall)
+      const cams = holes.filter((d) => d.diameter === 15)
+      const dowels = holes.filter((d) => d.diameter === 8)
+      // Екі бүйір × екі стяжка.
+      expect(cams).toHaveLength(4)
+      expect(dowels).toHaveLength(4)
+      for (const cam of cams) {
+        expect(cam.depth).toBe(12.7)
+        expect(cam.face).toBe('inner')
+      }
+      for (const dowel of dowels) {
+        expect(dowel.depth).toBe(34)
+        expect(dowel.face.startsWith('edge')).toBe(true)
+      }
+    }
+  })
+
+  it('бүйірде штифт бұралатын Ø5 × 13 тесік бар', () => {
+    for (const side of sides) {
+      const screws = of(side).filter((d) => d.diameter === 5)
+      // Алдыңғы және артқы қабырға × екі стяжка.
+      expect(screws).toHaveLength(4)
+      for (const d of screws) {
+        expect(d.depth).toBe(13)
+        expect(d.face).toBe('inner')
+      }
+    }
+  })
+
+  it('екі стяжка 32 мм-ге ажыратылған (32 мм жүйесі)', () => {
+    const cams = of(walls[0]!).filter((d) => d.diameter === 15)
+    const xs = [...new Set(cams.map((d) => d.x))].sort((a, b) => a - b)
+    expect(xs).toHaveLength(2)
+    expect(xs[1]! - xs[0]!).toBe(32)
+  })
+
+  it('ұяның ортасы торцтан 34 мм ішке қарай', () => {
+    const wall = walls[0]!
+    const cams = of(wall).filter((d) => d.diameter === 15)
+    const ys = [...new Set(cams.map((d) => d.y))].sort((a, b) => a - b)
+    expect(ys).toHaveLength(2)
+    // Екі шетінен де 34 мм (рез координатасында кромка шегерілуі мүмкін).
+    expect(ys[0]!).toBeLessThanOrEqual(34)
+    expect(wall.cutWidth - ys[1]!).toBeLessThanOrEqual(34)
+  })
+
+  it('ящик жоқ корпуста минификс те ЖОҚ', () => {
+    const plain = build({}, 'wardrobe-penal-600')
+    expect(plain.flatMap((p) => p.drilling).filter((d) => d.purpose === 'minifix')).toEqual([])
+  })
+})
