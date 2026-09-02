@@ -51,6 +51,7 @@ export const EdgeBandSchema = z.object({
 export const ConstructionSettingsSchema = z.object({
   shelfGap: z.number().int().nonnegative(),
   shelfSetback: z.number().int().nonnegative(),
+  plinthSetback: z.number().int().nonnegative(),
   frontGap: z.number().int().nonnegative(),
   backThickness: z.number().positive(),
   grooveDepth: z.number().int().nonnegative(),
@@ -257,6 +258,8 @@ export const PlacementSchema = z.object({
   cabinetId: z.string().min(1),
   wall: z.enum(['north', 'east', 'south', 'west']),
   offset: z.number().int(),
+  /** Еденнен биіктік, мм. ЕРІКТІ: ескі жобада ол жоқ, мәні 0 деп саналады. */
+  elevation: z.number().int().min(0).max(4000).optional(),
 })
 
 export const ProjectFileSchema = ProjectFileV2Schema.extend({

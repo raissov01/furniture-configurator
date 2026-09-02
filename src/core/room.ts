@@ -115,7 +115,9 @@ export function placementPose(
   return {
     position: v(
       wall.origin.x + wall.direction.x * t + wall.inward.x * d,
-      0,
+      // Ілмелі модуль: еденнен көтерілген биіктік. Корпустың ішкі есебі
+      // бұдан ӨЗГЕРМЕЙДІ — ол тек бөлмедегі орны.
+      placement.elevation ?? 0,
       wall.origin.z + wall.direction.z * t + wall.inward.z * d,
     ),
     rotationY: wall.rotationY,

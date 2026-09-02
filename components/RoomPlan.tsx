@@ -146,6 +146,17 @@ export function RoomPlan() {
                   onChange={(offset) => movePlacement(activeId, { offset })}
                 />
               </Field>
+              {/* Ілмелі модуль: ас үйдің үстіңгі қатары, ванна шкафы, ілмелі
+                  тумба. Корпустың есебі бұдан өзгермейді — тек орны. */}
+              <Field label={tr('От пола')} hint="мм">
+                <NumberInput
+                  value={activePlacement.elevation ?? 0}
+                  min={0}
+                  max={4000}
+                  step={10}
+                  onChange={(elevation) => movePlacement(activeId, { elevation })}
+                />
+              </Field>
             </div>
 
             <div className="flex items-center justify-between">

@@ -202,6 +202,9 @@ export function ShopSettings() {
             <div className="grid gap-2 sm:grid-cols-3">
               <Rule label={tr('Зазор полки')} hint={tr('общий, на обе стороны')} k="shelfGap" shop={shop} onChange={setRule} />
               <Rule label={tr('Отступ полки от фронта')} k="shelfSetback" shop={shop} onChange={setRule} />
+              {/* Цокольдің «вылеті»: аяқ тұратын орын. Бұрын кодта 50 мм
+                  болып қатып тұрған, ал ас үйде 100 мм-ге дейін жетеді. */}
+              <Rule label={tr('Отступ цоколя (вылет)')} k="plinthSetback" shop={shop} onChange={setRule} />
               <Rule label={tr('Зазор фасадов')} k="frontGap" shop={shop} onChange={setRule} />
               <Rule label={tr('Толщина задней стенки')} k="backThickness" shop={shop} onChange={setRule} />
               <Rule label={tr('Глубина паза')} k="grooveDepth" shop={shop} onChange={setRule} />

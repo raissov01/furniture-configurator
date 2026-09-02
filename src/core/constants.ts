@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS: ConstructionSettings = {
    * қояды — есік жабылғанда киім ілгіш сөреге тимеуі үшін.
    */
   shelfSetback: 0,
+  plinthSetback: 50,
 
   /** Фасадтар арасындағы және айналасындағы зазор. Аз болса — есіктер бір-біріне тиеді. */
   frontGap: 3,

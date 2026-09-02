@@ -39,10 +39,9 @@ const MIN_DIMENSION = 100
  */
 const MIN_RAIL_WIDTH = 20
 /**
- * Цокольдің алдыңғы жиектен шегінісі, мм. Аяқ тұратын орын — цех
- * стандартында әдетте 50 мм.
+ * ⚠ ЕСКІРГЕН: шегіністі енді цех өз профилінде қояды
+ * (`settings.plinthSetback`). Тұрақты тек сол әдепкінің көзі ретінде қалды.
  */
-const PLINTH_SETBACK = 50
 /** Ящик қорабының ең аз биіктігі. Бұл — ақылға қонымды еден, цех ережесі емес. */
 const MIN_DRAWER_BOX_HEIGHT = 60
 /** Ең үлкен габарит: бір парақтан ұзын. Бөлу (A2) кейінгі кезеңде. */
@@ -643,7 +642,7 @@ export function generateCabinet(
       make(
         'plinth', 'plinth', 'Цоколь', carcass,
         W, baseHeight,
-        { x: 0, y: -baseHeight, z: PLINTH_SETBACK }, ORIENT_FACING,
+        { x: 0, y: -baseHeight, z: settings.plinthSetback }, ORIENT_FACING,
         'Цоколь, лицевой',
       ),
     )

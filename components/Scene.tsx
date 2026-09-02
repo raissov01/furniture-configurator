@@ -157,7 +157,8 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
 
   return (
     <group
-      position={[item.pose.position.x, 0, item.pose.position.z]}
+      // Y — ілмелі модульдің еденнен биіктігі (`placement.elevation`).
+      position={[item.pose.position.x, item.pose.position.y, item.pose.position.z]}
       rotation={[0, (item.pose.rotationY * Math.PI) / 180, 0]}
     >
       {item.panels.map((p) => {
@@ -275,7 +276,12 @@ export default function Scene({
     }
     const fp = placementFootprint(room, active.cabinet, active.placement)
     return {
-      target: { x: fp.x + fp.width / 2, y: active.cabinet.height / 2, z: fp.z + fp.depth / 2 },
+      target: {
+        x: fp.x + fp.width / 2,
+        // Ілмелі модульге камера өз биіктігінде қарауы керек.
+        y: active.pose.position.y + active.cabinet.height / 2,
+        z: fp.z + fp.depth / 2,
+      },
       box: { W: active.cabinet.width, H: active.cabinet.height, D: active.cabinet.depth },
       facingY: active.pose.rotationY,
     }

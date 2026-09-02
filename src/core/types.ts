@@ -277,6 +277,11 @@ export type EdgePolicy = {
 export type ConstructionSettings = {
   shelfGap: number
   shelfSetback: number
+  /**
+   * Цокольдің алдыңғы жиектен шегінісі, мм («вылет»). Аяқ тұратын орын:
+   * цех стандартында әдетте 50 мм, бірақ ас үйде 100 мм-ге дейін де болады.
+   */
+  plinthSetback: number
   frontGap: number
   backThickness: number
   grooveDepth: number
@@ -634,6 +639,14 @@ export type Placement = {
   wall: WallId
   /** Қабырға басынан, мм */
   offset: number
+  /**
+   * ЕДЕННЕН қанша биіктікте ілінген, мм. 0 — еденде тұр.
+   *
+   * Ас үйдің үстіңгі қатары, ванна бөлмесінің шкафы, теледидардың астындағы
+   * ілмелі тумба — бәрі еденде тұрмайды. Бұл — БӨЛМЕДЕГІ орны, корпустың өз
+   * геометриясы емес: деталировка да, раскрой да бұдан өзгермейді.
+   */
+  elevation?: number | undefined
 }
 
 export type ProjectFile = {

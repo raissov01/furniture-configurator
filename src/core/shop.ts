@@ -437,6 +437,7 @@ const EdgeBandSchema = z.object({
 const SettingsOverrideSchema = z.object({
   shelfGap: z.number().int().nonnegative(),
   shelfSetback: z.number().int().nonnegative(),
+  plinthSetback: z.number().int().nonnegative(),
   frontGap: z.number().int().nonnegative(),
   backThickness: z.number().positive(),
   grooveDepth: z.number().int().nonnegative(),
