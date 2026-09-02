@@ -29,6 +29,7 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
   const canRemove = useConfigurator((s) => activeCabinet(s).sections.length > 1)
 
   const shelves = section.contents.find((c) => c.kind === 'shelves')
+  const stand = section.contents.find((c) => c.kind === 'stand')
   const drawers = section.contents.find((c) => c.kind === 'drawers')
   const rod = section.contents.find((c) => c.kind === 'rod')
   const filling = section.contents.find((c) => c.kind === 'filling')
@@ -41,6 +42,9 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
   const setFill = (next: {
     shelfCount?: number
     shelfKind?: 'adjustable' | 'fixed'
+    shelfInsets?: NonNullable<Extract<SectionContent, { kind: 'shelves' }>['insets']>
+    shelfAt?: number[] | null
+    standCount?: number
     drawerCount?: number
     hasRod?: boolean
     filling?: FillingKind | null
@@ -48,6 +52,13 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
   }) => {
     const shelfCount = next.shelfCount ?? shelves?.count ?? 0
     const shelfKind = next.shelfKind ?? shelves?.shelfKind ?? 'adjustable'
+    // Шегіністер мен нақты биіктіктер ҚАЙТА ҚҰРУДА жоғалмауы керек: бұл
+    // тізім әр өзгеріс сайын нөлден жиналады.
+    const shelfInsets = next.shelfInsets ?? (shelves?.kind === 'shelves' ? shelves.insets : undefined)
+    const shelfAt = next.shelfAt === undefined
+      ? (shelves?.kind === 'shelves' ? shelves.at : undefined)
+      : (next.shelfAt ?? undefined)
+    const standCount = next.standCount ?? (stand?.kind === 'stand' ? stand.count : 0)
     const drawerCount = next.drawerCount ?? drawers?.count ?? 0
     const hasRod = next.hasRod ?? rod !== undefined
     const fillingKind = next.filling === undefined
@@ -61,7 +72,16 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
     // Техника ең ТӨМЕНДЕ: духовка мен посудомойка еденге жақын тұрады.
     if (applianceKind) contents.push({ kind: 'appliance', appliance: applianceKind })
     if (drawerCount > 0) contents.push({ kind: 'drawers', count: drawerCount })
-    if (shelfCount > 0) contents.push({ kind: 'shelves', count: shelfCount, shelfKind })
+    if (shelfCount > 0) {
+      contents.push({
+        kind: 'shelves', count: shelfCount, shelfKind,
+        ...(shelfInsets ? { insets: shelfInsets } : {}),
+        ...(shelfAt && shelfAt.length > 0 ? { at: shelfAt } : {}),
+      })
+    }
+    // Стойка сөренің ҮСТІНДЕ бөлек жолақ болып тұрады: солай ғана «төменде
+    // сөре, жоғарыда екі бөлік» деген тор шығады.
+    if (standCount > 0) contents.push({ kind: 'stand', count: standCount })
     // Механизм сөренің үстінде, штанганың астында.
     if (fillingKind) contents.push({ kind: 'filling', filling: fillingKind })
     // Штанга ең ҮСТІНДЕ: киім ілінетін жер жоғарыда болады.
@@ -109,6 +129,44 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
         </Field>
       </div>
 
+      {shelves?.kind === 'shelves' && shelves.count > 0 ? (
+        <div className="space-y-2 rounded-md border border-neutral-200 p-2 dark:border-neutral-800">
+          <div className="text-[10px] uppercase tracking-wider text-neutral-500">{tr('Полки: отступы и высоты')}</div>
+          <div className="grid grid-cols-4 gap-2">
+            {([['left', 'Слева'], ['right', 'Справа'], ['front', 'Спереди'], ['back', 'Сзади']] as const)
+              .map(([key, label]) => (
+                <Field key={key} label={tr(label)}>
+                  <NumberInput
+                    value={shelves.insets?.[key] ?? 0}
+                    min={0}
+                    max={1000}
+                    onChange={(value) => setFill({ shelfInsets: { ...shelves.insets, [key]: value } })}
+                  />
+                </Field>
+              ))}
+          </div>
+          {/*
+            * Нақты биіктіктер: бос болса — тең таратылады. Үтірмен енгізу
+            * цехқа ыңғайлы: «320, 700, 1150» деп бір жолмен қояды.
+            */}
+          <Field label={tr('Высоты полок, мм')} hint={tr('через запятую; пусто — поровну')}>
+            <input
+              value={(shelves.at ?? []).join(', ')}
+              onChange={(e) => {
+                const list = e.target.value
+                  .split(/[,;\s]+/)
+                  .map((part) => Number(part))
+                  .filter((n) => Number.isFinite(n) && n > 0)
+                  .map((n) => Math.round(n))
+                setFill({ shelfAt: list.length > 0 ? list : null })
+              }}
+              placeholder="320, 700, 1150"
+              className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm tabular-nums outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
+            />
+          </Field>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Полок')}>
           <NumberInput
@@ -126,6 +184,14 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
               { value: 'adjustable', label: tr('На полкодержателях') },
               { value: 'fixed', label: tr('Фиксированная') },
             ]}
+          />
+        </Field>
+        <Field label={tr('Стоек')} hint={tr('вертикальные, в полосе')}>
+          <NumberInput
+            value={stand?.kind === 'stand' ? stand.count : 0}
+            min={0}
+            max={10}
+            onChange={(standCount) => setFill({ standCount })}
           />
         </Field>
         <Field label={tr('Ящиков')} hint={drawers ? 'снизу' : undefined}>

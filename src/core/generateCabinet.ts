@@ -597,6 +597,79 @@ export function generateCabinet(
         return
       }
 
+      if (content.kind === 'stand' && content.count > 0) {
+        const field = `sections[${sectionIndex}].contents[${bandIndex}]`
+        if (!Number.isInteger(content.count) || content.count < 1 || content.count > 10) {
+          throw new ConfigValidationError(`${field}.count`, `${content.count}`, '1..10 бүтін сан')
+        }
+
+        const insets = content.insets ?? {}
+        for (const [name, value] of Object.entries(insets)) {
+          if (value === undefined) continue
+          if (!Number.isInteger(value) || value < 0 || value > 1000) {
+            throw new ConfigValidationError(`${field}.insets.${name}`, `${value}`, '0..1000 мм, бүтін сан')
+          }
+        }
+        const top = insets.top ?? 0
+        const bottom = insets.bottom ?? 0
+        const front = insets.front ?? 0
+        const back = insets.back ?? 0
+
+        // Тереңдік жолақтың ОРТАСЫНАН алынады: қиғаш төбеде стойка да
+        // қысқарады, ал ортасы — оның орташа тереңдігі.
+        const space = shelfSpaceAt(band.y + Math.round(band.height / 2))
+        const standHeight = band.height - top - bottom
+        const standDepth = space.depth - front - back
+        if (standHeight < MIN_RAIL_WIDTH || standDepth < MIN_RAIL_WIDTH) {
+          throw new ConfigValidationError(
+            `${field}.insets`,
+            `отступы оставляют стойку ${standHeight}×${standDepth} мм`,
+            `каждая сторона ≥ ${MIN_RAIL_WIDTH} мм`,
+          )
+        }
+
+        /*
+         * Орындары: нақты берілсе — сол, әйтпесе ұяның ені тең бөлінеді
+         * (сөренің ережесімен бір: қалдық миллиметр СОЛ жақтан таратылады).
+         */
+        const explicit = content.at
+        if (explicit) {
+          let previous = -Infinity
+          for (const value of explicit) {
+            if (!Number.isInteger(value) || value < 0) {
+              throw new ConfigValidationError(`${field}.at`, `${value}`, '0-ден басталатын бүтін сан, мм')
+            }
+            if (value + t > layout.width) {
+              throw new ConfigValidationError(
+                `${field}.at`, `${value} мм`, `0..${layout.width - t} мм (ұяның ені ${layout.width})`,
+              )
+            }
+            if (value < previous + t) {
+              throw new ConfigValidationError(
+                `${field}.at`, `${value} мм`, `алдыңғы стойкадан кемінде ${t} мм оңға`,
+              )
+            }
+            previous = value
+          }
+        }
+
+        const openings = distributeMillimetres(layout.width - content.count * t, content.count + 1)
+        const standCount = explicit ? explicit.length : content.count
+        let x = layout.x
+        for (let i = 0; i < standCount; i += 1) {
+          x = explicit ? layout.x + explicit[i]! : x + (openings[i] ?? 0)
+          panels.push(make(
+            `${section.id}${bandTag(bandIndex)}-stand-${i + 1}`, 'divider', 'Стойка', carcass,
+            standHeight, standDepth,
+            { x, y: band.y + bottom, z: space.z + front },
+            ORIENT_SIDE,
+            'Стойка в полосе',
+          ))
+          if (!explicit) x += t
+        }
+        return
+      }
+
       if (content.kind === 'drawers') {
         const created = makeDrawers({
           section, sectionIndex, bandIndex, band, layout,

@@ -175,6 +175,18 @@ export const SectionContentSchema = z.discriminatedUnion('kind', [
     count: z.number().int().min(1).max(8),
     height: bandHeight,
   }),
+  z.object({
+    kind: z.literal('stand'),
+    count: z.number().int().min(1).max(10),
+    height: bandHeight,
+    at: z.array(z.number().int().min(0)).max(10).optional(),
+    insets: z.object({
+      top: z.number().int().min(0).max(1000).optional(),
+      bottom: z.number().int().min(0).max(1000).optional(),
+      front: z.number().int().min(0).max(1000).optional(),
+      back: z.number().int().min(0).max(1000).optional(),
+    }).optional(),
+  }),
   z.object({ kind: z.literal('rod'), height: bandHeight }),
   z.object({ kind: z.literal('filling'), filling: FillingKindSchema, height: bandHeight }),
   z.object({ kind: z.literal('appliance'), appliance: ApplianceKindSchema, height: bandHeight }),
