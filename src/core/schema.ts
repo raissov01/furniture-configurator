@@ -160,6 +160,15 @@ export const SectionContentSchema = z.discriminatedUnion('kind', [
     count: z.number().int().min(0).max(20),
     shelfKind: z.enum(['adjustable', 'fixed']),
     height: bandHeight,
+    /** Ұяның шетінен шегіністер. ЕРІКТІ — ескі жобада жоқ, мәні 0. */
+    insets: z.object({
+      left: z.number().int().min(0).max(1000).optional(),
+      right: z.number().int().min(0).max(1000).optional(),
+      front: z.number().int().min(0).max(1000).optional(),
+      back: z.number().int().min(0).max(1000).optional(),
+    }).optional(),
+    /** Нақты биіктіктер, мм. Берілсе, `count` еленбейді. */
+    at: z.array(z.number().int().min(0)).max(20).optional(),
   }),
   z.object({
     kind: z.literal('drawers'),

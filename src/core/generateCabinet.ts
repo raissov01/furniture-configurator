@@ -496,16 +496,64 @@ export function generateCabinet(
             `sections[${sectionIndex}].contents[${bandIndex}].count`, `${content.count}`, '0..20 бүтін сан',
           )
         }
-        // Ішкі саңылау: сөрелер соны тең бөледі. Қалдық миллиметр АСТЫҢҒЫ
-        // бөліктерден бастап таратылады — көз деңгейінен төмен жер аз көрінеді.
+        const field = `sections[${sectionIndex}].contents[${bandIndex}]`
+
+        /*
+         * Шегіністер. Цехтың `shelfGap`-ы — отырғызу саңылауы (§4.6), ал бұл
+         * ӘДЕЙІ шегініс: бүйірдегі бөлгіштен, алдыңғы механизмнен қашықтау.
+         * Екеуі қосылады, себебі екеуінің себебі бөлек.
+         */
+        const insets = content.insets ?? {}
+        for (const [name, value] of Object.entries(insets)) {
+          if (value === undefined) continue
+          if (!Number.isInteger(value) || value < 0 || value > 1000) {
+            throw new ConfigValidationError(`${field}.insets.${name}`, `${value}`, '0..1000 мм, бүтін сан')
+          }
+        }
+        const insetLeft = insets.left ?? 0
+        const insetRight = insets.right ?? 0
+        const insetFront = insets.front ?? 0
+        const insetBack = insets.back ?? 0
+
+        /*
+         * Биіктіктер. `at` берілсе — цех қойған нақты сандар; әйтпесе ішкі
+         * саңылау тең бөлінеді де, қалдық миллиметр АСТЫҢҒЫ бөліктерден
+         * бастап таратылады (көз деңгейінен төмен жер аз көрінеді).
+         */
+        const explicit = content.at
+        if (explicit) {
+          if (explicit.length === 0) {
+            throw new ConfigValidationError(`${field}.at`, 'бос тізім', 'кемінде бір биіктік')
+          }
+          let previous = -Infinity
+          for (const value of explicit) {
+            if (!Number.isInteger(value) || value < 0) {
+              throw new ConfigValidationError(`${field}.at`, `${value}`, '0-ден басталатын бүтін сан, мм')
+            }
+            if (value + t > band.height) {
+              throw new ConfigValidationError(
+                `${field}.at`, `${value} мм`, `0..${band.height - t} мм (жолақтың биіктігі ${band.height})`,
+              )
+            }
+            // Реті бұзылса, сөрелер бір-біріне кіріп кетеді — үнсіз түзетпейміз.
+            if (value < previous + t) {
+              throw new ConfigValidationError(
+                `${field}.at`, `${value} мм`, `алдыңғы сөреден кемінде ${t} мм жоғары`,
+              )
+            }
+            previous = value
+          }
+        }
+
         const openings = distributeMillimetres(band.height - content.count * t, content.count + 1)
         const note = content.shelfKind === 'fixed'
           ? 'Фиксированная, конфирмат'
           : 'На полкодержателях, шаг 32 мм'
 
+        const shelfCount = explicit ? explicit.length : content.count
         let y = band.y
-        for (let i = 0; i < content.count; i += 1) {
-          y += openings[i] ?? 0
+        for (let i = 0; i < shelfCount; i += 1) {
+          y = explicit ? band.y + explicit[i]! : y + (openings[i] ?? 0)
           const space = shelfSpaceAt(y + t)
           if (space.depth < MIN_DIMENSION) {
             throw new ConfigValidationError(
@@ -514,12 +562,29 @@ export function generateCabinet(
               'уменьшите число полок или поднимите низкую сторону',
             )
           }
+          const shelfWidth = layout.width - settings.shelfGap - insetLeft - insetRight
+          const shelfDepthHere = space.depth - insetFront - insetBack
+          if (shelfWidth < MIN_RAIL_WIDTH || shelfDepthHere < MIN_RAIL_WIDTH) {
+            throw new ConfigValidationError(
+              `${field}.insets`,
+              `отступы оставляют полку ${shelfWidth}×${shelfDepthHere} мм`,
+              `каждая сторона ≥ ${MIN_RAIL_WIDTH} мм`,
+            )
+          }
+          const shelfNote = [
+            space.depth < shelfDepth ? `${note}. Укорочена под скос` : note,
+            insetLeft || insetRight || insetFront || insetBack ? 'С отступами' : '',
+          ].filter(Boolean).join('. ')
           const shelf = make(
             `${section.id}${bandTag(bandIndex)}-shelf-${i + 1}`, 'shelf', 'Полка', carcass,
-            layout.width - settings.shelfGap, space.depth,
-            { x: layout.x + Math.floor(settings.shelfGap / 2), y, z: space.z },
+            shelfWidth, shelfDepthHere,
+            {
+              x: layout.x + Math.floor(settings.shelfGap / 2) + insetLeft,
+              y,
+              z: space.z + insetFront,
+            },
             ORIENT_HORIZONTAL,
-            space.depth < shelfDepth ? `${note}. Укорочена под скос` : note,
+            shelfNote,
           )
           // Бұрыштық корпуста сөре де ТРАПЕЦИЯ: тереңдігі бүйірлерімен бірге
           // өзгереді, әйтпесе оң жағы қиғаш алдыңғы жиектен шығып тұрар еді.

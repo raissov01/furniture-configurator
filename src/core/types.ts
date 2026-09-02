@@ -399,7 +399,34 @@ export type SectionFronts = {
 }
 
 export type SectionContent =
-  | { kind: 'shelves'; count: number; shelfKind: ShelfKind; height?: number | undefined }
+  | {
+    kind: 'shelves'
+    count: number
+    shelfKind: ShelfKind
+    height?: number | undefined
+    /**
+     * Ұяның шетінен шегіністер, мм. Берілмегені — 0.
+     *
+     * НЕГЕ КЕРЕК: сөре әрқашан ұяны толық алмайды. Бүйірде тік бөлгіш тұрса,
+     * сөре одан шегінеді; алдында фасадтың механизмі болса, артқа жылжиды.
+     * `left/right` — цехтың `shelfGap`-ының ҮСТІНЕ қосылады (ол — отырғызу
+     * саңылауы, бұл — әдейі шегініс), `front/back` — тереңдік бойынша.
+     */
+    insets?: {
+      left?: number | undefined
+      right?: number | undefined
+      front?: number | undefined
+      back?: number | undefined
+    } | undefined
+    /**
+     * Сөрелердің НАҚТЫ биіктігі: жолақтың астынан сөренің АСТЫҢҒЫ бетіне
+     * дейін, мм. Берілсе, `count` пен тең тарату ЕЛЕНБЕЙДІ.
+     *
+     * Тең тарату — әдепкі әрі жиі дұрыс, бірақ ыдыс-аяқ пен кітаптың биіктігі
+     * әртүрлі: цех «мұнда 320, мұнда 420» деп қоя алуы керек.
+     */
+    at?: number[] | undefined
+  }
   | { kind: 'drawers'; count: number; height?: number | undefined }
   | { kind: 'rod'; height?: number | undefined }
   /**
