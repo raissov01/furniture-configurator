@@ -6,7 +6,7 @@
  * сахна метрге келтіріледі (scale 0.001).
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Grid, OrbitControls, OrthographicCamera } from '@react-three/drei'
@@ -18,6 +18,7 @@ import { ROD_DIAMETER, placementFootprint } from '@/src/core/index'
 import type { CabinetConfig, Catalog, HardwarePlacement, Panel, Placement, Room, Vec3 } from '@/src/core/index'
 
 type Controls = ComponentRef<typeof OrbitControls>
+
 
 const MM = 0.001
 
@@ -74,7 +75,20 @@ function CameraRig({
   const camera = useThree((s) => s.camera)
   const size = useThree((s) => s.size)
   const invalidate = useThree((s) => s.invalidate)
-  const controls = useRef<Controls>(null)
+  /*
+   * ⚠ ref ЕМЕС, STATE.
+   *
+   * OrbitControls-тың сілтемесі R3F-тің өз реконсилерінде тіркеледі, ал ол
+   * сыртқы React-тің эффектілерімен бір мезгілде БОЛМАУЫ мүмкін. Сол себепті
+   * бірінші «кадрлау» кезінде `controls` бос болып шығатын да, бақылаушының
+   * нысанасы (0,0,0) күйінде қалатын — содан кейін ол камераны БАСТАПҚЫ
+   * НҮКТЕГЕ, яғни бөлменің бұрышындағы еденге қаратып жіберетін. Клиент
+   * сілтемені ашқанда дәл сол бос еденді көретін.
+   *
+   * State болғандықтан, сілтеме тіркелген сәтте `fit` қайта жасалады да,
+   * кадрлау бақылаушымен БІРГЕ бір рет қайталанады.
+   */
+  const [controls, setControls] = useState<Controls | null>(null)
   const { W, H, D } = box
   const { x: tx, y: ty, z: tz } = target
 
@@ -128,30 +142,21 @@ function CameraRig({
       if (Number.isFinite(fitZoom) && fitZoom > 0) camera.zoom = fitZoom
     }
     camera.updateProjectionMatrix()
-    controls.current?.target.set(tx * MM, ty * MM, tz * MM)
-    controls.current?.update()
+    controls?.target.set(tx * MM, ty * MM, tz * MM)
+    controls?.update()
     invalidate()
-  }, [preset, camera, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, contentKey, fitNonce])
+  }, [preset, camera, controls, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, contentKey, fitNonce])
 
   useEffect(() => { fit() }, [fit])
 
-  /**
-   * ⚠ БІР РЕТТІК ҚАЙТА БАҒЫТТАУ.
-   *
-   * Бірінші кадрда канвастың өлшемі әлі түпкілікті емес, ал сахна мазмұны
-   * (жоба) кейінірек келуі мүмкін — сілтемемен ашылған бетте ол әрқашан
-   * солай. Сол сәтте бағытталған камера ЕДЕНГЕ қарап қалады да, пайдаланушы
-   * пресетті қолмен баспайынша солай тұрады. Клиент сілтемені ашқанда бос
-   * еден көрсе, ол қайта баспайды — жай ғана жабады.
-   *
-   * Сондықтан келесі кадрда бір рет қайта бағыттаймыз.
+  /*
+   * Сахнаның мазмұны (жоба) КЕЙІНІРЕК келуі мүмкін — сілтемемен ашылған бетте
+   * ол әрқашан солай. `fit` сол мазмұнға тәуелді, сондықтан жоба келгенде
+   * жоғарыдағы эффект өзі қайта жүреді; мұнда бөлек «бір реттік» қайталау
+   * қажет емес.
    */
-  useEffect(() => {
-    const id = requestAnimationFrame(() => fit())
-    return () => cancelAnimationFrame(id)
-  }, [fit])
 
-  return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.12} />
+  return <OrbitControls ref={setControls} makeDefault enableDamping dampingFactor={0.12} />
 }
 
 function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Catalog; active: boolean }) {
