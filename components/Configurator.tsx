@@ -530,13 +530,28 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
       <Field label={tr('Задняя стенка')}>
         <Select
           value={cabinet.back.mode}
-          onChange={(mode) => edit('back', { back: { mode } })}
+          onChange={(mode) => edit('back', { back: { ...cabinet.back, mode } })}
           options={[
             { value: 'overlay', label: tr('Внакладку (на скобы)') },
+            { value: 'inset', label: tr('Вкладная (внутрь корпуса)') },
             { value: 'groove', label: tr('В паз 4 мм') },
+            // Ядро мұны бұрыннан біледі (ашық стеллаж, стол, кереует
+            // каркасы), бірақ экранда таңдау жоқ болатын.
+            { value: 'none', label: tr('Без стенки') },
           ]}
         />
       </Field>
+
+      {cabinet.back.mode === 'inset' ? (
+        <Field label={tr('Отступ задней стенки')} hint={tr('от заднего края, мм')}>
+          <NumberInput
+            value={cabinet.back.inset ?? 0}
+            min={0}
+            max={200}
+            onChange={(inset) => edit('back.inset', { back: { ...cabinet.back, inset } })}
+          />
+        </Field>
+      ) : null}
 
       <SectionTitle>{tr('Скос (мансарда)')}</SectionTitle>
       <div className="grid grid-cols-2 gap-2">

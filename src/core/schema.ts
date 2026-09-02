@@ -115,7 +115,11 @@ const CabinetBaseSchema = z.object({
   carcassMaterialId: z.string().min(1),
   frontMaterialId: z.string().min(1),
   backMaterialId: z.string().min(1),
-  back: z.object({ mode: z.enum(['overlay', 'groove', 'none']) }),
+  back: z.object({
+    mode: z.enum(['overlay', 'groove', 'inset', 'none']),
+    /** Вкладной арт қабырғаның арт жиектен шегінісі, мм. ЕРІКТІ (әдепкі 0). */
+    inset: z.number().int().min(0).max(200).optional(),
+  }),
   edging: EdgePolicySchema,
   settings: ConstructionSettingsSchema.optional(),
   corner: z.object({ depthAtRight: mm }).optional(),

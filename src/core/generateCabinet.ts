@@ -79,9 +79,23 @@ export function generateCabinet(
    *   groove  — ХДФ панельдің ішіндегі пазда отырады, сөре пазға дейін барады
    */
   // Арт қабырға ЖОҚ болса, шегеретін де ештеңе жоқ: корпус толық тереңдікте.
+  /**
+   * ВКЛАДНОЙ арт қабырғаның шегінісі. Мұнда материалдың ӨЗ қалыңдығы
+   * алынады, `settings.backThickness` емес: вкладной арт қабырға 3 мм ХДФ та,
+   * 10 мм ЛДСП та болуы мүмкін, ал накладной режимде екеуінің тең болуы
+   * тексеріліп тұр.
+   */
+  const isInsetBack = config.back.mode === 'inset'
+  const backInset = config.back.inset ?? 0
+  if (isInsetBack && (!Number.isInteger(backInset) || backInset < 0 || backInset > 200)) {
+    throw new ConfigValidationError('back.inset', `${backInset} мм`, '0..200 мм, бүтін сан')
+  }
+
   const backAllowance = config.back.mode === 'none'
     ? 0
-    : isGroove ? settings.grooveInset : settings.backThickness
+    : isGroove ? settings.grooveInset
+      : isInsetBack ? backInset + backMat.thickness
+        : settings.backThickness
 
   /**
    * Бүйір/крышка/дно/перегородка тереңдігі. ЕКІ режимде де жиналған кабинеттің
@@ -97,7 +111,7 @@ export function generateCabinet(
    * корпус сұралғаннан 3 мм тайыз болып шығатын.
    */
   const carcassDepthOf = (d: number): number =>
-    config.back.mode === 'none' ? d : isGroove ? d : d - settings.backThickness
+    config.back.mode === 'none' || isGroove || isInsetBack ? d : d - settings.backThickness
   const carcassDepth = carcassDepthOf(D)
 
   /** Сөре тереңдігі: арт қабырғаға дейін барады, оның үстіне шықпайды. */
@@ -562,6 +576,21 @@ export function generateCabinet(
       )
       x += pieceWidth
     })
+  } else if (isInsetBack) {
+    /*
+     * ВКЛАДНОЙ: ХДФ корпустың ішкі ойығына дәл кіреді де, панельдердің
+     * торцына бекітіледі. Пазы ЖОҚ, сондықтан өлшемі — таза ойық, ал орны
+     * арт жиектен `inset` шегініп тұрады.
+     */
+    panels.push(
+      make(
+        'back', 'back', 'Задняя стенка', backMat,
+        innerHeight, innerWidth,
+        { x: t, y: t, z: D - backInset - backMat.thickness },
+        ORIENT_FACING,
+        backInset > 0 ? `Вкладная, отступ ${backInset} мм` : 'Вкладная, заподлицо',
+      ),
+    )
   } else {
     const g = settings.grooveDepth
     // ХДФ корпустың ішінде, пазда отырады: алдыңғы беті D − grooveInset-те,

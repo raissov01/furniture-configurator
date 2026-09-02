@@ -247,7 +247,16 @@ export type Panel = {
 // ── Конфигурация ─────────────────────────────────────────────────────────────
 
 export type ConstructionMethod = 'sidesOverlay' | 'topBottomOverlay'
-export type BackMode = 'overlay' | 'groove' | 'none'
+/**
+ * Арт қабырғаның бекітілуі (§4.5).
+ *
+ *   overlay — НАКЛАДНОЙ: корпустың артына скобамен қағылады (W × H)
+ *   groove  — ПАЗҒА: панельдердің ішіндегі ойықта отырады
+ *   inset   — ВКЛАДНОЙ: корпустың ІШІНЕ, ойықсыз кіреді де, панельдердің
+ *             торцына бұранда/скобамен бекітіледі (ішкі ойықтың өлшемі)
+ *   none    — арт қабырғасыз (ашық стеллаж, стол, кереует каркасы)
+ */
+export type BackMode = 'overlay' | 'groove' | 'inset' | 'none'
 export type FrontMount = 'overlay' | 'inset'
 export type ShelfKind = 'adjustable' | 'fixed'
 
@@ -454,7 +463,12 @@ export type CabinetConfig = {
   carcassMaterialId: string
   frontMaterialId: string
   backMaterialId: string
-  back: { mode: BackMode }
+  /**
+   * Арт қабырға. `inset` — ВКЛАДНОЙ режимде `inset` өрісі арт жиектен қанша
+   * шегінетінін айтады (мм, әдепкі 0 — жиекпен беттеседі). Шегініс сөренің
+   * тереңдігін де сонша қысқартады: сөре арт қабырғаға тірелмеуі керек.
+   */
+  back: { mode: BackMode; inset?: number | undefined }
   /** Кемінде бір секция. Перегородкасыз кабинет = бір flex секция. */
   sections: Section[]
   /**
