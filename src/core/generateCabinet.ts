@@ -18,7 +18,7 @@ import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import {
   calculateCutDimensions, carcassEdges, customPartEdges, resolveEdges, subtractedThickness,
 } from './edges'
-import { applyCutouts } from './cutouts'
+import { applyCutouts, applyPanelOverrides } from './cutouts'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
@@ -1130,6 +1130,8 @@ export function generateCabinet(
 
   // Оймалар: панельдің ішінен алынатын тесіктер (раковина, розетка, құбыр).
   applyCutouts(panels, config.panelCutouts)
+  // Жеке детальдің текстурасы мен бұрыштарының радиусы.
+  applyPanelOverrides(panels, config.panelGrain, config.panelCorners)
 
   // Қолмен түзетілген присадка — ЕҢ СОҢЫНДА. Осылай 3D те, DXF те, смета да
   // бірдей тесіктерді көреді: панель — жалғыз ақиқат көзі (§3).

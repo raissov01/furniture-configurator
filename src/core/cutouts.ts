@@ -20,7 +20,7 @@
  */
 
 import { ConfigValidationError } from './errors'
-import type { Panel } from './types'
+import type { Panel, PanelCorners } from './types'
 
 /** Өлшем қай бұрыштан саналады. */
 export type CutoutCorner = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight'
@@ -246,4 +246,47 @@ export function cutoutWarnings(panel: Panel): CutoutWarning[] {
   }
 
   return out
+}
+
+
+/**
+ * Жеке детальдің текстура бағыты мен бұрыштарының дөңгелектенуі.
+ *
+ * Екеуі де оймамен бір жерде тұр: үшеуі де БІР ДЕТАЛЬДІҢ өз қасиеті, әрі
+ * үшеуі де конфигте панель id-і бойынша сақталады.
+ *
+ * ⚠ Текстура РАСКРОЙҒА әсер етеді: текстуралы материалда деталь бұрылмайды,
+ * сондықтан бағытты өзгерту парақтағы орналасуды да өзгертеді. Ал бұрыштың
+ * радиусы раскройды өзгертпейді — парақтан бәрібір тікбұрыш кесіледі.
+ */
+export function applyPanelOverrides(
+  panels: Panel[],
+  grain: Record<string, 'length' | 'width'> | undefined,
+  corners: Record<string, PanelCorners> | undefined,
+): void {
+  for (const panel of panels) {
+    const direction = grain?.[panel.id]
+    if (direction) panel.grainAlongLength = direction === 'length'
+
+    const radii = corners?.[panel.id]
+    if (!radii) continue
+
+    // Радиус детальдің жартысынан аспауы керек: одан үлкені — бұрыш емес,
+    // басқа пішін. Оны үнсіз қиып тастамай, қате етіп айтамыз.
+    const max = Math.min(panel.finishedLength, panel.finishedWidth) / 2
+    for (const [name, value] of Object.entries(radii)) {
+      if (!Number.isInteger(value) || value < 0 || value > max) {
+        throw new ConfigValidationError(
+          `panelCorners[${panel.id}].${name}`,
+          `${value} мм`,
+          `0..${Math.floor(max)} мм`,
+        )
+      }
+    }
+    if (Object.values(radii).some((r) => r > 0)) {
+      panel.corners = { ...radii }
+      const list = Object.values(radii).filter((r) => r > 0)
+      panel.note = [panel.note, `Скругление R${Math.max(...list)}`].filter(Boolean).join('. ')
+    }
+  }
 }

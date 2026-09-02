@@ -177,13 +177,37 @@ export function PanelMesh({
      * болмайды, ал экранда ойма көрінбесе, оны байқамай қалуға болады —
      * қателіктің ең қымбат түрі дәл сол.
      */
-    if (!panel.bevel && panel.cutouts.length === 0) return null
+    const rounded = panel.corners && Object.values(panel.corners).some((r) => r > 0)
+    if (!panel.bevel && panel.cutouts.length === 0 && !rounded) return null
     if (!panel.bevel) {
+      const L = panel.finishedLength
+      const Wd = panel.finishedWidth
       const flat = new Shape()
-      flat.moveTo(0, 0)
-      flat.lineTo(panel.finishedLength, 0)
-      flat.lineTo(panel.finishedLength, panel.finishedWidth)
-      flat.lineTo(0, panel.finishedWidth)
+      if (rounded && panel.corners) {
+        // Дөңгелектелген бұрыш: түзу — доға — түзу. Радиус детальдің
+        // жартысынан аспайды (ядрода тексеріледі).
+        const cap = Math.min(L, Wd) / 2
+        const r = {
+          bl: Math.min(panel.corners.bottomLeft, cap),
+          br: Math.min(panel.corners.bottomRight, cap),
+          tr: Math.min(panel.corners.topRight, cap),
+          tl: Math.min(panel.corners.topLeft, cap),
+        }
+        flat.moveTo(r.bl, 0)
+        flat.lineTo(L - r.br, 0)
+        if (r.br > 0) flat.absarc(L - r.br, r.br, r.br, -Math.PI / 2, 0, false)
+        flat.lineTo(L, Wd - r.tr)
+        if (r.tr > 0) flat.absarc(L - r.tr, Wd - r.tr, r.tr, 0, Math.PI / 2, false)
+        flat.lineTo(r.tl, Wd)
+        if (r.tl > 0) flat.absarc(r.tl, Wd - r.tl, r.tl, Math.PI / 2, Math.PI, false)
+        flat.lineTo(0, r.bl)
+        if (r.bl > 0) flat.absarc(r.bl, r.bl, r.bl, Math.PI, Math.PI * 1.5, false)
+      } else {
+        flat.moveTo(0, 0)
+        flat.lineTo(L, 0)
+        flat.lineTo(L, Wd)
+        flat.lineTo(0, Wd)
+      }
       flat.closePath()
       flat.holes = cutoutHoles(panel)
       return flat
@@ -216,7 +240,7 @@ export function PanelMesh({
     s0.closePath()
     s0.holes = cutoutHoles(panel)
     return s0
-  }, [panel.bevel, panel.finishedWidth, panel.finishedLength, panel.cutouts])
+  }, [panel.bevel, panel.finishedWidth, panel.finishedLength, panel.cutouts, panel.corners])
 
   const color = isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
   const toRad = (deg: number) => (deg * Math.PI) / 180

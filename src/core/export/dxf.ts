@@ -82,6 +82,19 @@ function circle(layer: string, x: number, y: number, radius: number): Group[] {
   return [g(0, 'CIRCLE'), g(8, layer), g(10, x), g(20, y), g(30, 0), g(40, radius)]
 }
 
+/**
+ * Доға: бұрыштарды дөңгелектеу үшін. Бұрыштар ГРАДУСПЕН, DXF стандарты
+ * дәл солай күтеді, әрі сағат тіліне ҚАРСЫ саналады.
+ */
+function arc(
+  layer: string, x: number, y: number, radius: number, startDeg: number, endDeg: number,
+): Group[] {
+  return [
+    g(0, 'ARC'), g(8, layer), g(10, x), g(20, y), g(30, 0), g(40, radius),
+    g(50, startDeg), g(51, endDeg),
+  ]
+}
+
 function text(layer: string, x: number, y: number, height: number, value: string): Group[] {
   return [g(0, 'TEXT'), g(8, layer), g(10, x), g(20, y), g(30, 0), g(40, height), g(1, value)]
 }
@@ -137,6 +150,41 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
     entities.push(
       ...lwpolyline(LAYER_OUTLINE, [[0, 0], [startX, 0], [endX, Wd], [0, Wd]], true),
     )
+  } else if (panel.corners && Object.values(panel.corners).some((r) => r > 0)) {
+    /*
+     * Дөңгелектелген бұрыш: контур ТҮЗУ кесінділер мен ДОҒАЛАРДАН құралады.
+     * Бір LWPOLYLINE-ға сыйғызуға болар еді (bulge арқылы), бірақ ескі
+     * оқығыштар bulge-ті елемей, бұрышты кесіп жібереді — сонда цех тікбұрыш
+     * фрезерлейді. ARC — бәрі бірдей түсінетін нәрсе.
+     *
+     * Радиус РЕЗ өлшемінде қолданылады: станок соны кеседі.
+     */
+    const r = {
+      bl: Math.min(panel.corners.bottomLeft, L / 2, Wd / 2),
+      br: Math.min(panel.corners.bottomRight, L / 2, Wd / 2),
+      tr: Math.min(panel.corners.topRight, L / 2, Wd / 2),
+      tl: Math.min(panel.corners.topLeft, L / 2, Wd / 2),
+    }
+    const segments: [number, number][][] = [
+      [[r.bl, 0], [L - r.br, 0]],
+      [[L, r.br], [L, Wd - r.tr]],
+      [[L - r.tr, Wd], [r.tl, Wd]],
+      [[0, Wd - r.tl], [0, r.bl]],
+    ]
+    for (const [from, to] of segments) {
+      if (from![0] !== to![0] || from![1] !== to![1]) {
+        entities.push(...lwpolyline(LAYER_OUTLINE, [from!, to!], false))
+      }
+    }
+    const arcs: [number, number, number, number, number][] = [
+      [r.bl, r.bl, r.bl, 180, 270],
+      [L - r.br, r.br, r.br, 270, 360],
+      [L - r.tr, Wd - r.tr, r.tr, 0, 90],
+      [r.tl, Wd - r.tl, r.tl, 90, 180],
+    ]
+    for (const [cx, cy, radius, start, end] of arcs) {
+      if (radius > 0) entities.push(...arc(LAYER_OUTLINE, cx, cy, radius, start, end))
+    }
   } else {
     entities.push(...lwpolyline(LAYER_OUTLINE, [[0, 0], [L, 0], [L, Wd], [0, Wd]], true))
   }

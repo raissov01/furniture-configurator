@@ -272,6 +272,16 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
     }),
   ]))).optional(),
 
+  /** Жеке детальдің текстура бағыты. ЕРІКТІ. */
+  panelGrain: z.record(z.string().min(1), z.enum(['length', 'width'])).optional(),
+  /** Бұрыштардың радиусы, мм. ЕРІКТІ. */
+  panelCorners: z.record(z.string().min(1), z.object({
+    bottomLeft: z.number().int().min(0),
+    bottomRight: z.number().int().min(0),
+    topRight: z.number().int().min(0),
+    topLeft: z.number().int().min(0),
+  })).optional(),
+
   /**
    * Ерікті детальдар. Бұл да ЕРІКТІ өріс — ескі жоба сол күйінде оқылады.
    */

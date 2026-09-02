@@ -447,6 +447,36 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
               </div>
             ))}
 
+            {/* Текстура мен бұрыштар — сол детальдің қасиеті, сондықтан
+                оймамен бір жерде тұр. */}
+            <div className="grid grid-cols-2 gap-2 border-t border-neutral-200 pt-2 dark:border-neutral-800">
+              <Field label={tr('Текстура')} hint={tr('раскрой учитывает')}>
+                <Select
+                  value={cabinet.panelGrain?.[panel.id] ?? (panel.grainAlongLength ? 'length' : 'width')}
+                  onChange={(direction) => edit(`grain:${panel.id}`, {
+                    panelGrain: { ...cabinet.panelGrain, [panel.id]: direction },
+                  })}
+                  options={[
+                    { value: 'length' as const, label: tr('Вдоль длины') },
+                    { value: 'width' as const, label: tr('Поперёк длины') },
+                  ]}
+                />
+              </Field>
+              <Field label={tr('Скругление, R')} hint={tr('все углы')}>
+                <NumberInput
+                  value={panel.corners?.bottomLeft ?? 0}
+                  min={0}
+                  max={Math.floor(Math.min(panel.finishedLength, panel.finishedWidth) / 2)}
+                  onChange={(r) => edit(`corners:${panel.id}`, {
+                    panelCorners: {
+                      ...cabinet.panelCorners,
+                      [panel.id]: { bottomLeft: r, bottomRight: r, topRight: r, topLeft: r },
+                    },
+                  })}
+                />
+              </Field>
+            </div>
+
             {/* Ескертулер — ҚАТЕ емес: цех әдейі солай жасауы мүмкін. */}
             {warnings.length > 0 ? (
               <ul className="space-y-0.5 rounded-md border border-amber-300 bg-amber-50 p-1.5 text-[10px] text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
