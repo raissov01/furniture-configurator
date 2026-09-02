@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { ComponentRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { Grid, OrbitControls } from '@react-three/drei'
+import { Grid, OrbitControls, OrthographicCamera } from '@react-three/drei'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
@@ -70,6 +70,7 @@ function CameraRig({
   contentKey: string
 }) {
   const preset = useConfigurator((s) => s.cameraPreset)
+  const fitNonce = useConfigurator((s) => s.fitNonce)
   const camera = useThree((s) => s.camera)
   const size = useThree((s) => s.size)
   const invalidate = useThree((s) => s.invalidate)
@@ -116,11 +117,21 @@ function CameraRig({
     // OrbitControls әлі тіркелмеген болса да камера нысанға қарауы керек:
     // онсыз бірінші кадр бос шығады да, тінтуір қозғалғанша солай тұрады.
     camera.lookAt(tx * MM, ty * MM, tz * MM)
+    /*
+     * Ортографиялық камерада қашықтық масштабты өзгертпейді — оны `zoom`
+     * шешеді. Сондықтан нысанды кадрға сыйдыру да сол арқылы: экранның қай
+     * жағы тар болса, сол шектейді.
+     */
+    if (!('fov' in camera)) {
+      const spanMm = Math.max(H, Math.max(W, D))
+      const fitZoom = Math.min(size.width, size.height) / (spanMm * MM * 1.25)
+      if (Number.isFinite(fitZoom) && fitZoom > 0) camera.zoom = fitZoom
+    }
     camera.updateProjectionMatrix()
     controls.current?.target.set(tx * MM, ty * MM, tz * MM)
     controls.current?.update()
     invalidate()
-  }, [preset, camera, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, contentKey])
+  }, [preset, camera, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, contentKey, fitNonce])
 
   useEffect(() => { fit() }, [fit])
 
@@ -145,6 +156,8 @@ function CameraRig({
 
 function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Catalog; active: boolean }) {
   const showDimensions = useConfigurator((s) => s.showDimensions)
+  // Фасадты жасыру — корпустың ішін көрудің ең тура жолы (мөлдірлікпен қатар).
+  const showFronts = useConfigurator((s) => s.showFronts)
   const materialOf = useMemo(() => {
     const map = new Map(catalog.materials.map((m) => [m.id, m]))
     return (id: string) => map.get(id)
@@ -161,7 +174,7 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
       position={[item.pose.position.x, item.pose.position.y, item.pose.position.z]}
       rotation={[0, (item.pose.rotationY * Math.PI) / 180, 0]}
     >
-      {item.panels.map((p) => {
+      {item.panels.filter((p) => showFronts || p.role !== 'front').map((p) => {
         const material = materialOf(p.materialId)
         return (
           <PanelMesh
@@ -264,6 +277,7 @@ export default function Scene({
 }) {
   const active = items.find((i) => i.cabinet.id === activeId) ?? items[0]
   const preset = useConfigurator((s) => s.cameraPreset)
+  const projection = useConfigurator((s) => s.projection)
 
   // «Комната» пресеті бүкіл бөлмеге қарайды, қалғаны — белсенді шкафқа.
   const view = useMemo<{ target: Vec3; box: { W: number; H: number; D: number }; facingY: number }>(() => {
@@ -303,6 +317,13 @@ export default function Scene({
       resize={{ scroll: false, debounce: { scroll: 0, resize: 0 }, offsetSize: true }}
       camera={{ fov: 40, near: 0.01, far: 100, position: [2, 1.4, 2.4] }}
     >
+      {/*
+        * Ортографиялық проекция: параллель сызықтар қиылыспайды, сондықтан
+        * өлшемді көзбен салыстыруға ыңғайлы (цехтың сызбасындағыдай).
+        * `makeDefault` арқылы OrbitControls те, CameraRig те дәл осы камераны
+        * көреді — екі камераны қатар ұстаудың қажеті жоқ.
+        */}
+      {projection === 'ortho' ? <OrthographicCamera makeDefault near={-100} far={100} /> : null}
       <color attach="background" args={['#20242c']} />
       <hemisphereLight intensity={0.55} groundColor="#8a8a8a" />
       <directionalLight position={[3, 5, 4]} intensity={1.5} />

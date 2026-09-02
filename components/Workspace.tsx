@@ -15,6 +15,10 @@ import { QuoteView } from '@/components/QuoteView'
 import { SketchEditor } from '@/components/SketchEditor'
 import { DrillEditor } from '@/components/DrillEditor'
 import { CustomParts } from '@/components/CustomParts'
+import { ProjectPanel } from '@/components/ProjectPanel'
+import { HelpPanel } from '@/components/HelpPanel'
+import { HistoryPanel } from '@/components/HistoryPanel'
+import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { cloudEnabled } from '@/lib/cloud'
@@ -73,6 +77,19 @@ export function Workspace() {
   const setSketchOpen = useConfigurator((s) => s.setSketchOpen)
   const setDrillOpen = useConfigurator((s) => s.setDrillOpen)
   const setPartsOpen = useConfigurator((s) => s.setPartsOpen)
+  const setProjectOpen = useConfigurator((s) => s.setProjectOpen)
+  const setHelpOpen = useConfigurator((s) => s.setHelpOpen)
+  const setHistoryOpen = useConfigurator((s) => s.setHistoryOpen)
+  const viewMode = useConfigurator((s) => s.viewMode)
+  const setViewMode = useConfigurator((s) => s.setViewMode)
+  const showFronts = useConfigurator((s) => s.showFronts)
+  const setShowFronts = useConfigurator((s) => s.setShowFronts)
+  const projection = useConfigurator((s) => s.projection)
+  const setProjection = useConfigurator((s) => s.setProjection)
+  const fitCamera = useConfigurator((s) => s.fitCamera)
+  const showDimensions = useConfigurator((s) => s.showDimensions)
+  const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
+  const pushHistory = useConfigurator((s) => s.pushHistory)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
@@ -96,9 +113,14 @@ export function Workspace() {
   // Автосақтау: бетті жаңартқанда жұмыс жоғалмауы керек. Кідіріс — өріске
   // сан теріп жатқанда әр таңбаға жазбау үшін.
   useEffect(() => {
-    const timer = setTimeout(saveProjectLocally, 500)
+    const timer = setTimeout(() => {
+      saveProjectLocally()
+      // Тарихқа да жазамыз: автосақтау бір ғана кілтті қайта жазады да,
+      // жарты сағат бұрынғы күйге қайтуға мүмкіндік қалмайды.
+      pushHistory()
+    }, 500)
     return () => clearTimeout(timer)
-  }, [room, cabinets, placements, saveProjectLocally])
+  }, [room, cabinets, placements, saveProjectLocally, pushHistory])
 
   // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
   const spanWarnings = useMemo(() => shelfSpanWarnings(panels, shop), [panels, shop])
@@ -121,16 +143,34 @@ export function Workspace() {
     return () => clearTimeout(timer)
   }, [shared])
 
+  /*
+   * Хоткейлер. Тізім `lib/hotkeys.ts`-те — анықтама терезесі де сол тізімнен
+   * құрылады, сондықтан «құжатта бар, шындықта жоқ» перне болмайды.
+   */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return
+      if (isTyping(e.target)) return
+      const hotkey = matchHotkey(e)
+      if (!hotkey) return
       e.preventDefault()
-      if (e.shiftKey) redo()
-      else undo()
+      const action = hotkey.action
+      switch (action.kind) {
+        case 'preset': setCameraPreset(action.preset); break
+        case 'fit': fitCamera(); break
+        case 'viewMode':
+          setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')
+          break
+        case 'fronts': setShowFronts(!showFronts); break
+        case 'projection': setProjection(projection === 'perspective' ? 'ortho' : 'perspective'); break
+        case 'dimensions': setShowDimensions(!showDimensions); break
+        case 'help': setHelpOpen(true); break
+        case 'undo': undo(); break
+        case 'redo': redo(); break
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo, redo])
+  })
 
   return (
     <div className="flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
@@ -141,6 +181,9 @@ export function Workspace() {
       <SketchEditor />
       <DrillEditor panels={panels} catalog={catalog} />
       <CustomParts catalog={catalog} />
+      <ProjectPanel panels={projectPanels} catalog={catalog} />
+      <HelpPanel />
+      <HistoryPanel />
       {cloudEnabled && <AccountPanel />}
       <QuoteView
         panels={projectPanels}
@@ -173,6 +216,7 @@ export function Workspace() {
           <Button onClick={() => setAiOpen(true)} title={tr('Описать задачу словами')}>{tr('Техзадание')}</Button>
           <Button onClick={() => setSketchOpen(true)} title={tr('Нарисовать корпус мышью')}>{tr('Нарисовать')}</Button>
           <Button onClick={() => setPartsOpen(true)} title={tr('Добавить свою деталь: перемычку, царгу, столешницу')}>{tr('Детали')}</Button>
+          <Button onClick={() => setProjectOpen(true)} title={tr('Материалы проекта и порядок сборки')}>{tr('Проект')}</Button>
           <Button onClick={() => setDrillOpen(true)} title={tr('Развёртка детали: добавить или убрать отверстие')}>{tr('Присадка')}</Button>
           <Button onClick={() => setRoomOpen(true)} title={tr('План комнаты и стены')}>{tr('Стены')}</Button>
           <Button onClick={() => setShopOpen(true)} title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
@@ -221,6 +265,35 @@ export function Workspace() {
               {p.label}
             </Button>
           ))}
+        </div>
+
+        {/* Көрініс: мөлдірлік, фасадты жасыру, проекция, кадрға сыйдыру.
+            Әрқайсысының хоткейі бар — анықтамада «?» арқылы көрінеді. */}
+        <div className="flex items-center gap-1">
+          <Button
+            active={viewMode !== 'solid'}
+            title={`${tr('Прозрачность')} (T)`}
+            onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
+          >
+            {viewMode === 'solid' ? tr('Тело') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
+          </Button>
+          <Button
+            active={!showFronts}
+            title={`${tr('Показать или скрыть фасады')} (H)`}
+            onClick={() => setShowFronts(!showFronts)}
+          >
+            {showFronts ? tr('Фасады') : tr('Без фасадов')}
+          </Button>
+          <Button
+            active={projection === 'ortho'}
+            title={`${tr('Перспектива или ортогональная проекция')} (O)`}
+            onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
+          >
+            {projection === 'perspective' ? tr('Перспектива') : tr('Орто')}
+          </Button>
+          <Button onClick={fitCamera} title={`${tr('Вписать в кадр')} (F)`}>{tr('В кадр')}</Button>
+          <Button onClick={() => setHistoryOpen(true)} title={tr('История локальных сохранений')}>{tr('История')}</Button>
+          <Button onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
         </div>
 
         <ExportMenu cabinet={cabinet} panels={panels} />

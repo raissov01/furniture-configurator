@@ -112,6 +112,8 @@ export function PanelMesh({
   const exploded = useConfigurator((s) => s.exploded)
   const hovered = useConfigurator((s) => s.hovered)
   const setHovered = useConfigurator((s) => s.setHovered)
+  const viewMode = useConfigurator((s) => s.viewMode)
+
 
   const extents = useMemo(() => panelExtents(panel, thickness), [panel, thickness])
 
@@ -131,6 +133,12 @@ export function PanelMesh({
   }, [panel, extents, exploded, centre])
 
   const isHovered = hovered === panel.id
+  /*
+   * Мөлдір режимдер. `ghost` — ішін көру үшін жартылай мөлдір, `wire` — тек
+   * әрең көрінетін сұлба. Тінтуір астындағы панель ӘРҚАШАН тұтас қалады:
+   * әйтпесе мөлдір режимде нені меңзеп тұрғаның білінбейді.
+   */
+  const opacity = viewMode === 'solid' || isHovered ? 1 : viewMode === 'ghost' ? 0.28 : 0.06
 
   /**
    * Қиғаш деталь мен көлбеу крышка — жалғыз екі жағдай, онда панель әлем
@@ -199,7 +207,10 @@ export function PanelMesh({
           ) : (
             <boxGeometry args={[panel.finishedLength, panel.finishedWidth, thickness]} />
           )}
-          <meshStandardMaterial color={color} roughness={0.7} metalness={0} />
+          <meshStandardMaterial
+            color={color} roughness={0.7} metalness={0}
+            transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
+          />
         </mesh>
       </group>
     )
@@ -219,6 +230,10 @@ export function PanelMesh({
         color={color}
         roughness={0.7}
         metalness={0}
+        transparent={opacity < 1}
+        opacity={opacity}
+        // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.
+        depthWrite={opacity === 1}
       />
       {panel.role === 'front' && panel.milling.length > 0 ? (
         <MillingLines panel={panel} catalog={catalog} settings={settings} extents={extents} />

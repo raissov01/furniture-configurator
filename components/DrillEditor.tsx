@@ -212,6 +212,32 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
           <b className="tabular-nums">{counts.removed}</b>
         </span>
         <div className="ml-auto flex items-center gap-1">
+          {/* Панель бойынша CNC: станоктың бағдарламасы дәл осындай кестені
+              оқиды, ал бүкіл жобаның архивін ашудың қажеті жоқ. */}
+          <Button
+            title={tr('CSV с отверстиями этой детали — для станка')}
+            onClick={() => {
+              const rows = [
+                ['Деталь', 'Сторона', 'X', 'Y', 'Диаметр', 'Глубина', 'Назначение', 'Источник'],
+                ...panel.drilling.map((d) => [
+                  panel.label, d.face, String(d.x), String(d.y),
+                  String(d.diameter), String(d.depth), d.purpose,
+                  isManualDrill(d, panelEdit) ? 'вручную' : 'авто',
+                ]),
+              ]
+              const csv = rows.map((r) => r.join(';')).join('\r\n')
+              // BOM: Excel онсыз кириллицаны бұзып ашады.
+              const blob = new Blob([new TextEncoder().encode(`\ufeff${csv}`)], { type: 'text/csv;charset=utf-8' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `${panel.label}-присадка.csv`
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
+          >
+            {tr('CNC CSV')}
+          </Button>
           <Button
             disabled={!panelEdit}
             title={tr('Вернуть автоматическую присадку этой детали')}

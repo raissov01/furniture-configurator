@@ -31,6 +31,10 @@ import type {
 const SHOP_KEY = 'furniture-configurator:shop'
 /** Ағымдағы жоба — бетті жаңартқанда жұмыс жоғалмауы үшін. */
 const PROJECT_KEY = 'furniture-configurator:project'
+/** Локал сақтаулар тарихы: соңғы бірнеше нұсқа. */
+const HISTORY_KEY = 'furniture-configurator:history'
+/** Тарихта неше жазба тұрады. Көбейтсе, қойма толады (жоба ~6 КБ). */
+const HISTORY_KEEP = 20
 
 /** Осы уақыт ішіндегі бір өрістің өзгерісі бір undo қадамына біріктіріледі. */
 const COALESCE_MS = 500
@@ -63,6 +67,27 @@ type State = Snapshot & {
   drillOpen: boolean
   /** Ерікті детальдар терезесі ашық па. */
   partsOpen: boolean
+  /** Жоба туралы терезе (материалдар + жинау реті). */
+  projectOpen: boolean
+  /** Хоткейлер анықтамасы. */
+  helpOpen: boolean
+  /** Локал сақтаулар тарихы ашық па. */
+  historyOpen: boolean
+
+  /**
+   * Сахнаның көрінісі: тұтас / жартылай мөлдір / тек контур.
+   * Мөлдір режим шкафтың ІШІН көрсетеді — фасадты алып тастамай-ақ.
+   */
+  viewMode: 'solid' | 'ghost' | 'wire'
+  /** Фасадтарды көрсету. Өшірсе, корпустың ішкі құрылымы ашылады. */
+  showFronts: boolean
+  /** Камера проекциясы: перспектива (табиғи) не орто (өлшем алуға ыңғайлы). */
+  projection: 'perspective' | 'ortho'
+  /**
+   * «Кадрға сыйдыру» батырмасын басқан сайын өседі. Камера пресеті
+   * өзгермесе де қайта бағыттау керек, ал ол үшін тәуелділік керек.
+   */
+  fitNonce: number
   /**
    * Бұл браузерде сақталған жоба ЖОҚ па. `hydrateProject()` шешеді.
    *
@@ -116,6 +141,17 @@ type State = Snapshot & {
   setSketchOpen(v: boolean): void
   setDrillOpen(v: boolean): void
   setPartsOpen(v: boolean): void
+  setProjectOpen(v: boolean): void
+  setHelpOpen(v: boolean): void
+  setHistoryOpen(v: boolean): void
+  setViewMode(v: 'solid' | 'ghost' | 'wire'): void
+  setShowFronts(v: boolean): void
+  setProjection(v: 'perspective' | 'ortho'): void
+  fitCamera(): void
+  /** Локал тарихқа қазіргі жобаны жазу. */
+  pushHistory(): void
+  /** Тарихтағы жазбаны қайтару. */
+  restoreHistory(at: number): void
   setFirstRun(v: boolean): void
   setAccountOpen(v: boolean): void
 
@@ -165,6 +201,13 @@ export const useConfigurator = create<State>((set, get) => ({
   sketchOpen: false,
   drillOpen: false,
   partsOpen: false,
+  projectOpen: false,
+  helpOpen: false,
+  historyOpen: false,
+  viewMode: 'solid',
+  showFronts: true,
+  projection: 'perspective',
+  fitNonce: 0,
   firstRun: true,
   accountOpen: false,
   templateId: defaultTemplateId,
@@ -425,6 +468,47 @@ export const useConfigurator = create<State>((set, get) => ({
   setSketchOpen: (sketchOpen) => set({ sketchOpen }),
   setDrillOpen: (drillOpen) => set({ drillOpen }),
   setPartsOpen: (partsOpen) => set({ partsOpen }),
+  setProjectOpen: (projectOpen) => set({ projectOpen }),
+  setHelpOpen: (helpOpen) => set({ helpOpen }),
+  setHistoryOpen: (historyOpen) => set({ historyOpen }),
+  setViewMode: (viewMode) => set({ viewMode }),
+  setShowFronts: (showFronts) => set({ showFronts }),
+  setProjection: (projection) => set({ projection }),
+  fitCamera: () => set({ fitNonce: get().fitNonce + 1 }),
+
+  /**
+   * Локал тарих. Автосақтау ағымдағы жобаны бір ғана кілтке жазады да,
+   * кешегі күйді қайтару мүмкін болмай қалады. Тарих соңғы `HISTORY_KEEP`
+   * жазбаны бөлек ұстайды: пайдаланушы «мына нұсқаға қайт» дей алады.
+   *
+   * Жазба тек ӨЗГЕРІС болғанда қосылады — әйтпесе бірдей 20 жазба жиналады.
+   */
+  pushHistory() {
+    const file = get().exportProject()
+    const json = JSON.stringify(file)
+    try {
+      const raw = window.localStorage.getItem(HISTORY_KEY)
+      const list: { at: number; name: string; json: string }[] = raw ? JSON.parse(raw) : []
+      if (list[0]?.json === json) return
+      const next = [{ at: Date.now(), name: file.name, json }, ...list].slice(0, HISTORY_KEEP)
+      window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+    } catch {
+      // қоймаға жазылмады: тарих жоқ, бірақ жұмыс тоқтамайды
+    }
+  },
+
+  restoreHistory(at) {
+    try {
+      const raw = window.localStorage.getItem(HISTORY_KEY)
+      if (!raw) return
+      const list: { at: number; json: string }[] = JSON.parse(raw)
+      const found = list.find((x) => x.at === at)
+      if (!found) return
+      get().loadProject(parseProject(JSON.parse(found.json)))
+    } catch {
+      // бүлінген жазба: үнсіз қалдырамыз, ағымдағы жоба сақталады
+    }
+  },
   setFirstRun: (firstRun) => set({ firstRun }),
   setAccountOpen: (accountOpen) => set({ accountOpen }),
 

@@ -1,0 +1,162 @@
+'use client'
+
+/**
+ * «Жоба» терезесі: МАТЕРИАЛДАР мен ЖИНАУ РЕТІ.
+ *
+ * Екеуі де сметаның ішінде емес, бөлек тұр — себебі екеуінің сұрағы басқа:
+ * материал тізімі «нені ауыстырсам, қайда тиеді» дегенге жауап береді,
+ * ал жинау реті цехтағы адамға «алдымен нені» дегенді айтады.
+ *
+ * Мұнда ештеңе ЕСЕПТЕЛМЕЙДІ — бәрі ядродан (`projectUsage`, `assemblySteps`).
+ */
+
+import { t as tr } from '@/lib/i18n'
+import { useMemo, useState } from 'react'
+import { Button } from '@/components/ui'
+import { cn } from '@/lib/cn'
+import { ASSEMBLY_STAGE_NAMES, assemblySteps, projectUsage, rolesLabel } from '@/src/core/index'
+import type { AssemblyStage, Catalog, Panel } from '@/src/core/index'
+import { useConfigurator } from '@/store/configurator'
+
+type Tab = 'materials' | 'assembly'
+
+const squareMetres = (mm2: number): string => (mm2 / 1_000_000).toFixed(2)
+
+const STAGE_COLOR: Record<AssemblyStage, string> = {
+  carcass: 'bg-sky-500',
+  fixed: 'bg-emerald-500',
+  movable: 'bg-amber-500',
+  front: 'bg-violet-500',
+}
+
+export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Catalog }) {
+  const open = useConfigurator((s) => s.projectOpen)
+  const setOpen = useConfigurator((s) => s.setProjectOpen)
+  const setHovered = useConfigurator((s) => s.setHovered)
+  const [tab, setTab] = useState<Tab>('materials')
+
+  const usage = useMemo(() => {
+    try {
+      return projectUsage(panels, catalog)
+    } catch {
+      return null
+    }
+  }, [panels, catalog])
+  const steps = useMemo(() => assemblySteps(panels), [panels])
+
+  if (!open) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      onClick={() => setOpen(false)}
+    >
+      <div
+        className="w-full max-w-3xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <h2 className="mr-1 text-sm font-semibold">{tr('Проект')}</h2>
+          <Button active={tab === 'materials'} onClick={() => setTab('materials')}>{tr('Материалы')}</Button>
+          <Button active={tab === 'assembly'} onClick={() => setTab('assembly')}>{tr('Сборка')}</Button>
+          <span className="text-[11px] text-neutral-500">
+            {tr('деталей')}: <b className="tabular-nums">{panels.length}</b>
+          </span>
+          <div className="ml-auto">
+            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
+          </div>
+        </div>
+
+        {tab === 'materials' ? (
+          !usage ? (
+            <p className="text-xs text-neutral-500">{tr('Нет деталей.')}</p>
+          ) : (
+            <div className="space-y-4">
+              <table className="w-full text-xs">
+                <thead className="text-[10px] uppercase tracking-wider text-neutral-500">
+                  <tr>
+                    <th className="py-1 text-left">{tr('Материал')}</th>
+                    <th className="py-1 text-right">{tr('Деталей')}</th>
+                    <th className="py-1 text-right">{tr('Площадь')}</th>
+                    <th className="py-1 text-right">{tr('Самая большая')}</th>
+                    <th className="py-1 text-left">{tr('Где стоит')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usage.materials.map((m) => (
+                    <tr key={m.materialId} className="border-t border-neutral-200 dark:border-neutral-800">
+                      <td className="py-1.5">
+                        {m.materialName}
+                        <span className="ml-1 text-neutral-400">{m.thickness} мм</span>
+                      </td>
+                      <td className="py-1.5 text-right tabular-nums">{m.parts}</td>
+                      <td className="py-1.5 text-right tabular-nums">{squareMetres(m.area)} м²</td>
+                      <td className="py-1.5 text-right tabular-nums text-neutral-500">
+                        {m.largest.length}×{m.largest.width}
+                      </td>
+                      <td className="py-1.5 text-neutral-500">{rolesLabel(m)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {usage.edges.length > 0 ? (
+                <div>
+                  <h3 className="mb-1 text-[10px] uppercase tracking-wider text-neutral-500">{tr('Кромка')}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {usage.edges.map((e) => (
+                      <span key={e.bandId} className="rounded-md border border-neutral-200 px-2 py-1 text-[11px] dark:border-neutral-700">
+                        {e.bandName}
+                        <span className="ml-1 font-medium tabular-nums">{e.metres.toFixed(1)} {tr('м')}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <p className="text-[10px] leading-relaxed text-neutral-400">
+                {tr('Листы здесь не считаются: их знает только раскрой. Площадь — по готовому размеру.')}
+              </p>
+            </div>
+          )
+        ) : (
+          <div className="space-y-1">
+            {steps.map((step, i) => {
+              const previous = steps[i - 1]
+              const newStage = !previous || previous.stage !== step.stage
+              return (
+                <div key={step.panelId}>
+                  {newStage ? (
+                    <div className="mt-3 mb-1 flex items-center gap-2 first:mt-0">
+                      <span className={cn('inline-block h-2 w-2 rounded-full', STAGE_COLOR[step.stage])} />
+                      <span className="text-[10px] uppercase tracking-wider text-neutral-500">
+                        {tr(ASSEMBLY_STAGE_NAMES[step.stage])}
+                      </span>
+                    </div>
+                  ) : null}
+                  <div
+                    className="flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    onMouseEnter={() => setHovered(step.panelId)}
+                    onMouseLeave={() => setHovered(null)}
+                  >
+                    <span className="w-6 shrink-0 text-right tabular-nums text-neutral-400">{step.step}</span>
+                    <span className="flex-1">{step.label}</span>
+                    <span className="text-neutral-500">{tr(step.direction)}</span>
+                    {step.holes > 0 ? (
+                      <span className="tabular-nums text-[11px] text-neutral-400">
+                        {step.holes} {tr('отв.')}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              )
+            })}
+            <p className="mt-3 text-[10px] leading-relaxed text-neutral-400">
+              {tr('Наведите на строку — деталь подсветится в 3D. Порядок выводится из геометрии: снизу вверх, снаружи внутрь, крышка последней.')}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
