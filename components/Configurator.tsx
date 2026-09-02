@@ -917,6 +917,19 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </>
       ) : null}
 
+      {/* Цоколь — КӨРІНЕТІН деталь: көбіне фасадпен бір түсте. */}
+      {cabinet.base?.kind === 'plinth' ? (
+        <Field label={tr('Материал цоколя')} hint={tr('обычно как фасад')}>
+          <Select
+            value={cabinet.base.plinthMaterialId ?? cabinet.carcassMaterialId}
+            onChange={(plinthMaterialId) => edit('base.plinthMaterialId', {
+              base: { ...cabinet.base!, plinthMaterialId },
+            })}
+            options={materialOptions(materials.filter(isCarcass))}
+          />
+        </Field>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Столешница')}>
           <Select
