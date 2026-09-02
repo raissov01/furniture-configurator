@@ -28,7 +28,7 @@ import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
   FrontGaps, Orientation, Panel, PanelBevel, PanelEdges, PanelMount, PanelRole, Rail,
-  Section, SectionContent, SettingsOverride,
+  PanelOpening, Section, SectionContent, SettingsOverride,
 } from './types'
 
 /**
@@ -1191,6 +1191,9 @@ export function generateCabinet(
       const carcassPanel = side === 'left'
         ? (i === 0 ? left : undefined)
         : (i === last ? right : undefined)
+      // 3D-дегі анимация ІЛГЕКТІҢ жағын осы жерден алады: екеуі бір шешімнен
+      // шықса, есік ешқашан «басқа жаққа» ашылмайды.
+      front.opening = { kind: 'door', side }
       hingeHoles(front, carcassPanel, side, ctx, hingeSystem)
       if (handle) handleHoles(front, handle.model, handle.spec, ctx)
       if (milling) {
@@ -1762,6 +1765,16 @@ function makeDrawers(input: {
         'Дно ящика, ЛДСП',
       ),
     )
+
+    /*
+     * Ящиктің БАРЛЫҚ детальі бірге жылжиды: фасады да, қорабы да. Шығу
+     * жолы — қораптың тереңдігінің 80%-ы: толық шығару направляющаға
+     * байланысты, ал ішіндегі затты көрсетуге осы да жетеді.
+     */
+    const opening: PanelOpening = { kind: 'drawer', travel: Math.round(boxDepth * 0.8) }
+    for (const panel of panels) {
+      if (panel.id.startsWith(id)) panel.opening = opening
+    }
 
     runs.push({ boxBottomY: boxY, boxFrontZ: settings.shelfSetback, boxDepth })
     y += frontHeight

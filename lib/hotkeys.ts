@@ -17,6 +17,7 @@ export type HotkeyAction =
   | { kind: 'fit' }
   | { kind: 'viewMode' }
   | { kind: 'fronts' }
+  | { kind: 'openness' }
   | { kind: 'projection' }
   | { kind: 'dimensions' }
   | { kind: 'help' }
@@ -44,6 +45,7 @@ export const HOTKEYS: Hotkey[] = [
   { keys: 'F', match: ['f'], description: 'Вписать в кадр', action: { kind: 'fit' } },
   { keys: 'T', match: ['t'], description: 'Прозрачность: тело → полупрозрачно → контур', action: { kind: 'viewMode' } },
   { keys: 'H', match: ['h'], description: 'Показать или скрыть фасады', action: { kind: 'fronts' } },
+  { keys: 'E', match: ['e'], description: 'Открыть или закрыть двери и ящики', action: { kind: 'openness' } },
   { keys: 'O', match: ['o'], description: 'Проекция: перспектива ↔ ортогональная', action: { kind: 'projection' } },
   { keys: 'D', match: ['d'], description: 'Размеры на сцене', action: { kind: 'dimensions' } },
   { keys: '?', match: ['?', '/'], description: 'Эта справка', action: { kind: 'help' } },

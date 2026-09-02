@@ -83,6 +83,8 @@ export function Workspace() {
   const viewMode = useConfigurator((s) => s.viewMode)
   const setViewMode = useConfigurator((s) => s.setViewMode)
   const showFronts = useConfigurator((s) => s.showFronts)
+  const openness = useConfigurator((s) => s.openness)
+  const setOpenness = useConfigurator((s) => s.setOpenness)
   const setShowFronts = useConfigurator((s) => s.setShowFronts)
   const projection = useConfigurator((s) => s.projection)
   const setProjection = useConfigurator((s) => s.setProjection)
@@ -161,6 +163,7 @@ export function Workspace() {
           setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')
           break
         case 'fronts': setShowFronts(!showFronts); break
+        case 'openness': setOpenness(openness > 0 ? 0 : 1); break
         case 'projection': setProjection(projection === 'perspective' ? 'ortho' : 'perspective'); break
         case 'dimensions': setShowDimensions(!showDimensions); break
         case 'help': setHelpOpen(true); break
@@ -283,6 +286,18 @@ export function Workspace() {
             onClick={() => setShowFronts(!showFronts)}
           >
             {showFronts ? tr('Фасады') : tr('Без фасадов')}
+          </Button>
+          {/* Ашық/жабық — клиентке көрсететін нәрсе: жабық шкаф суреттен
+              айнымайды, ал ашылған есік жиһаздың ішін бірден түсіндіреді. */}
+          <Button
+            active={openness > 0}
+            title={`${tr('Открыть или закрыть двери и ящики')} (E)`}
+            onClick={() => setOpenness(openness > 0 ? 0 : 1)}
+          >
+            {/* «Открыть» деп атауға БОЛМАЙДЫ: жоғарыда файл ашатын
+                «Открыть» тұр, ал бір панельдегі екі бірдей атау — қате
+                басудың дайын себебі. */}
+            {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
           </Button>
           <Button
             active={projection === 'ortho'}

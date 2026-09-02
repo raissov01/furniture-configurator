@@ -81,6 +81,14 @@ type State = Snapshot & {
   viewMode: 'solid' | 'ghost' | 'wire'
   /** Фасадтарды көрсету. Өшірсе, корпустың ішкі құрылымы ашылады. */
   showFronts: boolean
+  /**
+   * Есік пен ящиктің АШЫЛУЫ: 0 — жабық, 1 — толық ашық.
+   *
+   * Бұл — клиентке көрсететін нәрсе: жабық шкаф суреттен айнымайды, ал
+   * ашылған есік пен шығарылған ящик жиһаздың ішін де, өлшемін де бірден
+   * түсіндіреді. Деталировкаға да, раскройға да әсері ЖОҚ.
+   */
+  openness: number
   /** Камера проекциясы: перспектива (табиғи) не орто (өлшем алуға ыңғайлы). */
   projection: 'perspective' | 'ortho'
   /**
@@ -146,6 +154,7 @@ type State = Snapshot & {
   setHistoryOpen(v: boolean): void
   setViewMode(v: 'solid' | 'ghost' | 'wire'): void
   setShowFronts(v: boolean): void
+  setOpenness(v: number): void
   setProjection(v: 'perspective' | 'ortho'): void
   fitCamera(): void
   /** Локал тарихқа қазіргі жобаны жазу. */
@@ -206,6 +215,7 @@ export const useConfigurator = create<State>((set, get) => ({
   historyOpen: false,
   viewMode: 'solid',
   showFronts: true,
+  openness: 0,
   projection: 'perspective',
   fitNonce: 0,
   firstRun: true,
@@ -473,6 +483,7 @@ export const useConfigurator = create<State>((set, get) => ({
   setHistoryOpen: (historyOpen) => set({ historyOpen }),
   setViewMode: (viewMode) => set({ viewMode }),
   setShowFronts: (showFronts) => set({ showFronts }),
+  setOpenness: (openness) => set({ openness: Math.min(1, Math.max(0, openness)) }),
   setProjection: (projection) => set({ projection }),
   fitCamera: () => set({ fitNonce: get().fitNonce + 1 }),
 

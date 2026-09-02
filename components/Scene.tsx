@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ComponentRef } from 'react'
+import type { ComponentRef, ReactNode } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Grid, OrbitControls, OrthographicCamera } from '@react-three/drei'
 import { DimensionLabels } from '@/components/DimensionLabels'
@@ -15,9 +15,19 @@ import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 import { ROD_DIAMETER, placementFootprint } from '@/src/core/index'
-import type { CabinetConfig, Catalog, HardwarePlacement, Panel, Placement, Room, Vec3 } from '@/src/core/index'
+import type {
+  CabinetConfig, Catalog, HardwarePlacement, Panel, PanelOpening, Placement, Room, Vec3,
+} from '@/src/core/index'
 
 type Controls = ComponentRef<typeof OrbitControls>
+
+/**
+ * Есіктің толық ашылу бұрышы, радиан (100°).
+ *
+ * Нақты ілгек 95–110° ашады; 100° — соның ортасы әрі көзге де солай көрінеді.
+ * 90°-тан үлкені әдейі: дәл 90° «сурет» сияқты жасанды көрінеді.
+ */
+const DOOR_OPEN_ANGLE = (100 * Math.PI) / 180
 
 
 const MM = 0.001
@@ -163,6 +173,7 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
   const showDimensions = useConfigurator((s) => s.showDimensions)
   // Фасадты жасыру — корпустың ішін көрудің ең тура жолы (мөлдірлікпен қатар).
   const showFronts = useConfigurator((s) => s.showFronts)
+  const openness = useConfigurator((s) => s.openness)
   const materialOf = useMemo(() => {
     const map = new Map(catalog.materials.map((m) => [m.id, m]))
     return (id: string) => map.get(id)
@@ -181,7 +192,7 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
     >
       {item.panels.filter((p) => showFronts || p.role !== 'front').map((p) => {
         const material = materialOf(p.materialId)
-        return (
+        const mesh = (
           <PanelMesh
             catalog={catalog}
             key={p.id}
@@ -191,6 +202,11 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
             decorColor={material?.decor?.color}
           />
         )
+        return openness > 0 && p.opening ? (
+          <OpenedPanel key={p.id} opening={p.opening} panel={p} openness={openness}>
+            {mesh}
+          </OpenedPanel>
+        ) : mesh
       })}
       {item.hardware.map((h, i) => {
         if (h.kind === 'rod') {
@@ -275,6 +291,45 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
         return null
       })}
       {active && showDimensions ? <DimensionLabels cabinet={item.cabinet} /> : null}
+    </group>
+  )
+}
+
+/**
+ * Ашылған есік пен шығарылған ящик.
+ *
+ * ⚠ Мұнда ЕШТЕҢЕ ШЕШІЛМЕЙДІ: қай жаққа ашылатыны да, қанша шығатыны да
+ * панельдің `opening` өрісінде дайын тұр (`types.ts` қара). Бұл компонент
+ * тек сол шешімді көрсетеді — әйтпесе 3D мен присадка бір күні алшақтайды.
+ *
+ * Есік ІЛГЕКТІҢ жиегі айналасында бұрылады, сондықтан ось панельдің шетіне
+ * қойылады да, мазмұны кері жылжытылады: three.js-те топ өз нүктесінің
+ * айналасында бұрылады.
+ */
+function OpenedPanel({
+  opening, panel, openness, children,
+}: {
+  opening: PanelOpening
+  panel: Panel
+  /** 0 — жабық, 1 — толық ашық. */
+  openness: number
+  children: ReactNode
+}) {
+  if (opening.kind === 'drawer') {
+    // Ящик АЛҒА шығады: −Z бағыты (корпустың алды).
+    return <group position={[0, 0, -opening.travel * openness]}>{children}</group>
+  }
+
+  // Есіктің ені — X бойымен (ORIENT_FACING), сондықтан ось сол не оң жиегінде.
+  const width = panel.finishedWidth
+  const hingeX = opening.side === 'left' ? panel.position.x : panel.position.x + width
+  // Сол жақтағы ілгек есікті САҒАТ БАҒЫТЫМЕН ашады (Y осі жоғары қараған).
+  const sign = opening.side === 'left' ? 1 : -1
+  const angle = sign * openness * DOOR_OPEN_ANGLE
+
+  return (
+    <group position={[hingeX, 0, 0]} rotation={[0, angle, 0]}>
+      <group position={[-hingeX, 0, 0]}>{children}</group>
     </group>
   )
 }

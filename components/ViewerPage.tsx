@@ -93,6 +93,8 @@ function Viewer({
   const placements = useConfigurator((s) => s.placements)
   const catalog = useConfigurator((s) => s.catalog)
   const activeId = useConfigurator((s) => s.activeId)
+  const openness = useConfigurator((s) => s.openness)
+  const setOpenness = useConfigurator((s) => s.setOpenness)
 
   const items = useSceneItems(room, cabinets, placements, catalog)
 
@@ -109,6 +111,11 @@ function Viewer({
           {cabinets.length === 1 ? '1 корпус' : `${cabinets.length} корпуса`}
         </span>
         <div className="ml-auto flex items-center gap-1">
+          {/* Клиент үшін ЕҢ түсінікті батырма: ашылған есік пен шығарылған
+              ящик жиһаздың ішін де, өлшемін де сөзсіз түсіндіреді. */}
+          <Button active={openness > 0} onClick={() => setOpenness(openness > 0 ? 0 : 1)}>
+            {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
+          </Button>
           {PRESETS.map((p) => (
             <Button key={p.value} active={preset === p.value} onClick={() => setPreset(p.value)}>
               {p.label}
