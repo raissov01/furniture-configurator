@@ -100,6 +100,14 @@ const CabinetBaseSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   construction: z.enum(['sidesOverlay', 'topBottomOverlay']),
+  /**
+   * Крышка мен дноның бекітілуі. ЕРІКТІ: болмаса `construction`-нан шығады,
+   * сондықтан ескі жоба сол күйінде оқылады әрі сол панельдерді береді.
+   */
+  mounts: z.object({
+    top: z.enum(['inset', 'overlay', 'overlayLeft', 'overlayRight']).optional(),
+    bottom: z.enum(['inset', 'overlay', 'overlayLeft', 'overlayRight']).optional(),
+  }).optional(),
   // Рет ӘРҚАШАН H × W × D.
   height: mm,
   width: mm,

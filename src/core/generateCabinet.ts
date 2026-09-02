@@ -14,15 +14,17 @@ import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
 import { fillingBandHeight } from './filling'
 import { millingPaths, validateMilling } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
-import { calculateCutDimensions, customPartEdges, resolveEdges, subtractedThickness } from './edges'
+import {
+  calculateCutDimensions, carcassEdges, customPartEdges, resolveEdges, subtractedThickness,
+} from './edges'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
-  FrontGaps, Orientation, Panel, PanelBevel, PanelEdges, PanelRole, Rail, Section,
-  SectionContent, SettingsOverride,
+  FrontGaps, Orientation, Panel, PanelBevel, PanelEdges, PanelMount, PanelRole, Rail,
+  Section, SectionContent, SettingsOverride,
 } from './types'
 
 /** Ең кіші жарамды габарит — бұдан кішісі корпус болмайды. */
@@ -290,6 +292,14 @@ export function generateCabinet(
   // ── Корпус (§4.4) ──────────────────────────────────────────────────────────
   const sidesOverlay = config.construction === 'sidesOverlay'
   /**
+   * Бекітілуді шешу: `mounts` берілмесе, ЕСКІ `construction`-нан шығады.
+   * Сондықтан бұрын сақталған жоба дәл сол панельдерді береді (§8.7 эталоны
+   * соны күзетеді).
+   */
+  const defaultMount: PanelMount = sidesOverlay ? 'inset' : 'overlay'
+  const topMount: PanelMount = config.mounts?.top ?? defaultMount
+  const bottomMount: PanelMount = config.mounts?.bottom ?? defaultMount
+  /**
    * Қиғашта бүйір — ТРАПЕЦИЯ. Өлшемі (заготовка) бұрынғыдай H × тереңдік:
    * станок алдымен тікбұрышты кеседі, содан кейін қиғашты кеседі.
    */
@@ -298,23 +308,63 @@ export function generateCabinet(
   const sideBevel = slope ? { lengthAtStart: heightFront, lengthAtEnd: heightBack } : undefined
   const sideNote = slope ? `Скос ${heightFront} → ${heightBack} мм` : ''
 
-  const sideLeft = sidesOverlay
-    ? make('side-left', 'side', 'Боковина', carcass, H, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_SIDE, sideNote)
-    : make('side-left', 'side', 'Боковина', carcass, innerHeight, carcassDepth, { x: 0, y: t, z: 0 }, ORIENT_SIDE)
+  /*
+   * ── Бекітілу (§4.4, элемент бойынша) ──────────────────────────────────────
+   *
+   * Крышка мен дно бір-бірінен ТӘУЕЛСІЗ бекітіледі, әрі әр панель бүйірлерді
+   * бөлек-бөлек жабуы мүмкін. Осыдан үш нәрсе шығады:
+   *   1. Көлденең панельдің ені: жапқан бүйірінің әрқайсысына +t;
+   *   2. Бүйірдің биіктігі: оны жапқан панельдің әрқайсысына −t;
+   *   3. Торцтардың көрінуі: жабылған торц ЖАСЫРЫН, ашығы КӨРІНЕДІ.
+   * Үшеуі де бір жерден шығады, сондықтан олар ажырап кете алмайды.
+   */
+  const covers = (mount: PanelMount, side: 'left' | 'right'): boolean =>
+    mount === 'overlay' || (side === 'left' ? mount === 'overlayLeft' : mount === 'overlayRight')
+
+  const horizontalSpan = (mount: PanelMount): { x: number; length: number } => {
+    const left = covers(mount, 'left')
+    const right = covers(mount, 'right')
+    return { x: left ? 0 : t, length: innerWidth + (left ? t : 0) + (right ? t : 0) }
+  }
+
+  /** Бүйірдің биіктігі мен бастауы: оны жапқан панель қысқартады. */
+  const sideSpan = (side: 'left' | 'right'): { y: number; length: number } => {
+    const below = covers(bottomMount, side) ? t : 0
+    const above = covers(topMount, side) ? t : 0
+    return { y: below, length: H - below - above }
+  }
+
+  /** Бүйірдің торцы: жабылмаған жағы КӨРІНЕДІ (W1 — асты, W2 — үсті). */
+  const sideEdges = (side: 'left' | 'right') =>
+    carcassEdges({ W1: !covers(bottomMount, side), W2: !covers(topMount, side) }, config.edging)
+
+  /** Көлденең панельдің торцы: жапқан жағы СЫРТҚА шығады да, көрінеді. */
+  const horizontalEdges = (mount: PanelMount) =>
+    carcassEdges({ W1: covers(mount, 'left'), W2: covers(mount, 'right') }, config.edging)
+
+  const leftSpan = sideSpan('left')
+  const sideLeft = make(
+    'side-left', 'side', 'Боковина', carcass, leftSpan.length, carcassDepth,
+    { x: 0, y: leftSpan.y, z: 0 }, ORIENT_SIDE, sideNote, sideEdges('left'),
+  )
   // Бұрыштық корпуста оң бүйір ТАРЫРАҚ: ол өз тереңдігінде тұрады да,
   // қабырғаға тірелу үшін артқа жылжиды.
   const rightZ = corner ? carcassDepth - carcassDepthRight : 0
   const rightNote = corner ? `Глубина ${carcassDepthRight} мм` : sideNote
-  const sideRight = sidesOverlay
-    ? make('side-right', 'side', 'Боковина', carcass, H, carcassDepthRight, { x: W - t, y: 0, z: rightZ }, ORIENT_SIDE, rightNote)
-    : make('side-right', 'side', 'Боковина', carcass, innerHeight, carcassDepthRight, { x: W - t, y: t, z: rightZ }, ORIENT_SIDE)
+  const rightSpan = sideSpan('right')
+  const sideRight = make(
+    'side-right', 'side', 'Боковина', carcass, rightSpan.length, carcassDepthRight,
+    { x: W - t, y: rightSpan.y, z: rightZ }, ORIENT_SIDE, rightNote, sideEdges('right'),
+  )
   if (sideBevel) {
     sideLeft.bevel = { ...sideBevel }
     sideRight.bevel = { ...sideBevel }
   }
-  const bottom = sidesOverlay
-    ? make('bottom', 'bottom', 'Дно', carcass, innerWidth, carcassDepth, { x: t, y: 0, z: 0 }, ORIENT_HORIZONTAL)
-    : make('bottom', 'bottom', 'Дно', carcass, W, carcassDepth, { x: 0, y: 0, z: 0 }, ORIENT_HORIZONTAL)
+  const bottomSpan = horizontalSpan(bottomMount)
+  const bottom = make(
+    'bottom', 'bottom', 'Дно', carcass, bottomSpan.length, carcassDepth,
+    { x: bottomSpan.x, y: 0, z: 0 }, ORIENT_HORIZONTAL, '', horizontalEdges(bottomMount),
+  )
   const cornerBevel = widthBevel(carcassDepth, carcassDepthRight)
   if (cornerBevel) bottom.bevel = { ...cornerBevel }
   /**
@@ -327,15 +377,15 @@ export function generateCabinet(
     ? Math.round(Math.sqrt(carcassDepth * carcassDepth + slopeRise * slopeRise))
     : carcassDepth
 
-  const top = sidesOverlay
-    ? make(
-        'top', 'top', 'Крышка', carcass, innerWidth, topWidth,
-        // Көлбеу крышкада қалыңдық ТӨМЕН қарай кетеді (жатық панельдің
-        // келісімі), сондықтан бастауы дәл биік жиектің деңгейінде.
-        { x: t, y: slope ? heightFront : H - t, z: 0 }, ORIENT_HORIZONTAL,
-        slope ? `Наклонная, ${Math.round((slopeAngle * 180) / Math.PI)}°` : '',
-      )
-    : make('top', 'top', 'Крышка', carcass, W, carcassDepth, { x: 0, y: H - t, z: 0 }, ORIENT_HORIZONTAL)
+  const topSpan = horizontalSpan(topMount)
+  const top = make(
+    'top', 'top', 'Крышка', carcass, topSpan.length, slope ? topWidth : carcassDepth,
+    // Көлбеу крышкада қалыңдық ТӨМЕН қарай кетеді (жатық панельдің
+    // келісімі), сондықтан бастауы дәл биік жиектің деңгейінде.
+    { x: topSpan.x, y: slope ? heightFront : H - t, z: 0 }, ORIENT_HORIZONTAL,
+    slope ? `Наклонная, ${Math.round((slopeAngle * 180) / Math.PI)}°` : '',
+    horizontalEdges(topMount),
+  )
   if (slope) {
     // Көлбеуді 3D оқиды: панель өз жазықтығында тікбұрыш күйінде қалады.
     top.rotation = { ...top.rotation, x: top.rotation.x + (slopeAngle * 180) / Math.PI }
@@ -343,13 +393,17 @@ export function generateCabinet(
   if (cornerBevel) top.bevel = { ...cornerBevel }
 
   // Рет деталировкадағы жолдардың ретін анықтайды — өзгертпе, snapshot соған қарайды.
+  // Рет деталировкадағы жолдардың ретін анықтайды: сыртта тұрған деталь
+  // бірінші жазылады. Бүйір ТОЛЫҚ биіктікте болса (ештеңе жаппаса) — ол
+  // корпустың сырты, сондықтан алдымен келеді.
+  const sidesOutside = leftSpan.length === H && rightSpan.length === H
   if (config.openTop) {
     // Үсті ашық корпуста крышка ЖОҚ, бірақ ол әлі де геометрия үшін керек:
     // сөрелер мен фасадтардың есебі ішкі биіктікке сүйенеді, ал ол крышканың
     // қалыңдығын есептейді. Сондықтан деталь тізімге түспейді, есеп өзгермейді.
-    if (sidesOverlay) panels.push(sideLeft, sideRight, bottom)
+    if (sidesOutside) panels.push(sideLeft, sideRight, bottom)
     else panels.push(bottom, sideLeft, sideRight)
-  } else if (sidesOverlay) {
+  } else if (sidesOutside) {
     panels.push(sideLeft, sideRight, bottom, top)
   } else {
     panels.push(bottom, top, sideLeft, sideRight)

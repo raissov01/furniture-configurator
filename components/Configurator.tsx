@@ -492,16 +492,41 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
       </div>
 
       <SectionTitle>{tr('Конструкция')}</SectionTitle>
-      <Field label={tr('Метод сборки')}>
+      <Field label={tr('Метод сборки')} hint={tr('обе панели сразу')}>
         <Select
           value={cabinet.construction}
-          onChange={(construction) => edit('construction', { construction })}
+          onChange={(construction) =>
+            // Жалпы әдіс екеуін де қатар ауыстырады: бұл — жиі керек болатын
+            // жылдам таңдау. Бөлек-бөлек баптау төменде тұр.
+            edit('construction', { construction, mounts: undefined })
+          }
           options={[
             { value: 'sidesOverlay', label: tr('Боковины накрывают крышку и дно') },
             { value: 'topBottomOverlay', label: tr('Крышка и дно накрывают боковины') },
           ]}
         />
       </Field>
+
+      {/* Элемент бойынша: қатарға тұратын модульдің крышкасы тек сыртқы
+          бүйірді жабады, ал ішкі жағы көршісіне тіреледі. */}
+      <div className="grid grid-cols-2 gap-2">
+        {([['top', 'Крышка'], ['bottom', 'Дно']] as const).map(([which, label]) => (
+          <Field key={which} label={tr(label)}>
+            <Select
+              value={cabinet.mounts?.[which] ?? (cabinet.construction === 'sidesOverlay' ? 'inset' : 'overlay')}
+              onChange={(mount) => edit(`mounts.${which}`, {
+                mounts: { ...cabinet.mounts, [which]: mount },
+              })}
+              options={[
+                { value: 'inset' as const, label: tr('Вкладной') },
+                { value: 'overlay' as const, label: tr('Накладной') },
+                { value: 'overlayLeft' as const, label: tr('Накладной слева') },
+                { value: 'overlayRight' as const, label: tr('Накладной справа') },
+              ]}
+            />
+          </Field>
+        ))}
+      </div>
       <Field label={tr('Задняя стенка')}>
         <Select
           value={cabinet.back.mode}

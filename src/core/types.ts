@@ -418,10 +418,34 @@ export type Section = {
   fronts?: SectionFronts | null | undefined
 }
 
+/**
+ * Көлденең панельдің (крышка/дно) бүйірлерге қатысты орны.
+ *
+ *   inset        — ВКЛАДНОЙ: екі бүйірдің АРАСЫНДА, бүйірлер оны жанынан
+ *                  жауып тұрады (ені W − 2t)
+ *   overlay      — НАКЛАДНОЙ: екі бүйірді де ҮСТІНЕН жабады (ені W)
+ *   overlayLeft  — НАКЛАДНОЙ СОЛДАН: тек сол бүйірді жабады (ені W − t)
+ *   overlayRight — НАКЛАДНОЙ ОҢНАН: тек оң бүйірді жабады (ені W − t)
+ *
+ * Асимметриялы нұсқалар нақты жиһазда бар: қатарға тұратын ас үй модулінің
+ * бір жағы көршісіне тіреледі де, крышка тек СЫРТҚЫ жағын жабады. Сол себепті
+ * ЕКІ БҮЙІР ӘРТҮРЛІ БИІКТІКТЕ болуы мүмкін — бұл қате емес.
+ */
+export type PanelMount = 'inset' | 'overlay' | 'overlayLeft' | 'overlayRight'
+
 export type CabinetConfig = {
   id: string
   name: string
+  /**
+   * ⚠ ЕСКІ, БІРАҚ ЖОЙЫЛМАЙДЫ. Бүкіл корпусқа бір ғана шешім береді, ал
+   * `mounts` әр панельді бөлек басқарады. `mounts` берілмесе, геометрия
+   * ОСЫДАН шығады, сондықтан ескі жоба дәл бұрынғыдай есептеледі:
+   *   sidesOverlay     → крышка мен дно ЕКЕУІ де `inset`
+   *   topBottomOverlay → екеуі де `overlay`
+   */
   construction: ConstructionMethod
+  /** Крышка мен дноның бекітілуі. Берілмеген панель `construction`-нан алынады. */
+  mounts?: { top?: PanelMount | undefined; bottom?: PanelMount | undefined } | undefined
   /** Сыртқы габарит, мм. Рет ӘРҚАШАН H × W × D. */
   height: number // H
   width: number // W

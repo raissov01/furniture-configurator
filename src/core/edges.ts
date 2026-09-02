@@ -121,6 +121,34 @@ export function customPartEdges(
   }
 }
 
+/**
+ * Корпус панелінің кромкасы, ТОРЦТАРЫ бойынша.
+ *
+ * `edgeClasses` бүкіл корпусқа бір ғана `construction`-ға қарайды, ал панель
+ * бекітілуі әр жағында әртүрлі болуы мүмкін («накладной слева»): сонда бір
+ * торцы көрінеді, екіншісі көршісіне тіреліп жасырын қалады. Бұл функция
+ * дәл сол жағдайды сипаттайды.
+ *
+ * `visible.W1` / `visible.W2` — панельдің локал x бойынша БАСЫ мен СОҢЫ:
+ * жатық панельде сол/оң жағы, тік панельде асты/үсті (types.ts қара).
+ */
+export function carcassEdges(
+  visible: { W1: boolean; W2: boolean },
+  policy: EdgePolicy,
+): PanelEdges {
+  const pick = (c: EdgeClass): EdgeSpec => {
+    const bandId = policy[c]
+    return bandId ? { bandId } : null
+  }
+  return {
+    // Алдыңғы жиек әрқашан көрінеді, арты — ХДФ жауып тұр (§4.4).
+    L1: pick('visibleFront'),
+    L2: pick('hidden'),
+    W1: pick(visible.W1 ? 'visibleSecondary' : 'hidden'),
+    W2: pick(visible.W2 ? 'visibleSecondary' : 'hidden'),
+  }
+}
+
 export type CutDimensions = { cutLength: number; cutWidth: number }
 
 /**
