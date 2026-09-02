@@ -134,7 +134,12 @@ export function countHardware(panels: Panel[]): Map<string, number> {
     if (p.role === 'shelf') shelves += 1
     if (p.role === 'drawerSide') drawerSides += 1
     for (const d of p.drilling) {
-      if (d.purpose === 'confirmat' && d.diameter === CONFIRMAT_EDGE_DIAMETER) confirmats += 1
+      /*
+       * Бір конфирмат — ЕКІ тесік: беттегі өтпелі мен ТОРЦТАҒЫ пилот.
+       * Санағанда ТОРЦТАҒЫСЫН аламыз: диаметрге қарау сынғыш болатын
+       * (диаметрлер 2026-09-02-де ауысты), ал беті-торцы ешқашан ауыспайды.
+       */
+      if (d.purpose === 'confirmat' && d.face.startsWith('edge')) confirmats += 1
       // Чашка = бір ілгек. Планканың тесіктері сол ілгектің екінші ұшы,
       // оларды қайта санауға болмайды.
       if (d.purpose === 'hinge' && d.diameter === HINGE_CUP_DIAMETER) {

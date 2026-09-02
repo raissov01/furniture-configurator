@@ -308,9 +308,15 @@ type Drill = {
 ```
 
 Rules:
-- **Confirmat (евровинт):** Ø5 through the face panel, Ø7×50 into the panel edge.
-  Two per joint minimum, three if the joint is longer than 400 mm.
+- **Confirmat (евровинт):** Ø8 **through** the face panel, Ø5×35 pilot into the
+  panel edge. Two per joint minimum, three if the joint is longer than 400 mm.
   First hole 50 mm from the edge; the rest distributed evenly.
+
+  > Corrected 2026-09-02. This used to read "Ø5 through the face, Ø7×50 into the
+  > edge", which is backwards: the screw's body passes through the face panel and
+  > its thread cuts into the edge, so the through hole is the **larger** one and
+  > the edge hole is the pilot. A Ø7 screw does not pass through a Ø5 hole. The
+  > numbers are taken from a competitor's CNC export of the same joint.
 - **Shelf pin column:** Ø5, depth 8 mm, **32 mm pitch**, front row 37 mm from
   the front edge, back row 37 mm from the back edge.
 - **Hinge cup:** Ø35, depth 12.5 mm, centre 22 mm from the front edge (Blum

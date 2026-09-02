@@ -60,9 +60,11 @@ describe('өлшемдер', () => {
 describe('фурнитура присадкадан шығады', () => {
   const counts = countHardware(panels)
 
-  it('конфирмат саны торцтағы Ø7 тесікпен бірдей', () => {
+  it('конфирмат саны ТОРЦТАҒЫ тесікпен бірдей', () => {
+    // Бір конфирмат = екі тесік: беттегі өтпелі + торцтағы пилот. Санақ
+    // торцпен жүреді — диаметр ауысса да (2026-09-02) бұл өзгермейді.
     const edgeHoles = panels.reduce(
-      (n, p) => n + p.drilling.filter((d) => d.purpose === 'confirmat' && d.diameter === 7).length,
+      (n, p) => n + p.drilling.filter((d) => d.purpose === 'confirmat' && d.face.startsWith('edge')).length,
       0,
     )
     expect(counts.get('confirmat-7x50')).toBe(edgeHoles)

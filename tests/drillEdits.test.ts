@@ -138,7 +138,7 @@ describe('түзетуді өзгерту', () => {
 
 describe('пресеттер', () => {
   it('сандары §4.9 константаларымен БІР', () => {
-    expect(findDrillPreset('confirmat-edge')).toMatchObject({ diameter: 7, depth: 50, where: 'edge' })
+    expect(findDrillPreset('confirmat-edge')).toMatchObject({ diameter: 5, depth: 35, where: 'edge' })
     expect(findDrillPreset('shelf-pin')).toMatchObject({ diameter: 5, depth: 8 })
     expect(findDrillPreset('hinge-cup')).toMatchObject({ diameter: 35, depth: 12.5 })
     expect(DRILL_PRESETS.every((p) => p.name.includes('Ø'))).toBe(true)

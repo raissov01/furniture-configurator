@@ -20,19 +20,25 @@ describe('конфирмат (§4.9)', () => {
     expect(spreadAlongJoint(300, 2, 50)).toEqual([50, 250])
   })
 
-  it('бүйірде Ø5 өтпелі, крышканың торцінде Ø7×50', () => {
+  /**
+   * ⚠ 2026-09-02-де бағыт ТҮЗЕТІЛДІ: бетте ҮЛКЕН өтпелі (Ø8), торцта КІШІ
+   * пилот (Ø5×35). Бұранданың денесі бет арқылы өтіп, торцқа бұралады;
+   * бұрынғы Ø5 өтпелі тесіктен Ø7 бұранда өте алмайтын. Сандар qdesign-ның
+   * CNC экспортымен беттестірілген (constants.ts қара).
+   */
+  it('бүйірде Ø8 өтпелі, крышканың торцінде Ø5×35', () => {
     const faceHoles = of(side, 'confirmat')
     expect(faceHoles).toHaveLength(6) // крышка + дно, әрқайсысына 3
     for (const d of faceHoles) {
       expect(d.face).toBe('outer')
-      expect(d.diameter).toBe(5)
+      expect(d.diameter).toBe(8)
       expect(d.depth).toBe(T) // өтпелі
     }
     const edgeHoles = of(top, 'confirmat')
     expect(edgeHoles).toHaveLength(6) // екі торц × 3
     for (const d of edgeHoles) {
-      expect(d.diameter).toBe(7)
-      expect(d.depth).toBe(50)
+      expect(d.diameter).toBe(5)
+      expect(d.depth).toBe(35)
       expect(d.y).toBe(T / 2) // торцтың дәл ортасында
     }
     expect(new Set(edgeHoles.map((d) => d.face))).toEqual(new Set(['edgeW1', 'edgeW2']))
