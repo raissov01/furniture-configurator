@@ -208,22 +208,43 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
           const d = h.size.x
           const height = h.size.y
           const y = h.position.y
-          const common = <meshStandardMaterial color={h.legType === 'hidden' ? '#6b7280' : '#8b9199'} roughness={0.4} metalness={0.55} />
-          if (h.legType === 'square') {
-            return (
-              <mesh key={`leg-${i}`} position={[h.position.x, y, h.position.z]}>
-                <boxGeometry args={[d, height, d]} />
-                {common}
-              </mesh>
-            )
-          }
+          const colour = h.legType === 'none' ? '#6b7280' : '#8b9199'
+          const plate = h.plateSize ?? 0
+          const plateThickness = 3
+          // Табан дноға тіреледі: тұғыр одан төмен басталады.
+          const plateY = h.position.y + height / 2 - plateThickness / 2
+          const postHeight = Math.max(1, height - (plate > 0 ? plateThickness : 0))
+          const postY = h.position.y - (plate > 0 ? plateThickness / 2 : 0)
           // Конуста асты ТАРЫРАҚ: нақты аяқ дәл солай көрінеді.
           const bottomRadius = h.legType === 'cone' ? d * 0.28 : d / 2
+
           return (
-            <mesh key={`leg-${i}`} position={[h.position.x, y, h.position.z]}>
-              <cylinderGeometry args={[d / 2, bottomRadius, height, 20]} />
-              {common}
-            </mesh>
+            <group key={`leg-${i}`}>
+              {plate > 0 ? (
+                <mesh position={[h.position.x, plateY, h.position.z]}>
+                  {h.legPlate === 'square'
+                    ? <boxGeometry args={[plate, plateThickness, plate]} />
+                    : <cylinderGeometry args={[plate / 2, plate / 2, plateThickness, 24]} />}
+                  <meshStandardMaterial color={colour} roughness={0.4} metalness={0.55} />
+                </mesh>
+              ) : null}
+              {h.legType === 'none' ? null : (
+                <mesh
+                  position={[h.position.x, postY, h.position.z]}
+                  // «Вектор» — қиғаш аяқ: сол қиғаштығы оны басқалардан ажыратады.
+                  rotation={h.legType === 'vector' ? [0.18, 0, 0.18] : [0, 0, 0]}
+                >
+                  {h.legType === 'square'
+                    ? <boxGeometry args={[d, postHeight, d]} />
+                    : <cylinderGeometry args={[
+                      h.legType === 'vector' ? d / 3 : d / 2,
+                      h.legType === 'vector' ? d / 3 : bottomRadius,
+                      postHeight, 20,
+                    ]} />}
+                  <meshStandardMaterial color={colour} roughness={0.4} metalness={0.55} />
+                </mesh>
+              )}
+            </group>
           )
         }
 

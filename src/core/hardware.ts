@@ -10,13 +10,13 @@
  * штанганың орны шкафтың ішкі құрылымымен ешқашан алшақтамайды.
  */
 
-import { mergeSettings } from './constants'
+import { LEG_PLATE_ROUND_DIAMETER, LEG_PLATE_SQUARE_SIDE, LEG_STEP, mergeSettings } from './constants'
 import { findAppliance, findFilling } from './filling'
 import { ConfigValidationError } from './errors'
 import { carcassDepthAt, layoutBands } from './generateCabinet'
 import { legCentres, legPairsFor } from './drilling'
 import { layoutSections } from './sections'
-import type { CabinetConfig, Catalog, LegType, SettingsOverride, Vec3 } from './types'
+import type { CabinetConfig, Catalog, LegPlate, LegType, SettingsOverride, Vec3 } from './types'
 
 export type HardwareKindPlaced =
   | 'rod' | 'rodBracket' | 'slidingTrack' | 'slidingDoorKit' | 'leg'
@@ -43,6 +43,10 @@ export type HardwarePlacement = {
   color?: string | undefined
   /** Аяққа — оның түрі: 3D пішінді содан алады. */
   legType?: LegType | undefined
+  /** Аяққа — табанының пішіні. */
+  legPlate?: LegPlate | undefined
+  /** Табанның өлшемі, мм (дөңгелекке — диаметрі, шаршыға — қабырғасы). 0 — жоқ. */
+  plateSize?: number | undefined
   /**
    * Сметаға түсе ме. Техника — КЛИЕНТТІКІ, сондықтан `false`: ойдан жазылған
    * баға клиентке кеткен КП-ға түсер еді.
@@ -76,7 +80,16 @@ export const LEG_SPECS: Record<LegType, {
   cylinder: { hardwareId: 'leg-100', label: 'Ножка регулируемая', diameter: 50 },
   cone: { hardwareId: 'leg-cone', label: 'Ножка коническая', diameter: 60 },
   square: { hardwareId: 'leg-square', label: 'Ножка квадратная', diameter: 50 },
-  hidden: { hardwareId: 'leg-hidden', label: 'Опора скрытая (под цоколь)', diameter: 40 },
+  vector: { hardwareId: 'leg-vector', label: 'Ножка «вектор» (наклонная)', diameter: 45 },
+  // Тұғырсыз: тек табаны бұралады, оның үстіне цоколь тіреледі.
+  none: { hardwareId: 'leg-hidden', label: 'Опора скрытая (без стойки)', diameter: 40 },
+}
+
+/** Табанның өлшемі, мм. `none` — табан жоқ, бұранда да жоқ. */
+export const LEG_PLATE_SIZE: Record<LegPlate, number> = {
+  round: LEG_PLATE_ROUND_DIAMETER,
+  square: LEG_PLATE_SQUARE_SIDE,
+  none: 0,
 }
 
 export function generateHardware(
@@ -117,7 +130,9 @@ export function generateHardware(
     // ⚠ Тереңдік — КОРПУСТЫҚІ (`carcassDepthAt`), габарит емес: накладной
     // арт қабырға дноның артында тұрады, ал аяқ дноға бұралады.
     const legDepth = carcassDepthAt(config, settings)
-    for (const centre of legCentres(config.width, legDepth, legPairsFor(config.width))) {
+    const plate: LegPlate = config.base.legPlate ?? 'round'
+    const step = config.base.legStep ?? LEG_STEP
+    for (const centre of legCentres(config.width, legDepth, legPairsFor(config.width, step))) {
       out.push({
         kind: 'leg',
         priced: true,
@@ -129,6 +144,10 @@ export function generateHardware(
         axis: 'x',
         size: { x: spec.diameter, y: baseHeight, z: spec.diameter },
         legType,
+        legPlate: plate,
+        // Табан дноға тіреледі, сондықтан оның қалыңдығы тұғырға қосылмайды —
+        // 3D-де ол жұқа диск/пластина болып қана көрінеді.
+        plateSize: LEG_PLATE_SIZE[plate],
       })
     }
   }

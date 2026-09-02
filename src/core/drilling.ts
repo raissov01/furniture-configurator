@@ -15,7 +15,7 @@ import {
   HINGE_END_OFFSET, HINGE_PLATE_DEPTH, HINGE_PLATE_DIAMETER,
   HINGE_PLATE_FROM_FRONT, HINGE_PLATE_HOLE_SPACING,
   LEG_CENTRE_FROM_FRONT, LEG_CENTRE_FROM_SIDE, LEG_SCREW_DEPTH, LEG_SCREW_DIAMETER,
-  LEG_SCREW_SQUARE,
+  LEG_SCREW_SQUARE, LEG_STEP,
   DRAWER_BOTTOM_DOWEL_DEPTH, DRAWER_BOTTOM_DOWEL_DIAMETER, DRAWER_BOTTOM_DOWEL_FROM_END,
   MINIFIX_CAM_DEPTH, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_FROM_EDGE,
   MINIFIX_DOWEL_DEPTH, MINIFIX_DOWEL_DIAMETER, MINIFIX_FROM_END, MINIFIX_PAIR_SPACING,
@@ -447,8 +447,8 @@ export function drawerFacadeScrews(wall: Panel, facade: Panel, ctx: Ctx): void {
  * Әр 600 мм-ге бір жұп: одан кең корпустың дносы ортасынан майысады, ал
  * майысқан дно ящиктің направляющасын қысады. Кемінде екі жұп — төрт аяқ.
  */
-export function legPairsFor(width: number): number {
-  return Math.max(2, Math.ceil(width / 600))
+export function legPairsFor(width: number, step: number = LEG_STEP): number {
+  return Math.max(2, Math.ceil(width / step))
 }
 
 /**
@@ -490,10 +490,11 @@ export function legScrewHoles(
   legPairs: number,
   ctx: Ctx,
   offset: { x: number; z: number } = { x: 0, z: 0 },
+  holeSpacing: number = LEG_SCREW_SQUARE,
 ): void {
   const length = bottom.finishedLength
   const width = bottom.finishedWidth
-  const half = LEG_SCREW_SQUARE / 2
+  const half = holeSpacing / 2
 
   const centres = legCentres(length + offset.x * 2, width + offset.z * 2, legPairs)
 

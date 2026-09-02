@@ -5,7 +5,7 @@
  * Таза функция: React жоқ, three.js жоқ, күй (state) жоқ.
  */
 
-import { mergeSettings } from './constants'
+import { LEG_SCREW_SQUARE, LEG_STEP, mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
 import {
   applyMilling, confirmatJoint, drawerBottomJoints, drawerFacadeScrews, handleHoles, hingeHoles,
@@ -1092,9 +1092,26 @@ export function generateCabinet(
    * `hardware.ts`-тегі ережемен бір: әр 600 мм-ге бір жұп.
    */
   if (config.base?.kind === 'legs') {
-    // Дно ВКЛАДНОЙ болса, оның нөлі корпустың нөлінен `t` жылжыған — аяқтың
-    // орны сол шегерумен беріледі, әйтпесе саңылаулар қисаяды.
-    legScrewHoles(bottom, legPairsFor(W), ctx, { x: bottom.position.x, z: bottom.position.z })
+    /*
+     * Дно ВКЛАДНОЙ болса, оның нөлі корпустың нөлінен `t` жылжыған — аяқтың
+     * орны сол шегерумен беріледі, әйтпесе саңылаулар қисаяды.
+     *
+     * ⚠ ТАБАНСЫЗ аяққа тесік бұрғыланбайды: бекітілуі тұғырдың түріне қарай
+     * әртүрлі, ал ойдан шығарылған тесік дайын детальді бүлдіреді.
+     */
+    const plate = config.base.legPlate ?? 'round'
+    if (plate === 'none') {
+      bottom.note = [bottom.note, 'Опора без основания: крепление на усмотрение цеха']
+        .filter(Boolean).join('; ')
+    } else {
+      legScrewHoles(
+        bottom,
+        legPairsFor(W, config.base.legStep ?? LEG_STEP),
+        ctx,
+        { x: bottom.position.x, z: bottom.position.z },
+        config.base.legHoleSpacing ?? LEG_SCREW_SQUARE,
+      )
+    }
   }
 
   /*

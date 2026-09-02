@@ -462,19 +462,39 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
                   ]}
                 />
               </Field>
-              <Field label={tr('Скругление, R')} hint={tr('все углы')}>
-                <NumberInput
-                  value={panel.corners?.bottomLeft ?? 0}
-                  min={0}
-                  max={Math.floor(Math.min(panel.finishedLength, panel.finishedWidth) / 2)}
-                  onChange={(r) => edit(`corners:${panel.id}`, {
-                    panelCorners: {
-                      ...cabinet.panelCorners,
-                      [panel.id]: { bottomLeft: r, bottomRight: r, topRight: r, topLeft: r },
-                    },
-                  })}
-                />
-              </Field>
+            </div>
+
+            {/* Бұрыштар — ӘРҚАЙСЫСЫ бөлек. Столешницада көбіне тек алдыңғы екеуі
+                дөңгелектеледі, ал төртеуін бірге қою оны бермейді. Реті —
+                сызбадағыдай: жоғарғы қатар үстінде. */}
+            <div className="border-t border-neutral-200 pt-2 dark:border-neutral-800">
+              <div className="mb-1 text-xs text-neutral-500">{tr('Скругление углов, R мм')}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  ['topLeft', 'Верхний левый'],
+                  ['topRight', 'Верхний правый'],
+                  ['bottomLeft', 'Нижний левый'],
+                  ['bottomRight', 'Нижний правый'],
+                ] as const).map(([corner, label]) => (
+                  <Field key={corner} label={tr(label)}>
+                    <NumberInput
+                      value={panel.corners?.[corner] ?? 0}
+                      min={0}
+                      max={Math.floor(Math.min(panel.finishedLength, panel.finishedWidth) / 2)}
+                      onChange={(r) => {
+                        const current = cabinet.panelCorners?.[panel.id]
+                          ?? { bottomLeft: 0, bottomRight: 0, topRight: 0, topLeft: 0 }
+                        edit(`corners:${panel.id}:${corner}`, {
+                          panelCorners: {
+                            ...cabinet.panelCorners,
+                            [panel.id]: { ...current, [corner]: r },
+                          },
+                        })
+                      }}
+                    />
+                  </Field>
+                ))}
+              </div>
             </div>
 
             {/* Ескертулер — ҚАТЕ емес: цех әдейі солай жасауы мүмкін. */}

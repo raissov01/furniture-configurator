@@ -230,7 +230,10 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
   base: z.object({
     kind: z.enum(['plinth', 'legs']),
     height: mm,
-    legType: z.enum(['cylinder', 'cone', 'square', 'hidden']).optional(),
+    legType: z.enum(['cylinder', 'cone', 'square', 'vector', 'none']).optional(),
+    legPlate: z.enum(['round', 'square', 'none']).optional(),
+    legHoleSpacing: mm.optional(),
+    legStep: mm.optional(),
   }).optional(),
   openTop: z.boolean().optional(),
   drawerSystem: z.enum(['roller', 'ball', 'tandem']).optional(),

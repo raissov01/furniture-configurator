@@ -223,6 +223,7 @@ const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'leg-100', kind: 'leg', name: 'Ножка регулируемая 100 мм' },
   { id: 'leg-cone', kind: 'leg', name: 'Ножка коническая' },
   { id: 'leg-square', kind: 'leg', name: 'Ножка квадратная' },
+  { id: 'leg-vector', kind: 'leg', name: 'Ножка «вектор» (наклонная)' },
   { id: 'leg-hidden', kind: 'leg', name: 'Опора скрытая под цоколь' },
   { id: 'runner-roller', kind: 'other', name: 'Направляющие роликовые (пара)' },
   { id: 'runner-ball', kind: 'other', name: 'Направляющие шариковые (пара)' },

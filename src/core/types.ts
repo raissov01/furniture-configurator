@@ -533,8 +533,11 @@ export type PanelMount = 'inset' | 'overlay' | 'overlayLeft' | 'overlayRight'
 /** Направляющаның жүйесі — толық сипаттамасы `drawerSystems.ts`-те. */
 export type DrawerSystemId = 'roller' | 'ball' | 'tandem'
 
-/** Реттелетін аяқтың түрі (`CabinetConfig.base.legType`). */
-export type LegType = 'cylinder' | 'cone' | 'square' | 'hidden'
+/** Аяқтың тұғыры (`CabinetConfig.base.legType`). */
+export type LegType = 'cylinder' | 'cone' | 'square' | 'vector' | 'none'
+
+/** Аяқтың табаны (`CabinetConfig.base.legPlate`). */
+export type LegPlate = 'round' | 'square' | 'none'
 
 export type CabinetConfig = {
   id: string
@@ -605,15 +608,28 @@ export type CabinetConfig = {
     kind: 'plinth' | 'legs'
     height: number
     /**
-     * Аяқтың ТҮРІ. Тек көрініс емес: әрқайсысы бөлек артикул, сондықтан
-     * сметада да, фурнитура тізімінде де бөлек жолмен тұрады.
+     * Аяқтың ТҰҒЫРЫ (опора). Тек көрініс емес: әрқайсысы бөлек артикул,
+     * сондықтан сметада да, фурнитура тізімінде де бөлек жолмен тұрады.
      *
      *   cylinder — реттелетін цилиндр (әдепкі, ең жиі)
      *   cone     — конус, көрінетін аяқ (тумба, комод)
      *   square   — шаршы профиль
-     *   hidden   — жасырын тірек: цоколь оны жауып тұрады
+     *   vector   — қиғаш «вектор» аяқ
+     *   none     — тұғырсыз: тек табаны қалады (цоколь астындағы жасырын тірек)
      */
     legType?: LegType | undefined
+    /**
+     * Аяқтың ТАБАНЫ (основание): дноға бұралатын табан.
+     *
+     * ⚠ `none` таңдалса, дноға БҰРАНДА ТЕСІГІ БҰРҒЫЛАНБАЙДЫ: табансыз
+     * тұғырдың бекітілуі оның түріне қарай әртүрлі, ал ойдан шығарылған
+     * тесік дайын детальді бүлдіреді. Деталь ескертпесінде ол айтылады.
+     */
+    legPlate?: LegPlate | undefined
+    /** Табанның бұрандалары жатқан шаршының қабырғасы, мм (әдепкі 65). */
+    legHoleSpacing?: number | undefined
+    /** Аяқтардың қадамы, мм (әдепкі 600). */
+    legStep?: number | undefined
   } | undefined
 
   /**

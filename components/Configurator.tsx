@@ -574,24 +574,49 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
       </Field>
 
       {/* Элемент бойынша: қатарға тұратын модульдің крышкасы тек сыртқы
-          бүйірді жабады, ал ішкі жағы көршісіне тіреледі. */}
+          бүйірді жабады, ал ішкі жағы көршісіне тіреледі.
+
+          Крышканың тізімінде бекітілуден БӨЛЕК «Планка» мен «Нет» те тұр —
+          үшеуі де бір сұрақтың жауабы («үстінде не бар?»), сондықтан бір
+          тізімде. qdesign да дәл солай жасаған. */}
       <div className="grid grid-cols-2 gap-2">
-        {([['top', 'Крышка'], ['bottom', 'Дно']] as const).map(([which, label]) => (
-          <Field key={which} label={tr(label)}>
-            <Select
-              value={cabinet.mounts?.[which] ?? (cabinet.construction === 'sidesOverlay' ? 'inset' : 'overlay')}
-              onChange={(mount) => edit(`mounts.${which}`, {
-                mounts: { ...cabinet.mounts, [which]: mount },
-              })}
-              options={[
-                { value: 'inset' as const, label: tr('Вкладной') },
-                { value: 'overlay' as const, label: tr('Накладной') },
-                { value: 'overlayLeft' as const, label: tr('Накладной слева') },
-                { value: 'overlayRight' as const, label: tr('Накладной справа') },
-              ]}
-            />
-          </Field>
-        ))}
+        <Field label={tr('Крышка')}>
+          <Select
+            value={cabinet.openTop ? 'none' : cabinet.topRails ? 'rails'
+              : (cabinet.mounts?.top ?? (cabinet.construction === 'sidesOverlay' ? 'inset' : 'overlay'))}
+            onChange={(value) => edit('mounts.top', value === 'rails'
+              ? { openTop: undefined, topRails: cabinet.topRails ?? { width: 100, count: 2 } }
+              : value === 'none'
+                ? { openTop: true, topRails: undefined }
+                : {
+                  openTop: undefined,
+                  topRails: undefined,
+                  mounts: { ...cabinet.mounts, top: value },
+                })}
+            options={[
+              { value: 'inset' as const, label: tr('Вкладной') },
+              { value: 'overlay' as const, label: tr('Накладной') },
+              { value: 'overlayLeft' as const, label: tr('Накладной слева') },
+              { value: 'overlayRight' as const, label: tr('Накладной справа') },
+              { value: 'rails' as const, label: tr('Планка (царга)') },
+              { value: 'none' as const, label: tr('Нет') },
+            ]}
+          />
+        </Field>
+        <Field label={tr('Дно')}>
+          <Select
+            value={cabinet.mounts?.bottom ?? (cabinet.construction === 'sidesOverlay' ? 'inset' : 'overlay')}
+            onChange={(mount) => edit('mounts.bottom', {
+              mounts: { ...cabinet.mounts, bottom: mount },
+            })}
+            options={[
+              { value: 'inset' as const, label: tr('Вкладной') },
+              { value: 'overlay' as const, label: tr('Накладной') },
+              { value: 'overlayLeft' as const, label: tr('Накладной слева') },
+              { value: 'overlayRight' as const, label: tr('Накладной справа') },
+            ]}
+          />
+        </Field>
       </div>
       {/* Направляющаның жүйесі: саңылауы да, тесігі де, қораптың тереңдігі де
           содан шығады. «Цехтың профилінен» — ескі мінез. */}
@@ -606,25 +631,6 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
             { value: 'roller' as const, label: tr('Роликовые (телескопические)') },
             { value: 'ball' as const, label: tr('Шариковые полного выдвижения') },
             { value: 'tandem' as const, label: tr('Blum TANDEM (скрытые)') },
-          ]}
-        />
-      </Field>
-
-      {/* Крыша: тұтас панель, ПЛАНКА немесе жоқ. Ас үй тумбасында үстінде
-          столешница жатады да, тұтас крышаның қажеті болмайды. */}
-      <Field label={tr('Крыша')} hint={tr('под столешницей хватает планок')}>
-        <Select
-          value={cabinet.openTop ? 'none' : cabinet.topRails ? 'rails' : 'panel'}
-          onChange={(kind) => edit('topKind', {
-            openTop: kind === 'none' ? true : undefined,
-            topRails: kind === 'rails'
-              ? (cabinet.topRails ?? { width: 100, count: 2 })
-              : undefined,
-          })}
-          options={[
-            { value: 'panel' as const, label: tr('Панель') },
-            { value: 'rails' as const, label: tr('Планка (царга)') },
-            { value: 'none' as const, label: tr('Нет') },
           ]}
         />
       </Field>
@@ -803,20 +809,60 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
       </div>
 
       {cabinet.base?.kind === 'legs' ? (
-        <Field label={tr('Тип ножки')} hint={tr('отдельный артикул в смете')}>
-          <Select
-            value={cabinet.base.legType ?? 'cylinder'}
-            onChange={(legType) => edit('base.legType', {
-              base: { ...cabinet.base!, legType },
-            })}
-            options={[
-              { value: 'cylinder' as const, label: tr('Цилиндр (регулируемая)') },
-              { value: 'cone' as const, label: tr('Конус') },
-              { value: 'square' as const, label: tr('Квадратная') },
-              { value: 'hidden' as const, label: tr('Скрытая (под цоколь)') },
-            ]}
-          />
-        </Field>
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label={tr('Стойка (опора)')} hint={tr('отдельный артикул в смете')}>
+              <Select
+                value={cabinet.base.legType ?? 'cylinder'}
+                onChange={(legType) => edit('base.legType', {
+                  base: { ...cabinet.base!, legType },
+                })}
+                options={[
+                  { value: 'cylinder' as const, label: tr('Цилиндр (регулируемая)') },
+                  { value: 'cone' as const, label: tr('Конус') },
+                  { value: 'square' as const, label: tr('Квадратная') },
+                  { value: 'vector' as const, label: tr('Вектор (наклонная)') },
+                  { value: 'none' as const, label: tr('Без стойки (скрытая)') },
+                ]}
+              />
+            </Field>
+            {/* Табан — бұранда тесіктерін БЕРЕТІН бөлік. «Жоқ» таңдалса,
+                дноға тесік бұрғыланбайды. */}
+            <Field label={tr('Основание')} hint={tr('оно даёт отверстия')}>
+              <Select
+                value={cabinet.base.legPlate ?? 'round'}
+                onChange={(legPlate) => edit('base.legPlate', {
+                  base: { ...cabinet.base!, legPlate },
+                })}
+                options={[
+                  { value: 'round' as const, label: tr('Круглое Ø108') },
+                  { value: 'square' as const, label: tr('Квадратное 81×81') },
+                  { value: 'none' as const, label: tr('Без основания') },
+                ]}
+              />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label={tr('Расстояние отверстий')} hint={tr('мм')}>
+              <NumberInput
+                value={cabinet.base.legHoleSpacing ?? 65}
+                min={20} max={200}
+                onChange={(legHoleSpacing) => edit('base.legHoleSpacing', {
+                  base: { ...cabinet.base!, legHoleSpacing },
+                })}
+              />
+            </Field>
+            <Field label={tr('Шаг опор')} hint={tr('мм')}>
+              <NumberInput
+                value={cabinet.base.legStep ?? 600}
+                min={200} max={1200} step={50}
+                onChange={(legStep) => edit('base.legStep', {
+                  base: { ...cabinet.base!, legStep },
+                })}
+              />
+            </Field>
+          </div>
+        </>
       ) : null}
 
       <div className="grid grid-cols-2 gap-2">
