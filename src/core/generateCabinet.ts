@@ -18,6 +18,7 @@ import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import {
   calculateCutDimensions, carcassEdges, customPartEdges, resolveEdges, subtractedThickness,
 } from './edges'
+import { applyCutouts } from './cutouts'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
@@ -298,6 +299,7 @@ export function generateCabinet(
       orientation,
       note,
       drilling: [],
+      cutouts: [],
       grooves: [],
       milling: [],
     }
@@ -1125,6 +1127,9 @@ export function generateCabinet(
       customPartEdges(part.edging, config.edging),
     ))
   })
+
+  // Оймалар: панельдің ішінен алынатын тесіктер (раковина, розетка, құбыр).
+  applyCutouts(panels, config.panelCutouts)
 
   // Қолмен түзетілген присадка — ЕҢ СОҢЫНДА. Осылай 3D те, DXF те, смета да
   // бірдей тесіктерді көреді: панель — жалғыз ақиқат көзі (§3).

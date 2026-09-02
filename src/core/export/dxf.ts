@@ -10,6 +10,7 @@
  */
 
 import type { NestedSheet, NestingResult } from '../nesting'
+import { cutoutBounds } from '../cutouts'
 import { isWidthBevel } from '../types'
 import type { Drill, Groove, Panel } from '../types'
 
@@ -110,6 +111,7 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
     ...[...new Set(drills.map((d) => drillLayerName(d.diameter)))].sort(),
     ...(grooves.length > 0 ? [LAYER_GROOVE] : []),
     ...(milling.length > 0 ? [LAYER_MILLING] : []),
+    ...(panel.cutouts.length > 0 ? [LAYER_CUTOUT] : []),
     LAYER_TEXT,
   ]
 
@@ -152,6 +154,26 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
       ...text(LAYER_GROOVE, gr.x1 + 10, gr.y1 + 3, textHeight * 0.6,
         `PAZ ${gr.width}x${gr.depth}`),
     )
+  }
+
+  /*
+   * Оймалар — БӨЛЕК қабатта. Себебі станокта бұл бөлек операция: контурды
+   * ара кеседі, ойманы фреза алады. Бір қабатқа қоссақ, оператор ойманы
+   * контурдың бір бөлігі деп оқып, детальді қиып жіберуі мүмкін.
+   *
+   * Координата РЕЗ детальінде: кромка шегерілген жиектен саналады.
+   */
+  for (const cutout of panel.cutouts) {
+    const bounds = cutoutBounds(cutout, panel.finishedLength, panel.finishedWidth)
+    const x = bounds.x - (panel.finishedLength - L) / 2
+    const y = bounds.y - (panel.finishedWidth - Wd) / 2
+    if (cutout.shape === 'circle') {
+      entities.push(...circle(LAYER_CUTOUT, x + bounds.width / 2, y + bounds.height / 2, cutout.diameter / 2))
+    } else {
+      entities.push(...lwpolyline(LAYER_CUTOUT, [
+        [x, y], [x + bounds.width, y], [x + bounds.width, y + bounds.height], [x, y + bounds.height],
+      ], true))
+    }
   }
 
   for (const path of milling) {
@@ -206,6 +228,9 @@ export function cabinetToDxfFiles(panels: Panel[], options?: DxfOptions): Map<st
 }
 
 // ── Раскрой картасы ──────────────────────────────────────────────────────────
+
+/** Ойма — контурдан БӨЛЕК қабат: станокта ол бөлек операция. */
+export const LAYER_CUTOUT = 'CUTOUT'
 
 export const LAYER_SHEET = 'SHEET'
 export const LAYER_USABLE = 'USABLE'

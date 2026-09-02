@@ -247,6 +247,32 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
    */
   drillEdits: z.record(z.string().min(1), DrillEditSchema).optional(),
   /**
+   * Панельдің ІШІНДЕГІ оймалар, панель id-і бойынша. ЕРІКТІ өріс.
+   */
+  panelCutouts: z.record(z.string().min(1), z.array(z.discriminatedUnion('shape', [
+    z.object({
+      shape: z.literal('rect'),
+      id: z.string().min(1),
+      label: z.string().optional(),
+      corner: z.enum(['bottomLeft', 'bottomRight', 'topLeft', 'topRight']),
+      x: z.number().int(),
+      y: z.number().int(),
+      width: mm,
+      height: mm,
+      radius: z.number().int().min(0).optional(),
+    }),
+    z.object({
+      shape: z.literal('circle'),
+      id: z.string().min(1),
+      label: z.string().optional(),
+      corner: z.enum(['bottomLeft', 'bottomRight', 'topLeft', 'topRight']),
+      x: z.number().int(),
+      y: z.number().int(),
+      diameter: mm,
+    }),
+  ]))).optional(),
+
+  /**
    * Ерікті детальдар. Бұл да ЕРІКТІ өріс — ескі жоба сол күйінде оқылады.
    */
   customParts: z.array(z.object({

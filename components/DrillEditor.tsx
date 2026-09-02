@@ -16,11 +16,15 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Field, Select } from '@/components/ui'
+import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import {
+  CUTOUT_PRESETS,
   DRILL_PRESETS,
   addDrill,
+  cutoutBounds,
+  cutoutWarnings,
+  findCutoutPreset,
   drillEditCounts,
   drillKey,
   drillFromPreset,
@@ -30,7 +34,7 @@ import {
   resetPanelDrills,
   snapToPitch,
 } from '@/src/core/index'
-import type { Catalog, Drill, DrillEdits, Panel } from '@/src/core/index'
+import type { Catalog, Cutout, Drill, DrillEdits, Panel, PanelCutouts } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 
 type Filter = 'all' | 'auto' | 'manual'
@@ -107,10 +111,22 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null)
 
   const edits: DrillEdits = cabinet.drillEdits ?? {}
+  const allCutouts: PanelCutouts = cabinet.panelCutouts ?? {}
   const panel = panels.find((p) => p.id === panelId) ?? panels[0]
   const preset = findDrillPreset(presetId)!
 
   const setEdits = (next: DrillEdits, key: string) => edit(`drill:${key}`, { drillEdits: next })
+
+  /**
+   * Ойманы қосу/өшіру. Присадкамен бір терезеде тұрғаны әдейі: цехтағы адам
+   * бір детальді ашып, тесігін де, ойымын да сонда көреді.
+   */
+  const setCutouts = (panelId: string, list: Cutout[], key: string) => {
+    const next: PanelCutouts = { ...allCutouts }
+    if (list.length === 0) delete next[panelId]
+    else next[panelId] = list
+    edit(`cutout:${key}`, { panelCutouts: next })
+  }
 
   // Панель жоғалса (габарит өзгерді, секция өшті) — таңдау бірінші панельге көшеді.
   useEffect(() => {
@@ -168,6 +184,8 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
   const scale = VIEW_PX / viewW
   const counts = drillEditCounts(edits)
   const panelEdit = edits[panel.id]
+  const panelCutouts = allCutouts[panel.id] ?? []
+  const warnings = cutoutWarnings(panel)
 
   /** Экрандағы нүкте → детальдің миллиметрі. */
   const toMm = (e: React.MouseEvent<SVGSVGElement>): { x: number; y: number } => {
@@ -302,6 +320,141 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
 
           {selected !== null ? <SelectedInfo panel={panel} keyOf={selected} /> : null}
 
+          {/* ── Оймалар ─────────────────────────────────────────────────────
+              Раковина, розетка, құбыр: параметрлі модельден шықпайтын, бірақ
+              әр екінші тапсырыста кездесетін нәрсе. */}
+          <div className="space-y-2 border-t border-neutral-200 pt-2 dark:border-neutral-800">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-wider text-neutral-500">{tr('Вырезы')}</span>
+              <span className="text-[11px] text-neutral-400 tabular-nums">{panelCutouts.length}</span>
+            </div>
+
+            <Select
+              value=""
+              onChange={(id) => {
+                const preset = findCutoutPreset(id)
+                if (!preset) return
+                const n = panelCutouts.length + 1
+                const common = {
+                  id: `cut-${n}-${Date.now().toString(36)}`,
+                  label: preset.name,
+                  corner: 'bottomLeft' as const,
+                  // Әдепкі орны — сол-төменгі бұрыштан 100 мм: деталь ішінде
+                  // жататыны кепілді, ал цех оны бірден жылжытады.
+                  x: 100,
+                  y: 100,
+                }
+                const cutout: Cutout = preset.shape === 'circle'
+                  ? { ...common, shape: 'circle', diameter: preset.diameter ?? 68 }
+                  : {
+                    ...common, shape: 'rect',
+                    width: preset.width ?? 100, height: preset.height ?? 60,
+                    ...(preset.radius === undefined ? {} : { radius: preset.radius }),
+                  }
+                setCutouts(panel.id, [...panelCutouts, cutout], `add:${cutout.id}`)
+              }}
+              options={[
+                { value: '', label: tr('+ Добавить вырез') },
+                ...CUTOUT_PRESETS.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
+
+            {panelCutouts.map((cutout, i) => (
+              <div key={cutout.id} className="rounded-md border border-neutral-200 p-1.5 dark:border-neutral-700">
+                <div className="flex items-center gap-1">
+                  <span className="flex-1 truncate text-[11px]">{cutout.label ?? cutout.id}</span>
+                  <Button onClick={() => setCutouts(
+                    panel.id,
+                    panelCutouts.filter((c) => c.id !== cutout.id),
+                    `remove:${cutout.id}`,
+                  )}>
+                    ✕
+                  </Button>
+                </div>
+                <div className="mt-1 grid grid-cols-2 gap-1">
+                  <Field label="X" hint={tr('от угла')}>
+                    <NumberInput
+                      value={cutout.x} min={0} max={5000}
+                      onChange={(x) => setCutouts(
+                        panel.id,
+                        panelCutouts.map((c, k) => (k === i ? { ...c, x } : c)),
+                        `x:${cutout.id}`,
+                      )}
+                    />
+                  </Field>
+                  <Field label="Y" hint={tr('от угла')}>
+                    <NumberInput
+                      value={cutout.y} min={0} max={5000}
+                      onChange={(y) => setCutouts(
+                        panel.id,
+                        panelCutouts.map((c, k) => (k === i ? { ...c, y } : c)),
+                        `y:${cutout.id}`,
+                      )}
+                    />
+                  </Field>
+                  <Field label={tr('Угол')}>
+                    <Select
+                      value={cutout.corner}
+                      onChange={(corner) => setCutouts(
+                        panel.id,
+                        panelCutouts.map((c, k) => (k === i ? { ...c, corner } : c)),
+                        `corner:${cutout.id}`,
+                      )}
+                      options={[
+                        { value: 'bottomLeft' as const, label: tr('Слева снизу') },
+                        { value: 'bottomRight' as const, label: tr('Справа снизу') },
+                        { value: 'topLeft' as const, label: tr('Слева сверху') },
+                        { value: 'topRight' as const, label: tr('Справа сверху') },
+                      ]}
+                    />
+                  </Field>
+                  {cutout.shape === 'circle' ? (
+                    <Field label="Ø" hint="мм">
+                      <NumberInput
+                        value={cutout.diameter} min={5} max={2000}
+                        onChange={(diameter) => setCutouts(
+                          panel.id,
+                          panelCutouts.map((c, k) => (k === i ? { ...c, diameter } : c)),
+                          `d:${cutout.id}`,
+                        )}
+                      />
+                    </Field>
+                  ) : (
+                    <>
+                      <Field label={tr('Ширина')} hint="мм">
+                        <NumberInput
+                          value={cutout.width} min={5} max={4000}
+                          onChange={(width) => setCutouts(
+                            panel.id,
+                            panelCutouts.map((c, k) => (k === i ? { ...c, width } : c)),
+                            `w:${cutout.id}`,
+                          )}
+                        />
+                      </Field>
+                      <Field label={tr('Высота')} hint="мм">
+                        <NumberInput
+                          value={cutout.height} min={5} max={4000}
+                          onChange={(height) => setCutouts(
+                            panel.id,
+                            panelCutouts.map((c, k) => (k === i ? { ...c, height } : c)),
+                            `h:${cutout.id}`,
+                          )}
+                        />
+                      </Field>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Ескертулер — ҚАТЕ емес: цех әдейі солай жасауы мүмкін. */}
+            {warnings.length > 0 ? (
+              <ul className="space-y-0.5 rounded-md border border-amber-300 bg-amber-50 p-1.5 text-[10px] text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                {warnings.map((w) => <li key={w.cutoutId + w.message}>{w.message}</li>)}
+              </ul>
+            ) : null}
+          </div>
+
           <div className="space-y-1 border-t border-neutral-200 pt-2 dark:border-neutral-800">
             {[...new Set(panel.drilling.map((d) => d.purpose))].map((purpose) => (
               <div key={purpose} className="flex items-center gap-1.5 text-[10px] text-neutral-500">
@@ -335,6 +488,25 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
               <rect x={-t} y={0} width={t} height={W} fill="#e2e8f0" stroke="#94a3b8" strokeWidth={1} />
               <rect x={L} y={0} width={t} height={W} fill="#e2e8f0" stroke="#94a3b8" strokeWidth={1} />
               <rect x={0} y={0} width={L} height={W} fill="#f8fafc" stroke="#334155" strokeWidth={2} />
+
+              {/* Оймалар — тесіктерден БҰРЫН салынады: тесік олардың үстінде
+                  көрінуі керек. */}
+              {panelCutouts.map((cutout) => {
+                const b = cutoutBounds(cutout, panel.cutLength, panel.cutWidth)
+                return cutout.shape === 'circle' ? (
+                  <circle
+                    key={cutout.id}
+                    cx={b.x + b.width / 2} cy={b.y + b.height / 2} r={cutout.diameter / 2}
+                    fill="#f8fafc" stroke="#7c3aed" strokeWidth={3} strokeDasharray="10 6"
+                  />
+                ) : (
+                  <rect
+                    key={cutout.id}
+                    x={b.x} y={b.y} width={b.width} height={b.height}
+                    fill="#f8fafc" stroke="#7c3aed" strokeWidth={3} strokeDasharray="10 6"
+                  />
+                )
+              })}
 
               {drills.map(({ drill, key, manual }) => {
                 const at = place(drill, L, W)

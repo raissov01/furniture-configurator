@@ -7,8 +7,8 @@
 
 import { useMemo } from 'react'
 import { Html } from '@react-three/drei'
-import { BufferAttribute, BufferGeometry, Shape } from 'three'
-import { cutOrigin, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
+import { BufferAttribute, BufferGeometry, Path, Shape } from 'three'
+import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import type { Axis, Catalog, Panel, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
@@ -97,6 +97,27 @@ function MillingLines({ panel, catalog, settings, extents }: {
 /** Ажыратылған көріністе панель өз ҚАЛЫҢДЫҒЫ өсі бойымен ортадан ажырайды. */
 const EXPLODE_DISTANCE = 260
 
+/**
+ * Оймалардың `Path` тізімі: `Shape.holes` дәл осыны күтеді.
+ * Координата панельдің ГОТОВЫЙ өлшемінде — 3D готовый өлшеммен салынады (§4.3).
+ */
+function cutoutHoles(panel: Panel): Path[] {
+  return panel.cutouts.map((cutout) => {
+    const b = cutoutBounds(cutout, panel.finishedLength, panel.finishedWidth)
+    const hole = new Path()
+    if (cutout.shape === 'circle') {
+      hole.absarc(b.x + b.width / 2, b.y + b.height / 2, cutout.diameter / 2, 0, Math.PI * 2, false)
+    } else {
+      hole.moveTo(b.x, b.y)
+      hole.lineTo(b.x + b.width, b.y)
+      hole.lineTo(b.x + b.width, b.y + b.height)
+      hole.lineTo(b.x, b.y + b.height)
+      hole.closePath()
+    }
+    return hole
+  })
+}
+
 export function PanelMesh({
   panel, thickness, centre, decorColor, catalog, settings,
 }: {
@@ -151,7 +172,22 @@ export function PanelMesh({
   }, [panel.rotation, panel.orientation])
 
   const shape = useMemo(() => {
-    if (!panel.bevel) return null
+    /*
+     * Ойма бар панель де ЖАЗЫҚТЫҚТА салынады: қораптың геометриясында тесік
+     * болмайды, ал экранда ойма көрінбесе, оны байқамай қалуға болады —
+     * қателіктің ең қымбат түрі дәл сол.
+     */
+    if (!panel.bevel && panel.cutouts.length === 0) return null
+    if (!panel.bevel) {
+      const flat = new Shape()
+      flat.moveTo(0, 0)
+      flat.lineTo(panel.finishedLength, 0)
+      flat.lineTo(panel.finishedLength, panel.finishedWidth)
+      flat.lineTo(0, panel.finishedWidth)
+      flat.closePath()
+      flat.holes = cutoutHoles(panel)
+      return flat
+    }
     const s0 = new Shape()
     if (isWidthBevel(panel.bevel)) {
       // Ен ұзындық бойымен өзгереді; `alignWidth` қай жиекке тірелетінін айтады.
@@ -170,6 +206,7 @@ export function PanelMesh({
         s0.lineTo(0, w0)
       }
       s0.closePath()
+      s0.holes = cutoutHoles(panel)
       return s0
     }
     s0.moveTo(0, 0)
@@ -177,8 +214,9 @@ export function PanelMesh({
     s0.lineTo(panel.bevel.lengthAtEnd, panel.finishedWidth)
     s0.lineTo(0, panel.finishedWidth)
     s0.closePath()
+    s0.holes = cutoutHoles(panel)
     return s0
-  }, [panel.bevel, panel.finishedWidth, panel.finishedLength])
+  }, [panel.bevel, panel.finishedWidth, panel.finishedLength, panel.cutouts])
 
   const color = isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
   const toRad = (deg: number) => (deg * Math.PI) / 180

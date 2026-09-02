@@ -86,6 +86,7 @@ export type Orientation = { length: Axis; width: Axis; thickness: Axis }
 
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import type { ApplianceKind, FillingKind } from './filling'
+import type { Cutout, PanelCutouts } from './cutouts'
 import type { DrillEdits } from './drillEdits'
 import type { MillingPath, MillingSpec } from './milling'
 
@@ -230,6 +231,11 @@ export type Panel = {
   note: string
 
   drilling: Drill[]
+  /**
+   * Панельдің ІШІНЕН алынатын оймалар (раковина, розетка, құбыр).
+   * Сыртқы өлшемді ӨЗГЕРТПЕЙДІ — раскрой оны көрмейді (`cutouts.ts` қара).
+   */
+  cutouts: Cutout[]
   /** Арт қабырға «в паз» болғанда ғана толады */
   grooves: Groove[]
   /**
@@ -524,6 +530,11 @@ export type CabinetConfig = {
   construction: ConstructionMethod
   /** Крышка мен дноның бекітілуі. Берілмеген панель `construction`-нан алынады. */
   mounts?: { top?: PanelMount | undefined; bottom?: PanelMount | undefined } | undefined
+  /**
+   * Панельдің ІШІНДЕГІ оймалар, панель id-і бойынша (`cutouts.ts`).
+   * Присадканың түзетуіндей: панель емес, КОНФИГ сақталады (§7).
+   */
+  panelCutouts?: PanelCutouts | undefined
   /** Сыртқы габарит, мм. Рет ӘРҚАШАН H × W × D. */
   height: number // H
   width: number // W
