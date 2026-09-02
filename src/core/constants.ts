@@ -152,6 +152,36 @@ export const DRAWER_FACADE_SCREW_PILOT_DEPTH = 3
 export const DRAWER_FACADE_SCREW_END_OFFSET = 80
 
 export const RUNNER_FIRST_HOLE_OFFSET = 37
+
+/*
+ * ── qdesign-нің схемасынан алынған тесіктер (2026-09-02) ────────────────────
+ * Барлығы олардың CNC экспортынан оқылды (модуль 517 × 1540 × 298, ящик 250 мм
+ * тереңдікте, Blum Tandem). Дереккөзі белгілі болғандықтан цех оларды өз
+ * фурнитурасына қарай өзгерте алады.
+ */
+
+/**
+ * Blum Tandem направляющаясының бүйірдегі бекіту тесіктері: алдыңғы жиектен
+ * 83 мм, сосын 32 мм жүйесімен 64 + 64 + 32. Барлығы төртеу, Ø3 × 3 (пилот).
+ * Бұрын бізде екі-ақ тесік болатын (Ø5 × 12) — ол шарикті направляющаяның
+ * схемасы, ал тандемдікі басқа.
+ */
+export const RUNNER_TANDEM_OFFSETS = [83, 147, 211, 243]
+export const RUNNER_TANDEM_DIAMETER = 3
+export const RUNNER_TANDEM_DEPTH = 3
+
+/**
+ * Реттелетін аяқтың бекітілуі: әр аяққа ТӨРТ бұранда, 65 × 65 мм шаршымен.
+ * Аяқтың ортасы бүйір жиектен 88 мм, ал алды/арт жиектен 100 мм.
+ */
+export const LEG_SCREW_DIAMETER = 3
+export const LEG_SCREW_DEPTH = 3
+/** Бір аяқтың төрт бұрандасы жатқан шаршының қабырғасы, мм. */
+export const LEG_SCREW_SQUARE = 65
+/** Аяқтың ортасы: бүйір жиектен, мм. */
+export const LEG_CENTRE_FROM_SIDE = 88
+/** Аяқтың ортасы: алдыңғы және арт жиектен, мм. */
+export const LEG_CENTRE_FROM_FRONT = 100
 /** Направляющаны бекітетін бұранда тесігі: Ø5, 12 мм тереңдік. */
 export const RUNNER_SCREW_DIAMETER = 5
 export const RUNNER_SCREW_DEPTH = 12

@@ -8,8 +8,8 @@
 import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
 import {
-  applyMilling, confirmatJoint, drawerFacadeScrews, handleHoles, hingeHoles, runnerHoles,
-  shelfPinHoles,
+  applyMilling, confirmatJoint, drawerFacadeScrews, handleHoles, hingeHoles, legScrewHoles,
+  runnerHoles, shelfPinHoles,
 } from './drilling'
 import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
 import { fillingBandHeight } from './filling'
@@ -1004,6 +1004,14 @@ export function generateCabinet(
       shelfPinHoles(left, shelf, t + baseHeight, ctx)
       shelfPinHoles(right, shelf, t + baseHeight, ctx)
     }
+  }
+
+  /*
+   * Реттелетін аяқтардың бұрандалары дноның астына. Аяқтардың САНЫ
+   * `hardware.ts`-тегі ережемен бір: әр 600 мм-ге бір жұп.
+   */
+  if (config.base?.kind === 'legs') {
+    legScrewHoles(bottom, Math.max(2, Math.ceil(W / 600)), ctx)
   }
 
   /*

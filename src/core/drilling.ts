@@ -14,7 +14,10 @@ import {
   HINGE_COUNT_BY_HEIGHT, HINGE_CUP_DEPTH, HINGE_CUP_DIAMETER, HINGE_CUP_FROM_EDGE,
   HINGE_END_OFFSET, HINGE_PLATE_DEPTH, HINGE_PLATE_DIAMETER,
   HINGE_PLATE_FROM_FRONT, HINGE_PLATE_HOLE_SPACING,
+  LEG_CENTRE_FROM_FRONT, LEG_CENTRE_FROM_SIDE, LEG_SCREW_DEPTH, LEG_SCREW_DIAMETER,
+  LEG_SCREW_SQUARE,
   RUNNER_FIRST_HOLE_OFFSET, RUNNER_SCREW_DEPTH, RUNNER_SCREW_DIAMETER,
+  RUNNER_TANDEM_DEPTH, RUNNER_TANDEM_DIAMETER, RUNNER_TANDEM_OFFSETS,
   SHELF_PIN_BACK_OFFSET, SHELF_PIN_DEPTH, SHELF_PIN_DIAMETER, SHELF_PIN_FRONT_OFFSET,
   SHELF_PIN_GROUP, SHELF_PIN_PITCH,
 } from './constants'
@@ -288,18 +291,35 @@ export function runnerHoles(
   boxDepth: number,
   ctx: Ctx,
 ): void {
-  // Екі бекіту нүктесі: алдында және артында. Ортаңғысы қысқа
-  // направляющада болмайды, сондықтан екеуімен шектелеміз.
-  const columns = [
+  /*
+   * Blum Tandem схемасы: алдыңғы жиектен 83 мм, сосын 32 мм жүйесімен
+   * (64 + 64 + 32). Бұрын екі-ақ тесік болатын да, ол шарикті
+   * направляющаяның схемасы еді — тандемдікі басқа (constants.ts қара).
+   *
+   * Қораптан ұзын тесік бұрғыланбайды: қысқа ящикте соңғы нүктелер
+   * қорапта жоқ, ал жоқ жерге бұрғылау — панельдің сыртына шығу.
+   */
+  const columns = RUNNER_TANDEM_OFFSETS
+    .filter((offset) => offset <= boxDepth)
+    .map((offset) => boxFrontWorldZ + offset)
+
+  // Тандемнің бірде-бір нүктесі сыймаса (өте қысқа ящик), ескі екі нүктелі
+  // схемамен қаламыз — направляющая бәрібір бір нәрсеге бекітілуі керек.
+  const fallback = [
     boxFrontWorldZ + RUNNER_FIRST_HOLE_OFFSET,
     boxFrontWorldZ + boxDepth - RUNNER_FIRST_HOLE_OFFSET,
   ]
-  for (const worldZ of columns) {
+  const points = columns.length > 0 ? columns : fallback
+  const [diameter, depth] = columns.length > 0
+    ? [RUNNER_TANDEM_DIAMETER, RUNNER_TANDEM_DEPTH]
+    : [RUNNER_SCREW_DIAMETER, RUNNER_SCREW_DEPTH]
+
+  for (const worldZ of points) {
     pushFace(
       verticalPanel, 'inner',
       localX(verticalPanel, boxBottomWorldY),
       localY(verticalPanel, worldZ),
-      RUNNER_SCREW_DIAMETER, RUNNER_SCREW_DEPTH, 'runner', ctx,
+      diameter, depth, 'runner', ctx,
     )
   }
 }
@@ -391,6 +411,50 @@ export function drawerFacadeScrews(wall: Panel, facade: Panel, ctx: Ctx): void {
         facade, 'inner', facadeX, facadeY,
         DRAWER_FACADE_SCREW_DIAMETER, DRAWER_FACADE_SCREW_PILOT_DEPTH, 'dowel', ctx,
       )
+    }
+  }
+}
+
+
+/**
+ * Реттелетін аяқтардың бекітілуі: дноның АСТЫҢҒЫ бетіне, әр аяққа төрт
+ * бұранда 65 × 65 мм шаршымен.
+ *
+ * Бұрын бізде аяқ тек сметада тұратын — цех оны қайда бұрағанын өзі шешетін.
+ * Ал аяқтың орны корпустың тұрақтылығын шешеді: шетке тым жақын қойса,
+ * жиһаз шайқалады.
+ *
+ * `legPairs` — аяқтардың ЖҰБЫ (алдыңғы-артқы), ені бойынша қанша тұрғаны;
+ * ол `hardware.ts`-те есептеледі де, екеуі бір саннан жүреді.
+ */
+export function legScrewHoles(bottom: Panel, legPairs: number, ctx: Ctx): void {
+  const length = bottom.finishedLength
+  const width = bottom.finishedWidth
+  const half = LEG_SCREW_SQUARE / 2
+
+  // Ені бойынша аяқтардың ортасы: шеттегілері жиектен LEG_CENTRE_FROM_SIDE,
+  // қалғандары солардың арасына тең таралады.
+  const first = LEG_CENTRE_FROM_SIDE
+  const last = length - LEG_CENTRE_FROM_SIDE
+  if (last <= first) return
+  const centresX = legPairs <= 1
+    ? [(first + last) / 2]
+    : Array.from({ length: legPairs }, (_, i) => first + ((last - first) * i) / (legPairs - 1))
+
+  const centresY = [LEG_CENTRE_FROM_FRONT, width - LEG_CENTRE_FROM_FRONT]
+  if (centresY[1]! <= centresY[0]!) return
+
+  for (const cx of centresX) {
+    for (const cy of centresY) {
+      for (const dx of [-half, half]) {
+        for (const dy of [-half, half]) {
+          const x = Math.round(cx + dx)
+          const y = Math.round(cy + dy)
+          if (x < 0 || x > length || y < 0 || y > width) continue
+          // Аяқ дноның АСТЫНА бұралады, сондықтан сыртқы бет.
+          pushFace(bottom, 'outer', x, y, LEG_SCREW_DIAMETER, LEG_SCREW_DEPTH, 'runner', ctx)
+        }
+      }
     }
   }
 }
