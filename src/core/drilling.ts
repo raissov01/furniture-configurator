@@ -7,6 +7,8 @@
  */
 
 import {
+  DRAWER_FACADE_SCREW_DIAMETER, DRAWER_FACADE_SCREW_END_OFFSET,
+  DRAWER_FACADE_SCREW_PILOT_DEPTH,
   CONFIRMAT_EDGE_DEPTH, CONFIRMAT_EDGE_DIAMETER, CONFIRMAT_FACE_DIAMETER,
   CONFIRMAT_FIRST_OFFSET, CONFIRMAT_MIN_PER_JOINT,
   HINGE_COUNT_BY_HEIGHT, HINGE_CUP_DEPTH, HINGE_CUP_DIAMETER, HINGE_CUP_FROM_EDGE,
@@ -339,5 +341,56 @@ export function cutOrigin(
   return {
     x: subtractedThickness(panel.edges.W1, bands, settings),
     y: subtractedThickness(panel.edges.L1, bands, settings),
+  }
+}
+
+
+/**
+ * Ящиктің фасадын қорапқа бекітетін еврошуруптар.
+ *
+ * Бұрын бізде бұл МҮЛДЕ жоқ еді: направляющаяның тесіктері бар, ал фасадты
+ * қорапқа не ұстайтыны айтылмайтын. Цех оны қолмен өлшеп бұрғылайтын, ал
+ * фасад қисайса — ол клиенттің көзіне бірінші түсетін жер.
+ *
+ * Схема (`constants.ts`-тегі сандардың дереккөзі сонда жазылған):
+ *   • бұранда ҚОРАПТЫҢ ІШІНЕН алдыңғы қабырғаны тесіп өтеді;
+ *   • фасадқа тек ПИЛОТ тесік — 3 мм, тесіп шықпайды;
+ *   • төрт нүкте: қабырға биіктігінің 1/3 пен 2/3-інде, әр ұшынан шегініп.
+ *
+ * `wall` мен `facade` — ORIENT_FACING панельдері: локал x — БИІКТІК,
+ * локал y — ЕН (types.ts қара). Сондықтан биіктік x-ке, ен y-ке түседі.
+ */
+export function drawerFacadeScrews(wall: Panel, facade: Panel, ctx: Ctx): void {
+  const wallThickness = ctx.thickness(wall)
+  const wallHeight = wall.finishedLength
+  const wallWidth = wall.finishedWidth
+
+  // Тар ящикте 80 мм сыймайды: сонда шегініс ЕНнің төрттен біріне дейін
+  // қысылады — тесік әрқашан қабырғаның ішінде қалуы керек.
+  const offset = Math.min(DRAWER_FACADE_SCREW_END_OFFSET, Math.floor(wallWidth / 4))
+  const columns = [offset, wallWidth - offset]
+  const rows = [Math.round(wallHeight / 3), Math.round((wallHeight * 2) / 3)]
+
+  for (const x of rows) {
+    for (const y of columns) {
+      // Қораптың ІШКІ бетінен бұрғыланады да, қабырғаны тесіп өтеді.
+      pushFace(wall, 'inner', x, y, DRAWER_FACADE_SCREW_DIAMETER, wallThickness, 'dowel', ctx)
+
+      /*
+       * Фасадтағы жұбы — ДӘЛ сол физикалық нүкте, бірақ фасадтың өз
+       * координатасында. Екі панель де ORIENT_FACING болғандықтан аудару
+       * әлем осьтері арқылы жүреді: биіктік — Y, ен — X.
+       */
+      const worldY = wall.position.y + x
+      const worldX = wall.position.x + y
+      const facadeX = worldY - facade.position.y
+      const facadeY = worldX - facade.position.x
+      if (facadeX < 0 || facadeX > facade.finishedLength) continue
+      if (facadeY < 0 || facadeY > facade.finishedWidth) continue
+      pushFace(
+        facade, 'inner', facadeX, facadeY,
+        DRAWER_FACADE_SCREW_DIAMETER, DRAWER_FACADE_SCREW_PILOT_DEPTH, 'dowel', ctx,
+      )
+    }
   }
 }

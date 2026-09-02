@@ -8,7 +8,8 @@
 import { mergeSettings } from './constants'
 import { distributeMillimetres, gapFillOrder } from './distribute'
 import {
-  applyMilling, confirmatJoint, handleHoles, hingeHoles, runnerHoles, shelfPinHoles,
+  applyMilling, confirmatJoint, drawerFacadeScrews, handleHoles, hingeHoles, runnerHoles,
+  shelfPinHoles,
 } from './drilling'
 import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
 import { fillingBandHeight } from './filling'
@@ -1003,6 +1004,16 @@ export function generateCabinet(
       shelfPinHoles(left, shelf, t + baseHeight, ctx)
       shelfPinHoles(right, shelf, t + baseHeight, ctx)
     }
+  }
+
+  /*
+   * Ящиктің фасадын қорапқа бекітетін еврошуруптар. Жұп id-мен табылады:
+   * қораптың алдыңғы қабырғасы `…-wall-front`, ал оның фасады `…-front`.
+   */
+  for (const wall of panels) {
+    if (!wall.id.endsWith('-wall-front')) continue
+    const facade = panels.find((p) => p.id === `${wall.id.slice(0, -'-wall-front'.length)}-front`)
+    if (facade) drawerFacadeScrews(wall, facade, ctx)
   }
 
   // Направляющая: ящиктің екі жағындағы тік панельге
