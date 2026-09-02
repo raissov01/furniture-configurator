@@ -593,6 +593,64 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
           </Field>
         ))}
       </div>
+      {/* Крыша: тұтас панель, ПЛАНКА немесе жоқ. Ас үй тумбасында үстінде
+          столешница жатады да, тұтас крышаның қажеті болмайды. */}
+      <Field label={tr('Крыша')} hint={tr('под столешницей хватает планок')}>
+        <Select
+          value={cabinet.openTop ? 'none' : cabinet.topRails ? 'rails' : 'panel'}
+          onChange={(kind) => edit('topKind', {
+            openTop: kind === 'none' ? true : undefined,
+            topRails: kind === 'rails'
+              ? (cabinet.topRails ?? { width: 100, count: 2 })
+              : undefined,
+          })}
+          options={[
+            { value: 'panel' as const, label: tr('Панель') },
+            { value: 'rails' as const, label: tr('Планка (царга)') },
+            { value: 'none' as const, label: tr('Нет') },
+          ]}
+        />
+      </Field>
+
+      {cabinet.topRails ? (
+        <div className="grid grid-cols-3 gap-2">
+          <Field label={tr('Ширина планки')} hint={tr('мм')}>
+            <NumberInput
+              value={cabinet.topRails.width}
+              min={20} max={cabinet.depth} step={10}
+              invalid={invalid('cabinet.topRails.width')}
+              onChange={(width) => edit('topRails.width', {
+                topRails: { ...cabinet.topRails!, width },
+              })}
+            />
+          </Field>
+          <Field label={tr('Количество')}>
+            <Select
+              value={cabinet.topRails.count === 1 ? 'one' : 'two'}
+              onChange={(count) => edit('topRails.count', {
+                topRails: { ...cabinet.topRails!, count: count === 'one' ? 1 : 2 },
+              })}
+              options={[
+                { value: 'two' as const, label: tr('Две (перёд и зад)') },
+                { value: 'one' as const, label: tr('Одна (только зад)') },
+              ]}
+            />
+          </Field>
+          <Field label={tr('Положение')} hint={tr('на ребро жёстче')}>
+            <Select
+              value={cabinet.topRails.orientation ?? 'flat'}
+              onChange={(orientation) => edit('topRails.orientation', {
+                topRails: { ...cabinet.topRails!, orientation },
+              })}
+              options={[
+                { value: 'flat' as const, label: tr('Плашмя') },
+                { value: 'edge' as const, label: tr('На ребро') },
+              ]}
+            />
+          </Field>
+        </div>
+      ) : null}
+
       <Field label={tr('Задняя стенка')}>
         <Select
           value={cabinet.back.mode}

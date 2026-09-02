@@ -229,6 +229,11 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
   sliding: z.object({ count: z.number().int().min(2).max(4) }).optional(),
   base: z.object({ kind: z.enum(['plinth', 'legs']), height: mm }).optional(),
   openTop: z.boolean().optional(),
+  topRails: z.object({
+    width: z.number().int().positive(),
+    count: z.union([z.literal(1), z.literal(2)]),
+    orientation: z.enum(['flat', 'edge']).optional(),
+  }).optional(),
   slope: z.object({
     towards: z.enum(['back', 'front']),
     lowHeight: mm,

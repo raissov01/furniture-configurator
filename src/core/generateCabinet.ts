@@ -21,7 +21,7 @@ import {
 import { applyCutouts, applyPanelOverrides } from './cutouts'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
-import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, rotationFor } from './geometry'
+import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
@@ -408,21 +408,68 @@ export function generateCabinet(
   }
   if (cornerBevel) top.bevel = { ...cornerBevel }
 
-  // Рет деталировкадағы жолдардың ретін анықтайды — өзгертпе, snapshot соған қарайды.
+  /*
+   * ── Крыша: панель, ПЛАНКА немесе жоқ ──────────────────────────────────────
+   *
+   * `top` панелі ҮШ жағдайда да есептеледі, себебі одан ішкі биіктік шығады,
+   * ал оған сөре де, фасад та, ящик те сүйенеді. Тізімге не түсетіні ғана
+   * өзгереді. `topParts` — крышаның ОРНЫНДА не тұрғаны: присадка да,
+   * паз да соған қарайды, сондықтан жоқ детальға тесік бұрғыланбайды.
+   */
+  const topParts: Panel[] = []
+  if (config.topRails) {
+    const rails = config.topRails
+    const upright = rails.orientation === 'edge'
+    const railWidth = rails.width
+    if (!Number.isInteger(railWidth) || railWidth < MIN_RAIL_WIDTH || railWidth > carcassDepth) {
+      throw new ConfigValidationError(
+        'topRails.width', `${railWidth} мм`,
+        `${MIN_RAIL_WIDTH}..${carcassDepth} мм, бүтін сан`,
+      )
+    }
+    // Екі планка бір-біріне тимеуі керек: әйтпесе бұл жай ғана тұтас крыша.
+    if (rails.count === 2 && 2 * railWidth > carcassDepth) {
+      throw new ConfigValidationError(
+        'topRails.width', `${railWidth} мм × 2`, `≤ ${carcassDepth} мм (глубина корпуса)`,
+      )
+    }
+    // Жатық планка крышаның ОРНЫНА жатады; тік планка сол деңгейден ТӨМЕН кетеді.
+    const y = upright ? H - railWidth : H - t
+    const positions: { id: string; label: string; z: number }[] = rails.count === 2
+      ? [
+        { id: 'top-rail-front', label: 'Планка верхняя передняя', z: 0 },
+        {
+          id: 'top-rail-back',
+          label: 'Планка верхняя задняя',
+          z: carcassDepth - (upright ? t : railWidth),
+        },
+      ]
+      : [{
+        id: 'top-rail-back',
+        label: 'Планка верхняя задняя',
+        z: carcassDepth - (upright ? t : railWidth),
+      }]
+
+    for (const { id, label, z } of positions) {
+      topParts.push(make(
+        id, 'rail', label, carcass, topSpan.length, railWidth,
+        { x: topSpan.x, y, z }, upright ? ORIENT_UPRIGHT : ORIENT_HORIZONTAL,
+        upright ? 'Царга на ребро' : 'Царга плашмя',
+        horizontalEdges(topMount),
+      ))
+    }
+  } else if (!config.openTop) {
+    topParts.push(top)
+  }
+
   // Рет деталировкадағы жолдардың ретін анықтайды: сыртта тұрған деталь
   // бірінші жазылады. Бүйір ТОЛЫҚ биіктікте болса (ештеңе жаппаса) — ол
   // корпустың сырты, сондықтан алдымен келеді.
   const sidesOutside = leftSpan.length === H && rightSpan.length === H
-  if (config.openTop) {
-    // Үсті ашық корпуста крышка ЖОҚ, бірақ ол әлі де геометрия үшін керек:
-    // сөрелер мен фасадтардың есебі ішкі биіктікке сүйенеді, ал ол крышканың
-    // қалыңдығын есептейді. Сондықтан деталь тізімге түспейді, есеп өзгермейді.
-    if (sidesOutside) panels.push(sideLeft, sideRight, bottom)
-    else panels.push(bottom, sideLeft, sideRight)
-  } else if (sidesOutside) {
-    panels.push(sideLeft, sideRight, bottom, top)
+  if (sidesOutside) {
+    panels.push(sideLeft, sideRight, bottom, ...topParts)
   } else {
-    panels.push(bottom, top, sideLeft, sideRight)
+    panels.push(bottom, ...topParts, sideLeft, sideRight)
   }
 
   // ── Секциялар мен перегородкалар (A1) ──────────────────────────────────────
@@ -959,7 +1006,7 @@ export function generateCabinet(
     // Паз корпустың ішкі бетінде, арт жиектен grooveInset шегініп жүреді.
     // Ұзындығы бойы толық фрезерленеді; тоқтатылған паз — кейінгі жақсарту.
     const grooveCentreZ = D - settings.grooveInset + backMat.thickness / 2
-    for (const panel of [sideLeft, sideRight, bottom, top, ...dividers]) {
+    for (const panel of [sideLeft, sideRight, bottom, ...topParts, ...dividers]) {
       const y = grooveCentreZ - subtractedThickness(panel.edges.L1, bands, settings)
       panel.grooves.push({
         face: 'inner',
@@ -979,21 +1026,24 @@ export function generateCabinet(
   }
 
   // Конфирмат: корпус буындары
+  // ⚠ ЖОҚ детальға тесік бұрғыланбайды: үсті ашық корпуста бүйірдің торцінде
+  // «крышканың» саңылаулары қалып қойса, цех оны құрастыру кезінде ғана
+  // байқайды. Сондықтан бәрі `topParts` арқылы жүреді.
   if (sidesOverlay) {
     // Бұранда бүйірдің СЫРТЫНАН кіріп, крышка/дноның торціне барады
     for (const face of [sideLeft, sideRight]) {
-      for (const edge of [bottom, top]) confirmatJoint(face, edge, ctx)
+      for (const edge of [bottom, ...topParts]) confirmatJoint(face, edge, ctx)
     }
   } else {
     // Бұранда крышка/дноның СЫРТЫНАН кіріп, бүйірдің торціне барады
-    for (const face of [bottom, top]) {
+    for (const face of [bottom, ...topParts]) {
       for (const edge of [sideLeft, sideRight]) confirmatJoint(face, edge, ctx)
     }
   }
   // Перегородка екі құрастыруда да крышка мен дноның арасында
   for (const divider of dividers) {
     confirmatJoint(bottom, divider, ctx)
-    confirmatJoint(top, divider, ctx)
+    for (const part of topParts) confirmatJoint(part, divider, ctx)
   }
 
   // Сөрелер: фиксированная — конфирмат, жылжымалы — полкодержатель
