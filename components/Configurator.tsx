@@ -593,6 +593,23 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
           </Field>
         ))}
       </div>
+      {/* Направляющаның жүйесі: саңылауы да, тесігі де, қораптың тереңдігі де
+          содан шығады. «Цехтың профилінен» — ескі мінез. */}
+      <Field label={tr('Направляющие')} hint={tr('размер короба зависит от них')}>
+        <Select
+          value={cabinet.drawerSystem ?? 'profile'}
+          onChange={(value) => edit('drawerSystem', {
+            drawerSystem: value === 'profile' ? undefined : value,
+          })}
+          options={[
+            { value: 'profile' as const, label: tr('Из профиля цеха') },
+            { value: 'roller' as const, label: tr('Роликовые (телескопические)') },
+            { value: 'ball' as const, label: tr('Шариковые полного выдвижения') },
+            { value: 'tandem' as const, label: tr('Blum TANDEM (скрытые)') },
+          ]}
+        />
+      </Field>
+
       {/* Крыша: тұтас панель, ПЛАНКА немесе жоқ. Ас үй тумбасында үстінде
           столешница жатады да, тұтас крышаның қажеті болмайды. */}
       <Field label={tr('Крыша')} hint={tr('под столешницей хватает планок')}>

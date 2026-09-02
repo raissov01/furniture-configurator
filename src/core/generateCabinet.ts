@@ -21,6 +21,8 @@ import {
 import { applyCutouts, applyPanelOverrides } from './cutouts'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
+import { findDrawerSystem, nominalRunnerLength } from './drawerSystems'
+import type { DrawerSystem } from './drawerSystems'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
 import type {
@@ -77,6 +79,13 @@ export function generateCabinet(
   projectSettings?: SettingsOverride,
 ): Panel[] {
   const settings = mergeSettings(projectSettings, config.settings)
+  /**
+   * Направляющаның жүйесі. `null` — таңдалмаған: ол ЕСКІ мінез, өлшем цехтың
+   * профилінен алынады (`drawerSystems.ts` қара).
+   */
+  const drawerSystem: DrawerSystem | null = config.drawerSystem
+    ? findDrawerSystem(config.drawerSystem)
+    : null
   const materials = new Map(catalog.materials.map((m) => [m.id, m]))
   const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
 
@@ -744,6 +753,7 @@ export function generateCabinet(
           section, sectionIndex, bandIndex, band, layout,
           slot: slots[sectionIndex] ?? { x: layout.x, width: layout.width },
           settings, carcass, frontMat, backMat, shelfDepth, make,
+          system: drawerSystem,
         })
         panels.push(...created.panels)
         for (const run of created.runs) {
@@ -1130,8 +1140,8 @@ export function generateCabinet(
   // Направляющая: ящиктің екі жағындағы тік панельге
   for (const run of drawerRuns) {
     const [left, right] = boundsOf(run.sectionIndex)
-    runnerHoles(left, run.boxBottomY, run.boxFrontZ, run.boxDepth, ctx)
-    runnerHoles(right, run.boxBottomY, run.boxFrontZ, run.boxDepth, ctx)
+    runnerHoles(left, run.boxBottomY, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
+    runnerHoles(right, run.boxBottomY, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
   }
 
   // Ілгектер: шеткі фасадтар секцияның тік панеліне ілінеді.
@@ -1508,8 +1518,10 @@ function makeDrawers(input: {
   backMat: Material
   shelfDepth: number
   make: MakePanel
+  /** Таңдалған направляющая; берілмесе — ескі мінез (settings-тен). */
+  system: DrawerSystem | null
 }): { panels: Panel[]; runs: { boxBottomY: number; boxFrontZ: number; boxDepth: number }[] } {
-  const { section, sectionIndex, bandIndex, band, layout, slot, settings, carcass, frontMat, backMat, shelfDepth, make } = input
+  const { section, sectionIndex, bandIndex, band, layout, slot, settings, carcass, frontMat, backMat, shelfDepth, make, system } = input
   const content = band.content
   if (content.kind !== 'drawers') return { panels: [], runs: [] }
 
@@ -1534,8 +1546,26 @@ function makeDrawers(input: {
   }
   const gaps = distributeMillimetres(band.height - n * frontHeight, n + 1)
 
-  const boxWidth = layout.width - 2 * settings.drawerRunnerGap
-  const boxDepth = shelfDepth - settings.drawerBackGap
+  /*
+   * Қораптың ені мен тереңдігі — направляющаның ӨЛШЕМІ.
+   *
+   * Жүйе таңдалса, саңылау да, тереңдік те содан алынады, әрі тереңдігі
+   * НОМИНАЛДЫ ұзындыққа дөңгеленеді: направляющая 50 мм қадаммен ғана
+   * сатылады, ал қорап оған дәл тең болуы керек. Жүйе таңдалмаса — бәрі
+   * бұрынғыдай, цехтың профилінен.
+   */
+  const clearance = system ? system.sideClearance : settings.drawerRunnerGap
+  const boxWidth = Math.floor(layout.width - 2 * clearance)
+  const available = shelfDepth - settings.drawerBackGap
+  const nominal = system ? nominalRunnerLength(system, available) : available
+  if (nominal === null) {
+    throw new ConfigValidationError(
+      `sections[${sectionIndex}].contents[${bandIndex}]`,
+      `под ящик остаётся ${available} мм`,
+      `${system!.name}: самая короткая направляющая ${Math.min(...system!.nominalLengths)} мм`,
+    )
+  }
+  const boxDepth = nominal
   const boxHeight = frontHeight - settings.drawerBoxDrop
   // Қораптың БИІКТІГІНЕ бөлек еден: 60–80 мм ұсақ заттарға арналған ящик —
   // қалыпты нәрсе, ал ені мен тереңдігі 100 мм-ден кем болса, ол ящик емес.

@@ -233,6 +233,7 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
     legType: z.enum(['cylinder', 'cone', 'square', 'hidden']).optional(),
   }).optional(),
   openTop: z.boolean().optional(),
+  drawerSystem: z.enum(['roller', 'ball', 'tandem']).optional(),
   topRails: z.object({
     width: z.number().int().positive(),
     count: z.union([z.literal(1), z.literal(2)]),

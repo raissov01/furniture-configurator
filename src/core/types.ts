@@ -530,6 +530,9 @@ export type Section = {
  */
 export type PanelMount = 'inset' | 'overlay' | 'overlayLeft' | 'overlayRight'
 
+/** Направляющаның жүйесі — толық сипаттамасы `drawerSystems.ts`-те. */
+export type DrawerSystemId = 'roller' | 'ball' | 'tandem'
+
 /** Реттелетін аяқтың түрі (`CabinetConfig.base.legType`). */
 export type LegType = 'cylinder' | 'cone' | 'square' | 'hidden'
 
@@ -694,6 +697,17 @@ export type CabinetConfig = {
     overhangSides: number
   } | undefined
   edging: EdgePolicy
+  /**
+   * Направляющаның ЖҮЙЕСІ (`drawerSystems.ts`).
+   *
+   * Берілмесе, ЕСКІ мінез сақталады: саңылау `settings.drawerRunnerGap`-тан,
+   * тесіктер Tandem схемасынан. Ол екеуі әртүрлі фурнитураға тиесілі еді,
+   * бірақ бұрыннан сақталған жобаның өлшемі өзгермеуі керек.
+   *
+   * Таңдалғанда БӘРІ сол жүйеден алынады: саңылауы да, тесігі де, ал
+   * қораптың тереңдігі номиналды ұзындыққа дөңгеленеді.
+   */
+  drawerSystem?: DrawerSystemId | undefined
   /** Цех константаларын осы кабинет үшін ғана өзгерту */
   settings?: SettingsOverride | undefined
 

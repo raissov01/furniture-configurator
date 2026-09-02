@@ -177,7 +177,16 @@ export function countHardware(panels: Panel[]): Map<string, number> {
   if (shelves > 0) add('shelf-pin-5', shelves * 4)
   // Бір ящикте екі бүйір, ал направляющая ЖҰП болып сатылады: сондықтан
   // жиынтық саны = ящик саны, бүйір саны емес.
-  if (drawerSides > 0) add('runner-roller-400', drawerSides / 2)
+  //
+  // Артикулы тесіктен алынады: жүйе таңдалса, ол сол жердегі `hardwareId`-де
+  // жазулы тұр. Таңдалмаса — ескі әдепкі, себебі бұрынғы жобаның сметасы
+  // өзгермеуі керек.
+  if (drawerSides > 0) {
+    const runnerId = panels
+      .flatMap((p) => p.drilling)
+      .find((d) => d.purpose === 'runner' && d.hardwareId)?.hardwareId
+    add(runnerId ?? 'runner-roller-400', drawerSides / 2)
+  }
 
   return counts
 }

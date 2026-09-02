@@ -31,6 +31,7 @@ import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import { subtractedThickness } from './edges'
 import { panelExtents } from './geometry'
 import type { Axis, ConstructionSettings, Drill, EdgeBand, Panel } from './types'
+import type { DrawerSystem } from './drawerSystems'
 
 export type Thickness = (panel: Panel) => number
 
@@ -296,28 +297,33 @@ export function runnerHoles(
   boxFrontWorldZ: number,
   boxDepth: number,
   ctx: Ctx,
+  system?: DrawerSystem | null,
 ): void {
   /*
-   * Blum Tandem схемасы: алдыңғы жиектен 83 мм, сосын 32 мм жүйесімен
-   * (64 + 64 + 32). Бұрын екі-ақ тесік болатын да, ол шарикті
-   * направляющаяның схемасы еді — тандемдікі басқа (constants.ts қара).
+   * Тесіктің схемасы направляющаның ЖҮЙЕСІНЕН алынады (`drawerSystems.ts`).
+   * Жүйе таңдалмаса — Blum Tandem-нің схемасы, ол qdesign-нің CNC экспортынан
+   * өлшенген: алдыңғы жиектен 83 мм, сосын 32 мм жүйесімен 64 + 64 + 32.
    *
-   * Қораптан ұзын тесік бұрғыланбайды: қысқа ящикте соңғы нүктелер
-   * қорапта жоқ, ал жоқ жерге бұрғылау — панельдің сыртына шығу.
+   * Қораптан ұзын тесік бұрғыланбайды: қысқа ящикте соңғы нүктелер қорапта
+   * жоқ, ал жоқ жерге бұрғылау — панельдің сыртына шығу.
    */
-  const columns = RUNNER_TANDEM_OFFSETS
+  const offsets = system ? system.holeOffsets : RUNNER_TANDEM_OFFSETS
+  const columns = offsets
     .filter((offset) => offset <= boxDepth)
     .map((offset) => boxFrontWorldZ + offset)
 
-  // Тандемнің бірде-бір нүктесі сыймаса (өте қысқа ящик), ескі екі нүктелі
-  // схемамен қаламыз — направляющая бәрібір бір нәрсеге бекітілуі керек.
+  // Бірде-бір нүктесі сыймаса (өте қысқа ящик), екі нүктелі схемамен
+  // қаламыз — направляющая бәрібір бір нәрсеге бекітілуі керек.
   const fallback = [
     boxFrontWorldZ + RUNNER_FIRST_HOLE_OFFSET,
     boxFrontWorldZ + boxDepth - RUNNER_FIRST_HOLE_OFFSET,
   ]
   const points = columns.length > 0 ? columns : fallback
   const [diameter, depth] = columns.length > 0
-    ? [RUNNER_TANDEM_DIAMETER, RUNNER_TANDEM_DEPTH]
+    ? [
+      system ? system.holeDiameter : RUNNER_TANDEM_DIAMETER,
+      system ? system.holeDepth : RUNNER_TANDEM_DEPTH,
+    ]
     : [RUNNER_SCREW_DIAMETER, RUNNER_SCREW_DEPTH]
 
   for (const worldZ of points) {
@@ -325,7 +331,9 @@ export function runnerHoles(
       verticalPanel, 'inner',
       localX(verticalPanel, boxBottomWorldY),
       localY(verticalPanel, worldZ),
-      diameter, depth, 'runner', ctx,
+      // Артикул тесікте жүреді: смета осыдан ҚАЙ направляющая екенін біледі
+      // (ілгек пен тұтқада да дәл солай).
+      diameter, depth, 'runner', ctx, system?.hardwareId,
     )
   }
 }
