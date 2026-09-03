@@ -245,6 +245,11 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
     plinthMaterialId: z.string().min(1).optional(),
   }).optional(),
   openTop: z.boolean().optional(),
+  frontPanel: z.object({
+    width: mm,
+    side: z.enum(['left', 'right']),
+    materialId: z.string().min(1).optional(),
+  }).optional(),
   drawerSystem: z.enum([
     'roller', 'ball', 'tandem', 'tandembox', 'legrabox', 'merivobox',
   ]).optional(),

@@ -182,13 +182,16 @@ export function generateCabinet(
       if (section.fronts && section.fronts.count > 0) {
         throw new ConfigValidationError(
           `sections[${i}].fronts`, 'есть',
-          'қиғаш бетке ілгек присадкасы әзірге жасалмайды — фасадсыз қалдырыңыз',
+          'қиғаш бетке ілгек присадкасы әзірге жасалмайды. '
+          + 'Бұрыштық орынға фасад керек болса — «Фронтальная панель» қолданыңыз: '
+          + 'корпус тікбұрыш күйінде қалады да, фасад қалыпты жұмыс істейді',
         )
       }
       if (section.contents.some((c) => c.kind === 'drawers')) {
         throw new ConfigValidationError(
           `sections[${i}].contents`, 'ящики',
-          'қиғаш корпуста направляющая әзірге жасалмайды',
+          'қиғаш корпуста направляющая әзірге жасалмайды. '
+          + 'Бұрыштық орынға ящик керек болса — «Фронтальная панель» қолданыңыз',
         )
       }
     }
@@ -526,6 +529,36 @@ export function generateCabinet(
   // да сол ұяны алады — әйтпесе ілмелі фасадпен бір қатарда тұрмайды.
   const slots = frontSlots(dividerPositions, W, t)
 
+  /*
+   * ── ФРОНТАЛЬДЫҚ ПАНЕЛЬ ────────────────────────────────────────────────────
+   *
+   * Алдыңғы жиектің бір бөлігін ТІК панель жабады да, фасад қалған ұяға
+   * қойылады (бұрыштық орында көрші модульдің тұтқасына соғылмау үшін).
+   *
+   * Корпус ТІКБҰРЫШ күйінде қалады — сондықтан мұнда тарылатыны тек ҰЯ:
+   * ішкі геометрия да, сөре де, перегородка да тиылмайды. Ящик те тарылады,
+   * әйтпесе ол шығарылғанда панельге соғылар еді.
+   */
+  const frontPanel = config.frontPanel
+  if (frontPanel) {
+    const outer = frontPanel.side === 'left' ? 0 : slots.length - 1
+    const slot = slots[outer]
+    if (!Number.isInteger(frontPanel.width) || frontPanel.width < MIN_RAIL_WIDTH) {
+      throw new ConfigValidationError(
+        'frontPanel.width', `${frontPanel.width} мм`, `≥ ${MIN_RAIL_WIDTH} мм, бүтін сан`,
+      )
+    }
+    if (!slot || slot.width - frontPanel.width < MIN_FRONT_WIDTH) {
+      throw new ConfigValidationError(
+        'frontPanel.width', `${frontPanel.width} мм`,
+        `фасадқа ${MIN_FRONT_WIDTH} мм-ден кем қалмауы керек`,
+      )
+    }
+    // Ұя тарылады: сол жақта бастауы жылжиды, оң жақта тек ені кемиді.
+    if (frontPanel.side === 'left') slot.x += frontPanel.width
+    slot.width -= frontPanel.width
+  }
+
   // ── Секция ішіндегі толтырылым: тік жолақтар (D1) ──────────────────────────
   //
   // Секцияның ішкі биіктігі жолақтарға бөлінеді: [0] АСТЫҢҒЫ. Жолақтар
@@ -761,6 +794,13 @@ export function generateCabinet(
           system: drawerSystem,
           metalBox,
           metalBoxBackHeight: config.metalBoxBackHeight,
+          // Фронтальдық панель ұяны тарылтады: ящик шығарылғанда оған
+          // соғылмауы керек. Ол тек СОЛ секцияға тиеді.
+          openingInset: frontPanel && (
+            frontPanel.side === 'left' ? sectionIndex === 0 : sectionIndex === layouts.length - 1
+          )
+            ? { side: frontPanel.side, width: frontPanel.width }
+            : null,
         })
         panels.push(...created.panels)
         for (const run of created.runs) {
@@ -847,7 +887,18 @@ export function generateCabinet(
     const from = hingedFrontFrom[sectionIndex] ?? t
     const stacked = from > t
     const originY = stacked ? from : (inset ? t : 0)
-    const spanY = stacked ? (inset ? H - t - from : H - from) : (inset ? innerHeight : H)
+    /*
+     * ⚠ ҚИҒАШ ТӨБЕ. Фасад корпустың АЛДЫНДА тұрады, ал қиғаш корпуста
+     * алдыңғы жиектің биіктігі `H`-тен өзгеше: алға қарай төмендейтін
+     * төбеде ол әлдеқайда аласа. Бұрын мұнда `H` тұрған да, 2000 мм
+     * корпустың алды 1200 мм болса, фасад 800 мм-ге ауада қалып қоятын.
+     *
+     * Артқа қарай төмендейтін төбеде алды биік, сондықтан `H`-пен бірдей —
+     * ескі жобаның фасады өзгермейді.
+     */
+    const frontTop = heightAtDepth(0)
+    // Вкладной фасад крышканың АСТЫНА кіреді, сондықтан бір қалыңдық кемиді.
+    const spanY = frontTop - originY - (inset ? t : 0)
 
     const created = makeFronts(
       layout.section, sectionIndex, fronts, slot,
@@ -858,6 +909,26 @@ export function generateCabinet(
     panels.push(...created)
     frontGroups.push({ fronts: created, sectionIndex })
   })
+
+  // ── Фронтальдық панель ─────────────────────────────────────────────────────
+  if (frontPanel) {
+    // Панель КӨРІНЕДІ, сондықтан әдепкі материалы — фасадтікі, әрі ол
+    // фасадпен БІР жазықтықта тұрады.
+    const panelMat = frontPanel.materialId
+      ? requireMaterial(materials, frontPanel.materialId, 'frontPanel.materialId')
+      : frontMat
+    panels.push(make(
+      'front-panel', 'front', 'Фронтальная панель', panelMat,
+      heightAtDepth(0), frontPanel.width,
+      {
+        x: frontPanel.side === 'left' ? 0 : W - frontPanel.width,
+        y: baseHeight,
+        z: -panelMat.thickness,
+      },
+      ORIENT_FACING,
+      `Фронтальная панель, ${frontPanel.side === 'left' ? 'слева' : 'справа'}`,
+    ))
+  }
 
   // ── Цоколь мен столешница ──────────────────────────────────────────────────
   if (config.base?.kind === 'plinth') {
@@ -1554,8 +1625,10 @@ function makeDrawers(input: {
   /** Металл жәшік таңдалса — оның кестесі. Ағаш қорап жасалмайды. */
   metalBox: MetalBoxSystem | null
   metalBoxBackHeight?: number | undefined
+  /** Фронтальдық панель ұяны осынша тарылтады (деталь ЖАСАЛМАЙДЫ — ол бар). */
+  openingInset: { side: 'left' | 'right'; width: number } | null
 }): { panels: Panel[]; runs: { boxBottomY: number; boxFrontZ: number; boxDepth: number }[] } {
-  const { section, sectionIndex, bandIndex, band, layout, slot, settings, carcass, frontMat, backMat, shelfDepth, make, system, metalBox, metalBoxBackHeight } = input
+  const { section, sectionIndex, bandIndex, band, layout, slot, settings, carcass, frontMat, backMat, shelfDepth, make, system, metalBox, metalBoxBackHeight, openingInset } = input
   const content = band.content
   if (content.kind !== 'drawers') return { panels: [], runs: [] }
 
@@ -1643,8 +1716,10 @@ function makeDrawers(input: {
       )
     }
   }
-  const openingX = layout.x + fillerLeft
-  const openingWidth = layout.width - fillerLeft - fillerRight
+  const insetLeft = fillerLeft + (openingInset?.side === 'left' ? openingInset.width : 0)
+  const insetRight = fillerRight + (openingInset?.side === 'right' ? openingInset.width : 0)
+  const openingX = layout.x + insetLeft
+  const openingWidth = layout.width - insetLeft - insetRight
 
   // Вкладной фасад секцияның ТАЗА ұясында отырады, накладной — кеңірек ұяда
   // (ілмелі фасадтағы ережемен бірдей).

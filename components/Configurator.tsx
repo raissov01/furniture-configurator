@@ -865,6 +865,39 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
+      {/* Фронтальдық панель: бұрыштық орындағы модульдің фасады көршісінің
+          тұтқасына соғылмауы үшін. Корпус тікбұрыш күйінде қалады. */}
+      <SectionTitle>{tr('Фронтальная панель')}</SectionTitle>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label={tr('Ширина')} hint={tr('0 — нет; ниша сужается, мм')}>
+          <NumberInput
+            value={cabinet.frontPanel?.width ?? 0}
+            min={0}
+            max={Math.max(0, cabinet.width - 100)}
+            step={10}
+            invalid={invalid('cabinet.frontPanel.width')}
+            onChange={(width) => edit('frontPanel.width', {
+              frontPanel: width > 0
+                ? { width, side: cabinet.frontPanel?.side ?? 'left' }
+                : undefined,
+            })}
+          />
+        </Field>
+        <Field label={tr('Сторона')}>
+          <Select
+            value={cabinet.frontPanel?.side ?? 'left'}
+            onChange={(side) => {
+              if (!cabinet.frontPanel) return
+              edit('frontPanel.side', { frontPanel: { ...cabinet.frontPanel, side } })
+            }}
+            options={[
+              { value: 'left' as const, label: tr('Слева') },
+              { value: 'right' as const, label: tr('Справа') },
+            ]}
+          />
+        </Field>
+      </div>
+
       <SectionTitle>{tr('Основание и столешница')}</SectionTitle>
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Основание')} hint={cabinet.base ? `${cabinet.base.height} мм` : 'нет'}>
