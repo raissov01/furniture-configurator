@@ -6,7 +6,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
+import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import {
   APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
@@ -634,7 +634,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>{tr('Конструкция')}</SectionTitle>
+      <Collapsible id="construction" title={tr('Конструкция')} defaultOpen>
       <Field label={tr('Метод сборки')} hint={tr('обе панели сразу')}>
         <Select
           value={cabinet.construction}
@@ -796,7 +796,8 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       ) : null}
 
-      <SectionTitle>{tr('Скос (мансарда)')}</SectionTitle>
+      </Collapsible>
+      <Collapsible id="slope" title={tr('Скос (мансарда)')} badge={cabinet.slope ? tr('есть') : tr('нет')}>
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Скос потолка')} hint={cabinet.slope ? 'боковины трапеции' : 'нет'}>
           <Select
@@ -834,7 +835,8 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>{tr('Угловой (переходной)')}</SectionTitle>
+      </Collapsible>
+      <Collapsible id="corner" title={tr('Угловой (переходной)')} badge={cabinet.corner ? `${cabinet.corner.depthAtRight} мм` : tr('нет')}>
       <p className="text-[11px] text-neutral-500">
         Глубина меняется слева направо, задняя стенка встаёт к стене. Пока такой корпус
         делается открытым: фасады, ящики, перегородки и задняя стенка на скошенной
@@ -875,7 +877,8 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
 
       {/* Фронтальдық панель: бұрыштық орындағы модульдің фасады көршісінің
           тұтқасына соғылмауы үшін. Корпус тікбұрыш күйінде қалады. */}
-      <SectionTitle>{tr('Фронтальная панель')}</SectionTitle>
+      </Collapsible>
+      <Collapsible id="frontPanel" title={tr('Фронтальная панель')} badge={cabinet.frontPanel ? `${cabinet.frontPanel.width} мм` : tr('нет')}>
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Ширина')} hint={tr('0 — нет; ниша сужается, мм')}>
           <NumberInput
@@ -906,7 +909,8 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>{tr('Основание и столешница')}</SectionTitle>
+      </Collapsible>
+      <Collapsible id="base" title={tr('Основание и столешница')} defaultOpen>
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Основание')} hint={cabinet.base ? `${cabinet.base.height} мм` : 'нет'}>
           <Select
@@ -1033,7 +1037,8 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>{tr('Планки и фартук')}</SectionTitle>
+      </Collapsible>
+      <Collapsible id="rails" title={tr('Планки и фартук')} badge={`${(cabinet.rails ?? []).length + (cabinet.backsplash ? 1 : 0)}`}>
       <p className="text-[11px] text-neutral-500">
         Планка (царга) ставится вместо сплошной крышки: под столешницей она не нужна.
         Фальш-панель закрывает зазор сбоку от корпуса.
@@ -1188,7 +1193,8 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <SectionTitle>{tr('Двери')}</SectionTitle>
+      </Collapsible>
+      <Collapsible id="sliding" title={tr('Двери')} badge={cabinet.sliding ? `${cabinet.sliding.count}` : tr('нет')}>
       <Field
         label={tr('Двери-купе')}
         hint={cabinet.sliding ? 'вместо распашных' : 'нет'}
@@ -1214,7 +1220,8 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         />
       </Field>
 
-      <SectionTitle>{tr('Материалы')}</SectionTitle>
+      </Collapsible>
+      <Collapsible id="materials" title={tr('Материалы')} defaultOpen>
       <Field label={tr('Корпус')}>
         <DecorPicker
           materials={carcassMaterials}
@@ -1243,6 +1250,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
           options={materialOptions(backMaterials)}
         />
       </Field>
+      </Collapsible>
 
       <div className="flex items-center justify-between pt-1">
         <SectionTitle>Секции ({cabinet.sections.length})</SectionTitle>

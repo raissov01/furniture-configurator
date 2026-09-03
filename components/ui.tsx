@@ -5,6 +5,7 @@
  * shadcn CLI интерактивті және желі керек ететіндіктен).
  */
 
+import * as React from 'react'
 import { cn } from '@/lib/cn'
 
 export function Field({
@@ -129,5 +130,80 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
     <h2 className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
       {children}
     </h2>
+  )
+}
+
+/**
+ * ЖИЫЛАТЫН бөлім.
+ *
+ * НЕГЕ КЕРЕК: панельде оннан астам бөлім бар, ал бір тапсырыста олардың
+ * үш-төртеуі ғана керек. Бәрі ашық тұрғанда керегін табу үшін ұзақ
+ * айналдыруға тура келеді.
+ *
+ * Ашық/жабық күйі БРАУЗЕРДЕ сақталады (жобада емес): бұл — адамның өз
+ * ыңғайы, ал жоба басқа адамға ашылғанда оның әдеті таңылмауы керек.
+ * Оқу мен жазу try/catch ішінде: жеке терезеде localStorage лақтыруы мүмкін.
+ */
+const COLLAPSE_KEY = 'furniture-configurator:collapsed'
+
+function readCollapsed(): Record<string, boolean> {
+  try {
+    const raw = window.localStorage.getItem(COLLAPSE_KEY)
+    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {}
+  } catch {
+    return {}
+  }
+}
+
+export function Collapsible({
+  title, id, defaultOpen = false, badge, children,
+}: {
+  title: React.ReactNode
+  /** localStorage кілті. Атауы өзгерсе де күй сақталуы үшін бөлек. */
+  id: string
+  defaultOpen?: boolean
+  /** Тақырыптың жанындағы қысқа белгі: «бар», «2 шт» — жабық күйде де көрінеді. */
+  badge?: React.ReactNode
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = React.useState(defaultOpen)
+
+  // Гидратациядан КЕЙІН оқимыз: сервер мен клиент бірінші кадрда бірдей
+  // болуы керек, әйтпесе React ескертеді.
+  React.useEffect(() => {
+    const saved = readCollapsed()[id]
+    if (saved !== undefined) setOpen(saved)
+  }, [id])
+
+  const toggle = () => {
+    const next = !open
+    setOpen(next)
+    try {
+      window.localStorage.setItem(COLLAPSE_KEY, JSON.stringify({ ...readCollapsed(), [id]: next }))
+    } catch {
+      // Жады жоқ болса, күй тек осы сессияда тұрады — бұл қате емес.
+    }
+  }
+
+  return (
+    <div className="border-t border-neutral-200 pt-2 dark:border-neutral-800">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-1.5 text-left"
+      >
+        <span className={cn('text-[10px] text-neutral-400 transition-transform', open && 'rotate-90')}>
+          ▶
+        </span>
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+          {title}
+        </span>
+        {badge && !open ? (
+          <span className="ml-auto text-[10px] normal-case text-neutral-500">{badge}</span>
+        ) : null}
+      </button>
+      {open ? <div className="mt-2 flex flex-col gap-2">{children}</div> : null}
+    </div>
   )
 }
