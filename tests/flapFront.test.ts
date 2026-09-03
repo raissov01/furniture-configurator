@@ -68,7 +68,7 @@ describe('присадка', () => {
           count: 1, mount: 'overlay' as const, opening: 'up' as const,
           handle: {
             handleId: 'handle-bar', boreSpacing: 128,
-            position: 'topCentre' as const, edgeOffset: 40, endOffset: 50,
+            position: 'top' as const, edgeOffset: 40, endOffset: 50,
           },
         },
       }],

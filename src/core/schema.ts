@@ -347,6 +347,8 @@ export const PlacementSchema = z.object({
   offset: z.number().int(),
   /** Еденнен биіктік, мм. ЕРІКТІ: ескі жобада ол жоқ, мәні 0 деп саналады. */
   elevation: z.number().int().min(0).max(4000).optional(),
+  /** Қабырғаның бұрышына қосымша бұрылыс, градус. Ескі жобада жоқ = 0. */
+  rotate: z.number().min(-180).max(180).optional(),
 })
 
 export const ProjectFileSchema = ProjectFileV2Schema.extend({

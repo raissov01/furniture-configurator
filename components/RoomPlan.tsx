@@ -5,14 +5,14 @@
  * шкафты сол қабырға бойымен жылжытасың, жаңасын қосасың.
  *
  * Мұнда координата ЕСЕПТЕЛМЕЙДІ — орын да, төртбұрыш та ядродан келеді
- * (`placementFootprint`), сондықтан жоспар мен 3D ешқашан алшақтамайды.
+ * (`placementCorners`), сондықтан жоспар мен 3D ешқашан алшақтамайды.
  */
 
 import { t as tr } from '@/lib/i18n'
 import { useMemo } from 'react'
 import {
   WALL_LABELS,
-  placementFootprint,
+  placementCorners,
   roomWalls,
   validatePlacements,
   wallById,
@@ -157,6 +157,17 @@ export function RoomPlan() {
                   onChange={(elevation) => movePlacement(activeId, { elevation })}
                 />
               </Field>
+              {/* Бұрыштық ас үйдің 45°-тық модулі, қиғаш қабырғаға тірелген
+                  шкаф. Корпустың есебі бұдан да өзгермейді. */}
+              <Field label={tr('Поворот')} hint="°">
+                <NumberInput
+                  value={activePlacement.rotate ?? 0}
+                  min={-180}
+                  max={180}
+                  step={5}
+                  onChange={(rotate) => movePlacement(activeId, { rotate })}
+                />
+              </Field>
             </div>
 
             <div className="flex items-center justify-between">
@@ -253,12 +264,18 @@ function PlanSvg({
       })}
 
       {entries.map(({ cabinet, placement }) => {
-        const fp = placementFootprint(room, cabinet, placement)
+        /*
+         * ⚠ Тікбұрыш ЕМЕС, көпбұрыш. Бұрылған шкафтың осьтерге тураланған
+         * АЖШ-сы шкафтың өзінен үлкен: оны тікбұрышпен салсақ, жоспарда ол
+         * шын орнынан кеңірек көрініп, көршісіне тиіп тұрғандай болар еді.
+         */
+        const points = placementCorners(room, cabinet, placement)
+          .map((p) => `${p.x},${p.z}`).join(' ')
         const on = cabinet.id === activeId
         return (
           <g key={cabinet.id} onClick={() => onCabinet(cabinet.id)} style={{ cursor: 'pointer' }}>
-            <rect
-              x={fp.x} y={fp.z} width={fp.width} height={fp.depth}
+            <polygon
+              points={points}
               fill={on ? '#c9a227' : '#e3c76a'}
               stroke={on ? '#0f172a' : '#7c5f14'}
               strokeWidth={on ? 14 : 6}

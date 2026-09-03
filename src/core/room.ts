@@ -120,8 +120,79 @@ export function placementPose(
       placement.elevation ?? 0,
       wall.origin.z + wall.direction.z * t + wall.inward.z * d,
     ),
-    rotationY: wall.rotationY,
+    // Қабырғаның бұрышына пайдаланушының қосымша бұрышы қосылады.
+    rotationY: wall.rotationY + (placement.rotate ?? 0),
   }
+}
+
+/**
+ * Жоспардағы БҰРЫЛҒАН төртбұрыш: төрт нақты бұрышы.
+ *
+ * `placementFootprint` осьтерге тураланған АЖШ (AABB) береді, ал бұрылған
+ * шкафтың АЖШ-сы шкафтың өзінен ҮЛКЕН. Қабаттасуды сонымен тексерсек,
+ * 45°-қа бұрылған екі модуль тимей тұрса да «қабаттасады» деп шығар еді.
+ */
+export function placementCorners(
+  room: Room,
+  cabinet: CabinetConfig,
+  placement: Placement,
+): Vec3[] {
+  const pose = placementPose(room, cabinet, placement)
+  const a = (pose.rotationY * Math.PI) / 180
+  /*
+   * ⚠ 90°-қа еселі бұрыштарды ДӘЛ ұстау керек. `Math.cos(Math.PI)` −1 емес,
+   * −0.9999999999999999 береді де, 450 мм-лік шкаф жоспарда 450.0000000000001
+   * болып шығады. Ондай «құйрық» өлшемді салыстыратын жерде де, тестте де
+   * түсініксіз айырма береді, ал ерікті бұрышта ол бәрібір қалады.
+   */
+  const snap = (n: number): number => {
+    if (Math.abs(n) < 1e-9) return 0
+    if (Math.abs(n - 1) < 1e-9) return 1
+    if (Math.abs(n + 1) < 1e-9) return -1
+    return n
+  }
+  const cos = snap(Math.cos(a))
+  const sin = snap(Math.sin(a))
+  const out: Vec3[] = []
+  for (const [lx, lz] of [[0, 0], [cabinet.width, 0], [cabinet.width, cabinet.depth], [0, cabinet.depth]]) {
+    out.push(v(
+      pose.position.x + lx! * cos + lz! * sin,
+      0,
+      pose.position.z - lx! * sin + lz! * cos,
+    ))
+  }
+  return out
+}
+
+/**
+ * Екі дөңес төртбұрыштың қиылысуы — бөлгіш осьтер әдісі (SAT).
+ *
+ * Тек ЖАНАСУ қиылысу деп саналмайды: қатарға тұрған екі модуль бір-біріне
+ * тіреліп тұрады, ал ол қалыпты жағдай. Сондықтан шек `> EPS`.
+ */
+const OVERLAP_EPS = 0.5
+
+export function rectanglesOverlap(a: Vec3[], b: Vec3[]): boolean {
+  for (const poly of [a, b]) {
+    for (let i = 0; i < poly.length; i += 1) {
+      const p1 = poly[i]!
+      const p2 = poly[(i + 1) % poly.length]!
+      // Қабырғаның НОРМАЛІ — бөлгіш ось үміткері.
+      const axis = { x: -(p2.z - p1.z), z: p2.x - p1.x }
+      const len = Math.hypot(axis.x, axis.z)
+      if (len < 1e-9) continue
+      const ux = axis.x / len
+      const uz = axis.z / len
+      const project = (poly2: Vec3[]) => {
+        const values = poly2.map((p) => p.x * ux + p.z * uz)
+        return { min: Math.min(...values), max: Math.max(...values) }
+      }
+      const pa = project(a)
+      const pb = project(b)
+      if (pa.max - pb.min <= OVERLAP_EPS || pb.max - pa.min <= OVERLAP_EPS) return false
+    }
+  }
+  return true
 }
 
 /**
@@ -134,18 +205,14 @@ export function placementFootprint(
   cabinet: CabinetConfig,
   placement: Placement,
 ): { x: number; z: number; width: number; depth: number } {
-  const pose = placementPose(room, cabinet, placement)
-  const a = (pose.rotationY * Math.PI) / 180
-  const cos = Math.round(Math.cos(a))
-  const sin = Math.round(Math.sin(a))
-  const xs: number[] = []
-  const zs: number[] = []
-  for (const lx of [0, cabinet.width]) {
-    for (const lz of [0, cabinet.depth]) {
-      xs.push(pose.position.x + lx * cos + lz * sin)
-      zs.push(pose.position.z - lx * sin + lz * cos)
-    }
-  }
+  /*
+   * ⚠ Бұрын мұнда cos/sin БҮТІНГЕ дөңгеленетін: қабырғаның бұрышы 90°-қа
+   * еселі болғандықтан ол дұрыс еді әрі дөңгелеу қателігін жоятын. Ерікті
+   * бұрыш қосылған соң ол жарамайды — 45°-та дөңгелектелген cos 1 болып,
+   * төртбұрыш мүлде басқа жерге кетер еді.
+   */
+  const xs = placementCorners(room, cabinet, placement).map((p) => p.x)
+  const zs = placementCorners(room, cabinet, placement).map((p) => p.z)
   const x = Math.min(...xs)
   const z = Math.min(...zs)
   return { x, z, width: Math.max(...xs) - x, depth: Math.max(...zs) - z }
@@ -212,13 +279,36 @@ export function validatePlacements(
   for (const list of byWall.values()) {
     const sorted = [...list].sort((a, b) => a.placement.offset - b.placement.offset)
     for (let i = 1; i < sorted.length; i += 1) {
-      const prev = placementSpan(sorted[i - 1]!.cabinet, sorted[i - 1]!.placement)
-      const curr = placementSpan(sorted[i]!.cabinet, sorted[i]!.placement)
+      const before = sorted[i - 1]!
+      const after = sorted[i]!
+      /*
+       * БҰРЫЛҒАН модульді қабырға бойындағы аралықпен тексеруге БОЛМАЙДЫ:
+       * 45°-қа бұрылған шкаф қабырғаның бойымен кеңірек орын алады, бірақ
+       * көршісіне тимеуі мүмкін. Ондай жағдайда нақты төртбұрыштар
+       * салыстырылады (SAT), ал жанасу қиылысу деп саналмайды.
+       */
+      const rotated = (before.placement.rotate ?? 0) !== 0 || (after.placement.rotate ?? 0) !== 0
+      if (rotated) {
+        const hit = rectanglesOverlap(
+          placementCorners(room, before.cabinet, before.placement),
+          placementCorners(room, after.cabinet, after.placement),
+        )
+        if (hit) {
+          issues.push({
+            cabinetId: after.cabinet.id,
+            field: 'overlap',
+            message: `пересекается с «${before.cabinet.name}»`,
+          })
+        }
+        continue
+      }
+      const prev = placementSpan(before.cabinet, before.placement)
+      const curr = placementSpan(after.cabinet, after.placement)
       if (curr.start < prev.end) {
         issues.push({
-          cabinetId: sorted[i]!.cabinet.id,
+          cabinetId: after.cabinet.id,
           field: 'overlap',
-          message: `пересекается с «${sorted[i - 1]!.cabinet.name}» на ${prev.end - curr.start} мм`,
+          message: `пересекается с «${before.cabinet.name}» на ${prev.end - curr.start} мм`,
         })
       }
     }
