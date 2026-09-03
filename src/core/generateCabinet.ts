@@ -900,6 +900,17 @@ export function generateCabinet(
     // Вкладной фасад крышканың АСТЫНА кіреді, сондықтан бір қалыңдық кемиді.
     const spanY = frontTop - originY - (inset ? t : 0)
 
+    /*
+     * Көтерілетін фасад ұяда ЖАЛҒЫЗ болады: екеуін қатар қою механизмнің
+     * иінтірегін бір-біріне соқтырады, ал ол тек құрастыру кезінде байқалады.
+     */
+    if (fronts.opening === 'up' && fronts.count > 1) {
+      throw new ConfigValidationError(
+        `sections[${sectionIndex}].fronts.count`, `${fronts.count}`,
+        'подъёмный фасад в нише может быть только один',
+      )
+    }
+
     const created = makeFronts(
       layout.section, sectionIndex, fronts, slot,
       spanY, originY,
@@ -1260,6 +1271,25 @@ export function generateCabinet(
      */
     const opening = spec?.opening ?? 'auto'
     group.fronts.forEach((front, i) => {
+      if (handle) handleHoles(front, handle.model, handle.spec, ctx)
+      if (opening === 'up') {
+        /*
+         * КӨТЕРІЛЕТІН фасад: ілгектің чашкасы бұрғыланбайды.
+         *
+         * Механизмнің түрі моделіне қарай мүлде әртүрлі (Aventos HK бір
+         * чашкамен, HF екеуімен, арқандысы басқаша), ал цех оларды бәрібір
+         * өндірушінің қағаз шаблонымен бұрғылайды. Ойдан шығарылған тесік
+         * дайын фасадты бүлдіреді, сондықтан мұнда ЕСКЕРТПЕ ғана.
+         */
+        front.opening = { kind: 'flap' }
+        front.note = [front.note, 'Подъёмный: присадка по шаблону механизма']
+          .filter(Boolean).join('; ')
+        if (milling) {
+          validateMilling(milling, ctx.thickness(front))
+          applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)
+        }
+        return
+      }
       const side: 'left' | 'right' = opening === 'auto'
         ? (i === last && last > 0 ? 'right' : i % 2 === 0 ? 'left' : 'right')
         : opening
@@ -1273,7 +1303,6 @@ export function generateCabinet(
       // шықса, есік ешқашан «басқа жаққа» ашылмайды.
       front.opening = { kind: 'door', side }
       hingeHoles(front, carcassPanel, side, ctx, hingeSystem)
-      if (handle) handleHoles(front, handle.model, handle.spec, ctx)
       if (milling) {
         validateMilling(milling, ctx.thickness(front))
         applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)

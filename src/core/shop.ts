@@ -220,6 +220,7 @@ const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'handle-knob', kind: 'handle', name: 'Ручка-кнопка' },
   { id: 'handle-profile', kind: 'handle', name: 'Профиль-ручка (врезная), за метр' },
   { id: 'handle-none', kind: 'handle', name: 'Механизм push-to-open' },
+  { id: 'lift-flap', kind: 'other', name: 'Подъёмный механизм для фасада' },
   { id: 'leg-100', kind: 'leg', name: 'Ножка регулируемая 100 мм' },
   { id: 'leg-cone', kind: 'leg', name: 'Ножка коническая' },
   { id: 'leg-square', kind: 'leg', name: 'Ножка квадратная' },

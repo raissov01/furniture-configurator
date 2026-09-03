@@ -29,6 +29,14 @@ type Controls = ComponentRef<typeof OrbitControls>
  */
 const DOOR_OPEN_ANGLE = (100 * Math.PI) / 180
 
+/**
+ * Көтерілетін фасадтың ашылу бұрышы, радиан (75°).
+ *
+ * Толық 90° — теориялық шек: нақты механизм фасадты сәл алға шығарып,
+ * 70–80°-та тоқтатады, әйтпесе ол шкафтың үстіне тіреледі.
+ */
+const FLAP_OPEN_ANGLE = (75 * Math.PI) / 180
+
 
 const MM = 0.001
 
@@ -318,6 +326,19 @@ function OpenedPanel({
   if (opening.kind === 'drawer') {
     // Ящик АЛҒА шығады: −Z бағыты (корпустың алды).
     return <group position={[0, 0, -opening.travel * openness]}>{children}</group>
+  }
+
+  if (opening.kind === 'flap') {
+    /*
+     * Көтерілетін фасад ҮСТІҢГІ жиегі айналасында ашылады. Ось — сол жиек,
+     * ал бұрылыс X осімен: фасад алға-жоғары шығады.
+     */
+    const topY = panel.position.y + panel.finishedLength
+    return (
+      <group position={[0, topY, 0]} rotation={[-FLAP_OPEN_ANGLE * openness, 0, 0]}>
+        <group position={[0, -topY, 0]}>{children}</group>
+      </group>
+    )
   }
 
   // Есіктің ені — X бойымен (ORIENT_FACING), сондықтан ось сол не оң жиегінде.

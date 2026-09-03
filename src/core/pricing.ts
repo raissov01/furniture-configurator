@@ -175,6 +175,12 @@ export function countHardware(panels: Panel[]): Map<string, number> {
     if (id.startsWith('hinge-')) add('hinge-plate', n)
   }
   if (shelves > 0) add('shelf-pin-5', shelves * 4)
+  /*
+   * Көтергіш механизм: оның присадкасы ЖОҚ (шаблон бойынша бұрғыланады),
+   * сондықтан ол тесіктен емес, ФАСАДТЫҢ ӨЗІНЕН саналады.
+   */
+  const flaps = panels.filter((p) => p.opening?.kind === 'flap').length
+  if (flaps > 0) add('lift-flap', flaps)
   // Бір ящикте екі бүйір, ал направляющая ЖҰП болып сатылады: сондықтан
   // жиынтық саны = ящик саны, бүйір саны емес.
   //

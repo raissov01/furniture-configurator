@@ -85,7 +85,7 @@ const FrontsSchema = z.object({
   hingeSystemId: z.string().min(1).optional(),
   handle: HandleSpecSchema.nullable().optional(),
   milling: MillingSpecSchema.nullable().optional(),
-  opening: z.enum(['auto', 'left', 'right']).optional(),
+  opening: z.enum(['auto', 'left', 'right', 'up']).optional(),
   gaps: FrontGapsSchema.optional(),
 }).nullable()
 
