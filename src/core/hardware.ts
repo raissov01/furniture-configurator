@@ -14,6 +14,7 @@ import { LEG_PLATE_ROUND_DIAMETER, LEG_PLATE_SQUARE_SIDE, LEG_STEP, mergeSetting
 import { findAppliance, findFilling } from './filling'
 import { ConfigValidationError } from './errors'
 import { carcassDepthAt, layoutBands } from './generateCabinet'
+import { findMetalBoxSystem, isMetalBoxSystem } from './drawerSystems'
 import { legCentres, legPairsFor } from './drilling'
 import { layoutSections } from './sections'
 import type { CabinetConfig, Catalog, LegPlate, LegType, SettingsOverride, Vec3 } from './types'
@@ -148,6 +149,35 @@ export function generateHardware(
         // Табан дноға тіреледі, сондықтан оның қалыңдығы тұғырға қосылмайды —
         // 3D-де ол жұқа диск/пластина болып қана көрінеді.
         plateSize: LEG_PLATE_SIZE[plate],
+      })
+    }
+  }
+
+  /*
+   * МЕТАЛЛ ЖӘШІК — сатып алынатын ЖИЫНТЫҚ (бүйірлері + направляющасы).
+   *
+   * Ағаш қораптың направляющасы присадканың тесігінен саналады, ал металл
+   * жәшікте тесік ЖОҚ: ол корпусқа өз шаблонымен бекітіледі. Сондықтан ол
+   * осында, конфигурациядан саналады — әйтпесе сметада мүлде көрінбей
+   * қалар еді.
+   */
+  if (config.drawerSystem && isMetalBoxSystem(config.drawerSystem)) {
+    const box = findMetalBoxSystem(config.drawerSystem)
+    const count = config.sections.reduce(
+      (sum, section) => sum + section.contents.reduce(
+        (n, content) => n + (content.kind === 'drawers' ? content.count : 0), 0,
+      ), 0,
+    )
+    if (count > 0) {
+      out.push({
+        kind: 'filling',
+        priced: true,
+        hardwareId: box.hardwareId,
+        label: `${box.name} (комплект)`,
+        qty: count,
+        length: 0,
+        position: { x: config.width / 2, y: baseHeight, z: config.depth / 2 },
+        axis: 'x',
       })
     }
   }

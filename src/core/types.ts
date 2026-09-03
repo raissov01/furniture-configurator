@@ -580,6 +580,9 @@ export type PanelMount = 'inset' | 'overlay' | 'overlayLeft' | 'overlayRight'
 /** Направляющаның жүйесі — толық сипаттамасы `drawerSystems.ts`-те. */
 export type DrawerSystemId = 'roller' | 'ball' | 'tandem'
 
+/** Металл жәшік жүйесі: қорап дайын, парақтан түбі мен арты ғана кесіледі. */
+export type MetalBoxSystemId = 'tandembox' | 'legrabox' | 'merivobox'
+
 /** Аяқтың тұғыры (`CabinetConfig.base.legType`). */
 export type LegType = 'cylinder' | 'cone' | 'square' | 'vector' | 'none'
 
@@ -794,7 +797,15 @@ export type CabinetConfig = {
    * Таңдалғанда БӘРІ сол жүйеден алынады: саңылауы да, тесігі де, ал
    * қораптың тереңдігі номиналды ұзындыққа дөңгеленеді.
    */
-  drawerSystem?: DrawerSystemId | undefined
+  drawerSystem?: DrawerSystemId | MetalBoxSystemId | undefined
+  /**
+   * Металл жәшіктің АРТ ҚАБЫРҒАСЫНЫҢ биіктігі, мм.
+   *
+   * Ол биіктік класына байланысты (Blum-да N/M/K/C/F), ал бізде әр жүйеден
+   * БІР ғана класс өлшенген. Цехтың кестесінде басқа класс болса, санды
+   * осында қояды. Берілмесе — өлшенген әдепкі (`drawerSystems.ts`).
+   */
+  metalBoxBackHeight?: number | undefined
   /** Цех константаларын осы кабинет үшін ғана өзгерту */
   settings?: SettingsOverride | undefined
 

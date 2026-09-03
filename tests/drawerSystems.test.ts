@@ -46,19 +46,24 @@ describe('жүйе таңдалмаса — ЕСКІ мінез сақталад
 
 describe('таңдалған жүйе бәрін өзі шешеді', () => {
   it('әр жүйенің саңылауы әртүрлі → қораптың ені де әртүрлі', () => {
-    const roller = boxSide(gen('roller'))
-    const tandem = boxSide(gen('tandem'))
-    // Tandem әр жақтан 21 мм алады, роликті 12.5 — қорап 17 мм тарырақ.
+    /*
+     * ⚠ ӨЛШЕНГЕН МӘН (qdesign, 2026-09-04): ТАНДЕМ қораптың АСТЫНДА
+     * жатады, сондықтан қорап саңылауды толық дерлік алады (әр жақтан
+     * 5 мм), ал роликті ЖАНЫНАН орын талап етеді (12.5). Демек тандемнің
+     * қорабы КЕҢІРЕК — керісінше емес.
+     */
     const width = (panels: Panel[]) => panels.find((p) => p.role === 'drawerBack')!.finishedWidth
-    expect(width(gen('tandem'))).toBeLessThan(width(gen('roller')))
-    expect(roller.finishedWidth).toBeGreaterThan(0)
-    expect(tandem.finishedWidth).toBeGreaterThan(0)
+    expect(width(gen('tandem'))).toBeGreaterThan(width(gen('roller')))
+    expect(boxSide(gen('roller')).finishedWidth).toBeGreaterThan(0)
+    expect(boxSide(gen('tandem')).finishedWidth).toBeGreaterThan(0)
   })
 
-  it('қораптың тереңдігі — НОМИНАЛДЫ ұзындық, «қалай шықса, солай» емес', () => {
+  it('қораптың тереңдігі НОМИНАЛДЫ ұзындықтан шығады', () => {
     for (const id of ['roller', 'ball', 'tandem'] as const) {
+      const system = DRAWER_SYSTEMS[id]
       const depth = boxSide(gen(id)).finishedWidth
-      expect(DRAWER_SYSTEMS[id].nominalLengths, id).toContain(depth)
+      // Тандемде қорап направляющадан 10 мм қысқа (өлшенді), қалғанында тең.
+      expect(system.nominalLengths, id).toContain(depth + system.boxDepthSub)
     }
   })
 

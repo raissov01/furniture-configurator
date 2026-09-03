@@ -21,8 +21,10 @@ import {
 import { applyCutouts, applyPanelOverrides } from './cutouts'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
-import { findDrawerSystem, nominalRunnerLength } from './drawerSystems'
-import type { DrawerSystem } from './drawerSystems'
+import {
+  findDrawerSystem, findMetalBoxSystem, isMetalBoxSystem, metalBoxParts, nominalRunnerLength,
+} from './drawerSystems'
+import type { DrawerSystem, MetalBoxSystem } from './drawerSystems'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
 import type {
@@ -83,7 +85,10 @@ export function generateCabinet(
    * Направляющаның жүйесі. `null` — таңдалмаған: ол ЕСКІ мінез, өлшем цехтың
    * профилінен алынады (`drawerSystems.ts` қара).
    */
-  const drawerSystem: DrawerSystem | null = config.drawerSystem
+  const metalBox: MetalBoxSystem | null = config.drawerSystem && isMetalBoxSystem(config.drawerSystem)
+    ? findMetalBoxSystem(config.drawerSystem)
+    : null
+  const drawerSystem: DrawerSystem | null = config.drawerSystem && !metalBox
     ? findDrawerSystem(config.drawerSystem)
     : null
   const materials = new Map(catalog.materials.map((m) => [m.id, m]))
@@ -754,6 +759,8 @@ export function generateCabinet(
           slot: slots[sectionIndex] ?? { x: layout.x, width: layout.width },
           settings, carcass, frontMat, backMat, shelfDepth, make,
           system: drawerSystem,
+          metalBox,
+          metalBoxBackHeight: config.metalBoxBackHeight,
         })
         panels.push(...created.panels)
         for (const run of created.runs) {
@@ -1544,8 +1551,11 @@ function makeDrawers(input: {
   make: MakePanel
   /** Таңдалған направляющая; берілмесе — ескі мінез (settings-тен). */
   system: DrawerSystem | null
+  /** Металл жәшік таңдалса — оның кестесі. Ағаш қорап жасалмайды. */
+  metalBox: MetalBoxSystem | null
+  metalBoxBackHeight?: number | undefined
 }): { panels: Panel[]; runs: { boxBottomY: number; boxFrontZ: number; boxDepth: number }[] } {
-  const { section, sectionIndex, bandIndex, band, layout, slot, settings, carcass, frontMat, backMat, shelfDepth, make, system } = input
+  const { section, sectionIndex, bandIndex, band, layout, slot, settings, carcass, frontMat, backMat, shelfDepth, make, system, metalBox, metalBoxBackHeight } = input
   const content = band.content
   if (content.kind !== 'drawers') return { panels: [], runs: [] }
 
@@ -1644,19 +1654,44 @@ function makeDrawers(input: {
   const clearance = system ? system.sideClearance : settings.drawerRunnerGap
   const boxWidth = Math.floor(openingWidth - 2 * clearance)
   const available = shelfDepth - settings.drawerBackGap
-  const nominal = system ? nominalRunnerLength(system, available) : available
+  const lengths = system ?? metalBox
+  const nominal = lengths ? nominalRunnerLength(lengths, available) : available
   if (nominal === null) {
     throw new ConfigValidationError(
       `sections[${sectionIndex}].contents[${bandIndex}]`,
       `под ящик остаётся ${available} мм`,
-      `${system!.name}: самая короткая направляющая ${Math.min(...system!.nominalLengths)} мм`,
+      `${lengths!.name}: самая короткая направляющая ${Math.min(...lengths!.nominalLengths)} мм`,
     )
   }
-  const boxDepth = nominal
+  // Тандем қораптың АСТЫНДА жатады, сондықтан қорап направляющадан сәл қысқа.
+  const boxDepth = system ? nominal - system.boxDepthSub : nominal
   const boxHeight = frontHeight - settings.drawerBoxDrop
+  /*
+   * ── МЕТАЛЛ ЖӘШІК ──────────────────────────────────────────────────────────
+   *
+   * Қорап сатып алынады: бүйірі де, арты да, направляющасы да сол жиынтықта.
+   * Парақтан тек ТҮБІ мен АРТ ҚАБЫРҒАСЫ кесіледі, ал олардың өлшемі
+   * өндірушінің кестесінен шығады (`drawerSystems.ts`, өлшенген сандар).
+   *
+   * Сондықтан мұнда ағаш қораптың бірде-бір бөлшегі жасалмайды: бүйірі де,
+   * алдыңғы қабырғасы да, минификсі де. Оларды «бәрібір керек шығар» деп
+   * қосу цехқа артық деталь беріп, металл қораппен қатар кесілер еді.
+   */
+  const metalParts = metalBox
+    ? metalBoxParts(metalBox, openingWidth, nominal, metalBoxBackHeight)
+    : null
+  if (metalParts && (metalParts.bottom.width < MIN_DIMENSION || metalParts.bottom.depth < MIN_DIMENSION)) {
+    throw new ConfigValidationError(
+      `sections[${sectionIndex}].contents[${bandIndex}]`,
+      `дно ящика получается ${metalParts.bottom.width}×${metalParts.bottom.depth} мм`,
+      `${metalBox!.name}: каждая сторона ≥ ${MIN_DIMENSION} мм`,
+    )
+  }
+
   // Қораптың БИІКТІГІНЕ бөлек еден: 60–80 мм ұсақ заттарға арналған ящик —
   // қалыпты нәрсе, ал ені мен тереңдігі 100 мм-ден кем болса, ол ящик емес.
-  if (boxWidth < MIN_DIMENSION || boxDepth < MIN_DIMENSION || boxHeight < MIN_DRAWER_BOX_HEIGHT) {
+  if (!metalParts
+    && (boxWidth < MIN_DIMENSION || boxDepth < MIN_DIMENSION || boxHeight < MIN_DRAWER_BOX_HEIGHT)) {
     throw new ConfigValidationError(
       `sections[${sectionIndex}].contents[${bandIndex}]`,
       `короб получается ${boxHeight}×${boxWidth}×${boxDepth} мм`,
@@ -1714,6 +1749,46 @@ function makeDrawers(input: {
 
     const boxX = Math.round(openingX + clearance)
     const boxY = y + settings.drawerBoxDrop / 2
+
+    if (metalParts) {
+      // Металл жәшік: парақтан ТЕК осы екеуі кесіледі.
+      panels.push(make(
+        `${id}-bottom`, 'drawerBottom', 'Дно ящика', carcass,
+        // ORIENT_HORIZONTAL: ұзындығы X (ен), ені Z (тереңдік).
+        metalParts.bottom.width, metalParts.bottom.depth,
+        {
+          x: Math.round(openingX + (openingWidth - metalParts.bottom.width) / 2),
+          y: boxY,
+          z: settings.shelfSetback,
+        },
+        ORIENT_HORIZONTAL,
+        `Дно ящика, ${metalBox!.name}`,
+      ))
+      panels.push(make(
+        `${id}-wall-back`, 'drawerBack', 'Задняя стенка ящика', carcass,
+        // ORIENT_FACING: ұзындығы Y (биіктік), ені X.
+        metalParts.back.height, metalParts.back.width,
+        {
+          x: Math.round(openingX + (openingWidth - metalParts.back.width) / 2),
+          y: boxY,
+          z: settings.shelfSetback + metalParts.bottom.depth - t,
+        },
+        ORIENT_FACING,
+        `Задняя стенка ящика, ${metalBox!.name}`,
+      ))
+
+      const opening: PanelOpening = {
+        kind: 'drawer',
+        travel: Math.round(metalParts.bottom.depth * 0.8),
+      }
+      for (const panel of panels) {
+        if (panel.id.startsWith(id)) panel.opening = opening
+      }
+      // Металл қорапта бүйір жоқ, сондықтан направляющаға присадка да жоқ:
+      // ол корпусқа өз шаблонымен бекітіледі.
+      y += frontHeight
+      continue
+    }
 
     for (const [side, offsetX] of [['левая', 0], ['правая', boxWidth - t]] as const) {
       panels.push(

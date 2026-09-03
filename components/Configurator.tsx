@@ -20,6 +20,9 @@ import type {
 
 const materialOptions = (list: Material[]) => list.map((m) => ({ value: m.id, label: m.name }))
 
+/** Металл жәшік жүйелері: оларда қосымша өріс көрінеді. */
+const METAL_BOX_IDS: string[] = ['legrabox', 'tandembox', 'merivobox']
+
 /** Корпус пен фасадқа — қалың плита, арт қабырғаға — жұқа. */
 const isCarcass = (m: Material) => m.thickness >= 10
 
@@ -697,9 +700,28 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
             { value: 'roller' as const, label: tr('Роликовые (телескопические)') },
             { value: 'ball' as const, label: tr('Шариковые полного выдвижения') },
             { value: 'tandem' as const, label: tr('Blum TANDEM (скрытые)') },
+            // Металл жәшік: қорап сатып алынады, парақтан түбі мен арты ғана.
+            { value: 'legrabox' as const, label: tr('Blum LEGRABOX (металлический ящик)') },
+            { value: 'tandembox' as const, label: tr('Blum TANDEMBOX (металлический ящик)') },
+            { value: 'merivobox' as const, label: tr('Blum MERIVOBOX (металлический ящик)') },
           ]}
         />
       </Field>
+
+      {/* Арт қабырғаның биіктігі биіктік класына байланысты, ал бізде әр
+          жүйеден бір ғана класс өлшенген — цех оны өз кестесінен қояды. */}
+      {cabinet.drawerSystem && METAL_BOX_IDS.includes(cabinet.drawerSystem) ? (
+        <Field label={tr('Задняя стенка ящика')} hint={tr('высота по таблице производителя, мм')}>
+          <NumberInput
+            value={cabinet.metalBoxBackHeight ?? 0}
+            min={0}
+            max={400}
+            onChange={(value) => edit('metalBoxBackHeight', {
+              metalBoxBackHeight: value > 0 ? value : undefined,
+            })}
+          />
+        </Field>
+      ) : null}
 
       {cabinet.topRails ? (
         <div className="grid grid-cols-3 gap-2">
