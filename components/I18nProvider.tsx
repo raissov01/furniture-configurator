@@ -9,17 +9,41 @@
  * бетте қазақша қалып қою мүмкін емес.
  */
 
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { applySavedLang, getLang, subscribeLang } from '@/lib/i18n'
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState(getLang())
 
-  useEffect(() => subscribeLang(() => setLangState(getLang())), [])
+  /*
+   * ⚠ ЖАЗЫЛЫМ `applySavedLang`-тан БҰРЫН әрі `useLayoutEffect`-те тұруы керек.
+   *
+   * Бұрын ол `useEffect`-те еді. React алдымен БАРЛЫҚ layout эффектілерді,
+   * сосын барып passive эффектілерді жүргізеді — яғни `applySavedLang()`
+   * тыңдаушыларды шақырғанда бұл жазылым ӘЛІ ЖОҚ болатын. Сол себепті
+   * бірінші жүктелуде `lang` күйі `ru` күйінде қатып қалатын: `t()` модуль
+   * деңгейіндегі сөздіктен оқитындықтан экран қазақша көрінетін де, ал
+   * КҮЙГЕ байланғанның бәрі (`key`, төмендегі `<html lang>`) орысша қалатын.
+   */
+  useLayoutEffect(() => subscribeLang(() => setLangState(getLang())), [])
 
   // Сақталған тіл БОЯЛҒАНҒА ДЕЙІН қолданылады: гидратация сервердікімен
   // бірдей орысшадан басталады, ал пайдаланушы орысшаның жарқылын көрмейді.
   useLayoutEffect(() => { applySavedLang() }, [])
+
+  /*
+   * `<html lang>` тілмен бірге ауысады.
+   *
+   * Серверде ол әрқашан `ru`: localStorage онда жоқ. Бұрын ол сол күйі
+   * қалатын да, қазақша бет БРАУЗЕР үшін орысша болып тұратын — экран оқығыш
+   * қазақ мәтінін орыс дыбыстауымен оқиды, ал тасымал мен емле тексеру де
+   * қате тілмен жүреді.
+   *
+   * Атрибутты React-тың өзіне бермейміз: `<html>` — түбір элемент, оны
+   * рендерде өзгерту гидратация сәйкессіздігін берер еді. Сондықтан DOM-ға
+   * тікелей жазамыз, бояуға дейін.
+   */
+  useLayoutEffect(() => { document.documentElement.lang = lang }, [lang])
 
   return <div key={lang} className="contents">{children}</div>
 }
