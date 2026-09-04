@@ -24,6 +24,7 @@ import {
   setToProject,
   templateToCabinet,
 } from '@/src/core/index'
+import type { Quality } from '@/lib/appearance'
 import type {
   CabinetConfig, Catalog, Material, Placement, ProjectFile, Room, Section, SectionContent,
   ShopProfile, WallId,
@@ -94,6 +95,11 @@ type State = Snapshot & {
   /** Камера проекциясы: перспектива (табиғи) не орто (өлшем алуға ыңғайлы). */
   projection: 'perspective' | 'ortho'
   /**
+   * 3D сапасы. Жобаға ЖАЗЫЛМАЙДЫ — бұл адамның машинасының қасиеті
+   * (`lib/appearance.ts`), сондықтан браузерде сақталады.
+   */
+  quality: Quality
+  /**
    * «Кадрға сыйдыру» батырмасын басқан сайын өседі. Камера пресеті
    * өзгермесе де қайта бағыттау керек, ал ол үшін тәуелділік керек.
    */
@@ -155,6 +161,7 @@ type State = Snapshot & {
   setHelpOpen(v: boolean): void
   setHistoryOpen(v: boolean): void
   setViewMode(v: 'solid' | 'ghost' | 'wire'): void
+  setQuality(q: Quality): void
   setShowFronts(v: boolean): void
   setOpenness(v: number): void
   setProjection(v: 'perspective' | 'ortho'): void
@@ -221,6 +228,7 @@ export const useConfigurator = create<State>((set, get) => ({
   showFronts: true,
   openness: 0,
   projection: 'perspective',
+  quality: 'high',
   fitNonce: 0,
   firstRun: true,
   accountOpen: false,
@@ -486,6 +494,7 @@ export const useConfigurator = create<State>((set, get) => ({
   setHelpOpen: (helpOpen) => set({ helpOpen }),
   setHistoryOpen: (historyOpen) => set({ historyOpen }),
   setViewMode: (viewMode) => set({ viewMode }),
+  setQuality: (quality) => set({ quality }),
   setShowFronts: (showFronts) => set({ showFronts }),
   setOpenness: (openness) => set({ openness: Math.min(1, Math.max(0, openness)) }),
   setProjection: (projection) => set({ projection }),

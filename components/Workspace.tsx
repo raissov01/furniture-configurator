@@ -21,6 +21,7 @@ import { HistoryPanel } from '@/components/HistoryPanel'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
+import { AppearanceSwitch } from '@/components/AppearanceSwitch'
 import { cloudEnabled } from '@/lib/cloud'
 import { SHARE_LINK_WARN_LENGTH, shareLink } from '@/src/core/index'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -262,6 +263,7 @@ export function Workspace() {
 
         <ProjectMenu />
 
+        <AppearanceSwitch />
         <LangSwitch />
 
         {cloudEnabled && (

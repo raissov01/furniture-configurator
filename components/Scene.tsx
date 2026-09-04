@@ -13,6 +13,7 @@ import { Grid, OrbitControls, OrthographicCamera } from '@react-three/drei'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
+import { canvasSettings } from '@/lib/appearance'
 import type { CameraPreset } from '@/store/configurator'
 import { ROD_DIAMETER, placementFootprint } from '@/src/core/index'
 import type {
@@ -408,6 +409,8 @@ export default function Scene({
   const active = items.find((i) => i.cabinet.id === activeId) ?? items[0]
   const preset = useConfigurator((s) => s.cameraPreset)
   const projection = useConfigurator((s) => s.projection)
+  const quality = useConfigurator((s) => s.quality)
+  const canvas = canvasSettings(quality)
 
   // «Комната» пресеті бүкіл бөлмеге қарайды, қалғаны — белсенді шкафқа.
   const view = useMemo<{ target: Vec3; box: { W: number; H: number; D: number }; facingY: number }>(() => {
@@ -433,7 +436,13 @@ export default function Scene({
 
   return (
     <Canvas
-      dpr={[1, 2]}
+      /*
+       * Сапа адамның баптауынан келеді (`lib/appearance.ts`): 2× пиксель
+       * тығыздығы 4 есе көп пиксель деген сөз, ал әлсіз ноутбукте дәл сол
+       * кадрды екі есе жылдамдатады.
+       */
+      dpr={canvas.dpr}
+      gl={{ antialias: canvas.antialias }}
       /*
        * Өлшеу: debounce нөл әрі `offsetSize`.
        *

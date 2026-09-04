@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/*
+ * ҚАРАҢҒЫ ТЕМА екі жолмен қосылады:
+ *   1. жүйенің баптауы (`prefers-color-scheme`) — адам ештеңе таңдамағанда;
+ *   2. `data-theme="dark"` — адам ҚОЛМЕН таңдағанда.
+ *
+ * ⚠ Бірінші ереже `[data-theme="light"]` тұрғанда ІСТЕМЕЙДІ: жүйесі қараңғы
+ * адам ақ теманы әдейі таңдаса, оның таңдауы басым болуы керек.
+ */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme="light"], [data-theme="light"] *)) { @slot; }
+  }
+  &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
+}
+
 /**
  * Түс палитрасы цехтың өз материалынан алынған:
  * фон — ЛДСП «Белый платиновый» реңкі, акцент — «Дуб Бардолино» мен кромка,
