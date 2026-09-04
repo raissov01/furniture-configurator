@@ -15,6 +15,18 @@ import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 
 type Account = { email: string; shopName: string }
+type PlanInfo = {
+  id: string
+  name: string
+  note: string
+  /** `null` — шексіз */
+  projects: number | null
+  members: number | null
+  /** Тиынмен; `null` — қойылмаған («келісіледі») */
+  price: number | null
+  until: number | null
+  expired: boolean
+}
 type ProjectRow = { id: string; name: string; updatedAt: number }
 
 const input =
@@ -33,6 +45,8 @@ export function AccountPanel() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
   const [projects, setProjects] = useState<ProjectRow[]>([])
+  const [plan, setPlan] = useState<PlanInfo | null>(null)
+  const [usage, setUsage] = useState<{ projects: number; members: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -47,9 +61,15 @@ export function AccountPanel() {
   useEffect(() => {
     void (async () => {
       const res = await fetch('/api/me')
-      const data = (await res.json()) as { account?: Account | null }
+      const data = (await res.json()) as {
+        account?: Account | null
+        plan?: PlanInfo
+        usage?: { projects: number; members: number }
+      }
       if (data.account) {
         setAccount(data.account)
+        setPlan(data.plan ?? null)
+        setUsage(data.usage ?? null)
         void refreshProjects()
       }
     })()
@@ -171,6 +191,39 @@ export function AccountPanel() {
         {account ? (
           <div className="space-y-3">
             <p className="text-xs text-neutral-500">{account.email}</p>
+
+            {/*
+              Тариф САҚТАУ СӘТІНЕ ДЕЙІН көрінеді: цех шегіне жеткенін
+              жобасын жоғалтып емес, алдын ала білуі керек.
+            */}
+            {plan ? (
+              <div className="rounded-lg border border-neutral-200 px-2.5 py-2 dark:border-neutral-800">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs font-medium">{tr('Тариф')}: {plan.name}</span>
+                  <span className="text-[10px] tabular-nums text-neutral-400">
+                    {plan.price === null
+                      ? tr('цена по договорённости')
+                      : `${(plan.price / 100).toLocaleString('ru-RU')} ₸`}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] leading-snug text-neutral-400">{plan.note}</p>
+                {usage ? (
+                  <p className="mt-1 text-[11px] tabular-nums text-neutral-500">
+                    {tr('Проектов')}: {usage.projects}
+                    {plan.projects === null ? ` / ${tr('без предела')}` : ` / ${plan.projects}`}
+                  </p>
+                ) : null}
+                {plan.expired ? (
+                  <p className="mt-1 text-[11px] leading-snug text-amber-600 dark:text-amber-400">
+                    {tr('Срок тарифа истёк — действуют пробные пределы. Проекты на месте.')}
+                  </p>
+                ) : plan.until !== null ? (
+                  <p className="mt-1 text-[11px] tabular-nums text-neutral-400">
+                    {tr('До')} {new Date(plan.until).toLocaleDateString('ru-RU')}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">

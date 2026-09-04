@@ -75,6 +75,25 @@ function migrate(database: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS projects_shop ON projects (shop_id, updated_at DESC);
     CREATE INDEX IF NOT EXISTS sessions_user ON sessions (user_id);
   `)
+
+  /*
+   * 2-қадам: тариф.
+   *
+   * `ALTER TABLE ... ADD COLUMN` бір рет қана өтеді, ал екінші рет
+   * «duplicate column name» деп лақтырады. `IF NOT EXISTS` синтаксисі
+   * SQLite-та ЖОҚ, сондықтан бағанның бар-жоғын кестенің өз мәліметінен
+   * сұраймыз — миграция қайта жүргенде де сынбауы керек.
+   */
+  const columns = database.prepare('PRAGMA table_info(shops)').all() as { name: string }[]
+  const has = (name: string) => columns.some((c) => c.name === name)
+  if (!has('plan')) {
+    database.exec("ALTER TABLE shops ADD COLUMN plan TEXT NOT NULL DEFAULT 'free'")
+  }
+  if (!has('plan_until')) {
+    // Тариф қашан бітеді, мс. NULL — мерзімсіз (тегін жоспар да, қолмен
+    // берілген мерзімсіз жоспар да осында).
+    database.exec('ALTER TABLE shops ADD COLUMN plan_until INTEGER')
+  }
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */
