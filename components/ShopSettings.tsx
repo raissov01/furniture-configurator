@@ -11,6 +11,8 @@ import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import {
   DEFAULT_SETTINGS,
+  HANDLE_BORE_DIAMETER,
+  HANDLE_BORE_SPACINGS,
   SERVICE_BASIS_NAMES,
   SERVICE_IDS,
   SERVICE_NAMES,
@@ -19,7 +21,9 @@ import {
   makeMaterial,
   shopReadiness,
 } from '@/src/core/index'
-import type { ConstructionSettings, DimensionLimits, ServiceBasis, ShopProfile } from '@/src/core/index'
+import type {
+  ConstructionSettings, DimensionLimits, HandleModel, ServiceBasis, ShopProfile,
+} from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -79,6 +83,43 @@ export function ShopSettings() {
     editShop({ hingeSystems: shop.hingeSystems.map((h) => (h.id === id ? { ...h, cupFromEdge } : h)) })
   const setHingeEnd = (id: string, endOffset: number) =>
     editShop({ hingeSystems: shop.hingeSystems.map((h) => (h.id === id ? { ...h, endOffset } : h)) })
+  /*
+   * ТҰТҚА КАТАЛОГЫ — цехтың өзінікі.
+   *
+   * Артикул да, баға да жеткізушіден келеді әрі әр цехта басқаша, сондықтан
+   * кодта тек ТҮРЛЕРІ тұр, ал нақты тізімді цех осында толықтырады. Жойылған
+   * тұтқа жобада қалып қоюы мүмкін — сол себепті соңғы модельді жоюға
+   * болмайды әрі фасад тұтқасыз қалмайды.
+   */
+  const addHandle = (name: string, kind: HandleModel['kind']) => {
+    const id = `handle-shop-${Date.now().toString(36)}`
+    const model: HandleModel = {
+      id,
+      name: name.trim(),
+      kind,
+      boreSpacings: kind === 'knob' || kind === 'profile' || kind === 'none'
+        ? []
+        : [...HANDLE_BORE_SPACINGS],
+      boreDiameter: kind === 'profile' || kind === 'none' ? 0 : HANDLE_BORE_DIAMETER,
+      hardwareId: id,
+    }
+    editShop({
+      handles: [...shop.handles, model],
+      // Сметаның жолы да бірге пайда болады, әйтпесе жаңа тұтқа ақшаға
+      // кірмей қалар еді.
+      hardware: [...shop.hardware, { id, kind: 'handle', name: model.name, pricePerUnit: 0 }],
+    })
+  }
+  const renameHandle = (id: string, name: string) =>
+    editShop({
+      handles: shop.handles.map((h) => (h.id === id ? { ...h, name } : h)),
+      hardware: shop.hardware.map((h) => (h.id === id ? { ...h, name } : h)),
+    })
+  const removeHandle = (id: string) => {
+    if (shop.handles.length <= 1) return
+    editShop({ handles: shop.handles.filter((h) => h.id !== id) })
+  }
+
   const setRule = (key: keyof ConstructionSettings, value: number) =>
     editShop({
       settings: {
@@ -180,6 +221,13 @@ export function ShopSettings() {
         ) : null}
 
         {tab === 'hardware' ? (
+          <div className="space-y-4">
+          <HandleCatalogue
+            handles={shop.handles}
+            onAdd={addHandle}
+            onRename={renameHandle}
+            onRemove={removeHandle}
+          />
           <PriceTable
             head={['Позиция', 'Цена за штуку, ₸']}
             rows={shop.hardware.map((h) => ({
@@ -191,6 +239,7 @@ export function ShopSettings() {
               ],
             }))}
           />
+          </div>
         ) : null}
 
         {tab === 'hinges' ? (
@@ -364,6 +413,80 @@ export function ShopSettings() {
  * Декор кітапханасын біз жаза алмаймыз: коды мен реңкі жеткізушіден келеді,
  * әр цехта басқаша. Сондықтан бос жол береміз де, цех өзінікін қосады.
  */
+/**
+ * Тұтқалардың каталогы: цех өз артикулын осында қосады.
+ *
+ * ТҮРІ ӨЗГЕРТІЛМЕЙДІ — ол присадканың негізі (қанша тесік, қай аралықта).
+ * Түрі қате қойылса, оны түзетуден гөрі жаңасын қосып, ескісін жойған
+ * қауіпсіз: сол кезде бұрын жасалған жобадағы присадка үнсіз өзгермейді.
+ */
+function HandleCatalogue({
+  handles, onAdd, onRename, onRemove,
+}: {
+  handles: HandleModel[]
+  onAdd: (name: string, kind: HandleModel['kind']) => void
+  onRename: (id: string, name: string) => void
+  onRemove: (id: string) => void
+}) {
+  const [name, setName] = useState('')
+  const [kind, setKind] = useState<HandleModel['kind']>('bar')
+
+  return (
+    <div className="space-y-2">
+      <SectionTitle>{tr('Ручки')} ({handles.length})</SectionTitle>
+      <p className="max-w-2xl text-[11px] leading-snug text-neutral-400">
+        Артикулы и цены у каждого цеха свои, поэтому в программе лежат только виды.
+        Добавьте свои позиции — они попадут и в выбор фасада, и в смету.
+      </p>
+      <ul className="space-y-1">
+        {handles.map((h) => (
+          <li key={h.id} className="flex items-center gap-2">
+            <input
+              className="min-w-0 flex-1 rounded-md border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              value={h.name}
+              onChange={(e) => onRename(h.id, e.target.value)}
+            />
+            <span className="w-28 shrink-0 text-[11px] text-neutral-400">{HANDLE_KIND_NAME[h.kind]}</span>
+            <Button onClick={() => onRemove(h.id)} disabled={handles.length <= 1}>✕</Button>
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-center gap-2">
+        <input
+          className="min-w-0 flex-1 rounded-md border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+          placeholder={tr('Ручка-скоба Boyard RS-101, 128 мм')}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <div className="w-40 shrink-0">
+          <Select
+            value={kind}
+            onChange={setKind}
+            options={(Object.keys(HANDLE_KIND_NAME) as HandleModel['kind'][])
+              .map((k) => ({ value: k, label: HANDLE_KIND_NAME[k] }))}
+          />
+        </div>
+        <Button
+          active
+          disabled={name.trim().length < 2}
+          onClick={() => { onAdd(name, kind); setName('') }}
+        >
+          {tr('Добавить')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+const HANDLE_KIND_NAME: Record<HandleModel['kind'], string> = {
+  bar: 'Скоба',
+  rail: 'Рейлинг',
+  shell: 'Ракушка',
+  knob: 'Кнопка',
+  profile: 'Профиль',
+  none: 'Без ручки',
+}
+
 function AddMaterial() {
   const shop = useConfigurator((s) => s.shop)
   const addMaterial = useConfigurator((s) => s.addMaterial)

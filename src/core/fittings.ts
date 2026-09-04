@@ -130,13 +130,19 @@ export const DEFAULT_HINGE_SYSTEM_ID = 'hinge-blum-soft-cross-overlay'
 // ── Тұтқа ────────────────────────────────────────────────────────────────────
 
 /**
- * Тұтқаның түрі. Присадкаға тікелей әсер етеді:
- * - `bar` / `rail` — екі өтпелі тесік, аралығы `boreSpacing`
- * - `knob` — БІР тесік (аралық 0)
- * - `profile` — фасадтың торцінде фрезерленген профиль, тесік ЖОҚ
- * - `none` — push-to-open, тесік те, фурнитура да жоқ
+ * Тұтқаның ТҮРІ — присадкаға да, 3D-ге де әсер етеді:
+ *
+ *   bar     — скоба: екі бұранда, аралығы (межцентровое) таңдалады
+ *   rail    — рейлинг: сол сияқты, бірақ дөңгелек құбыр
+ *   shell   — ракушка (ящикке жиі): екі бұранда, аралығы кіші
+ *   knob    — кнопка: БІР бұранда
+ *   profile — профиль-ручка (гола): бұранда ЖОҚ, фасадтың жиегіне отырады
+ *   none    — тұтқасыз (push-to-open)
+ *
+ * ⚠ Присадка `boreSpacings`-тен емес, ОСЫ ТҮРДЕН шығады (`handleBorePoints`):
+ * жаңа түр қосқанда оның қай топқа жататынын да жазу керек.
  */
-export type HandleKind = 'bar' | 'rail' | 'knob' | 'profile' | 'none'
+export type HandleKind = 'bar' | 'rail' | 'shell' | 'knob' | 'profile' | 'none'
 
 export type HandleModel = {
   id: string
@@ -206,32 +212,71 @@ export type HandleSpec = {
   endOffset: number
 }
 
+/**
+ * Тұтқалардың БАСТАПҚЫ тізімі.
+ *
+ * ⚠ БҰЛ — АРТИКУЛ ТІЗІМІ ЕМЕС. Артикул да, баға да жеткізушіден келеді әрі
+ * әр цехта басқаша, сондықтан мұнда тек ТҮРЛЕРІ тұр — присадка мен 3D үшін
+ * керегі де сол. Цех өз каталогын профильде толықтырады (Фурнитура → Ручки),
+ * ал бағасы бұрынғыдай 0 күйінде келеді (§6).
+ */
 export function defaultHandles(): HandleModel[] {
+  const bores = [...HANDLE_BORE_SPACINGS]
+  /** Ракушканың аралығы кіші: ол ящиктің фасадына көлденең отырады. */
+  const shellBores = [64, 96, 128, 160]
   return [
     {
       id: 'handle-bar', name: 'Ручка-скоба', kind: 'bar',
-      boreSpacings: [...HANDLE_BORE_SPACINGS],
-      boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-bar',
+      boreSpacings: bores, boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-bar',
+    },
+    {
+      id: 'handle-bar-square', name: 'Ручка-скоба квадратная', kind: 'bar',
+      boreSpacings: bores, boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-bar-square',
+    },
+    {
+      id: 'handle-bracket', name: 'Ручка-скоба П-образная', kind: 'bar',
+      boreSpacings: bores, boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-bracket',
     },
     {
       id: 'handle-rail', name: 'Ручка-рейлинг', kind: 'rail',
-      boreSpacings: [...HANDLE_BORE_SPACINGS],
-      boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-rail',
+      boreSpacings: bores, boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-rail',
+    },
+    {
+      id: 'handle-rail-thin', name: 'Ручка-рейлинг тонкая (Ø10)', kind: 'rail',
+      boreSpacings: bores, boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-rail-thin',
+    },
+    {
+      id: 'handle-shell', name: 'Ручка-ракушка', kind: 'shell',
+      boreSpacings: shellBores, boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-shell',
+    },
+    {
+      id: 'handle-shell-long', name: 'Ручка-ракушка удлинённая', kind: 'shell',
+      boreSpacings: [128, 160, 192, 224], boreDiameter: HANDLE_BORE_DIAMETER,
+      hardwareId: 'handle-shell-long',
     },
     {
       id: 'handle-knob', name: 'Ручка-кнопка', kind: 'knob',
-      boreSpacings: [],
-      boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-knob',
+      boreSpacings: [], boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-knob',
+    },
+    {
+      id: 'handle-knob-wood', name: 'Ручка-кнопка деревянная', kind: 'knob',
+      boreSpacings: [], boreDiameter: HANDLE_BORE_DIAMETER, hardwareId: 'handle-knob-wood',
     },
     {
       id: 'handle-profile', name: 'Профиль-ручка (врезная)', kind: 'profile',
-      boreSpacings: [],
-      boreDiameter: 0, hardwareId: 'handle-profile',
+      boreSpacings: [], boreDiameter: 0, hardwareId: 'handle-profile',
+    },
+    {
+      id: 'handle-profile-c', name: 'Профиль-ручка накладная (С-образная)', kind: 'profile',
+      boreSpacings: [], boreDiameter: 0, hardwareId: 'handle-profile-c',
+    },
+    {
+      id: 'handle-profile-gola', name: 'Гола-профиль (под фасадом)', kind: 'profile',
+      boreSpacings: [], boreDiameter: 0, hardwareId: 'handle-profile-gola',
     },
     {
       id: 'handle-none', name: 'Без ручки (push-to-open)', kind: 'none',
-      boreSpacings: [],
-      boreDiameter: 0, hardwareId: 'handle-none',
+      boreSpacings: [], boreDiameter: 0, hardwareId: 'handle-none',
     },
   ]
 }
@@ -337,7 +382,7 @@ export const HingeSystemSchema = z.object({
 export const HandleModelSchema = z.object({
   id: z.string().min(1),
   name: z.string(),
-  kind: z.enum(['bar', 'rail', 'knob', 'profile', 'none']),
+  kind: z.enum(['bar', 'rail', 'shell', 'knob', 'profile', 'none']),
   boreSpacings: z.array(z.number().positive()),
   boreDiameter: z.number().nonnegative(),
   hardwareId: z.string().min(1),

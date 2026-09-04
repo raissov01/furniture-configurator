@@ -254,11 +254,13 @@ const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'hinge-plate', kind: 'hinge', name: 'Планка ответная под петлю' },
   { id: 'runner-roller-400', kind: 'runner', name: 'Направляющая роликовая 400 мм' },
   { id: 'runner-ball-400', kind: 'runner', name: 'Направляющая шариковая 400 мм' },
-  { id: 'handle-bar', kind: 'handle', name: 'Ручка-скоба' },
-  { id: 'handle-rail', kind: 'handle', name: 'Ручка-рейлинг' },
-  { id: 'handle-knob', kind: 'handle', name: 'Ручка-кнопка' },
-  { id: 'handle-profile', kind: 'handle', name: 'Профиль-ручка (врезная), за метр' },
-  { id: 'handle-none', kind: 'handle', name: 'Механизм push-to-open' },
+  // Тұтқалар: тізім `defaultHandles()`-тен шығады, сондықтан ҚОЛМЕН
+  // қайталанбайды — жаңа модель қосқанда сметаның жолы да өзінен пайда болады.
+  ...defaultHandles().map((h) => ({
+    id: h.hardwareId,
+    kind: 'handle' as const,
+    name: h.kind === 'profile' ? `${h.name}, за метр` : h.name,
+  })),
   { id: 'lift-flap', kind: 'other', name: 'Подъёмный механизм для фасада' },
   { id: 'leg-100', kind: 'leg', name: 'Ножка регулируемая 100 мм' },
   { id: 'leg-cone', kind: 'leg', name: 'Ножка коническая' },
