@@ -48,6 +48,8 @@ export function AccountPanel() {
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [plan, setPlan] = useState<PlanInfo | null>(null)
+  /** Ақы алу қосулы ма (сервер айтады). Тегін кезеңде тариф көрсетілмейді. */
+  const [billing, setBilling] = useState(false)
   const [team, setTeam] = useState<{ members: Member[]; invites: Invite[]; limit: number | null } | null>(null)
   /** Жаңа шақырудың сілтемесі — көшіріп алу үшін бір рет көрсетіледі. */
   const [inviteLink, setInviteLink] = useState<string | null>(null)
@@ -91,11 +93,13 @@ export function AccountPanel() {
       const res = await fetch('/api/me')
       const data = (await res.json()) as {
         account?: Account | null
+        billing?: boolean
         plan?: PlanInfo
         usage?: { projects: number; members: number }
       }
       if (data.account) {
         setAccount(data.account)
+        setBilling(data.billing === true)
         setPlan(data.plan ?? null)
         setUsage(data.usage ?? null)
         void refreshProjects()
@@ -259,7 +263,7 @@ export function AccountPanel() {
               Тариф САҚТАУ СӘТІНЕ ДЕЙІН көрінеді: цех шегіне жеткенін
               жобасын жоғалтып емес, алдын ала білуі керек.
             */}
-            {plan ? (
+            {billing && plan ? (
               <div className="rounded-lg border border-neutral-200 px-2.5 py-2 dark:border-neutral-800">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-xs font-medium">{tr('Тариф')}: {plan.name}</span>
@@ -298,7 +302,7 @@ export function AccountPanel() {
                   <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
                     {tr('Команда')}
                     <span className="ml-1 tabular-nums normal-case">
-                      {team.members.length}{team.limit === null ? '' : ` / ${team.limit}`}
+                      {team.members.length}{!billing || team.limit === null ? '' : ` / ${team.limit}`}
                     </span>
                   </span>
                   <Button onClick={() => void makeInvite()} disabled={busy}>

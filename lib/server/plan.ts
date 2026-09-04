@@ -8,7 +8,8 @@
  * дәл осы `setPlan`-ды шақырады — қалған кодты өзгертудің қажеті болмайды.
  */
 
-import { DEFAULT_PLAN, isPlanId, planOf } from '../plans'
+import { billingEnabled } from '../billing'
+import { DEFAULT_PLAN, PLANS, isPlanId, planOf } from '../plans'
 import type { Plan, PlanId, PlanUsage } from '../plans'
 import { db } from './db'
 
@@ -21,6 +22,13 @@ export type ShopPlan = {
 }
 
 export function readPlan(shopId: string, now = Date.now()): ShopPlan {
+  /*
+   * ТЕГІН КЕЗЕҢ. Ақы алу сөндірулі тұрғанда әр цех ШЕКТЕУСІЗ жоспарда
+   * болады — базадағы жазба қандай болса да. Дерек сақталады: `BILLING=on`
+   * деген күні цех қай тарифте тұрғаны сол қалпында табылады.
+   */
+  if (!billingEnabled()) return { plan: PLANS.team, until: null, expired: false }
+
   const row = db().prepare('SELECT plan, plan_until FROM shops WHERE id = ?').get(shopId) as
     | { plan: string | null; plan_until: number | null }
     | undefined

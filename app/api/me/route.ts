@@ -4,6 +4,7 @@ import { SESSION_COOKIE, accountFromToken } from '@/lib/server/auth'
 import { cloudOff } from '@/lib/server/cloud'
 import { readPlan, usageOf } from '@/lib/server/plan'
 import { planPrice } from '@/lib/plans'
+import { billingEnabled } from '@/lib/billing'
 
 export async function GET(): Promise<Response> {
   const off = cloudOff()
@@ -18,6 +19,9 @@ export async function GET(): Promise<Response> {
   const { plan, until, expired } = readPlan(account.shopId)
   return NextResponse.json({
     account,
+    // Тегін кезеңде терезеде тариф КАРТОЧКАСЫ көрсетілмейді: шектеу жоқ
+    // жерде «Тариф: Команда» деп тұру адамды шатастырады.
+    billing: billingEnabled(),
     plan: {
       id: plan.id,
       name: plan.name,

@@ -8,7 +8,7 @@
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PLANS, canAddMember, canAddProject, planOf, planPrice } from '../lib/plans'
 
 process.env['DATA_DIR'] = mkdtempSync(join(tmpdir(), 'furniture-plan-'))
@@ -56,7 +56,12 @@ describe('жоспарлар кестесі', () => {
   })
 })
 
-describe('цехтың тарифі (дерекқор)', () => {
+describe('цехтың тарифі (дерекқор), ақы алу ҚОСУЛЫ', () => {
+  // Лимиттің өзін тексеру үшін ақы алуды әдейі қосамыз: әдепкі күйде
+  // (тегін кезең) ол мүлде жұмыс істемейді — оны төмендегі блок тексереді.
+  beforeAll(() => { process.env['BILLING'] = 'on' })
+  afterAll(() => { delete process.env['BILLING'] })
+
   const shopIdOf = (email: string) => {
     const r = auth.register(email, 'password123', 'Цех')
     if (!r.ok) throw new Error(r.error)
@@ -111,5 +116,35 @@ describe('цехтың тарифі (дерекқор)', () => {
   it('белгісіз тариф қойылмайды', () => {
     const shopId = shopIdOf('plan-bad@example.kz')
     expect(() => plan.setPlan(shopId, 'сатылмайды' as never)).toThrow()
+  })
+})
+
+/**
+ * ТЕГІН КЕЗЕҢ (`BILLING` қойылмаған — бүгінгі күй).
+ *
+ * Ең маңыздысы: лимиттің КОДЫ орнында тұрса да, ол ЖҰМЫС ІСТЕМЕЙДІ. Ал
+ * базадағы жазба сақталады — эквайринг қосылған күні цех қай тарифте
+ * тұрғаны сол қалпында табылады.
+ */
+describe('тегін кезең', () => {
+  it('ақы алу сөндірулі: әр цех шектеусіз жоспарда', () => {
+    const r = auth.register('free-era@example.kz', 'password123', 'Цех')
+    if (!r.ok) throw new Error(r.error)
+    const shopId = r.account.shopId
+
+    // Базада «сынақ» тұрса да, оқығанда шектеусіз шығады.
+    plan.setPlan(shopId, 'free')
+    const read = plan.readPlan(shopId)
+    expect(read.plan.id).toBe('team')
+    expect(read.plan.projects).toBeNull()
+    expect(read.plan.members).toBeNull()
+    expect(canAddProject(read.plan, { projects: 9999, members: 50 }).ok).toBe(true)
+  })
+
+  it('мерзімі өткен жазба да тегін кезеңде кедергі емес', () => {
+    const r = auth.register('free-era2@example.kz', 'password123', 'Цех')
+    if (!r.ok) throw new Error(r.error)
+    plan.setPlan(r.account.shopId, 'shop', Date.now() - 86_400_000)
+    expect(plan.readPlan(r.account.shopId).expired).toBe(false)
   })
 })
