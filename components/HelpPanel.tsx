@@ -11,6 +11,7 @@
 import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 import { HOTKEYS } from '@/lib/hotkeys'
+import { startTour } from '@/components/Tour'
 import { useConfigurator } from '@/store/configurator'
 
 export function HelpPanel() {
@@ -29,7 +30,9 @@ export function HelpPanel() {
       >
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-sm font-semibold">{tr('Горячие клавиши')}</h2>
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
+            {/* Оқытуды қайта қосу: адам оны бірінші рет өткізіп жіберуі мүмкін. */}
+            <Button onClick={() => { setOpen(false); startTour() }}>{tr('Обучение')}</Button>
             <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>

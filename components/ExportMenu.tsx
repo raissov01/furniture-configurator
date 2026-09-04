@@ -39,7 +39,7 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1" data-tour="export">
       <span className="mr-1 text-[10px] uppercase tracking-wider text-neutral-400">{tr('Экспорт')}</span>
 
       <Button

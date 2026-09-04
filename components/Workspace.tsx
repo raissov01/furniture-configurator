@@ -23,6 +23,7 @@ import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
 import { ArButton } from '@/components/ArButton'
+import { Tour } from '@/components/Tour'
 import { cloudEnabled } from '@/lib/cloud'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
@@ -234,7 +235,7 @@ export function Workspace() {
           <Button onClick={() => setProjectOpen(true)} title={tr('Материалы проекта и порядок сборки')}>{tr('Проект')}</Button>
           <Button onClick={() => setDrillOpen(true)} title={tr('Развёртка детали: добавить или убрать отверстие')}>{tr('Присадка')}</Button>
           <Button onClick={() => setRoomOpen(true)} title={tr('План комнаты и стены')}>{tr('Стены')}</Button>
-          <Button onClick={() => setShopOpen(true)} title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
+          <Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
           <Button onClick={() => setQuoteOpen(true)} title={tr('Раскрой и стоимость по всему проекту')}>{tr('Смета')}</Button>
           {/* Раскрой — БӨЛЕК бет: цехтың станок жанындағы адамы оны басып шығарады. */}
           <Link
@@ -386,6 +387,7 @@ export function Workspace() {
         </div>
       ) : null}
 
+      <Tour />
       {sizeWarnings.length > 0 ? (
         <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
           {sizeWarnings
@@ -410,13 +412,13 @@ export function Workspace() {
         <aside className="min-h-0 overflow-auto border-r border-neutral-200 p-3 dark:border-neutral-800">
           <Configurator invalidField={error?.field ?? null} />
         </aside>
-        <main className="relative min-h-64">
+        <main className="relative min-h-64" data-tour="scene">
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} />
           </div>
         </main>
-        <aside className="min-h-0 border-l border-neutral-200 dark:border-neutral-800">
+        <aside className="min-h-0 border-l border-neutral-200 dark:border-neutral-800" data-tour="cutlist">
           <CutListTable panels={panels} catalog={catalog} />
         </aside>
       </div>

@@ -82,18 +82,21 @@ export function Slider({
 }
 
 export function Button({
-  children, onClick, disabled, active, title,
+  children, onClick, disabled, active, title, tour,
 }: {
   children: React.ReactNode
   onClick?: () => void
   disabled?: boolean
   active?: boolean
   title?: string
+  /** Оқыту көмекшісінің белгісі (`components/Tour.tsx`). */
+  tour?: string
 }) {
   return (
     <button
       type="button"
       title={title}
+      data-tour={tour}
       onClick={onClick}
       disabled={disabled}
       className={cn(
@@ -156,7 +159,7 @@ function readCollapsed(): Record<string, boolean> {
 }
 
 export function Collapsible({
-  title, id, defaultOpen = false, badge, children,
+  title, id, defaultOpen = false, badge, children, tour,
 }: {
   title: React.ReactNode
   /** localStorage кілті. Атауы өзгерсе де күй сақталуы үшін бөлек. */
@@ -165,6 +168,8 @@ export function Collapsible({
   /** Тақырыптың жанындағы қысқа белгі: «бар», «2 шт» — жабық күйде де көрінеді. */
   badge?: React.ReactNode
   children: React.ReactNode
+  /** Оқыту көмекшісінің белгісі (`components/Tour.tsx`). */
+  tour?: string
 }) {
   const [open, setOpen] = React.useState(defaultOpen)
 
@@ -186,7 +191,7 @@ export function Collapsible({
   }
 
   return (
-    <div className="border-t border-neutral-200 pt-2 dark:border-neutral-800">
+    <div className="border-t border-neutral-200 pt-2 dark:border-neutral-800" data-tour={tour}>
       <button
         type="button"
         onClick={toggle}

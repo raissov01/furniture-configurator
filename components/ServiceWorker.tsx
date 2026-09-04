@@ -15,7 +15,10 @@ export function ServiceWorker() {
     if (!('serviceWorker' in navigator)) return
     const timer = setTimeout(() => {
       // Тіркеу БЕТ ЖҮКТЕЛГЕННЕН КЕЙІН: ол бірінші кадрмен жарыспауы керек.
-      void navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Мекенжайдағы `v` — құрастырудың белгісі: жаңа нұсқа шыққанда браузер
+      // жаңа жұмысшыны орнатады, ал ол ескі кэшті тастайды.
+      const version = process.env.NEXT_PUBLIC_BUILD_ID ?? 'dev'
+      void navigator.serviceWorker.register(`/sw.js?v=${version}`).catch(() => {
         // Тіркелмесе — қосымша бұрынғыдай жұмыс істей береді.
       })
     }, 1500)

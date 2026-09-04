@@ -631,7 +631,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
       </div>
 
       <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2" data-tour="size">
         <Field label={tr('Высота (H)')} hint={hint('height')}>
           <NumberInput
             value={cabinet.height} min={100} max={4000} step={10} invalid={invalid('cabinet.height')}
@@ -652,7 +652,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       </div>
 
-      <Collapsible id="construction" title={tr('Конструкция')} defaultOpen>
+      <Collapsible id="construction" title={tr('Конструкция')} defaultOpen tour="sections">
       <Field label={tr('Метод сборки')} hint={tr('обе панели сразу')}>
         <Select
           value={cabinet.construction}
