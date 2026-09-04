@@ -13,6 +13,7 @@ import { create } from 'zustand'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import {
   DEFAULT_ROOM,
+  DEFAULT_SILHOUETTE_HEIGHT,
   canMirror,
   catalogOf,
   findSet,
@@ -100,6 +101,11 @@ type State = Snapshot & {
    */
   quality: Quality
   /**
+   * Масштаб үшін тұратын адамның силуэті (`src/core/silhouette.ts`).
+   * Жобаға ЖАЗЫЛМАЙДЫ: ол — көрініс, жиһаздың қасиеті емес.
+   */
+  silhouette: { on: boolean; height: number }
+  /**
    * «Кадрға сыйдыру» батырмасын басқан сайын өседі. Камера пресеті
    * өзгермесе де қайта бағыттау керек, ал ол үшін тәуелділік керек.
    */
@@ -162,6 +168,7 @@ type State = Snapshot & {
   setHistoryOpen(v: boolean): void
   setViewMode(v: 'solid' | 'ghost' | 'wire'): void
   setQuality(q: Quality): void
+  setSilhouette(patch: Partial<{ on: boolean; height: number }>): void
   setShowFronts(v: boolean): void
   setOpenness(v: number): void
   setProjection(v: 'perspective' | 'ortho'): void
@@ -229,6 +236,7 @@ export const useConfigurator = create<State>((set, get) => ({
   openness: 0,
   projection: 'perspective',
   quality: 'high',
+  silhouette: { on: false, height: DEFAULT_SILHOUETTE_HEIGHT },
   fitNonce: 0,
   firstRun: true,
   accountOpen: false,
@@ -495,6 +503,7 @@ export const useConfigurator = create<State>((set, get) => ({
   setHistoryOpen: (historyOpen) => set({ historyOpen }),
   setViewMode: (viewMode) => set({ viewMode }),
   setQuality: (quality) => set({ quality }),
+  setSilhouette: (patch) => set((s) => ({ silhouette: { ...s.silhouette, ...patch } })),
   setShowFronts: (showFronts) => set({ showFronts }),
   setOpenness: (openness) => set({ openness: Math.min(1, Math.max(0, openness)) }),
   setProjection: (projection) => set({ projection }),

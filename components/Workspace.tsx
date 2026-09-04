@@ -23,7 +23,9 @@ import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
 import { cloudEnabled } from '@/lib/cloud'
-import { SHARE_LINK_WARN_LENGTH, shareLink } from '@/src/core/index'
+import {
+  MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
+} from '@/src/core/index'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { usePanels } from '@/lib/usePanels'
@@ -89,6 +91,8 @@ export function Workspace() {
   const openness = useConfigurator((s) => s.openness)
   const setOpenness = useConfigurator((s) => s.setOpenness)
   const setShowFronts = useConfigurator((s) => s.setShowFronts)
+  const silhouette = useConfigurator((s) => s.silhouette)
+  const setSilhouette = useConfigurator((s) => s.setSilhouette)
   const projection = useConfigurator((s) => s.projection)
   const setProjection = useConfigurator((s) => s.setProjection)
   const fitCamera = useConfigurator((s) => s.fitCamera)
@@ -288,6 +292,32 @@ export function Workspace() {
           >
             {viewMode === 'solid' ? tr('Тело') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
           </Button>
+          {/*
+            Силуэт — масштабтың өлшемі: клиент 2400 мм-ді санмен емес,
+            қасында тұрған адаммен түсінеді (`src/core/silhouette.ts`).
+          */}
+          <Button
+            active={silhouette.on}
+            title={tr('Человек рядом — для масштаба')}
+            onClick={() => setSilhouette({ on: !silhouette.on })}
+          >
+            {tr('Рост')}
+          </Button>
+          {silhouette.on ? (
+            <input
+              type="number"
+              className="w-16 rounded-md border border-neutral-300 px-1.5 py-1 text-xs tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
+              value={silhouette.height}
+              min={MIN_SILHOUETTE_HEIGHT}
+              max={MAX_SILHOUETTE_HEIGHT}
+              step={10}
+              title={tr('Рост человека, мм')}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                if (Number.isFinite(v)) setSilhouette({ height: Math.round(v) })
+              }}
+            />
+          ) : null}
           <Button
             active={!showFronts}
             title={`${tr('Показать или скрыть фасады')} (H)`}

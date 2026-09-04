@@ -8,14 +8,18 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentRef, ReactNode } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Grid, OrbitControls, OrthographicCamera } from '@react-three/drei'
+import { SRGBColorSpace, TextureLoader } from 'three'
+import type { Mesh } from 'three'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
 import { canvasSettings } from '@/lib/appearance'
 import type { CameraPreset } from '@/store/configurator'
-import { ROD_DIAMETER, placementFootprint } from '@/src/core/index'
+import {
+  ROD_DIAMETER, placementFootprint, silhouetteDataUri, silhouetteSize, wallById,
+} from '@/src/core/index'
 import type {
   CabinetConfig, Catalog, HardwarePlacement, Panel, PanelOpening, Placement, Room, Vec3,
 } from '@/src/core/index'
@@ -398,6 +402,42 @@ function RoomShell({ room }: { room: Room }) {
   )
 }
 
+/**
+ * АДАМНЫҢ СИЛУЭТІ — масштабтың өлшемі (`src/core/silhouette.ts`).
+ *
+ * Тегіс жазықтық, әрқашан КАМЕРАҒА ҚАРАП тұрады (billboard): адам
+ * айналдырғанда силуэт қырынан «жоғалып кетпеуі» керек. Ол шкафтың СОЛ
+ * ЖАҒЫНА, еденге қойылады да, өзі ешнәрсеге кедергі жасамайды —
+ * деталировкаға да, раскройға да кірмейді.
+ */
+function Silhouette({ height, x, z }: { height: number; x: number; z: number }) {
+  const texture = useMemo(() => {
+    const loader = new TextureLoader()
+    const t = loader.load(silhouetteDataUri(height, '#141a22'))
+    t.colorSpace = SRGBColorSpace
+    return t
+  }, [height])
+  const size = silhouetteSize(height)
+  const ref = useRef<Mesh>(null)
+
+  // Billboard: әр кадрда камераға бұрылады. `lookAt` тік өсті сақтайды —
+  // силуэт еңкейіп кетпеуі керек.
+  useFrame(({ camera }) => {
+    const mesh = ref.current
+    if (!mesh) return
+    mesh.rotation.y = Math.atan2(camera.position.x - mesh.position.x, camera.position.z - mesh.position.z)
+  })
+
+  return (
+    <mesh ref={ref} position={[x, size.height / 2, z]}>
+      <planeGeometry args={[size.width, size.height]} />
+      {/* `transparent` + `depthWrite=false`: силуэттің мөлдір бөлігі
+          артындағы шкафты жасырмауы керек. */}
+      <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
+    </mesh>
+  )
+}
+
 export default function Scene({
   items, room, activeId, catalog,
 }: {
@@ -410,6 +450,7 @@ export default function Scene({
   const preset = useConfigurator((s) => s.cameraPreset)
   const projection = useConfigurator((s) => s.projection)
   const quality = useConfigurator((s) => s.quality)
+  const silhouette = useConfigurator((s) => s.silhouette)
   const canvas = canvasSettings(quality)
 
   // «Комната» пресеті бүкіл бөлмеге қарайды, қалғаны — белсенді шкафқа.
@@ -433,6 +474,34 @@ export default function Scene({
       facingY: active.pose.rotationY,
     }
   }, [active, room, preset])
+
+  /*
+   * Силуэт қайда тұрады.
+   *
+   * Шкафтың СОЛ ЖАҒЫНДА әрі АЛДЫНДА: жанында тұрған адам шкафты жаппауы
+   * керек, ал артында тұрса — көрінбей қалады. Орны бөлменің ішінде
+   * ҚЫСЫЛАДЫ: сыртына шықса, қабырғаның артында қалып қояды да, батырма
+   * басылған адам «неге ештеңе шықпады» деп ойлайды (дәл сол қате 09-04-те
+   * жіберілді).
+   */
+  const spot = useMemo(() => {
+    if (!active) return { x: room.width / 2, z: room.depth / 2 }
+    /*
+     * ⚠ БАҒЫТ ҚАБЫРҒАДАН ШЫҒАДЫ, «алдында» деген тұрақты жақтан ЕМЕС.
+     * Алғашқы нұсқада силуэт `z + 500`-ге қойылған да, солтүстік қабырғадағы
+     * шкафта ол қабырғаның АРТЫНА түсіп, мүлде көрінбей қалған (09-04).
+     * Дұрысы: қабырғаның ІШКЕ қараған нормалі бойымен ілгері шығу, ал
+     * қабырғаның бойымен модульдің СОЛ жағына жылжу.
+     */
+    const wall = wallById(room, active.placement.wall)
+    const along = active.placement.offset - 400
+    const out = active.cabinet.depth + 500
+    const clamp = (v: number, max: number) => Math.min(max - 250, Math.max(250, v))
+    return {
+      x: clamp(wall.origin.x + wall.direction.x * along + wall.inward.x * out, room.width),
+      z: clamp(wall.origin.z + wall.direction.z * along + wall.inward.z * out, room.depth),
+    }
+  }, [active, room])
 
   return (
     <Canvas
@@ -478,6 +547,14 @@ export default function Scene({
           />
         ))}
       </group>
+      {/* Силуэт белсенді шкафтың СОЛ ЖАҒЫНА, еденге қойылады. */}
+      {silhouette.on && active ? (
+        <Silhouette
+          height={silhouette.height}
+          x={spot.x / 1000}
+          z={spot.z / 1000}
+        />
+      ) : null}
       <Grid
         args={[10, 10]}
         position={[0, -0.005, 0]}
