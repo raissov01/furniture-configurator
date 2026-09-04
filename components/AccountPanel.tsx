@@ -28,6 +28,8 @@ type PlanInfo = {
   expired: boolean
 }
 type ProjectRow = { id: string; name: string; updatedAt: number }
+type Member = { userId: string; email: string; joinedAt: number }
+type Invite = { token: string; createdAt: number; expiresAt: number; usedBy: string | null; revoked: boolean }
 
 const input =
   'w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none ' +
@@ -46,9 +48,25 @@ export function AccountPanel() {
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [plan, setPlan] = useState<PlanInfo | null>(null)
+  const [team, setTeam] = useState<{ members: Member[]; invites: Invite[]; limit: number | null } | null>(null)
+  /** Жаңа шақырудың сілтемесі — көшіріп алу үшін бір рет көрсетіледі. */
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  /**
+   * Шақыру сілтемесімен келген адамның токені (`?invite=…`).
+   *
+   * URL тек БРАУЗЕРДЕ бар, сондықтан оны эффектіде оқимыз: серверде оқысақ,
+   * гидратация сәйкессіздігі шығады.
+   */
+  const [invite, setInvite] = useState<string | null>(null)
   const [usage, setUsage] = useState<{ projects: number; members: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  const refreshTeam = useCallback(async () => {
+    const res = await fetch('/api/team')
+    if (!res.ok) return
+    setTeam((await res.json()) as { members: Member[]; invites: Invite[]; limit: number | null })
+  }, [])
 
   const refreshProjects = useCallback(async () => {
     const res = await fetch('/api/projects')
@@ -56,6 +74,16 @@ export function AccountPanel() {
     const data = (await res.json()) as { projects?: ProjectRow[] }
     setProjects(data.projects ?? [])
   }, [])
+
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('invite')
+    if (!token) return
+    setInvite(token)
+    // Шақырумен келген адамға тіркелу қосымшасы бірден ашылады: оның
+    // аккаунты әлі жоқ, ал әдепкі «кіру» қосымшасы оны шатастырар еді.
+    setMode('register')
+    setOpen(true)
+  }, [setOpen])
 
   // Кім кіргенін бет ашылғанда бір рет сұраймыз.
   useEffect(() => {
@@ -71,9 +99,10 @@ export function AccountPanel() {
         setPlan(data.plan ?? null)
         setUsage(data.usage ?? null)
         void refreshProjects()
+        void refreshTeam()
       }
     })()
-  }, [refreshProjects])
+  }, [refreshProjects, refreshTeam])
 
   /**
    * Кіргеннен кейінгі бірінші синхрондау: серверде профиль бар болса —
@@ -119,7 +148,8 @@ export function AccountPanel() {
       const res = await fetch(`/api/auth/${mode}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        // Шақыру сілтемесімен келген адам ЖАҢА цех ашпайды, барына қосылады.
+        body: JSON.stringify(mode === 'register' && invite ? { ...form, invite } : form),
       })
       const data = (await res.json()) as { account?: Account; error?: string }
       if (!res.ok || !data.account) {
@@ -130,6 +160,39 @@ export function AccountPanel() {
       setForm({ email: '', password: '', shopName: '' })
       await syncProfile()
       await refreshProjects()
+      await refreshTeam()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const makeInvite = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/team', { method: 'POST' })
+      const data = (await res.json()) as { invite?: Invite; error?: string }
+      if (!res.ok || !data.invite) {
+        setError(data.error ?? 'Не получилось')
+        return
+      }
+      setInviteLink(`${window.location.origin}/configurator?invite=${data.invite.token}`)
+      await refreshTeam()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const dropInvite = async (token: string) => {
+    setBusy(true)
+    try {
+      await fetch('/api/team', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      })
+      setInviteLink(null)
+      await refreshTeam()
     } finally {
       setBusy(false)
     }
@@ -221,6 +284,72 @@ export function AccountPanel() {
                   <p className="mt-1 text-[11px] tabular-nums text-neutral-400">
                     {tr('До')} {new Date(plan.until).toLocaleDateString('ru-RU')}
                   </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {/*
+              Команда. Рөл ЖОҚ: цехтағы бәрі бір жобамен жұмыс істейді
+              (`lib/server/team.ts` қара).
+            */}
+            {team ? (
+              <div className="rounded-lg border border-neutral-200 px-2.5 py-2 dark:border-neutral-800">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+                    {tr('Команда')}
+                    <span className="ml-1 tabular-nums normal-case">
+                      {team.members.length}{team.limit === null ? '' : ` / ${team.limit}`}
+                    </span>
+                  </span>
+                  <Button onClick={() => void makeInvite()} disabled={busy}>
+                    {tr('Пригласить')}
+                  </Button>
+                </div>
+
+                <ul className="mt-1.5 space-y-0.5">
+                  {team.members.map((m) => (
+                    <li key={m.userId} className="flex items-baseline justify-between gap-2 text-xs">
+                      <span className="min-w-0 truncate">{m.email}</span>
+                      <span className="shrink-0 text-[10px] tabular-nums text-neutral-400">
+                        {new Date(m.joinedAt).toLocaleDateString('ru-RU')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/*
+                  Сілтеме ТЕК ЖАСАЛҒАН СӘТТЕ көрсетіледі: токен — құпия, оны
+                  тізімде тұрақты ұстаудың қажеті жоқ.
+                */}
+                {inviteLink ? (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[11px] text-neutral-500">
+                      {tr('Ссылка одноразовая и живёт 7 дней. Отправьте её сотруднику.')}
+                    </p>
+                    <input
+                      className={input}
+                      readOnly
+                      value={inviteLink}
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                  </div>
+                ) : null}
+
+                {team.invites.filter((i) => !i.usedBy && !i.revoked && i.expiresAt > Date.now()).length > 0 ? (
+                  <ul className="mt-2 space-y-1">
+                    {team.invites
+                      .filter((i) => !i.usedBy && !i.revoked && i.expiresAt > Date.now())
+                      .map((i) => (
+                        <li key={i.token} className="flex items-center justify-between gap-2 text-[11px]">
+                          <span className="text-neutral-500">
+                            {tr('Приглашение до')} {new Date(i.expiresAt).toLocaleDateString('ru-RU')}
+                          </span>
+                          <Button onClick={() => void dropInvite(i.token)} disabled={busy}>
+                            {tr('Отозвать')}
+                          </Button>
+                        </li>
+                      ))}
+                  </ul>
                 ) : null}
               </div>
             ) : null}

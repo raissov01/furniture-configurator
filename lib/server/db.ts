@@ -94,6 +94,28 @@ function migrate(database: DatabaseSync): void {
     // берілген мерзімсіз жоспар да осында).
     database.exec('ALTER TABLE shops ADD COLUMN plan_until INTEGER')
   }
+
+  /*
+   * 3-қадам: командаға шақыру.
+   *
+   * Шақыру — БІР РЕТТІК токен: қабылданғаны `used_by`-мен белгіленеді де,
+   * жол қайта жүрмейді. Жазба ӨШІРІЛМЕЙДІ — цех кімді кім шақырғанын кейін
+   * көре алуы керек.
+   */
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS invites (
+      token      TEXT PRIMARY KEY,
+      shop_id    TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL,
+      used_by    TEXT REFERENCES users(id) ON DELETE SET NULL,
+      used_at    INTEGER,
+      revoked_at INTEGER
+    );
+
+    CREATE INDEX IF NOT EXISTS invites_shop ON invites (shop_id, created_at DESC);
+  `)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */

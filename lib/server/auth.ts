@@ -43,7 +43,20 @@ function verifyPassword(password: string, stored: string): boolean {
 
 export type AuthResult = { ok: true; token: string; account: Account } | { ok: false; error: string }
 
-export function register(email: string, password: string, shopName: string): AuthResult {
+/**
+ * Тіркелу.
+ *
+ * `invite` берілсе, адам ЖАҢА цех ашпайды, БАР цехқа қосылады: жобалар да,
+ * профиль де ортақ болады. Шақырудың жарамдылығын шақырушы жағы тексереді
+ * (`checkInvite`), ал мұнда тек цехтың id-і келеді — auth қабаты шақырудың
+ * ережелерін білмеуі керек.
+ */
+export function register(
+  email: string,
+  password: string,
+  shopName: string,
+  joinShopId?: string,
+): AuthResult {
   const clean = email.trim().toLowerCase()
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) return { ok: false, error: 'Неверный адрес почты' }
   if (password.length < MIN_PASSWORD) {
@@ -55,11 +68,23 @@ export function register(email: string, password: string, shopName: string): Aut
   if (exists) return { ok: false, error: 'Такая почта уже зарегистрирована' }
 
   const now = Date.now()
-  const shopId = randomUUID()
   const userId = randomUUID()
-  const name = shopName.trim() || 'Мой цех'
 
-  database.prepare('INSERT INTO shops (id, name, created_at) VALUES (?, ?, ?)').run(shopId, name, now)
+  let shopId: string
+  let name: string
+  if (joinShopId) {
+    const shop = database.prepare('SELECT id, name FROM shops WHERE id = ?').get(joinShopId) as
+      | { id: string; name: string }
+      | undefined
+    if (!shop) return { ok: false, error: 'Цех приглашения не найден' }
+    shopId = shop.id
+    name = shop.name
+  } else {
+    shopId = randomUUID()
+    name = shopName.trim() || 'Мой цех'
+    database.prepare('INSERT INTO shops (id, name, created_at) VALUES (?, ?, ?)').run(shopId, name, now)
+  }
+
   database
     .prepare('INSERT INTO users (id, email, password_hash, shop_id, created_at) VALUES (?, ?, ?, ?, ?)')
     .run(userId, clean, hashPassword(password), shopId, now)
