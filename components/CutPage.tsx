@@ -232,6 +232,27 @@ export function CutPage() {
             </Button>
             <Button
               disabled={busy !== null}
+              title={tr('Присадка для станка: на каждую деталь свой файл, плюс index.csv')}
+              onClick={() => void run('cnc', async () => {
+                const [{ cncFiles }, { zipSync, strToU8 }] = await Promise.all([
+                  import('@/src/core/export/cnc'),
+                  import('fflate'),
+                ])
+                const entries: Record<string, Uint8Array> = {}
+                for (const [name, content] of cncFiles(panels, catalog, { projectName })) {
+                  entries[name] = strToU8(content)
+                }
+                download(
+                  `${projectName}-чпу.zip`,
+                  zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
+                  'application/zip',
+                )
+              })}
+            >
+              {busy === 'cnc' ? '…' : tr('ЧПУ по деталям')}
+            </Button>
+            <Button
+              disabled={busy !== null}
               title={tr('Список деталей и присадки для Базиса: CSV в Windows-1251 плюс DXF деталей')}
               onClick={() => void run('basis', async () => {
                 const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfFiles }, { zipSync, strToU8 }] =
