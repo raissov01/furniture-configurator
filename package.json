@@ -13,7 +13,8 @@
     "cutlist": "tsx src/cli/cutlist.ts",
     "export": "tsx src/cli/export.ts",
     "test:e2e": "node scripts/e2e.mjs",
-    "plan": "node scripts/plan.mjs"
+    "plan": "node scripts/plan.mjs",
+    "deploy": "bash scripts/deploy.sh"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
