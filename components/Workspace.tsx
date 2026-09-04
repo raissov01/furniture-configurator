@@ -1,6 +1,6 @@
 'use client'
 
-import { t as tr } from '@/lib/i18n'
+import { t as tr, tf } from '@/lib/i18n'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
@@ -27,7 +27,9 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { usePanels } from '@/lib/usePanels'
 import { useSceneItems } from '@/lib/useSceneItems'
-import { mergeProjectPanels, shelfSpanWarnings } from '@/src/core/index'
+import {
+  DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, mergeProjectPanels, shelfSpanWarnings,
+} from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 
@@ -126,6 +128,10 @@ export function Workspace() {
 
   // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
   const spanWarnings = useMemo(() => shelfSpanWarnings(panels, shop), [panels, shop])
+
+  // Габарит шектері де солай: цех қоймаса, ескерту мүлде шықпайды. Тексеру
+  // БҮКІЛ жоба бойынша — жобадағы екінші корпус шектен шықса да көрінуі керек.
+  const sizeWarnings = useMemo(() => dimensionWarnings(cabinets, shop), [cabinets, shop])
 
   // Смета БҮКІЛ жоба бойынша: цех парақты бір тапсырысқа бірге сатып алады.
   // id-лер корпустың атауымен префиксталады: бір жобадағы екі шкафта да
@@ -343,6 +349,19 @@ export function Workspace() {
           className="border-b border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200"
         >
           {shared}
+        </div>
+      ) : null}
+
+      {sizeWarnings.length > 0 ? (
+        <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          {sizeWarnings
+            .map((w) =>
+              // Корпустың аты бір ғана корпус болғанда артық: ол тақырыпта тұр.
+              (cabinets.length > 1 ? `${w.cabinetName}: ` : '') +
+              tf(dimensionWarningTemplate(w), {
+                axis: tr(DIMENSION_AXIS_LABEL[w.axis]), value: w.value, limit: w.limit,
+              }))
+            .join('; ')}
         </div>
       ) : null}
 

@@ -19,7 +19,7 @@ import {
   makeMaterial,
   shopReadiness,
 } from '@/src/core/index'
-import type { ConstructionSettings, ServiceBasis, ShopProfile } from '@/src/core/index'
+import type { ConstructionSettings, DimensionLimits, ServiceBasis, ShopProfile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -42,6 +42,19 @@ const toMinor = (tenge: number) => Math.round(tenge) * 100
 const text =
   'w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none ' +
   'focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-300'
+
+/**
+ * Габарит шектерінің өрістері. Реті — жобаның H × W × D ережесімен бірдей,
+ * ал әр жолда «ең кіші — ең үлкен» қатар тұрады.
+ */
+const LIMIT_FIELDS: { key: keyof DimensionLimits; label: string }[] = [
+  { key: 'minHeight', label: 'Высота от, мм' },
+  { key: 'minWidth', label: 'Ширина от, мм' },
+  { key: 'minDepth', label: 'Глубина от, мм' },
+  { key: 'maxHeight', label: 'Высота до, мм' },
+  { key: 'maxWidth', label: 'Ширина до, мм' },
+  { key: 'maxDepth', label: 'Глубина до, мм' },
+]
 
 export function ShopSettings() {
   const open = useConfigurator((s) => s.shopOpen)
@@ -310,6 +323,33 @@ export function ShopSettings() {
               Значения по умолчанию здесь нет намеренно. Предел зависит от материала, толщины и того,
               что кладут на полку — один цех ставит 800 мм, другой 900. Пока поле пустое, предупреждение
               не показывается вовсе.
+            </p>
+
+            <SectionTitle>{tr('Пределы габарита')}</SectionTitle>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {LIMIT_FIELDS.map((f) => (
+                <Field
+                  key={f.key}
+                  label={tr(f.label)}
+                  hint={shop.limits[f.key] === null ? tr('нет') : undefined}
+                >
+                  <NumberInput
+                    value={shop.limits[f.key] ?? 0}
+                    min={0}
+                    step={10}
+                    onChange={(v) =>
+                      // 0 = шек ЖОҚ. Бөлек «өшіру» түймесі алты өріске алты
+                      // түйме болып, панельді ретсіз қылар еді.
+                      editShop({ limits: { ...shop.limits, [f.key]: v > 0 ? v : null } })
+                    }
+                  />
+                </Field>
+              ))}
+            </div>
+            <p className="max-w-2xl text-[11px] leading-snug text-neutral-400">
+              0 — предела нет. Это предупреждение, а не запрет: габарит всё равно можно ввести,
+              цех вправе сделать корпус крупнее и собрать его из двух. Умолчаний здесь тоже нет —
+              предел задаёт станок, лист и машина, которой везут заказ.
             </p>
           </div>
         ) : null}

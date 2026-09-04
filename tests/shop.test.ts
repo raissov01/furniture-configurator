@@ -10,7 +10,10 @@ import {
   DEFAULT_SETTINGS,
   SHEET_FORMATS,
   catalogOf,
+  defaultLimits,
   defaultShopProfile,
+  dimensionWarningText,
+  dimensionWarnings,
   findTemplate,
   generateCabinet,
   makeMaterial,
@@ -165,5 +168,76 @@ describe('цехтың өз материалы', () => {
       expect(Number.isInteger(f.height)).toBe(true)
       expect(f.width).toBeGreaterThan(f.height)
     }
+  })
+})
+
+/**
+ * Габарит шектері.
+ *
+ * Ең маңызды тексеріс — БІРІНШІСІ: жаңа профильде шек жоқ. Егер кодта әдепкі
+ * сан тұрса, оны қоймаған цехтың бәріне ЖАЛҒАН ескерту шығар еді.
+ */
+describe('габарит шектері', () => {
+  const box = { id: 'c1', name: 'Пенал', width: 600, height: 2000, depth: 560 }
+
+  it('жаңа профильде шек ЖОҚ, сондықтан ескерту де жоқ', () => {
+    expect(shop.limits).toEqual({
+      minHeight: null, maxHeight: null,
+      minWidth: null, maxWidth: null,
+      minDepth: null, maxDepth: null,
+    })
+    expect(dimensionWarnings([{ ...box, height: 9000 }], shop)).toEqual([])
+  })
+
+  it('жоғарғы шектен асқан габарит ескертіледі', () => {
+    const limited: ShopProfile = { ...shop, limits: { ...shop.limits, maxHeight: 2750 } }
+    const [w, ...rest] = dimensionWarnings([{ ...box, height: 2900 }], limited)
+    expect(rest).toHaveLength(0)
+    expect(w).toMatchObject({ cabinetId: 'c1', axis: 'height', value: 2900, limit: 2750, side: 'max' })
+    expect(dimensionWarningText(w!)).toBe('Высота 2900 мм — больше предела цеха (2750 мм)')
+  })
+
+  it('төменгі шектен кіші габарит те ескертіледі', () => {
+    const limited: ShopProfile = { ...shop, limits: { ...shop.limits, minDepth: 200 } }
+    const [w] = dimensionWarnings([{ ...box, depth: 150 }], limited)
+    expect(w).toMatchObject({ axis: 'depth', value: 150, limit: 200, side: 'min' })
+    expect(dimensionWarningText(w!)).toBe('Глубина 150 мм — меньше предела цеха (200 мм)')
+  })
+
+  it('шектің дәл өзі — ескерту емес', () => {
+    const limited: ShopProfile = {
+      ...shop,
+      limits: { ...shop.limits, maxWidth: 600, minWidth: 600 },
+    }
+    expect(dimensionWarnings([box], limited)).toEqual([])
+  })
+
+  it('бір корпустан бірнеше ескерту шығады: қайсысын қысқарту керегі көрінеді', () => {
+    const limited: ShopProfile = {
+      ...shop,
+      limits: { ...shop.limits, maxWidth: 900, maxHeight: 2400, maxDepth: 600 },
+    }
+    const warnings = dimensionWarnings([{ ...box, width: 1200, height: 2900 }], limited)
+    expect(warnings.map((w) => w.axis)).toEqual(['height', 'width'])
+  })
+
+  it('тексеру БҮКІЛ жоба бойынша жүреді, тек белсенді корпус емес', () => {
+    const limited: ShopProfile = { ...shop, limits: { ...shop.limits, maxWidth: 800 } }
+    const warnings = dimensionWarnings(
+      [box, { ...box, id: 'c2', name: 'Тумба', width: 1200 }],
+      limited,
+    )
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]!.cabinetName).toBe('Тумба')
+  })
+
+  it('5-нұсқадағы профиль көтерілгенде шектер БОС келеді, бағалары сақталады', () => {
+    const old = { ...defaultShopProfile(), schemaVersion: 5, markupPercent: 25 }
+    delete (old as { limits?: unknown }).limits
+
+    const migrated = parseShopProfile(old)
+    expect(migrated.schemaVersion).toBe(6)
+    expect(migrated.limits).toEqual(defaultLimits())
+    expect(migrated.markupPercent).toBe(25)
   })
 })

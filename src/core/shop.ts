@@ -21,7 +21,7 @@ import {
 import type { HandleModel, HingeSystem } from './fittings'
 import type { NestingOptions, OptimizationLevel } from './nesting'
 import { SEED_EDGE_BANDS, SEED_MATERIALS } from './seed'
-import type { Catalog, EdgeBand, Material, Panel, SettingsOverride } from './types'
+import type { CabinetConfig, Catalog, EdgeBand, Material, Panel, SettingsOverride } from './types'
 
 export type HardwareKind =
   | 'confirmat' | 'dowel' | 'minifix' | 'shelfPin' | 'hinge' | 'runner' | 'handle' | 'leg' | 'other'
@@ -135,7 +135,7 @@ export function defaultServices(): Services {
 }
 
 export type ShopProfile = {
-  schemaVersion: 5
+  schemaVersion: 6
   id: string
   /** КП-да тұратын атау */
   name: string
@@ -182,6 +182,45 @@ export type ShopProfile = {
    * қалғандарына ол үнсіз ЖАЛҒАН ескерту болып шығады.
    */
   maxShelfSpan: number | null
+
+  /**
+   * Габариттің шектері, мм. Әр сан бөлек: `null` — сол жағынан шек ЖОҚ.
+   *
+   * НЕГЕ КЕРЕК. Цехтың станогы да, парағы да, көлігі де шексіз емес: 2900 мм
+   * биік корпус қағазда әдемі, ал сол цехта ол ЖАСАЛМАЙДЫ. Шекті бір рет
+   * қойған соң, менеджер қабылдамайтын тапсырысты клиентке уәде етпейді.
+   *
+   * ӘДЕПКІ МӘНІ — БАРЛЫҒЫ `null`, дәл `maxShelfSpan` сияқты. Бір цехтың
+   * саны бүкіл жүйеге жазылса, қалғандарына ол үнсіз ЖАЛҒАН ескерту болып
+   * шығады: 2750 мм — бәсекелестің әдепкісі, әмбебап шындық емес.
+   *
+   * Бұл — ЕСКЕРТУ, тыйым емес. Габаритті бәрібір теруге болады: цех өз
+   * жауапкершілігімен шектен тыс корпус жасай алады (біреуін екіге бөліп,
+   * бөлек жинап). Тыйым салсақ, құрал жұмысты тоқтатар еді.
+   */
+  limits: DimensionLimits
+}
+
+/**
+ * Габарит шектері. Өріс аты — өлшемнің өзінде: H — биіктік, W — ені,
+ * D — тереңдігі (жобаның H × W × D ережесі).
+ */
+export type DimensionLimits = {
+  minHeight: number | null
+  maxHeight: number | null
+  minWidth: number | null
+  maxWidth: number | null
+  minDepth: number | null
+  maxDepth: number | null
+}
+
+/** Шексіз профиль: жаңа цехта ешқандай габарит шегі жоқ. */
+export function defaultLimits(): DimensionLimits {
+  return {
+    minHeight: null, maxHeight: null,
+    minWidth: null, maxWidth: null,
+    minDepth: null, maxDepth: null,
+  }
 }
 
 /**
@@ -304,7 +343,7 @@ export function defaultHardware(): HardwareItem[] {
  */
 export function defaultShopProfile(id = 'shop-1'): ShopProfile {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     id,
     name: '',
     city: '',
@@ -322,6 +361,7 @@ export function defaultShopProfile(id = 'shop-1'): ShopProfile {
     coefficient: 1,
     markupPercent: 0,
     maxShelfSpan: null,
+    limits: defaultLimits(),
   }
 }
 
@@ -396,6 +436,80 @@ export function shelfSpanWarnings(panels: Panel[], shop: ShopProfile): ShelfSpan
   return panels
     .filter((p) => p.role === 'shelf' && p.finishedLength > limit)
     .map((p) => ({ panelId: p.id, label: p.label, span: p.finishedLength, limit }))
+}
+
+export type DimensionWarning = {
+  cabinetId: string
+  cabinetName: string
+  /** Қай өлшем: биіктік, ені, тереңдігі */
+  axis: 'height' | 'width' | 'depth'
+  /** Терілген сан */
+  value: number
+  /** Шектің өзі */
+  limit: number
+  /** Шектен ЖОҒАРЫ ма, әлде ТӨМЕН бе */
+  side: 'min' | 'max'
+}
+
+export const DIMENSION_AXIS_LABEL: Record<DimensionWarning['axis'], string> = {
+  height: 'Высота',
+  width: 'Ширина',
+  depth: 'Глубина',
+}
+
+/**
+ * Ескертудің СӨЙЛЕМ ҮЛГІСІ, орындарымен.
+ *
+ * Дайын жол емес, үлгі қайтарылады: қазақшада сөз реті басқа («шектен АСЫП
+ * КЕТТІ» соңында тұрады), сондықтан аударма бүтін сөйлемге жасалуы керек.
+ * Ядро аударманы білмейді — оны UI (`tf`) толтырады.
+ */
+export function dimensionWarningTemplate(w: DimensionWarning): string {
+  return w.side === 'max'
+    ? '{axis} {value} мм — больше предела цеха ({limit} мм)'
+    : '{axis} {value} мм — меньше предела цеха ({limit} мм)'
+}
+
+/** Аудармасыз, орысша мәтін: экспорт пен тест үшін. */
+export function dimensionWarningText(w: DimensionWarning): string {
+  return dimensionWarningTemplate(w)
+    .replace('{axis}', DIMENSION_AXIS_LABEL[w.axis])
+    .replace('{value}', String(w.value))
+    .replace('{limit}', String(w.limit))
+}
+
+/**
+ * Габарит цехтың шегінен шықты ма.
+ *
+ * Цех шек қоймаса — тексеру ЖҮРМЕЙДІ (бос тізім). Бұл `shelfSpanWarnings`
+ * сияқты ЕСКЕРТУ: құрал жұмысты тоқтатпайды, тек «бұны сіздің цехта
+ * жасай алмайсыз» деп ескертеді.
+ *
+ * Бір корпустан бірнеше ескерту шығуы мүмкін (ені де, биіктігі де асып кетсе):
+ * менеджер қайсысын қысқарту керегін бірден көрсін.
+ */
+export function dimensionWarnings(
+  cabinets: Pick<CabinetConfig, 'id' | 'name' | 'width' | 'height' | 'depth'>[],
+  shop: ShopProfile,
+): DimensionWarning[] {
+  const { limits } = shop
+  const out: DimensionWarning[] = []
+  for (const c of cabinets) {
+    const checks: { axis: DimensionWarning['axis']; value: number; min: number | null; max: number | null }[] = [
+      { axis: 'height', value: c.height, min: limits.minHeight, max: limits.maxHeight },
+      { axis: 'width', value: c.width, min: limits.minWidth, max: limits.maxWidth },
+      { axis: 'depth', value: c.depth, min: limits.minDepth, max: limits.maxDepth },
+    ]
+    for (const ch of checks) {
+      if (ch.max !== null && ch.value > ch.max) {
+        out.push({ cabinetId: c.id, cabinetName: c.name, axis: ch.axis, value: ch.value, limit: ch.max, side: 'max' })
+      }
+      if (ch.min !== null && ch.value < ch.min) {
+        out.push({ cabinetId: c.id, cabinetName: c.name, axis: ch.axis, value: ch.value, limit: ch.min, side: 'min' })
+      }
+    }
+  }
+  return out
 }
 
 // ── Сақтау схемасы ───────────────────────────────────────────────────────────
@@ -478,8 +592,19 @@ const CuttingSettingsSchema = z.object({
   optimization: z.enum(['fast', 'standard', 'deep']),
 })
 
+const dimensionLimit = z.number().int().positive().nullable()
+
+const DimensionLimitsSchema = z.object({
+  minHeight: dimensionLimit,
+  maxHeight: dimensionLimit,
+  minWidth: dimensionLimit,
+  maxWidth: dimensionLimit,
+  minDepth: dimensionLimit,
+  maxDepth: dimensionLimit,
+})
+
 export const ShopProfileSchema = z.object({
-  schemaVersion: z.literal(5),
+  schemaVersion: z.literal(6),
   id: z.string().min(1),
   name: z.string(),
   city: z.string(),
@@ -503,6 +628,7 @@ export const ShopProfileSchema = z.object({
   labour: LabourRatesSchema,
   markupPercent: z.number().int().min(0).max(1000),
   maxShelfSpan: z.number().int().positive().nullable(),
+  limits: DimensionLimitsSchema,
 })
 
 /**
@@ -567,6 +693,14 @@ export function parseShopProfile(raw: unknown): ShopProfile {
   const v4 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
   if (v4 === 4) {
     migrated = { ...(migrated as ShopProfile), schemaVersion: 5, cutting: defaultCutting() }
+  }
+
+  // v5 → v6: габарит шектері. Ескі профильде олар жоқ, ал бұрынғы мінез —
+  // ешқандай шек болмауы, сондықтан бос (`null`) шектермен көтеріледі: цехтың
+  // ескі жобасы жаңа нұсқада кенет «шектен шықты» деп ескертілмейді.
+  const v5 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
+  if (v5 === 5) {
+    migrated = { ...(migrated as ShopProfile), schemaVersion: 6, limits: defaultLimits() }
   }
 
   return ShopProfileSchema.parse(migrated) as ShopProfile

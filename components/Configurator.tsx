@@ -581,6 +581,10 @@ function FrontFittings({
   )
 }
 
+/** Өлшемнің осі → цех профиліндегі өріс аты. */
+const AXIS_MIN = { height: 'minHeight', width: 'minWidth', depth: 'minDepth' } as const
+const AXIS_MAX = { height: 'maxHeight', width: 'maxWidth', depth: 'maxDepth' } as const
+
 export function Configurator({ invalidField }: { invalidField: string | null }) {
   const cabinet: CabinetConfig = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
@@ -590,14 +594,28 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
   // Материалдар тізімі цехтың профилінен келеді, кодтан емес.
   const materials = useConfigurator((s) => s.shop.materials)
+  const limits = useConfigurator((s) => s.shop.limits)
   const carcassMaterials = materials.filter(isCarcass)
   const backMaterials = materials.filter((m) => !isCarcass(m))
   const template = findTemplate(useConfigurator((s) => s.templateId))
 
   const invalid = (field: string) => invalidField === field
-  /** Шаблон ұсынған аралық — қатты шектеу емес, тек бағдар. */
-  const hint = (axis: 'height' | 'width' | 'depth') =>
-    template ? `${template.range[axis].min}–${template.range[axis].max}` : undefined
+  /**
+   * Габариттің үстіндегі кішкене сан.
+   *
+   * ЦЕХТЫҢ ШЕГІ ШАБЛОННЫҢ АРАЛЫҒЫНАН БАСЫМ. Шаблондікі — ұсыныс («пенал
+   * әдетте осындай»), ал цехтікі — станок пен парақтың шындығы. Екеуін қатар
+   * көрсетсек, қайсысы міндетті екені түсініксіз болар еді.
+   *
+   * Бір жағы ғана қойылса, екіншісінің орнына сызықша тұрады: «600–» деген
+   * «600-ден бастап, жоғарғы шегі жоқ» дегенді білдіреді.
+   */
+  const hint = (axis: 'height' | 'width' | 'depth') => {
+    const min = limits[AXIS_MIN[axis]]
+    const max = limits[AXIS_MAX[axis]]
+    if (min !== null || max !== null) return `${min ?? ''}–${max ?? ''}`
+    return template ? `${template.range[axis].min}–${template.range[axis].max}` : undefined
+  }
 
   return (
     <div className="space-y-3">
