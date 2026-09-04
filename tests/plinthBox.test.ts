@@ -8,7 +8,7 @@
  *   бүйір 638 × 95 × 2  — 700 − 30 − 2×16, екеуінің АРАСЫНА кіреді
  */
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETTINGS, generateCabinet } from '../src/core/index'
+import { DEFAULT_SETTINGS, countHardware, generateCabinet } from '../src/core/index'
 import { catalog, withCabinet } from './fixtures'
 
 const BASE_HEIGHT = 95
@@ -109,5 +109,83 @@ describe('цокольдің пішіні', () => {
       base: { ...base, plinthShape: 'box', plinthMaterialId: other.id },
     }), catalog))
     expect(parts.every((p) => p.materialId === other.id)).toBe(true)
+  })
+})
+
+/**
+ * Қорапты ЖИНАУ.
+ *
+ * Бұл жерде «дұрыс жауап» жоқ — екеуі де цехта кездеседі, сондықтан таңдау
+ * ашық. Тест таңдаудың САЛДАРЫН күзетеді: конфирматта бұранданың басы
+ * көрінетін бетке шығады (заглушка керек), минификсте шықпайды.
+ */
+describe('цоколь қорабының буындары', () => {
+  const boxWith = (joint?: 'confirmat' | 'minifix') =>
+    generateCabinet(withCabinet({
+      width: 900, height: 1540, depth: 700,
+      base: { ...base, plinthShape: 'box', ...(joint ? { plinthJoint: joint } : {}) },
+    }), catalog).filter((p) => p.role === 'plinth')
+
+  it('әдепкіде конфирмат: әр бұрышта 2 бұранда, төрт бұрыш', () => {
+    const parts = boxWith()
+    const byId = new Map(parts.map((p) => [p.id, p]))
+    // Алдыңғы тақтай: екі бұрыш × 2 = 4 өтпелі тесік.
+    expect(byId.get('plinth')!.drilling.filter((d) => d.purpose === 'confirmat')).toHaveLength(4)
+    expect(byId.get('plinth-back')!.drilling).toHaveLength(4)
+    // Бүйірдің ЕКІ ұшында да пилот тесік (алдына да, артына да тіреледі).
+    const left = byId.get('plinth-left')!
+    expect(new Set(left.drilling.map((d) => d.face))).toEqual(new Set(['edgeL1', 'edgeL2']))
+    expect(left.drilling).toHaveLength(4)
+  })
+
+  it('ҚЫСҚА БУЫН ережесі: тесік жиектен ≥ 24 мм, реті дұрыс', () => {
+    const left = boxWith().find((p) => p.id === 'plinth-left')!
+    const xs = [...new Set(left.drilling.map((d) => d.x))].sort((a, b) => a - b)
+    expect(xs).toEqual([32, 63]) // 95 / 3 = 31.7 → 32, екіншісі 95 − 32
+    for (const x of xs) {
+      expect(x).toBeGreaterThanOrEqual(24)
+      expect(BASE_HEIGHT - x).toBeGreaterThanOrEqual(24)
+    }
+  })
+
+  it('минификсте көрінетін бетте бұранданың басы ЖОҚ', () => {
+    const byId = new Map(boxWith('minifix').map((p) => [p.id, p]))
+    const front = byId.get('plinth')!
+    expect(front.drilling.some((d) => d.face === 'outer')).toBe(false)
+    expect(front.drilling.some((d) => d.purpose === 'minifix')).toBe(true)
+    // Бүйірдің бетінде штифт бұралатын тесік тұрады.
+    expect(byId.get('plinth-left')!.drilling.some((d) => d.purpose === 'minifix')).toBe(true)
+  })
+
+  it('конфирматта деталировка заглушка керегін АЙТАДЫ', () => {
+    const front = boxWith().find((p) => p.id === 'plinth')!
+    expect(front.note).toMatch(/заглушк/i)
+    // Ал жай планкада (қорапсыз) ондай ескертпе жоқ.
+    const plain = generateCabinet(withCabinet({ width: 900, height: 1540, depth: 700, base }), catalog)
+      .find((p) => p.id === 'plinth')!
+    expect(plain.note).not.toMatch(/заглушк/i)
+  })
+})
+
+/** Ақша: қорап бос шықпауы керек — бұрандасы сметаға түседі. */
+describe('цоколь қорабы сметада', () => {
+  const buildAll = (extra: object) => generateCabinet(withCabinet({
+    width: 900, height: 1540, depth: 700, base: { ...base, ...extra },
+  }), catalog)
+
+  it('конфирматтары мен заглушкалары сметаға қосылады', () => {
+    const plain = countHardware(buildAll({}))
+    const box = countHardware(buildAll({ plinthShape: 'box' }))
+    const screws = (m: Map<string, number>) => m.get('confirmat-7x50') ?? 0
+    // Төрт бұрыш × 2 бұранда = 8.
+    expect(screws(box) - screws(plain)).toBe(8)
+    expect(box.get('confirmat-cap')).toBe(box.get('confirmat-7x50'))
+  })
+
+  it('минификсте конфирмат емес, стяжка саналады', () => {
+    const box = countHardware(buildAll({ plinthShape: 'box', plinthJoint: 'minifix' }))
+    const plain = countHardware(buildAll({}))
+    expect(box.get('confirmat-7x50') ?? 0).toBe(plain.get('confirmat-7x50') ?? 0)
+    expect((box.get('minifix-15') ?? 0) - (plain.get('minifix-15') ?? 0)).toBe(8)
   })
 })

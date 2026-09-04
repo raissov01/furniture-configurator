@@ -942,18 +942,25 @@ export function generateCabinet(
   }
 
   // ── Цоколь мен столешница ──────────────────────────────────────────────────
+  /** Цоколь ҚОРАП болса — оның буынының түрі; әйтпесе `null`. */
+  let plinthBox: 'confirmat' | 'minifix' | null = null
   if (config.base?.kind === 'plinth') {
     // Цоколь — КӨРІНЕТІН деталь: көбіне фасадпен бір түсте болады.
     const plinthMat = config.base.plinthMaterialId
       ? requireMaterial(materials, config.base.plinthMaterialId, 'base.plinthMaterialId')
       : carcass
     // Цоколь алдыңғы жиектен ішке шегіндіріледі: аяқ тұратын орын.
+    const boxJoint = config.base.plinthJoint ?? 'confirmat'
     panels.push(
       make(
         'plinth', 'plinth', 'Цоколь', plinthMat,
         W, baseHeight,
         { x: 0, y: -baseHeight, z: settings.plinthSetback }, ORIENT_FACING,
-        'Цоколь, лицевой',
+        // Конфирматтың басы КӨРІНЕТІН бетке шығады — цех оны заглушкамен
+        // жабады. Мұны деталировкада айтпасақ, ол құрастыруда ғана байқалады.
+        config.base.plinthShape === 'box' && boxJoint === 'confirmat'
+          ? 'Цоколь, лицевой; шляпки конфирматов на лице — заглушки'
+          : 'Цоколь, лицевой',
       ),
     )
 
@@ -1002,6 +1009,7 @@ export function generateCabinet(
           ),
         )
       }
+      plinthBox = boxJoint
     }
   }
 
@@ -1213,6 +1221,29 @@ export function generateCabinet(
   for (const divider of dividers) {
     confirmatJoint(bottom, divider, ctx)
     for (const part of topParts) confirmatJoint(part, divider, ctx)
+  }
+
+  /*
+   * Цоколь қорабының бұрыштары.
+   *
+   * Бұранда АЛДЫҢҒЫ (және артқы) тақтайдың бетінен өтіп, бүйірдің торціне
+   * барады — бүйір екеуінің арасына кіретіндіктен, басқаша болуы да мүмкін
+   * емес. Буын небәрі 95 мм шамасында, сондықтан мұнда `spreadAlongJoint`-тың
+   * ҚЫСҚА БУЫН ережесі істейді (тесік жиектен ≥ 24 мм).
+   *
+   * Қорапты КОРПУСҚА бекіту мұнда ЖОҚ: цех оны әртүрлі істейді (біреуі
+   * дноның астынан бұрайды, біреуі бұрышпен). Ойдан тесік жазсақ, дайын
+   * детальде артық саңылау қалар еді (§10).
+   */
+  if (plinthBox !== null) {
+    const boxSides = panels.filter((p) => p.id === 'plinth-left' || p.id === 'plinth-right')
+    const boxFaces = panels.filter((p) => p.id === 'plinth' || p.id === 'plinth-back')
+    for (const face of boxFaces) {
+      for (const side of boxSides) {
+        if (plinthBox === 'minifix') minifixJoint(face, side, ctx)
+        else confirmatJoint(face, side, ctx)
+      }
+    }
   }
 
   // Сөрелер: фиксированная — конфирмат, жылжымалы — полкодержатель

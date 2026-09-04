@@ -10,7 +10,7 @@ import {
   DRAWER_FACADE_SCREW_DIAMETER, DRAWER_FACADE_SCREW_END_OFFSET,
   DRAWER_FACADE_SCREW_PILOT_DEPTH,
   CONFIRMAT_EDGE_DEPTH, CONFIRMAT_EDGE_DIAMETER, CONFIRMAT_FACE_DIAMETER,
-  CONFIRMAT_FIRST_OFFSET, CONFIRMAT_MIN_PER_JOINT,
+  CONFIRMAT_FIRST_OFFSET, CONFIRMAT_MIN_EDGE, CONFIRMAT_MIN_PER_JOINT,
   HINGE_COUNT_BY_HEIGHT, HINGE_CUP_DEPTH, HINGE_CUP_DIAMETER, HINGE_CUP_FROM_EDGE,
   HINGE_END_OFFSET, HINGE_PLATE_DEPTH, HINGE_PLATE_DIAMETER,
   HINGE_PLATE_FROM_FRONT, HINGE_PLATE_HOLE_SPACING,
@@ -76,16 +76,33 @@ function pushFace(
 /**
  * Буын бойындағы тесік орындары. Шеткілері жиектен CONFIRMAT_FIRST_OFFSET,
  * қалғандары солардың арасына тең таралады. Барлығы бүтін мм.
+ *
+ * ⚠ ҚЫСҚА БУЫН. Шегініс буынның ҮШТЕН БІРІНЕН аспайды. Онсыз 95 мм буында
+ * (цоколь қорабының бұрышы) `spreadAlongJoint(95, 2, 50)` → `[50, 45]`
+ * шығатын: екі тесік бір-бірінің үстінде, әрі реті теріс. Ұзын буында
+ * ештеңе өзгермейді — 150 мм-ден бастап `length / 3 ≥ 50`.
  */
 export function spreadAlongJoint(length: number, count: number, endOffset: number): number[] {
   if (count <= 1) return [Math.round(length / 2)]
-  const first = endOffset
-  const last = length - endOffset
+  const first = Math.min(endOffset, length / 3)
+  const last = length - first
   const step = (last - first) / (count - 1)
   return Array.from({ length: count }, (_, i) => Math.round(first + i * step))
 }
 
 function confirmatCount(jointLength: number, settings: ConstructionSettings): number {
+  /*
+   * ТЫМ ҚЫСҚА БУЫНҒА БІР ҒАНА конфирмат.
+   *
+   * Екеуін сыйғызу үшін буын кемінде 3 × CONFIRMAT_MIN_EDGE болуы керек
+   * (жиекке дейін, екеуінің арасына, тағы жиекке дейін). Одан қысқасында
+   * тесіктер жиекке тым жақын отырады да, ЛДСП жарылады — бұрандасы жоқ
+   * бұрыштан гөрі, жарылған деталь қымбатқа түседі.
+   *
+   * Айналып кетуден қорықпайды: бұл ереже іс жүзінде цоколь қорабының
+   * бұрышы сияқты жерде ғана істейді, ал ондай қорапты төрт бұрыш ұстайды.
+   */
+  if (jointLength < 3 * CONFIRMAT_MIN_EDGE) return 1
   const span = settings.confirmatSpanForThird
   // `null` — ереже ӨШІРУЛІ: ұзын буында да екі конфирмат (types.ts қара).
   return span !== null && jointLength > span

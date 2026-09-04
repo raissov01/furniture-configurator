@@ -1035,6 +1035,26 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
         </Field>
       ) : null}
 
+      {cabinet.base?.kind === 'plinth' && cabinet.base.plinthShape === 'box' ? (
+        <Field
+          label={tr('Сборка короба')}
+          hint={(cabinet.base.plinthJoint ?? 'confirmat') === 'confirmat'
+            ? tr('шляпки на лице')
+            : tr('лицо чистое')}
+        >
+          <Select
+            value={cabinet.base.plinthJoint ?? 'confirmat'}
+            onChange={(plinthJoint) => edit('base.plinthJoint', {
+              base: { ...cabinet.base!, plinthJoint },
+            })}
+            options={[
+              { value: 'confirmat' as const, label: tr('Конфирмат (нужны заглушки)') },
+              { value: 'minifix' as const, label: tr('Минификс (дороже, лицо чистое)') },
+            ]}
+          />
+        </Field>
+      ) : null}
+
       {cabinet.base?.kind === 'plinth' ? (
         <Field label={tr('Материал цоколя')} hint={tr('обычно как фасад')}>
           <Select
