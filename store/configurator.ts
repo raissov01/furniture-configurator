@@ -67,6 +67,8 @@ type State = Snapshot & {
   quoteOpen: boolean
   sketchOpen: boolean
   accountOpen: boolean
+  /** ИИ-рендер терезесі (`components/RenderPanel.tsx`). */
+  renderOpen: boolean
   /** Присадка редакторы ашық па. */
   drillOpen: boolean
   /** Ерікті детальдар терезесі ашық па. */
@@ -202,6 +204,7 @@ type State = Snapshot & {
   restoreHistory(at: number): void
   setFirstRun(v: boolean): void
   setAccountOpen(v: boolean): void
+  setRenderOpen(v: boolean): void
 
   editRoom(patch: Partial<Room>): void
   setSelectedWall(wall: WallId): void
@@ -265,6 +268,7 @@ export const useConfigurator = create<State>((set, get) => ({
   fitNonce: 0,
   firstRun: true,
   accountOpen: false,
+  renderOpen: false,
   templateId: defaultTemplateId,
   selectedWall: 'south',
 
@@ -571,6 +575,7 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   setFirstRun: (firstRun) => set({ firstRun }),
   setAccountOpen: (accountOpen) => set({ accountOpen }),
+  setRenderOpen: (renderOpen) => set({ renderOpen }),
 
   editRoom(patch) {
     const s = get()

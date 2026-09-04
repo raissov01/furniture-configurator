@@ -512,7 +512,12 @@ export default function Scene({
        * кадрды екі есе жылдамдатады.
        */
       dpr={canvas.dpr}
-      gl={{ antialias: canvas.antialias }}
+      /*
+       * `preserveDrawingBuffer` — ИИ-рендер үшін: онсыз `toDataURL()` БОС
+       * сурет қайтарады (браузер кадрды салған соң буферді тазалайды).
+       * Бағасы шамалы, ал онсыз «сурет ала алмадық» деген қате шығады.
+       */
+      gl={{ antialias: canvas.antialias, preserveDrawingBuffer: true }}
       /*
        * Өлшеу: debounce нөл әрі `offsetSize`.
        *

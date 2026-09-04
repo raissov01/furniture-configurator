@@ -24,6 +24,7 @@ import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
 import { ArButton } from '@/components/ArButton'
 import { Tour } from '@/components/Tour'
+import { RenderPanel } from '@/components/RenderPanel'
 import { cloudEnabled } from '@/lib/cloud'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
@@ -102,6 +103,7 @@ export function Workspace() {
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
+  const setRenderOpen = useConfigurator((s) => s.setRenderOpen)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
   const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
@@ -298,6 +300,12 @@ export function Workspace() {
             Силуэт — масштабтың өлшемі: клиент 2400 мм-ді санмен емес,
             қасында тұрған адаммен түсінеді (`src/core/silhouette.ts`).
           */}
+          <Button
+            onClick={() => setRenderOpen(true)}
+            title={tr('Фотореалистичная картинка для клиента')}
+          >
+            {tr('Рендер')}
+          </Button>
           <ArButton />
           <Button
             active={silhouette.on}
@@ -388,6 +396,7 @@ export function Workspace() {
       ) : null}
 
       <Tour />
+      <RenderPanel />
       {sizeWarnings.length > 0 ? (
         <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
           {sizeWarnings
