@@ -14,7 +14,8 @@
     "export": "tsx src/cli/export.ts",
     "test:e2e": "node scripts/e2e.mjs",
     "plan": "node scripts/plan.mjs",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "icons": "node scripts/icons.mjs"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

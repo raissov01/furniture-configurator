@@ -451,6 +451,7 @@ export default function Scene({
   const projection = useConfigurator((s) => s.projection)
   const quality = useConfigurator((s) => s.quality)
   const silhouette = useConfigurator((s) => s.silhouette)
+  const setLiveScene = useConfigurator((s) => s.setLiveScene)
   const canvas = canvasSettings(quality)
 
   // «Комната» пресеті бүкіл бөлмеге қарайды, қалғаны — белсенді шкафқа.
@@ -524,6 +525,12 @@ export default function Scene({
        */
       resize={{ scroll: false, debounce: { scroll: 0, resize: 0 }, offsetSize: true }}
       camera={{ fov: 40, near: 0.01, far: 100, position: [2, 1.4, 2.4] }}
+      /*
+       * Тірі сахнаны сторға береміз — AR батырмасы содан алады.
+       * `onCreated` БАР ЭЛЕМЕНТТІҢ қасиеті: Canvas ішіне жаңа компонент
+       * қосқаннан гөрі сенімді (09-04-те дәл сол жерде уақыт жоғалды).
+       */
+      onCreated={(state) => setLiveScene(state.scene)}
     >
       {/*
         * Ортографиялық проекция: параллель сызықтар қиылыспайды, сондықтан

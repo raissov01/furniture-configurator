@@ -1,0 +1,88 @@
+'use client'
+
+/**
+ * «AR» — жиһазды телефонның камерасы арқылы БӨЛМЕГЕ қою.
+ *
+ * Батырманың өзі ЕШТЕҢЕ экспорттамайды: ол стордағы AR арнасына сұраныс
+ * қалдырады, ал нағыз жұмысты `<Canvas>` ішіндегі `ArExporter` істейді —
+ * 3D сахнаға тек сол жерден жетуге болады.
+ *
+ * Компьютерде AR жоқ, сондықтан онда СІЛТЕМЕ беріледі: адам оны телефонына
+ * жібереді (немесе сол сілтемемен клиентке көрсетеді).
+ */
+
+import { t as tr } from '@/lib/i18n'
+import { Button } from '@/components/ui'
+import { cloudEnabled } from '@/lib/cloud'
+import { useConfigurator } from '@/store/configurator'
+import { activeCabinet } from '@/store/configurator'
+
+export function ArButton() {
+  const ar = useConfigurator((s) => s.ar)
+  const setAr = useConfigurator((s) => s.setAr)
+  const scene = useConfigurator((s) => s.liveScene)
+  const title = useConfigurator((s) => activeCabinet(s).name)
+
+  const run = async () => {
+    if (!scene) {
+      setAr({ error: 'Сцена ещё не готова' })
+      return
+    }
+    setAr({ busy: true, link: null, error: null })
+    try {
+      const { sceneToGlb, isAndroid, isIos, sceneViewerUrl } = await import('@/lib/ar')
+      const glb = await sceneToGlb(scene as object)
+      const res = await fetch('/api/ar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'model/gltf-binary' },
+        body: glb as unknown as BodyInit,
+      })
+      const data = (await res.json()) as { id?: string; error?: string }
+      if (!res.ok || !data.id) {
+        setAr({ busy: false, error: data.error ?? 'Не получилось' })
+        return
+      }
+      const fileUrl = `${window.location.origin}/api/ar/${data.id}`
+      if (isAndroid()) {
+        setAr({ busy: false, link: fileUrl })
+        window.location.href = sceneViewerUrl(fileUrl, title)
+        return
+      }
+      setAr({
+        busy: false,
+        link: fileUrl,
+        // iPhone-да Quick Look USDZ талап етеді — оны браузерде жасау мүмкін емес.
+        error: isIos() ? 'На iPhone AR пока нет: нужен формат Apple (USDZ)' : null,
+      })
+    } catch (e) {
+      setAr({ busy: false, error: e instanceof Error ? e.message : 'Не получилось' })
+    }
+  }
+
+  // Бұлт сөндірулі құрастыруда (Vercel демосы) файлды сақтайтын жер жоқ.
+  if (!cloudEnabled) return null
+
+  return (
+    <>
+      <Button
+        onClick={() => void run()}
+        disabled={ar.busy}
+        title={tr('Посмотреть в комнате через камеру')}
+      >
+        {ar.busy ? '…' : 'AR'}
+      </Button>
+      {ar.link ? (
+        <input
+          className="w-56 rounded-md border border-neutral-300 px-1.5 py-1 text-[11px] dark:border-neutral-700 dark:bg-neutral-900"
+          readOnly
+          value={ar.link}
+          title={tr('Откройте эту ссылку на телефоне (Android)')}
+          onFocus={(e) => e.currentTarget.select()}
+        />
+      ) : null}
+      {ar.error ? (
+        <span className="text-[11px] text-amber-600 dark:text-amber-400">{tr(ar.error)}</span>
+      ) : null}
+    </>
+  )
+}

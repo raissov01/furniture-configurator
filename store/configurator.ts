@@ -106,6 +106,27 @@ type State = Snapshot & {
    */
   silhouette: { on: boolean; height: number }
   /**
+   * AR арнасы.
+   *
+   * ⚠ НЕГЕ СТОР АРҚЫЛЫ. Экспорт `<Canvas>`-тың ІШІНДЕ жүруі керек (сахнаға
+   * тек сол жерден жетуге болады), ал батырма — сыртында. Модуль деңгейіндегі
+   * сілтеме БОЛМАЙДЫ: Scene бөлек чанкқа жүктеледі де, ондағы модуль көшірмесі
+   * басқа болып шығады (09-04-те тексерілді). Ал стор екеуіне де ортақ.
+   *
+   * `requestedAt` — түрткі: батырма уақытты жазады, сахна соны байқап
+   * экспорттайды. Нәтижесі — тек ЖОЛ (сілтеме), нысан емес.
+   */
+  ar: { requestedAt: number; busy: boolean; link: string | null; error: string | null }
+  /**
+   * Тірі 3D сахна (three.js `Scene`).
+   *
+   * ⚠ СЕРИЯЛАНБАЙДЫ: жобаға да, тарихқа да (`snapshot`) КІРМЕЙДІ — ол
+   * браузердегі нысан. Мұнда тұрғаны — AR батырмасына сахнаға жету үшін
+   * басқа жол жоқ: экспорт `<Canvas>`-тың ішінен басталуы керек, ал модуль
+   * деңгейіндегі сілтеме чанктар арасында жүрмейді (09-04-те тексерілді).
+   */
+  liveScene: unknown
+  /**
    * «Кадрға сыйдыру» батырмасын басқан сайын өседі. Камера пресеті
    * өзгермесе де қайта бағыттау керек, ал ол үшін тәуелділік керек.
    */
@@ -169,6 +190,8 @@ type State = Snapshot & {
   setViewMode(v: 'solid' | 'ghost' | 'wire'): void
   setQuality(q: Quality): void
   setSilhouette(patch: Partial<{ on: boolean; height: number }>): void
+  setLiveScene(scene: unknown): void
+  setAr(patch: Partial<{ busy: boolean; link: string | null; error: string | null }>): void
   setShowFronts(v: boolean): void
   setOpenness(v: number): void
   setProjection(v: 'perspective' | 'ortho'): void
@@ -237,6 +260,8 @@ export const useConfigurator = create<State>((set, get) => ({
   projection: 'perspective',
   quality: 'high',
   silhouette: { on: false, height: DEFAULT_SILHOUETTE_HEIGHT },
+  ar: { requestedAt: 0, busy: false, link: null, error: null },
+  liveScene: null,
   fitNonce: 0,
   firstRun: true,
   accountOpen: false,
@@ -504,6 +529,8 @@ export const useConfigurator = create<State>((set, get) => ({
   setViewMode: (viewMode) => set({ viewMode }),
   setQuality: (quality) => set({ quality }),
   setSilhouette: (patch) => set((s) => ({ silhouette: { ...s.silhouette, ...patch } })),
+  setLiveScene: (liveScene) => set({ liveScene }),
+  setAr: (patch) => set((s) => ({ ar: { ...s.ar, ...patch } })),
   setShowFronts: (showFronts) => set({ showFronts }),
   setOpenness: (openness) => set({ openness: Math.min(1, Math.max(0, openness)) }),
   setProjection: (projection) => set({ projection }),

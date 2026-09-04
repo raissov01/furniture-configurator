@@ -22,6 +22,7 @@ import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
+import { ArButton } from '@/components/ArButton'
 import { cloudEnabled } from '@/lib/cloud'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
@@ -296,6 +297,7 @@ export function Workspace() {
             Силуэт — масштабтың өлшемі: клиент 2400 мм-ді санмен емес,
             қасында тұрған адаммен түсінеді (`src/core/silhouette.ts`).
           */}
+          <ArButton />
           <Button
             active={silhouette.on}
             title={tr('Человек рядом — для масштаба')}
