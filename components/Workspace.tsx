@@ -363,7 +363,7 @@ export function Workspace() {
         <ExportMenu cabinet={cabinet} panels={panels} />
 
         <label className="flex min-w-40 flex-1 items-center gap-2 text-[11px] text-neutral-500">
-          Разнести
+          {tr('Разнести')}
           <Slider value={exploded} onChange={setExploded} />
         </label>
 

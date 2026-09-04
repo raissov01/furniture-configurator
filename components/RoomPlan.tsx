@@ -180,7 +180,7 @@ export function RoomPlan() {
             </div>
 
             <div className="flex items-center justify-between">
-              <SectionTitle>Корпуса ({cabinets.length})</SectionTitle>
+              <SectionTitle>{tr('Корпуса')} ({cabinets.length})</SectionTitle>
               <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             </div>
             <ul className="space-y-1">

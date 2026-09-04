@@ -13,14 +13,24 @@
  * әрі `t()`-ті кез келген жерде, шарттың ішінде де шақыруға болады.
  */
 
+import { en } from './locales/en'
 import { kk } from './locales/kk'
+import { uz } from './locales/uz'
 
-export type Lang = 'ru' | 'kk'
+export type Lang = 'ru' | 'kk' | 'en' | 'uz'
 
 export const LANGS: { value: Lang; label: string }[] = [
   { value: 'ru', label: 'Русский' },
   { value: 'kk', label: 'Қазақша' },
+  { value: 'uz', label: "O'zbekcha" },
+  { value: 'en', label: 'English' },
 ]
+
+/**
+ * Сөздіктер. Орысша — сөздіксіз: кілттің өзі орысша жол, сондықтан оның
+ * аудармасы керек емес (`t()` табылмаған жолды сол күйі қайтарады).
+ */
+const DICTIONARIES: Record<Lang, Record<string, string>> = { ru: {}, kk, uz, en }
 
 const STORAGE_KEY = 'furniture-configurator:lang'
 
@@ -37,7 +47,8 @@ let current: Lang = 'ru'
 
 function readSaved(): Lang {
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === 'kk' ? 'kk' : 'ru'
+    const saved = window.localStorage.getItem(STORAGE_KEY)
+    return saved !== null && saved in DICTIONARIES ? (saved as Lang) : 'ru'
   } catch {
     return 'ru'
   }
@@ -59,7 +70,7 @@ export function applySavedLang(): void {
   const saved = readSaved()
   if (saved !== current) {
     current = saved
-    dictionary = saved === 'kk' ? kk : {}
+    dictionary = DICTIONARIES[saved]
     for (const fn of listeners) fn()
   }
 }
@@ -78,7 +89,7 @@ export function subscribeLang(fn: () => void): () => void {
 
 export function setLang(lang: Lang): void {
   if (lang === current) return
-  dictionary = lang === 'kk' ? kk : {}
+  dictionary = DICTIONARIES[lang]
   current = lang
   try {
     window.localStorage.setItem(STORAGE_KEY, lang)

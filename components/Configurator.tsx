@@ -99,7 +99,7 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
   return (
     <div className="space-y-2 rounded-lg border border-neutral-200 p-2.5 dark:border-neutral-800">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-neutral-500">Секция {index + 1}</span>
+        <span className="text-[11px] font-semibold text-neutral-500">{tr('Секция')} {index + 1}</span>
         <Button onClick={() => removeSection(index)} disabled={!canRemove} title={tr('Удалить секцию')}>
           ✕
         </Button>
@@ -1309,7 +1309,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
       </Collapsible>
 
       <div className="flex items-center justify-between pt-1">
-        <SectionTitle>Секции ({cabinet.sections.length})</SectionTitle>
+        <SectionTitle>{tr('Секции')} ({cabinet.sections.length})</SectionTitle>
         <Button onClick={addSection} disabled={cabinet.sections.length >= 12}>
           + секция
         </Button>

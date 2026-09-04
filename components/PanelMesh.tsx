@@ -6,6 +6,7 @@
  */
 
 import { useMemo } from 'react'
+import { t as tr } from '@/lib/i18n'
 import { Html } from '@react-three/drei'
 import { BufferAttribute, BufferGeometry, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
@@ -307,7 +308,7 @@ export function PanelMesh({
             <span className="mx-1.5 opacity-50">·</span>
             готовый {panel.finishedLength}×{panel.finishedWidth}
             <span className="mx-1.5 opacity-50">·</span>
-            <span className="text-amber-300">рез {panel.cutLength}×{panel.cutWidth}</span>
+            <span className="text-amber-300">{tr('рез')} {panel.cutLength}×{panel.cutWidth}</span>
           </div>
         </Html>
       ) : null}
