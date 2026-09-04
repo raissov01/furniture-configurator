@@ -633,4 +633,6 @@ export const en: Record<string, string> = {
   'Секция': 'Section',
   'Секции': 'Sections',
   'Корпуса': 'Carcasses',
+  'Найти декор: egger дуб, K076, бетон…': 'Find a decor: egger oak, K076, concrete…',
+  'Все бренды': 'All brands',
 }

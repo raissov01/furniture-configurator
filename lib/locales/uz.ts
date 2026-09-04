@@ -637,4 +637,6 @@ export const uz: Record<string, string> = {
   'Секция': 'Bo\'lim',
   'Секции': 'Bo\'limlar',
   'Корпуса': 'Korpuslar',
+  'Найти декор: egger дуб, K076, бетон…': 'Dekor topish: egger dub, K076, beton…',
+  'Все бренды': 'Barcha brendlar',
 }

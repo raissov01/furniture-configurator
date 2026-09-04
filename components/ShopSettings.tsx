@@ -10,6 +10,8 @@
 import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import {
+  DECOR_BRANDS,
+  DECOR_LIBRARY,
   DEFAULT_SETTINGS,
   HANDLE_BORE_DIAMETER,
   HANDLE_BORE_SPACINGS,
@@ -19,6 +21,7 @@ import {
   SHEET_FORMATS,
   SHEET_THICKNESSES,
   makeMaterial,
+  searchDecors,
   shopReadiness,
 } from '@/src/core/index'
 import type {
@@ -478,6 +481,14 @@ function HandleCatalogue({
   )
 }
 
+/** Кітапханадағы түрдің атауы — жаңа материалдың атына қосылады. */
+const DECOR_KIND_NAME: Record<string, string> = {
+  chipboard: 'ЛДСП',
+  mdf: 'МДФ',
+  hardboard: 'ХДФ',
+  other: 'Плита',
+}
+
 const HANDLE_KIND_NAME: Record<HandleModel['kind'], string> = {
   bar: 'Скоба',
   rail: 'Рейлинг',
@@ -491,6 +502,8 @@ function AddMaterial() {
   const shop = useConfigurator((s) => s.shop)
   const addMaterial = useConfigurator((s) => s.addMaterial)
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const [brand, setBrand] = useState('')
   const [draft, setDraft] = useState({
     name: '',
     thickness: 16,
@@ -507,7 +520,8 @@ function AddMaterial() {
     return (
       <div className="flex items-center justify-between">
         <p className="text-[11px] text-neutral-500">
-          Каталог ваш: добавьте декоры, с которыми реально работаете.
+          Каталог ваш: добавьте декоры, с которыми реально работаете —
+          в библиотеке {DECOR_LIBRARY.length} позиций.
         </p>
         <Button onClick={() => setOpen(true)}>{tr('+ материал')}</Button>
       </div>
@@ -519,6 +533,58 @@ function AddMaterial() {
 
   return (
     <div className="space-y-2 rounded-lg border border-neutral-300 p-3 dark:border-neutral-700">
+      {/*
+        ДЕКОР КІТАПХАНАСЫ (523 позиция, `src/core/decors.ts`).
+        Цех өз плитасын атын қолмен теріп емес, каталогтан ТАБЫП қосады —
+        артикул да, текстура да сол жерден келеді, ал қателесу мүмкіндігі азаяды.
+      */}
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <input
+            className={text}
+            value={search}
+            placeholder={tr('Найти декор: egger дуб, K076, бетон…')}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <div className="w-40 shrink-0">
+            <Select
+              value={brand}
+              onChange={setBrand}
+              options={[{ value: '', label: tr('Все бренды') },
+                ...DECOR_BRANDS.map((b) => ({ value: b, label: b }))]}
+            />
+          </div>
+        </div>
+        {search.trim().length > 0 || brand ? (
+          <ul className="max-h-44 space-y-0.5 overflow-auto rounded-md border border-neutral-200 p-1 dark:border-neutral-700">
+            {searchDecors(search, brand || undefined, 40).map((d) => (
+              <li key={d.id}>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  onClick={() => {
+                    setDraft({
+                      ...draft,
+                      name: `${DECOR_KIND_NAME[d.kind]} ${d.name} ${draft.thickness} мм`,
+                      color: d.color,
+                      hasGrain: d.hasGrain,
+                    })
+                    setSearch('')
+                  }}
+                >
+                  <span
+                    className="h-4 w-6 shrink-0 rounded-sm border border-black/10"
+                    style={{ background: d.color }}
+                  />
+                  <span className="min-w-0 truncate">{d.name}</span>
+                  {d.hasGrain ? <span className="ml-auto text-[10px] text-neutral-400">{tr('Текстура')}</span> : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+
       <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_7rem_minmax(0,1.4fr)_6rem]">
         <Field label={tr('Название')}>
           <input className={text} value={draft.name} placeholder={tr('ЛДСП Дуб Сонома 16 мм')}
