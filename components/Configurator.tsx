@@ -1018,6 +1018,24 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
 
       {/* Цоколь — КӨРІНЕТІН деталь: көбіне фасадпен бір түсте. */}
       {cabinet.base?.kind === 'plinth' ? (
+        <Field
+          label={tr('Форма цоколя')}
+          hint={cabinet.base.plinthShape === 'box' ? tr('+3 детали') : undefined}
+        >
+          <Select
+            value={cabinet.base.plinthShape ?? 'front'}
+            onChange={(plinthShape) => edit('base.plinthShape', {
+              base: { ...cabinet.base!, plinthShape },
+            })}
+            options={[
+              { value: 'front' as const, label: tr('Только передняя планка') },
+              { value: 'box' as const, label: tr('Короб: перед, зад и бока') },
+            ]}
+          />
+        </Field>
+      ) : null}
+
+      {cabinet.base?.kind === 'plinth' ? (
         <Field label={tr('Материал цоколя')} hint={tr('обычно как фасад')}>
           <Select
             value={cabinet.base.plinthMaterialId ?? cabinet.carcassMaterialId}

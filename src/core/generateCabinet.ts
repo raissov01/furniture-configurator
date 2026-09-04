@@ -956,6 +956,53 @@ export function generateCabinet(
         'Цоколь, лицевой',
       ),
     )
+
+    /*
+     * ЖАБЫҚ ҚОРАП (qdesign: «накладной короб»).
+     *
+     * Алды мен арты — ТОЛЫҚ ені, ал бүйірлері екеуінің АРАСЫНА кіреді.
+     * Дәл осылай: бәсекелестің сол өлшемдегі модулінен өлшенді (2026-09-04),
+     * әрі бұл цехта да қисынды — көрінетін алдыңғы планканың торцы бүйірмен
+     * жабылмайды, ал жинағанда қорап тікбұрышты болып шығады.
+     *
+     * Шегініс тек АЛДЫНДА: арт жағы қабырғаға тіреледі, оны шегіндірудің
+     * мағынасы жоқ әрі жүк түсетін тірек ауданы азаяр еді.
+     */
+    if (config.base.plinthShape === 'box') {
+      const pt = plinthMat.thickness
+      const boxDepth = D - settings.plinthSetback - 2 * pt
+      if (boxDepth < MIN_DIMENSION) {
+        throw new ConfigValidationError(
+          'base.plinthShape', `просвет короба ${boxDepth} мм`, `≥ ${MIN_DIMENSION} мм`,
+        )
+      }
+      panels.push(
+        make(
+          'plinth-back', 'plinth', 'Цоколь задний', plinthMat,
+          W, baseHeight,
+          { x: 0, y: -baseHeight, z: D - pt }, ORIENT_FACING,
+          'Цоколь, задний',
+          // Арт тақтайды ешкім көрмейді — кромка ақшаны бос жейді.
+          { L1: null, L2: null, W1: null, W2: null },
+        ),
+      )
+      for (const side of ['left', 'right'] as const) {
+        panels.push(
+          make(
+            `plinth-${side}`, 'plinth', `Цоколь боковой ${side === 'left' ? 'левый' : 'правый'}`,
+            plinthMat,
+            baseHeight, boxDepth,
+            {
+              x: side === 'left' ? 0 : W - pt,
+              y: -baseHeight,
+              z: settings.plinthSetback + pt,
+            },
+            ORIENT_SIDE,
+            `Цоколь, ${side === 'left' ? 'левый' : 'правый'}`,
+          ),
+        )
+      }
+    }
   }
 
   if (config.worktop) {

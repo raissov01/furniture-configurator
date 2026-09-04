@@ -243,6 +243,7 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
     legHoleSpacing: mm.optional(),
     legStep: mm.optional(),
     plinthMaterialId: z.string().min(1).optional(),
+    plinthShape: z.enum(['front', 'box']).optional(),
   }).optional(),
   openTop: z.boolean().optional(),
   frontPanel: z.object({
