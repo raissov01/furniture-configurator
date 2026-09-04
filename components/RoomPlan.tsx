@@ -12,6 +12,7 @@ import { t as tr } from '@/lib/i18n'
 import { useMemo } from 'react'
 import {
   WALL_LABELS,
+  canMirror,
   placementCorners,
   roomWalls,
   validatePlacements,
@@ -26,6 +27,12 @@ import { cn } from '@/lib/cn'
 const PLAN_PX = 420
 /** Қабырға сызығының қалыңдығы, мм (шартты — тек көрініс үшін). */
 const WALL_MM = 60
+
+/** Айна неге сөндірулі — батырманың `title`-інде тұрады. */
+function mirrorReason(cabinet: CabinetConfig): string {
+  const check = canMirror(cabinet)
+  return check.ok ? '' : check.reason
+}
 
 export function RoomPlan() {
   const open = useConfigurator((s) => s.roomOpen)
@@ -42,6 +49,8 @@ export function RoomPlan() {
   const setActive = useConfigurator((s) => s.setActive)
   const addCabinet = useConfigurator((s) => s.addCabinet)
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
+  const duplicateCabinet = useConfigurator((s) => s.duplicateCabinet)
+  const mirrorCabinet = useConfigurator((s) => s.mirrorCabinet)
   const movePlacement = useConfigurator((s) => s.movePlacement)
 
   const entries = useMemo(
@@ -194,6 +203,23 @@ export function RoomPlan() {
                           {WALL_LABELS[placement.wall]} · {placement.offset} мм · {cabinet.width} (W)
                         </span>
                       </button>
+                      <Button
+                        title={tr('Копия корпуса')}
+                        onClick={() => duplicateCabinet(cabinet.id)}
+                      >
+                        ⧉
+                      </Button>
+                      {/*
+                        Айна: бұрыштық корпуста СӨНДІРУЛІ — себебі
+                        `canMirror`-да жазылған, ал title соны айтады.
+                      */}
+                      <Button
+                        title={canMirror(cabinet).ok ? tr('Зеркальный корпус') : mirrorReason(cabinet)}
+                        disabled={!canMirror(cabinet).ok}
+                        onClick={() => mirrorCabinet(cabinet.id)}
+                      >
+                        ⇄
+                      </Button>
                       <Button onClick={() => removeCabinet(cabinet.id)} disabled={cabinets.length <= 1}>✕</Button>
                     </div>
                     {bad.map((i, k) => (

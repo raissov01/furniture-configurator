@@ -13,9 +13,11 @@ import { create } from 'zustand'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import {
   DEFAULT_ROOM,
+  canMirror,
   catalogOf,
   findSet,
   findTemplate,
+  mirrorCabinet as mirrorCabinetConfig,
   nextFreeOffset,
   parseProject,
   parseShopProfile,
@@ -168,6 +170,8 @@ type State = Snapshot & {
   setSelectedWall(wall: WallId): void
   setActive(id: string): void
   addCabinet(): void
+  duplicateCabinet(id: string): void
+  mirrorCabinet(id: string): void
   removeCabinet(id: string): void
   movePlacement(cabinetId: string, patch: Partial<Omit<Placement, 'cabinetId'>>): void
 
@@ -552,6 +556,60 @@ export const useConfigurator = create<State>((set, get) => ({
         { cabinetId: id, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
       ],
       activeId: id,
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [],
+      lastEditKey: null,
+    })
+  },
+
+  /**
+   * КӨШІРМЕ. `addCabinet` та белсенді модульді көшіреді, бірақ ол «жаңа
+   * модуль» деген мағынада: көшірме АТЫМЕН ажыратылуы керек, әйтпесе
+   * тізімде екі бірдей жол тұрады да, қайсысы қайсы екені білінбейді.
+   */
+  duplicateCabinet(id) {
+    const s = get()
+    const source = s.cabinets.find((c) => c.id === id)
+    if (!source) return
+    const entries = s.cabinets.map((c) => ({
+      cabinet: c,
+      placement: s.placements.find((p) => p.cabinetId === c.id)!,
+    }))
+    const newId = `cabinet-${Date.now().toString(36)}`
+    set({
+      cabinets: [...s.cabinets, { ...source, id: newId, name: `${source.name} (копия)` }],
+      placements: [
+        ...s.placements,
+        { cabinetId: newId, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
+      ],
+      activeId: newId,
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [],
+      lastEditKey: null,
+    })
+  },
+
+  /**
+   * АЙНА КӨШІРМЕСІ. Ережелері ядрода (`src/core/mirror.ts`): есіктің ашылу
+   * жағы, тұтқа, планка, секциялардың реті — бәрі сол-оң бойынша шағылысады.
+   * Бұрыштық корпус айналмайды, сондықтан батырма да сөндіріліп тұрады.
+   */
+  mirrorCabinet(id) {
+    const s = get()
+    const source = s.cabinets.find((c) => c.id === id)
+    if (!source || !canMirror(source).ok) return
+    const entries = s.cabinets.map((c) => ({
+      cabinet: c,
+      placement: s.placements.find((p) => p.cabinetId === c.id)!,
+    }))
+    const newId = `cabinet-${Date.now().toString(36)}`
+    set({
+      cabinets: [...s.cabinets, mirrorCabinetConfig(source, newId)],
+      placements: [
+        ...s.placements,
+        { cabinetId: newId, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
+      ],
+      activeId: newId,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
