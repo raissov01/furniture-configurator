@@ -129,10 +129,19 @@ export function Tour() {
   const left = Math.min(Math.max(12, rect.left), window.innerWidth - 340)
 
   return (
-    <div className="fixed inset-0 z-[60]" onClick={() => close(true)}>
+    /*
+     * ⚠ ҚАБАТ БАСҚАРУДЫ БӨГЕМЕЙДІ (`pointer-events-none`).
+     *
+     * Бірінші нұсқада ол бүкіл бетті жауып тұрған да, жаңа қолданушының
+     * КЛИКТЕРІ бағдарламаға жетпей қалған: адам «көмекші тұрып қалды» деп
+     * ойлайды. Жанды сайттағы e2e дәл соны ұстады (09-04). Енді тек
+     * карточканың өзі басылады, ал қалған бәрі бұрынғыдай жұмыс істейді —
+     * көмекшіні оқи отырып, бірден істеп көруге болады.
+     */
+    <div className="pointer-events-none fixed inset-0 z-[60]">
       {/* Қараңғы қабат ТЕСІКПЕН: көрсетіліп тұрған элемент жарық қалады. */}
       <div
-        className="absolute rounded-lg ring-2 ring-amber-400 transition-all"
+        className="pointer-events-none absolute rounded-lg ring-2 ring-amber-400 transition-all"
         style={{
           top: rect.top - 4,
           left: rect.left - 4,
@@ -142,9 +151,8 @@ export function Tour() {
         }}
       />
       <div
-        className="absolute w-80 rounded-xl border border-neutral-200 bg-white p-3 shadow-2xl dark:border-neutral-700 dark:bg-neutral-900"
+        className="pointer-events-auto absolute w-80 rounded-xl border border-neutral-200 bg-white p-3 shadow-2xl dark:border-neutral-700 dark:bg-neutral-900"
         style={{ top, left }}
-        onClick={(e) => e.stopPropagation()}
       >
         <p className="text-[10px] uppercase tracking-wider text-neutral-400">
           {tr('Шаг')} {step + 1} / {STEPS.length}
