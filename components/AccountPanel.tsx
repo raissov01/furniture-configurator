@@ -162,9 +162,13 @@ export function AccountPanel() {
       }
       setAccount(data.account)
       setForm({ email: '', password: '', shopName: '' })
-      await syncProfile()
-      await refreshProjects()
-      await refreshTeam()
+      /*
+       * Үшеуі ҚАТАР жүреді. Бұрын кезекпен күтетін, ал әрқайсысы бөлек
+       * баруы серверге дейінгі кідірісті ҮШ ЕСЕЛЕЙТІН: жақын тұрған дев
+       * серверде байқалмайды, ал VPS-те адам «Сохранить» батырмасын
+       * басқанда тізім әлі жаңармай тұрады.
+       */
+      await Promise.all([syncProfile(), refreshProjects(), refreshTeam()])
     } finally {
       setBusy(false)
     }
