@@ -14,9 +14,17 @@ const BUILD_ID = String(Date.now())
 
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_BUILD_ID: BUILD_ID },
-  // Docker үшін: Next өзіне керек модульдерді ғана жинайды да, образ
-  // node_modules-сыз шығады (1 vCPU VPS-те бұл маңызды).
-  output: 'standalone',
+  /*
+   * Docker үшін: Next өзіне керек модульдерді ғана жинайды да, образ
+   * node_modules-сыз шығады (1 vCPU VPS-те бұл маңызды).
+   *
+   * ⚠ ВЕРСЕЛЬДЕ ЖАРАМАЙДЫ. Онда билд өзі өтеді, бірақ соңында платформа
+   * `.next/next-server.js.nft.json` іздейді де, standalone режимінде ол
+   * файл жасалмағандықтан деплой құлайды («ENOENT ... nft.json»). Сол
+   * себепті белгі ТЕК өз машинамызда/Docker-де қойылады; Vercel өзінің
+   * `VERCEL` айнымалысымен танылады.
+   */
+  ...(process.env['VERCEL'] ? {} : { output: 'standalone' as const }),
   // `next dev` әйтпесе біздің CLAUDE.md-ке өз блогын жазып қояды.
   // CLAUDE.md — жобаның спеці, оны құрал өзгертпеуі керек.
   agentRules: false,
