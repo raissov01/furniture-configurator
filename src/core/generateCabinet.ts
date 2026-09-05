@@ -1595,8 +1595,17 @@ function validateDimension(value: number, field: string): void {
 export function mergeProjectPanels(items: { cabinetId: string; panels: Panel[] }[]): Panel[] {
   if (items.length === 1) return items[0]!.panels
   return items.flatMap(({ cabinetId, panels }) =>
-    panels.map((panel) => ({ ...panel, id: `${cabinetId}--${panel.id}` })),
+    panels.map((panel) => ({ ...panel, id: projectPanelId(cabinetId, panel.id, items.length) })),
   )
+}
+
+/**
+ * Детальдің ЖОБА ІШІНДЕГІ кілті. Ережесі `mergeProjectPanels`-пен БІР болуы
+ * керек: сахна мен тізім бір детальді бір атпен білгенде ғана 3D-дегі
+ * бөлектеу мен қағаздағы жол қатар жүреді.
+ */
+export function projectPanelId(cabinetId: string, panelId: string, cabinetCount: number): string {
+  return cabinetCount === 1 ? panelId : `${cabinetId}--${panelId}`
 }
 
 /**

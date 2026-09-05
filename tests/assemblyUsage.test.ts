@@ -8,8 +8,9 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  ASSEMBLY_STAGE_NAMES, SEED_CATALOG, assemblySteps, findTemplate, generateCabinet,
-  projectUsage, rolesLabel, templateToCabinet,
+  ASSEMBLY_STAGE_NAMES, SEED_CATALOG, assemblyStepIndex, assemblySteps, findTemplate,
+  generateCabinet, mergeProjectPanels, projectPanelId, projectUsage, rolesLabel,
+  templateToCabinet,
 } from '../src/core/index'
 import type { Panel } from '../src/core/index'
 
@@ -130,5 +131,49 @@ describe('материалдардың қолданылуы', () => {
     for (const m of usage.materials) {
       expect(m).not.toHaveProperty('sheets')
     }
+  })
+})
+
+/**
+ * 3D-де корпус қадаммен жиналады. Сахна ретті ӨЗІ ойлап таппауы керек:
+ * экрандағы N-қадам мен қағаздағы N-жол әрқашан бір деталь.
+ */
+describe('жинау қадамының индексі', () => {
+  it('әр детальдің нөмірі `assemblySteps`-пен бірдей', () => {
+    const index = assemblyStepIndex(panels)
+    expect(index.size).toBe(panels.length)
+    for (const step of steps) expect(index.get(step.panelId)).toBe(step.step)
+  })
+
+  it('қадамға дейінгі детальдар саны — дәл сол қадам', () => {
+    const index = assemblyStepIndex(panels)
+    for (const limit of [1, 3, panels.length]) {
+      const visible = panels.filter((p) => (index.get(p.id) ?? 0) <= limit)
+      expect(visible).toHaveLength(limit)
+    }
+  })
+
+  it('бірінші қадам — корпустың бір детальі, соңғысы жинаудың соңы', () => {
+    const index = assemblyStepIndex(panels)
+    const first = panels.filter((p) => index.get(p.id) === 1)
+    expect(first).toHaveLength(1)
+    expect(steps[0]!.stage).toBe('carcass')
+    expect(index.get(steps.at(-1)!.panelId)).toBe(panels.length)
+  })
+
+  it('ЕКІ КОРПУСТА кілттер жоба бойынша: нөмірлер қабаттаспайды', () => {
+    const second = panelsOf('kitchen-base-600')
+    const merged = mergeProjectPanels([
+      { cabinetId: 'a', panels },
+      { cabinetId: 'b', panels: second },
+    ])
+    const index = assemblyStepIndex(merged)
+    expect(index.size).toBe(panels.length + second.length)
+    // Сахна дәл осы кілтпен іздейді — ережесі бір жерде.
+    const key = projectPanelId('a', panels[0]!.id, 2)
+    expect(key).toBe(`a--${panels[0]!.id}`)
+    expect(index.has(key)).toBe(true)
+    // Жалғыз корпуста префикс ҚОСЫЛМАЙДЫ, әйтпесе бөлектеу жоғалады.
+    expect(projectPanelId('a', panels[0]!.id, 1)).toBe(panels[0]!.id)
   })
 })

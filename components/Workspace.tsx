@@ -104,6 +104,10 @@ export function Workspace() {
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
   const setRenderOpen = useConfigurator((s) => s.setRenderOpen)
+  const assemblyStep = useConfigurator((s) => s.assemblyStep)
+  const setAssemblyStep = useConfigurator((s) => s.setAssemblyStep)
+  const selected = useConfigurator((s) => s.selected)
+  const setSelected = useConfigurator((s) => s.setSelected)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
   const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
@@ -167,6 +171,12 @@ export function Workspace() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTyping(e.target)) return
+      // Escape — 3D-дегі таңдауды алу. Хоткейлер тізіміне кірмейді: бұл
+      // «әрекет» емес, кез келген жерден шығудың әдеттегі жолы.
+      if (e.key === 'Escape') {
+        if (selected) { e.preventDefault(); setSelected(null) }
+        return
+      }
       const hotkey = matchHotkey(e)
       if (!hotkey) return
       e.preventDefault()
@@ -306,6 +316,34 @@ export function Workspace() {
           >
             {tr('Рендер')}
           </Button>
+          {/*
+            ЖИНАУ ҚАДАМЫ: сахнада корпус нөлден бастап жиналады. Бұл — цехтың
+            жаңа адамына арналған: қай деталь қайдан кіретінін БІР РЕТ көрсе,
+            қағаздағы нұсқаулық түсінікті болады.
+          */}
+          <Button
+            active={assemblyStep !== null}
+            title={tr('Показать сборку по шагам')}
+            onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}
+          >
+            {tr('Сборка')}
+          </Button>
+          {assemblyStep !== null ? (
+            <>
+              <input
+                type="range"
+                aria-label={tr('Показать сборку по шагам')}
+                className="w-28 accent-neutral-900 dark:accent-neutral-100"
+                min={1}
+                max={Math.max(1, projectPanels.length)}
+                value={Math.min(assemblyStep, projectPanels.length)}
+                onChange={(e) => setAssemblyStep(Number(e.target.value))}
+              />
+              <span className="text-[11px] tabular-nums text-neutral-500">
+                {Math.min(assemblyStep, projectPanels.length)} / {projectPanels.length}
+              </span>
+            </>
+          ) : null}
           <ArButton />
           <Button
             active={silhouette.on}
@@ -397,6 +435,34 @@ export function Workspace() {
 
       <Tour />
       <RenderPanel />
+      {/*
+        3D-де БАСЫП таңдалған деталь: цехтың сұрағы «мынау қандай деталь»
+        деп басталады, ал жауап әрқашан бір жерде тұруы керек.
+      */}
+      {selected ? (() => {
+        // Іздеу ЖОБА тізімінен: бір жобадағы екі шкафтың детальі де осында.
+        const part = projectPanels.find((p) => p.id === selected)
+        if (!part) return null
+        return (
+          <div className="flex items-center gap-3 border-b border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+            <b>{part.label}</b>
+            <span className="tabular-nums text-neutral-500">
+              {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
+            </span>
+            <span className="tabular-nums text-amber-600 dark:text-amber-400">
+              {tr('Рез · цех')}: {part.cutLength}×{part.cutWidth}
+            </span>
+            <span className="tabular-nums text-neutral-500">
+              {part.drilling.length} {tr('отв.')}
+            </span>
+            {part.note ? <span className="truncate text-neutral-400">{part.note}</span> : null}
+            <div className="ml-auto">
+              <Button onClick={() => setSelected(null)}>{tr('Закрыть')}</Button>
+            </div>
+          </div>
+        )
+      })() : null}
+
       {sizeWarnings.length > 0 ? (
         <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
           {sizeWarnings

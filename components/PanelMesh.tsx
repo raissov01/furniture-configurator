@@ -7,7 +7,7 @@
 
 import { useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
-import { Html } from '@react-three/drei'
+import { Edges, Html } from '@react-three/drei'
 import { BufferAttribute, BufferGeometry, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import type { Axis, Catalog, Panel, SettingsOverride } from '@/src/core/index'
@@ -120,10 +120,16 @@ function cutoutHoles(panel: Panel): Path[] {
 }
 
 export function PanelMesh({
-  panel, thickness, centre, decorColor, catalog, settings,
+  panel, thickness, centre, decorColor, catalog, settings, pid,
 }: {
   panel: Panel
   thickness: number
+  /**
+   * Детальдің ЖОБА ІШІНДЕГІ кілті (`projectPanelId`). Бір жобада екі шкаф
+   * болса, екеуінде де `side-left` бар — сондықтан бөлектеу мен «Жоба»
+   * терезесіндегі жол осы кілт арқылы табысады. Берілмесе — панельдің өз id-і.
+   */
+  pid?: string | undefined
   /** Өрнекті салу үшін керек: кромка қалыңдығы РЕЗ ығысуын береді. */
   catalog: Catalog
   settings?: SettingsOverride | undefined
@@ -135,6 +141,9 @@ export function PanelMesh({
   const hovered = useConfigurator((s) => s.hovered)
   const setHovered = useConfigurator((s) => s.setHovered)
   const viewMode = useConfigurator((s) => s.viewMode)
+  const selected = useConfigurator((s) => s.selected)
+  const setSelected = useConfigurator((s) => s.setSelected)
+  const key = pid ?? panel.id
 
 
   const extents = useMemo(() => panelExtents(panel, thickness), [panel, thickness])
@@ -154,13 +163,15 @@ export function PanelMesh({
     return base
   }, [panel, extents, exploded, centre])
 
-  const isHovered = hovered === panel.id
+  const isHovered = hovered === key
+  /** Таңдалған деталь тінтуір кеткенде де БӨЛЕКТЕЛІП тұрады. */
+  const isSelected = selected === key
   /*
    * Мөлдір режимдер. `ghost` — ішін көру үшін жартылай мөлдір, `wire` — тек
    * әрең көрінетін сұлба. Тінтуір астындағы панель ӘРҚАШАН тұтас қалады:
    * әйтпесе мөлдір режимде нені меңзеп тұрғаның білінбейді.
    */
-  const opacity = viewMode === 'solid' || isHovered ? 1 : viewMode === 'ghost' ? 0.28 : 0.06
+  const opacity = viewMode === 'solid' || isHovered || isSelected ? 1 : viewMode === 'ghost' ? 0.28 : 0.06
 
   /**
    * Қиғаш деталь мен көлбеу крышка — жалғыз екі жағдай, онда панель әлем
@@ -244,6 +255,12 @@ export function PanelMesh({
   }, [panel.bevel, panel.finishedWidth, panel.finishedLength, panel.cutouts, panel.corners])
 
   const color = isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
+  /*
+   * Таңдалғанын ТҮСПЕН көрсетуге болмайды: декордың өзі сары (дуб, бук) —
+   * бөлектеу онда жоғалады. Сондықтан таңдалған детальдің ҚЫРЫ сызылады, ол
+   * кез келген декордың үстінен көрінеді.
+   */
+  const outline = isSelected ? <Edges color="#f2c14e" lineWidth={2.5} /> : null
   const toRad = (deg: number) => (deg * Math.PI) / 180
 
   if (shape || tilted) {
@@ -261,9 +278,14 @@ export function PanelMesh({
           position={shape ? [0, 0, 0] : [panel.finishedLength / 2, panel.finishedWidth / 2, thickness / 2]}
           onPointerOver={(e) => {
             e.stopPropagation()
-            setHovered(panel.id)
+            setHovered(key)
           }}
           onPointerOut={() => setHovered(null)}
+          onClick={(e) => {
+            e.stopPropagation()
+            // Екінші рет басу таңдауды АЛАДЫ: бөлектеу қалып қоймауы керек.
+            setSelected(isSelected ? null : key)
+          }}
         >
           {shape ? (
             <extrudeGeometry args={[shape, { depth: thickness, bevelEnabled: false }]} />
@@ -274,6 +296,7 @@ export function PanelMesh({
             color={color} roughness={0.7} metalness={0}
             transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
           />
+          {outline}
         </mesh>
       </group>
     )
@@ -284,9 +307,13 @@ export function PanelMesh({
       position={[position.x, position.y, position.z]}
       onPointerOver={(e) => {
         e.stopPropagation()
-        setHovered(panel.id)
+        setHovered(key)
       }}
       onPointerOut={() => setHovered(null)}
+      onClick={(e) => {
+        e.stopPropagation()
+        setSelected(isSelected ? null : key)
+      }}
     >
       <boxGeometry args={[extents.x, extents.y, extents.z]} />
       <meshStandardMaterial
@@ -298,10 +325,11 @@ export function PanelMesh({
         // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.
         depthWrite={opacity === 1}
       />
+      {outline}
       {panel.role === 'front' && panel.milling.length > 0 ? (
         <MillingLines panel={panel} catalog={catalog} settings={settings} extents={extents} />
       ) : null}
-      {isHovered ? (
+      {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>
           <div className="pointer-events-none whitespace-nowrap rounded bg-neutral-900/90 px-2 py-1 text-[11px] text-white shadow">
             <b>{panel.label}</b>

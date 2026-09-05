@@ -633,6 +633,63 @@ async function run() {
     await h.clickText('Закрыть', 700)
   })
 
+  /*
+   * ЖИНАУ ҚАДАМЫ: сахна да, «Жоба» терезесіндегі тізім де БІР ретті көреді.
+   * Тексерілетіні — сол байланыс: тізімдегі жолды бассаң, тақтадағы қадам
+   * дәл сол нөмір болады.
+   */
+  await test('Сборка по шагам: тізім мен 3D бір ретте', async () => {
+    await h.closeModals()
+    check(await h.clickText('Сборка', 900), 'жинау режимі қосылды')
+    const slider = await h.evaluate(`(() => {
+      // Тақтада «Разнести» слайдері де бар — өзімізді aria-label-мен табамыз.
+      const i = document.querySelector('input[aria-label="Показать сборку по шагам"]')
+      return i ? { max: Number(i.max), value: Number(i.value) } : null
+    })()`)
+    check(slider !== null, 'қадам слайдері шықты')
+    check(slider && slider.value === 1, 'бірінші қадамнан басталады')
+    // Осы кезде жобада бірнеше корпус тұр — қадам саны ЖОБА бойынша.
+    check(slider && slider.max > 1, `слайдердің шегі — деталь саны (${slider?.max})`)
+
+    check(await h.clickText('Проект', 800), '«Жоба» терезесі ашылды')
+    // Терезедегі «Сборка» табы (тақтадағы батырма емес — ол қосулы тұр).
+    const tab = await h.evaluate(`(() => {
+      const modal = document.querySelector('.fixed.inset-0.z-50')
+      if (!modal) return false
+      const b = [...modal.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Сборка')
+      if (!b) return false
+      b.click()
+      return true
+    })()`)
+    check(tab, 'жинау табы ашылды')
+    await h.wait(500)
+
+    const clicked = await h.evaluate(`(() => {
+      const modal = document.querySelector('.fixed.inset-0.z-50')
+      const rows = [...modal.querySelectorAll('button[data-step]')]
+      if (rows.length < 3) return 0
+      rows[2].click()
+      return rows.length
+    })()`)
+    // Тізімдегі жол саны мен слайдердің шегі БІР болуы керек: екеуі де бір
+    // ретті көрсетеді.
+    check(clicked === slider?.max, `тізімдегі жол саны слайдермен бірдей (${clicked} / ${slider?.max})`)
+    await h.wait(400)
+    await h.closeModals()
+
+    const after = await h.evaluate(
+      `Number(document.querySelector('input[aria-label="Показать сборку по шагам"]').value)`,
+    )
+    check(after === 3, `үшінші жолды басқанда қадам да үшінші (${after})`)
+
+    // Режимді сөндіріп кетеміз: келесі тестер ТОЛЫҚ шкафты көруі керек.
+    check(await h.clickText('Сборка', 700), 'жинау режимі сөнді')
+    const off = await h.evaluate(
+      `document.querySelector('input[aria-label="Показать сборку по шагам"]') === null`,
+    )
+    check(off, 'слайдер жоғалды')
+  })
+
   await test('Консольде қате жоқ', async () => {
     const real = session.consoleErrors.filter((e) => !/DevTools|favicon|THREE.Clock/.test(e))
     check(real.length === 0, `қате жоқ (${real.slice(0, 2).join(' | ') || 'таза'})`)

@@ -105,3 +105,15 @@ export const ASSEMBLY_STAGE_NAMES: Record<AssemblyStage, string> = {
   movable: 'Наполнение',
   front: 'Фасады',
 }
+
+
+/**
+ * Жинау қадамдарының индексі: `panel.id` → қадам нөмірі.
+ *
+ * 3D-де корпусты нөлден бастап жинап көрсету үшін керек. Рет `assemblySteps`
+ * -тен алынады, сондықтан ҚАҒАЗДАҒЫ нұсқаулықтың N-қадамы мен 3D-дегі
+ * N-қадам БІР деталь болады — екеуін бөлек санауға болмайды.
+ */
+export function assemblyStepIndex(panels: Panel[]): Map<string, number> {
+  return new Map(assemblySteps(panels).map((s) => [s.panelId, s.step]))
+}

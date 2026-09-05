@@ -18,7 +18,8 @@ import { useConfigurator } from '@/store/configurator'
 import { canvasSettings } from '@/lib/appearance'
 import type { CameraPreset } from '@/store/configurator'
 import {
-  ROD_DIAMETER, placementFootprint, silhouetteDataUri, silhouetteSize, wallById,
+  ROD_DIAMETER, assemblyStepIndex, mergeProjectPanels, placementFootprint, projectPanelId,
+  silhouetteDataUri, silhouetteSize, wallById,
 } from '@/src/core/index'
 import type {
   CabinetConfig, Catalog, HardwarePlacement, Panel, PanelOpening, Placement, Room, Vec3,
@@ -182,7 +183,17 @@ function CameraRig({
   return <OrbitControls ref={setControls} makeDefault enableDamping dampingFactor={0.12} />
 }
 
-function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Catalog; active: boolean }) {
+function CabinetGroup({
+  item, catalog, active, cabinetCount, stepOf,
+}: {
+  item: SceneItem
+  catalog: Catalog
+  active: boolean
+  /** Жобадағы корпус саны — детальдің кілтін сол шешеді. */
+  cabinetCount: number
+  /** Жоба бойынша жинау қадамы: кілт → нөмір. */
+  stepOf: Map<string, number>
+}) {
   const showDimensions = useConfigurator((s) => s.showDimensions)
   // Фасадты жасыру — корпустың ішін көрудің ең тура жолы (мөлдірлікпен қатар).
   const showFronts = useConfigurator((s) => s.showFronts)
@@ -197,18 +208,36 @@ function CabinetGroup({ item, catalog, active }: { item: SceneItem; catalog: Cat
     [item.cabinet],
   )
 
+  /*
+   * ЖИНАУ ҚАДАМЫ: сахнада тек осы қадамға дейінгі детальдар қалады. Рет
+   * ЯДРОДАН, әрі ЖОБА БОЙЫНША — сондықтан «Жоба → Сборка» тізіміндегі
+   * N-жол мен сахнадағы N-қадам БІР деталь.
+   */
+  const stepLimit = useConfigurator((s) => s.assemblyStep)
+  const visible = useMemo(
+    () => (stepLimit === null
+      ? item.panels
+      : item.panels.filter(
+        (p) => (stepOf.get(projectPanelId(item.cabinet.id, p.id, cabinetCount)) ?? 0) <= stepLimit,
+      )),
+    [item.panels, item.cabinet.id, cabinetCount, stepOf, stepLimit],
+  )
+
   return (
     <group
       // Y — ілмелі модульдің еденнен биіктігі (`placement.elevation`).
       position={[item.pose.position.x, item.pose.position.y, item.pose.position.z]}
       rotation={[0, (item.pose.rotationY * Math.PI) / 180, 0]}
     >
-      {item.panels.filter((p) => showFronts || p.role !== 'front').map((p) => {
+      {visible
+        .filter((p) => showFronts || p.role !== 'front')
+        .map((p) => {
         const material = materialOf(p.materialId)
         const mesh = (
           <PanelMesh
             catalog={catalog}
             key={p.id}
+            pid={projectPanelId(item.cabinet.id, p.id, cabinetCount)}
             panel={p}
             thickness={material?.thickness ?? 16}
             centre={centre}
@@ -454,6 +483,17 @@ export default function Scene({
   const setLiveScene = useConfigurator((s) => s.setLiveScene)
   const canvas = canvasSettings(quality)
 
+  /*
+   * Жинау қадамдары ЖОБА БОЙЫНША саналады — дәл «Жоба → Сборка» тізіміндегі
+   * тізбек (ол да `mergeProjectPanels`-тен кейінгі тізімді көреді).
+   */
+  const stepOf = useMemo(
+    () => assemblyStepIndex(mergeProjectPanels(
+      items.map((i) => ({ cabinetId: i.cabinet.id, panels: i.panels })),
+    )),
+    [items],
+  )
+
   // «Комната» пресеті бүкіл бөлмеге қарайды, қалғаны — белсенді шкафқа.
   const view = useMemo<{ target: Vec3; box: { W: number; H: number; D: number }; facingY: number }>(() => {
     if (preset === 'room' || !active) {
@@ -556,6 +596,8 @@ export default function Scene({
             item={item}
             catalog={catalog}
             active={item.cabinet.id === activeId}
+            cabinetCount={items.length}
+            stepOf={stepOf}
           />
         ))}
       </group>

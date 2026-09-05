@@ -161,6 +161,19 @@ type State = Snapshot & {
   cameraPreset: CameraPreset
   /** Тінтуір астындағы панельдің id-і */
   hovered: string | null
+  /**
+   * 3D-де БАСЫП таңдалған деталь (`panel.id`).
+   *
+   * Hover-ден айырмасы: таңдау тінтуір кеткенде жоғалмайды, сондықтан оның
+   * өлшемін оқып, деталировкадан табуға болады. Цехтың сұрағы әрқашан
+   * «мынау қандай деталь» деп басталады.
+   */
+  selected: string | null
+  /**
+   * ЖИНАУ ҚАДАМЫ: сахнада тек осы қадамға дейінгі детальдар көрінеді.
+   * `null` — бәрі көрінеді (қалыпты күй).
+   */
+  assemblyStep: number | null
 
   edit(key: string, patch: Partial<CabinetConfig>): void
   editSection(index: number, patch: Partial<Section>, key: string): void
@@ -208,6 +221,8 @@ type State = Snapshot & {
 
   editRoom(patch: Partial<Room>): void
   setSelectedWall(wall: WallId): void
+  setSelected(id: string | null): void
+  setAssemblyStep(step: number | null): void
   setActive(id: string): void
   addCabinet(): void
   duplicateCabinet(id: string): void
@@ -285,6 +300,8 @@ export const useConfigurator = create<State>((set, get) => ({
   showDimensions: true,
   cameraPreset: 'three-quarter',
   hovered: null,
+  selected: null,
+  assemblyStep: null,
 
   edit(key, patch) {
     const s = get()
@@ -588,7 +605,9 @@ export const useConfigurator = create<State>((set, get) => ({
   },
 
   setSelectedWall: (selectedWall) => set({ selectedWall }),
-  setActive: (activeId) => set({ activeId, templateId: '' }),
+  // Басқа корпусқа ауысқанда таңдау ЕСКІ корпустың детальінде қалып қоймауы
+  // керек: тақтадағы өлшем сол сәтте жоқ детальдікі болып шығар еді.
+  setActive: (activeId) => set({ activeId, templateId: '', selected: null }),
 
   /** Жаңа шкаф таңдалған қабырғаның бос жеріне қойылады. */
   addCabinet() {
@@ -733,6 +752,8 @@ export const useConfigurator = create<State>((set, get) => ({
   setShowDimensions: (showDimensions) => set({ showDimensions }),
   setCameraPreset: (cameraPreset) => set({ cameraPreset }),
   setHovered: (hovered) => set({ hovered }),
+  setSelected: (selected) => set({ selected }),
+  setAssemblyStep: (assemblyStep) => set({ assemblyStep }),
   setGalleryOpen: (galleryOpen) => set({ galleryOpen }),
   setAiOpen: (aiOpen) => set({ aiOpen }),
   setRoomOpen: (roomOpen) => set({ roomOpen }),

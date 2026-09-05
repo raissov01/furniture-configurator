@@ -405,8 +405,8 @@ export const uz: Record<string, string> = {
   'Где стоит': 'Qayerda turadi',
   'Листы здесь не считаются: их знает только раскрой. Площадь — по готовому размеру.':
     'Bu yerda listlar hisoblanmaydi: ularni faqat raskroy biladi. Maydon tayyor o\'lcham bo\'yicha.',
-  'Наведите на строку — деталь подсветится в 3D. Порядок выводится из геометрии: снизу вверх, снаружи внутрь, крышка последней.':
-    'Qatorga olib borsangiz detal 3D da yoritiladi. Tartib geometriyadan chiqadi: pastdan tepaga, tashqaridan ichkariga, tepa panel oxirida.',
+  'Наведите на строку — деталь подсветится в 3D, нажмите — корпус соберётся до этого шага. Порядок выводится из геометрии: снизу вверх, снаружи внутрь, крышка последней.':
+    'Qatorga olib borsangiz detal 3D da yoritiladi, bossangiz korpus shu bosqichgacha yig\'iladi. Tartib geometriyadan chiqadi: pastdan tepaga, tashqaridan ichkariga, tepa panel oxirida.',
   'Закрепить': 'Mahkamlash',
   'Фасады': 'Fasadlar',
   'отв.': 'tesh.',
@@ -639,4 +639,5 @@ export const uz: Record<string, string> = {
   'Корпуса': 'Korpuslar',
   'Найти декор: egger дуб, K076, бетон…': 'Dekor topish: egger dub, K076, beton…',
   'Все бренды': 'Barcha brendlar',
+  'Показать сборку по шагам': 'Yig\'ishni bosqichma-bosqich ko\'rsatish',
 }

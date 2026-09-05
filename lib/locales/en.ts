@@ -401,8 +401,8 @@ export const en: Record<string, string> = {
   'Где стоит': 'Where it sits',
   'Листы здесь не считаются: их знает только раскрой. Площадь — по готовому размеру.':
     'Sheets are not counted here: only nesting knows them. Area is by the finished size.',
-  'Наведите на строку — деталь подсветится в 3D. Порядок выводится из геометрии: снизу вверх, снаружи внутрь, крышка последней.':
-    'Hover a row and the part lights up in 3D. The order comes from the geometry: bottom to top, outside in, top panel last.',
+  'Наведите на строку — деталь подсветится в 3D, нажмите — корпус соберётся до этого шага. Порядок выводится из геометрии: снизу вверх, снаружи внутрь, крышка последней.':
+    'Hover a row and the part lights up in 3D; click and the carcass is assembled up to that step. The order comes from the geometry: bottom to top, outside in, top panel last.',
   'Закрепить': 'Pin',
   'Фасады': 'Fronts',
   'отв.': 'holes',
@@ -635,4 +635,5 @@ export const en: Record<string, string> = {
   'Корпуса': 'Carcasses',
   'Найти декор: egger дуб, K076, бетон…': 'Find a decor: egger oak, K076, concrete…',
   'Все бренды': 'All brands',
+  'Показать сборку по шагам': 'Show the assembly step by step',
 }

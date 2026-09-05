@@ -33,6 +33,13 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
   const open = useConfigurator((s) => s.projectOpen)
   const setOpen = useConfigurator((s) => s.setProjectOpen)
   const setHovered = useConfigurator((s) => s.setHovered)
+  // Тізімдегі жол мен 3D бір-бірін БІЛЕДІ: жолды бассаң, сахна сол қадамға
+  // тұрады да, деталь бөлектеледі. Цехтағы адам «мынау қайсысы» дегенді
+  // қағаздан да, экраннан да бір қимылмен табады.
+  const setSelected = useConfigurator((s) => s.setSelected)
+  const selected = useConfigurator((s) => s.selected)
+  const assemblyStep = useConfigurator((s) => s.assemblyStep)
+  const setAssemblyStep = useConfigurator((s) => s.setAssemblyStep)
   const [tab, setTab] = useState<Tab>('materials')
 
   const usage = useMemo(() => {
@@ -134,10 +141,21 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
                       </span>
                     </div>
                   ) : null}
-                  <div
-                    className="flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  <button
+                    type="button"
+                    data-step={step.step}
+                    className={cn(
+                      'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                      selected === step.panelId && 'bg-amber-100 dark:bg-amber-900/40',
+                      // Осы қадамға дейін жиналғаны — солғын емес, жиналмағаны солғын.
+                      assemblyStep !== null && step.step > assemblyStep && 'opacity-40',
+                    )}
                     onMouseEnter={() => setHovered(step.panelId)}
                     onMouseLeave={() => setHovered(null)}
+                    onClick={() => {
+                      setAssemblyStep(step.step)
+                      setSelected(step.panelId)
+                    }}
                   >
                     <span className="w-6 shrink-0 text-right tabular-nums text-neutral-400">{step.step}</span>
                     <span className="flex-1">{step.label}</span>
@@ -147,12 +165,12 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
                         {step.holes} {tr('отв.')}
                       </span>
                     ) : null}
-                  </div>
+                  </button>
                 </div>
               )
             })}
             <p className="mt-3 text-[10px] leading-relaxed text-neutral-400">
-              {tr('Наведите на строку — деталь подсветится в 3D. Порядок выводится из геометрии: снизу вверх, снаружи внутрь, крышка последней.')}
+              {tr('Наведите на строку — деталь подсветится в 3D, нажмите — корпус соберётся до этого шага. Порядок выводится из геометрии: снизу вверх, снаружи внутрь, крышка последней.')}
             </p>
           </div>
         )}
