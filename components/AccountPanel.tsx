@@ -14,7 +14,9 @@ import { parseProject, parseShopProfile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 
-type Account = { email: string; shopName: string }
+// `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
+// сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
+type Account = { userId: string; email: string; shopName: string }
 type PlanInfo = {
   id: string
   name: string
@@ -53,6 +55,14 @@ export function AccountPanel() {
   const [team, setTeam] = useState<{ members: Member[]; invites: Invite[]; limit: number | null } | null>(null)
   /** Жаңа шақырудың сілтемесі — көшіріп алу үшін бір рет көрсетіледі. */
   const [inviteLink, setInviteLink] = useState<string | null>(null)
+  /**
+   * Шығарылуы РАСТАЛУЫН күтіп тұрған адам.
+   *
+   * Екі басу: адамды цехтан шығару — қайтарылмайтын әрекет, ал батырма
+   * тізімде, тінтуірдің астында тұр. Бірінші басу сұрақ қояды, екіншісі
+   * орындайды.
+   */
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
   /**
    * Шақыру сілтемесімен келген адамның токені (`?invite=…`).
    *
@@ -206,6 +216,35 @@ export function AccountPanel() {
     }
   }
 
+  const removeMember = async (userId: string) => {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/team/member', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      const data = (await res.json()) as { members?: Member[]; error?: string }
+      if (!res.ok) {
+        setError(data.error ?? 'Не получилось')
+        return
+      }
+      setConfirmRemove(null)
+      // Өзін шығарған адам цехтан айырылады: сеансы серверде жойылды,
+      // сондықтан терезені кірмеген күйге қайтарамыз.
+      if (userId === account?.userId) {
+        setAccount(null)
+        setTeam(null)
+        setProjects([])
+        return
+      }
+      await refreshTeam()
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const saveToCloud = async () => {
     setBusy(true)
     setError(null)
@@ -314,15 +353,50 @@ export function AccountPanel() {
                   </Button>
                 </div>
 
+                {/*
+                  Иесі — тізімдегі БІРІНШІ адам (цехты сол тіркеген). Оны
+                  шығаруға болмайды, әрі шығара алатын да сол ғана — ережені
+                  сервер де тексереді (`removeMember`).
+                */}
                 <ul className="mt-1.5 space-y-0.5">
-                  {team.members.map((m) => (
-                    <li key={m.userId} className="flex items-baseline justify-between gap-2 text-xs">
-                      <span className="min-w-0 truncate">{m.email}</span>
-                      <span className="shrink-0 text-[10px] tabular-nums text-neutral-400">
-                        {new Date(m.joinedAt).toLocaleDateString('ru-RU')}
-                      </span>
-                    </li>
-                  ))}
+                  {team.members.map((m, i) => {
+                    const owner = i === 0
+                    const self = m.userId === account?.userId
+                    const iAmOwner = team.members[0]?.userId === account?.userId
+                    const canRemove = !owner && (iAmOwner || self)
+                    return (
+                      <li key={m.userId} className="flex items-baseline justify-between gap-2 text-xs">
+                        <span className="min-w-0 truncate">
+                          {m.email}
+                          {owner ? (
+                            <span className="ml-1 text-[10px] text-neutral-400">{tr('владелец')}</span>
+                          ) : null}
+                        </span>
+                        <span className="flex shrink-0 items-baseline gap-2">
+                          <span className="text-[10px] tabular-nums text-neutral-400">
+                            {new Date(m.joinedAt).toLocaleDateString('ru-RU')}
+                          </span>
+                          {canRemove ? (
+                            <Button
+                              disabled={busy}
+                              title={self ? tr('Выйти из цеха') : tr('Убрать из цеха')}
+                              onClick={() => {
+                                if (confirmRemove === m.userId) void removeMember(m.userId)
+                                else setConfirmRemove(m.userId)
+                              }}
+                            >
+                              {confirmRemove === m.userId
+                                ? tr('Точно?')
+                                // «Выйти» ЕМЕС: тақтада шығудың өз батырмасы
+                                // бар, екеуі бір аталса адам да, тест те
+                                // шатасады.
+                                : self ? tr('Уйти') : tr('Убрать')}
+                            </Button>
+                          ) : null}
+                        </span>
+                      </li>
+                    )
+                  })}
                 </ul>
 
                 {/*

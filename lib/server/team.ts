@@ -1,5 +1,5 @@
 /**
- * Цехтың командасы: шақыру, тізім, шақыруды қайтарып алу.
+ * Цехтың командасы: шақыру, тізім, шақыруды қайтарып алу, адамды шығару.
  *
  * РӨЛ ЖОҚ әрі ӘДЕЙІ жоқ. Цехта екі-үш адам болады да, олардың бәрі бір
  * жобамен жұмыс істейді; «кім кімге не істей алады» деген қабатты бүгін
@@ -96,4 +96,63 @@ export function checkInvite(token: string, now = Date.now()): InviteCheck {
 
 export function markInviteUsed(token: string, userId: string, now = Date.now()): void {
   db().prepare('UPDATE invites SET used_by = ?, used_at = ? WHERE token = ?').run(userId, now, token)
+}
+
+/**
+ * Цехтың ИЕСІ — ең бірінші тіркелген адам.
+ *
+ * Рөл кестесі жоқ (жоғарыдағы ескертпені қара), сондықтан «кім шығара алады»
+ * дегенді ретпен шешеміз: цехты ашқан адам — иесі. Бұл ереже дерекке жаңа
+ * баған қоспайды әрі ойдан шығарылмаған: цехты ол тіркеген.
+ */
+export function founderOf(shopId: string): string | null {
+  const row = db()
+    .prepare('SELECT id FROM users WHERE shop_id = ? ORDER BY created_at, id LIMIT 1')
+    .get(shopId) as { id: string } | undefined
+  return row?.id ?? null
+}
+
+export type RemoveResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * Адамды цехтан шығару.
+ *
+ * Кім шығара алады: цехтың ИЕСІ — кез келгенді, ал қалғаны — тек ӨЗІН
+ * («цехтан кету»). Иенің өзін шығаруға болмайды: цех иесіз қалар еді.
+ *
+ * ⚠ ЕҢ БАСТЫСЫ — ШАҚЫРУ ҚАЙТА АШЫЛЫП КЕТПЕУІ. `invites.used_by` бағаны
+ * `ON DELETE SET NULL`, сондықтан адамды өшірген бойда ол КІРГЕН шақыру
+ * «әлі қолданылмаған» болып қалады да, сілтемесі сақталған адам цехқа
+ * қайта кіре алар еді. Сол себепті алдымен сол шақырулар қайтарып алынады.
+ *
+ * Жобалар цехтікі (`projects.shop_id`) — адам кеткенде ештеңе жоғалмайды.
+ * Сеанстары каскадпен өшеді: шығарылған адам сол сәтте-ақ шығып қалады.
+ */
+export function removeMember(
+  shopId: string, actorUserId: string, targetUserId: string, now = Date.now(),
+): RemoveResult {
+  const target = db()
+    .prepare('SELECT id FROM users WHERE id = ? AND shop_id = ?')
+    .get(targetUserId, shopId) as { id: string } | undefined
+  if (!target) return { ok: false, error: 'Этот человек не из вашего цеха' }
+
+  const founder = founderOf(shopId)
+  if (targetUserId === founder) return { ok: false, error: 'Владельца цеха убрать нельзя' }
+  if (actorUserId !== founder && actorUserId !== targetUserId) {
+    return { ok: false, error: 'Убирать людей может только владелец цеха' }
+  }
+
+  const database = db()
+  database.exec('BEGIN')
+  try {
+    database
+      .prepare('UPDATE invites SET revoked_at = ? WHERE used_by = ? AND revoked_at IS NULL')
+      .run(now, targetUserId)
+    database.prepare('DELETE FROM users WHERE id = ? AND shop_id = ?').run(targetUserId, shopId)
+    database.exec('COMMIT')
+  } catch (error) {
+    database.exec('ROLLBACK')
+    throw error
+  }
+  return { ok: true }
 }

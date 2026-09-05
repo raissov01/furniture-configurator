@@ -130,3 +130,91 @@ describe('команданың тізімі', () => {
     expect(rows.find((r) => r.token === revoked.token)!.revoked).toBe(true)
   })
 })
+
+/**
+ * Адамды цехтан шығару.
+ *
+ * Ең қауіпті тұсы — ШАҚЫРУДЫҢ ҚАЙТА АШЫЛУЫ: адам өшкенде `invites.used_by`
+ * NULL болады да, ол кірген сілтеме қайтадан жарамды көрінер еді. Сол
+ * себепті сілтеме шығару кезінде қайтарып алынады.
+ */
+describe('цехтан шығару', () => {
+  const joined = (shopId: string, email: string) => {
+    const r = auth.register(email, 'password123', '', shopId)
+    if (!r.ok) throw new Error(r.error)
+    return r.account
+  }
+
+  it('иесі басқа адамды шығарады, жобалар цехта қалады', () => {
+    const a = owner('team-12@example.kz')
+    const worker = joined(a.shopId, 'worker-12@example.kz')
+    store.writeProject(a.shopId, 'Ортақ жоба', { any: 1 })
+
+    expect(team.removeMember(a.shopId, a.userId, worker.userId).ok).toBe(true)
+    expect(team.listMembers(a.shopId).map((m) => m.email)).toEqual(['team-12@example.kz'])
+    expect(store.listProjects(a.shopId)).toHaveLength(1)
+  })
+
+  it('ШЫҒАРЫЛҒАН адамның сеансы сол сәтте жарамсыз', () => {
+    const a = owner('team-13@example.kz')
+    const r = auth.register('worker-13@example.kz', 'password123', '', a.shopId)
+    if (!r.ok) throw new Error(r.error)
+    expect(auth.accountFromToken(r.token)?.email).toBe('worker-13@example.kz')
+
+    team.removeMember(a.shopId, a.userId, r.account.userId)
+    expect(auth.accountFromToken(r.token)).toBe(null)
+  })
+
+  it('ШАҚЫРУ ҚАЙТА АШЫЛМАЙДЫ: адам кеткен соң сілтеме жарамсыз', () => {
+    const a = owner('team-14@example.kz')
+    const invite = team.createInvite(a.shopId, a.userId)
+    const worker = joined(a.shopId, 'worker-14@example.kz')
+    team.markInviteUsed(invite.token, worker.userId)
+
+    team.removeMember(a.shopId, a.userId, worker.userId)
+    const check = team.checkInvite(invite.token)
+    expect(check.ok).toBe(false)
+    if (!check.ok) expect(check.error).toMatch(/отозвано/)
+  })
+
+  it('ИЕСІН шығаруға болмайды — цех иесіз қалар еді', () => {
+    const a = owner('team-15@example.kz')
+    const worker = joined(a.shopId, 'worker-15@example.kz')
+    const result = team.removeMember(a.shopId, worker.userId, a.userId)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toMatch(/[Вв]ладельца/)
+    expect(team.listMembers(a.shopId)).toHaveLength(2)
+  })
+
+  it('қатардағы адам БАСҚАНЫ шығара алмайды, ӨЗІ кете алады', () => {
+    const a = owner('team-16@example.kz')
+    const one = joined(a.shopId, 'worker-16a@example.kz')
+    const two = joined(a.shopId, 'worker-16b@example.kz')
+
+    const denied = team.removeMember(a.shopId, one.userId, two.userId)
+    expect(denied.ok).toBe(false)
+    if (!denied.ok) expect(denied.error).toMatch(/владелец/)
+
+    expect(team.removeMember(a.shopId, one.userId, one.userId).ok).toBe(true)
+    expect(team.listMembers(a.shopId).map((m) => m.email)).toEqual([
+      'team-16@example.kz', 'worker-16b@example.kz',
+    ])
+  })
+
+  it('БӨТЕН ЦЕХТЫҢ адамына тиісе алмайды', () => {
+    const a = owner('team-17@example.kz')
+    const b = owner('team-18@example.kz')
+    const worker = joined(b.shopId, 'worker-18@example.kz')
+
+    const result = team.removeMember(a.shopId, a.userId, worker.userId)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toMatch(/не из вашего цеха/)
+    expect(team.listMembers(b.shopId)).toHaveLength(2)
+  })
+
+  it('иесі — ең бірінші тіркелген адам', () => {
+    const a = owner('team-19@example.kz')
+    joined(a.shopId, 'worker-19@example.kz')
+    expect(team.founderOf(a.shopId)).toBe(a.userId)
+  })
+})

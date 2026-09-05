@@ -636,4 +636,10 @@ export const en: Record<string, string> = {
   'Найти декор: egger дуб, K076, бетон…': 'Find a decor: egger oak, K076, concrete…',
   'Все бренды': 'All brands',
   'Показать сборку по шагам': 'Show the assembly step by step',
+  'владелец': 'owner',
+  'Выйти из цеха': 'Leave the shop',
+  'Убрать из цеха': 'Remove from the shop',
+  'Точно?': 'Sure?',
+  'Уйти': 'Leave',
+  'Убрать': 'Remove',
 }

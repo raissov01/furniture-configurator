@@ -640,4 +640,10 @@ export const uz: Record<string, string> = {
   'Найти декор: egger дуб, K076, бетон…': 'Dekor topish: egger dub, K076, beton…',
   'Все бренды': 'Barcha brendlar',
   'Показать сборку по шагам': 'Yig\'ishni bosqichma-bosqich ko\'rsatish',
+  'владелец': 'egasi',
+  'Выйти из цеха': 'Sexdan chiqish',
+  'Убрать из цеха': 'Sexdan chiqarish',
+  'Точно?': 'Aniqmi?',
+  'Уйти': 'Chiqish',
+  'Убрать': 'Chiqarish',
 }

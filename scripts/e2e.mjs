@@ -185,7 +185,26 @@ function makeHelpers({ send }) {
     }
   }
 
-  return { evaluate, wait, goto, text, clickText, clickContains, cutListRows, setNumberByLabel, closeModals }
+  /**
+   * Шарт орындалғанша күту.
+   *
+   * Тіркелген `wait(5000)` жарамайды: бұлтқа сақтау жергілікті машинада
+   * 300 мс, ал алыс серверде секундтарға созылады — сол себепті аккаунт
+   * тесті кейде жалған құлайтын. Енді күту НӘТИЖЕ бойынша.
+   */
+  const until = async (expression, timeoutMs = 20000, stepMs = 400) => {
+    const deadline = Date.now() + timeoutMs
+    for (;;) {
+      if (await evaluate(expression)) return true
+      if (Date.now() > deadline) return false
+      await wait(stepMs)
+    }
+  }
+
+  return {
+    evaluate, wait, until, goto, text, clickText, clickContains, cutListRows,
+    setNumberByLabel, closeModals,
+  }
 }
 
 // ── Тестер ───────────────────────────────────────────────────────────────────
@@ -587,6 +606,8 @@ async function run() {
     await h.clickText('Закрыть', 800)
   })
 
+  const ownerEmail = `e2e-${Math.floor(Date.now() / 1000)}@example.kz`
+
   await test('Аккаунт: тіркелу, бұлтқа сақтау, қайта кіру', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
@@ -594,7 +615,8 @@ async function run() {
     check(await h.clickText('Регистрация', 700), 'тіркелу табы')
 
     // Әр жүгірісте бөлек пошта: база тесттен кейін де қалады.
-    const email = `e2e-${Math.floor(Date.now() / 1000)}@example.kz`
+    // Келесі тест (команда) ДӘЛ ОСЫ иенің атынан кіреді.
+    const email = ownerEmail
     const fill = async (label, value) => h.evaluate(`(() => {
       const l = [...document.querySelectorAll('label')].find((x) => x.textContent.includes(${JSON.stringify(label)}))
       if (!l) return false
@@ -617,20 +639,107 @@ async function run() {
 
     // ⚠ Кідіріс АЛЫС серверге есептелген: жоба сақталуы жергілікті машинада
     // 300 мс, ал VPS-те (тіркелу + профиль + тізім) секундтарға созылады.
-    check(await h.clickText('Сохранить текущий', 5000), 'жоба сақталды')
-    const saved = await h.text()
-    check(!saved.includes('Пока пусто'), 'жоба тізімде пайда болды')
+    check(await h.clickText('Сохранить текущий', 800), 'жоба сақталды')
+    check(
+      await h.until(`!document.body.innerText.includes('Пока пусто')`),
+      'жоба тізімде пайда болды',
+    )
 
     check(await h.clickText('Выйти', 1500), 'шығу')
     check(await h.clickText('Вход', 600), 'кіру табы')
     await fill('Почта', email)
     await fill('Пароль', 'password123')
     await h.wait(400)
-    check(await h.clickText('Войти', 2500), 'қайта кірді')
-    const back = await h.text()
-    check(back.includes('Цех E2E'), 'аккаунт қалпына келді')
-    check(!back.includes('Пока пусто'), 'сақталған жоба орнында')
+    check(await h.clickText('Войти', 800), 'қайта кірді')
+    check(await h.until(`document.body.innerText.includes('Цех E2E')`), 'аккаунт қалпына келді')
+    check(
+      await h.until(`!document.body.innerText.includes('Пока пусто')`),
+      'сақталған жоба орнында',
+    )
     await h.clickText('Закрыть', 700)
+  })
+
+  /*
+   * КОМАНДА: шақыру → қосылу → шығару.
+   *
+   * Алдыңғы тест цехтың ИЕСІ болып кірген күйде бітеді, сондықтан осында
+   * шақыруды сол жасайды. Тексерілетіні — шығарудың ТОЛЫҚ шынжыры: адам
+   * тізімнен кетеді, ал оның сілтемесі қайта ашылмайды.
+   */
+  await test('Команда: шақыру, қосылу, цехтан шығару', async () => {
+    await h.closeModals()
+    check(await h.clickText('Аккаунт', 1200), 'аккаунт терезесі ашылды')
+    check(await h.clickText('Пригласить', 2000), 'шақыру жасалды')
+    const link = await h.evaluate(`(() => {
+      const i = [...document.querySelectorAll('input[readonly]')].find((x) => x.value.includes('invite='))
+      return i ? i.value : null
+    })()`)
+    check(typeof link === 'string', 'шақыру сілтемесі көрінді')
+    check(await h.clickText('Выйти', 1500), 'иесі шықты')
+    await h.closeModals()
+
+    // Шақырумен келген адам ЖАҢА цех ашпайды — барына қосылады.
+    const worker = `worker-${Date.now()}@example.kz`
+    await session.send('Page.navigate', { url: link })
+    await h.wait(9000)
+    await h.clickText('Аккаунт', 1200)
+    await h.clickText('Регистрация', 600)
+    const fill = async (label, value) => h.evaluate(`(() => {
+      const l = [...document.querySelectorAll('label')].find((x) => x.textContent.includes(${JSON.stringify(label)}))
+      if (!l) return false
+      const i = l.querySelector('input')
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+      setter.call(i, ${JSON.stringify('')} + ${JSON.stringify(value)})
+      i.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    })()`)
+    await fill('Почта', worker)
+    await fill('Пароль', 'password123')
+    await h.wait(400)
+    check(await h.clickText('Создать аккаунт', 800), 'жұмысшы қосылды')
+    /*
+     * Команда тізімі БӨЛЕК сұраныспен келеді. Мәтіннен іздеу жарамайды:
+     * терезенің басында аккаунттың ӨЗ поштасы тұр, сондықтан «пошта бар»
+     * дегені тізім келді дегенді білдірмейді. Жолдардың ӨЗІН күтеміз.
+     */
+    check(
+      await h.until(`[...document.querySelectorAll('li')]
+        .filter((x) => x.textContent.includes('@')).length >= 2`),
+      'тізімде екі адам',
+    )
+    check((await h.text()).includes('Цех E2E'), 'бөтен цех емес, БАР цехқа кірді')
+
+    // Қатардағы адамның өз жолында «Уйти» тұрады, ал иесінде ештеңе жоқ.
+    const labels = await h.evaluate(`(() => {
+      const rows = [...document.querySelectorAll('li')].filter((x) => x.textContent.includes('@'))
+      return rows.map((r) => [...r.querySelectorAll('button')].map((b) => b.textContent.trim()).join(','))
+    })()`)
+    check(JSON.stringify(labels).includes('Уйти'), `өз жолында «Уйти» (${JSON.stringify(labels)})`)
+
+    // Иесі қайта кіріп, жұмысшыны шығарады: екі басу — сұрақ, сосын әрекет.
+    check(await h.clickText('Выйти', 1500), 'жұмысшы шықты')
+    await h.clickText('Вход', 600)
+    await fill('Почта', ownerEmail)
+    await fill('Пароль', 'password123')
+    await h.wait(400)
+    check(await h.clickText('Войти', 800), 'иесі қайта кірді')
+    /*
+     * Батырма ПАЙДА БОЛҒАНЫ жеткіліксіз: сұраныстар бітпей тұрғанда ол әлі
+     * `disabled`, ал өшірулі батырманы басу үнсіз өтеді де, тест жалған
+     * «бастым» деп есептейді. Сондықтан белсенді болғанын күтеміз.
+     */
+    check(
+      await h.until(`[...document.querySelectorAll('button')]
+        .some((b) => b.textContent.trim() === 'Убрать' && !b.disabled)`),
+      'иесі қайта кірді',
+    )
+    check(await h.clickText('Убрать', 600), 'шығару сұралды')
+    check(await h.clickText('Точно?', 800), 'шығару расталды')
+    check(
+      await h.until(`!document.body.innerText.includes(${JSON.stringify(worker)})`),
+      'жұмысшы тізімнен кетті',
+    )
+    await h.closeModals()
   })
 
   /*

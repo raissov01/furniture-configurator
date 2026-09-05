@@ -1,0 +1,29 @@
+import { NextResponse } from 'next/server'
+import { cloudOff } from '@/lib/server/cloud'
+import { currentAccount } from '@/lib/server/session'
+import { listMembers, removeMember } from '@/lib/server/team'
+
+/**
+ * Адамды цехтан шығару.
+ *
+ * Бөлек маршрут: `/api/team` DELETE-і ШАҚЫРУДЫ қайтарып алады, ал бұл —
+ * адамды шығарады. Екеуін бір денеге сыйдырсақ («token бе, әлде userId ме»),
+ * қателескен сұраныс үнсіз басқа әрекет жасар еді.
+ */
+export async function DELETE(request: Request): Promise<Response> {
+  const off = cloudOff()
+  if (off) return off
+
+  const account = await currentAccount()
+  if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
+
+  const body = (await request.json().catch(() => null)) as { userId?: unknown } | null
+  const userId = typeof body?.userId === 'string' ? body.userId : ''
+  if (!userId) return NextResponse.json({ error: 'Не указан человек' }, { status: 400 })
+
+  const result = removeMember(account.shopId, account.userId, userId)
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: 403 })
+
+  // Тізімді бірден қайтарамыз: клиент екінші сұраныс жасамауы керек.
+  return NextResponse.json({ members: listMembers(account.shopId) })
+}
