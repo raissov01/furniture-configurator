@@ -42,18 +42,26 @@ export function ArButton() {
         setAr({ busy: false, error: data.error ?? 'Не получилось' })
         return
       }
-      const fileUrl = `${window.location.origin}/api/ar/${data.id}`
+      const glbUrl = `${window.location.origin}/api/ar/${data.id}`
+      // ⚠ СІЛТЕМЕ ЕНДІ AR БЕТІНЕ (`/ar/{id}`), шикі GLB-ге ЕМЕС: телефон бетті
+      // ашқанда model-viewer жиһазды КАМЕРАМЕН бөлмеге қояды (Android). Бұрын
+      // шикі .glb ашылып, тек 3D көрінетін.
+      const pageUrl = `${window.location.origin}/ar/${data.id}`
       if (isAndroid()) {
-        setAr({ busy: false, link: fileUrl })
-        window.location.href = sceneViewerUrl(fileUrl, title)
+        // Android-та Scene Viewer-ді ТІКЕЛЕЙ шақырамыз (бір рет басу — AR).
+        setAr({ busy: false, link: pageUrl })
+        window.location.href = sceneViewerUrl(glbUrl, title)
         return
       }
-      setAr({
-        busy: false,
-        link: fileUrl,
-        // iPhone-да Quick Look USDZ талап етеді — оны браузерде жасау мүмкін емес.
-        error: isIos() ? 'На iPhone AR пока нет: нужен формат Apple (USDZ)' : null,
-      })
+      if (isIos()) {
+        // iOS-та бетті ашамыз: model-viewer 3D көрсетеді (толық AR үшін USDZ
+        // керек, ол — келесі қадам), бірақ бұл шикі файлдан әлдеқайда жақсы.
+        setAr({ busy: false, link: pageUrl })
+        window.location.href = pageUrl
+        return
+      }
+      // Компьютерде: сілтемені телефонға жіберу үшін AR БЕТІН береміз.
+      setAr({ busy: false, link: pageUrl, error: null })
     } catch (e) {
       setAr({ busy: false, error: e instanceof Error ? e.message : 'Не получилось' })
     }
