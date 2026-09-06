@@ -9,7 +9,7 @@ import { useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Edges, Html } from '@react-three/drei'
 import { grainTexture } from '@/lib/grainTexture'
-import { BufferAttribute, BufferGeometry, Path, Shape } from 'three'
+import { Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import type { Axis, Catalog, Panel, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -58,12 +58,13 @@ function MillingLines({ panel, catalog, settings, extents }: {
   /** Панельдің әлем өстеріндегі габариті — жергілікті нөлді табу үшін. */
   extents: { x: number; y: number; z: number }
 }) {
-  const geometry = useMemo(() => {
-    if (panel.milling.length === 0) return null
+  // Сегменттерді БЕДЕР (жіңішке молдинг) ретінде: әрқайсысы — жұқа бокс.
+  // Жалпақ сызық емес, көлемді — жарық пен көлеңке оны ойылғандай көрсетеді.
+  const segments = useMemo(() => {
+    if (panel.milling.length === 0) return []
     const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
     const origin = cutOrigin(panel, bands, mergeSettings(settings))
-
-    const vertices: number[] = []
+    const out: { x: number; y: number; len: number; angle: number }[] = []
     for (const path of panel.milling) {
       const pts = path.points
       const last = path.closed ? pts.length : pts.length - 1
@@ -71,28 +72,31 @@ function MillingLines({ panel, catalog, settings, extents }: {
         const a = pts[i]!
         const b = pts[(i + 1) % pts.length]!
         // Фасадтың локал өстері: x — биіктік (әлемде Y), y — ені (әлемде X).
-        vertices.push(a.y + origin.y, a.x + origin.x, 0)
-        vertices.push(b.y + origin.y, b.x + origin.x, 0)
+        const ax = a.y + origin.y, ay = a.x + origin.x
+        const bx = b.y + origin.y, by = b.x + origin.x
+        const dx = bx - ax, dy = by - ay
+        const len = Math.hypot(dx, dy)
+        if (len < 1) continue
+        out.push({ x: (ax + bx) / 2, y: (ay + by) / 2, len, angle: Math.atan2(dy, dx) })
       }
     }
-    if (vertices.length === 0) return null
-    const g = new BufferGeometry()
-    g.setAttribute('position', new BufferAttribute(new Float32Array(vertices), 3))
-    return g
+    return out
   }, [panel, catalog, settings])
 
-  if (!geometry) return null
+  if (segments.length === 0) return null
 
   return (
     // Ата-мешь панельдің ОРТАСЫНДА тұр, ал жолдар панельдің БҰРЫШЫНАН
-    // саналған — сондықтан жартылай габаритке кері ығысамыз. z бойынша
-    // сыртқы бетке шығып, беттен 1 мм алға: әйтпесе z-fighting болады.
-    <lineSegments
-      geometry={geometry}
-      position={[-extents.x / 2, -extents.y / 2, -extents.z / 2 - 1]}
-    >
-      <lineBasicMaterial color="#5a5148" transparent opacity={0.85} />
-    </lineSegments>
+    // саналған — сондықтан жартылай габаритке кері ығысамыз. Бедер беттен
+    // сәл алға шығады (молдинг әсері).
+    <group position={[-extents.x / 2, -extents.y / 2, -extents.z / 2]}>
+      {segments.map((seg, i) => (
+        <mesh key={i} position={[seg.x, seg.y, -1.5]} rotation={[0, 0, seg.angle]} castShadow>
+          <boxGeometry args={[seg.len + 4, 5, 3]} />
+          <meshStandardMaterial color="#6b6156" roughness={0.6} metalness={0} />
+        </mesh>
+      ))}
+    </group>
   )
 }
 
