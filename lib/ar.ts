@@ -17,9 +17,13 @@ export type ArUpload = { url: string; expiresAt: number }
 export async function sceneToGlb(scene: object): Promise<Uint8Array> {
   const { GLTFExporter } = await import('three/examples/jsm/exporters/GLTFExporter.js')
   const exporter = new GLTFExporter()
-  const result = await exporter.parseAsync(scene as never, {
+  // ⚠ ТЕК ЖИҺАЗ. Бүкіл сахнаны берсек, көлеңке жазықтығы (40×40 м), бөлме
+  // қабырғалары, тор да кетіп, телефонда алып АҚ ҚАБЫРҒА болып шығады.
+  // `ar-furniture` тобы — жиһаз, өз масштабымен (MM), сондықтан метрде дұрыс.
+  const target = (scene as { getObjectByName?: (n: string) => object | undefined })
+    .getObjectByName?.('ar-furniture') ?? scene
+  const result = await exporter.parseAsync(target as never, {
     binary: true,
-    // Тор мен өлшем сызықтары AR-ға керек емес: клиент ЖИҺАЗДЫ көреді.
     onlyVisible: true,
   })
   return new Uint8Array(result as ArrayBuffer)

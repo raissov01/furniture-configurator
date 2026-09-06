@@ -720,6 +720,15 @@ export default function Scene({
       <directionalLight position={[-4, 2, -3]} intensity={0.45} color="#dce6ff" />
       <group scale={MM}>
         <RoomShell room={room} />
+      </group>
+      {/*
+        ⚠ ЖИҺАЗ БӨЛЕК, АТАУЛЫ топта (`ar-furniture`), әрі өз масштабымен (MM).
+        AR экспорты ТЕК ОСЫ топты алады: онсыз көлеңке жазықтығы (40×40 м),
+        бөлме, тор да кетіп, телефонда алып АҚ ҚАБЫРҒА болып шығатын. Атаулы
+        топты экспорттаса, оның scale=MM түбір түйінге жазылады да, жиһаз
+        МЕТРМЕН, дұрыс өлшемде бөлмеге қойылады.
+      */}
+      <group name="ar-furniture" scale={MM}>
         {items.map((item) => (
           <CabinetGroup
             key={item.cabinet.id}
