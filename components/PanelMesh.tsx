@@ -275,6 +275,8 @@ export function PanelMesh({
         rotation={[toRad(panel.rotation.x), toRad(panel.rotation.y), toRad(panel.rotation.z)]}
       >
         <mesh
+          castShadow
+          receiveShadow
           position={shape ? [0, 0, 0] : [panel.finishedLength / 2, panel.finishedWidth / 2, thickness / 2]}
           onPointerOver={(e) => {
             e.stopPropagation()
@@ -304,6 +306,8 @@ export function PanelMesh({
 
   return (
     <mesh
+      castShadow
+      receiveShadow
       position={[position.x, position.y, position.z]}
       onPointerOver={(e) => {
         e.stopPropagation()

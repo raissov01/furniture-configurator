@@ -655,6 +655,7 @@ export default function Scene({
 
   return (
     <Canvas
+      shadows
       /*
        * Сапа адамның баптауынан келеді (`lib/appearance.ts`): 2× пиксель
        * тығыздығы 4 есе көп пиксель деген сөз, ал әлсіз ноутбукте дәл сол
@@ -701,7 +702,21 @@ export default function Scene({
       */}
       <ambientLight intensity={0.35} />
       <hemisphereLight intensity={0.5} color="#fff6e8" groundColor="#8a8a8a" />
-      <directionalLight position={[3, 5, 4]} intensity={1.7} color="#fff1dc" />
+      <directionalLight
+        position={[3, 5, 4]}
+        intensity={1.7}
+        color="#fff1dc"
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-bias={-0.0005}
+        shadow-camera-near={0.1}
+        shadow-camera-far={25}
+        shadow-camera-left={-8}
+        shadow-camera-right={8}
+        shadow-camera-top={8}
+        shadow-camera-bottom={-8}
+      />
       <directionalLight position={[-4, 2, -3]} intensity={0.45} color="#dce6ff" />
       <group scale={MM}>
         <RoomShell room={room} />
@@ -724,6 +739,11 @@ export default function Scene({
           z={spot.z / 1000}
         />
       ) : null}
+      {/* Көлеңке ұстағыш: тек көлеңке көрінеді, әйтпесе мөлдір (еденді боямайды). */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} receiveShadow>
+        <planeGeometry args={[40, 40]} />
+        <shadowMaterial transparent opacity={0.28} />
+      </mesh>
       <Grid
         args={[10, 10]}
         position={[0, -0.005, 0]}
