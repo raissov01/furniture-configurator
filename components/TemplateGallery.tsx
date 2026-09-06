@@ -13,6 +13,7 @@ import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { KitchenWizard } from '@/components/KitchenWizard'
 
 type Filter = TemplateCategory | 'all' | 'sets'
 
@@ -48,6 +49,7 @@ export function TemplateGallery() {
   const [filter, setFilter] = useState<Filter>('all')
   // Ас үй генераторы формасының күйі.
   const [kit, setKit] = useState({ lengthA: 3000, lengthB: 2400, corner: true, sink: true, upper: true, appliances: true })
+  const [wizardOpen, setWizardOpen] = useState(false)
   const catalog = useConfigurator((s) => s.catalog)
 
   const counts = useMemo(() => {
@@ -90,6 +92,8 @@ export function TemplateGallery() {
           </div>
         </div>
 
+        <KitchenWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+
         {firstRun ? (
           <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {TEMPLATE_CATEGORIES.map((c) => (
@@ -124,6 +128,9 @@ export function TemplateGallery() {
               <div className="mb-2 flex items-center gap-2">
                 <span className="text-xs font-semibold">{tr('Генератор кухни')}</span>
                 <span className="text-[11px] text-neutral-500">{tr('по длине стены')}</span>
+                <div className="ml-auto">
+                  <Button active onClick={() => setWizardOpen(true)}>{tr('Мастер кухни (5 шагов)')}</Button>
+                </div>
               </div>
               <div className="flex flex-wrap items-end gap-3">
                 <label className="text-[11px] text-neutral-500">

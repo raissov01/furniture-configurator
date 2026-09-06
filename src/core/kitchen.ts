@@ -16,8 +16,10 @@
  * дәл `sets.ts`-тегі бұрыш ережесі. V1 солтүстік (+ шығыс) бұрышын құрайды.
  */
 
+import { defaultMillingSpec } from './milling'
+import type { MillingPatternId } from './milling'
 import { findTemplate, templateToCabinet } from './templates'
-import type { CabinetConfig, Catalog, Placement } from './types'
+import type { CabinetConfig, Catalog, Placement, Section } from './types'
 
 export type KitchenLayout = 'straight' | 'corner'
 
@@ -33,6 +35,26 @@ export type KitchenOptions = {
   upper?: boolean | undefined
   /** Техника мен пенал бағаналарын қосу (тоңазытқыш, ящик араласы) */
   appliances?: boolean | undefined
+  /** Өлшемдер (қадам 2). Берілмегені әдепкіден. */
+  dims?: {
+    lowerHeight?: number | undefined
+    lowerDepth?: number | undefined
+    plinthHeight?: number | undefined
+    upperDepth?: number | undefined
+    upperHeight?: number | undefined
+    upperElevation?: number | undefined
+    worktopOverhang?: number | undefined
+    backsplashHeight?: number | undefined
+  } | undefined
+  /** Материалдар (қадам 5). Берілмегені шаблон материалынан. */
+  materials?: {
+    carcassId?: string | undefined
+    frontId?: string | undefined
+    worktopId?: string | undefined
+    plinthId?: string | undefined
+  } | undefined
+  /** Фасад фрезеровкасы (қадам 5). `plain` — тегіс. */
+  milling?: MillingPatternId | undefined
 }
 
 /** Бір орынның ТҮРІ — функционалды кухня біркелкі қорап болмауы үшін. */
@@ -132,13 +154,50 @@ const TEMPLATE_OF: Record<ModuleKind, string> = {
   sink: 'kitchen-sink-800',
 }
 
-/** Төменгі модульге цоколь мен столешница қосу (шаблонда болмаса). */
-function dressLower(cabinet: CabinetConfig): CabinetConfig {
+/** Секциялардың фасадына фрезеровка өрнегін салу (тегіс болмаса). */
+function withMilling(cabinet: CabinetConfig, pattern: MillingPatternId | undefined): CabinetConfig {
+  if (!pattern || pattern === 'plain') return cabinet
+  const spec = defaultMillingSpec(pattern)
+  const sections: Section[] = cabinet.sections.map((sec) =>
+    sec.fronts ? { ...sec, fronts: { ...sec.fronts, milling: spec } } : sec)
+  return { ...cabinet, sections }
+}
+
+/** Материалды бүкіл корпусқа қолдану (берілген өрістер ғана). */
+function withMaterials(cabinet: CabinetConfig, m: KitchenOptions['materials']): CabinetConfig {
+  if (!m) return cabinet
   return {
     ...cabinet,
-    base: cabinet.base ?? { kind: 'plinth', height: PLINTH_HEIGHT },
-    worktop: cabinet.worktop ?? { overhangFront: WORKTOP_OVERHANG, overhangSides: 0 },
+    carcassMaterialId: m.carcassId ?? cabinet.carcassMaterialId,
+    frontMaterialId: m.frontId ?? cabinet.frontMaterialId,
   }
+}
+
+/**
+ * Төменгі модульді ТОЛЫҚ безендіру: цоколь + столешница + (қаласа) фартук,
+ * материал мен фрезеровка. Шаблонда цоколь/столешница болса — сақталады.
+ */
+function dressLower(cabinet: CabinetConfig, opts: KitchenOptions): CabinetConfig {
+  const dims = opts.dims
+  const worktopMat = opts.materials?.worktopId
+  const plinthMat = opts.materials?.plinthId ?? opts.materials?.frontId
+  let out: CabinetConfig = {
+    ...cabinet,
+    base: {
+      kind: 'plinth',
+      height: dims?.plinthHeight ?? cabinet.base?.height ?? PLINTH_HEIGHT,
+      ...(plinthMat ? { plinthMaterialId: plinthMat } : {}),
+    },
+    worktop: {
+      overhangFront: dims?.worktopOverhang ?? cabinet.worktop?.overhangFront ?? WORKTOP_OVERHANG,
+      overhangSides: 0,
+      ...(worktopMat ? { materialId: worktopMat } : {}),
+    },
+  }
+  if (dims?.backsplashHeight && dims.backsplashHeight > 0) {
+    out = { ...out, backsplash: { height: dims.backsplashHeight } }
+  }
+  return withMilling(withMaterials(out, opts.materials), opts.milling)
 }
 
 /**
@@ -160,6 +219,13 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   const sink = options.sink ?? true
   const appliances = options.appliances ?? true
   const withUpper = options.upper ?? true
+  const d = options.dims ?? {}
+  const lowerH = d.lowerHeight ?? LOWER_HEIGHT
+  const lowerD = d.lowerDepth ?? LOWER_DEPTH
+  const upperD = d.upperDepth ?? UPPER_DEPTH
+  const upperH = d.upperHeight ?? UPPER_HEIGHT
+  const upperElev = d.upperElevation ?? UPPER_ELEVATION
+  const finishUpper = (c: CabinetConfig) => withMilling(withMaterials(c, options.materials), options.milling)
 
   const runA = composeRun(options.lengthA, { sink, appliances, main: true })
   const runB = corner ? composeRun(options.lengthB!, { sink: false, appliances, main: false }) : []
@@ -168,7 +234,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
 
   const room = {
     width: Math.max(3000, totalA + ROOM_MARGIN),
-    depth: Math.max(3000, (corner ? LOWER_DEPTH + totalB : 0) + ROOM_MARGIN),
+    depth: Math.max(3000, (corner ? lowerD + totalB : 0) + ROOM_MARGIN),
     height: 2700,
   }
 
@@ -178,9 +244,9 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     if (mod.kind === 'tall') {
       // Пенал (тоңазытқыш/қойма бағанасы): толық биік, өз цоколі бар —
       // столешница да, бөлек цоколь де қосылмайды.
-      return { ...templateToCabinet(tplOf('tall'), catalog, { width: mod.width, height: TALL_HEIGHT, depth: TALL_DEPTH }), id }
+      return finishUpper({ ...templateToCabinet(tplOf('tall'), catalog, { width: mod.width, height: TALL_HEIGHT, depth: TALL_DEPTH }), id })
     }
-    return dressLower({ ...templateToCabinet(tplOf(mod.kind), catalog, { width: mod.width, height: LOWER_HEIGHT, depth: LOWER_DEPTH }), id })
+    return dressLower({ ...templateToCabinet(tplOf(mod.kind), catalog, { width: mod.width, height: lowerH, depth: lowerD }), id }, options)
   }
 
   // ── Негізгі қабырға (солтүстік), бұрыштан оңға (offset 0-ден) ─────────────
@@ -193,8 +259,8 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     // үстінде әдетте сорғыш/терезе тұрады.
     if (withUpper && (mod.kind === 'baseDoors' || mod.kind === 'baseDrawers')) {
       const uid = nextId('a-up')
-      cabinets.push({ ...templateToCabinet(wallTpl, catalog, { width: mod.width, height: UPPER_HEIGHT, depth: UPPER_DEPTH }), id: uid })
-      placements.push({ cabinetId: uid, wall: 'north', offset: cursor, elevation: UPPER_ELEVATION })
+      cabinets.push(finishUpper({ ...templateToCabinet(wallTpl, catalog, { width: mod.width, height: upperH, depth: upperD }), id: uid }))
+      placements.push({ cabinetId: uid, wall: 'north', offset: cursor, elevation: upperElev })
     }
     cursor += mod.width
   })
@@ -203,15 +269,15 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   // Шығыстың offset 0-і ОҢТҮСТІК-ШЫҒЫС бұрышында, ал бізге СОЛТҮСТІК-ШЫҒЫС
   // керек: бұрыштан өлшенген `q`-ды offset-ке ауыстырамыз (depth − q − width).
   // Қатар мойка ТЕРЕҢДІГІНЕН басталады, әйтпесе бұрышта A-мен соқтығысады.
-  let q = corner ? LOWER_DEPTH : 0
+  let q = corner ? lowerD : 0
   runB.forEach((mod) => {
     const cab = build(mod.kind === 'tall' ? { kind: 'baseDoors', width: mod.width } : mod, 'b')
     cabinets.push(cab)
     placements.push({ cabinetId: cab.id, wall: 'east', offset: room.depth - q - mod.width })
     if (withUpper) {
       const uid = nextId('b-up')
-      cabinets.push({ ...templateToCabinet(wallTpl, catalog, { width: mod.width, height: UPPER_HEIGHT, depth: UPPER_DEPTH }), id: uid })
-      placements.push({ cabinetId: uid, wall: 'east', offset: room.depth - q - mod.width, elevation: UPPER_ELEVATION })
+      cabinets.push(finishUpper({ ...templateToCabinet(wallTpl, catalog, { width: mod.width, height: upperH, depth: upperD }), id: uid }))
+      placements.push({ cabinetId: uid, wall: 'east', offset: room.depth - q - mod.width, elevation: upperElev })
     }
     q += mod.width
   })
