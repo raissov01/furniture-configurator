@@ -58,7 +58,7 @@ export type KitchenOptions = {
 }
 
 /** Бір орынның ТҮРІ — функционалды кухня біркелкі қорап болмауы үшін. */
-type ModuleKind = 'tall' | 'baseDoors' | 'baseDrawers' | 'sink'
+type ModuleKind = 'tall' | 'baseDoors' | 'baseDrawers' | 'sink' | 'fridge' | 'oven' | 'dishwasher'
 
 
 export type KitchenResult = {
@@ -125,22 +125,35 @@ function composeRun(
   opts: { sink: boolean; appliances: boolean; main: boolean },
 ): { kind: ModuleKind; width: number }[] {
   let remaining = Math.round(length)
-  const wantFridge = opts.appliances && opts.main && remaining >= FRIDGE_WIDTH + MODULE_MIN
-  if (wantFridge) remaining -= FRIDGE_WIDTH
+  const APP_W = 600
+
+  // Техника — ТҰРАҚТЫ енді ұялар. Негізгі қабырғада: тоңазытқыш пен духовка
+  // мұнарасы шетте, посудомойка мойканың қасында.
+  const wantFridge = opts.appliances && opts.main && remaining >= APP_W + MODULE_MIN
+  if (wantFridge) remaining -= APP_W
+  const wantOven = opts.appliances && opts.main && remaining >= APP_W + MODULE_MIN
+  if (wantOven) remaining -= APP_W
   const wantSink = opts.sink && opts.main && remaining >= SINK_WIDTH + MODULE_MIN
   if (wantSink) remaining -= SINK_WIDTH
+  const wantDish = opts.appliances && opts.main && wantSink && remaining >= APP_W + MODULE_MIN
+  if (wantDish) remaining -= APP_W
 
   const bases = splitRun(remaining).map((width, i): { kind: ModuleKind; width: number } => ({
-    // Ящик пен есік кезектеседі: цехта да, көзге де әртүрлі.
     kind: opts.appliances && i % 2 === 0 ? 'baseDrawers' : 'baseDoors',
     width,
   }))
 
   const out: { kind: ModuleKind; width: number }[] = []
-  if (wantFridge) out.push({ kind: 'tall', width: FRIDGE_WIDTH })
+  if (wantFridge) out.push({ kind: 'fridge', width: APP_W })
+  if (wantOven) out.push({ kind: 'oven', width: APP_W })
   if (wantSink) {
     const mid = Math.floor(bases.length / 2)
-    out.push(...bases.slice(0, mid), { kind: 'sink', width: SINK_WIDTH }, ...bases.slice(mid))
+    out.push(
+      ...bases.slice(0, mid),
+      { kind: 'sink', width: SINK_WIDTH },
+      ...(wantDish ? [{ kind: 'dishwasher' as ModuleKind, width: APP_W }] : []),
+      ...bases.slice(mid),
+    )
   } else {
     out.push(...bases)
   }
@@ -149,9 +162,28 @@ function composeRun(
 
 const TEMPLATE_OF: Record<ModuleKind, string> = {
   tall: 'kitchen-tall-600',
+  fridge: 'kitchen-tall-600',
+  oven: 'kitchen-tall-600',
   baseDoors: 'kitchen-base-full-600',
   baseDrawers: 'kitchen-base-drawers-600',
+  dishwasher: 'kitchen-base-full-600',
   sink: 'kitchen-sink-800',
+}
+
+/**
+ * Техника ҰЯСЫ бар модуль: секцияның мазмұнын техникаға ауыстырады.
+ *
+ * Ұяда цех фасады болмайды — техниканың өз есігі бар (тоңазытқыш, духовка).
+ * 3D-де техника ӨЗ РЕҢКІМЕН көрінеді (`filling.ts` APPLIANCES). Раскрой тек
+ * корпусты санайды: техниканы клиент өзі алады.
+ */
+function applianceNiche(
+  cabinet: CabinetConfig, contents: Section['contents'],
+): CabinetConfig {
+  return {
+    ...cabinet,
+    sections: cabinet.sections.map((sec, i) => (i === 0 ? { ...sec, contents, fronts: null } : sec)),
+  }
 }
 
 /** Секциялардың фасадына фрезеровка өрнегін салу (тегіс болмаса). */
@@ -241,12 +273,32 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   /** Бір модульден корпус жасау (әр түрі — өз шаблоны, өз безендірілуі). */
   const build = (mod: { kind: ModuleKind; width: number }, role: string): CabinetConfig => {
     const id = nextId(role)
+    const tower = () => ({ ...templateToCabinet(tplOf(mod.kind), catalog, { width: mod.width, height: TALL_HEIGHT, depth: TALL_DEPTH }), id })
     if (mod.kind === 'tall') {
-      // Пенал (тоңазытқыш/қойма бағанасы): толық биік, өз цоколі бар —
-      // столешница да, бөлек цоколь де қосылмайды.
-      return finishUpper({ ...templateToCabinet(tplOf('tall'), catalog, { width: mod.width, height: TALL_HEIGHT, depth: TALL_DEPTH }), id })
+      // Пенал (қойма бағанасы): толық биік, өз цоколі бар.
+      return finishUpper(tower())
     }
-    return dressLower({ ...templateToCabinet(tplOf(mod.kind), catalog, { width: mod.width, height: lowerH, depth: lowerD }), id }, options)
+    if (mod.kind === 'fridge') {
+      // Тоңазытқыш бағанасы: ұя + үстінде кішкене шкаф.
+      return finishUpper(applianceNiche(tower(), [
+        { kind: 'appliance', appliance: 'fridge' },
+        { kind: 'shelves', count: 1, shelfKind: 'adjustable' },
+      ]))
+    }
+    if (mod.kind === 'oven') {
+      // Духовка мұнарасы: духовка + СВЧ + сөрелер (qdesign «Пенал духовка+СВЧ»).
+      return finishUpper(applianceNiche(tower(), [
+        { kind: 'appliance', appliance: 'oven', height: 595 },
+        { kind: 'appliance', appliance: 'microwave', height: 380 },
+        { kind: 'shelves', count: 2, shelfKind: 'adjustable' },
+      ]))
+    }
+    const base = { ...templateToCabinet(tplOf(mod.kind), catalog, { width: mod.width, height: lowerH, depth: lowerD }), id }
+    if (mod.kind === 'dishwasher') {
+      // Посудомойка: аласа ұя (фасады — техниканікі), цоколь + столешница астынан.
+      return dressLower(applianceNiche(base, [{ kind: 'appliance', appliance: 'dishwasher', height: 600 }, { kind: 'empty' }]), options)
+    }
+    return dressLower(base, options)
   }
 
   // ── Негізгі қабырға (солтүстік), бұрыштан оңға (offset 0-ден) ─────────────

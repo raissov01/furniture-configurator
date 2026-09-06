@@ -86,6 +86,23 @@ describe('generateKitchen', () => {
     expect(validatePlacements(r.room, entriesOf(r))).toEqual([])
   })
 
+  it('техникамен: НАҒЫЗ техника ұялары шығады (тоңазытқыш/духовка/посудомойка)', () => {
+    const r = generateKitchen({ layout: 'straight', lengthA: 4200, sink: true, upper: true, appliances: true }, SEED_CATALOG)
+    const appliances = r.cabinets
+      .flatMap((c) => c.sections)
+      .flatMap((sec) => sec.contents)
+      .filter((c) => c.kind === 'appliance')
+      .map((c) => (c.kind === 'appliance' ? c.appliance : ''))
+    expect(appliances).toContain('fridge')
+    expect(appliances).toContain('oven')
+    expect(appliances).toContain('dishwasher')
+    // Техника ұясында цех фасады болмайды (техниканың өз есігі бар).
+    const applianceSection = r.cabinets
+      .flatMap((c) => c.sections)
+      .find((sec) => sec.contents.some((x) => x.kind === 'appliance' && x.appliance === 'fridge'))
+    expect(applianceSection?.fronts).toBeNull()
+  })
+
   it('техникасыз: біркелкі базалар (пенал жоқ)', () => {
     const r = generateKitchen({ layout: 'straight', lengthA: 2400, sink: true, upper: false, appliances: false }, SEED_CATALOG)
     expect(r.cabinets.every((c) => !c.name.toLowerCase().includes('пенал'))).toBe(true)
