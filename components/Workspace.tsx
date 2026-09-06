@@ -4,7 +4,7 @@ import { t as tr, tf } from '@/lib/i18n'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Button, Slider } from '@/components/ui'
+import { Button, Menu, MenuItem, Slider } from '@/components/ui'
 import { Configurator } from '@/components/Configurator'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
@@ -241,17 +241,39 @@ export function Workspace() {
           </span>
         </h1>
 
+        {/*
+          ТОПТАЛҒАН ТАҚТА: бұрын 30+ батырма қатар тұрып «каша» болатын. Енді
+          жасау мен жоба құралдары ашылмалы мәзірге жиналды — тек жиі керегі
+          көзде. Клиентке сілтеме де осында.
+        */}
         <div className="flex items-center gap-1">
-          <Button onClick={() => setGalleryOpen(true)} title={tr('Готовые шаблоны')}>{tr('Шаблоны')}</Button>
-          <Button onClick={() => setAiOpen(true)} title={tr('Описать задачу словами')}>{tr('Техзадание')}</Button>
-          <Button onClick={() => setSketchOpen(true)} title={tr('Нарисовать корпус мышью')}>{tr('Нарисовать')}</Button>
-          <Button onClick={() => setPartsOpen(true)} title={tr('Добавить свою деталь: перемычку, царгу, столешницу')}>{tr('Детали')}</Button>
-          <Button onClick={() => setProjectOpen(true)} title={tr('Материалы проекта и порядок сборки')}>{tr('Проект')}</Button>
-          <Button onClick={() => setDrillOpen(true)} title={tr('Развёртка детали: добавить или убрать отверстие')}>{tr('Присадка')}</Button>
-          <Button onClick={() => setRoomOpen(true)} title={tr('План комнаты и стены')}>{tr('Стены')}</Button>
+          <Menu label={tr('Создать')} title={tr('С чего начать корпус')}>
+            <MenuItem onClick={() => setGalleryOpen(true)}>{tr('Готовые шаблоны')}</MenuItem>
+            <MenuItem onClick={() => setAiOpen(true)}>{tr('Техзадание (словами)')}</MenuItem>
+            <MenuItem onClick={() => setSketchOpen(true)}>{tr('Нарисовать мышью')}</MenuItem>
+            <MenuItem onClick={() => setPartsOpen(true)}>{tr('Своя деталь')}</MenuItem>
+          </Menu>
+          <Menu label={tr('Проект')} title={tr('Материалы, раскрой, присадка, смета')}>
+            <MenuItem onClick={() => setProjectOpen(true)}>{tr('Материалы и сборка')}</MenuItem>
+            <MenuItem onClick={() => setQuoteOpen(true)}>{tr('Смета и раскрой')}</MenuItem>
+            <MenuItem onClick={() => setDrillOpen(true)}>{tr('Присадка')}</MenuItem>
+            <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
+            <MenuItem onClick={() => setHistoryOpen(true)}>{tr('История')}</MenuItem>
+            <MenuItem onClick={() => {
+              const link = shareLink(window.location.origin, exportProject())
+              void navigator.clipboard.writeText(link).then(
+                () => setShared(
+                  link.length > SHARE_LINK_WARN_LENGTH
+                    ? 'Ссылка скопирована, но она длинная: мессенджер может её обрезать. Надёжнее отправить файл проекта.'
+                    : 'Ссылка скопирована',
+                ),
+                () => setShared('Не удалось скопировать — разрешите доступ к буферу обмена'),
+              )
+            }}>{tr('Ссылка клиенту')}</MenuItem>
+            <MenuItem onClick={reset}>{tr('Сброс')}</MenuItem>
+          </Menu>
           <Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
-          <Button onClick={() => setQuoteOpen(true)} title={tr('Раскрой и стоимость по всему проекту')}>{tr('Смета')}</Button>
-          {/* Раскрой — БӨЛЕК бет: цехтың станок жанындағы адамы оны басып шығарады. */}
+          {/* Раскрой — БӨЛЕК бет (цех станогы қасында ашады), сондықтан тікелей. */}
           <Link
             href="/cut"
             title={tr('Отдельный экран раскроя: КИМ, резы, бирки')}
@@ -261,24 +283,6 @@ export function Workspace() {
           </Link>
           <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
-          <Button onClick={reset}>{tr('Сброс')}</Button>
-          <Button
-            title={tr('Ссылка для клиента: проект едет в самой ссылке, на сервер не попадает')}
-            onClick={() => {
-              const link = shareLink(window.location.origin, exportProject())
-              void navigator.clipboard.writeText(link).then(
-                () => setShared(
-                  link.length > SHARE_LINK_WARN_LENGTH
-                    // Мессенджерлер ұзын сілтемені үзіп жібереді — цех оны білуі керек.
-                    ? 'Ссылка скопирована, но она длинная: мессенджер может её обрезать. Надёжнее отправить файл проекта.'
-                    : 'Ссылка скопирована',
-                ),
-                () => setShared('Не удалось скопировать — разрешите доступ к буферу обмена'),
-              )
-            }}
-          >
-            Ссылка клиенту
-          </Button>
         </div>
 
         <ProjectMenu />
@@ -290,39 +294,30 @@ export function Workspace() {
           <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
         )}
 
+        {/*
+          КӨРІНІС: жиі керегі (Рендер, Прогулка, AR, Сборка, Распахнуть) —
+          көзде; сирек баптаулар «Вид» мәзіріне жиналды. Бұрын мұнда 12 батырма
+          қатар тұрып «каша» болатын.
+        */}
         <div className="flex items-center gap-1">
-          {PRESETS.map((p) => (
-            <Button key={p.value} active={cameraPreset === p.value} onClick={() => setCameraPreset(p.value)}>
-              {p.label}
-            </Button>
-          ))}
-        </div>
-
-        {/* Көрініс: мөлдірлік, фасадты жасыру, проекция, кадрға сыйдыру.
-            Әрқайсысының хоткейі бар — анықтамада «?» арқылы көрінеді. */}
-        <div className="flex items-center gap-1">
-          <Button
-            active={viewMode !== 'solid'}
-            title={`${tr('Прозрачность')} (T)`}
-            onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
-          >
-            {viewMode === 'solid' ? tr('Тело') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
-          </Button>
-          {/*
-            Силуэт — масштабтың өлшемі: клиент 2400 мм-ді санмен емес,
-            қасында тұрған адаммен түсінеді (`src/core/silhouette.ts`).
-          */}
-          <Button
-            onClick={() => setRenderOpen(true)}
-            title={tr('Фотореалистичная картинка для клиента')}
-          >
+          <Button onClick={() => setRenderOpen(true)} title={tr('Фотореалистичная картинка для клиента')}>
             {tr('Рендер')}
           </Button>
-          {/*
-            ЖИНАУ ҚАДАМЫ: сахнада корпус нөлден бастап жиналады. Бұл — цехтың
-            жаңа адамына арналған: қай деталь қайдан кіретінін БІР РЕТ көрсе,
-            қағаздағы нұсқаулық түсінікті болады.
-          */}
+          <Button
+            active={walk}
+            title={tr('Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы')}
+            onClick={() => setWalk(!walk)}
+          >
+            {tr('Прогулка')}
+          </Button>
+          <ArButton />
+          <Button
+            active={openness > 0}
+            title={`${tr('Открыть или закрыть двери и ящики')} (E)`}
+            onClick={() => setOpenness(openness > 0 ? 0 : 1)}
+          >
+            {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
+          </Button>
           <Button
             active={assemblyStep !== null}
             title={tr('Показать сборку по шагам')}
@@ -335,7 +330,7 @@ export function Workspace() {
               <input
                 type="range"
                 aria-label={tr('Показать сборку по шагам')}
-                className="w-28 accent-neutral-900 dark:accent-neutral-100"
+                className="w-24 accent-neutral-900 dark:accent-neutral-100"
                 min={1}
                 max={Math.max(1, projectPanels.length)}
                 value={Math.min(assemblyStep, projectPanels.length)}
@@ -346,21 +341,27 @@ export function Workspace() {
               </span>
             </>
           ) : null}
-          <ArButton />
-          <Button
-            active={walk}
-            title={tr('Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы')}
-            onClick={() => setWalk(!walk)}
-          >
-            {tr('Прогулка')}
-          </Button>
-          <Button
-            active={silhouette.on}
-            title={tr('Человек рядом — для масштаба')}
-            onClick={() => setSilhouette({ on: !silhouette.on })}
-          >
-            {tr('Рост')}
-          </Button>
+          <Menu label={tr('Вид')} title={tr('Прозрачность, фасады, проекция, масштаб')}>
+            <MenuItem
+              active={viewMode !== 'solid'}
+              onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
+            >
+              {viewMode === 'solid' ? tr('Прозрачность') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
+            </MenuItem>
+            <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
+              {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
+            </MenuItem>
+            <MenuItem
+              active={projection === 'ortho'}
+              onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
+            >
+              {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
+            </MenuItem>
+            <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
+            <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
+              {tr('Человек для масштаба')}
+            </MenuItem>
+          </Menu>
           {silhouette.on ? (
             <input
               type="number"
@@ -376,34 +377,6 @@ export function Workspace() {
               }}
             />
           ) : null}
-          <Button
-            active={!showFronts}
-            title={`${tr('Показать или скрыть фасады')} (H)`}
-            onClick={() => setShowFronts(!showFronts)}
-          >
-            {showFronts ? tr('Фасады') : tr('Без фасадов')}
-          </Button>
-          {/* Ашық/жабық — клиентке көрсететін нәрсе: жабық шкаф суреттен
-              айнымайды, ал ашылған есік жиһаздың ішін бірден түсіндіреді. */}
-          <Button
-            active={openness > 0}
-            title={`${tr('Открыть или закрыть двери и ящики')} (E)`}
-            onClick={() => setOpenness(openness > 0 ? 0 : 1)}
-          >
-            {/* «Открыть» деп атауға БОЛМАЙДЫ: жоғарыда файл ашатын
-                «Открыть» тұр, ал бір панельдегі екі бірдей атау — қате
-                басудың дайын себебі. */}
-            {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
-          </Button>
-          <Button
-            active={projection === 'ortho'}
-            title={`${tr('Перспектива или ортогональная проекция')} (O)`}
-            onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
-          >
-            {projection === 'perspective' ? tr('Перспектива') : tr('Орто')}
-          </Button>
-          <Button onClick={fitCamera} title={`${tr('Вписать в кадр')} (F)`}>{tr('В кадр')}</Button>
-          <Button onClick={() => setHistoryOpen(true)} title={tr('История локальных сохранений')}>{tr('История')}</Button>
           <Button onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
         </div>
 

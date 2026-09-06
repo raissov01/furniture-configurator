@@ -65,6 +65,81 @@ export function Select<T extends string>({
   )
 }
 
+// ── Ашылмалы мәзір (тақтаны топтап, «каша»-ны азайту үшін) ─────────────────
+
+const MenuCtx = React.createContext<() => void>(() => {})
+
+/**
+ * Түйме басылғанда астынан тізім ашылатын мәзір. Сыртқа басқанда/Esc-те
+ * жабылады, элемент таңдалғанда да жабылады.
+ */
+export function Menu({
+  label, title, active, children, align = 'left',
+}: {
+  label: React.ReactNode
+  title?: string
+  active?: boolean
+  children: React.ReactNode
+  align?: 'left' | 'right'
+}) {
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
+  }, [open])
+  return (
+    <div ref={ref} className="relative">
+      <Button active={active || open} {...(title ? { title } : {})} onClick={() => setOpen((v) => !v)}>
+        {label} <span className="text-[9px] opacity-60">▾</span>
+      </Button>
+      {open ? (
+        <div
+          className={cn(
+            'absolute z-40 mt-1 min-w-44 rounded-lg border border-neutral-200 bg-white p-1 shadow-xl dark:border-neutral-700 dark:bg-neutral-900',
+            align === 'right' ? 'right-0' : 'left-0',
+          )}
+        >
+          <MenuCtx.Provider value={() => setOpen(false)}>{children}</MenuCtx.Provider>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+/** Мәзір элементі — таңдалғанда мәзірді жабады. */
+export function MenuItem({
+  onClick, children, active, title, disabled,
+}: {
+  onClick?: () => void
+  children: React.ReactNode
+  active?: boolean
+  title?: string
+  disabled?: boolean
+}) {
+  const close = React.useContext(MenuCtx)
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      title={title}
+      onClick={() => { onClick?.(); close() }}
+      className={cn(
+        'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40',
+        active
+          ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+          : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function Slider({
   value, onChange, min = 0, max = 1, step = 0.01,
 }: { value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number }) {

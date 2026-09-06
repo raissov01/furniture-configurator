@@ -10,7 +10,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useState } from 'react'
-import { Button } from '@/components/ui'
+import { Menu, MenuItem } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
 import type { CabinetConfig, Panel } from '@/src/core/index'
 
@@ -39,66 +39,63 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
   }
 
   return (
-    <div className="flex items-center gap-1" data-tour="export">
-      <span className="mr-1 text-[10px] uppercase tracking-wider text-neutral-400">{tr('Экспорт')}</span>
-
-      <Button
-        disabled={busy !== null}
-        onClick={() => run('xlsx', async () => {
-          const { cutListToXlsx } = await import('@/src/core/export/xlsx')
-          download(`${base}-cutlist.xlsx`, cutListToXlsx(panels, catalog, cabinet.name),
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        })}
-      >
-        {busy === 'xlsx' ? '…' : 'XLSX'}
-      </Button>
-
-      <Button
-        disabled={busy !== null}
-        onClick={() => run('csv', async () => {
-          const { cutListToCsv } = await import('@/src/core/export/csv')
-          download(`${base}-cutlist.csv`, cutListToCsv(panels, catalog), 'text/csv;charset=utf-8')
-        })}
-      >
-        {busy === 'csv' ? '…' : 'CSV'}
-      </Button>
-
-      <Button
-        disabled={busy !== null}
-        title={tr('Каждая деталь — отдельный DXF, всё в одном архиве')}
-        onClick={() => run('dxf', async () => {
-          const [{ cabinetToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
-            import('@/src/core/export/dxf'),
-            import('fflate'),
-          ])
-          const entries: Record<string, Uint8Array> = {}
-          for (const [name, content] of cabinetToDxfFiles(panels)) entries[name] = strToU8(content)
-          download(`${base}-dxf.zip`, zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
-            'application/zip')
-        })}
-      >
-        {busy === 'dxf' ? '…' : 'DXF'}
-      </Button>
-
-      <Button
-        disabled={busy !== null}
-        title={tr('Проекции, сборка и деталировка')}
-        onClick={() => run('pdf', async () => {
-          const { assemblyDrawingPdf } = await import('@/src/core/export/pdf')
-          const [regular, bold] = await Promise.all([
-            fetch('/fonts/DejaVuSans-subset.ttf').then((r) => r.arrayBuffer()),
-            fetch('/fonts/DejaVuSans-Bold-subset.ttf').then((r) => r.arrayBuffer()),
-          ])
-          const bytes = await assemblyDrawingPdf({
-            cabinet, panels, catalog,
-            projectName: cabinet.name,
-            fonts: { regular: new Uint8Array(regular), bold: new Uint8Array(bold) },
-          })
-          download(`${base}-assembly.pdf`, bytes, 'application/pdf')
-        })}
-      >
-        {busy === 'pdf' ? '…' : 'PDF'}
-      </Button>
+    <div data-tour="export">
+      <Menu label={busy ? '…' : tr('Экспорт')} title={tr('Скачать файлы для цеха')} align="right">
+        <MenuItem
+          disabled={busy !== null}
+          onClick={() => run('xlsx', async () => {
+            const { cutListToXlsx } = await import('@/src/core/export/xlsx')
+            download(`${base}-cutlist.xlsx`, cutListToXlsx(panels, catalog, cabinet.name),
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+          })}
+        >
+          XLSX — {tr('деталировка')}
+        </MenuItem>
+        <MenuItem
+          disabled={busy !== null}
+          onClick={() => run('csv', async () => {
+            const { cutListToCsv } = await import('@/src/core/export/csv')
+            download(`${base}-cutlist.csv`, cutListToCsv(panels, catalog), 'text/csv;charset=utf-8')
+          })}
+        >
+          CSV — {tr('на распил')}
+        </MenuItem>
+        <MenuItem
+          disabled={busy !== null}
+          title={tr('Каждая деталь — отдельный DXF, всё в одном архиве')}
+          onClick={() => run('dxf', async () => {
+            const [{ cabinetToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
+              import('@/src/core/export/dxf'),
+              import('fflate'),
+            ])
+            const entries: Record<string, Uint8Array> = {}
+            for (const [name, content] of cabinetToDxfFiles(panels)) entries[name] = strToU8(content)
+            download(`${base}-dxf.zip`, zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
+              'application/zip')
+          })}
+        >
+          DXF — {tr('на станок')}
+        </MenuItem>
+        <MenuItem
+          disabled={busy !== null}
+          title={tr('Проекции, сборка и деталировка')}
+          onClick={() => run('pdf', async () => {
+            const { assemblyDrawingPdf } = await import('@/src/core/export/pdf')
+            const [regular, bold] = await Promise.all([
+              fetch('/fonts/DejaVuSans-subset.ttf').then((r) => r.arrayBuffer()),
+              fetch('/fonts/DejaVuSans-Bold-subset.ttf').then((r) => r.arrayBuffer()),
+            ])
+            const bytes = await assemblyDrawingPdf({
+              cabinet, panels, catalog,
+              projectName: cabinet.name,
+              fonts: { regular: new Uint8Array(regular), bold: new Uint8Array(bold) },
+            })
+            download(`${base}-assembly.pdf`, bytes, 'application/pdf')
+          })}
+        >
+          PDF — {tr('сборочный чертёж')}
+        </MenuItem>
+      </Menu>
     </div>
   )
 }
