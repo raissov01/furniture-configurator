@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentRef, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Grid, OrbitControls, OrthographicCamera, PointerLockControls } from '@react-three/drei'
-import { SRGBColorSpace, TextureLoader, Vector3 } from 'three'
+import { Object3D, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3 } from 'three'
 import type { Mesh } from 'three'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
@@ -89,8 +89,10 @@ function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [n
  * ол өшкенде ғана осы қосылады (`walk` күйі шешеді).
  */
 function WalkControls({ room }: { room: { width: number; depth: number } }) {
-  const { camera } = useThree()
+  const { camera, scene, gl } = useThree()
   const keys = useRef<Record<string, boolean>>({})
+  const stepTimer = useRef(0)
+  const audio = useRef<{ ctx: AudioContext } | null>(null)
 
   // Бөлме ішіне, көз биіктігіне қою (бір рет).
   useEffect(() => {
@@ -107,10 +109,47 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
       }
     }
     const up = (e: KeyboardEvent) => { keys.current[e.code] = false }
+    // БАСЫП АШУ: тінтуір бекітілген кезде экран ортасынан сәуле жіберіп,
+    // тінтуір астындағы КОРПУСТЫ табамыз да, тек соны ашамыз/жабамыз.
+    const click = () => {
+      if (!document.pointerLockElement) return
+      const ray = new Raycaster()
+      ray.setFromCamera(new Vector2(0, 0), camera)
+      for (const hit of ray.intersectObjects(scene.children, true)) {
+        let obj: Object3D | null = hit.object
+        while (obj) {
+          const id = (obj.userData as { cabinetId?: string }).cabinetId
+          if (id) { useConfigurator.getState().toggleCabinetOpen(id); return }
+          obj = obj.parent
+        }
+      }
+    }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up) }
-  }, [])
+    gl.domElement.addEventListener('click', click)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+      gl.domElement.removeEventListener('click', click)
+    }
+  }, [camera, scene, gl])
+
+  /** Аяқ дыбысы: сүзілген шу серпіні (файлсыз, WebAudio). */
+  const footstep = () => {
+    try {
+      const ctx = (audio.current ??= { ctx: new AudioContext() }).ctx
+      if (ctx.state === 'suspended') void ctx.resume()
+      const dur = 0.09
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate)
+      const data = buf.getChannelData(0)
+      for (let i = 0; i < data.length; i += 1) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length)
+      const src = ctx.createBufferSource(); src.buffer = buf
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 450
+      const g = ctx.createGain(); g.gain.value = 0.12
+      src.connect(lp); lp.connect(g); g.connect(ctx.destination)
+      src.start()
+    } catch { /* аудио қолжетімсіз — үнсіз */ }
+  }
 
   useFrame((_, dt) => {
     const speed = 2.4 * Math.min(dt, 0.05)
@@ -124,13 +163,21 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
     if (keys.current['KeyS'] || keys.current['ArrowDown']) move.sub(dir)
     if (keys.current['KeyD'] || keys.current['ArrowRight']) move.add(right)
     if (keys.current['KeyA'] || keys.current['ArrowLeft']) move.sub(right)
-    if (move.lengthSq() > 0) camera.position.add(move.normalize().multiplyScalar(speed))
+    const moving = move.lengthSq() > 0
+    if (moving) camera.position.add(move.normalize().multiplyScalar(speed))
     // Көз биіктігі тұрақты, бөлмеден шықпайды (0.3 м шетте тоқтайды).
     camera.position.y = 1.6
     const mx = room.width / 1000 - 0.3
     const mz = room.depth / 1000 - 0.3
     camera.position.x = Math.min(mx, Math.max(0.3, camera.position.x))
     camera.position.z = Math.min(mz, Math.max(0.3, camera.position.z))
+    // Қадам дыбысы: жүргенде әр ~0.42 с сайын.
+    if (moving && document.pointerLockElement) {
+      stepTimer.current += dt
+      if (stepTimer.current >= 0.42) { stepTimer.current = 0; footstep() }
+    } else {
+      stepTimer.current = 0.42
+    }
   })
 
   return <PointerLockControls makeDefault />
@@ -254,6 +301,9 @@ function CabinetGroup({
   // Фасадты жасыру — корпустың ішін көрудің ең тура жолы (мөлдірлікпен қатар).
   const showFronts = useConfigurator((s) => s.showFronts)
   const openness = useConfigurator((s) => s.openness)
+  const openCabinets = useConfigurator((s) => s.openCabinets)
+  // Жеке ашылған корпус әрқашан толық ашық; әйтпесе жаһандық openness.
+  const openAmt = openCabinets[item.cabinet.id] ? 1 : openness
   const materialOf = useMemo(() => {
     const map = new Map(catalog.materials.map((m) => [m.id, m]))
     return (id: string) => map.get(id)
@@ -284,6 +334,8 @@ function CabinetGroup({
       // Y — ілмелі модульдің еденнен биіктігі (`placement.elevation`).
       position={[item.pose.position.x, item.pose.position.y, item.pose.position.z]}
       rotation={[0, (item.pose.rotationY * Math.PI) / 180, 0]}
+      // Прогулкада басып ашу үшін: raycast осы id-ді табады.
+      userData={{ cabinetId: item.cabinet.id }}
     >
       {visible
         .filter((p) => showFronts || p.role !== 'front')
@@ -300,8 +352,8 @@ function CabinetGroup({
             decorColor={material?.decor?.color}
           />
         )
-        return openness > 0 && p.opening ? (
-          <OpenedPanel key={p.id} opening={p.opening} panel={p} openness={openness}>
+        return openAmt > 0 && p.opening ? (
+          <OpenedPanel key={p.id} opening={p.opening} panel={p} openness={openAmt}>
             {mesh}
           </OpenedPanel>
         ) : mesh
@@ -642,9 +694,15 @@ export default function Scene({
         */}
       {projection === 'ortho' ? <OrthographicCamera makeDefault near={-100} far={100} /> : null}
       <color attach="background" args={['#20242c']} />
-      <hemisphereLight intensity={0.55} groundColor="#8a8a8a" />
-      <directionalLight position={[3, 5, 4]} intensity={1.5} />
-      <directionalLight position={[-4, 2, -3]} intensity={0.5} />
+      {/*
+        Жарық: жұмсақ ambient (көлеңкелер қап-қара болмасын) + ЖЫЛЫ негізгі
+        жарық (жиһаз «пластик» емес, табиғи көрінсін) + суық толтырғыш
+        (қарама-қарсы жақ тым қараңғы қалмасын). Прогулкада бөлме тірідей.
+      */}
+      <ambientLight intensity={0.35} />
+      <hemisphereLight intensity={0.5} color="#fff6e8" groundColor="#8a8a8a" />
+      <directionalLight position={[3, 5, 4]} intensity={1.7} color="#fff1dc" />
+      <directionalLight position={[-4, 2, -3]} intensity={0.45} color="#dce6ff" />
       <group scale={MM}>
         <RoomShell room={room} />
         {items.map((item) => (
