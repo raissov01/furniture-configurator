@@ -715,4 +715,6 @@ export const en: Record<string, string> = {
   'Напр.: угловая кухня 3 и 2 метра с посудомойкой, без верхних': 'E.g.: corner kitchen 3 and 2 metres with a dishwasher, no uppers',
   'Заполнить': 'Fill in',
   '…': '…',
+  'П-образная (три стены)': 'U-shaped (three walls)',
+  'Стена C, мм': 'Wall C, mm',
 }

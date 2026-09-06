@@ -719,4 +719,6 @@ export const uz: Record<string, string> = {
   'Напр.: угловая кухня 3 и 2 метра с посудомойкой, без верхних': 'Mas.: burchak oshxona 3 va 2 metr, idishyuvgich bilan, yuqorisiz',
   'Заполнить': 'To\'ldirish',
   '…': '…',
+  'П-образная (три стены)': 'P-shaklli (uch devor)',
+  'Стена C, мм': 'C devor, mm',
 }

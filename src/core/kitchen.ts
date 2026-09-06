@@ -21,14 +21,16 @@ import type { MillingPatternId } from './milling'
 import { findTemplate, templateToCabinet } from './templates'
 import type { CabinetConfig, Catalog, Placement, Section } from './types'
 
-export type KitchenLayout = 'straight' | 'corner'
+export type KitchenLayout = 'straight' | 'corner' | 'u'
 
 export type KitchenOptions = {
   layout: KitchenLayout
   /** Негізгі қабырғаның ұзындығы, мм */
   lengthA: number
-  /** Перпендикуляр қабырға (тек `corner`), мм */
+  /** Перпендикуляр қабырға (`corner`/`u`), мм */
   lengthB?: number | undefined
+  /** Үшінші қабырға (тек `u` — П-пішін), мм */
+  lengthC?: number | undefined
   /** Мойканы қосу (негізгі қабырғаның ортасына) */
   sink?: boolean | undefined
   /** Үстіңгі қатарды қосу */
@@ -184,7 +186,8 @@ function composeRun(
  * алады, пайдаланушы өзгертеді, сосын `options.modules`-пен қайтарады.
  */
 export function kitchenLayout(options: KitchenOptions): { runA: KitchenModule[]; runB: KitchenModule[] } {
-  const corner = options.layout === 'corner' && (options.lengthB ?? 0) >= MODULE_MIN
+  const uShape = options.layout === 'u'
+  const corner = (options.layout === 'corner' || uShape) && (options.lengthB ?? 0) >= MODULE_MIN
   const sink = options.sink ?? true
   const appliances = options.appliances ?? true
   return {
@@ -280,7 +283,8 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   let counter = 0
   const nextId = (role: string) => `kitchen-${role}-${(counter += 1)}`
 
-  const corner = options.layout === 'corner' && (options.lengthB ?? 0) >= MODULE_MIN
+  const uShape = options.layout === 'u'
+  const corner = (options.layout === 'corner' || uShape) && (options.lengthB ?? 0) >= MODULE_MIN
   const sink = options.sink ?? true
   const appliances = options.appliances ?? true
   const withUpper = options.upper ?? true
@@ -296,12 +300,17 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   const runB = options.modules
     ? options.modules.runB
     : corner ? composeRun(options.lengthB!, { sink: false, appliances, main: false }) : []
+  // Үшінші қабырға (П-пішін) — әрқашан авто (раскладка редакторы А/B ғана).
+  const runC = uShape && (options.lengthC ?? 0) >= MODULE_MIN
+    ? composeRun(options.lengthC!, { sink: false, appliances, main: false })
+    : []
   const totalA = runA.reduce((sum, m) => sum + m.width, 0)
   const totalB = runB.reduce((sum, m) => sum + m.width, 0)
+  const totalC = runC.reduce((sum, m) => sum + m.width, 0)
 
   const room = {
     width: Math.max(3000, totalA + ROOM_MARGIN),
-    depth: Math.max(3000, (corner ? lowerD + totalB : 0) + ROOM_MARGIN),
+    depth: Math.max(3000, (corner ? lowerD + Math.max(totalB, totalC) : 0) + ROOM_MARGIN),
     height: 2700,
   }
 
@@ -367,6 +376,22 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
       placements.push({ cabinetId: uid, wall: 'east', offset: room.depth - q - mod.width, elevation: upperElev })
     }
     q += mod.width
+  })
+
+  // ── Үшінші қабырға (батыс, тек П-пішін) ──────────────────────────────────
+  // Батыстың offset 0-і СОЛТҮСТІК-БАТЫС бұрышында, оңтүстікке қарай өседі.
+  // Қатар мойка ТЕРЕҢДІГІНЕН басталады (солтүстікпен соқтығыспас үшін).
+  let wOff = lowerD
+  runC.forEach((mod) => {
+    const cab = build(mod.kind === 'tall' ? { kind: 'baseDoors', width: mod.width } : mod, 'c')
+    cabinets.push(cab)
+    placements.push({ cabinetId: cab.id, wall: 'west', offset: wOff })
+    if (withUpper) {
+      const uid = nextId('c-up')
+      cabinets.push(finishUpper({ ...templateToCabinet(wallTpl, catalog, { width: mod.width, height: upperH, depth: upperD }), id: uid }))
+      placements.push({ cabinetId: uid, wall: 'west', offset: wOff, elevation: upperElev })
+    }
+    wOff += mod.width
   })
 
   return { cabinets, placements, room }

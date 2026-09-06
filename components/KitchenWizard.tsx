@@ -22,9 +22,10 @@ import { useConfigurator } from '@/store/configurator'
 
 type Draft = {
   type: FurnitureType
-  layout: 'straight' | 'corner'
+  layout: 'straight' | 'corner' | 'u'
   lengthA: number
   lengthB: number
+  lengthC: number
   sink: boolean
   upper: boolean
   appliances: boolean
@@ -45,7 +46,7 @@ type Draft = {
 }
 
 const DEFAULT: Draft = {
-  type: 'kitchen', layout: 'corner', lengthA: 3200, lengthB: 2400,
+  type: 'kitchen', layout: 'corner', lengthA: 3200, lengthB: 2400, lengthC: 2000,
   sink: true, upper: true, appliances: true,
   lowerHeight: 720, lowerDepth: 500, plinthHeight: 95,
   upperDepth: 320, upperHeight: 720, upperElevation: 1460,
@@ -163,7 +164,8 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
   const kitchenOpts = (): KitchenOptions => ({
     layout: d.layout,
     lengthA: d.lengthA,
-    lengthB: d.layout === 'corner' ? d.lengthB : undefined,
+    lengthB: d.layout === 'corner' || d.layout === 'u' ? d.lengthB : undefined,
+    lengthC: d.layout === 'u' ? d.lengthC : undefined,
     sink: d.sink,
     upper: d.upper,
     appliances: d.appliances,
@@ -173,7 +175,8 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
     const options: KitchenOptions = {
       layout: d.layout,
       lengthA: d.lengthA,
-      lengthB: d.layout === 'corner' ? d.lengthB : undefined,
+      lengthB: d.layout === 'corner' || d.layout === 'u' ? d.lengthB : undefined,
+      lengthC: d.layout === 'u' ? d.lengthC : undefined,
       sink: d.sink,
       upper: d.upper,
       appliances: d.appliances,
@@ -195,7 +198,8 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
     } else {
       loadFurniture({
         type: d.type,
-        layout: d.type === 'tv' ? 'straight' : d.layout,
+        // U тек ас үйде; басқа түрде ол болмайды, бірақ TS үшін тарылтамыз.
+        layout: d.type === 'tv' || d.layout === 'u' ? (d.layout === 'u' ? 'corner' : 'straight') : d.layout,
         lengthA: d.lengthA,
         lengthB: d.layout === 'corner' ? d.lengthB : undefined,
         materials: { carcassId: d.carcassId || undefined, frontId: d.frontId || undefined },
@@ -281,6 +285,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
                   options={[
                     { value: 'straight', label: tr('Прямая (одна стена)') },
                     { value: 'corner', label: tr('Угловая (Г, две стены)') },
+                    ...(d.type === 'kitchen' ? [{ value: 'u' as const, label: tr('П-образная (три стены)') }] : []),
                   ]}
                 />
               </Field>
@@ -289,9 +294,14 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
               <Field label={tr('Стена A, мм')}>
                 <NumberInput value={d.lengthA} onChange={(v) => set('lengthA', v)} min={600} step={100} />
               </Field>
-              {d.layout === 'corner' && d.type !== 'tv' ? (
+              {(d.layout === 'corner' || d.layout === 'u') && d.type !== 'tv' ? (
                 <Field label={tr('Стена B, мм')}>
                   <NumberInput value={d.lengthB} onChange={(v) => set('lengthB', v)} min={600} step={100} />
+                </Field>
+              ) : null}
+              {d.layout === 'u' && d.type === 'kitchen' ? (
+                <Field label={tr('Стена C, мм')}>
+                  <NumberInput value={d.lengthC} onChange={(v) => set('lengthC', v)} min={600} step={100} />
                 </Field>
               ) : null}
             </div>

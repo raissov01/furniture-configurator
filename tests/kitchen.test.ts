@@ -103,6 +103,14 @@ describe('generateKitchen', () => {
     expect(applianceSection?.fronts).toBeNull()
   })
 
+  it('П-пішін (U): ҮШ қабырға, қабаттаспайды, сыяды', () => {
+    const r = generateKitchen({ layout: 'u', lengthA: 3200, lengthB: 2400, lengthC: 2000, sink: true, upper: true, appliances: true }, SEED_CATALOG)
+    const walls = new Set(r.placements.map((p) => p.wall))
+    expect(walls).toEqual(new Set(['north', 'east', 'west']))
+    for (const c of r.cabinets) expect(() => generateCabinet(c, SEED_CATALOG)).not.toThrow()
+    expect(validatePlacements(r.room, r.cabinets.map((c) => ({ cabinet: c, placement: r.placements.find((p) => p.cabinetId === c.id)! })))).toEqual([])
+  })
+
   it('АЙҚЫН модуль тізімі: генератор соны дәл құрайды (раскладка редакторы)', () => {
     const layout = kitchenLayout({ layout: 'straight', lengthA: 3000, sink: true, appliances: true })
     expect(layout.runA.length).toBeGreaterThan(1)
