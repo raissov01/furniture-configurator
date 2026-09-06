@@ -16,8 +16,8 @@ import { useState } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
-import { MILLING_PATTERNS } from '@/src/core/index'
-import type { KitchenOptions, MillingPatternId, FurnitureType } from '@/src/core/index'
+import { MILLING_PATTERNS, MODULE_KINDS, kitchenLayout } from '@/src/core/index'
+import type { KitchenOptions, MillingPatternId, FurnitureType, KitchenModule } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
 type Draft = {
@@ -40,6 +40,8 @@ type Draft = {
   frontId: string
   worktopId: string
   milling: MillingPatternId
+  /** null — авто-құрастыру; әйтпесе — қолмен өзгертілген раскладка. */
+  modules: { runA: KitchenModule[]; runB: KitchenModule[] } | null
 }
 
 const DEFAULT: Draft = {
@@ -50,9 +52,59 @@ const DEFAULT: Draft = {
   worktopOverhang: 30, backsplashHeight: 0,
   carcassId: '', frontId: '', worktopId: '',
   milling: 'plain',
+  modules: null,
 }
 
 const STEPS = ['Расположение', 'Размеры', 'Наполнение', 'Конструкция', 'Материалы'] as const
+
+
+/** Бір қатардың раскладка редакторы: модуль қосу/өшіру/жылжыту/түрін өзгерту. */
+function RunEditor(
+  { title, run, onChange }: { title: string; run: KitchenModule[]; onChange: (r: KitchenModule[]) => void },
+) {
+  const cell = 'rounded border border-neutral-300 bg-white px-1.5 py-1 text-xs outline-none dark:border-neutral-600 dark:bg-neutral-900'
+  const icon = 'rounded border border-neutral-300 px-1.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 disabled:opacity-30 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800'
+  const setAt = (i: number, patch: Partial<KitchenModule>) => onChange(run.map((m, j) => (j === i ? { ...m, ...patch } : m)))
+  const remove = (i: number) => onChange(run.filter((_, j) => j !== i))
+  const move = (i: number, dir: number) => {
+    const j = i + dir
+    if (j < 0 || j >= run.length) return
+    const copy = [...run]
+    ;[copy[i], copy[j]] = [copy[j]!, copy[i]!]
+    onChange(copy)
+  }
+  return (
+    <div>
+      <div className="mb-1 text-[11px] font-medium text-neutral-500">{title}</div>
+      <div className="space-y-1">
+        {run.map((m, i) => (
+          <div key={i} className="flex items-center gap-1">
+            <span className="w-4 text-right text-[10px] tabular-nums text-neutral-400">{i + 1}</span>
+            <select className={cn(cell, 'flex-1')} value={m.kind} onChange={(e) => setAt(i, { kind: e.target.value as KitchenModule['kind'] })}>
+              {MODULE_KINDS.map((k) => (
+                <option key={k.kind} value={k.kind}>{tr(k.name)}</option>
+              ))}
+            </select>
+            <input
+              type="number" className={cn(cell, 'w-16 tabular-nums')} value={m.width} min={200} step={50}
+              onChange={(e) => setAt(i, { width: Math.round(Number(e.target.value)) })}
+            />
+            <button type="button" className={icon} disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
+            <button type="button" className={icon} disabled={i === run.length - 1} onClick={() => move(i, 1)}>↓</button>
+            <button type="button" className={icon} onClick={() => remove(i)}>✕</button>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        className="mt-1.5 rounded border border-dashed border-neutral-400 px-2 py-1 text-[11px] text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        onClick={() => onChange([...run, { kind: 'baseDoors', width: 600 }])}
+      >
+        + {tr('Добавить модуль')}
+      </button>
+    </div>
+  )
+}
 
 export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () => void }) {
   const catalog = useConfigurator((s) => s.catalog)
@@ -68,6 +120,16 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
     { value: '', label: tr('Как в шаблоне') },
     ...catalog.materials.map((m) => ({ value: m.id, label: m.name })),
   ]
+
+  /** Ағымдағы драфттан KitchenOptions (раскладканы алдын ала есептеу үшін де). */
+  const kitchenOpts = (): KitchenOptions => ({
+    layout: d.layout,
+    lengthA: d.lengthA,
+    lengthB: d.layout === 'corner' ? d.lengthB : undefined,
+    sink: d.sink,
+    upper: d.upper,
+    appliances: d.appliances,
+  })
 
   const generate = () => {
     const options: KitchenOptions = {
@@ -88,6 +150,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
         worktopId: d.worktopId || undefined,
       },
       milling: d.milling,
+      modules: d.modules ?? undefined,
     }
     if (d.type === 'kitchen') {
       loadKitchen(options)
@@ -215,7 +278,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
 
         {/* ── Қадам 3: мазмұн ───────────────────────────────────────────── */}
         {step === 2 ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {([
               ['upper', tr('Верхний ряд шкафов')],
               ['sink', tr('Модуль под мойку')],
@@ -226,9 +289,44 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
                 {label}
               </label>
             ))}
-            <p className="text-[11px] leading-snug text-neutral-400">
-              {tr('Модули низа чередуются: ящики и распашные, мойка по центру, пенал с краю.')}
-            </p>
+            {/* Раскладка редакторы: авто тізімді қолмен өзгерту (qdesign 3-қадамы). */}
+            <div className="rounded-md border border-neutral-300 p-2 dark:border-neutral-600">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-xs font-medium">{tr('Раскладка по модулям')}</span>
+                <div className="ml-auto flex gap-1.5">
+                  {d.modules ? (
+                    <Button onClick={() => set('modules', null)}>{tr('Сбросить (авто)')}</Button>
+                  ) : (
+                    <Button active onClick={() => set('modules', kitchenLayout(kitchenOpts()))}>
+                      {tr('Разложить по модулям')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {d.modules ? (
+                <div className="space-y-3">
+                  <RunEditor
+                    title={tr('Стена A (нижний ряд)')}
+                    run={d.modules.runA}
+                    onChange={(runA) => set('modules', { runA, runB: d.modules!.runB })}
+                  />
+                  {d.layout === 'corner' ? (
+                    <RunEditor
+                      title={tr('Стена B (нижний ряд)')}
+                      run={d.modules.runB}
+                      onChange={(runB) => set('modules', { runA: d.modules!.runA, runB })}
+                    />
+                  ) : null}
+                  <p className="text-[11px] leading-snug text-neutral-400">
+                    {tr('Порядок = слева направо. Ширины можно менять; сумма определит длину стены.')}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[11px] leading-snug text-neutral-400">
+                  {tr('Модули низа чередуются: ящики и распашные, мойка по центру, пенал с краю. Нажмите, чтобы изменить вручную.')}
+                </p>
+              )}
+            </div>
           </div>
         ) : null}
 

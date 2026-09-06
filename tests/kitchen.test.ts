@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  SEED_CATALOG, generateCabinet, generateKitchen, splitRun, validatePlacements,
+  SEED_CATALOG, generateCabinet, generateKitchen, kitchenLayout, splitRun, validatePlacements,
 } from '../src/core/index'
 
 describe('splitRun', () => {
@@ -101,6 +101,18 @@ describe('generateKitchen', () => {
       .flatMap((c) => c.sections)
       .find((sec) => sec.contents.some((x) => x.kind === 'appliance' && x.appliance === 'fridge'))
     expect(applianceSection?.fronts).toBeNull()
+  })
+
+  it('АЙҚЫН модуль тізімі: генератор соны дәл құрайды (раскладка редакторы)', () => {
+    const layout = kitchenLayout({ layout: 'straight', lengthA: 3000, sink: true, appliances: true })
+    expect(layout.runA.length).toBeGreaterThan(1)
+    // Қолмен өзгертеміз: бірінші модульді мойка етеміз.
+    const edited = { runA: [{ kind: 'sink' as const, width: 800 }, { kind: 'baseDoors' as const, width: 600 }], runB: [] }
+    const r = generateKitchen({ layout: 'straight', lengthA: 1400, upper: false, modules: edited }, SEED_CATALOG)
+    // Тек екі базалық модуль (үстіңгі қатарсыз) — дәл біз бергендей.
+    expect(r.cabinets).toHaveLength(2)
+    expect(r.cabinets.some((c) => c.name.toLowerCase().includes('мойк'))).toBe(true)
+    expect(validatePlacements(r.room, r.cabinets.map((c) => ({ cabinet: c, placement: r.placements.find((p) => p.cabinetId === c.id)! })))).toEqual([])
   })
 
   it('техникасыз: біркелкі базалар (пенал жоқ)', () => {

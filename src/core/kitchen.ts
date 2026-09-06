@@ -55,7 +55,26 @@ export type KitchenOptions = {
   } | undefined
   /** Фасад фрезеровкасы (қадам 5). `plain` — тегіс. */
   milling?: MillingPatternId | undefined
+  /**
+   * АЙҚЫН модуль тізімі (раскладка редакторынан). Берілсе, авто-құрастыру
+   * (`composeRun`) орнына ОСЫ қолданылады — пайдаланушы қатарды өзі өзгертсе.
+   */
+  modules?: { runA: KitchenModule[]; runB: KitchenModule[] } | undefined
 }
+
+/** Раскладкадағы бір модуль. */
+export type KitchenModule = { kind: ModuleKind; width: number }
+
+/** Раскладка редакторында таңдауға болатын модуль түрлері. */
+export const MODULE_KINDS: { kind: ModuleKind; name: string; upper: boolean }[] = [
+  { kind: 'baseDoors', name: 'Тумба с фасадом', upper: false },
+  { kind: 'baseDrawers', name: 'Тумба с ящиками', upper: false },
+  { kind: 'sink', name: 'Мойка', upper: false },
+  { kind: 'dishwasher', name: 'Посудомойка', upper: false },
+  { kind: 'oven', name: 'Пенал духовка+СВЧ', upper: true },
+  { kind: 'fridge', name: 'Холодильник', upper: true },
+  { kind: 'tall', name: 'Пенал (шкаф)', upper: true },
+]
 
 /** Бір орынның ТҮРІ — функционалды кухня біркелкі қорап болмауы үшін. */
 type ModuleKind = 'tall' | 'baseDoors' | 'baseDrawers' | 'sink' | 'fridge' | 'oven' | 'dishwasher'
@@ -160,6 +179,20 @@ function composeRun(
   return out
 }
 
+/**
+ * Раскладканы АЛДЫН АЛА есептеу (авто). Редактор осыны бастапқы күй ретінде
+ * алады, пайдаланушы өзгертеді, сосын `options.modules`-пен қайтарады.
+ */
+export function kitchenLayout(options: KitchenOptions): { runA: KitchenModule[]; runB: KitchenModule[] } {
+  const corner = options.layout === 'corner' && (options.lengthB ?? 0) >= MODULE_MIN
+  const sink = options.sink ?? true
+  const appliances = options.appliances ?? true
+  return {
+    runA: composeRun(options.lengthA, { sink, appliances, main: true }),
+    runB: corner ? composeRun(options.lengthB!, { sink: false, appliances, main: false }) : [],
+  }
+}
+
 const TEMPLATE_OF: Record<ModuleKind, string> = {
   tall: 'kitchen-tall-600',
   fridge: 'kitchen-tall-600',
@@ -259,8 +292,10 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   const upperElev = d.upperElevation ?? UPPER_ELEVATION
   const finishUpper = (c: CabinetConfig) => withMilling(withMaterials(c, options.materials), options.milling)
 
-  const runA = composeRun(options.lengthA, { sink, appliances, main: true })
-  const runB = corner ? composeRun(options.lengthB!, { sink: false, appliances, main: false }) : []
+  const runA = options.modules ? options.modules.runA : composeRun(options.lengthA, { sink, appliances, main: true })
+  const runB = options.modules
+    ? options.modules.runB
+    : corner ? composeRun(options.lengthB!, { sink: false, appliances, main: false }) : []
   const totalA = runA.reduce((sum, m) => sum + m.width, 0)
   const totalB = runB.reduce((sum, m) => sum + m.width, 0)
 
