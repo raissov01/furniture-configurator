@@ -739,4 +739,9 @@ export const en: Record<string, string> = {
   'Показать фасады': 'Show fronts',
   'Ортогональная проекция': 'Orthographic',
   'Человек для масштаба': 'Person for scale',
+  'Стиль интерьера': 'Interior style',
+  'Скандинавский': 'Scandinavian',
+  'Современный': 'Modern',
+  'Лофт': 'Loft',
+  'Классический': 'Classic',
 }

@@ -743,4 +743,9 @@ export const uz: Record<string, string> = {
   'Показать фасады': 'Fasadni ko\'rsatish',
   'Ортогональная проекция': 'Ortogonal proyeksiya',
   'Человек для масштаба': 'Masshtab uchun odam',
+  'Стиль интерьера': 'Interyer uslubi',
+  'Скандинавский': 'Skandinav',
+  'Современный': 'Zamonaviy',
+  'Лофт': 'Loft',
+  'Классический': 'Klassik',
 }

@@ -21,13 +21,23 @@ const MODEL = process.env['OPENAI_IMAGE_MODEL'] ?? 'gpt-image-1'
 const MAX_BYTES = 8 * 1024 * 1024
 
 const PROMPT = [
-  'Фотореалистичный интерьерный рендер этой мебели.',
-  'СОХРАНИ пропорции, количество и расположение фасадов, полок и ящиков без изменений —',
-  'это чертёж реального изделия, а не эскиз.',
+  'Фотореалистичный интерьерный рендер этой мебели, качество студийной визуализации.',
+  'СОХРАНИ в точности пропорции, количество и расположение корпусов, фасадов, полок,',
+  'ящиков и техники — это чертёж реального изделия, а не эскиз, ничего не добавляй и не убирай.',
   'Убери сетку, размерные подписи и служебные линии.',
-  'Поставь мебель в светлую комнату с мягким дневным светом, лёгкой тенью на полу,',
-  'нейтральными стенами и полом. Без людей, без текста, без логотипов.',
+  'Материалы реалистичные: фактура ЛДСП/МДФ, матовые или сатиновые фасады, металлические ручки,',
+  'столешница с лёгким блеском. Мягкий дневной свет из окна сбоку, мягкие контактные тени,',
+  'реалистичные отражения. Нейтральные стены и пол, аккуратная комната.',
+  'Без людей, без текста, без логотипов, без искажений геометрии.',
 ].join(' ')
+
+/** Интерьер стилі — пайдаланушы таңдайды, промптқа қосылады. */
+const STYLES: Record<string, string> = {
+  scandinavian: 'Стиль: скандинавский — светлое дерево, белые стены, минимализм, уют.',
+  modern: 'Стиль: современный минимализм — чистые линии, матовые поверхности, нейтральные тона.',
+  loft: 'Стиль: лофт — кирпич, бетон, тёплый свет, тёмный металл.',
+  classic: 'Стиль: классический — тёплое дерево, филёнчатые фасады, мягкий свет.',
+}
 
 export async function POST(request: Request): Promise<Response> {
   const key = process.env['OPENAI_API_KEY']
@@ -35,9 +45,10 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'ИИ-рендер не настроен: нет ключа OpenAI' }, { status: 503 })
   }
 
-  const body = (await request.json().catch(() => null)) as { image?: unknown; hint?: unknown } | null
+  const body = (await request.json().catch(() => null)) as { image?: unknown; hint?: unknown; style?: unknown } | null
   const image = typeof body?.image === 'string' ? body.image : ''
   const hint = typeof body?.hint === 'string' ? body.hint.slice(0, 300) : ''
+  const style = typeof body?.style === 'string' && body.style in STYLES ? STYLES[body.style] : ''
   if (!image.startsWith('data:image/png;base64,')) {
     return Response.json({ error: 'Нужен снимок сцены' }, { status: 400 })
   }
@@ -53,8 +64,9 @@ export async function POST(request: Request): Promise<Response> {
       model: MODEL,
       // `File` — Node 20+ ішінде бар, қосымша тәуелділік керек емес.
       image: new File([bytes as unknown as BlobPart], 'scene.png', { type: 'image/png' }),
-      prompt: hint ? `${PROMPT} Дополнительно: ${hint}` : PROMPT,
+      prompt: [PROMPT, style, hint ? `Дополнительно: ${hint}` : ''].filter(Boolean).join(' '),
       size: '1024x1024',
+      quality: 'high',
     })
     const b64 = result.data?.[0]?.b64_json
     if (!b64) return Response.json({ error: 'Модель не вернула изображение' }, { status: 502 })

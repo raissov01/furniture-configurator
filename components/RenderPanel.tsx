@@ -18,6 +18,7 @@ export function RenderPanel() {
   const setOpen = useConfigurator((s) => s.setRenderOpen)
   const [busy, setBusy] = useState(false)
   const [hint, setHint] = useState('')
+  const [style, setStyle] = useState('scandinavian')
   const [image, setImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,7 +38,7 @@ export function RenderPanel() {
       const res = await fetch('/api/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: shot, hint }),
+        body: JSON.stringify({ image: shot, hint, style }),
       })
       const data = (await res.json()) as { image?: string; error?: string }
       if (!res.ok || !data.image) {
@@ -71,6 +72,31 @@ export function RenderPanel() {
         <p className="mb-3 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
           {tr('Рендер — картинка, а не размер: модель может слегка изменить пропорции и цвет. Перед отправкой клиенту сверьте с деталировкой.')}
         </p>
+
+        <Field label={tr('Стиль интерьера')}>
+          <div className="flex flex-wrap gap-1.5">
+            {([
+              ['scandinavian', tr('Скандинавский')],
+              ['modern', tr('Современный')],
+              ['loft', tr('Лофт')],
+              ['classic', tr('Классический')],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setStyle(id)}
+                className={
+                  'rounded-md border px-2.5 py-1 text-xs transition ' +
+                  (style === id
+                    ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+                    : 'border-neutral-300 hover:border-neutral-500 dark:border-neutral-700')
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </Field>
 
         <Field label={tr('Пожелание к обстановке')} hint={tr('необязательно')}>
           <input
