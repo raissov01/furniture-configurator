@@ -268,8 +268,7 @@ export function validatePlacements(
     }
   }
 
-  // Бір қабырғадағы қабаттасу. Тек көршілес жұптарды салыстыру жеткілікті:
-  // аралықтар басына қарай сұрыпталған.
+  // Бір қабырғадағы қабаттасу.
   const byWall = new Map<WallId, { cabinet: CabinetConfig; placement: Placement }[]>()
   for (const entry of entries) {
     const list = byWall.get(entry.placement.wall) ?? []
@@ -278,43 +277,76 @@ export function validatePlacements(
   }
   for (const list of byWall.values()) {
     const sorted = [...list].sort((a, b) => a.placement.offset - b.placement.offset)
-    for (let i = 1; i < sorted.length; i += 1) {
-      const before = sorted[i - 1]!
-      const after = sorted[i]!
-      /*
-       * БҰРЫЛҒАН модульді қабырға бойындағы аралықпен тексеруге БОЛМАЙДЫ:
-       * 45°-қа бұрылған шкаф қабырғаның бойымен кеңірек орын алады, бірақ
-       * көршісіне тимеуі мүмкін. Ондай жағдайда нақты төртбұрыштар
-       * салыстырылады (SAT), ал жанасу қиылысу деп саналмайды.
-       */
-      const rotated = (before.placement.rotate ?? 0) !== 0 || (after.placement.rotate ?? 0) !== 0
-      if (rotated) {
-        const hit = rectanglesOverlap(
-          placementCorners(room, before.cabinet, before.placement),
-          placementCorners(room, after.cabinet, after.placement),
-        )
-        if (hit) {
+    /*
+     * ⚠ Барлық жұпты салыстырамыз, тек көршілесті ЕМЕС. Себебі ас үйдің
+     * үстіңгі қатары төменгінің дәл ҮСТІНДЕ (бірдей offset, бөлек биіктік)
+     * тұрады: offset бойынша сұрыпталғанда үстіңгі мен төменгі араласып,
+     * көршілес-жұп оптимизациясы шынайы қабаттасуды өткізіп жіберер еді.
+     */
+    for (let i = 0; i < sorted.length; i += 1) {
+      for (let j = i + 1; j < sorted.length; j += 1) {
+        const before = sorted[i]!
+        const after = sorted[j]!
+        // Тік ауқымдары қиылыспаса — қабаттасу ЖОҚ (үстіңгі мен төменгі
+        // қатар бір жоспарда тұрса да, әр биіктікте).
+        if (!verticalOverlap(before, after)) continue
+        /*
+         * БҰРЫЛҒАН модульді қабырға бойындағы аралықпен тексеруге БОЛМАЙДЫ:
+         * 45°-қа бұрылған шкаф қабырғаның бойымен кеңірек орын алады, бірақ
+         * көршісіне тимеуі мүмкін. Ондай жағдайда нақты төртбұрыштар
+         * салыстырылады (SAT), ал жанасу қиылысу деп саналмайды.
+         */
+        const rotated = (before.placement.rotate ?? 0) !== 0 || (after.placement.rotate ?? 0) !== 0
+        if (rotated) {
+          const hit = rectanglesOverlap(
+            placementCorners(room, before.cabinet, before.placement),
+            placementCorners(room, after.cabinet, after.placement),
+          )
+          if (hit) {
+            issues.push({
+              cabinetId: after.cabinet.id,
+              field: 'overlap',
+              message: `пересекается с «${before.cabinet.name}»`,
+            })
+          }
+          continue
+        }
+        const prev = placementSpan(before.cabinet, before.placement)
+        const curr = placementSpan(after.cabinet, after.placement)
+        const gap = Math.min(prev.end, curr.end) - Math.max(prev.start, curr.start)
+        if (gap > 0) {
           issues.push({
             cabinetId: after.cabinet.id,
             field: 'overlap',
-            message: `пересекается с «${before.cabinet.name}»`,
+            message: `пересекается с «${before.cabinet.name}» на ${gap} мм`,
           })
         }
-        continue
-      }
-      const prev = placementSpan(before.cabinet, before.placement)
-      const curr = placementSpan(after.cabinet, after.placement)
-      if (curr.start < prev.end) {
-        issues.push({
-          cabinetId: after.cabinet.id,
-          field: 'overlap',
-          message: `пересекается с «${before.cabinet.name}» на ${prev.end - curr.start} мм`,
-        })
       }
     }
   }
 
   return issues
+}
+
+/**
+ * Екі модульдің ТІК ауқымы қиылыса ма (еденнен биіктік бойынша).
+ *
+ * Ас үйдің үстіңгі қатары төменгінің дәл үстінде тұрады: жоспарда іздері
+ * бір, бірақ биіктіктері бөлек — сондықтан қабаттасу емес. Ауқым:
+ * [ілінген биіктік, + цоколь + корпус]. Столешницаның 40 мм-і елеусіз.
+ */
+function verticalOverlap(
+  a: { cabinet: CabinetConfig; placement: Placement },
+  b: { cabinet: CabinetConfig; placement: Placement },
+): boolean {
+  const range = (e: { cabinet: CabinetConfig; placement: Placement }) => {
+    const bottom = e.placement.elevation ?? 0
+    return { bottom, top: bottom + (e.cabinet.base?.height ?? 0) + e.cabinet.height }
+  }
+  const ra = range(a)
+  const rb = range(b)
+  // Тек ЖАНАСУ (бірінің төбесі екіншісінің табанымен беттесуі) қиылысу емес.
+  return Math.min(ra.top, rb.top) - Math.max(ra.bottom, rb.bottom) > 0.5
 }
 
 /**

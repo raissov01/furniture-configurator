@@ -646,4 +646,13 @@ export const uz: Record<string, string> = {
   'Точно?': 'Aniqmi?',
   'Уйти': 'Chiqish',
   'Убрать': 'Chiqarish',
+  'Генератор кухни': 'Oshxona generatori',
+  'по длине стены': 'devor uzunligi bo\'yicha',
+  'Стена A, мм': 'A devor, mm',
+  'Стена B (угол), мм': 'B devor (burchak), mm',
+  'Угол (Г)': 'Burchak (G)',
+  'Мойка': 'Rakovina',
+  'Верхний ряд': 'Yuqori qator',
+  'Сгенерировать': 'Generatsiya',
+  'Стена делится на стандартные модули автоматически. Столешница, цоколь и мойка добавляются сами. Ctrl+Z возвращает.': 'Devor standart modullarga avtomatik bo\'linadi. Stoleshnitsa, tsokol va rakovina o\'zi qo\'shiladi. Ctrl+Z qaytaradi.',
 }

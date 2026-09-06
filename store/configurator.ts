@@ -17,6 +17,7 @@ import {
   canMirror,
   catalogOf,
   findSet,
+  generateKitchen,
   findTemplate,
   mirrorCabinet as mirrorCabinetConfig,
   nextFreeOffset,
@@ -182,6 +183,7 @@ type State = Snapshot & {
 
   loadTemplate(id: string): void
   loadSet(id: string): void
+  loadKitchen(options: import('@/src/core/index').KitchenOptions): void
   loadCabinet(cabinet: CabinetConfig): void
 
   exportProject(): ProjectFile
@@ -379,6 +381,29 @@ export const useConfigurator = create<State>((set, get) => ({
         depth: Math.max(s.room.depth, preset.room.depth),
         height: Math.max(s.room.height, preset.room.height),
       },
+      cabinets,
+      placements,
+      activeId: cabinets[0]!.id,
+      templateId: '',
+      galleryOpen: false,
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [],
+      lastEditKey: null,
+    })
+  },
+
+  /**
+   * Ас үй ГЕНЕРАТОРЫ: қабырға ұзындығынан толық гарнитур.
+   *
+   * `loadSet`-пен бір қалыпта — бүкіл жобаны АЛМАСТЫРАДЫ (Ctrl+Z қайтарады).
+   * Бөлме генератор берген өлшемге көшеді: гарнитур сонда ғана дәл сыяды.
+   */
+  loadKitchen(options) {
+    const s = get()
+    const { cabinets, placements, room } = generateKitchen(options, s.catalog)
+    if (cabinets.length === 0) return
+    set({
+      room: { ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) },
       cabinets,
       placements,
       activeId: cabinets[0]!.id,

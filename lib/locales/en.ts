@@ -642,4 +642,13 @@ export const en: Record<string, string> = {
   'Точно?': 'Sure?',
   'Уйти': 'Leave',
   'Убрать': 'Remove',
+  'Генератор кухни': 'Kitchen generator',
+  'по длине стены': 'by wall length',
+  'Стена A, мм': 'Wall A, mm',
+  'Стена B (угол), мм': 'Wall B (corner), mm',
+  'Угол (Г)': 'Corner (L)',
+  'Мойка': 'Sink',
+  'Верхний ряд': 'Upper row',
+  'Сгенерировать': 'Generate',
+  'Стена делится на стандартные модули автоматически. Столешница, цоколь и мойка добавляются сами. Ctrl+Z возвращает.': 'The wall is split into standard modules automatically. Countertop, plinth and sink are added for you. Ctrl+Z undoes.',
 }

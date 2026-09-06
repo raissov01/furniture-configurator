@@ -37,23 +37,31 @@ export const SEED_SETS: TemplateSet[] = [
     id: 'corner-wardrobe',
     name: 'Угловой шкаф',
     description:
-      'Два корпуса в угол: по одному на каждой стене. Так угол и собирают в цехе — ' +
-      'Г-образную деталь не выкроить из листа.',
+      'Два корпуса в угол: один вдоль стены, второй перпендикулярно. Так угол и ' +
+      'собирают в цехе — Г-образную деталь не выкроить из листа.',
     room: { width: 3000, depth: 3000, height: 2700 },
+    // ⚠ БҰРЫШ: екі корпус БІР бұрышта (солтүстік+шығыстың offset 0-і сол
+    // жерде түйіседі) түйісуі керек. Перпендикуляр корпус көршісінің
+    // ТЕРЕҢДІГІНЕ шегінеді, әйтпесе бұрыш кубында соқтығысады. Штангалы
+    // шкаф (тереңдігі 600) бұрышты алады, пенал одан кейін басталады.
     items: [
-      { templateId: 'wardrobe-rod-1000', size: { width: 1000 }, wall: 'west', offset: 0 },
-      { templateId: 'wardrobe-penal-600', size: { height: 2200, width: 900 }, wall: 'north', offset: 0 },
+      { templateId: 'wardrobe-rod-1000', size: { width: 1000 }, wall: 'north', offset: 0 },
+      { templateId: 'wardrobe-penal-600', size: { height: 2200, width: 900 }, wall: 'east', offset: 1500 },
     ],
   },
   {
     id: 'corner-kitchen',
     name: 'Угловая кухня',
-    description: 'Нижний ряд по двум стенам: мойка в углу, тумба с ящиками и рабочий модуль.',
+    description: 'Нижний ряд буквой Г: мойка в углу, рабочий модуль по одной стене, ящики по другой.',
     room: { width: 3200, depth: 3000, height: 2700 },
+    // ⚠ БҰРЫШ: мойка (тереңдігі 500) солтүстік+шығыс бұрышын алады да,
+    // ящик перпендикуляр қабырғада мойканың ТЕРЕҢДІГІНЕН (500) басталады —
+    // сонда екі қатар нақ Г-әрпіндей түйіседі, бұрышта саңылау да,
+    // соқтығысу да болмайды.
     items: [
       { templateId: 'kitchen-sink-800', wall: 'north', offset: 0 },
       { templateId: 'kitchen-base-full-600', wall: 'north', offset: 800 },
-      { templateId: 'kitchen-base-drawers-600', wall: 'west', offset: 0 },
+      { templateId: 'kitchen-base-drawers-600', wall: 'east', offset: 1900 },
     ],
   },
   {

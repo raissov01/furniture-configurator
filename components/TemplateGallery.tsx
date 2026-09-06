@@ -43,8 +43,11 @@ export function TemplateGallery() {
   }
   const loadTemplate = useConfigurator((s) => s.loadTemplate)
   const loadSet = useConfigurator((s) => s.loadSet)
+  const loadKitchen = useConfigurator((s) => s.loadKitchen)
   const activeId = useConfigurator((s) => s.templateId)
   const [filter, setFilter] = useState<Filter>('all')
+  // Ас үй генераторы формасының күйі.
+  const [kit, setKit] = useState({ lengthA: 3000, lengthB: 2400, corner: true, sink: true, upper: true, appliances: true })
   const catalog = useConfigurator((s) => s.catalog)
 
   const counts = useMemo(() => {
@@ -111,6 +114,75 @@ export function TemplateGallery() {
         ) : null}
 
         {filter === 'sets' ? (
+          <div className="space-y-4">
+            {/*
+              АС ҮЙ ГЕНЕРАТОРЫ: қабырға ұзындығынан толық гарнитур (авто
+              модуль бөлу + столешница + үстіңгі қатар). Бекітілген «Наборы»-дан
+              айырмасы — ұзындық ерікті, модульдерді өзі бөледі.
+            */}
+            <div className="rounded-lg border border-neutral-300 bg-neutral-50 p-3 dark:border-neutral-600 dark:bg-neutral-800/50">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-xs font-semibold">{tr('Генератор кухни')}</span>
+                <span className="text-[11px] text-neutral-500">{tr('по длине стены')}</span>
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="text-[11px] text-neutral-500">
+                  {tr('Стена A, мм')}
+                  <input
+                    type="number" min={600} step={100}
+                    value={kit.lengthA}
+                    onChange={(e) => setKit((k) => ({ ...k, lengthA: Number(e.target.value) }))}
+                    className="mt-0.5 block w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 dark:border-neutral-600 dark:bg-neutral-900"
+                  />
+                </label>
+                <label className={cn('text-[11px] text-neutral-500', !kit.corner && 'opacity-40')}>
+                  {tr('Стена B (угол), мм')}
+                  <input
+                    type="number" min={600} step={100}
+                    value={kit.lengthB}
+                    disabled={!kit.corner}
+                    onChange={(e) => setKit((k) => ({ ...k, lengthB: Number(e.target.value) }))}
+                    className="mt-0.5 block w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-900"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5 text-xs">
+                  <input type="checkbox" checked={kit.corner} onChange={(e) => setKit((k) => ({ ...k, corner: e.target.checked }))} />
+                  {tr('Угол (Г)')}
+                </label>
+                <label className="flex items-center gap-1.5 text-xs">
+                  <input type="checkbox" checked={kit.sink} onChange={(e) => setKit((k) => ({ ...k, sink: e.target.checked }))} />
+                  {tr('Мойка')}
+                </label>
+                <label className="flex items-center gap-1.5 text-xs">
+                  <input type="checkbox" checked={kit.upper} onChange={(e) => setKit((k) => ({ ...k, upper: e.target.checked }))} />
+                  {tr('Верхний ряд')}
+                </label>
+                <label className="flex items-center gap-1.5 text-xs">
+                  <input type="checkbox" checked={kit.appliances} onChange={(e) => setKit((k) => ({ ...k, appliances: e.target.checked }))} />
+                  {tr('Техника')}
+                </label>
+                <Button
+                  active
+                  onClick={() => {
+                    setFirstRun(false)
+                    loadKitchen({
+                      layout: kit.corner ? 'corner' : 'straight',
+                      lengthA: kit.lengthA,
+                      lengthB: kit.corner ? kit.lengthB : undefined,
+                      sink: kit.sink,
+                      upper: kit.upper,
+                      appliances: kit.appliances,
+                    })
+                  }}
+                >
+                  {tr('Сгенерировать')}
+                </Button>
+              </div>
+              <p className="mt-2 text-[11px] leading-snug text-neutral-400">
+                {tr('Стена делится на стандартные модули автоматически. Столешница, цоколь и мойка добавляются сами. Ctrl+Z возвращает.')}
+              </p>
+            </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             {SEED_SETS.map((preset) => {
               const { cabinets } = setToProject(preset, catalog)
@@ -139,6 +211,7 @@ export function TemplateGallery() {
                 </button>
               )
             })}
+          </div>
           </div>
         ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
