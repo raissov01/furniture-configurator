@@ -9,8 +9,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentRef, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Grid, OrbitControls, OrthographicCamera } from '@react-three/drei'
-import { SRGBColorSpace, TextureLoader } from 'three'
+import { Grid, OrbitControls, OrthographicCamera, PointerLockControls } from '@react-three/drei'
+import { SRGBColorSpace, TextureLoader, Vector3 } from 'three'
 import type { Mesh } from 'three'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
@@ -80,6 +80,62 @@ function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [n
  * көрініс сол шкафты ортаға алады — әйтпесе қабырға таңдаған сайын нысан
  * экраннан шығып кетеді.
  */
+/**
+ * ПРОГУЛКА — бірінші жақтан жүру. WASD жүру, тінтуірмен қарау (pointer-lock),
+ * көз биіктігінде (1.6 м), бөлменің ішінен шықпайды. E — барлық есік/ящикті
+ * ашу/жабу.
+ *
+ * ⚠ OrbitControls-пен ҚАТАР болмауы керек: екеуі де `makeDefault`, сондықтан
+ * ол өшкенде ғана осы қосылады (`walk` күйі шешеді).
+ */
+function WalkControls({ room }: { room: { width: number; depth: number } }) {
+  const { camera } = useThree()
+  const keys = useRef<Record<string, boolean>>({})
+
+  // Бөлме ішіне, көз биіктігіне қою (бір рет).
+  useEffect(() => {
+    camera.position.set(room.width / 1000 / 2, 1.6, room.depth / 1000 - 0.6)
+    camera.lookAt(room.width / 1000 / 2, 1.4, 0)
+  }, [camera, room.width, room.depth])
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      keys.current[e.code] = true
+      if (e.code === 'KeyE') {
+        const st = useConfigurator.getState()
+        st.setOpenness(st.openness > 0 ? 0 : 1)
+      }
+    }
+    const up = (e: KeyboardEvent) => { keys.current[e.code] = false }
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up) }
+  }, [])
+
+  useFrame((_, dt) => {
+    const speed = 2.4 * Math.min(dt, 0.05)
+    const dir = new Vector3()
+    camera.getWorldDirection(dir)
+    dir.y = 0
+    if (dir.lengthSq() > 0) dir.normalize()
+    const right = new Vector3().crossVectors(dir, new Vector3(0, 1, 0)).normalize()
+    const move = new Vector3()
+    if (keys.current['KeyW'] || keys.current['ArrowUp']) move.add(dir)
+    if (keys.current['KeyS'] || keys.current['ArrowDown']) move.sub(dir)
+    if (keys.current['KeyD'] || keys.current['ArrowRight']) move.add(right)
+    if (keys.current['KeyA'] || keys.current['ArrowLeft']) move.sub(right)
+    if (move.lengthSq() > 0) camera.position.add(move.normalize().multiplyScalar(speed))
+    // Көз биіктігі тұрақты, бөлмеден шықпайды (0.3 м шетте тоқтайды).
+    camera.position.y = 1.6
+    const mx = room.width / 1000 - 0.3
+    const mz = room.depth / 1000 - 0.3
+    camera.position.x = Math.min(mx, Math.max(0.3, camera.position.x))
+    camera.position.z = Math.min(mz, Math.max(0.3, camera.position.z))
+  })
+
+  return <PointerLockControls makeDefault />
+}
+
 function CameraRig({
   target, box, facingY, contentKey,
 }: {
@@ -481,6 +537,7 @@ export default function Scene({
   const quality = useConfigurator((s) => s.quality)
   const silhouette = useConfigurator((s) => s.silhouette)
   const setLiveScene = useConfigurator((s) => s.setLiveScene)
+  const walk = useConfigurator((s) => s.walk)
   const canvas = canvasSettings(quality)
 
   /*
@@ -619,12 +676,16 @@ export default function Scene({
         infiniteGrid
         fadeDistance={14}
       />
-      <CameraRig
-        target={view.target}
-        box={view.box}
-        facingY={view.facingY}
-        contentKey={items.map((i) => i.cabinet.id).join(',')}
-      />
+      {walk ? (
+        <WalkControls room={room} />
+      ) : (
+        <CameraRig
+          target={view.target}
+          box={view.box}
+          facingY={view.facingY}
+          contentKey={items.map((i) => i.cabinet.id).join(',')}
+        />
+      )}
     </Canvas>
   )
 }

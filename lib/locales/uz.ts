@@ -721,4 +721,7 @@ export const uz: Record<string, string> = {
   '…': '…',
   'П-образная (три стены)': 'P-shaklli (uch devor)',
   'Стена C, мм': 'C devor, mm',
+  'Прогулка': 'Sayr',
+  'Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы': 'Ichida yurish: WASD — yurish, sichqoncha — ko\'rish, E — eshiklarni ochish',
+  'Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор': 'Ko\'rish uchun bosing · WASD — yurish · E — eshiklar · Esc — kursor',
 }

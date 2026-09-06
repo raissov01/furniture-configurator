@@ -717,4 +717,7 @@ export const en: Record<string, string> = {
   '…': '…',
   'П-образная (три стены)': 'U-shaped (three walls)',
   'Стена C, мм': 'Wall C, mm',
+  'Прогулка': 'Walk',
+  'Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы': 'Walk inside: WASD — move, mouse — look, E — open doors',
+  'Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор': 'Click to look · WASD — move · E — doors · Esc — cursor',
 }

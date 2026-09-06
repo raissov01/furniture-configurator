@@ -213,6 +213,9 @@ type State = Snapshot & {
   setAr(patch: Partial<{ busy: boolean; link: string | null; error: string | null }>): void
   setShowFronts(v: boolean): void
   setOpenness(v: number): void
+  /** Бірінші жақтан жүру режимі (Прогулка). */
+  walk: boolean
+  setWalk(v: boolean): void
   setProjection(v: 'perspective' | 'ortho'): void
   fitCamera(): void
   /** Локал тарихқа қазіргі жобаны жазу. */
@@ -279,6 +282,7 @@ export const useConfigurator = create<State>((set, get) => ({
   viewMode: 'solid',
   showFronts: true,
   openness: 0,
+  walk: false,
   projection: 'perspective',
   quality: 'high',
   silhouette: { on: false, height: DEFAULT_SILHOUETTE_HEIGHT },
@@ -598,6 +602,7 @@ export const useConfigurator = create<State>((set, get) => ({
   setViewMode: (viewMode) => set({ viewMode }),
   setQuality: (quality) => set({ quality }),
   setSilhouette: (patch) => set((s) => ({ silhouette: { ...s.silhouette, ...patch } })),
+  setWalk: (walk) => set({ walk }),
   setLiveScene: (liveScene) => set({ liveScene }),
   setAr: (patch) => set((s) => ({ ar: { ...s.ar, ...patch } })),
   setShowFronts: (showFronts) => set({ showFronts }),

@@ -92,6 +92,8 @@ export function Workspace() {
   const setViewMode = useConfigurator((s) => s.setViewMode)
   const showFronts = useConfigurator((s) => s.showFronts)
   const openness = useConfigurator((s) => s.openness)
+  const walk = useConfigurator((s) => s.walk)
+  const setWalk = useConfigurator((s) => s.setWalk)
   const setOpenness = useConfigurator((s) => s.setOpenness)
   const setShowFronts = useConfigurator((s) => s.setShowFronts)
   const silhouette = useConfigurator((s) => s.silhouette)
@@ -346,6 +348,13 @@ export function Workspace() {
           ) : null}
           <ArButton />
           <Button
+            active={walk}
+            title={tr('Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы')}
+            onClick={() => setWalk(!walk)}
+          >
+            {tr('Прогулка')}
+          </Button>
+          <Button
             active={silhouette.on}
             title={tr('Человек рядом — для масштаба')}
             onClick={() => setSilhouette({ on: !silhouette.on })}
@@ -492,6 +501,20 @@ export function Workspace() {
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} />
           </div>
+          {walk ? (
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+              <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/85 px-4 py-2 text-xs text-white shadow-lg backdrop-blur">
+                <span>{tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
+                <button
+                  type="button"
+                  className="rounded-full bg-white/15 px-2.5 py-1 hover:bg-white/25"
+                  onClick={() => setWalk(false)}
+                >
+                  {tr('Выйти')}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </main>
         <aside className="min-h-0 border-l border-neutral-200 dark:border-neutral-800" data-tour="cutlist">
           <CutListTable panels={panels} catalog={catalog} />
