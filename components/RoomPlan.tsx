@@ -9,7 +9,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   WALL_LABELS,
   canMirror,
@@ -103,6 +103,7 @@ export function RoomPlan() {
             selectedWall={selectedWall}
             onWall={setSelectedWall}
             onCabinet={setActive}
+            onMove={(id, offset) => movePlacement(id, { offset })}
           />
 
           <div className="space-y-3">
@@ -233,8 +234,7 @@ export function RoomPlan() {
         </div>
 
         <p className="mt-3 text-[11px] text-neutral-400">
-          Кружок на стене — точка отсчёта смещения. Редактор показывает выбранный корпус;
-          деталировка и экспорт — тоже по нему.
+          {tr('Перетащите корпус на плане, чтобы подвинуть вдоль стены. Кружок — точка отсчёта. Редактор и экспорт — по выбранному корпусу.')}
         </p>
       </div>
     </div>
@@ -242,7 +242,7 @@ export function RoomPlan() {
 }
 
 function PlanSvg({
-  room, scale, entries, activeId, selectedWall, onWall, onCabinet,
+  room, scale, entries, activeId, selectedWall, onWall, onCabinet, onMove,
 }: {
   room: Room
   scale: number
@@ -251,9 +251,39 @@ function PlanSvg({
   selectedWall: WallId
   onWall: (w: WallId) => void
   onCabinet: (id: string) => void
+  onMove: (id: string, offset: number) => void
 }) {
   const walls = roomWalls(room)
   const pad = WALL_MM * 2
+
+  /*
+   * СҮЙРЕП ЖЫЛЖЫТУ (шетелдік конфигуратордың ыңғайы). Корпусты басып
+   * тартқанда ол ӨЗ ҚАБЫРҒАСЫ бойымен жылжиды: экран пикселін мм-ге
+   * (÷scale) айналдырып, қабырға бағытына проекциялаймыз. Offset [0,
+   * қабырға−ені] аралығында қыселінеді. Дәлдік керек болса — оң жақтағы сан
+   * қалады.
+   */
+  const drag = useRef<{ id: string; wall: WallId; startX: number; startY: number; startOffset: number } | null>(null)
+  const [dragging, setDragging] = useState<string | null>(null)
+  useEffect(() => {
+    if (!dragging) return
+    const move = (e: PointerEvent) => {
+      const d = drag.current
+      if (!d) return
+      const wall = walls.find((w) => w.id === d.wall)
+      if (!wall) return
+      const dxMm = (e.clientX - d.startX) / scale
+      const dzMm = (e.clientY - d.startY) / scale
+      const along = dxMm * wall.direction.x + dzMm * wall.direction.z
+      const cab = entries.find((en) => en.cabinet.id === d.id)?.cabinet
+      const max = Math.max(0, wall.length - (cab?.width ?? 0))
+      onMove(d.id, Math.round(Math.min(max, Math.max(0, d.startOffset + along))))
+    }
+    const up = () => { drag.current = null; setDragging(null) }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    return () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+  }, [dragging, walls, scale, entries, onMove])
 
   return (
     <svg
@@ -299,7 +329,19 @@ function PlanSvg({
           .map((p) => `${p.x},${p.z}`).join(' ')
         const on = cabinet.id === activeId
         return (
-          <g key={cabinet.id} onClick={() => onCabinet(cabinet.id)} style={{ cursor: 'pointer' }}>
+          <g
+            key={cabinet.id}
+            onClick={() => onCabinet(cabinet.id)}
+            onPointerDown={(e) => {
+              onCabinet(cabinet.id)
+              drag.current = {
+                id: cabinet.id, wall: placement.wall,
+                startX: e.clientX, startY: e.clientY, startOffset: placement.offset,
+              }
+              setDragging(cabinet.id)
+            }}
+            style={{ cursor: dragging === cabinet.id ? 'grabbing' : 'grab' }}
+          >
             <polygon
               points={points}
               fill={on ? '#c9a227' : '#e3c76a'}

@@ -748,4 +748,5 @@ export const uz: Record<string, string> = {
   'Современный': 'Zamonaviy',
   'Лофт': 'Loft',
   'Классический': 'Klassik',
+  'Перетащите корпус на плане, чтобы подвинуть вдоль стены. Кружок — точка отсчёта. Редактор и экспорт — по выбранному корпусу.': 'Korpusni rejada sudrab, devor bo\'ylab suriladi. Doira — hisob nuqtasi. Redaktor va eksport tanlangan korpus bo\'yicha.',
 }
