@@ -711,4 +711,8 @@ export const en: Record<string, string> = {
   'Пенал духовка+СВЧ': 'Oven+microwave tower',
   'Холодильник': 'Fridge',
   'Пенал (шкаф)': 'Pantry (tall)',
+  'Опишите словами': 'Describe in words',
+  'Напр.: угловая кухня 3 и 2 метра с посудомойкой, без верхних': 'E.g.: corner kitchen 3 and 2 metres with a dishwasher, no uppers',
+  'Заполнить': 'Fill in',
+  '…': '…',
 }

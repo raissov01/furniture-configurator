@@ -112,6 +112,9 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
   const loadFurniture = useConfigurator((s) => s.loadFurniture)
   const [step, setStep] = useState(0)
   const [d, setD] = useState<Draft>(DEFAULT)
+  const [prompt, setPrompt] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((p) => ({ ...p, [k]: v }))
 
   if (!open) return null
@@ -120,6 +123,41 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
     { value: '', label: tr('Как в шаблоне') },
     ...catalog.materials.map((m) => ({ value: m.id, label: m.name })),
   ]
+
+  /** Сөзбен: сипаттаманы серверге жіберіп, драфтты толтыру. */
+  const fromText = async () => {
+    if (!prompt.trim()) return
+    setAiBusy(true)
+    setAiError(null)
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      })
+      const data = (await res.json()) as { options?: { type: FurnitureType; layout: 'straight' | 'corner'; lengthA: number; lengthB: number | null; sink: boolean; upper: boolean; appliances: boolean }; error?: string }
+      if (!res.ok || !data.options) {
+        setAiError(data.error ?? 'Не получилось')
+        return
+      }
+      const o = data.options
+      setD((p) => ({
+        ...p,
+        type: o.type,
+        layout: o.layout,
+        lengthA: o.lengthA,
+        lengthB: o.lengthB ?? p.lengthB,
+        sink: o.sink,
+        upper: o.upper,
+        appliances: o.appliances,
+        modules: null,
+      }))
+    } catch {
+      setAiError('Сеть недоступна')
+    } finally {
+      setAiBusy(false)
+    }
+  }
 
   /** Ағымдағы драфттан KitchenOptions (раскладканы алдын ала есептеу үшін де). */
   const kitchenOpts = (): KitchenOptions => ({
@@ -205,6 +243,24 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
         {/* ── Қадам 1: орналасу ─────────────────────────────────────────── */}
         {step === 0 ? (
           <div className="space-y-3">
+            {/* Сөзбен генерация (qdesign шеберінің жоғарысындағыдай). */}
+            <div className="rounded-md border border-neutral-300 bg-neutral-50 p-2 dark:border-neutral-600 dark:bg-neutral-800/50">
+              <div className="mb-1 text-[11px] font-medium text-neutral-500">{tr('Опишите словами')}</div>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-neutral-900 dark:border-neutral-600 dark:bg-neutral-900"
+                  placeholder={tr('Напр.: угловая кухня 3 и 2 метра с посудомойкой, без верхних')}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') void fromText() }}
+                />
+                <Button active disabled={aiBusy || !prompt.trim()} onClick={() => void fromText()}>
+                  {aiBusy ? tr('…') : tr('Заполнить')}
+                </Button>
+              </div>
+              {aiError ? <p className="mt-1 text-[11px] text-red-600 dark:text-red-400">{aiError}</p> : null}
+            </div>
+
             <Field label={tr('Тип мебели')}>
               <Select
                 value={d.type}

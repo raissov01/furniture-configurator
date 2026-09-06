@@ -715,4 +715,8 @@ export const uz: Record<string, string> = {
   'Пенал духовка+СВЧ': 'Duxovka+SVCh penali',
   'Холодильник': 'Muzlatgich',
   'Пенал (шкаф)': 'Penal (shkaf)',
+  'Опишите словами': 'So\'z bilan tasvirlang',
+  'Напр.: угловая кухня 3 и 2 метра с посудомойкой, без верхних': 'Mas.: burchak oshxona 3 va 2 metr, idishyuvgich bilan, yuqorisiz',
+  'Заполнить': 'To\'ldirish',
+  '…': '…',
 }
