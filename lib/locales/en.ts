@@ -688,4 +688,13 @@ export const en: Record<string, string> = {
   'Ромб': 'Diamond',
   'Арка': 'Arch',
   'Профиль по периметру': 'Perimeter profile',
+  'Мастер мебели': 'Furniture wizard',
+  'Тип мебели': 'Furniture type',
+  'Кухня': 'Kitchen',
+  'Шкаф': 'Wardrobe',
+  'ТВ-зона': 'TV zone',
+  'Комод': 'Chest',
+  'Форма': 'Shape',
+  'Стена делится на стандартные модули автоматически. Кухня — с мойкой и техникой; шкаф, комод и ТВ-зона — рядом модулей.': 'The wall is split into standard modules automatically. Kitchen — with sink and appliances; wardrobe, chest and TV zone — a row of modules.',
+  'Собрать': 'Build',
 }

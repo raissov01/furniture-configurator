@@ -17,10 +17,11 @@ import { t as tr } from '@/lib/i18n'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { MILLING_PATTERNS } from '@/src/core/index'
-import type { KitchenOptions, MillingPatternId } from '@/src/core/index'
+import type { KitchenOptions, MillingPatternId, FurnitureType } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
 type Draft = {
+  type: FurnitureType
   layout: 'straight' | 'corner'
   lengthA: number
   lengthB: number
@@ -42,7 +43,7 @@ type Draft = {
 }
 
 const DEFAULT: Draft = {
-  layout: 'corner', lengthA: 3200, lengthB: 2400,
+  type: 'kitchen', layout: 'corner', lengthA: 3200, lengthB: 2400,
   sink: true, upper: true, appliances: true,
   lowerHeight: 720, lowerDepth: 500, plinthHeight: 95,
   upperDepth: 320, upperHeight: 720, upperElevation: 1460,
@@ -56,6 +57,7 @@ const STEPS = ['Расположение', 'Размеры', 'Наполнени
 export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () => void }) {
   const catalog = useConfigurator((s) => s.catalog)
   const loadKitchen = useConfigurator((s) => s.loadKitchen)
+  const loadFurniture = useConfigurator((s) => s.loadFurniture)
   const [step, setStep] = useState(0)
   const [d, setD] = useState<Draft>(DEFAULT)
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((p) => ({ ...p, [k]: v }))
@@ -87,7 +89,17 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
       },
       milling: d.milling,
     }
-    loadKitchen(options)
+    if (d.type === 'kitchen') {
+      loadKitchen(options)
+    } else {
+      loadFurniture({
+        type: d.type,
+        layout: d.type === 'tv' ? 'straight' : d.layout,
+        lengthA: d.lengthA,
+        lengthB: d.layout === 'corner' ? d.lengthB : undefined,
+        materials: { carcassId: d.carcassId || undefined, frontId: d.frontId || undefined },
+      })
+    }
     onClose()
   }
 
@@ -102,7 +114,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
       >
         {/* Тақырып + қадам индикаторы */}
         <div className="mb-3 flex items-center gap-3">
-          <h2 className="text-sm font-semibold">{tr('Мастер кухни')}</h2>
+          <h2 className="text-sm font-semibold">{tr('Мастер мебели')}</h2>
           <div className="ml-auto">
             <Button onClick={onClose}>{tr('Закрыть')}</Button>
           </div>
@@ -130,28 +142,42 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
         {/* ── Қадам 1: орналасу ─────────────────────────────────────────── */}
         {step === 0 ? (
           <div className="space-y-3">
-            <Field label={tr('Форма кухни')}>
+            <Field label={tr('Тип мебели')}>
               <Select
-                value={d.layout}
-                onChange={(v) => set('layout', v)}
+                value={d.type}
+                onChange={(v) => set('type', v)}
                 options={[
-                  { value: 'straight', label: tr('Прямая (одна стена)') },
-                  { value: 'corner', label: tr('Угловая (Г, две стены)') },
+                  { value: 'kitchen', label: tr('Кухня') },
+                  { value: 'wardrobe', label: tr('Шкаф') },
+                  { value: 'tv', label: tr('ТВ-зона') },
+                  { value: 'chest', label: tr('Комод') },
                 ]}
               />
             </Field>
+            {d.type !== 'tv' ? (
+              <Field label={tr('Форма')}>
+                <Select
+                  value={d.layout}
+                  onChange={(v) => set('layout', v)}
+                  options={[
+                    { value: 'straight', label: tr('Прямая (одна стена)') },
+                    { value: 'corner', label: tr('Угловая (Г, две стены)') },
+                  ]}
+                />
+              </Field>
+            ) : null}
             <div className="grid grid-cols-2 gap-3">
               <Field label={tr('Стена A, мм')}>
                 <NumberInput value={d.lengthA} onChange={(v) => set('lengthA', v)} min={600} step={100} />
               </Field>
-              {d.layout === 'corner' ? (
+              {d.layout === 'corner' && d.type !== 'tv' ? (
                 <Field label={tr('Стена B, мм')}>
                   <NumberInput value={d.lengthB} onChange={(v) => set('lengthB', v)} min={600} step={100} />
                 </Field>
               ) : null}
             </div>
             <p className="text-[11px] leading-snug text-neutral-400">
-              {tr('Стена делится на стандартные модули автоматически. Другие типы мебели — скоро.')}
+              {tr('Стена делится на стандартные модули автоматически. Кухня — с мойкой и техникой; шкаф, комод и ТВ-зона — рядом модулей.')}
             </p>
           </div>
         ) : null}
@@ -250,7 +276,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
               {tr('Далее')}
             </Button>
           ) : (
-            <Button active onClick={generate}>{tr('Собрать кухню')}</Button>
+            <Button active onClick={generate}>{d.type === 'kitchen' ? tr('Собрать кухню') : tr('Собрать')}</Button>
           )}
         </div>
       </div>

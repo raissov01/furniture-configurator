@@ -692,4 +692,13 @@ export const uz: Record<string, string> = {
   'Ромб': 'Romb',
   'Арка': 'Arka',
   'Профиль по периметру': 'Perimetr profili',
+  'Мастер мебели': 'Mebel ustasi',
+  'Тип мебели': 'Mebel turi',
+  'Кухня': 'Oshxona',
+  'Шкаф': 'Shkaf',
+  'ТВ-зона': 'TV zona',
+  'Комод': 'Komod',
+  'Форма': 'Shakli',
+  'Стена делится на стандартные модули автоматически. Кухня — с мойкой и техникой; шкаф, комод и ТВ-зона — рядом модулей.': 'Devor standart modullarga avtomatik bo\'linadi. Oshxona — rakovina va texnika bilan; shkaf, komod, TV zona — modullar qatori.',
+  'Собрать': 'Yig\'ish',
 }

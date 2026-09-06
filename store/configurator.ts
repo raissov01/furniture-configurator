@@ -18,6 +18,7 @@ import {
   catalogOf,
   findSet,
   generateKitchen,
+  generateFurniture,
   findTemplate,
   mirrorCabinet as mirrorCabinetConfig,
   nextFreeOffset,
@@ -184,6 +185,7 @@ type State = Snapshot & {
   loadTemplate(id: string): void
   loadSet(id: string): void
   loadKitchen(options: import('@/src/core/index').KitchenOptions): void
+  loadFurniture(options: import('@/src/core/index').FurnitureOptions): void
   loadCabinet(cabinet: CabinetConfig): void
 
   exportProject(): ProjectFile
@@ -401,6 +403,27 @@ export const useConfigurator = create<State>((set, get) => ({
   loadKitchen(options) {
     const s = get()
     const { cabinets, placements, room } = generateKitchen(options, s.catalog)
+    if (cabinets.length === 0) return
+    set({
+      room: { ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) },
+      cabinets,
+      placements,
+      activeId: cabinets[0]!.id,
+      templateId: '',
+      galleryOpen: false,
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [],
+      lastEditKey: null,
+    })
+  },
+
+  /**
+   * ЖИҺАЗ ГЕНЕРАТОРЫ (көп түр): шкаф/ТВ/комод те қабырғадан құрылады.
+   * `loadKitchen`-мен бір қалыпта — жобаны алмастырады, Ctrl+Z қайтарады.
+   */
+  loadFurniture(options) {
+    const s = get()
+    const { cabinets, placements, room } = generateFurniture(options, s.catalog)
     if (cabinets.length === 0) return
     set({
       room: { ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) },
