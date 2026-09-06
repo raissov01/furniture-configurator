@@ -8,6 +8,7 @@
 import { useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Edges, Html } from '@react-three/drei'
+import { grainTexture } from '@/lib/grainTexture'
 import { BufferAttribute, BufferGeometry, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import type { Axis, Catalog, Panel, SettingsOverride } from '@/src/core/index'
@@ -144,6 +145,8 @@ export function PanelMesh({
   const selected = useConfigurator((s) => s.selected)
   const setSelected = useConfigurator((s) => s.setSelected)
   const key = pid ?? panel.id
+  // Тақта түйіршігі — түске көбейтіледі, реалистік бет үшін.
+  const grain = grainTexture()
 
 
   const extents = useMemo(() => panelExtents(panel, thickness), [panel, thickness])
@@ -295,7 +298,7 @@ export function PanelMesh({
             <boxGeometry args={[panel.finishedLength, panel.finishedWidth, thickness]} />
           )}
           <meshStandardMaterial
-            color={color} roughness={0.7} metalness={0}
+            color={color} map={grain} roughness={0.7} metalness={0}
             transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
           />
           {outline}
@@ -322,6 +325,7 @@ export function PanelMesh({
       <boxGeometry args={[extents.x, extents.y, extents.z]} />
       <meshStandardMaterial
         color={color}
+        map={grain}
         roughness={0.7}
         metalness={0}
         transparent={opacity < 1}
