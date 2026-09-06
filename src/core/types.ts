@@ -454,6 +454,12 @@ export type SectionFronts = {
   milling?: MillingSpec | null | undefined
   /** Шыны фасад (жоғарғы шкафтарда жиі). 3D-де мөлдір көрінеді. */
   glass?: boolean | undefined
+  /**
+   * Осы секцияның фасад декоры (басқа секциялардан бөлек). Берілмесе —
+   * корпустың `frontMaterialId`-і. qdesign сияқты: бір шкафта әр есік
+   * әртүрлі түсте болуы мүмкін.
+   */
+  materialId?: string | undefined
 }
 
 export type SectionContent =

@@ -5,6 +5,7 @@
  * өзгереді, қалғанын ядро жасайды (CLAUDE.md §3).
  */
 
+import { useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
@@ -29,6 +30,10 @@ const isCarcass = (m: Material) => m.thickness >= 10
 function SectionEditor({ section, index }: { section: Section; index: number }) {
   const editSection = useConfigurator((s) => s.editSection)
   const removeSection = useConfigurator((s) => s.removeSection)
+  const catalog = useConfigurator((s) => s.catalog)
+  const cabFrontMat = useConfigurator((s) => activeCabinet(s).frontMaterialId)
+  // Фасадқа жарамды декорлар: ХДФ (3 мм) фасад болмайды.
+  const sectionFrontMats = useMemo(() => catalog.materials.filter((m) => m.thickness >= 10), [catalog])
   const canRemove = useConfigurator((s) => activeCabinet(s).sections.length > 1)
 
   const shopGap = useConfigurator((s) => s.shop.settings.frontGap ?? DEFAULT_SETTINGS.frontGap)
@@ -353,6 +358,39 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
           />
         </Field>
       </div>
+
+      {/* СЕКЦИЯ ФАСАДЫНЫҢ ДЕКОРЫ — корпустан бөлек (qdesign сияқты: бір
+          шкафта әр есік әртүрлі түсте). Берілмесе — корпустікі. */}
+      {section.fronts && section.fronts.count > 0 ? (
+        <Field
+          label={tr('Декор фасада секции')}
+          hint={section.fronts.materialId ? tr('свой') : tr('как у корпуса')}
+        >
+          <div className="flex items-center gap-1.5">
+            <div className="min-w-0 flex-1">
+              <DecorPicker
+                materials={sectionFrontMats}
+                value={section.fronts.materialId ?? cabFrontMat}
+                onChange={(materialId) =>
+                  editSection(index, { fronts: { ...section.fronts!, materialId } }, 'section.frontMaterial')
+                }
+              />
+            </div>
+            {section.fronts.materialId ? (
+              <button
+                type="button"
+                title={tr('Вернуть декор корпуса')}
+                onClick={() =>
+                  editSection(index, { fronts: { ...section.fronts!, materialId: undefined } }, 'section.frontMaterial')
+                }
+                className="shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
+              >
+                ↺
+              </button>
+            ) : null}
+          </div>
+        </Field>
+      ) : null}
 
       {section.fronts ? (
         <FrontFittings

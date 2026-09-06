@@ -911,11 +911,15 @@ export function generateCabinet(
       )
     }
 
+    // Секцияның ӨЗ фасад декоры болса — соны, әйтпесе корпустікі.
+    const secFrontMat = fronts.materialId
+      ? requireMaterial(materials, fronts.materialId, `sections[${sectionIndex}].fronts.materialId`)
+      : frontMat
     const created = makeFronts(
       layout.section, sectionIndex, fronts, slot,
       spanY, originY,
-      inset ? 0 : -frontMat.thickness,
-      frontMat, settings, make,
+      inset ? 0 : -secFrontMat.thickness,
+      secFrontMat, settings, make,
     )
     panels.push(...created)
     frontGroups.push({ fronts: created, sectionIndex })

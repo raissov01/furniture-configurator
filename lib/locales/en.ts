@@ -752,4 +752,8 @@ export const en: Record<string, string> = {
   'Зеркальная копия': 'Mirror copy',
   'Удалить корпус': 'Delete cabinet',
   'Подсветка под верхними (LED)': 'LED lighting under uppers',
+  'Декор фасада секции': 'Section front decor',
+  'свой': 'custom',
+  'как у корпуса': 'as carcass',
+  'Вернуть декор корпуса': 'Reset to carcass decor',
 }

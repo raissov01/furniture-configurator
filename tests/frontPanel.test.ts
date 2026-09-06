@@ -118,3 +118,4 @@ describe('тексерулер', () => {
     expect(() => gen({ frontPanel: { width: 5, side: 'left' } })).toThrow()
   })
 })
+
