@@ -91,10 +91,21 @@ function MillingLines({ panel, catalog, settings, extents }: {
     // сәл алға шығады (молдинг әсері).
     <group position={[-extents.x / 2, -extents.y / 2, -extents.z / 2]}>
       {segments.map((seg, i) => (
-        <mesh key={i} position={[seg.x, seg.y, -1.5]} rotation={[0, 0, seg.angle]} castShadow>
-          <boxGeometry args={[seg.len + 4, 5, 3]} />
-          <meshStandardMaterial color="#6b6156" roughness={0.6} metalness={0} />
-        </mesh>
+        // Әр сегмент — ЕКІ ЖОЛАҚ: сыртқы КӨТЕРІЛГЕН молдинг + оның ішіндегі
+        // ҚАРАҢҒЫ ОЙЫҚ (routed groove). Екеуі бірге классик рамалы фрезеровка
+        // (филёнка) әсерін береді — жалғыз жалпақ жолақтан әлдеқайда нақты.
+        <group key={i} position={[seg.x, seg.y, 0]} rotation={[0, 0, seg.angle]}>
+          {/* Көтерілген молдинг (беттен 2 мм алға) */}
+          <mesh position={[0, 0, -2]} castShadow>
+            <boxGeometry args={[seg.len + 6, 7, 4]} />
+            <meshStandardMaterial color="#7a6f61" roughness={0.55} metalness={0} />
+          </mesh>
+          {/* Ортасындағы қараңғы ойық — фрезаның жолы */}
+          <mesh position={[0, 0, -0.6]}>
+            <boxGeometry args={[seg.len + 2, 2.2, 2]} />
+            <meshStandardMaterial color="#3b342c" roughness={0.7} metalness={0} />
+          </mesh>
+        </group>
       ))}
     </group>
   )
