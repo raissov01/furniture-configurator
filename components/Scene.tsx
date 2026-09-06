@@ -346,6 +346,7 @@ function CabinetGroup({
             catalog={catalog}
             key={p.id}
             pid={projectPanelId(item.cabinet.id, p.id, cabinetCount)}
+            cabinetId={item.cabinet.id}
             panel={p}
             thickness={material?.thickness ?? 16}
             centre={centre}

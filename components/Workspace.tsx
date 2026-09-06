@@ -74,6 +74,9 @@ export function Workspace() {
   const cabinets = useConfigurator((s) => s.cabinets)
   const placements = useConfigurator((s) => s.placements)
   const activeId = useConfigurator((s) => s.activeId)
+  const duplicateCabinet = useConfigurator((s) => s.duplicateCabinet)
+  const mirrorCabinet = useConfigurator((s) => s.mirrorCabinet)
+  const removeCabinet = useConfigurator((s) => s.removeCabinet)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
@@ -438,7 +441,14 @@ export function Workspace() {
               {part.drilling.length} {tr('отв.')}
             </span>
             {part.note ? <span className="truncate text-neutral-400">{part.note}</span> : null}
-            <div className="ml-auto">
+            {/* Корпус әрекеттері: 3D-де басқан корпус белсенді, осы жерден
+                бірден көшіруге/айналдыруға/өшіруге болады (тікелей манипуляция). */}
+            <div className="ml-auto flex items-center gap-1">
+              <Button onClick={() => duplicateCabinet(activeId)} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
+              <Button onClick={() => mirrorCabinet(activeId)} title={tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
+              {cabinets.length > 1 ? (
+                <Button onClick={() => { removeCabinet(activeId); setSelected(null) }} title={tr('Удалить корпус')}>{tr('Удалить')}</Button>
+              ) : null}
               <Button onClick={() => setSelected(null)}>{tr('Закрыть')}</Button>
             </div>
           </div>

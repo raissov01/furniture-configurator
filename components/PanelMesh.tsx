@@ -125,7 +125,7 @@ function cutoutHoles(panel: Panel): Path[] {
 }
 
 export function PanelMesh({
-  panel, thickness, centre, decorColor, catalog, settings, pid,
+  panel, thickness, centre, decorColor, catalog, settings, pid, cabinetId,
 }: {
   panel: Panel
   thickness: number
@@ -135,6 +135,8 @@ export function PanelMesh({
    * терезесіндегі жол осы кілт арқылы табысады. Берілмесе — панельдің өз id-і.
    */
   pid?: string | undefined
+  /** Осы панель ҚАЙ корпустікі — 3D-де басқанда сол корпус белсенді болады. */
+  cabinetId?: string | undefined
   /** Өрнекті салу үшін керек: кромка қалыңдығы РЕЗ ығысуын береді. */
   catalog: Catalog
   settings?: SettingsOverride | undefined
@@ -148,6 +150,7 @@ export function PanelMesh({
   const viewMode = useConfigurator((s) => s.viewMode)
   const selected = useConfigurator((s) => s.selected)
   const setSelected = useConfigurator((s) => s.setSelected)
+  const setActive = useConfigurator((s) => s.setActive)
   const key = pid ?? panel.id
   // Тақта түйіршігі — түске көбейтіледі, реалистік бет үшін.
   const grain = grainTexture()
@@ -297,6 +300,8 @@ export function PanelMesh({
             e.stopPropagation()
             // Екінші рет басу таңдауды АЛАДЫ: бөлектеу қалып қоймауы керек.
             setSelected(isSelected ? null : key)
+        if (cabinetId) setActive(cabinetId)
+            if (cabinetId) setActive(cabinetId)
           }}
         >
           {shape ? (
