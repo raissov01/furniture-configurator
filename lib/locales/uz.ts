@@ -755,4 +755,5 @@ export const uz: Record<string, string> = {
   'Зеркало': 'Oyna',
   'Зеркальная копия': 'Oyna nusxasi',
   'Удалить корпус': 'Korpusni o\'chirish',
+  'Подсветка под верхними (LED)': 'Yuqori shkaf ostida yoritish (LED)',
 }

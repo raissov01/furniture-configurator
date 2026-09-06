@@ -37,6 +37,8 @@ export type KitchenOptions = {
   upper?: boolean | undefined
   /** Үстіңгі шкафтардың есіктерін ШЫНЫ ету (qdesign сияқты) */
   glassUpper?: boolean | undefined
+  /** Үстіңгі шкафтардың астына LED подсветка */
+  ledUpper?: boolean | undefined
   /** Техника мен пенал бағаналарын қосу (тоңазытқыш, ящик араласы) */
   appliances?: boolean | undefined
   /** Өлшемдер (қадам 2). Берілмегені әдепкіден. */
@@ -308,8 +310,10 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   const finishUpper = (c: CabinetConfig) => withMilling(withMaterials(c, options.materials), options.milling)
   const glassUpper = options.glassUpper ?? false
   const makeUpper = (width: number, uid: string): CabinetConfig => {
-    const cab = { ...templateToCabinet(wallTpl, catalog, { width, height: upperH, depth: upperD }), id: uid }
-    return finishUpper(glassUpper ? withGlass(cab) : cab)
+    let cab: CabinetConfig = { ...templateToCabinet(wallTpl, catalog, { width, height: upperH, depth: upperD }), id: uid }
+    if (glassUpper) cab = withGlass(cab)
+    if (options.ledUpper) cab = { ...cab, led: true }
+    return finishUpper(cab)
   }
 
   const runA = options.modules ? options.modules.runA : composeRun(options.lengthA, { sink, appliances, main: true })

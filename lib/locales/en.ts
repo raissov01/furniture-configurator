@@ -751,4 +751,5 @@ export const en: Record<string, string> = {
   'Зеркало': 'Mirror',
   'Зеркальная копия': 'Mirror copy',
   'Удалить корпус': 'Delete cabinet',
+  'Подсветка под верхними (LED)': 'LED lighting under uppers',
 }

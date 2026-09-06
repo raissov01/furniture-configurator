@@ -442,6 +442,17 @@ function CabinetGroup({
         return null
       })}
       {active && showDimensions ? <DimensionLabels cabinet={item.cabinet} /> : null}
+      {/*
+        LED ПОДСВЕТКА: корпустың астыңғы-алдыңғы жиегінде жарқыраған жолақ.
+        Тек эмиссив (нақты жарық емес — көп корпуста ондаған жарық баяулатар
+        еді), бірақ `toneMapped={false}` арқасында LED лентадай ЖАРҚЫРАЙДЫ.
+      */}
+      {item.cabinet.led ? (
+        <mesh position={[item.cabinet.width / 2, 3, -4]}>
+          <boxGeometry args={[Math.max(0, item.cabinet.width - 24), 5, 5]} />
+          <meshStandardMaterial color="#fff6df" emissive="#ffe6a0" emissiveIntensity={2.4} toneMapped={false} />
+        </mesh>
+      ) : null}
     </group>
   )
 }

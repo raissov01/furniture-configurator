@@ -30,6 +30,7 @@ type Draft = {
   upper: boolean
   appliances: boolean
   glassUpper: boolean
+  ledUpper: boolean
   lowerHeight: number
   lowerDepth: number
   plinthHeight: number
@@ -48,7 +49,7 @@ type Draft = {
 
 const DEFAULT: Draft = {
   type: 'kitchen', layout: 'corner', lengthA: 3200, lengthB: 2400, lengthC: 2000,
-  sink: true, upper: true, appliances: true, glassUpper: false,
+  sink: true, upper: true, appliances: true, glassUpper: false, ledUpper: false,
   lowerHeight: 720, lowerDepth: 500, plinthHeight: 95,
   upperDepth: 320, upperHeight: 720, upperElevation: 1460,
   worktopOverhang: 30, backsplashHeight: 0,
@@ -171,6 +172,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
     upper: d.upper,
     appliances: d.appliances,
     glassUpper: d.glassUpper,
+    ledUpper: d.ledUpper,
   })
 
   const generate = () => {
@@ -183,6 +185,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
       upper: d.upper,
       appliances: d.appliances,
       glassUpper: d.glassUpper,
+      ledUpper: d.ledUpper,
       dims: {
         lowerHeight: d.lowerHeight, lowerDepth: d.lowerDepth, plinthHeight: d.plinthHeight,
         upperDepth: d.upperDepth, upperHeight: d.upperHeight, upperElevation: d.upperElevation,
@@ -353,6 +356,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
               ['sink', tr('Модуль под мойку')],
               ['appliances', tr('Техника и пенал (холодильник, ящики)')],
               ['glassUpper', tr('Стеклянные верхние дверцы')],
+              ['ledUpper', tr('Подсветка под верхними (LED)')],
             ] as const).map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-700">
                 <input type="checkbox" checked={d[key]} onChange={(e) => set(key, e.target.checked)} />
