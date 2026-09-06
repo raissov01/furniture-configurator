@@ -745,4 +745,5 @@ export const en: Record<string, string> = {
   'Лофт': 'Loft',
   'Классический': 'Classic',
   'Перетащите корпус на плане, чтобы подвинуть вдоль стены. Кружок — точка отсчёта. Редактор и экспорт — по выбранному корпусу.': 'Drag a cabinet on the plan to move it along the wall. The circle is the origin. Editor and export follow the selected cabinet.',
+  'Стеклянные верхние дверцы': 'Glass upper doors',
 }

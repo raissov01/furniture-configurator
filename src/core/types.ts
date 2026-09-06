@@ -221,6 +221,9 @@ export type Panel = {
   /** Материалда текстура бар болса, ол finishedLength бойымен жүре ме */
   grainAlongLength: boolean
 
+  /** Шыны фасад па: 3D-де мөлдір көрсетіледі (раскрой өзгермейді). */
+  glass?: boolean | undefined
+
   /**
    * Әрқашан 1: generateCabinet әр физикалық детальді жеке Panel етіп қайтарады,
    * себебі әрқайсысының 3D-дегі орны бөлек. Бірдей детальдар formatCutList()
@@ -449,6 +452,8 @@ export type SectionFronts = {
   handle?: HandleSpec | null | undefined
   /** Фасадтың өрнегі. Болмаса — гладкий. */
   milling?: MillingSpec | null | undefined
+  /** Шыны фасад (жоғарғы шкафтарда жиі). 3D-де мөлдір көрінеді. */
+  glass?: boolean | undefined
 }
 
 export type SectionContent =

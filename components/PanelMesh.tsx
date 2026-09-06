@@ -268,6 +268,9 @@ export function PanelMesh({
    * кез келген декордың үстінен көрінеді.
    */
   const outline = isSelected ? <Edges color="#f2c14e" lineWidth={2.5} /> : null
+  // Шыны фасад: мөлдір әйнек + әрқашан көрінетін ЖИЕК (рама). Тұтас панельдей
+  // емес, ішін көрсетеді — qdesign-дегі шыны есіктер сияқты.
+  const isGlass = panel.glass === true
   const toRad = (deg: number) => (deg * Math.PI) / 180
 
   if (shape || tilted) {
@@ -327,16 +330,29 @@ export function PanelMesh({
       }}
     >
       <boxGeometry args={[extents.x, extents.y, extents.z]} />
-      <meshStandardMaterial
-        color={color}
-        map={grain}
-        roughness={0.7}
-        metalness={0}
-        transparent={opacity < 1}
-        opacity={opacity}
-        // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.
-        depthWrite={opacity === 1}
-      />
+      {isGlass ? (
+        <meshStandardMaterial
+          color="#bcd3dc"
+          roughness={0.08}
+          metalness={0.1}
+          transparent
+          opacity={0.28 * (opacity === 1 ? 1 : opacity)}
+          depthWrite={false}
+        />
+      ) : (
+        <meshStandardMaterial
+          color={color}
+          map={grain}
+          roughness={0.7}
+          metalness={0}
+          transparent={opacity < 1}
+          opacity={opacity}
+          // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.
+          depthWrite={opacity === 1}
+        />
+      )}
+      {/* Шыны есіктің рамасы әрқашан көрінеді. */}
+      {isGlass ? <Edges color="#5b5147" lineWidth={2} /> : null}
       {outline}
       {panel.role === 'front' && panel.milling.length > 0 ? (
         <MillingLines panel={panel} catalog={catalog} settings={settings} extents={extents} />

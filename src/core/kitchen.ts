@@ -35,6 +35,8 @@ export type KitchenOptions = {
   sink?: boolean | undefined
   /** Үстіңгі қатарды қосу */
   upper?: boolean | undefined
+  /** Үстіңгі шкафтардың есіктерін ШЫНЫ ету (qdesign сияқты) */
+  glassUpper?: boolean | undefined
   /** Техника мен пенал бағаналарын қосу (тоңазытқыш, ящик араласы) */
   appliances?: boolean | undefined
   /** Өлшемдер (қадам 2). Берілмегені әдепкіден. */
@@ -231,6 +233,15 @@ function withMilling(cabinet: CabinetConfig, pattern: MillingPatternId | undefin
   return { ...cabinet, sections }
 }
 
+/** Секциялардың фасадын ШЫНЫ ету (тек көрініс). */
+function withGlass(cabinet: CabinetConfig): CabinetConfig {
+  return {
+    ...cabinet,
+    sections: cabinet.sections.map((sec) =>
+      sec.fronts ? { ...sec, fronts: { ...sec.fronts, glass: true } } : sec),
+  }
+}
+
 /** Материалды бүкіл корпусқа қолдану (берілген өрістер ғана). */
 function withMaterials(cabinet: CabinetConfig, m: KitchenOptions['materials']): CabinetConfig {
   if (!m) return cabinet
@@ -295,6 +306,11 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   const upperH = d.upperHeight ?? UPPER_HEIGHT
   const upperElev = d.upperElevation ?? UPPER_ELEVATION
   const finishUpper = (c: CabinetConfig) => withMilling(withMaterials(c, options.materials), options.milling)
+  const glassUpper = options.glassUpper ?? false
+  const makeUpper = (width: number, uid: string): CabinetConfig => {
+    const cab = { ...templateToCabinet(wallTpl, catalog, { width, height: upperH, depth: upperD }), id: uid }
+    return finishUpper(glassUpper ? withGlass(cab) : cab)
+  }
 
   const runA = options.modules ? options.modules.runA : composeRun(options.lengthA, { sink, appliances, main: true })
   const runB = options.modules
@@ -355,7 +371,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     // үстінде әдетте сорғыш/терезе тұрады.
     if (withUpper && (mod.kind === 'baseDoors' || mod.kind === 'baseDrawers')) {
       const uid = nextId('a-up')
-      cabinets.push(finishUpper({ ...templateToCabinet(wallTpl, catalog, { width: mod.width, height: upperH, depth: upperD }), id: uid }))
+      cabinets.push(makeUpper(mod.width, uid))
       placements.push({ cabinetId: uid, wall: 'north', offset: cursor, elevation: upperElev })
     }
     cursor += mod.width
@@ -372,7 +388,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     placements.push({ cabinetId: cab.id, wall: 'east', offset: room.depth - q - mod.width })
     if (withUpper) {
       const uid = nextId('b-up')
-      cabinets.push(finishUpper({ ...templateToCabinet(wallTpl, catalog, { width: mod.width, height: upperH, depth: upperD }), id: uid }))
+      cabinets.push(makeUpper(mod.width, uid))
       placements.push({ cabinetId: uid, wall: 'east', offset: room.depth - q - mod.width, elevation: upperElev })
     }
     q += mod.width
@@ -388,7 +404,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     placements.push({ cabinetId: cab.id, wall: 'west', offset: wOff })
     if (withUpper) {
       const uid = nextId('c-up')
-      cabinets.push(finishUpper({ ...templateToCabinet(wallTpl, catalog, { width: mod.width, height: upperH, depth: upperD }), id: uid }))
+      cabinets.push(makeUpper(mod.width, uid))
       placements.push({ cabinetId: uid, wall: 'west', offset: wOff, elevation: upperElev })
     }
     wOff += mod.width

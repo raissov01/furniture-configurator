@@ -1349,6 +1349,8 @@ export function generateCabinet(
      */
     const opening = spec?.opening ?? 'auto'
     group.fronts.forEach((front, i) => {
+      // Шыны фасад — тек КӨРІНІС белгісі: раскрой мен присадка өзгермейді.
+      if (spec?.glass) front.glass = true
       if (handle) handleHoles(front, handle.model, handle.spec, ctx)
       if (opening === 'up') {
         /*

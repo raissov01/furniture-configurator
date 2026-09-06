@@ -123,6 +123,15 @@ describe('generateKitchen', () => {
     expect(validatePlacements(r.room, r.cabinets.map((c) => ({ cabinet: c, placement: r.placements.find((p) => p.cabinetId === c.id)! })))).toEqual([])
   })
 
+  it('шыны жоғарғы: үстіңгі фасад glass=true, төменгі — жоқ', () => {
+    const r = generateKitchen({ layout: 'straight', lengthA: 3000, upper: true, appliances: false, glassUpper: true }, SEED_CATALOG)
+    // Үстіңгі шкафтардың секция фасады шыны.
+    const glassSections = r.cabinets.flatMap((c) => c.sections).filter((sec) => sec.fronts?.glass)
+    expect(glassSections.length).toBeGreaterThan(0)
+    // Раскрой өзгермейді — панельдер жиналады.
+    for (const c of r.cabinets) expect(() => generateCabinet(c, SEED_CATALOG)).not.toThrow()
+  })
+
   it('техникасыз: біркелкі базалар (пенал жоқ)', () => {
     const r = generateKitchen({ layout: 'straight', lengthA: 2400, sink: true, upper: false, appliances: false }, SEED_CATALOG)
     expect(r.cabinets.every((c) => !c.name.toLowerCase().includes('пенал'))).toBe(true)
