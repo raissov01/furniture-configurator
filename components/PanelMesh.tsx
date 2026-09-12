@@ -5,11 +5,11 @@
  * детальді көрсетеді), рез өлшемі емес — CLAUDE.md §4.3.
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Edges, Html } from '@react-three/drei'
 import { grainTexture } from '@/lib/grainTexture'
-import { Path, Shape } from 'three'
+import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import type { Axis, Catalog, Panel, PanelHandle, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -249,6 +249,29 @@ function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: nu
   )
 }
 
+/** Панель жиегінің сызығы — бүкіл сахнаға БІР материал. */
+const EDGE_MATERIAL = new LineBasicMaterial({ color: '#2e2b27', transparent: true, opacity: 0.7 })
+
+/**
+ * Детальдің ЖИЕГІ — CAD-тағыдай жіңішке сызық (qdesign-мен салыстырғаннан
+ * кейін, 09-12). Онсыз ақ корпустар бір-біріне жабысып, бір ақ дақ болып
+ * көрінеді: бүйір қай жерде бітіп, фасад қай жерде басталатыны оқылмайды.
+ *
+ * drei `Edges` ӘР детальға жуан сызық (Line2) жасайды — жоба 600 деталь
+ * болғанда ол ауыр. Мұнда қарапайым `lineSegments` пен ортақ материал.
+ */
+function PanelEdges({ x, y, z }: { x: number; y: number; z: number }) {
+  const geometry = useMemo(() => {
+    const box = new BoxGeometry(x, y, z)
+    const edges = new EdgesGeometry(box)
+    box.dispose()
+    return edges
+  }, [x, y, z])
+  useEffect(() => () => geometry.dispose(), [geometry])
+  // Сызық тінтуірді ұстамайды: әйтпесе ол панельдің астындағы детальді жабады.
+  return <lineSegments geometry={geometry} material={EDGE_MATERIAL} raycast={() => null} />
+}
+
 /** Ажыратылған көріністе панель өз ҚАЛЫҢДЫҒЫ өсі бойымен ортадан ажырайды. */
 const EXPLODE_DISTANCE = 260
 
@@ -301,9 +324,19 @@ export function PanelMesh({
   const setSelected = useConfigurator((s) => s.setSelected)
   const setActive = useConfigurator((s) => s.setActive)
   const vr = useConfigurator((s) => s.vr)
+  // Жиек сызығы «үнемді» сапада өшеді: әлсіз ноутбукке ол мыңдаған сызық.
+  const quality = useConfigurator((s) => s.quality)
   const key = pid ?? panel.id
-  // Тақта түйіршігі — түске көбейтіледі, реалистік бет үшін.
-  const grain = grainTexture()
+  /*
+   * Тақта түйіршігі ТЕК АҒАШ декорға. Бұрын ол бәріне жабыстырылатын да,
+   * ақ ЛДСП ашық ағаш болып көрінетін (qdesign-мен салыстыруда байқалды):
+   * клиентке «ақ» деп сатылған корпус экранда жолақты болып тұратын.
+   */
+  const woodDecor = useMemo(
+    () => catalog.materials.find((m) => m.id === panel.materialId)?.decor?.kind === 'wood',
+    [catalog, panel.materialId],
+  )
+  const grain = woodDecor ? grainTexture() : null
 
 
   const extents = useMemo(() => panelExtents(panel, thickness), [panel, thickness])
@@ -512,6 +545,9 @@ export function PanelMesh({
       {/* Шыны есіктің рамасы әрқашан көрінеді. */}
       {isGlass ? <Edges color="#5b5147" lineWidth={2} /> : null}
       {outline}
+      {quality !== 'low' && !isGlass && !isSelected
+        ? <PanelEdges x={extents.x} y={extents.y} z={extents.z} />
+        : null}
       {panel.role === 'front' && panel.milling.length > 0 ? (
         <MillingLines panel={panel} catalog={catalog} settings={settings} extents={extents} />
       ) : null}

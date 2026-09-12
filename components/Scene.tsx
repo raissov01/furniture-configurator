@@ -9,8 +9,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentRef, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Grid, OrbitControls, OrthographicCamera, PointerLockControls } from '@react-three/drei'
-import { Object3D, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3 } from 'three'
+import {
+  Environment, Grid, Lightformer, OrbitControls, OrthographicCamera, PointerLockControls,
+} from '@react-three/drei'
+import { EffectComposer, N8AO } from '@react-three/postprocessing'
+import { NeutralToneMapping, Object3D, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3 } from 'three'
 import type { Group, Mesh } from 'three'
 import { XR, XROrigin, useXRControllerLocomotion } from '@react-three/xr'
 import { getXrStore } from '@/lib/xr'
@@ -651,13 +654,13 @@ function WallMesh({ wall, height, openings, color, solid }: {
           */}
           {solid
             ? <meshStandardMaterial key="solid" color={color} roughness={0.92} />
-            : <meshStandardMaterial key="ghost" color="#9fb0c9" transparent opacity={0.1} depthWrite={false} />}
+            : <meshStandardMaterial key="ghost" color="#b7b2a8" transparent opacity={0.12} depthWrite={false} />}
         </mesh>
       ))}
       {skirts.map(([a, b]) => (
         <mesh key={a} position={[(a + b) / 2, SKIRT_H / 2, -6]}>
           <boxGeometry args={[b - a, SKIRT_H, 12]} />
-          <meshStandardMaterial color={solid ? '#f2f0ea' : '#94a3b8'} roughness={0.6} />
+          <meshStandardMaterial color={solid ? '#f2f0ea' : '#cfcac2'} roughness={0.6} />
         </mesh>
       ))}
       {openings.map((o) => (o.kind === 'window'
@@ -815,6 +818,7 @@ export default function Scene({
   const walk = useConfigurator((s) => s.walk)
   const vr = useConfigurator((s) => s.vr)
   const setVr = useConfigurator((s) => s.setVr)
+  const viewMode = useConfigurator((s) => s.viewMode)
   const canvas = canvasSettings(quality)
   const xrStore = useMemo(() => getXrStore(), [])
   // Сессия басталды/бітті → стордағы `vr`: бөлме тұтас болады, камера
@@ -901,7 +905,12 @@ export default function Scene({
        * сурет қайтарады (браузер кадрды салған соң буферді тазалайды).
        * Бағасы шамалы, ал онсыз «сурет ала алмадық» деген қате шығады.
        */
-      gl={{ antialias: canvas.antialias, preserveDrawingBuffer: true }}
+      /*
+       * `NeutralToneMapping` (Khronos PBR Neutral): ақ ЛДСП ақ күйінде қалады,
+       * декордың түсі бұрмаланбайды. Әдепкі ACES ақты сарғайтып, түсті
+       * күңгірттейтін — клиентке «ақ» деп сатылған корпус сұр болып көрінетін.
+       */
+      gl={{ antialias: canvas.antialias, preserveDrawingBuffer: true, toneMapping: NeutralToneMapping }}
       /*
        * Өлшеу: debounce нөл әрі `offsetSize`.
        *
@@ -929,18 +938,35 @@ export default function Scene({
           * көреді — екі камераны қатар ұстаудың қажеті жоқ.
           */}
         {projection === 'ortho' ? <OrthographicCamera makeDefault near={-100} far={100} /> : null}
-        <color attach="background" args={['#20242c']} />
         {/*
-          Жарық: жұмсақ ambient (көлеңкелер қап-қара болмасын) + ЖЫЛЫ негізгі
-          жарық (жиһаз «пластик» емес, табиғи көрінсін) + суық толтырғыш
-          (қарама-қарсы жақ тым қараңғы қалмасын). Прогулкада бөлме тірідей.
+          ФОН ашық әрі бейтарап (qdesign-мен салыстыру, 09-12): қою фонда ақ
+          корпус «әзірлеушінің құралы» сияқты көрінетін, ал ашықта — каталогтағы
+          сурет сияқты.
         */}
-        <ambientLight intensity={0.35} />
-        <hemisphereLight intensity={0.5} color="#fff6e8" groundColor="#8a8a8a" />
+        <color attach="background" args={['#eceae6']} />
+        {/*
+          ҚОРШАҒАН ОРТА: Lightformer-мен ОСЫ ЖЕРДЕ жасалады — желіден HDR
+          жүктелмейді (PWA офлайн жұмыс істейді). Онсыз болат, шыны, плита мен
+          лак ештеңені шағылыстырмай, сұр пластик болып көрінетін.
+        */}
+        <Environment resolution={256} environmentIntensity={0.55}>
+          <Lightformer form="rect" intensity={2} position={[0, 6, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[12, 12, 1]} />
+          <Lightformer form="rect" intensity={1} position={[-7, 2, 3]} rotation={[0, Math.PI / 2, 0]} scale={[12, 3, 1]} />
+          <Lightformer form="rect" intensity={1} position={[7, 2, -3]} rotation={[0, -Math.PI / 2, 0]} scale={[12, 3, 1]} />
+        </Environment>
+        {/*
+          Жарық: әлсіз ambient (негізгі жарықты орта береді) + ЖЫЛЫ негізгі
+          жарық (көлеңке тастайды) + суық толтырғыш (қарама-қарсы жақ тым
+          қараңғы қалмасын).
+        */}
+        <ambientLight intensity={0.12} />
+        <hemisphereLight intensity={0.3} color="#ffffff" groundColor="#b5b0a8" />
+        {/* Түсі БЕЙТАРАП: Neutral tone mapping жылы жарықты басып тастамайды —
+            ақ қабырға мен ақ ЛДСП кремге ауып кететін. */}
         <directionalLight
           position={[3, 5, 4]}
-          intensity={1.7}
-          color="#fff1dc"
+          intensity={1.5}
+          color="#fffaf3"
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
@@ -952,7 +978,7 @@ export default function Scene({
           shadow-camera-top={8}
           shadow-camera-bottom={-8}
         />
-        <directionalLight position={[-4, 2, -3]} intensity={0.45} color="#dce6ff" />
+        <directionalLight position={[-4, 2, -3]} intensity={0.3} color="#e6eeff" />
         <group scale={MM}>
           <RoomShell room={room} walk={walk || vr} entries={items} />
         </group>
@@ -992,9 +1018,9 @@ export default function Scene({
           args={[10, 10]}
           position={[0, -0.005, 0]}
           cellSize={0.1}
-          cellColor="#b8b8b8"
+          cellColor="#d6d2ca"
           sectionSize={1}
-          sectionColor="#8f8f8f"
+          sectionColor="#bcb7ad"
           infiniteGrid
           fadeDistance={14}
         />
@@ -1010,6 +1036,18 @@ export default function Scene({
             contentKey={items.map((i) => i.cabinet.id).join(',')}
           />
         )}
+        {/*
+          БҰРЫШТАҒЫ КӨЛЕҢКЕ (N8AO): шкаф пен қабырғаның, сөре мен бүйірдің
+          түйіскен жері күңгірттенеді — онсыз заттар ауада қалықтап тұрғандай.
+          Тек «жоғары» сапада әрі тұтас көріністе: мөлдір режимде AO мөлдір
+          панельдің артындағыны лайлайды. VR-да ӨШЕДІ — постпроцессинг WebXR
+          сессиясында кадр бермейді.
+        */}
+        {quality === 'high' && viewMode === 'solid' && !vr ? (
+          <EffectComposer multisampling={4}>
+            <N8AO aoRadius={0.35} distanceFalloff={1} intensity={2.2} quality="medium" halfRes />
+          </EffectComposer>
+        ) : null}
       </XR>
     </Canvas>
   )

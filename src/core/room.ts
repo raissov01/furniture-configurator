@@ -42,11 +42,11 @@ export const WALL_LABELS: Record<WallId, string> = {
 
 export const DEFAULT_ROOM: Room = { width: 4000, depth: 3000, height: 2700 }
 
-/** Қабырғаның әдепкі түсі — жылы ақ (сұр емес: бөлме «тірі» көрінсін). */
-export const DEFAULT_WALL_COLOR = '#e9e4da'
+/** Қабырғаның әдепкі түсі — бейтарап ақшыл (жылы реңк кремге ауып кететін). */
+export const DEFAULT_WALL_COLOR = '#ecebe6'
 
 /** Қабырғаға ұсынылатын түстер (қолмен кез келгенін де таңдауға болады). */
-export const WALL_COLORS = ['#e9e4da', '#f4f3ef', '#d9dde0', '#cfd8c8', '#e6d3c3', '#b9c3cb']
+export const WALL_COLORS = ['#ecebe6', '#f4f3ef', '#d9dde0', '#cfd8c8', '#e6d3c3', '#b9c3cb']
 
 export const FLOOR_KINDS: { value: FloorKind; label: string }[] = [
   { value: 'oak', label: 'Дуб' },

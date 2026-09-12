@@ -228,6 +228,9 @@ function Dishwasher({ size }: { size: Vec3 }) {
  * Мойка: столешницаның ҮСТІНДЕГІ борты, күңгірт шарасы, ағызғышы және краны.
  * Габариттің астыңғы жазықтығы — столешницаның беті.
  */
+/** Кран доғасының радиусы, мм: шүмек құбырдан 2R алға шығады. */
+const SPOUT_R = 85
+
 function Sink({ size }: { size: Vec3 }) {
   const { x: W, y: H, z: D } = size
   const s = -H / 2
@@ -262,7 +265,7 @@ function Sink({ size }: { size: Vec3 }) {
         <cylinderGeometry args={[24, 24, 1, 24]} />
         <Matte color="#2e3338" />
       </mesh>
-      {/* Кран: табан, тік құбыр, алға иілген шүмек, тетік. */}
+      {/* Кран: табан, тік құбыр, «қаз мойын» доғасы, шүмек, тетік. */}
       <mesh position={[0, s + rim + 15, back]} castShadow>
         <cylinderGeometry args={[20, 22, 30, 20]} />
         <Steel />
@@ -271,11 +274,16 @@ function Sink({ size }: { size: Vec3 }) {
         <cylinderGeometry args={[11, 11, pipeH, 16]} />
         <Steel />
       </mesh>
-      <mesh position={[0, top, back - 85]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <cylinderGeometry args={[10, 10, 170, 16]} />
+      {/*
+        Жарты тор — құбырдың ұшынан мойканың ортасына қарай иілген доға.
+        Y бойынша 90° бұрылғанда тордың сақинасы YZ жазықтығына түседі:
+        артқы ұшы құбырдың үстінде, алдыңғысы шүмектің үстінде.
+      */}
+      <mesh position={[0, top, back - SPOUT_R]} rotation={[0, Math.PI / 2, 0]} castShadow>
+        <torusGeometry args={[SPOUT_R, 10, 12, 32, Math.PI]} />
         <Steel />
       </mesh>
-      <mesh position={[0, top - 15, back - 170]} castShadow>
+      <mesh position={[0, top - 15, back - 2 * SPOUT_R]} castShadow>
         <cylinderGeometry args={[12, 12, 30, 16]} />
         <Steel />
       </mesh>
