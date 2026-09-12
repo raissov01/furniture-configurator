@@ -12,6 +12,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Grid, OrbitControls, OrthographicCamera, PointerLockControls } from '@react-three/drei'
 import { Object3D, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3 } from 'three'
 import type { Mesh } from 'three'
+import { ApplianceMesh } from '@/components/ApplianceMesh'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
@@ -420,7 +421,17 @@ function CabinetGroup({
           )
         }
 
-        // Техника мен механизм — қорап. Техника ҚОЮ әрі мөлдір емес: клиент
+        // Техника — өз пішінімен (тоңазытқыш, мойка, плита…). Орны мен
+        // габариті ядродан; есігі корпуспен бірге ашылады.
+        if (h.kind === 'appliance' && h.size && h.appliance) {
+          return (
+            <group key={`appliance-${i}`} position={[h.position.x, h.position.y, h.position.z]}>
+              <ApplianceMesh kind={h.appliance} size={h.size} openness={openAmt} />
+            </group>
+          )
+        }
+
+        // Механизм — қорап. Техника ҚОЮ әрі мөлдір емес: клиент
         // оны плитадан бірден ажыратуы керек. Механизм жеңіл әрі жартылай
         // мөлдір — ол шкафтың ішін жаппайды.
         if ((h.kind === 'appliance' || h.kind === 'filling') && h.size) {

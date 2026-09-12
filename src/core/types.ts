@@ -660,6 +660,17 @@ export type PanelOpening =
   /** Көтерілетін фасад: ҮСТІҢГІ жиегі айналасында жоғары ашылады. */
   | { kind: 'flap' }
 
+/**
+ * Корпустың ұясына КІРМЕЙТІН техника (`CabinetConfig.fixtures`).
+ *
+ * Столешницадағы ойманың өлшемі мұнда ӘДЕЙІ жоқ: ол нақты мойканың не
+ * панельдің шаблонынан алынады. Цех оны «Вырезы» арқылы өзі қояды.
+ */
+export type CabinetFixture =
+  | { kind: 'sink' }
+  | { kind: 'hob'; fuel: 'gas' | 'electric' }
+  | { kind: 'hood' }
+
 /** Аяқтың табаны (`CabinetConfig.base.legPlate`). */
 export type LegPlate = 'round' | 'square' | 'none'
 
@@ -894,6 +905,14 @@ export type CabinetConfig = {
     count: 1 | 2
     orientation?: 'flat' | 'edge' | undefined
   } | undefined
+
+  /**
+   * Корпустағы ТЕХНИКА: столешницадағы мойка мен варочная панель, үстіндегі
+   * сорғыш. Панель шығармайды — раскройға да, присадкаға да кірмейді. Бәрі
+   * КЛИЕНТТІКІ, сондықтан сметаға түспейді; 3D-де және «техника клиента»
+   * тізімінде көрінеді.
+   */
+  fixtures?: CabinetFixture[] | undefined
 
   /** Столешница — корпустың үстіне жататын бөлек деталь. */
   worktop?: {

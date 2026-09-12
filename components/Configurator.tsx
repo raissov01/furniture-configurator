@@ -15,7 +15,7 @@ import {
 } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type {
-  ApplianceKind, CabinetConfig, FillingKind, HandleSpec, Material, MillingSpec,
+  ApplianceKind, CabinetConfig, CabinetFixture, FillingKind, HandleSpec, Material, MillingSpec,
   RailKind, RailPosition, Section, SectionContent, SectionFronts,
 } from '@/src/core/index'
 
@@ -657,6 +657,52 @@ function FrontFittings({
   )
 }
 
+/**
+ * Корпустағы ТЕХНИКА: мойка, варочная панель, сорғыш. Клиенттікі —
+ * сметаға кірмейді, тек 3D-де және «техника клиента» тізімінде көрінеді.
+ */
+function FixtureFields() {
+  const cabinet = useConfigurator(activeCabinet)
+  const edit = useConfigurator((s) => s.edit)
+  const fixtures = cabinet.fixtures ?? []
+  const set = (next: CabinetFixture[], field: string) =>
+    edit(field, { fixtures: next.length > 0 ? next : undefined })
+  const without = (kind: CabinetFixture['kind']) => fixtures.filter((f) => f.kind !== kind)
+  const has = (kind: CabinetFixture['kind']) => fixtures.some((f) => f.kind === kind)
+  const hob = fixtures.find((f) => f.kind === 'hob')
+  const yesNo = [{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      <Field label={tr('Мойка')}>
+        <Select
+          value={has('sink') ? 'yes' : 'no'}
+          onChange={(v) => set(v === 'yes' ? [...without('sink'), { kind: 'sink' }] : without('sink'), 'fixtures.sink')}
+          options={yesNo}
+        />
+      </Field>
+      <Field label={tr('Варочная панель')}>
+        <Select
+          value={hob?.kind === 'hob' ? hob.fuel : 'none'}
+          onChange={(v) => set(v === 'none' ? without('hob') : [...without('hob'), { kind: 'hob', fuel: v }], 'fixtures.hob')}
+          options={[
+            { value: 'none' as const, label: tr('Нет') },
+            { value: 'gas' as const, label: tr('Газовая') },
+            { value: 'electric' as const, label: tr('Электрическая') },
+          ]}
+        />
+      </Field>
+      <Field label={tr('Вытяжка')}>
+        <Select
+          value={has('hood') ? 'yes' : 'no'}
+          onChange={(v) => set(v === 'yes' ? [...without('hood'), { kind: 'hood' }] : without('hood'), 'fixtures.hood')}
+          options={yesNo}
+        />
+      </Field>
+    </div>
+  )
+}
+
 /** Өлшемнің осі → цех профиліндегі өріс аты. */
 const AXIS_MIN = { height: 'minHeight', width: 'minWidth', depth: 'minDepth' } as const
 const AXIS_MAX = { height: 'maxHeight', width: 'maxWidth', depth: 'maxDepth' } as const
@@ -1168,6 +1214,7 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
           />
         </Field>
       </div>
+      <FixtureFields />
 
       </Collapsible>
       <Collapsible id="rails" title={tr('Планки и фартук')} badge={`${(cabinet.rails ?? []).length + (cabinet.backsplash ? 1 : 0)}`}>

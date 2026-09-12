@@ -20,7 +20,8 @@ import { DEFAULT_HANDLE_BORE, DEFAULT_HANDLE_ID, defaultHandleSpec } from './fit
 import { defaultMillingSpec } from './milling'
 import type { MillingPatternId } from './milling'
 import { findTemplate, templateToCabinet } from './templates'
-import type { CabinetConfig, Catalog, Placement, Section } from './types'
+import { findFixture } from './filling'
+import type { CabinetConfig, CabinetFixture, Catalog, Placement, Section } from './types'
 
 export type KitchenLayout = 'straight' | 'corner' | 'u'
 
@@ -42,6 +43,13 @@ export type KitchenOptions = {
   ledUpper?: boolean | undefined
   /** Техника мен пенал бағаналарын қосу (тоңазытқыш, ящик араласы) */
   appliances?: boolean | undefined
+  /**
+   * Варочная панель. Берілмесе: техника қосулы болса — газ, әйтпесе жоқ.
+   * Ящикті тумбаға отырады (астында кастрюль ящигі — әдеттегі шешім).
+   */
+  hob?: 'gas' | 'electric' | 'none' | undefined
+  /** Панельдің үстіне сорғыш (үстіңгі шкафтың орнына). Әдепкі — бар. */
+  hood?: boolean | undefined
   /** Өлшемдер (қадам 2). Берілмегені әдепкіден. */
   dims?: {
     lowerHeight?: number | undefined
@@ -78,13 +86,19 @@ export const MODULE_KINDS: { kind: ModuleKind; name: string; upper: boolean }[] 
   { kind: 'baseDrawers', name: 'Тумба с ящиками', upper: false },
   { kind: 'sink', name: 'Мойка', upper: false },
   { kind: 'dishwasher', name: 'Посудомойка', upper: false },
+  { kind: 'hob', name: 'Тумба под варочную панель', upper: false },
   { kind: 'oven', name: 'Пенал духовка+СВЧ', upper: true },
   { kind: 'fridge', name: 'Холодильник', upper: true },
   { kind: 'tall', name: 'Пенал (шкаф)', upper: true },
 ]
 
 /** Бір орынның ТҮРІ — функционалды кухня біркелкі қорап болмауы үшін. */
-type ModuleKind = 'tall' | 'baseDoors' | 'baseDrawers' | 'sink' | 'fridge' | 'oven' | 'dishwasher'
+type ModuleKind = 'tall' | 'baseDoors' | 'baseDrawers' | 'sink' | 'fridge' | 'oven' | 'dishwasher' | 'hob'
+
+/** Варочная панельдің түрі: айқын берілмесе, техникамен бірге газ. */
+function hobFuelOf(options: KitchenOptions): 'gas' | 'electric' | 'none' {
+  return options.hob ?? ((options.appliances ?? true) ? 'gas' : 'none')
+}
 
 
 export type KitchenResult = {
@@ -148,7 +162,7 @@ const TALL_DEPTH = 560
  */
 function composeRun(
   length: number,
-  opts: { sink: boolean; appliances: boolean; main: boolean },
+  opts: { sink: boolean; appliances: boolean; main: boolean; hob?: boolean },
 ): { kind: ModuleKind; width: number }[] {
   let remaining = Math.round(length)
   const APP_W = 600
@@ -168,6 +182,18 @@ function composeRun(
     kind: opts.appliances && i % 2 === 0 ? 'baseDrawers' : 'baseDoors',
     width,
   }))
+
+  // Варочная панель — ЕҢ СОҢҒЫ жарамды базаға: мойка ортада, тоңазытқыш
+  // басында, ал плита олардан алыста тұрады (су мен от қатар тұрмайды).
+  if (opts.hob && opts.main) {
+    const min = findFixture('hobGas').minWidth
+    for (let i = bases.length - 1; i >= 0; i -= 1) {
+      if (bases[i]!.width >= min) {
+        bases[i] = { ...bases[i]!, kind: 'hob' }
+        break
+      }
+    }
+  }
 
   const out: { kind: ModuleKind; width: number }[] = []
   if (wantFridge) out.push({ kind: 'fridge', width: APP_W })
@@ -196,7 +222,7 @@ export function kitchenLayout(options: KitchenOptions): { runA: KitchenModule[];
   const sink = options.sink ?? true
   const appliances = options.appliances ?? true
   return {
-    runA: composeRun(options.lengthA, { sink, appliances, main: true }),
+    runA: composeRun(options.lengthA, { sink, appliances, main: true, hob: hobFuelOf(options) !== 'none' }),
     runB: corner ? composeRun(options.lengthB!, { sink: false, appliances, main: false }) : [],
   }
 }
@@ -209,6 +235,13 @@ const TEMPLATE_OF: Record<ModuleKind, string> = {
   baseDrawers: 'kitchen-base-drawers-600',
   dishwasher: 'kitchen-base-full-600',
   sink: 'kitchen-sink-800',
+  hob: 'kitchen-base-drawers-600',
+}
+
+/** Корпусқа техника қосу (сол түрі бұрыннан болса — қайталамай). */
+function withFixture(cabinet: CabinetConfig, fixture: CabinetFixture): CabinetConfig {
+  const rest = (cabinet.fixtures ?? []).filter((f) => f.kind !== fixture.kind)
+  return { ...cabinet, fixtures: [...rest, fixture] }
 }
 
 /**
@@ -341,7 +374,10 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     return finishUpper(cab)
   }
 
-  const runA = options.modules ? options.modules.runA : composeRun(options.lengthA, { sink, appliances, main: true })
+  const hobFuel = hobFuelOf(options)
+  const runA = options.modules
+    ? options.modules.runA
+    : composeRun(options.lengthA, { sink, appliances, main: true, hob: hobFuel !== 'none' })
   const runB = options.modules
     ? options.modules.runB
     : corner ? composeRun(options.lengthB!, { sink: false, appliances, main: false }) : []
@@ -387,6 +423,13 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
       // Посудомойка: аласа ұя (фасады — техниканікі), цоколь + столешница астынан.
       return dressLower(applianceNiche(base, [{ kind: 'appliance', appliance: 'dishwasher', height: 600 }, { kind: 'empty' }]), options)
     }
+    if (mod.kind === 'hob') {
+      // Панельдің үстінде үстіңгі шкаф емес, СОРҒЫШ тұрады.
+      let cab = withFixture(base, { kind: 'hob', fuel: hobFuel === 'electric' ? 'electric' : 'gas' })
+      if (options.hood ?? true) cab = withFixture(cab, { kind: 'hood' })
+      return dressLower(cab, options)
+    }
+    if (mod.kind === 'sink') return dressLower(withFixture(base, { kind: 'sink' }), options)
     return dressLower(base, options)
   }
 
@@ -415,7 +458,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     const cab = build(mod.kind === 'tall' ? { kind: 'baseDoors', width: mod.width } : mod, 'b')
     cabinets.push(cab)
     placements.push({ cabinetId: cab.id, wall: 'east', offset: room.depth - q - mod.width })
-    if (withUpper) {
+    if (withUpper && mod.kind !== 'hob') {
       const uid = nextId('b-up')
       cabinets.push(makeUpper(mod.width, uid))
       placements.push({ cabinetId: uid, wall: 'east', offset: room.depth - q - mod.width, elevation: upperElev })
@@ -431,7 +474,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     const cab = build(mod.kind === 'tall' ? { kind: 'baseDoors', width: mod.width } : mod, 'c')
     cabinets.push(cab)
     placements.push({ cabinetId: cab.id, wall: 'west', offset: wOff })
-    if (withUpper) {
+    if (withUpper && mod.kind !== 'hob') {
       const uid = nextId('c-up')
       cabinets.push(makeUpper(mod.width, uid))
       placements.push({ cabinetId: uid, wall: 'west', offset: wOff, elevation: upperElev })

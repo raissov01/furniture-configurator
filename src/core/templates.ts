@@ -63,6 +63,8 @@ export type CabinetTemplate = {
   sliding?: { count: number } | undefined
   base?: { kind: 'plinth' | 'legs'; height: number } | undefined
   worktop?: { overhangFront: number; overhangSides: number } | undefined
+  /** Корпустағы техника (мойка, плита, сорғыш) — тек 3D, сметаға кірмейді */
+  fixtures?: import('./types').CabinetFixture[] | undefined
 }
 
 export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string }[] = [
@@ -205,6 +207,7 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
     name: 'Кухня: под мойку 800',
     category: 'kitchen',
     description: 'Без полок — внутри сифон. 2 фасада.',
+    fixtures: [{ kind: 'sink' }],
     height: 720, width: 800, depth: 500,
     range: { height: { min: 600, max: 900 }, width: { min: 500, max: 1000 }, depth: { min: 400, max: 600 } },
     construction: 'sidesOverlay',
@@ -670,6 +673,7 @@ export function templateToCabinet(
     ...(template.sliding ? { sliding: { ...template.sliding } } : {}),
     ...(template.base ? { base: { ...template.base } } : {}),
     ...(template.worktop ? { worktop: { ...template.worktop } } : {}),
+    ...(template.fixtures ? { fixtures: template.fixtures.map((f) => ({ ...f })) } : {}),
     sections: template.sections.map((s) => ({
       ...s,
       contents: s.contents.map((c) => ({ ...c })),

@@ -11,13 +11,14 @@
  */
 
 import { LEG_PLATE_ROUND_DIAMETER, LEG_PLATE_SQUARE_SIDE, LEG_STEP, mergeSettings } from './constants'
-import { findAppliance, findFilling } from './filling'
+import { HOOD_CLEARANCE, findAppliance, findFilling, findFixture } from './filling'
+import type { ApplianceKind, FixtureVisual } from './filling'
 import { ConfigValidationError } from './errors'
 import { carcassDepthAt, layoutBands } from './generateCabinet'
 import { findMetalBoxSystem, isMetalBoxSystem } from './drawerSystems'
 import { legCentres, legPairsFor } from './drilling'
 import { layoutSections } from './sections'
-import type { CabinetConfig, Catalog, LegPlate, LegType, SettingsOverride, Vec3 } from './types'
+import type { CabinetConfig, CabinetFixture, Catalog, LegPlate, LegType, SettingsOverride, Vec3 } from './types'
 
 export type HardwareKindPlaced =
   | 'rod' | 'rodBracket' | 'slidingTrack' | 'slidingDoorKit' | 'leg'
@@ -42,6 +43,8 @@ export type HardwarePlacement = {
   size?: Vec3 | undefined
   /** 3D реңкі; болмаса қалыпты фурнитура түсі. */
   color?: string | undefined
+  /** Техниканың ТҮРІ — 3D пішінді содан алады (тоңазытқыш, мойка, …). */
+  appliance?: ApplianceKind | FixtureVisual | undefined
   /** Аяққа — оның түрі: 3D пішінді содан алады. */
   legType?: LegType | undefined
   /** Аяққа — табанының пішіні. */
@@ -262,6 +265,7 @@ export function generateHardware(
           axis: 'x',
           size: { x: layout.width, y: band.height, z: shelfDepth },
           color: model.color,
+          appliance: model.id,
           priced: false,
         })
         return
@@ -296,6 +300,66 @@ export function generateHardware(
       void bandIndex
     })
   })
+
+  /*
+   * СТОЛЕШНИЦАДАҒЫ ТЕХНИКА мен СОРҒЫШ (`config.fixtures`).
+   *
+   * Орны корпустың өзінен: мойка мен панель столешницаның ҮСТІНДЕ, оның
+   * тереңдігінің ортасында; сорғыш панельден нұсқаулықтағы қашықтықта,
+   * қабырғаға тіреліп. Столешница болмаса — корпустың үстінде.
+   */
+  const fixtures = config.fixtures ?? []
+  if (fixtures.length > 0) {
+    const worktopMat = config.worktop?.materialId
+      ? catalog.materials.find((m) => m.id === config.worktop!.materialId)
+      : carcass
+    const surface = config.height + baseHeight + (config.worktop ? (worktopMat?.thickness ?? t) : 0)
+    const overhang = config.worktop?.overhangFront ?? 0
+    const hob = fixtures.find((f): f is Extract<CabinetFixture, { kind: 'hob' }> => f.kind === 'hob')
+
+    fixtures.forEach((fixture, i) => {
+      const id: FixtureVisual = fixture.kind === 'hob'
+        ? (fixture.fuel === 'gas' ? 'hobGas' : 'hobElectric')
+        : fixture.kind
+      const model = findFixture(id)
+      if (config.width < model.minWidth) {
+        throw new ConfigValidationError(
+          `fixtures[${i}]`, `${model.name}: модуль ${config.width} мм`, `≥ ${model.minWidth} мм`,
+        )
+      }
+      // Модульге сыйғызамыз: екі жағынан кемінде 20 мм қалады.
+      const width = Math.min(model.width, config.width - 40)
+      const common = {
+        kind: 'appliance' as const,
+        appliance: id,
+        hardwareId: `appliance-${id}`,
+        label: model.name,
+        qty: 1,
+        length: 0,
+        axis: 'x' as const,
+        priced: false,
+      }
+
+      if (fixture.kind === 'hood') {
+        const depth = Math.min(model.depth, config.depth)
+        const bottom = surface + HOOD_CLEARANCE[hob ? hob.fuel : 'gas']
+        out.push({
+          ...common,
+          position: { x: config.width / 2, y: bottom + model.height / 2, z: config.depth - depth / 2 },
+          size: { x: width, y: model.height, z: depth },
+        })
+        return
+      }
+
+      // Столешница z = −overhang … D аралығында жатыр.
+      const depth = Math.min(model.depth, config.depth + overhang - 60)
+      out.push({
+        ...common,
+        position: { x: config.width / 2, y: surface + model.height / 2, z: (config.depth - overhang) / 2 },
+        size: { x: width, y: model.height, z: depth },
+      })
+    })
+  }
 
   return out
 }

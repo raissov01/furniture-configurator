@@ -104,6 +104,54 @@ export function findAppliance(id: ApplianceKind): ApplianceModel {
   return found
 }
 
+// ── Столешница мен қабырғадағы техника ───────────────────────────────────────
+
+/**
+ * Корпустың ҰЯСЫНА кірмейтін техника: мойка мен варочная панель
+ * столешницаға отырады, сорғыш қабырғаға ілінеді. Бәрі КЛИЕНТТІКІ.
+ *
+ * ⚠ Өлшемдер — ТЕК 3D үшін, ең жиі кездесетін модельдікі. Модульге
+ * сыймаса, ені тарылады. Столешницадағы ойма бұл сандардан ЕСЕПТЕЛМЕЙДІ.
+ */
+export type FixtureVisual = 'sink' | 'hobGas' | 'hobElectric' | 'hood'
+
+export type FixtureModel = {
+  id: FixtureVisual
+  name: string
+  /**
+   * Модульдің ең кіші ені, мм. Варочная панельдің ең тар стандарты — 45 см,
+   * мойканың — 40 см: одан тар тумбаға олар физикалық сыймайды.
+   */
+  minWidth: number
+  /** Әдепкі ені мен тереңдігі, мм. */
+  width: number
+  depth: number
+  /** Беттен (столешницадан) жоғары биіктігі, мм. Сорғышта — өз биіктігі. */
+  height: number
+}
+
+export const FIXTURES: FixtureModel[] = [
+  { id: 'sink', name: 'Мойка', minWidth: 400, width: 760, depth: 480, height: 300 },
+  { id: 'hobGas', name: 'Варочная панель (газ)', minWidth: 450, width: 590, depth: 510, height: 40 },
+  { id: 'hobElectric', name: 'Варочная панель (электро)', minWidth: 450, width: 590, depth: 510, height: 6 },
+  { id: 'hood', name: 'Вытяжка', minWidth: 450, width: 600, depth: 480, height: 800 },
+]
+
+export function findFixture(id: FixtureVisual): FixtureModel {
+  const found = FIXTURES.find((f) => f.id === id)
+  if (!found) throw new Error(`техника табылмады: ${id}`)
+  return found
+}
+
+/**
+ * Сорғыштың астыңғы жиегі варочная панельден қанша жоғары, мм.
+ *
+ * Газда 750, электрде 650 — сорғыш өндірушілерінің орнату нұсқаулығындағы
+ * ең кіші қашықтық. Тек 3D-дегі орны: нақты модельдің нұсқаулығымен
+ * тексеру керек.
+ */
+export const HOOD_CLEARANCE = { gas: 750, electric: 650 } as const
+
 /** Жолақтың биіктігі: нақты берілсе — сол, әйтпесе әдепкі ұя/механизм биіктігі. */
 export function fillingBandHeight(content: {
   // Кез келген жолақ келе алады — механизм мен техникадан басқасы 0 береді.

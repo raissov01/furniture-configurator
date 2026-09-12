@@ -272,6 +272,12 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
     overhangFront: z.number().int().nonnegative(),
     overhangSides: z.number().int().nonnegative(),
   }).optional(),
+  // Техника (мойка, плита, сорғыш). ЕРІКТІ — ескі жобада жоқ.
+  fixtures: z.array(z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('sink') }),
+    z.object({ kind: z.literal('hob'), fuel: z.enum(['gas', 'electric']) }),
+    z.object({ kind: z.literal('hood') }),
+  ])).max(3).optional(),
   /**
    * Присадканың қолмен түзетілуі, панель id-і бойынша.
    *

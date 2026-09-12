@@ -31,6 +31,8 @@ type Draft = {
   appliances: boolean
   glassUpper: boolean
   ledUpper: boolean
+  hob: 'gas' | 'electric' | 'none'
+  hood: boolean
   lowerHeight: number
   lowerDepth: number
   plinthHeight: number
@@ -50,6 +52,7 @@ type Draft = {
 const DEFAULT: Draft = {
   type: 'kitchen', layout: 'corner', lengthA: 3200, lengthB: 2400, lengthC: 2000,
   sink: true, upper: true, appliances: true, glassUpper: false, ledUpper: false,
+  hob: 'gas', hood: true,
   lowerHeight: 720, lowerDepth: 500, plinthHeight: 95,
   upperDepth: 320, upperHeight: 720, upperElevation: 1460,
   worktopOverhang: 30, backsplashHeight: 0,
@@ -173,6 +176,8 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
     appliances: d.appliances,
     glassUpper: d.glassUpper,
     ledUpper: d.ledUpper,
+    hob: d.hob,
+    hood: d.hood,
   })
 
   const generate = () => {
@@ -186,6 +191,8 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
       appliances: d.appliances,
       glassUpper: d.glassUpper,
       ledUpper: d.ledUpper,
+      hob: d.hob,
+      hood: d.hood,
       dims: {
         lowerHeight: d.lowerHeight, lowerDepth: d.lowerDepth, plinthHeight: d.plinthHeight,
         upperDepth: d.upperDepth, upperHeight: d.upperHeight, upperElevation: d.upperElevation,
@@ -410,8 +417,28 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
             <p className="text-xs leading-relaxed text-neutral-500">
               {tr('Фурнитура (ручки, петли, направляющие) берётся из профиля цеха — она уже настроена и применится ко всем модулям. Изменить можно в «Цех».')}
             </p>
+            <Field label={tr('Варочная панель')}>
+              <Select
+                value={d.hob}
+                onChange={(v) => set('hob', v)}
+                options={[
+                  { value: 'gas' as const, label: tr('Газовая') },
+                  { value: 'electric' as const, label: tr('Электрическая') },
+                  { value: 'none' as const, label: tr('Нет') },
+                ]}
+              />
+            </Field>
+            <label className="flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-700">
+              <input
+                type="checkbox"
+                checked={d.hood && d.hob !== 'none'}
+                disabled={d.hob === 'none'}
+                onChange={(e) => set('hood', e.target.checked)}
+              />
+              {tr('Вытяжка над плитой')}
+            </label>
             <p className="text-[11px] leading-snug text-neutral-400">
-              {tr('Отдельная настройка техники и подсветки появится здесь позже.')}
+              {tr('Техника клиента: видна в 3D, в смету не входит.')}
             </p>
           </div>
         ) : null}
