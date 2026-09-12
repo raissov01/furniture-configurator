@@ -218,6 +218,9 @@ type State = Snapshot & {
   /** Бірінші жақтан жүру режимі (Прогулка). */
   walk: boolean
   setWalk(v: boolean): void
+  /** VR-сессия жүріп жатыр ма (гарнитурада). Сахна `lib/xr` сторынан қояды. */
+  vr: boolean
+  setVr(v: boolean): void
   /** Жеке ашылған корпустар (Прогулкада басып ашу). */
   openCabinets: Record<string, boolean>
   toggleCabinetOpen(id: string): void
@@ -297,6 +300,7 @@ export const useConfigurator = create<State>((set, get) => ({
   showFronts: true,
   openness: 0,
   walk: false,
+  vr: false,
   openCabinets: {},
   projection: 'perspective',
   quality: 'high',
@@ -618,6 +622,7 @@ export const useConfigurator = create<State>((set, get) => ({
   setQuality: (quality) => set({ quality }),
   setSilhouette: (patch) => set((s) => ({ silhouette: { ...s.silhouette, ...patch } })),
   setWalk: (walk) => set({ walk }),
+  setVr: (vr) => set({ vr }),
   toggleCabinetOpen: (id) => set((s) => ({ openCabinets: { ...s.openCabinets, [id]: !s.openCabinets[id] } })),
   setLiveScene: (liveScene) => set({ liveScene }),
   setAr: (patch) => set((s) => ({ ar: { ...s.ar, ...patch } })),

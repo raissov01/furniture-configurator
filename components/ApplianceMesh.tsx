@@ -27,8 +27,9 @@ const PANEL_DARK = '#272b30'
 const INTERIOR = '#e8ecef'
 
 function Steel({ color = STEEL }: { color?: string }) {
-  // Металдық ОРТАША: қоршаған орта картасы жоқ сахнада толық металл қарайып кетеді.
-  return <meshStandardMaterial color={color} roughness={0.32} metalness={0.5} />
+  // Металдық ТӨМЕН: қоршаған орта картасы жоқ сахнада металл қарайып кетеді
+  // (0.5-те тоңазытқыштың есігі қара-сұр болып көрінді).
+  return <meshStandardMaterial color={color} roughness={0.35} metalness={0.25} />
 }
 
 function Glass({ color = BLACK_GLASS }: { color?: string }) {

@@ -23,6 +23,7 @@ import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
 import { ArButton } from '@/components/ArButton'
+import { VrButton } from '@/components/VrButton'
 import { Tour } from '@/components/Tour'
 import { RenderPanel } from '@/components/RenderPanel'
 import { cloudEnabled } from '@/lib/cloud'
@@ -314,6 +315,7 @@ export function Workspace() {
             {tr('Прогулка')}
           </Button>
           <ArButton />
+          <VrButton />
           <Button
             active={openness > 0}
             title={`${tr('Открыть или закрыть двери и ящики')} (E)`}

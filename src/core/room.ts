@@ -363,6 +363,21 @@ export function validatePlacements(
   return issues
 }
 
+/**
+ * Нүктені бөлменің ІШІНДЕ ұстау (прогулка мен VR): қабырғаға `margin` мм-ден
+ * жақындамайды — әйтпесе камера қабырғаның ішіне кіріп, арғы жағын көреді.
+ */
+export function clampInsideRoom(
+  room: Pick<Room, 'width' | 'depth'>,
+  p: { x: number; z: number },
+  margin = 300,
+): { x: number; z: number } {
+  return {
+    x: Math.min(room.width - margin, Math.max(margin, p.x)),
+    z: Math.min(room.depth - margin, Math.max(margin, p.z)),
+  }
+}
+
 // ── Терезе мен есік ──────────────────────────────────────────────────────────
 
 /**

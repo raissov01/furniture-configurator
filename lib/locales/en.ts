@@ -123,6 +123,8 @@ export const en: Record<string, string> = {
   'Орех': 'Walnut',
   'Плитка': 'Tile',
   'Бетон': 'Concrete',
+  'Войти в VR: стик — идти, курок — открыть шкаф': 'Enter VR: stick to walk, trigger to open a cabinet',
+  'Нужен VR-шлем (Meta Quest) с браузером WebXR': 'Needs a VR headset (Meta Quest) with a WebXR browser',
   'Межцентровое, мм': 'Bore spacing, mm',
   'Расположение': 'Placement',
   'Сверху': 'Top',

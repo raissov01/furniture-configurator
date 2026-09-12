@@ -124,6 +124,8 @@ export const uz: Record<string, string> = {
   'Орех': 'Yong\'oq',
   'Плитка': 'Plitka',
   'Бетон': 'Beton',
+  'Войти в VR: стик — идти, курок — открыть шкаф': 'VR ga kirish: stik — yurish, kurok — shkafni ochish',
+  'Нужен VR-шлем (Meta Quest) с браузером WebXR': 'VR-shlem (Meta Quest) va WebXR brauzeri kerak',
   'Межцентровое, мм': 'Markazlar orasi, mm',
   'Расположение': 'Joylashuvi',
   'Сверху': 'Tepadan',

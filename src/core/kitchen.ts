@@ -185,7 +185,7 @@ function composeRun(
 
   // Варочная панель — ЕҢ СОҢҒЫ жарамды базаға: мойка ортада, тоңазытқыш
   // басында, ал плита олардан алыста тұрады (су мен от қатар тұрмайды).
-  if (opts.hob && opts.main) {
+  if (opts.hob) {
     const min = findFixture('hobGas').minWidth
     for (let i = bases.length - 1; i >= 0; i -= 1) {
       if (bases[i]!.width >= min) {
@@ -221,10 +221,23 @@ export function kitchenLayout(options: KitchenOptions): { runA: KitchenModule[];
   const corner = (options.layout === 'corner' || uShape) && (options.lengthB ?? 0) >= MODULE_MIN
   const sink = options.sink ?? true
   const appliances = options.appliances ?? true
+  const wantHob = hobFuelOf(options) !== 'none'
+  const runA = composeRun(options.lengthA, { sink, appliances, main: true, hob: wantHob })
   return {
-    runA: composeRun(options.lengthA, { sink, appliances, main: true, hob: hobFuelOf(options) !== 'none' }),
-    runB: corner ? composeRun(options.lengthB!, { sink: false, appliances, main: false }) : [],
+    runA,
+    runB: corner
+      ? composeRun(options.lengthB!, { sink: false, appliances, main: false, hob: wantHob && !hasHob(runA) })
+      : [],
   }
+}
+
+/**
+ * Қатарда плита бар ма. Негізгі қабырғада техника мен мойкадан соң
+ * плитаға жарамды (≥ 450 мм) тумба қалмауы мүмкін — сонда плита КЕЛЕСІ
+ * қабырғаға көшеді. Әйтпесе ең жиі гарнитур (бұрыш, 3000 мм) плитасыз шығатын.
+ */
+function hasHob(run: { kind: ModuleKind }[]): boolean {
+  return run.some((m) => m.kind === 'hob')
 }
 
 const TEMPLATE_OF: Record<ModuleKind, string> = {
@@ -378,12 +391,19 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   const runA = options.modules
     ? options.modules.runA
     : composeRun(options.lengthA, { sink, appliances, main: true, hob: hobFuel !== 'none' })
+  // Қолмен берілген раскладкаға плита ӨЗДІГІНЕН қосылмайды: пайдаланушы
+  // оны «Тумба под варочную панель» арқылы өзі қояды.
+  const wantHob = hobFuel !== 'none' && !options.modules
   const runB = options.modules
     ? options.modules.runB
-    : corner ? composeRun(options.lengthB!, { sink: false, appliances, main: false }) : []
+    : corner
+      ? composeRun(options.lengthB!, { sink: false, appliances, main: false, hob: wantHob && !hasHob(runA) })
+      : []
   // Үшінші қабырға (П-пішін) — әрқашан авто (раскладка редакторы А/B ғана).
   const runC = uShape && (options.lengthC ?? 0) >= MODULE_MIN
-    ? composeRun(options.lengthC!, { sink: false, appliances, main: false })
+    ? composeRun(options.lengthC!, {
+      sink: false, appliances, main: false, hob: wantHob && !hasHob(runA) && !hasHob(runB),
+    })
     : []
   const totalA = runA.reduce((sum, m) => sum + m.width, 0)
   const totalB = runB.reduce((sum, m) => sum + m.width, 0)

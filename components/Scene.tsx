@@ -11,7 +11,9 @@ import type { ComponentRef, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Grid, OrbitControls, OrthographicCamera, PointerLockControls } from '@react-three/drei'
 import { Object3D, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3 } from 'three'
-import type { Mesh } from 'three'
+import type { Group, Mesh } from 'three'
+import { XR, XROrigin, useXRControllerLocomotion } from '@react-three/xr'
+import { getXrStore } from '@/lib/xr'
 import { ApplianceMesh } from '@/components/ApplianceMesh'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
@@ -22,8 +24,8 @@ import type { FloorPattern } from '@/lib/floorTexture'
 import { grainTexture } from '@/lib/grainTexture'
 import type { CameraPreset } from '@/store/configurator'
 import {
-  DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, mergeProjectPanels, placementFootprint, projectPanelId,
-  roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, wallById, wallPieces,
+  DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, placementFootprint,
+  projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, wallById, wallPieces,
 } from '@/src/core/index'
 import type {
   CabinetConfig, Catalog, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
@@ -172,10 +174,9 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
     if (moving) camera.position.add(move.normalize().multiplyScalar(speed))
     // Көз биіктігі тұрақты, бөлмеден шықпайды (0.3 м шетте тоқтайды).
     camera.position.y = 1.6
-    const mx = room.width / 1000 - 0.3
-    const mz = room.depth / 1000 - 0.3
-    camera.position.x = Math.min(mx, Math.max(0.3, camera.position.x))
-    camera.position.z = Math.min(mz, Math.max(0.3, camera.position.z))
+    const inside = clampInsideRoom(room, { x: camera.position.x * 1000, z: camera.position.z * 1000 })
+    camera.position.x = inside.x / 1000
+    camera.position.z = inside.z / 1000
     // Қадам дыбысы: жүргенде әр ~0.42 с сайын.
     if (moving && document.pointerLockElement) {
       stepTimer.current += dt
@@ -186,6 +187,35 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
   })
 
   return <PointerLockControls makeDefault />
+}
+
+/**
+ * VR — гарнитурамен бөлменің ішінде тұру. Сол стик — жүру, оң стик — 45°-қа
+ * бұрылу, курок — корпусты не техниканы басып ашу (`CabinetGroup`).
+ *
+ * Бастапқы орын — бөлменің оңтүстік жағы, көзқарас солтүстікке: генератор
+ * ас үйді сонда қояды. Көздің биіктігін гарнитура береді (адамның өз бойы),
+ * сондықтан мұнда тек ТАБАН (XROrigin) қойылады.
+ */
+function VrRig({ room }: { room: Room }) {
+  const origin = useRef<Group>(null)
+  useXRControllerLocomotion(origin, { speed: 1.5 }, { type: 'snap', degrees: 45 })
+
+  // Орын пропспен берілмейді: әр рендерде жаңа массив R3F-те орынды
+  // қайта қойып, жүрген адамды бастапқы нүктеге лақтырып тастар еді.
+  useEffect(() => {
+    origin.current?.position.set(room.width / 2000, 0, room.depth / 1000 - 0.8)
+  }, [room.width, room.depth])
+
+  useFrame(() => {
+    const o = origin.current
+    if (!o) return
+    const inside = clampInsideRoom(room, { x: o.position.x * 1000, z: o.position.z * 1000 })
+    o.position.x = inside.x / 1000
+    o.position.z = inside.z / 1000
+  })
+
+  return <XROrigin ref={origin} />
 }
 
 function CameraRig({
@@ -307,6 +337,9 @@ function CabinetGroup({
   const showFronts = useConfigurator((s) => s.showFronts)
   const openness = useConfigurator((s) => s.openness)
   const openCabinets = useConfigurator((s) => s.openCabinets)
+  // VR-да курок корпусты АШАДЫ: гарнитурада детальді таңдаудың мәні жоқ.
+  const vr = useConfigurator((s) => s.vr)
+  const toggleCabinetOpen = useConfigurator((s) => s.toggleCabinetOpen)
   // Жеке ашылған корпус әрқашан толық ашық; әйтпесе жаһандық openness.
   const openAmt = openCabinets[item.cabinet.id] ? 1 : openness
   const materialOf = useMemo(() => {
@@ -341,6 +374,8 @@ function CabinetGroup({
       rotation={[0, (item.pose.rotationY * Math.PI) / 180, 0]}
       // Прогулкада басып ашу үшін: raycast осы id-ді табады.
       userData={{ cabinetId: item.cabinet.id }}
+      // VR: панель де, техника да басылғанда оқиға осы топқа көтеріледі.
+      onClick={(e) => { if (!vr) return; e.stopPropagation(); toggleCabinetOpen(item.cabinet.id) }}
     >
       {visible
         .filter((p) => showFronts || p.role !== 'front')
@@ -766,7 +801,18 @@ export default function Scene({
   const silhouette = useConfigurator((s) => s.silhouette)
   const setLiveScene = useConfigurator((s) => s.setLiveScene)
   const walk = useConfigurator((s) => s.walk)
+  const vr = useConfigurator((s) => s.vr)
+  const setVr = useConfigurator((s) => s.setVr)
   const canvas = canvasSettings(quality)
+  const xrStore = useMemo(() => getXrStore(), [])
+  // Сессия басталды/бітті → стордағы `vr`: бөлме тұтас болады, камера
+  // басқаруы гарнитураға беріледі.
+  useEffect(
+    () => xrStore.subscribe((s, prev) => {
+      if (Boolean(s.session) !== Boolean(prev.session)) setVr(Boolean(s.session))
+    }),
+    [xrStore, setVr],
+  )
 
   /*
    * Жинау қадамдары ЖОБА БОЙЫНША саналады — дәл «Жоба → Сборка» тізіміндегі
@@ -863,92 +909,96 @@ export default function Scene({
        */
       onCreated={(state) => setLiveScene(state.scene)}
     >
-      {/*
-        * Ортографиялық проекция: параллель сызықтар қиылыспайды, сондықтан
-        * өлшемді көзбен салыстыруға ыңғайлы (цехтың сызбасындағыдай).
-        * `makeDefault` арқылы OrbitControls те, CameraRig те дәл осы камераны
-        * көреді — екі камераны қатар ұстаудың қажеті жоқ.
+      <XR store={xrStore}>
+        {/*
+          * Ортографиялық проекция: параллель сызықтар қиылыспайды, сондықтан
+          * өлшемді көзбен салыстыруға ыңғайлы (цехтың сызбасындағыдай).
+          * `makeDefault` арқылы OrbitControls те, CameraRig те дәл осы камераны
+          * көреді — екі камераны қатар ұстаудың қажеті жоқ.
+          */}
+        {projection === 'ortho' ? <OrthographicCamera makeDefault near={-100} far={100} /> : null}
+        <color attach="background" args={['#20242c']} />
+        {/*
+          Жарық: жұмсақ ambient (көлеңкелер қап-қара болмасын) + ЖЫЛЫ негізгі
+          жарық (жиһаз «пластик» емес, табиғи көрінсін) + суық толтырғыш
+          (қарама-қарсы жақ тым қараңғы қалмасын). Прогулкада бөлме тірідей.
         */}
-      {projection === 'ortho' ? <OrthographicCamera makeDefault near={-100} far={100} /> : null}
-      <color attach="background" args={['#20242c']} />
-      {/*
-        Жарық: жұмсақ ambient (көлеңкелер қап-қара болмасын) + ЖЫЛЫ негізгі
-        жарық (жиһаз «пластик» емес, табиғи көрінсін) + суық толтырғыш
-        (қарама-қарсы жақ тым қараңғы қалмасын). Прогулкада бөлме тірідей.
-      */}
-      <ambientLight intensity={0.35} />
-      <hemisphereLight intensity={0.5} color="#fff6e8" groundColor="#8a8a8a" />
-      <directionalLight
-        position={[3, 5, 4]}
-        intensity={1.7}
-        color="#fff1dc"
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-bias={-0.0005}
-        shadow-camera-near={0.1}
-        shadow-camera-far={25}
-        shadow-camera-left={-8}
-        shadow-camera-right={8}
-        shadow-camera-top={8}
-        shadow-camera-bottom={-8}
-      />
-      <directionalLight position={[-4, 2, -3]} intensity={0.45} color="#dce6ff" />
-      <group scale={MM}>
-        <RoomShell room={room} walk={walk} />
-      </group>
-      {/*
-        ⚠ ЖИҺАЗ БӨЛЕК, АТАУЛЫ топта (`ar-furniture`), әрі өз масштабымен (MM).
-        AR экспорты ТЕК ОСЫ топты алады: онсыз көлеңке жазықтығы (40×40 м),
-        бөлме, тор да кетіп, телефонда алып АҚ ҚАБЫРҒА болып шығатын. Атаулы
-        топты экспорттаса, оның scale=MM түбір түйінге жазылады да, жиһаз
-        МЕТРМЕН, дұрыс өлшемде бөлмеге қойылады.
-      */}
-      <group name="ar-furniture" scale={MM}>
-        {items.map((item) => (
-          <CabinetGroup
-            key={item.cabinet.id}
-            item={item}
-            catalog={catalog}
-            active={item.cabinet.id === activeId}
-            cabinetCount={items.length}
-            stepOf={stepOf}
+        <ambientLight intensity={0.35} />
+        <hemisphereLight intensity={0.5} color="#fff6e8" groundColor="#8a8a8a" />
+        <directionalLight
+          position={[3, 5, 4]}
+          intensity={1.7}
+          color="#fff1dc"
+          castShadow
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
+          shadow-bias={-0.0005}
+          shadow-camera-near={0.1}
+          shadow-camera-far={25}
+          shadow-camera-left={-8}
+          shadow-camera-right={8}
+          shadow-camera-top={8}
+          shadow-camera-bottom={-8}
+        />
+        <directionalLight position={[-4, 2, -3]} intensity={0.45} color="#dce6ff" />
+        <group scale={MM}>
+          <RoomShell room={room} walk={walk || vr} />
+        </group>
+        {/*
+          ⚠ ЖИҺАЗ БӨЛЕК, АТАУЛЫ топта (`ar-furniture`), әрі өз масштабымен (MM).
+          AR экспорты ТЕК ОСЫ топты алады: онсыз көлеңке жазықтығы (40×40 м),
+          бөлме, тор да кетіп, телефонда алып АҚ ҚАБЫРҒА болып шығатын. Атаулы
+          топты экспорттаса, оның scale=MM түбір түйінге жазылады да, жиһаз
+          МЕТРМЕН, дұрыс өлшемде бөлмеге қойылады.
+        */}
+        <group name="ar-furniture" scale={MM}>
+          {items.map((item) => (
+            <CabinetGroup
+              key={item.cabinet.id}
+              item={item}
+              catalog={catalog}
+              active={item.cabinet.id === activeId}
+              cabinetCount={items.length}
+              stepOf={stepOf}
+            />
+          ))}
+        </group>
+        {/* Силуэт белсенді шкафтың СОЛ ЖАҒЫНА, еденге қойылады. */}
+        {silhouette.on && active ? (
+          <Silhouette
+            height={silhouette.height}
+            x={spot.x / 1000}
+            z={spot.z / 1000}
           />
-        ))}
-      </group>
-      {/* Силуэт белсенді шкафтың СОЛ ЖАҒЫНА, еденге қойылады. */}
-      {silhouette.on && active ? (
-        <Silhouette
-          height={silhouette.height}
-          x={spot.x / 1000}
-          z={spot.z / 1000}
+        ) : null}
+        {/* Көлеңке ұстағыш: тек көлеңке көрінеді, әйтпесе мөлдір (еденді боямайды). */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} receiveShadow>
+          <planeGeometry args={[40, 40]} />
+          <shadowMaterial transparent opacity={0.28} />
+        </mesh>
+        <Grid
+          args={[10, 10]}
+          position={[0, -0.005, 0]}
+          cellSize={0.1}
+          cellColor="#b8b8b8"
+          sectionSize={1}
+          sectionColor="#8f8f8f"
+          infiniteGrid
+          fadeDistance={14}
         />
-      ) : null}
-      {/* Көлеңке ұстағыш: тек көлеңке көрінеді, әйтпесе мөлдір (еденді боямайды). */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} receiveShadow>
-        <planeGeometry args={[40, 40]} />
-        <shadowMaterial transparent opacity={0.28} />
-      </mesh>
-      <Grid
-        args={[10, 10]}
-        position={[0, -0.005, 0]}
-        cellSize={0.1}
-        cellColor="#b8b8b8"
-        sectionSize={1}
-        sectionColor="#8f8f8f"
-        infiniteGrid
-        fadeDistance={14}
-      />
-      {walk ? (
-        <WalkControls room={room} />
-      ) : (
-        <CameraRig
-          target={view.target}
-          box={view.box}
-          facingY={view.facingY}
-          contentKey={items.map((i) => i.cabinet.id).join(',')}
-        />
-      )}
+        <VrRig room={room} />
+        {/* VR-да камераны гарнитура басқарады: екінші басқарушы оған қарсы шығар еді. */}
+        {vr ? null : walk ? (
+          <WalkControls room={room} />
+        ) : (
+          <CameraRig
+            target={view.target}
+            box={view.box}
+            facingY={view.facingY}
+            contentKey={items.map((i) => i.cabinet.id).join(',')}
+          />
+        )}
+      </XR>
     </Canvas>
   )
 }

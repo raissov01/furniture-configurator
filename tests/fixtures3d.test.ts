@@ -92,6 +92,16 @@ describe('ас үй генераторы: плита, сорғыш, мойка',
     expect(above).toEqual([])
   })
 
+  it('негізгі қабырғаға сыймаса, плита КЕЛЕСІ қабырғаға көшеді (бұрыш 3000 × 2400)', () => {
+    const r = generateKitchen({ layout: 'corner', lengthA: 3000, lengthB: 2400 }, SEED_CATALOG)
+    const hobs = r.cabinets.filter((c) => c.fixtures?.some((f) => f.kind === 'hob'))
+    expect(hobs).toHaveLength(1)
+    const wall = r.placements.find((p) => p.cabinetId === hobs[0]!.id)!.wall
+    expect(wall).toBe('east')
+    // Плитаның үстінде үстіңгі шкаф жоқ — сорғыш тұрады.
+    expect(hobs[0]!.fixtures?.some((f) => f.kind === 'hood')).toBe(true)
+  })
+
   it('мойка гарнитурда ДӘЛ бір рет (шаблон мен генератор қайталамайды)', () => {
     const sinks = kitchen().cabinets.flatMap((c) => c.fixtures ?? []).filter((f) => f.kind === 'sink')
     expect(sinks).toHaveLength(1)

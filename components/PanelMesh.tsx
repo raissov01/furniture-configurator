@@ -300,6 +300,7 @@ export function PanelMesh({
   const selected = useConfigurator((s) => s.selected)
   const setSelected = useConfigurator((s) => s.setSelected)
   const setActive = useConfigurator((s) => s.setActive)
+  const vr = useConfigurator((s) => s.vr)
   const key = pid ?? panel.id
   // Тақта түйіршігі — түске көбейтіледі, реалистік бет үшін.
   const grain = grainTexture()
@@ -446,6 +447,8 @@ export function PanelMesh({
           }}
           onPointerOut={() => setHovered(null)}
           onClick={(e) => {
+            // VR-да оқиға корпустың тобына көтеріледі — ол есікті ашады.
+            if (vr) return
             e.stopPropagation()
             // Екінші рет басу таңдауды АЛАДЫ: бөлектеу қалып қоймауы керек.
             setSelected(isSelected ? null : key)
@@ -479,6 +482,7 @@ export function PanelMesh({
       }}
       onPointerOut={() => setHovered(null)}
       onClick={(e) => {
+        if (vr) return
         e.stopPropagation()
         setSelected(isSelected ? null : key)
       }}

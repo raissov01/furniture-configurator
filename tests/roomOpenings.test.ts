@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  DEFAULT_ROOM, SEED_CATALOG, defaultOpenings, findTemplate, fitOpenings, parseProject,
+  DEFAULT_ROOM, SEED_CATALOG, clampInsideRoom, defaultOpenings, findTemplate, fitOpenings, parseProject,
   skirtingSpans, templateToCabinet, validateOpenings, validatePlacements, wallPieces,
 } from '../src/core/index'
 import type { Room, RoomOpening } from '../src/core/index'
@@ -96,6 +96,13 @@ describe('3D қабырғасы', () => {
 
   it('плинтус есіктің алдында үзіледі, терезенің астында үзілмейді', () => {
     expect(skirtingSpans(4000, [door(), win()], 90)).toEqual([[0, 200], [1000, 4000]])
+  })
+})
+
+describe('прогулка мен VR', () => {
+  it('адам қабырғаға 300 мм-ден жақындамайды', () => {
+    expect(clampInsideRoom(DEFAULT_ROOM, { x: -500, z: 9000 })).toEqual({ x: 300, z: 2700 })
+    expect(clampInsideRoom(DEFAULT_ROOM, { x: 2000, z: 1500 })).toEqual({ x: 2000, z: 1500 })
   })
 })
 
