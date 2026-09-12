@@ -338,28 +338,6 @@ export function validatePlacements(
     }
   }
 
-  /*
-   * Корпус терезені не есікті ЖАУЫП тұрмасын. Ас үйдің төменгі қатары
-   * (815 мм) терезенің табалдырығынан (850) төмен — ол қалыпты жағдай,
-   * сондықтан биіктік те салыстырылады.
-   */
-  for (const { cabinet, placement } of entries) {
-    for (const o of room.openings ?? []) {
-      if (o.wall !== placement.wall) continue
-      const span = placementSpan(cabinet, placement)
-      const along = Math.min(span.end, o.offset + o.width) - Math.max(span.start, o.offset)
-      if (along <= OVERLAP_EPS) continue
-      const bottom = placement.elevation ?? 0
-      const top = bottom + (cabinet.base?.height ?? 0) + cabinet.height
-      if (Math.min(top, o.elevation + o.height) - Math.max(bottom, o.elevation) <= OVERLAP_EPS) continue
-      issues.push({
-        cabinetId: cabinet.id,
-        field: 'overlap',
-        message: `закрывает ${o.kind === 'door' ? 'дверь' : 'окно'} на ${along} мм`,
-      })
-    }
-  }
-
   return issues
 }
 
@@ -379,6 +357,40 @@ export function clampInsideRoom(
 }
 
 // ── Терезе мен есік ──────────────────────────────────────────────────────────
+//
+// Ойықтар тек ИММЕРСИВТІ көріністе (VR, прогулка) салынады: конструкторда
+// олар керек емес (пайдаланушы 2026-09-12). Сол себепті шкафты терезенің
+// алдына қойғаны үшін ескерту де жоқ — шкафтың артында қалған ойық жай
+// ғана салынбайды.
+
+/**
+ * Терезе не есік КОРПУСТЫҢ АРТЫНДА қала ма: бір қабырғада, әрі биіктіктері
+ * қиылысады. Ас үйдің төменгі қатары (≈ 815 мм) табалдырықтан (850) төмен —
+ * терезе оның үстінде көрінеді.
+ */
+export function openingBlocked(
+  o: RoomOpening,
+  entries: { cabinet: CabinetConfig; placement: Placement }[],
+): boolean {
+  return entries.some(({ cabinet, placement }) => {
+    if (placement.wall !== o.wall) return false
+    const span = placementSpan(cabinet, placement)
+    const along = Math.min(span.end, o.offset + o.width) - Math.max(span.start, o.offset)
+    if (along <= OVERLAP_EPS) return false
+    const bottom = placement.elevation ?? 0
+    const top = bottom + (cabinet.base?.height ?? 0) + cabinet.height
+    return Math.min(top, o.elevation + o.height) - Math.max(bottom, o.elevation) > OVERLAP_EPS
+  })
+}
+
+/** Иммерсивті көріністе салынатын ойықтар: жарамды әрі шкафтың артында емес. */
+export function visibleOpenings(
+  room: Room,
+  entries: { cabinet: CabinetConfig; placement: Placement }[],
+): RoomOpening[] {
+  const invalid = new Set(validateOpenings(room).map((i) => i.openingId))
+  return (room.openings ?? []).filter((o) => !invalid.has(o.id) && !openingBlocked(o, entries))
+}
 
 /**
  * Жаңа бөлменің ЕСІГІ мен ТЕРЕЗЕСІ — прогулкада бөлме бос қорап болмасын.

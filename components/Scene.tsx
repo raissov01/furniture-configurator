@@ -25,7 +25,8 @@ import { grainTexture } from '@/lib/grainTexture'
 import type { CameraPreset } from '@/store/configurator'
 import {
   DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, placementFootprint,
-  projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, wallById, wallPieces,
+  projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, visibleOpenings, wallById,
+  wallPieces,
 } from '@/src/core/index'
 import type {
   CabinetConfig, Catalog, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
@@ -581,8 +582,15 @@ const FLOOR_LOOK: Record<FloorKind, { color: string; pattern: FloorPattern | nul
  * ⚠ Қабырға ешқашан көлеңке ТАСТАМАЙДЫ: негізгі жарық бөлменің сыртында,
  * тұтас қабырға көлеңке тастаса, бүкіл ішті қарауытып жіберер еді.
  */
-function RoomShell({ room, walk }: { room: Room; walk: boolean }) {
-  const openings = room.openings ?? []
+function RoomShell({ room, walk, entries }: {
+  room: Room
+  walk: boolean
+  /** Корпустар — артында қалған терезе/есік салынбайды. */
+  entries: { cabinet: CabinetConfig; placement: Placement }[]
+}) {
+  // Терезе мен есік тек ИММЕРСИВТІ көріністе (VR, прогулка): конструкторда
+  // олар керек емес, қабырға тұтас (`room.ts`, «Терезе мен есік»).
+  const openings = useMemo(() => (walk ? visibleOpenings(room, entries) : []), [walk, room, entries])
   const wallColor = room.finish?.wallColor ?? DEFAULT_WALL_COLOR
   const look = FLOOR_LOOK[room.finish?.floor ?? 'oak']
   const floorMap = useMemo(
@@ -653,14 +661,14 @@ function WallMesh({ wall, height, openings, color, solid }: {
         </mesh>
       ))}
       {openings.map((o) => (o.kind === 'window'
-        ? <WindowMesh key={o.id} opening={o} sky={solid} />
+        ? <WindowMesh key={o.id} opening={o} />
         : <DoorMesh key={o.id} opening={o} />))}
     </group>
   )
 }
 
-/** Терезе: ақ жақтау, импост, әйнек, ішкі подоконник; прогулкада сыртында аспан. */
-function WindowMesh({ opening: o, sky }: { opening: RoomOpening; sky: boolean }) {
+/** Терезе: ақ жақтау, импост, әйнек, ішкі подоконник, сыртында аспан. */
+function WindowMesh({ opening: o }: { opening: RoomOpening }) {
   const f = 60 // жақтаудың ені
   const cx = o.offset + o.width / 2
   const cy = o.elevation + o.height / 2
@@ -690,12 +698,10 @@ function WindowMesh({ opening: o, sky }: { opening: RoomOpening; sky: boolean })
         <meshStandardMaterial color="#f5f4f0" roughness={0.6} />
       </mesh>
       {/* Сыртындағы аспан: ішінен қарағанда терезе жарық болып тұрады. */}
-      {sky ? (
-        <mesh position={[cx, cy, WALL_T + 600]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[o.width * 2.2, o.height * 2]} />
-          <meshBasicMaterial color="#d6e8f7" toneMapped={false} />
-        </mesh>
-      ) : null}
+      <mesh position={[cx, cy, WALL_T + 600]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[o.width * 2.2, o.height * 2]} />
+        <meshBasicMaterial color="#d6e8f7" toneMapped={false} />
+      </mesh>
     </group>
   )
 }
@@ -948,7 +954,7 @@ export default function Scene({
         />
         <directionalLight position={[-4, 2, -3]} intensity={0.45} color="#dce6ff" />
         <group scale={MM}>
-          <RoomShell room={room} walk={walk || vr} />
+          <RoomShell room={room} walk={walk || vr} entries={items} />
         </group>
         {/*
           ⚠ ЖИҺАЗ БӨЛЕК, АТАУЛЫ топта (`ar-furniture`), әрі өз масштабымен (MM).

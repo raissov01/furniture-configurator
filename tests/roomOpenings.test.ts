@@ -2,13 +2,14 @@
  * Бөлменің терезесі мен есігі.
  *
  * Тексерілетіні: (1) ойық қабырғадан да, төбеден де шықпайды, бір-біріне
- * тимейді; (2) шкаф ойықты жауып тұрса — ескерту, ал терезенің астындағы
- * тумба қалыпты; (3) 3D қабырғасы ойықты дәл қалдырады; (4) жобада сақталады.
+ * тимейді; (2) ойықтар тек иммерсивті көріністе салынады: шкафтың артында
+ * қалғаны салынбайды, ал конструктор ол үшін ескертпейді; (3) 3D қабырғасы
+ * ойықты дәл қалдырады; (4) жобада сақталады.
  */
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_ROOM, SEED_CATALOG, clampInsideRoom, defaultOpenings, findTemplate, fitOpenings, parseProject,
-  skirtingSpans, templateToCabinet, validateOpenings, validatePlacements, wallPieces,
+  skirtingSpans, templateToCabinet, validateOpenings, validatePlacements, visibleOpenings, wallPieces,
 } from '../src/core/index'
 import type { Room, RoomOpening } from '../src/core/index'
 import { referenceProject } from './fixtures'
@@ -61,20 +62,30 @@ describe('шкаф пен ойық', () => {
   const at = (cabinet: typeof lower, wall: RoomOpening['wall'], offset: number) =>
     [{ cabinet, placement: { cabinetId: cabinet.id, wall, offset } }]
 
-  it('терезенің астындағы тумба — қалыпты', () => {
-    expect(validatePlacements(room, at(lower, 'north', 1200))).toEqual([])
+  const ids = (entries: ReturnType<typeof at>) => visibleOpenings(room, entries).map((o) => o.id)
+
+  it('терезенің астындағы тумба — терезе көрінеді', () => {
+    expect(ids(at(lower, 'north', 1200))).toEqual(['w', 'd'])
   })
 
-  it('биік пенал терезені жабады — ескерту', () => {
-    expect(validatePlacements(room, at(tall, 'north', 1200))[0]?.message).toMatch(/закрывает окно/)
+  it('биік пеналдың артындағы терезе салынбайды', () => {
+    expect(ids(at(tall, 'north', 1200))).toEqual(['d'])
   })
 
-  it('есіктің алдындағы шкаф — ескерту', () => {
-    expect(validatePlacements(room, at(lower, 'north', 2600))[0]?.message).toMatch(/закрывает дверь/)
+  it('шкафтың артындағы есік салынбайды', () => {
+    expect(ids(at(lower, 'north', 2600))).toEqual(['w'])
   })
 
-  it('басқа қабырғадағы ойық әсер етпейді', () => {
-    expect(validatePlacements(room, at(tall, 'east', 1200))).toEqual([])
+  it('басқа қабырғадағы шкаф әсер етпейді', () => {
+    expect(ids(at(tall, 'east', 1200))).toEqual(['w', 'd'])
+  })
+
+  it('конструктор ойық үшін ЕСКЕРТПЕЙДІ (ол жерде ойық жоқ)', () => {
+    expect(validatePlacements(room, at(tall, 'north', 1200))).toEqual([])
+  })
+
+  it('жарамсыз ойық (қабырғадан шыққан) салынбайды', () => {
+    expect(visibleOpenings({ ...room, openings: [win({ offset: 3500 })] }, [])).toEqual([])
   })
 })
 
