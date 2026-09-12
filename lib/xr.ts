@@ -8,7 +8,12 @@
  *
  * `offerSession: false` — Quest браузері бетті ашқан бойда өзі сессия
  * ұсынбасын (әдепкіде ол AR-ды таңдап алады): адам VR-ге батырмамен кіреді.
- * Эмуляция (әдепкісі) тек localhost-та қосылады — гарнитурасыз тексеру үшін.
+ *
+ * `emulate: false` — әдепкіде localhost-та WebXR жоқ браузерге Quest
+ * эмуляторы (IWER) орнатылады да, бетке өз басқару тақтасын қосады. Ол
+ * headless e2e-де батырмалардың үстіне шығады, ал нағыз гарнитурада оның
+ * керегі жоқ. Эмулятор десктоп Chrome-да бәрібір қосылмайды (нативті
+ * `navigator.xr` бар), сондықтан одан пайда жоқ.
  */
 
 import { createXRStore } from '@react-three/xr'
@@ -17,7 +22,7 @@ import type { XRStore } from '@react-three/xr'
 let store: XRStore | null = null
 
 export function getXrStore(): XRStore {
-  store ??= createXRStore({ offerSession: false })
+  store ??= createXRStore({ offerSession: false, emulate: false })
   return store
 }
 

@@ -635,9 +635,15 @@ function WallMesh({ wall, height, openings, color, solid }: {
       {pieces.map((p, i) => (
         <mesh key={i} position={[(p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2, WALL_T / 2]} receiveShadow={solid}>
           <boxGeometry args={[p.x1 - p.x0, p.y1 - p.y0, WALL_T]} />
+          {/*
+            ⚠ `key` МІНДЕТТІ. Екеуі бір типті элемент болғандықтан, онсыз React
+            материалдың БАР данасын қайта қолданады, ал R3F алынып тасталған
+            `transparent`/`opacity`/`depthWrite`-ті әдепкіге қайтармайды:
+            шолудан прогулкаға ауысқанда қабырға 10% мөлдір күйінде қалатын.
+          */}
           {solid
-            ? <meshStandardMaterial color={color} roughness={0.92} />
-            : <meshStandardMaterial color="#9fb0c9" transparent opacity={0.1} depthWrite={false} />}
+            ? <meshStandardMaterial key="solid" color={color} roughness={0.92} />
+            : <meshStandardMaterial key="ghost" color="#9fb0c9" transparent opacity={0.1} depthWrite={false} />}
         </mesh>
       ))}
       {skirts.map(([a, b]) => (
