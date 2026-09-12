@@ -11,16 +11,20 @@
 import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  DEFAULT_WALL_COLOR,
+  FLOOR_KINDS,
+  WALL_COLORS,
   WALL_LABELS,
   canMirror,
   placementCorners,
   roomWalls,
+  validateOpenings,
   validatePlacements,
   wallById,
 } from '@/src/core/index'
-import type { CabinetConfig, Placement, Room, WallId } from '@/src/core/index'
+import type { CabinetConfig, Placement, Room, RoomFinish, RoomOpening, WallId } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
-import { Button, Field, NumberInput, SectionTitle } from '@/components/ui'
+import { Button, Field, NumberInput, SectionTitle, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
 
 /** Жоспардың ең үлкен қабырғасы экранда осынша пиксель болады. */
@@ -122,6 +126,12 @@ export function RoomPlan() {
                   onChange={(height) => editRoom({ height })} />
               </Field>
             </div>
+
+            <SectionTitle>{tr('Окна и двери')}</SectionTitle>
+            <OpeningsEditor room={room} selectedWall={selectedWall} onChange={(openings) => editRoom({ openings })} />
+
+            <SectionTitle>{tr('Отделка')}</SectionTitle>
+            <FinishEditor room={room} onChange={(finish) => editRoom({ finish })} />
 
             <SectionTitle>{tr('Стена')}</SectionTitle>
             <div className="flex flex-wrap gap-1">
@@ -241,6 +251,124 @@ export function RoomPlan() {
   )
 }
 
+/**
+ * Терезе мен есік. Жаңасы ТАҢДАЛҒАН қабырғаның ортасына қойылады; өлшемдері —
+ * ең жиі кездесетіні (есік 800 × 2050, терезе 1200 × 1400, табалдырығы 850).
+ * Қате болса (қабырғадан шықты, төбеден биік) — сол ойықтың астында жазылады.
+ */
+function OpeningsEditor({ room, selectedWall, onChange }: {
+  room: Room
+  selectedWall: WallId
+  onChange: (openings: RoomOpening[]) => void
+}) {
+  const list = room.openings ?? []
+  const issues = validateOpenings(room)
+  const select = 'rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900'
+
+  const add = (kind: RoomOpening['kind']) => {
+    const wall = wallById(room, selectedWall)
+    const width = kind === 'door' ? 800 : 1200
+    onChange([...list, {
+      id: `${kind}-${Date.now().toString(36)}`,
+      kind,
+      wall: selectedWall,
+      offset: Math.max(0, Math.round((wall.length - width) / 2)),
+      width,
+      height: kind === 'door' ? 2050 : 1400,
+      elevation: kind === 'door' ? 0 : 850,
+    }])
+  }
+  const patch = (id: string, p: Partial<RoomOpening>) => onChange(list.map((o) => (o.id === id ? { ...o, ...p } : o)))
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-1">
+        <Button onClick={() => add('window')}>{tr('+ окно')}</Button>
+        <Button onClick={() => add('door')}>{tr('+ дверь')}</Button>
+        <span className="text-[11px] text-neutral-400">{tr('на выбранную стену')}</span>
+      </div>
+      {list.map((o) => (
+        <div key={o.id} className="rounded-md border border-neutral-200 p-2 dark:border-neutral-700">
+          <div className="mb-1.5 flex items-center gap-2 text-xs">
+            <span className="font-medium">{o.kind === 'door' ? tr('Дверь') : tr('Окно')}</span>
+            <select
+              className={select}
+              value={o.wall}
+              onChange={(e) => patch(o.id, { wall: e.target.value as WallId })}
+            >
+              {roomWalls(room).map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
+            </select>
+            <div className="ml-auto">
+              <Button onClick={() => onChange(list.filter((x) => x.id !== o.id))}>✕</Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <Field label={tr('Смещение')}>
+              <NumberInput value={o.offset} min={0} step={10} onChange={(offset) => patch(o.id, { offset })} />
+            </Field>
+            <Field label={tr('Ширина')}>
+              <NumberInput value={o.width} min={300} max={6000} step={10} onChange={(width) => patch(o.id, { width })} />
+            </Field>
+            <Field label={tr('Высота')}>
+              <NumberInput value={o.height} min={300} max={room.height} step={10} onChange={(height) => patch(o.id, { height })} />
+            </Field>
+            <Field label={tr('От пола')}>
+              <NumberInput value={o.elevation} min={0} max={room.height} step={10} onChange={(elevation) => patch(o.id, { elevation })} />
+            </Field>
+          </div>
+          {issues.filter((i) => i.openingId === o.id).map((i, k) => (
+            <p key={k} className="mt-1 text-[11px] text-red-600 dark:text-red-400">{i.message}</p>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Қабырғаның түсі мен еден — тек 3D-дегі көрініс, есепке әсері жоқ. */
+function FinishEditor({ room, onChange }: { room: Room; onChange: (finish: RoomFinish) => void }) {
+  const finish = room.finish ?? {}
+  const wallColor = finish.wallColor ?? DEFAULT_WALL_COLOR
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <Field label={tr('Цвет стен')}>
+        <div className="flex flex-wrap items-center gap-1 pt-1">
+          {WALL_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              title={c}
+              aria-label={c}
+              onClick={() => onChange({ ...finish, wallColor: c })}
+              className={cn(
+                'h-6 w-6 rounded border',
+                c === wallColor
+                  ? 'border-neutral-900 ring-1 ring-neutral-900 dark:border-neutral-100 dark:ring-neutral-100'
+                  : 'border-neutral-300 dark:border-neutral-600',
+              )}
+              style={{ backgroundColor: c }}
+            />
+          ))}
+          <input
+            type="color"
+            value={wallColor}
+            onChange={(e) => onChange({ ...finish, wallColor: e.target.value })}
+            className="h-6 w-8 cursor-pointer rounded border border-neutral-300 bg-transparent p-0 dark:border-neutral-600"
+            aria-label={tr('Свой цвет')}
+          />
+        </div>
+      </Field>
+      <Field label={tr('Пол')}>
+        <Select
+          value={finish.floor ?? 'oak'}
+          onChange={(floor) => onChange({ ...finish, floor })}
+          options={FLOOR_KINDS.map((f) => ({ value: f.value, label: tr(f.label) }))}
+        />
+      </Field>
+    </div>
+  )
+}
+
 function PlanSvg({
   room, scale, entries, activeId, selectedWall, onWall, onCabinet, onMove,
 }: {
@@ -314,6 +442,43 @@ function PlanSvg({
               cy={w.origin.z + w.inward.z * WALL_MM * 0.5}
               r={WALL_MM * 0.7}
               fill={on ? '#f59e0b' : '#94a3b8'}
+            />
+          </g>
+        )
+      })}
+
+      {/*
+        Терезе мен есік қабырғаның жолағында. Есіктің ашылу ДОҒАСЫ бөлменің
+        ішіне қарай: шкафты оның жолына қоюға болмайтыны бірден көрінеді.
+      */}
+      {(room.openings ?? []).map((o) => {
+        const w = walls.find((x) => x.id === o.wall)
+        if (!w) return null
+        const at = (t: number, out: number) => ({
+          x: w.origin.x + w.direction.x * t - w.inward.x * out,
+          z: w.origin.z + w.direction.z * t - w.inward.z * out,
+        })
+        const a = at(o.offset, 0)
+        const b = at(o.offset + o.width, 0)
+        const band = [a, b, at(o.offset + o.width, WALL_MM), at(o.offset, WALL_MM)]
+          .map((p) => `${p.x},${p.z}`).join(' ')
+        if (o.kind === 'window') {
+          return (
+            <polygon key={o.id} points={band} fill="#bfdbfe" stroke="#1d4ed8" strokeWidth={8} pointerEvents="none" />
+          )
+        }
+        // Жарма ілгектің (a) айналасында бөлменің ішіне ашылады.
+        const open = { x: a.x + w.inward.x * o.width, z: a.z + w.inward.z * o.width }
+        const u = { x: b.x - a.x, z: b.z - a.z }
+        const v = { x: open.x - a.x, z: open.z - a.z }
+        const sweep = u.x * v.z - u.z * v.x > 0 ? 1 : 0
+        return (
+          <g key={o.id} pointerEvents="none">
+            <polygon points={band} fill="#ffffff" stroke="#64748b" strokeWidth={6} />
+            <line x1={a.x} y1={a.z} x2={open.x} y2={open.z} stroke="#64748b" strokeWidth={10} />
+            <path
+              d={`M ${b.x} ${b.z} A ${o.width} ${o.width} 0 0 ${sweep} ${open.x} ${open.z}`}
+              fill="none" stroke="#94a3b8" strokeWidth={6} strokeDasharray="30 20"
             />
           </g>
         )

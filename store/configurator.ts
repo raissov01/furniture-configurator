@@ -16,6 +16,8 @@ import {
   DEFAULT_SILHOUETTE_HEIGHT,
   canMirror,
   catalogOf,
+  defaultOpenings,
+  fitOpenings,
   findSet,
   generateKitchen,
   generateFurniture,
@@ -259,8 +261,17 @@ const snapshot = (s: State): Snapshot => ({
   activeId: s.activeId,
 })
 
+/**
+ * Жаңа өлшемді бөлме. Терезе мен есік бар болса — жаңа қабырғаға қысылады,
+ * жоқ болса — әдепкісі қойылады: прогулкада бөлме бос қорап болмасын.
+ */
+const withOpenings = (room: Room): Room =>
+  (room.openings && room.openings.length > 0
+    ? { ...room, openings: fitOpenings(room) }
+    : { ...room, openings: defaultOpenings(room) })
+
 const initial: Snapshot = {
-  room: DEFAULT_ROOM,
+  room: withOpenings(DEFAULT_ROOM),
   cabinets: [defaultCabinet],
   placements: [{ cabinetId: defaultCabinet.id, wall: 'south', offset: 0 }],
   activeId: defaultCabinet.id,
@@ -413,7 +424,7 @@ export const useConfigurator = create<State>((set, get) => ({
     const { cabinets, placements, room } = generateKitchen(options, s.catalog)
     if (cabinets.length === 0) return
     set({
-      room: { ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) },
+      room: withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) }),
       cabinets,
       placements,
       activeId: cabinets[0]!.id,
@@ -434,7 +445,7 @@ export const useConfigurator = create<State>((set, get) => ({
     const { cabinets, placements, room } = generateFurniture(options, s.catalog)
     if (cabinets.length === 0) return
     set({
-      room: { ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) },
+      room: withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) }),
       cabinets,
       placements,
       activeId: cabinets[0]!.id,

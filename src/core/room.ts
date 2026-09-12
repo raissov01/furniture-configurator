@@ -14,7 +14,7 @@
  * болғандықтан). Жоспарда `offset = 0` нүктесі белгіленіп тұрады.
  */
 
-import type { CabinetConfig, Placement, Room, Vec3, WallId } from './types'
+import type { CabinetConfig, FloorKind, Placement, Room, RoomOpening, Vec3, WallId } from './types'
 
 
 export type Wall = {
@@ -41,6 +41,19 @@ export const WALL_LABELS: Record<WallId, string> = {
 }
 
 export const DEFAULT_ROOM: Room = { width: 4000, depth: 3000, height: 2700 }
+
+/** Қабырғаның әдепкі түсі — жылы ақ (сұр емес: бөлме «тірі» көрінсін). */
+export const DEFAULT_WALL_COLOR = '#e9e4da'
+
+/** Қабырғаға ұсынылатын түстер (қолмен кез келгенін де таңдауға болады). */
+export const WALL_COLORS = ['#e9e4da', '#f4f3ef', '#d9dde0', '#cfd8c8', '#e6d3c3', '#b9c3cb']
+
+export const FLOOR_KINDS: { value: FloorKind; label: string }[] = [
+  { value: 'oak', label: 'Дуб' },
+  { value: 'walnut', label: 'Орех' },
+  { value: 'tile', label: 'Плитка' },
+  { value: 'concrete', label: 'Бетон' },
+]
 
 const v = (x: number, y: number, z: number): Vec3 => ({ x, y, z })
 
@@ -325,7 +338,156 @@ export function validatePlacements(
     }
   }
 
+  /*
+   * Корпус терезені не есікті ЖАУЫП тұрмасын. Ас үйдің төменгі қатары
+   * (815 мм) терезенің табалдырығынан (850) төмен — ол қалыпты жағдай,
+   * сондықтан биіктік те салыстырылады.
+   */
+  for (const { cabinet, placement } of entries) {
+    for (const o of room.openings ?? []) {
+      if (o.wall !== placement.wall) continue
+      const span = placementSpan(cabinet, placement)
+      const along = Math.min(span.end, o.offset + o.width) - Math.max(span.start, o.offset)
+      if (along <= OVERLAP_EPS) continue
+      const bottom = placement.elevation ?? 0
+      const top = bottom + (cabinet.base?.height ?? 0) + cabinet.height
+      if (Math.min(top, o.elevation + o.height) - Math.max(bottom, o.elevation) <= OVERLAP_EPS) continue
+      issues.push({
+        cabinetId: cabinet.id,
+        field: 'overlap',
+        message: `закрывает ${o.kind === 'door' ? 'дверь' : 'окно'} на ${along} мм`,
+      })
+    }
+  }
+
   return issues
+}
+
+// ── Терезе мен есік ──────────────────────────────────────────────────────────
+
+/**
+ * Жаңа бөлменің ЕСІГІ мен ТЕРЕЗЕСІ — прогулкада бөлме бос қорап болмасын.
+ *
+ * Екеуі де ОҢТҮСТІК қабырғада: генератор ас үйді солтүстікке, шығысқа,
+ * батысқа қояды, сондықтан олар шкафтың артында қалмайды. Есік оң шетте,
+ * терезе одан солда; сол шеттегі 700 мм — әдепкі шкафтың орны. Өлшемдер —
+ * ең жиі кездесетіні: есік 800 × 2050, терезенің табалдырығы 850.
+ */
+export function defaultOpenings(room: Room): RoomOpening[] {
+  const door: RoomOpening = {
+    id: 'door-1', kind: 'door', wall: 'south',
+    offset: Math.max(0, room.width - 1100), width: 800, height: Math.min(2050, room.height - 100), elevation: 0,
+  }
+  const windowWidth = Math.min(1400, door.offset - 700 - 300)
+  const windowHeight = Math.min(1400, room.height - 850 - 150)
+  if (windowWidth < 600 || windowHeight < 600) return [door]
+  return [
+    { id: 'window-1', kind: 'window', wall: 'south', offset: 700, width: windowWidth, height: windowHeight, elevation: 850 },
+    door,
+  ]
+}
+
+/**
+ * Бөлме кішірейгенде терезе мен есікті қабырғасының ІШІНЕ қысу. Өлшемі
+ * өзгермейді, тек орны; сонда да сыймаса — `validateOpenings` айтады.
+ */
+export function fitOpenings(room: Room): RoomOpening[] {
+  return (room.openings ?? []).map((o) => {
+    const wall = wallById(room, o.wall)
+    return { ...o, offset: Math.max(0, Math.min(o.offset, wall.length - o.width)) }
+  })
+}
+
+export type OpeningIssue = { openingId: string; message: string }
+
+/** Терезе мен есікті тексеру: қабырғадан да, төбеден де шықпасын, бір-біріне тимесін. */
+export function validateOpenings(room: Room): OpeningIssue[] {
+  const issues: OpeningIssue[] = []
+  const list = room.openings ?? []
+  const nameOf = (o: RoomOpening) => (o.kind === 'door' ? 'дверь' : 'окно')
+
+  for (const o of list) {
+    const wall = wallById(room, o.wall)
+    if (o.offset < 0 || o.offset + o.width > wall.length) {
+      issues.push({
+        openingId: o.id,
+        message: `${nameOf(o)} не влезает в стену: ${o.offset + o.width} мм при длине ${wall.length} мм`,
+      })
+    }
+    if (o.elevation + o.height > room.height) {
+      issues.push({
+        openingId: o.id,
+        message: `${nameOf(o)} выше потолка: ${o.elevation + o.height} мм при высоте ${room.height} мм`,
+      })
+    }
+  }
+
+  for (let i = 0; i < list.length; i += 1) {
+    for (let j = i + 1; j < list.length; j += 1) {
+      const a = list[i]!
+      const b = list[j]!
+      if (a.wall !== b.wall) continue
+      const along = Math.min(a.offset + a.width, b.offset + b.width) - Math.max(a.offset, b.offset)
+      const up = Math.min(a.elevation + a.height, b.elevation + b.height) - Math.max(a.elevation, b.elevation)
+      if (along > OVERLAP_EPS && up > OVERLAP_EPS) {
+        issues.push({ openingId: b.id, message: `${nameOf(b)} пересекается: ${nameOf(a)} на ${along} мм` })
+      }
+    }
+  }
+  return issues
+}
+
+/**
+ * Ойығы бар қабырғаны ТІКБҰРЫШ бөліктерге бөлу (3D үшін).
+ *
+ * Тесікті пішінмен (Shape.holes) салудың орнына бөліктер: еденге тиіп тұрған
+ * есіктің ойығы сыртқы контурмен беттеседі де, үшбұрыштау оны бұзады.
+ * Координаттар қабырғаның өзінде: x — offset бойымен, y — еденнен.
+ */
+export function wallPieces(
+  length: number,
+  height: number,
+  openings: RoomOpening[],
+): { x0: number; x1: number; y0: number; y1: number }[] {
+  const clampX = (v: number) => Math.min(length, Math.max(0, v))
+  const clampY = (v: number) => Math.min(height, Math.max(0, v))
+  const cuts = [...new Set([0, length, ...openings.flatMap((o) => [clampX(o.offset), clampX(o.offset + o.width)])])]
+    .sort((a, b) => a - b)
+
+  const out: { x0: number; x1: number; y0: number; y1: number }[] = []
+  for (let i = 0; i < cuts.length - 1; i += 1) {
+    const x0 = cuts[i]!
+    const x1 = cuts[i + 1]!
+    if (x1 - x0 < 1) continue
+    const mid = (x0 + x1) / 2
+    const covering = openings
+      .filter((o) => o.offset < mid && mid < o.offset + o.width)
+      .sort((a, b) => a.elevation - b.elevation)
+    let y = 0
+    for (const o of covering) {
+      const bottom = clampY(o.elevation)
+      if (bottom - y > OVERLAP_EPS) out.push({ x0, x1, y0: y, y1: bottom })
+      y = Math.max(y, clampY(o.elevation + o.height))
+    }
+    if (height - y > OVERLAP_EPS) out.push({ x0, x1, y0: y, y1: height })
+  }
+  return out
+}
+
+/** Плинтустың аралықтары: есіктің алдында плинтус болмайды. */
+export function skirtingSpans(length: number, openings: RoomOpening[], skirtHeight: number): [number, number][] {
+  const doors = openings
+    .filter((o) => o.elevation < skirtHeight)
+    .map((o): [number, number] => [o.offset, o.offset + o.width])
+    .sort((a, b) => a[0] - b[0])
+  const out: [number, number][] = []
+  let x = 0
+  for (const [a, b] of doors) {
+    if (a - x > 1) out.push([x, Math.min(a, length)])
+    x = Math.max(x, b)
+  }
+  if (length - x > 1) out.push([x, length])
+  return out
 }
 
 /**

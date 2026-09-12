@@ -349,7 +349,27 @@ export const ProjectFileV2Schema = z.object({
 
 // ── schemaVersion 3 — бөлме мен орналастыру (C фаза) ─────────────────────────
 
-export const RoomSchema = z.object({ width: mm, depth: mm, height: mm })
+export const RoomOpeningSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(['window', 'door']),
+  wall: z.enum(['north', 'east', 'south', 'west']),
+  offset: z.number().int().min(0),
+  width: mm,
+  height: mm,
+  elevation: z.number().int().min(0),
+})
+
+// Терезе, есік, әрлеу ЕРІКТІ: ескі жобада жоқ, сондықтан нұсқа көтерілмейді.
+export const RoomSchema = z.object({
+  width: mm,
+  depth: mm,
+  height: mm,
+  openings: z.array(RoomOpeningSchema).max(20).optional(),
+  finish: z.object({
+    wallColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    floor: z.enum(['oak', 'walnut', 'tile', 'concrete']).optional(),
+  }).optional(),
+})
 
 export const PlacementSchema = z.object({
   cabinetId: z.string().min(1),

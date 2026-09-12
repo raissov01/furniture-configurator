@@ -17,13 +17,17 @@ import { DimensionLabels } from '@/components/DimensionLabels'
 import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
 import { canvasSettings } from '@/lib/appearance'
+import { floorTexture } from '@/lib/floorTexture'
+import type { FloorPattern } from '@/lib/floorTexture'
+import { grainTexture } from '@/lib/grainTexture'
 import type { CameraPreset } from '@/store/configurator'
 import {
-  ROD_DIAMETER, assemblyStepIndex, mergeProjectPanels, placementFootprint, projectPanelId,
-  silhouetteDataUri, silhouetteSize, wallById,
+  DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, mergeProjectPanels, placementFootprint, projectPanelId,
+  roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, wallById, wallPieces,
 } from '@/src/core/index'
 import type {
-  CabinetConfig, Catalog, HardwarePlacement, Panel, PanelOpening, Placement, Room, Vec3,
+  CabinetConfig, Catalog, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
+  Vec3, Wall,
 } from '@/src/core/index'
 
 type Controls = ComponentRef<typeof OrbitControls>
@@ -520,44 +524,193 @@ function OpenedPanel({
   )
 }
 
-/**
- * Еден, плинтус және төрт қабырға.
- *
- * Қабырғалар әдейі мөлдір — ішіндегі жиһаз көрінуі керек. Бірақ тек мөлдір
- * қабырға қара фонда мүлде байқалмайды, сондықтан бөлменің шекарасын
- * ПЛИНТУС береді: ол әрқашан анық көрінеді әрі қай қабырға қайда екенін
- * бір қарағанда айтады.
- */
-function RoomShell({ room }: { room: Room }) {
-  const t = 40 // қабырға қалыңдығы, мм — тек көрініс үшін
-  const skirt = 90 // плинтус биіктігі, мм — тек көрініс үшін
+/** Қабырғаның қалыңдығы мен плинтустың биіктігі, мм — тек көрініс үшін. */
+const WALL_T = 40
+const SKIRT_H = 90
 
-  const boxes: { key: string; pos: [number, number, number]; size: [number, number, number] }[] = [
-    { key: 'n', pos: [room.width / 2, room.height / 2, -t / 2], size: [room.width, room.height, t] },
-    { key: 's', pos: [room.width / 2, room.height / 2, room.depth + t / 2], size: [room.width, room.height, t] },
-    { key: 'w', pos: [-t / 2, room.height / 2, room.depth / 2], size: [t, room.height, room.depth] },
-    { key: 'e', pos: [room.width + t / 2, room.height / 2, room.depth / 2], size: [t, room.height, room.depth] },
-  ]
+/** Еденнің түрі → реңкі мен өрнегі (тек 3D). */
+const FLOOR_LOOK: Record<FloorKind, { color: string; pattern: FloorPattern | null }> = {
+  oak: { color: '#c49a6c', pattern: 'planks' },
+  walnut: { color: '#7a5236', pattern: 'planks' },
+  tile: { color: '#d6d3cc', pattern: 'tiles' },
+  concrete: { color: '#8f8e8a', pattern: null },
+}
+
+/**
+ * Бөлме: еден, төрт қабырға (терезе мен есіктің ОЙЫҒЫМЕН), плинтус.
+ *
+ * Шолуда қабырғалар мөлдір — ішіндегі жиһаз көрінуі керек, ал шекарасын
+ * плинтус береді. ПРОГУЛКАДА олар тұтас әрі боялған: адам бөлменің ішінде
+ * тұр, мөлдір қабырға оны сахнада тұрғандай сезіндіреді.
+ *
+ * ⚠ Қабырға ешқашан көлеңке ТАСТАМАЙДЫ: негізгі жарық бөлменің сыртында,
+ * тұтас қабырға көлеңке тастаса, бүкіл ішті қарауытып жіберер еді.
+ */
+function RoomShell({ room, walk }: { room: Room; walk: boolean }) {
+  const openings = room.openings ?? []
+  const wallColor = room.finish?.wallColor ?? DEFAULT_WALL_COLOR
+  const look = FLOOR_LOOK[room.finish?.floor ?? 'oak']
+  const floorMap = useMemo(
+    () => (look.pattern ? floorTexture(look.pattern, room.width, room.depth) : null),
+    [look.pattern, room.width, room.depth],
+  )
 
   return (
     <group>
       {/* Еден торлы Grid-тен сәл жоғары: әйтпесе екеуі бір жазықтықта жыпылықтайды. */}
-      <mesh position={[room.width / 2, 2, room.depth / 2]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[room.width / 2, 2, room.depth / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[room.width, room.depth]} />
-        <meshStandardMaterial color="#333c4b" />
+        <meshStandardMaterial color={look.color} map={floorMap} roughness={0.75} />
       </mesh>
-      {boxes.map((b) => (
-        <group key={b.key}>
-          <mesh position={b.pos}>
-            <boxGeometry args={b.size} />
-            <meshStandardMaterial color="#9fb0c9" transparent opacity={0.1} depthWrite={false} />
-          </mesh>
-          <mesh position={[b.pos[0], skirt / 2, b.pos[2]]}>
-            <boxGeometry args={[b.size[0], skirt, b.size[2]]} />
-            <meshStandardMaterial color="#94a3b8" />
-          </mesh>
-        </group>
+      {roomWalls(room).map((w) => (
+        <WallMesh
+          key={w.id}
+          wall={w}
+          height={room.height}
+          openings={openings.filter((o) => o.wall === w.id)}
+          color={wallColor}
+          solid={walk}
+        />
       ))}
+      {walk ? <Ceiling room={room} /> : null}
+    </group>
+  )
+}
+
+/**
+ * Бір қабырға. Топ қабырғаның offset = 0 нүктесінде, `rotationY`-пен бұрылған:
+ * сонда локал +X — қабырғаның бойы (offset өседі), +Z — бөлменің СЫРТЫ
+ * (корпустың локал өстерімен бірдей, `room.ts`). Бөлменің іші — теріс z.
+ */
+function WallMesh({ wall, height, openings, color, solid }: {
+  wall: Wall
+  height: number
+  openings: RoomOpening[]
+  color: string
+  solid: boolean
+}) {
+  const pieces = useMemo(() => wallPieces(wall.length, height, openings), [wall.length, height, openings])
+  const skirts = useMemo(() => skirtingSpans(wall.length, openings, SKIRT_H), [wall.length, openings])
+
+  return (
+    <group
+      position={[wall.origin.x, 0, wall.origin.z]}
+      rotation={[0, (wall.rotationY * Math.PI) / 180, 0]}
+    >
+      {pieces.map((p, i) => (
+        <mesh key={i} position={[(p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2, WALL_T / 2]} receiveShadow={solid}>
+          <boxGeometry args={[p.x1 - p.x0, p.y1 - p.y0, WALL_T]} />
+          {solid
+            ? <meshStandardMaterial color={color} roughness={0.92} />
+            : <meshStandardMaterial color="#9fb0c9" transparent opacity={0.1} depthWrite={false} />}
+        </mesh>
+      ))}
+      {skirts.map(([a, b]) => (
+        <mesh key={a} position={[(a + b) / 2, SKIRT_H / 2, -6]}>
+          <boxGeometry args={[b - a, SKIRT_H, 12]} />
+          <meshStandardMaterial color={solid ? '#f2f0ea' : '#94a3b8'} roughness={0.6} />
+        </mesh>
+      ))}
+      {openings.map((o) => (o.kind === 'window'
+        ? <WindowMesh key={o.id} opening={o} sky={solid} />
+        : <DoorMesh key={o.id} opening={o} />))}
+    </group>
+  )
+}
+
+/** Терезе: ақ жақтау, импост, әйнек, ішкі подоконник; прогулкада сыртында аспан. */
+function WindowMesh({ opening: o, sky }: { opening: RoomOpening; sky: boolean }) {
+  const f = 60 // жақтаудың ені
+  const cx = o.offset + o.width / 2
+  const cy = o.elevation + o.height / 2
+  const bars: [number, number, number, number][] = [
+    [cx, o.elevation + o.height - f / 2, o.width, f],
+    [cx, o.elevation + f / 2, o.width, f],
+    [o.offset + f / 2, cy, f, o.height],
+    [o.offset + o.width - f / 2, cy, f, o.height],
+  ]
+  if (o.width > 1000) bars.push([cx, cy, f * 0.8, o.height])
+
+  return (
+    <group>
+      {bars.map(([x, y, w, h], i) => (
+        <mesh key={i} position={[x, y, WALL_T / 2]} castShadow>
+          <boxGeometry args={[w, h, 70]} />
+          <meshStandardMaterial color="#f3f3f0" roughness={0.5} />
+        </mesh>
+      ))}
+      <mesh position={[cx, cy, WALL_T / 2]}>
+        <boxGeometry args={[o.width - 2 * f, o.height - 2 * f, 6]} />
+        <meshStandardMaterial color="#bcd8ea" transparent opacity={0.22} roughness={0.05} metalness={0.1} depthWrite={false} />
+      </mesh>
+      {/* Подоконник бөлменің ІШІНЕ шығып тұрады. */}
+      <mesh position={[cx, o.elevation - 10, -70]} castShadow receiveShadow>
+        <boxGeometry args={[o.width + 100, 20, 220]} />
+        <meshStandardMaterial color="#f5f4f0" roughness={0.6} />
+      </mesh>
+      {/* Сыртындағы аспан: ішінен қарағанда терезе жарық болып тұрады. */}
+      {sky ? (
+        <mesh position={[cx, cy, WALL_T + 600]} rotation={[0, Math.PI, 0]}>
+          <planeGeometry args={[o.width * 2.2, o.height * 2]} />
+          <meshBasicMaterial color="#d6e8f7" toneMapped={false} />
+        </mesh>
+      ) : null}
+    </group>
+  )
+}
+
+/** Есік: наличник, ағаш жармасы, тұтқасы (бөлменің ішкі жағында). */
+function DoorMesh({ opening: o }: { opening: RoomOpening }) {
+  const casing = 70
+  const cx = o.offset + o.width / 2
+  const leafW = o.width - 20
+  const leafH = o.height - 10
+  const grain = grainTexture()
+  const handleX = o.offset + o.width - 90
+
+  return (
+    <group>
+      {[
+        [cx, o.height + casing / 2, o.width + 2 * casing, casing],
+        [o.offset - casing / 2, o.height / 2, casing, o.height],
+        [o.offset + o.width + casing / 2, o.height / 2, casing, o.height],
+      ].map(([x, y, w, h], i) => (
+        <mesh key={i} position={[x!, y!, -8]} castShadow>
+          <boxGeometry args={[w!, h!, 16]} />
+          <meshStandardMaterial color="#efece6" roughness={0.55} />
+        </mesh>
+      ))}
+      <mesh position={[cx, leafH / 2, WALL_T / 2]} castShadow receiveShadow>
+        <boxGeometry args={[leafW, leafH, 40]} />
+        <meshStandardMaterial color="#cdb291" map={grain} roughness={0.6} />
+      </mesh>
+      <mesh position={[handleX, 1000, -24]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[25, 25, 8, 20]} />
+        <meshStandardMaterial color="#c3c8ce" roughness={0.3} metalness={0.55} />
+      </mesh>
+      <mesh position={[handleX - 50, 1000, -40]} castShadow>
+        <boxGeometry args={[120, 16, 16]} />
+        <meshStandardMaterial color="#c3c8ce" roughness={0.3} metalness={0.55} />
+      </mesh>
+    </group>
+  )
+}
+
+/** Прогулкадағы төбе мен шам: іш күндізгідей жарық болсын. */
+function Ceiling({ room }: { room: Room }) {
+  const cx = room.width / 2
+  const cz = room.depth / 2
+  return (
+    <group>
+      <mesh position={[cx, room.height, cz]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[room.width, room.depth]} />
+        <meshStandardMaterial color="#f4f4f1" roughness={0.95} />
+      </mesh>
+      <mesh position={[cx, room.height - 5, cz]}>
+        <cylinderGeometry args={[180, 180, 10, 32]} />
+        <meshStandardMaterial color="#fffaf0" emissive="#fff4dc" emissiveIntensity={1.2} toneMapped={false} />
+      </mesh>
+      <pointLight position={[cx, room.height - 300, cz]} intensity={8} decay={2} color="#fff1dc" />
     </group>
   )
 }
@@ -742,7 +895,7 @@ export default function Scene({
       />
       <directionalLight position={[-4, 2, -3]} intensity={0.45} color="#dce6ff" />
       <group scale={MM}>
-        <RoomShell room={room} />
+        <RoomShell room={room} walk={walk} />
       </group>
       {/*
         ⚠ ЖИҺАЗ БӨЛЕК, АТАУЛЫ топта (`ar-furniture`), әрі өз масштабымен (MM).

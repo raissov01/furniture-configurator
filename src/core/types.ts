@@ -1027,6 +1027,36 @@ export type Room = {
   depth: number
   /** Y бойымен, мм — тек 3D көрініс үшін */
   height: number
+  /** Терезе мен есік. ЕРІКТІ — ескі жобада жоқ. */
+  openings?: RoomOpening[] | undefined
+  /** Қабырға мен еденнің әрлеуі — тек 3D. */
+  finish?: RoomFinish | undefined
+}
+
+/**
+ * Қабырғадағы ОЙЫҚ: терезе не есік.
+ *
+ * `offset` шкафтың орнымен БІРДЕЙ саналады — қабырғаның offset = 0 нүктесінен
+ * ойықтың бастапқы жиегіне дейін (`room.ts` келісімі). Сондықтан «шкаф
+ * терезені жауып тұр ма» деген сұрақ бір өсте шешіледі.
+ */
+export type RoomOpening = {
+  id: string
+  kind: 'window' | 'door'
+  wall: WallId
+  offset: number
+  width: number
+  height: number
+  /** Еденнен астыңғы жиегіне дейін, мм. Есікте 0. */
+  elevation: number
+}
+
+export type FloorKind = 'oak' | 'walnut' | 'tile' | 'concrete'
+
+export type RoomFinish = {
+  /** Қабырғаның түсі, #rrggbb */
+  wallColor?: string | undefined
+  floor?: FloorKind | undefined
 }
 
 /** Шкафтың бөлмедегі орны. Бір шкаф — бір орын. */
