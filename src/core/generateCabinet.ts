@@ -11,7 +11,7 @@ import {
   applyMilling, confirmatJoint, drawerBottomJoints, drawerFacadeScrews, handleHoles, hingeHoles,
   legPairsFor, legScrewHoles, minifixJoint, runnerHoles, shelfPinHoles,
 } from './drilling'
-import { DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
+import { DEFAULT_HANDLE_ID, defaultHandleSpec, handleShape } from './fittings'
 import { fillingBandHeight } from './filling'
 import { millingPaths, validateMilling } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
@@ -572,6 +572,8 @@ export function generateCabinet(
     boxFrontZ: number
     boxDepth: number
   }[] = []
+  /** Ящик фасадтары мен олардың тұтқасы — присадка кезеңінде бұрғыланады. */
+  const drawerHandles: { fronts: Panel[]; spec: HandleSpec | null | undefined; field: string }[] = []
 
   layouts.forEach((layout, sectionIndex) => {
     const { section } = layout
@@ -806,6 +808,11 @@ export function generateCabinet(
         for (const run of created.runs) {
           drawerRuns.push({ ...run, sectionIndex })
         }
+        drawerHandles.push({
+          fronts: created.panels.filter((p) => p.role === 'front'),
+          spec: content.handle,
+          field: `sections[${sectionIndex}].contents[${bandIndex}].handle.handleId`,
+        })
         // Ілмелі фасад ящиктердің ҮСТІНЕН басталады: әйтпесе екеуі бір
         // жерді жауып, бірінің үстіне бірі шығады.
         hingedFrontFrom[sectionIndex] = Math.max(
@@ -1355,7 +1362,11 @@ export function generateCabinet(
     group.fronts.forEach((front, i) => {
       // Шыны фасад — тек КӨРІНІС белгісі: раскрой мен присадка өзгермейді.
       if (spec?.glass) front.glass = true
-      if (handle) handleHoles(front, handle.model, handle.spec, ctx)
+      if (handle) {
+        handleHoles(front, handle.model, handle.spec, ctx)
+        const shape = handleShape(handle.model, handle.spec, front.finishedLength, front.finishedWidth)
+        if (shape) front.handle = shape
+      }
       if (opening === 'up') {
         /*
          * КӨТЕРІЛЕТІН фасад: ілгектің чашкасы бұрғыланбайды.
@@ -1392,6 +1403,21 @@ export function generateCabinet(
         applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)
       }
     })
+  }
+
+  /*
+   * Ящик фасадының тұтқасы — ілмелі фасадтағы ДӘЛ СОЛ ереже: тесік те, 3D
+   * пішіні де `handleBorePoints`-тен. Смета тұтқаны тесіктен санайды,
+   * сондықтан ящиктің тұтқасы енді ақшаға да кіреді.
+   */
+  for (const group of drawerHandles) {
+    const handle = resolveHandle(catalog, group.spec, group.field)
+    if (!handle) continue
+    for (const front of group.fronts) {
+      handleHoles(front, handle.model, handle.spec, ctx)
+      const shape = handleShape(handle.model, handle.spec, front.finishedLength, front.finishedWidth)
+      if (shape) front.handle = shape
+    }
   }
 
   // ── Ерікті детальдар («Деталь») ────────────────────────────────────────────
@@ -1458,6 +1484,7 @@ function resolveHingeSystem(catalog: Catalog, id: string | undefined): HingeSyst
 function resolveHandle(
   catalog: Catalog,
   spec: HandleSpec | null | undefined,
+  field = 'fronts.handle.handleId',
 ): { model: HandleModel; spec: HandleSpec } | undefined {
   const list = catalog.handles
   if (!list || list.length === 0) return undefined
@@ -1466,7 +1493,7 @@ function resolveHandle(
   const model = list.find((h) => h.id === wanted.handleId)
     ?? (spec ? undefined : list.find((h) => h.id === DEFAULT_HANDLE_ID) ?? list[0])
   if (!model) {
-    throw new ConfigValidationError('fronts.handle.handleId', `тұтқа табылмады: "${wanted.handleId}"`)
+    throw new ConfigValidationError(field, `тұтқа табылмады: "${wanted.handleId}"`)
   }
   return { model, spec: wanted }
 }

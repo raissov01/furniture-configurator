@@ -17,6 +17,7 @@
  */
 
 import { z } from 'zod'
+import type { PanelHandle } from './types'
 
 // ── Ілгек ────────────────────────────────────────────────────────────────────
 
@@ -358,6 +359,57 @@ export function handleBorePoints(
       { along: clampAlong(along), across: clampAcross(centre - half) },
       { along: clampAlong(along), across: clampAcross(centre + half) },
     ]
+}
+
+/**
+ * Тұтқаның 3D ПІШІНІ фасадтың өз жазықтығында.
+ *
+ * ⚠ Орны `handleBorePoints`-тен алынады — присадка бұрғылайтын ДӘЛ СОЛ
+ * нүктелерден. 3D тұтқаның орнын өзі «болжаса», бір күні тесік бір жерде,
+ * ал клиентке көрсетілген тұтқа басқа жерде тұрар еді.
+ *
+ * Профильде тесік жоқ: ол таңдалған жиекті толық бойлайды. Бұрыштық орын
+ * профильде мағынасыз, сондықтан ол жақын жиекке түседі (topLeft → top).
+ */
+export function handleShape(
+  model: HandleModel,
+  spec: HandleSpec,
+  frontLength: number,
+  frontWidth: number,
+): PanelHandle | null {
+  if (model.kind === 'none') return null
+  const p = spec.position
+
+  if (model.kind === 'profile') {
+    const edge = p === 'left' || p === 'right' ? p : p.startsWith('top') ? 'top' : 'bottom'
+    return edge === 'left' || edge === 'right'
+      ? {
+        handleId: model.id, kind: 'profile', edge,
+        along: frontLength / 2, across: edge === 'left' ? 0 : frontWidth,
+        direction: 'along', spacing: 0, length: frontLength,
+      }
+      : {
+        handleId: model.id, kind: 'profile', edge,
+        along: edge === 'top' ? frontLength : 0, across: frontWidth / 2,
+        direction: 'across', spacing: 0, length: frontWidth,
+      }
+  }
+
+  const points = handleBorePoints(model, spec, frontLength, frontWidth)
+  const first = points[0]
+  if (!first) return null
+  const last = points[points.length - 1]!
+  return {
+    handleId: model.id,
+    kind: model.kind,
+    along: (first.along + last.along) / 2,
+    across: (first.across + last.across) / 2,
+    direction: p === 'left' || p === 'right' ? 'along' : 'across',
+    // Тесіктердің НАҚТЫ аралығы: фасадтан шығып кеткен нүкте қысылса,
+    // 3D-дегі скоба да сол қысылған тесіктерге отырады.
+    spacing: Math.hypot(last.along - first.along, last.across - first.across),
+    length: 0,
+  }
 }
 
 // ── Zod ──────────────────────────────────────────────────────────────────────

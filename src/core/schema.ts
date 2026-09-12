@@ -182,6 +182,8 @@ export const SectionContentSchema = z.discriminatedUnion('kind', [
       left: z.number().int().min(0).max(200).optional(),
       right: z.number().int().min(0).max(200).optional(),
     }).optional(),
+    // ЕРІКТІ: ескі жобада жоқ — ол кезде цехтың әдепкі тұтқасы.
+    handle: HandleSpecSchema.nullable().optional(),
   }),
   z.object({
     kind: z.literal('stand'),

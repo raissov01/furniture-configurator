@@ -84,7 +84,7 @@ export type Axis = 'x' | 'y' | 'z'
 /** Панельдің локал өстері (ұзындық/ені/қалыңдығы) әлем өстеріне қалай түседі */
 export type Orientation = { length: Axis; width: Axis; thickness: Axis }
 
-import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
+import type { HandleKind, HandleModel, HandleSpec, HingeSystem } from './fittings'
 import type { ApplianceKind, FillingKind } from './filling'
 import type { Cutout, PanelCutouts } from './cutouts'
 import type { DrillEdits } from './drillEdits'
@@ -202,6 +202,27 @@ export function isWidthBevel(
   return 'widthAtStart' in b
 }
 
+/**
+ * Фасадтағы тұтқа — 3D үшін. Координаталар фасадтың ГОТОВЫЙ жазықтығында:
+ * `along` — биіктігі бойымен (астынан), `across` — ені бойымен (сол жақтан).
+ * Бұл `handleBorePoints` қолданатын дәл сол өстер.
+ */
+export type PanelHandle = {
+  handleId: string
+  kind: Exclude<HandleKind, 'none'>
+  /** Тұтқаның ортасы, мм */
+  along: number
+  across: number
+  /** Тұтқа қай өспен созылады: `across` — көлденең, `along` — тік */
+  direction: 'along' | 'across'
+  /** Тесіктердің нақты аралығы, мм. Кнопкада 0. */
+  spacing: number
+  /** Профильдің ұзындығы (жиекті толық бойлайды), мм. Басқаларда 0. */
+  length: number
+  /** Профиль қай жиекте тұр. Басқаларда жоқ. */
+  edge?: 'top' | 'bottom' | 'left' | 'right' | undefined
+}
+
 export type Panel = {
   id: string
   role: PanelRole
@@ -223,6 +244,13 @@ export type Panel = {
 
   /** Шыны фасад па: 3D-де мөлдір көрсетіледі (раскрой өзгермейді). */
   glass?: boolean | undefined
+
+  /**
+   * Фасадтағы тұтқаның 3D пішіні. Присадкамен БІР есептен шығады
+   * (`handleShape` ← `handleBorePoints`), сондықтан экрандағы тұтқа тесіктің
+   * дәл үстінде тұрады. Деталировкаға, раскройға, сметаға әсері ЖОҚ.
+   */
+  handle?: PanelHandle | undefined
 
   /**
    * Әрқашан 1: generateCabinet әр физикалық детальді жеке Panel етіп қайтарады,
@@ -524,6 +552,14 @@ export type SectionContent =
      * Фасад ТАРЫЛМАЙДЫ — планка ұяның ішінде, фасадтың артында қалады.
      */
     fillers?: { left?: number | undefined; right?: number | undefined } | undefined
+    /**
+     * Ящик фасадының тұтқасы. `null` — әдейі тұтқасыз (push-to-open),
+     * `undefined` — цехтың әдепкісі, ілмелі фасадтағы ережемен бірдей.
+     *
+     * Бұрын ящиктің фасадына тұтқа мүлде бұрғыланбайтын: присадкада тесік
+     * жоқ, сметада тұтқа жоқ, 3D-де фасад жалаңаш. Нақты ящиктің тұтқасы бар.
+     */
+    handle?: HandleSpec | null | undefined
   }
   /**
    * ТІК БӨЛГІШ (стойка) жолақтың ІШІНДЕ.

@@ -16,6 +16,7 @@
  * дәл `sets.ts`-тегі бұрыш ережесі. V1 солтүстік (+ шығыс) бұрышын құрайды.
  */
 
+import { DEFAULT_HANDLE_BORE, DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
 import { defaultMillingSpec } from './milling'
 import type { MillingPatternId } from './milling'
 import { findTemplate, templateToCabinet } from './templates'
@@ -226,6 +227,29 @@ function applianceNiche(
   }
 }
 
+/**
+ * Үстіңгі шкафтың тұтқасы АСТЫҢҒЫ жиекте: есік 1,5 м биіктікте тұрады,
+ * оны астынан тартады. Цехтың әдепкісі (`top`) еденде тұрған шкафқа
+ * лайық — үстіңгі қатарда ол қол жетпейтін жерде қалар еді.
+ *
+ * Модель цехтың КАТАЛОГЫНАН: каталогта жоқ тұтқаны атасақ, ядро қате
+ * береді. Тұтқа әдейі алынған секция (`null`) сол күйі қалады.
+ */
+function handleAtBottom(cabinet: CabinetConfig, catalog: Catalog): CabinetConfig {
+  const list = catalog.handles ?? []
+  const model = list.find((h) => h.id === DEFAULT_HANDLE_ID) ?? list.find((h) => h.boreSpacings.length > 0)
+  if (!model) return cabinet
+  const bore = model.boreSpacings.includes(DEFAULT_HANDLE_BORE) ? DEFAULT_HANDLE_BORE : (model.boreSpacings[0] ?? 0)
+  return {
+    ...cabinet,
+    sections: cabinet.sections.map((sec) => {
+      if (!sec.fronts || sec.fronts.handle === null) return sec
+      const base = sec.fronts.handle ?? { ...defaultHandleSpec(), handleId: model.id, boreSpacing: bore }
+      return { ...sec, fronts: { ...sec.fronts, handle: { ...base, position: 'bottom' } } }
+    }),
+  }
+}
+
 /** Секциялардың фасадына фрезеровка өрнегін салу (тегіс болмаса). */
 function withMilling(cabinet: CabinetConfig, pattern: MillingPatternId | undefined): CabinetConfig {
   if (!pattern || pattern === 'plain') return cabinet
@@ -311,6 +335,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   const glassUpper = options.glassUpper ?? false
   const makeUpper = (width: number, uid: string): CabinetConfig => {
     let cab: CabinetConfig = { ...templateToCabinet(wallTpl, catalog, { width, height: upperH, depth: upperD }), id: uid }
+    cab = handleAtBottom(cab, catalog)
     if (glassUpper) cab = withGlass(cab)
     if (options.ledUpper) cab = { ...cab, led: true }
     return finishUpper(cab)

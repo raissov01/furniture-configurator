@@ -101,6 +101,7 @@ export const en: Record<string, string> = {
   'Петли': 'Hinges',
   'Ручка': 'Handle',
   '— Без ручки —': '— No handle —',
+  'Ручка ящика': 'Drawer handle',
   'Межцентровое, мм': 'Bore spacing, mm',
   'Расположение': 'Placement',
   'Сверху': 'Top',

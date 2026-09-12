@@ -11,7 +11,7 @@ import { Edges, Html } from '@react-three/drei'
 import { grainTexture } from '@/lib/grainTexture'
 import { Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
-import type { Axis, Catalog, Panel, SettingsOverride } from '@/src/core/index'
+import type { Axis, Catalog, Panel, PanelHandle, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
 /**
@@ -107,6 +107,144 @@ function MillingLines({ panel, catalog, settings, extents }: {
           </mesh>
         </group>
       ))}
+    </group>
+  )
+}
+
+/*
+ * ТҰТҚАНЫҢ КӨРІНІСІ. Мұндағы сандар — тек 3D (скобаның жуандығы, аяғының
+ * биіктігі): олар деталировкаға да, присадкаға да тимейді. Орны мен аралығы
+ * ядродан (`panel.handle`), сондықтан тұтқа тесіктің дәл үстінде тұрады.
+ */
+const HANDLE_STEEL = '#c3c8ce'
+const HANDLE_GOLA = '#8d949b'
+const HANDLE_WOOD = '#8a5a34'
+const HANDLE_RECESS = '#3a3f44'
+
+function Metal({ color = HANDLE_STEEL }: { color?: string }) {
+  // Металдық мен кедір-бұдыр ОРТАША: қоршаған орта картасы жоқ сахнада толық
+  // металл қап-қара болып көрінеді.
+  return <meshStandardMaterial color={color} roughness={0.3} metalness={0.55} />
+}
+
+/**
+ * Тұтқа — фасад мешінің БАЛАСЫ: есікпен бірге ашылады, ящикпен бірге
+ * шығады, ажыратылған көріністе фасадпен бірге жылжиды.
+ *
+ * Мештің нөлі — панельдің ОРТАСЫ, ал ядроның координатасы фасадтың
+ * сол-төмен бұрышынан. Фасадтың сыртқы беті — ең кіші z (бөлмеге қарайды).
+ */
+function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: number; y: number; z: number } }) {
+  const face = -extents.z / 2
+  const x = -extents.x / 2 + handle.across
+  const y = -extents.y / 2 + handle.along
+  const horizontal = handle.direction === 'across'
+  /** Тұтқа бойымен `d` мм ығысу. */
+  const along = (d: number): [number, number] => (horizontal ? [d, 0] : [0, d])
+  /** Цилиндр әдепкіде Y бойымен жатады: көлденең тұтқаға Z айналасында 90°. */
+  const lying: [number, number, number] = horizontal ? [0, 0, Math.PI / 2] : [0, 0, 0]
+  /** Беттен шығатын аяқ (−Z бағытына). */
+  const outward: [number, number, number] = [Math.PI / 2, 0, 0]
+
+  if (handle.kind === 'knob') {
+    return (
+      <group position={[x, y, face]}>
+        <mesh position={[0, 0, -9]} rotation={outward} castShadow>
+          <cylinderGeometry args={[5, 7, 18, 16]} />
+          <Metal />
+        </mesh>
+        <mesh position={[0, 0, -26]} castShadow>
+          <sphereGeometry args={[15, 24, 16]} />
+          {handle.handleId.includes('wood')
+            ? <meshStandardMaterial color={HANDLE_WOOD} roughness={0.6} metalness={0} />
+            : <Metal />}
+        </mesh>
+      </group>
+    )
+  }
+
+  if (handle.kind === 'profile') {
+    const edge = handle.edge ?? 'top'
+    // Жиектен фасадтың ІШІНЕ қараған бағыт.
+    const inward: [number, number] = edge === 'top' ? [0, -1] : edge === 'bottom' ? [0, 1] : edge === 'left' ? [1, 0] : [-1, 0]
+    const size = (across: number, deep: number): [number, number, number] =>
+      (horizontal ? [handle.length, across, deep] : [across, handle.length, deep])
+    const at = (d: number, z: number): [number, number, number] => [x + inward[0] * d, y + inward[1] * d, z]
+    if (handle.handleId.includes('gola')) {
+      // Гола: фасадтың СЫРТЫНДАҒЫ ойық, фасад жазықтығынан артқа кіріп тұрады.
+      return (
+        <mesh position={at(-16, face + 22)} castShadow>
+          <boxGeometry args={size(30, 40)} />
+          <Metal color={HANDLE_GOLA} />
+        </mesh>
+      )
+    }
+    if (handle.handleId.endsWith('-c')) {
+      // С-тәрізді накладной профиль: жиекті орап, алға шығып тұрады.
+      return (
+        <mesh position={at(12, face - 6)} castShadow>
+          <boxGeometry args={size(28, 12)} />
+          <Metal />
+        </mesh>
+      )
+    }
+    // Врезной профиль фасадтың жиегіне кіреді, бүкіл қалыңдығын алады.
+    return (
+      <mesh position={at(11, 0)} castShadow>
+        <boxGeometry args={size(22, extents.z + 1)} />
+        <Metal />
+      </mesh>
+    )
+  }
+
+  const span = handle.spacing
+
+  if (handle.kind === 'shell') {
+    const len = span + 36
+    return (
+      <group position={[x, y, face]}>
+        <mesh position={[0, 0, -5]} castShadow>
+          <boxGeometry args={horizontal ? [len, 28, 10] : [28, len, 10]} />
+          <Metal />
+        </mesh>
+        {/* Саусақ кіретін қуыс — ракушканың өзі осы. */}
+        <mesh position={[horizontal ? 0 : -5, horizontal ? -5 : 0, -10.5]}>
+          <boxGeometry args={horizontal ? [len - 16, 12, 1] : [12, len - 16, 1]} />
+          <meshStandardMaterial color={HANDLE_RECESS} roughness={0.6} metalness={0.2} />
+        </mesh>
+      </group>
+    )
+  }
+
+  // Скоба мен рейлинг: екі аяқ (тесіктердің үстінде) + ұстағыш.
+  const rail = handle.kind === 'rail'
+  const thin = handle.handleId.includes('thin')
+  const flat = handle.handleId.includes('bracket')
+  const square = handle.handleId.includes('square')
+  const standoff = rail ? 32 : 28
+  // Рейлинг аяқтарынан әр жаққа шығып тұрады, скоба аяқтарында бітеді.
+  const gripLen = rail ? span + 80 : span + 14
+  const gripR = rail ? (thin ? 5 : 6) : 5
+  const postR = rail && !thin ? 5 : 4
+  return (
+    <group position={[x, y, face]}>
+      {(span > 0 ? [-span / 2, span / 2] : [0]).map((d) => {
+        const [px, py] = along(d)
+        return (
+          <mesh key={d} position={[px, py, -standoff / 2]} rotation={outward} castShadow>
+            <cylinderGeometry args={[postR, postR, standoff, 12]} />
+            <Metal />
+          </mesh>
+        )
+      })}
+      <mesh position={[0, 0, -standoff]} rotation={flat || square ? [0, 0, 0] : lying} castShadow>
+        {flat
+          ? <boxGeometry args={horizontal ? [gripLen, 14, 6] : [14, gripLen, 6]} />
+          : square
+            ? <boxGeometry args={horizontal ? [gripLen, 10, 10] : [10, gripLen, 10]} />
+            : <cylinderGeometry args={[gripR, gripR, gripLen, 16]} />}
+        <Metal />
+      </mesh>
     </group>
   )
 }
@@ -373,6 +511,8 @@ export function PanelMesh({
       {panel.role === 'front' && panel.milling.length > 0 ? (
         <MillingLines panel={panel} catalog={catalog} settings={settings} extents={extents} />
       ) : null}
+      {/* Тұтқа тек тікбұрышты фасадта: қиғаш/оймалы фасадтың жазықтығы басқа. */}
+      {panel.role === 'front' && panel.handle ? <HandleMesh handle={panel.handle} extents={extents} /> : null}
       {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>
           <div className="pointer-events-none whitespace-nowrap rounded bg-neutral-900/90 px-2 py-1 text-[11px] text-white shadow">

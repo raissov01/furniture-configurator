@@ -279,6 +279,15 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
               ]}
             />
           </Field>
+          <HandleFields
+            label={tr('Ручка ящика')}
+            field="section.drawerHandle"
+            value={drawers.handle}
+            onChange={(handle, field) => {
+              const contents = section.contents.map((c) => (c.kind === 'drawers' ? { ...c, handle } : c))
+              editSection(index, { contents }, field)
+            }}
+          />
           <div className="grid grid-cols-2 gap-2">
             {([['left', 'Планка слева'], ['right', 'Планка справа']] as const).map(([side, label]) => (
               <Field key={side} label={tr(label)} hint={tr('сужает нишу, мм')}>
@@ -403,6 +412,91 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
 }
 
 /**
+ * Тұтқаның баптауы: моделі, аралығы, орны, шегіністері.
+ *
+ * Ілмелі фасад пен ящиктің фасады БІР компонентті қолданады — ядрода да
+ * екеуі бір ережемен (`handleBorePoints`) бұрғыланады.
+ */
+function HandleFields({
+  value, onChange, field, label,
+}: {
+  /** undefined — цехтың әдепкісі, null — әдейі тұтқасыз. */
+  value: HandleSpec | null | undefined
+  onChange: (handle: HandleSpec | null, field: string) => void
+  /** Өрістің аты (қате жолағы үшін); баптаулары `${field}Bore` т.с.с. */
+  field: string
+  label: string
+}) {
+  const handles = useConfigurator((s) => s.shop.handles)
+  const handleSpec: HandleSpec | null = value === null ? null : value ?? defaultHandleSpec()
+  const model = handleSpec ? handles.find((h) => h.id === handleSpec.handleId) : undefined
+  const spacings = model?.boreSpacings ?? []
+  // Профильде тесік жоқ, бірақ ҚАЙ ЖИЕКТЕ тұратыны бәрібір керек.
+  const drilled = model !== undefined && model.kind !== 'profile' && model.kind !== 'none'
+
+  const setHandle = (patch: Partial<HandleSpec>, suffix: string) => {
+    if (!handleSpec) return
+    onChange({ ...handleSpec, ...patch }, `${field}${suffix}`)
+  }
+
+  return (
+    <>
+      <Field label={label}>
+        <Select
+          value={handleSpec ? handleSpec.handleId : 'none'}
+          onChange={(id) =>
+            onChange(id === 'none' ? null : { ...(handleSpec ?? defaultHandleSpec()), handleId: id }, field)
+          }
+          options={[
+            ...handles.map((h) => ({ value: h.id, label: h.name })),
+            { value: 'none', label: tr('— Без ручки —') },
+          ]}
+        />
+      </Field>
+
+      {handleSpec && model && model.kind !== 'none' ? (
+        <div className="grid grid-cols-2 gap-2">
+          {spacings.length > 0 ? (
+            <Field label={tr('Межцентровое, мм')}>
+              <Select
+                value={String(handleSpec.boreSpacing)}
+                onChange={(v) => setHandle({ boreSpacing: Number(v) }, 'Bore')}
+                options={spacings.map((n) => ({ value: String(n), label: String(n) }))}
+              />
+            </Field>
+          ) : null}
+          <Field label={tr('Расположение')}>
+            <Select
+              value={handleSpec.position}
+              onChange={(position) => setHandle({ position: position as HandleSpec['position'] }, 'Position')}
+              options={HANDLE_POSITIONS.map((p) => ({ value: p, label: handlePositionName(p) }))}
+            />
+          </Field>
+          {drilled ? (
+            <>
+              <Field label={tr('Отступ от края, мм')}>
+                <NumberInput
+                  value={handleSpec.edgeOffset}
+                  min={0}
+                  onChange={(edgeOffset) => setHandle({ edgeOffset }, 'EdgeOffset')}
+                />
+              </Field>
+              <Field label={tr('Отступ от торца, мм')}>
+                <NumberInput
+                  value={handleSpec.endOffset}
+                  min={0}
+                  onChange={(endOffset) => setHandle({ endOffset }, 'EndOffset')}
+                />
+              </Field>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  )
+}
+
+/**
  * Фасадтың фурнитурасы: ілгек жүйесі мен тұтқа.
  *
  * Каталог ЦЕХТІКІ (`shop.hingeSystems` / `shop.handles`), сондықтан мұнда
@@ -417,18 +511,8 @@ function FrontFittings({
 }) {
   const shop = useConfigurator((s) => s.shop)
   const systems = shop.hingeSystems
-  const handles = shop.handles
 
   const hingeId = fronts.hingeSystemId ?? systems[0]?.id ?? ''
-  // undefined — цехтың әдепкісі, null — әдейі тұтқасыз.
-  const handleSpec: HandleSpec | null = fronts.handle === null ? null : fronts.handle ?? defaultHandleSpec()
-  const model = handleSpec ? handles.find((h) => h.id === handleSpec.handleId) : undefined
-  const spacings = model?.boreSpacings ?? []
-
-  const setHandle = (patch: Partial<HandleSpec>, field: string) => {
-    if (!handleSpec) return
-    onChange({ handle: { ...handleSpec, ...patch } }, field)
-  }
 
   const milling: MillingSpec | null = fronts.milling ?? null
   const pattern = milling ? millingPattern(milling.patternId) : null
@@ -563,58 +647,12 @@ function FrontFittings({
         />
       </Field>
 
-      <Field label={tr('Ручка')}>
-        <Select
-          value={handleSpec ? handleSpec.handleId : 'none'}
-          onChange={(id) =>
-            onChange(
-              id === 'none'
-                ? { handle: null }
-                : { handle: { ...(handleSpec ?? defaultHandleSpec()), handleId: id } },
-              'section.handle',
-            )
-          }
-          options={[
-            ...handles.map((h) => ({ value: h.id, label: h.name })),
-            { value: 'none', label: tr('— Без ручки —') },
-          ]}
-        />
-      </Field>
-
-      {handleSpec && spacings.length > 0 ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Field label={tr('Межцентровое, мм')}>
-            <Select
-              value={String(handleSpec.boreSpacing)}
-              onChange={(v) => setHandle({ boreSpacing: Number(v) }, 'section.handleBore')}
-              options={spacings.map((n) => ({ value: String(n), label: String(n) }))}
-            />
-          </Field>
-          <Field label={tr('Расположение')}>
-            <Select
-              value={handleSpec.position}
-              onChange={(position) =>
-                setHandle({ position: position as HandleSpec['position'] }, 'section.handlePosition')
-              }
-              options={HANDLE_POSITIONS.map((p) => ({ value: p, label: handlePositionName(p) }))}
-            />
-          </Field>
-          <Field label={tr('Отступ от края, мм')}>
-            <NumberInput
-              value={handleSpec.edgeOffset}
-              min={0}
-              onChange={(edgeOffset) => setHandle({ edgeOffset }, 'section.handleEdgeOffset')}
-            />
-          </Field>
-          <Field label={tr('Отступ от торца, мм')}>
-            <NumberInput
-              value={handleSpec.endOffset}
-              min={0}
-              onChange={(endOffset) => setHandle({ endOffset }, 'section.handleEndOffset')}
-            />
-          </Field>
-        </div>
-      ) : null}
+      <HandleFields
+        label={tr('Ручка')}
+        field="section.handle"
+        value={fronts.handle}
+        onChange={(handle, field) => onChange({ handle }, field)}
+      />
     </div>
   )
 }

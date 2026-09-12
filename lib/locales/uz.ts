@@ -102,6 +102,7 @@ export const uz: Record<string, string> = {
   'Петли': 'Petlyalar',
   'Ручка': 'Ruchka',
   '— Без ручки —': '— Ruchkasiz —',
+  'Ручка ящика': 'Yashik ruchkasi',
   'Межцентровое, мм': 'Markazlar orasi, mm',
   'Расположение': 'Joylashuvi',
   'Сверху': 'Tepadan',
