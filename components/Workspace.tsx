@@ -410,7 +410,8 @@ export function Workspace() {
       */}
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-h-0 flex-col">
-        <main className="relative min-h-64 flex-1" data-tour="scene">
+        {/* Телефонда 3D экранның жартысынан астам: 256 px-те ештеңе көрінбейтін. */}
+        <main className="relative min-h-[55vh] flex-1 lg:min-h-64" data-tour="scene">
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} />
@@ -421,7 +422,8 @@ export function Workspace() {
             КӨРІНІС құралдары сахнаның өз үстінде: олар 3D-ге қатысты, ал тақтада
             тұрғанда оны екі қатарға бөліп жіберетін. Сирек баптаулар «Вид»-те.
           */}
-          <div className="absolute right-3 top-3 z-10 flex max-w-[70%] flex-wrap items-center justify-end gap-1">
+          {/* Телефонда АСТЫҢҒЫ бұрышта: жоғарыда модульдер тізімімен соқтығысатын. */}
+          <div className="absolute bottom-3 right-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end gap-1 lg:bottom-auto lg:top-3 lg:max-w-[70%]">
             <Button onClick={() => setRenderOpen(true)} title={tr('Фотореалистичная картинка для клиента')}>
               {tr('Рендер')}
             </Button>

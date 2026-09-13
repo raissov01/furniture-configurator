@@ -11,7 +11,7 @@
  * Бір корпус болса тізім көрсетілмейді — таңдайтын ештеңе жоқ.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
 import { useConfigurator } from '@/store/configurator'
@@ -22,22 +22,28 @@ export function ModuleList() {
   const activeId = useConfigurator((s) => s.activeId)
   const setActive = useConfigurator((s) => s.setActive)
   const [open, setOpen] = useState(true)
+  // Тар экранда (телефон) тізім ӘДЕПКІДЕ жиылған: ашық 15 жол шағын 3D-ні
+  // толық жауып, астындағы панельге дейін төгілетін (09-13).
+  useEffect(() => {
+    if (!window.matchMedia('(min-width: 1024px)').matches) setOpen(false)
+  }, [])
 
   if (cabinets.length < 2) return null
 
   return (
-    <div className="pointer-events-auto absolute left-3 top-3 z-10 w-60 rounded-lg border border-neutral-200 bg-white text-xs dark:border-neutral-700 dark:bg-neutral-900">
+    <div className="pointer-events-auto absolute left-3 top-3 z-10 flex max-h-[calc(100%-1.5rem)] w-52 flex-col rounded-lg border border-neutral-200 bg-white text-xs lg:w-60 dark:border-neutral-700 dark:bg-neutral-900">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between border-b border-neutral-200 px-3 py-2 font-semibold dark:border-neutral-700"
+        className="flex w-full shrink-0 items-center justify-between border-b border-neutral-200 px-3 py-2 font-semibold dark:border-neutral-700"
         aria-expanded={open}
       >
         <span>{tr('Модули')} · {cabinets.length}</span>
         <span className="text-[10px] text-neutral-400">{open ? '▲' : '▼'}</span>
       </button>
       {open ? (
-        <ol className="max-h-[50vh] overflow-auto p-1">
+        // Биіктігі 3D-нің өз шегімен (max-h ата-анадан), ұзын тізім ішінде айналады.
+        <ol className="min-h-0 flex-1 overflow-auto p-1">
           {cabinets.map((cabinet, i) => {
             const hanging = (placements.find((p) => p.cabinetId === cabinet.id)?.elevation ?? 0) > 0
             const active = cabinet.id === activeId
