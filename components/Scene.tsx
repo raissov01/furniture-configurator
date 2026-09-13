@@ -60,14 +60,6 @@ const FLAP_OPEN_ANGLE = (75 * Math.PI) / 180
 
 const MM = 0.001
 
-/**
- * Модуль 3D-де сүйреліп жатыр ма. Сол кезде камера модульге ҚАЙТА ҚАРАМАЙДЫ:
- * әйтпесе ол модульдің соңынан еріп, курсор модульден тағы алыстайды да,
- * модуль әр қадамда одан әрі лақтырылады (кері байланыс). Сүйреу біткен соң
- * камера орнында қалады — qdesign-да да солай, көрініс секірмейді.
- */
-const moduleDrag = { active: false }
-
 export type SceneItem = {
   cabinet: CabinetConfig
   panels: Panel[]
@@ -325,18 +317,19 @@ function VrRig({ room }: { room: Room }) {
 }
 
 function CameraRig({
-  target, box, facingY, contentKey,
+  target, box, facingY, layoutKey,
 }: {
   target: Vec3
   box: { W: number; H: number; D: number }
   /** Шкафтың бұрылу бұрышы: камера оның АЛДЫНА шығуы керек. */
   facingY: number
   /**
-   * Сахнаның МАЗМҰНЫ өзгергенін білдіретін кілт. Нысанның координатасы
-   * кездейсоқ бірдей болып қалуы мүмкін (мыс. екі шкаф та басында тұрса),
-   * ал камера жаңа мазмұнға бәрібір қайта бағытталуы керек.
+   * Көріністің КОМПОНОВКАСЫ: мазмұн, габариттер, белсенді модуль, қабырғалар
+   * мен бұрылыстар. Камера ТЕК осы кілт (не пресет, «Вид», канвас) өзгергенде
+   * қайта кадрланады. Модульдің қабырға бойымен жылжуы (сүйреу, «Смещение»,
+   * ‹ ›, «От пола») кілтке КІРМЕЙДІ — төмендегі эффектіні қара.
    */
-  contentKey: string
+  layoutKey: string
 }) {
   const preset = useConfigurator((s) => s.cameraPreset)
   const fitNonce = useConfigurator((s) => s.fitNonce)
@@ -413,19 +406,24 @@ function CameraRig({
     controls?.target.set(tx * MM, ty * MM, tz * MM)
     controls?.update()
     invalidate()
-  }, [preset, camera, controls, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, contentKey, fitNonce])
-
-  useEffect(() => {
-    if (moduleDrag.active) return
-    fit()
-  }, [fit])
+  }, [preset, camera, controls, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY])
 
   /*
-   * Сахнаның мазмұны (жоба) КЕЙІНІРЕК келуі мүмкін — сілтемемен ашылған бетте
-   * ол әрқашан солай. `fit` сол мазмұнға тәуелді, сондықтан жоба келгенде
-   * жоғарыдағы эффект өзі қайта жүреді; мұнда бөлек «бір реттік» қайталау
-   * қажет емес.
+   * ҚАЙТА КАДРЛАУ ТЕК КӨРІНІС ӨЗГЕРГЕНДЕ, нысана жылжығанда ЕМЕС.
+   *
+   * Бұрын эффект `fit`-ке тәуелді еді, яғни нысананың әр жылжуына: модульді
+   * сүйрегенде камера оның соңынан еріп, курсор модульден алыстайтын да,
+   * модуль әр қадамда одан әрі лақтырылатын; ‹ › басқан сайын көрініс
+   * секіретін. «Сүйреп жатыр» жалаушасы да көмектеспеді — соңғы қадамның
+   * эффектісі pointerup-тан КЕЙІН жүріп, камера бәрібір секіретін.
+   *
+   * `fit` ref арқылы шақырылады: ол әрқашан соңғы нысананы біледі, бірақ
+   * эффектіні өзі қоздырмайды. Жоба кейінірек келсе (сілтемемен ашылған
+   * бет) — `layoutKey` өзгереді де, кадрлау қайталанады.
    */
+  const fitRef = useRef(fit)
+  useEffect(() => { fitRef.current = fit }, [fit])
+  useEffect(() => { fitRef.current() }, [preset, camera, controls, size.width, size.height, layoutKey, fitNonce])
 
   return <OrbitControls ref={setControls} makeDefault enableDamping dampingFactor={0.12} />
 }
@@ -516,7 +514,6 @@ function CabinetGroup({
   const endDrag = () => {
     if (!drag.current) return
     drag.current = null
-    moduleDrag.active = false
     if (controls) controls.enabled = true
     gl.domElement.style.cursor = grabbable ? 'grab' : ''
   }
@@ -553,7 +550,6 @@ function CabinetGroup({
         // OrbitControls оқиғаны бізден БҰРЫН алады, бірақ әр қозғалыста `enabled`-ті
         // тексереді — сондықтан камера бір пиксель де бұрылмайды.
         if (controls) controls.enabled = false
-        moduleDrag.active = true
         gl.domElement.style.cursor = 'grabbing'
         ;(e.target as unknown as Element).setPointerCapture(e.pointerId)
       }}
@@ -1285,7 +1281,11 @@ export default function Scene({
             target={view.target}
             box={view.box}
             facingY={view.facingY}
-            contentKey={items.map((i) => i.cabinet.id).join(',')}
+            // Орын (offset, «От пола») ӘДЕЙІ жоқ — CameraRig-тің эффектісін қара.
+            layoutKey={[
+              room.width, room.depth, room.height, active?.cabinet.id ?? '',
+              ...items.map((i) => `${i.cabinet.id}:${i.cabinet.width}x${i.cabinet.height}x${i.cabinet.depth}:${i.placement.wall}:${i.placement.rotate ?? 0}`),
+            ].join('|')}
           />
         )}
         {/*
