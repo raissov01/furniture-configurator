@@ -58,6 +58,30 @@ describe('generateKitchen', () => {
     expect(validatePlacements(r.room, entriesOf(r))).toEqual([])
   })
 
+  /*
+   * ҮСТІҢГІ ҚАТАР (09-13): плитадан басқа әр аласа модульдің үстінде шкаф,
+   * биік бағананың үстінде — жоқ. Бұрын солтүстікте мойка мен посудомойканың
+   * үстінде бос қалып, қатар шетінде жалғыз шкаф ауада ілініп тұратын.
+   */
+  it('үстіңгі шкаф плитадан басқа әр аласа модульдің үстінде, пеналдың үстінде жоқ', () => {
+    const r = generateKitchen({ layout: 'corner', lengthA: 3200, lengthB: 2400, sink: true, upper: true }, SEED_CATALOG)
+    const byId = new Map(r.cabinets.map((c) => [c.id, c]))
+    const isUpper = (p: (typeof r.placements)[number]) => (p.elevation ?? 0) > 0
+    const lowers = r.placements.filter((p) => !isUpper(p))
+    const uppers = r.placements.filter(isUpper)
+    for (const low of lowers) {
+      const cab = byId.get(low.cabinetId)!
+      const tall = cab.height > 1500
+      const hob = (cab.fixtures ?? []).some((f) => f.kind === 'hob')
+      const above = uppers.filter((u) => u.wall === low.wall && u.offset === low.offset)
+      expect(above, `${cab.name} @ ${low.wall}:${low.offset}`).toHaveLength(tall || hob ? 0 : 1)
+    }
+    // Мойка мен посудомойка солтүстікте — енді олардың үстінде де шкаф бар.
+    const sink = lowers.find((p) => (byId.get(p.cabinetId)!.fixtures ?? []).some((f) => f.kind === 'sink'))!
+    expect(uppers.some((u) => u.wall === sink.wall && u.offset === sink.offset)).toBe(true)
+    expect(validatePlacements(r.room, entriesOf(r))).toEqual([])
+  })
+
   it('төменгі модульде цоколь мен столешница бар', () => {
     const r = generateKitchen({ layout: 'straight', lengthA: 2400, sink: false, upper: false, appliances: false }, SEED_CATALOG)
     // Техникасыз — бәрі төменгі база: цоколь мен столешница әрқайсысында.

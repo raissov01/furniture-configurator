@@ -453,15 +453,26 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     return dressLower(base, options)
   }
 
+  /*
+   * Үстіңгі шкаф қай модульдің үстіне қойылады: ПЛИТАДАН басқа кез келген
+   * аласа модуль (плитаның үстінде сорғыш тұрады). Биік бағаналар (пенал,
+   * тоңазытқыш, духовка мұнарасы) үстіңгі аймақты өздері алады.
+   *
+   * ⚠ Бұрын солтүстік қабырғада тек есікті/ящикті тумбаның үстіне қойылатын:
+   * мойка мен посудомойканың үстінде бос қалып, қатардың шетінде ЖАЛҒЫЗ
+   * үстіңгі шкаф ауада ілініп тұрғандай көрінетін (09-13). Ал B/C қабырғасы
+   * `kind !== 'hob'` дегенмен биік бағананың үстіне де шкаф қоятын.
+   */
+  const takesUpper = (kind: ModuleKind) =>
+    withUpper && kind !== 'hob' && !MODULE_KINDS.some((m) => m.kind === kind && m.upper)
+
   // ── Негізгі қабырға (солтүстік), бұрыштан оңға (offset 0-ден) ─────────────
   let cursor = 0
   runA.forEach((mod) => {
     const cab = build(mod, 'a')
     cabinets.push(cab)
     placements.push({ cabinetId: cab.id, wall: 'north', offset: cursor })
-    // Үстіңгі қатар тек БАЗА модульдің үстінде: пенал толық биік, ал мойканың
-    // үстінде әдетте сорғыш/терезе тұрады.
-    if (withUpper && (mod.kind === 'baseDoors' || mod.kind === 'baseDrawers')) {
+    if (takesUpper(mod.kind)) {
       const uid = nextId('a-up')
       cabinets.push(makeUpper(mod.width, uid))
       placements.push({ cabinetId: uid, wall: 'north', offset: cursor, elevation: upperElev })
