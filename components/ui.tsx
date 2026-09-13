@@ -7,6 +7,7 @@
 
 import * as React from 'react'
 import { cn } from '@/lib/cn'
+import { t as tr } from '@/lib/i18n'
 
 /**
  * ТЫҒЫЗ режим — оң жақтағы қасиеттер панелі үшін (qdesign сияқты: өрістер
@@ -52,11 +53,12 @@ export function NumberInput({
   step?: number
   invalid?: boolean
 }) {
+  const dense = React.useContext(DenseCtx)
   const cls = useControl()
-  return (
+  const input = (
     <input
       type="number"
-      className={cn(cls, 'tabular-nums', invalid && 'border-red-500 dark:border-red-500')}
+      className={cn(cls, 'tabular-nums', invalid && 'border-red-500 dark:border-red-500', dense && 'order-2 min-w-0 rounded-none border-x-0 px-0.5 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none')}
       value={value}
       min={min}
       max={max}
@@ -66,6 +68,27 @@ export function NumberInput({
         if (Number.isFinite(next)) onChange(Math.round(next))
       }}
     />
+  )
+  if (!dense) return input
+  /*
+   * ‹ › БАТЫРМАЛАРЫ (qdesign сияқты, тығыз панельде): өлшемді бір басумен
+   * қадамға өзгерту. ⚠ DOM-да input БІРІНШІ: <label>-дің «басқаратын
+   * элементі» — оның ішіндегі БІРІНШІ labelable элемент; батырма алда тұрса,
+   * жазуды басқан адам «−»-ті басып қояр еді. Солға «−» тек CSS `order`-мен.
+   */
+  const bump = (dir: 1 | -1) => {
+    let next = value + dir * step
+    if (min !== undefined) next = Math.max(min, next)
+    if (max !== undefined) next = Math.min(max, next)
+    onChange(Math.round(next))
+  }
+  const stepper = 'order-1 w-5 shrink-0 border border-neutral-300 bg-white text-xs text-neutral-500 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:text-neutral-100'
+  return (
+    <span className="flex items-stretch">
+      {input}
+      <button type="button" tabIndex={-1} aria-label={tr('Уменьшить')} onClick={() => bump(-1)} className={cn(stepper, 'rounded-l-md')}>‹</button>
+      <button type="button" tabIndex={-1} aria-label={tr('Увеличить')} onClick={() => bump(1)} className={cn(stepper, 'order-3 rounded-r-md')}>›</button>
+    </span>
   )
 }
 

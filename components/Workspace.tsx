@@ -2,9 +2,9 @@
 
 import { t as tr, tf } from '@/lib/i18n'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
+import { Button, Collapsible, Dense, Field, Menu, MenuItem, NumberInput, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { Configurator } from '@/components/Configurator'
 import { TemplateGallery } from '@/components/TemplateGallery'
@@ -31,7 +31,9 @@ import { RenderPanel } from '@/components/RenderPanel'
 import { cloudEnabled } from '@/lib/cloud'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
+  formatTenge, nestPanels, nestingOptionsOf, priceProject, roomWalls, wallById,
 } from '@/src/core/index'
+import type { WallId } from '@/src/core/index'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { ModuleList } from '@/components/ModuleList'
@@ -95,6 +97,7 @@ export function Workspace() {
   const mirrorCabinet = useConfigurator((s) => s.mirrorCabinet)
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
   const addCabinet = useConfigurator((s) => s.addCabinet)
+  const movePlacement = useConfigurator((s) => s.movePlacement)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
@@ -203,6 +206,28 @@ export function Workspace() {
   const projectName = cabinets.length === 1 ? cabinets[0]!.name : `Проект (${cabinets.length} корпуса)`
   // Монтаж корпустардың ЕНІНІҢ қосындысымен саналады.
   const moduleWidths = useMemo(() => cabinets.map((c) => c.width), [cabinets])
+
+  /*
+   * БАҒА ТАҚТАДА (qdesign сияқты — жоғарыда үнемі «763 490 ₸»). Бұрын баға
+   * тек сметаны ашқанда көрінетін. Есеп сметамен БІР жолдан (nestPanels →
+   * priceProject), сондықтан тақтадағы сан мен КП-дағы сан ажырамайды.
+   * `useDeferredValue` — өріске сан теріп жатқанда раскрой есебі терудің
+   * алдына түспеуі үшін (React оны бос уақытта санайды).
+   */
+  const deferredPanels = useDeferredValue(projectPanels)
+  const liveTotal = useMemo((): { total: number } | { missing: true } | null => {
+    try {
+      const nesting = nestPanels(deferredPanels, catalog, nestingOptionsOf(shop))
+      const price = priceProject(deferredPanels, nesting, shop, projectHardware, moduleWidths)
+      return price.missingPrices.length > 0 ? { missing: true } : { total: price.total }
+    } catch (error) {
+      // Жарамсыз конфиг кезінде (теріп жатқанда) баға уақытша көрінбейді — бұл
+      // қате емес: қатенің өзін тақтаның астындағы қызыл жолақ айтады.
+      console.debug('Цена в тулбаре не посчитана', error)
+      return null
+    }
+  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths])
+  const activePlacement = placements.find((p) => p.cabinetId === activeId)
   const [shared, setShared] = useState<string | null>(null)
 
   /*
@@ -351,6 +376,18 @@ export function Workspace() {
 
         {/* Сирек керегі оң жақта; көрініс құралдары 3D-нің өз үстіне көшті. */}
         <div className="ml-auto flex items-center gap-1">
+          {/* БАҒА (qdesign сияқты): басу — смета; баға қойылмаса — цех профилі. */}
+          {liveTotal ? (
+            'total' in liveTotal ? (
+              <Button onClick={() => setQuoteOpen(true)} title={tr('Итого клиенту — открыть смету')}>
+                <span className="tabular-nums font-semibold">{formatTenge(liveTotal.total)}</span>
+              </Button>
+            ) : (
+              <Button onClick={() => setShopOpen(true)} title={tr('Задайте цены материалов в профиле цеха')}>
+                <span className="whitespace-nowrap">{tr('Цены не заданы')}</span>
+              </Button>
+            )
+          ) : null}
           <ExportMenu cabinet={cabinet} panels={panels} />
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
@@ -594,6 +631,59 @@ export function Workspace() {
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-3">
             <Dense>
+              {/*
+                МОДУЛЬДІҢ ОРНЫ (qdesign «Модуль орны, мм»: X/Y/Z, Бұрылыс). Бұрын
+                тек «Стены» терезесінде еді — модульді жылжыту үшін бөлек терезе
+                ашу керек болатын. Өрістер RoomPlan-дағымен бірдей (бір store әрекеті).
+              */}
+              {activePlacement ? (
+                <div className="mb-3">
+                  <Collapsible id="placement" title={tr('Положение в комнате')} defaultOpen>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field label={tr('Стена')}>
+                        <select
+                          className="w-full rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                          value={activePlacement.wall}
+                          onChange={(e) => movePlacement(activeId, { wall: e.target.value as WallId })}
+                        >
+                          {roomWalls(room).map((w) => (
+                            <option key={w.id} value={w.id}>{w.label}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field
+                        label={tr('Смещение')}
+                        hint={`0..${Math.max(0, wallById(room, activePlacement.wall).length - cabinet.width)}`}
+                      >
+                        <NumberInput
+                          value={activePlacement.offset}
+                          min={0}
+                          step={10}
+                          onChange={(offset) => movePlacement(activeId, { offset })}
+                        />
+                      </Field>
+                      <Field label={tr('От пола')} hint="мм">
+                        <NumberInput
+                          value={activePlacement.elevation ?? 0}
+                          min={0}
+                          max={4000}
+                          step={10}
+                          onChange={(elevation) => movePlacement(activeId, { elevation })}
+                        />
+                      </Field>
+                      <Field label={tr('Поворот')} hint="°">
+                        <NumberInput
+                          value={activePlacement.rotate ?? 0}
+                          min={-180}
+                          max={180}
+                          step={5}
+                          onChange={(rotate) => movePlacement(activeId, { rotate })}
+                        />
+                      </Field>
+                    </div>
+                  </Collapsible>
+                </div>
+              ) : null}
               <Configurator invalidField={error?.field ?? null} />
             </Dense>
           </div>
