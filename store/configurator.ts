@@ -761,7 +761,12 @@ export const useConfigurator = create<State>((set, get) => ({
   setSelectedWall: (selectedWall) => set({ selectedWall }),
   // Басқа корпусқа ауысқанда таңдау ЕСКІ корпустың детальінде қалып қоймауы
   // керек: тақтадағы өлшем сол сәтте жоқ детальдікі болып шығар еді.
-  setActive: (activeId) => set({ activeId, templateId: '', selected: null }),
+  // Сол корпусты қайта белсендіру — ештеңе өзгертпейді: әйтпесе детальді басқан
+  // сайын таңдау мен шаблонның аты өшіп қалатын (басу әрі таңдайды, әрі белсендіреді).
+  setActive: (activeId) => {
+    if (get().activeId === activeId) return
+    set({ activeId, templateId: '', selected: null })
+  },
 
   /** Жаңа шкаф таңдалған қабырғаның бос жеріне қойылады. */
   addCabinet() {

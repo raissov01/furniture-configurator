@@ -501,9 +501,11 @@ export function PanelMesh({
             // әйтпесе жібергенде таңдау ауысып не алынып кететін.
             if (e.delta > CLICK_SLOP) return
             e.stopPropagation()
+            // ⚠ Алдымен корпус: басқа корпусқа ауысу таңдауды тазалайды, сондықтан
+            // setActive setSelected-тен КЕЙІН тұрса, таңдау бірден өшіп қалатын.
+            if (cabinetId) setActive(cabinetId)
             // Екінші рет басу таңдауды АЛАДЫ: бөлектеу қалып қоймауы керек.
             setSelected(isSelected ? null : key)
-            if (cabinetId) setActive(cabinetId)
           }}
         >
           {shape ? (
@@ -541,8 +543,8 @@ export function PanelMesh({
         if (vr) return
         if (e.delta > CLICK_SLOP) return
         e.stopPropagation()
-        setSelected(isSelected ? null : key)
         if (cabinetId) setActive(cabinetId)
+        setSelected(isSelected ? null : key)
       }}
     >
       <boxGeometry args={[extents.x, extents.y, extents.z]} />
