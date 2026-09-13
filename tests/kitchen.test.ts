@@ -59,6 +59,26 @@ describe('generateKitchen', () => {
   })
 
   /*
+   * БҰРЫШ qdesign сияқты (09-13): бұрышта — бұрыштық мойка (соқыр жағы
+   * фронт. панельмен), үстінде бұрыштық үстіңгі; техника бағаналары арғы
+   * шетте. Бұрын бұрышта пенал тұрып, көрші қатарға 60 мм кіретін.
+   */
+  it('бұрыш: мойка бұрышта соқыр панельмен, бағана бұрышта емес, қабаттасу жоқ', () => {
+    const r = generateKitchen({ layout: 'corner', lengthA: 3200, lengthB: 2400, sink: true, upper: true }, SEED_CATALOG)
+    const byId = new Map(r.cabinets.map((c) => [c.id, c]))
+    const atCorner = r.placements.filter((p) => p.wall === 'north' && p.offset === 0)
+    const lower = byId.get(atCorner.find((p) => !(p.elevation ?? 0))!.cabinetId)!
+    const upper = byId.get(atCorner.find((p) => (p.elevation ?? 0) > 0)!.cabinetId)!
+    expect(lower.width).toBe(1450)
+    expect(lower.frontPanel).toEqual({ width: 550, side: 'left' })
+    expect((lower.fixtures ?? []).some((f) => f.kind === 'sink')).toBe(true)
+    expect(upper.frontPanel).toEqual({ width: 350, side: 'left' })
+    expect(atCorner.some((p) => byId.get(p.cabinetId)!.height > 1500)).toBe(false)
+    expect(validatePlacements(r.room, entriesOf(r))).toEqual([])
+    for (const c of r.cabinets) expect(() => generateCabinet(c, SEED_CATALOG)).not.toThrow()
+  })
+
+  /*
    * ҮСТІҢГІ ҚАТАР (09-13): плитадан басқа әр аласа модульдің үстінде шкаф,
    * биік бағананың үстінде — жоқ. Бұрын солтүстікте мойка мен посудомойканың
    * үстінде бос қалып, қатар шетінде жалғыз шкаф ауада ілініп тұратын.

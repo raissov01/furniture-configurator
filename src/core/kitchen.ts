@@ -85,6 +85,7 @@ export const MODULE_KINDS: { kind: ModuleKind; name: string; upper: boolean }[] 
   { kind: 'baseDoors', name: 'Тумба с фасадом', upper: false },
   { kind: 'baseDrawers', name: 'Тумба с ящиками', upper: false },
   { kind: 'sink', name: 'Мойка', upper: false },
+  { kind: 'cornerSink', name: 'Мойка угловая', upper: false },
   { kind: 'dishwasher', name: 'Посудомойка', upper: false },
   { kind: 'hob', name: 'Тумба под варочную панель', upper: false },
   { kind: 'oven', name: 'Пенал духовка+СВЧ', upper: true },
@@ -93,7 +94,7 @@ export const MODULE_KINDS: { kind: ModuleKind; name: string; upper: boolean }[] 
 ]
 
 /** Бір орынның ТҮРІ — функционалды кухня біркелкі қорап болмауы үшін. */
-type ModuleKind = 'tall' | 'baseDoors' | 'baseDrawers' | 'sink' | 'fridge' | 'oven' | 'dishwasher' | 'hob'
+type ModuleKind = 'tall' | 'baseDoors' | 'baseDrawers' | 'sink' | 'cornerSink' | 'fridge' | 'oven' | 'dishwasher' | 'hob'
 
 /** Варочная панельдің түрі: айқын берілмесе, техникамен бірге газ. */
 function hobFuelOf(options: KitchenOptions): 'gas' | 'electric' | 'none' {
@@ -146,6 +147,15 @@ export function splitRun(
   return Array.from({ length: n }, (_, i) => base + (i < remainder ? 1 : 0))
 }
 
+/*
+ * БҰРЫШТЫҚ МОЙКА (qdesign «Мойка угловая», 09-13-те олардың жобасынан
+ * өлшенді): корпус 1450 мм, бұрыш жағы СОҚЫР — оны фронт. панель 550 мм
+ * жабады (көрші қатардың тумбасы 500 мм + есік пен тұтқаға саңылау). Үстіңгі
+ * бұрыштық шкафта соқыр панель 350 мм (үстіңгі тереңдік + саңылау).
+ */
+const CORNER_SINK_WIDTH = 1450
+const CORNER_BLIND = 550
+const CORNER_UPPER_BLIND = 350
 const FRIDGE_WIDTH = 600
 const SINK_WIDTH = 800
 const TALL_HEIGHT = 2100
@@ -162,10 +172,19 @@ const TALL_DEPTH = 560
  */
 function composeRun(
   length: number,
-  opts: { sink: boolean; appliances: boolean; main: boolean; hob?: boolean },
+  opts: { sink: boolean; appliances: boolean; main: boolean; hob?: boolean; corner?: boolean },
 ): { kind: ModuleKind; width: number }[] {
   let remaining = Math.round(length)
   const APP_W = 600
+
+  /*
+   * Г/П-кухняда мойка — БҰРЫШТА (qdesign «Мойка угловая»): соқыр бұрыш
+   * пайдаланылады, ал техника бағаналары қатардың АРҒЫ шетіне кетеді.
+   * ⚠ Бұрын бұрышта тоңазытқыш бағанасы (тереңдігі 560) тұратын да, көрші
+   * қатардың тумбасына 60 мм кіріп тұратын — тексеру оны көрмейтін (09-13).
+   */
+  const cornerSink = Boolean(opts.corner && opts.main && opts.sink && remaining >= CORNER_SINK_WIDTH + MODULE_MIN)
+  if (cornerSink) remaining -= CORNER_SINK_WIDTH
 
   // Техника — ТҰРАҚТЫ енді ұялар. Негізгі қабырғада: тоңазытқыш пен духовка
   // мұнарасы шетте, посудомойка мойканың қасында.
@@ -173,9 +192,9 @@ function composeRun(
   if (wantFridge) remaining -= APP_W
   const wantOven = opts.appliances && opts.main && remaining >= APP_W + MODULE_MIN
   if (wantOven) remaining -= APP_W
-  const wantSink = opts.sink && opts.main && remaining >= SINK_WIDTH + MODULE_MIN
+  const wantSink = !cornerSink && opts.sink && opts.main && remaining >= SINK_WIDTH + MODULE_MIN
   if (wantSink) remaining -= SINK_WIDTH
-  const wantDish = opts.appliances && opts.main && wantSink && remaining >= APP_W + MODULE_MIN
+  const wantDish = opts.appliances && opts.main && (wantSink || cornerSink) && remaining >= APP_W + MODULE_MIN
   if (wantDish) remaining -= APP_W
 
   const bases = splitRun(remaining).map((width, i): { kind: ModuleKind; width: number } => ({
@@ -196,6 +215,15 @@ function composeRun(
   }
 
   const out: { kind: ModuleKind; width: number }[] = []
+  if (cornerSink) {
+    // Бұрыштан: мойка → посудомойка → тумбалар → бағаналар (арғы шетте).
+    out.push({ kind: 'cornerSink', width: CORNER_SINK_WIDTH })
+    if (wantDish) out.push({ kind: 'dishwasher', width: APP_W })
+    out.push(...bases)
+    if (wantOven) out.push({ kind: 'oven', width: APP_W })
+    if (wantFridge) out.push({ kind: 'fridge', width: APP_W })
+    return out
+  }
   if (wantFridge) out.push({ kind: 'fridge', width: APP_W })
   if (wantOven) out.push({ kind: 'oven', width: APP_W })
   if (wantSink) {
@@ -222,7 +250,7 @@ export function kitchenLayout(options: KitchenOptions): { runA: KitchenModule[];
   const sink = options.sink ?? true
   const appliances = options.appliances ?? true
   const wantHob = hobFuelOf(options) !== 'none'
-  const runA = composeRun(options.lengthA, { sink, appliances, main: true, hob: wantHob })
+  const runA = composeRun(options.lengthA, { sink, appliances, main: true, hob: wantHob, corner })
   return {
     runA,
     runB: corner
@@ -248,6 +276,7 @@ const TEMPLATE_OF: Record<ModuleKind, string> = {
   baseDrawers: 'kitchen-base-drawers-600',
   dishwasher: 'kitchen-base-full-600',
   sink: 'kitchen-sink-800',
+  cornerSink: 'kitchen-sink-800',
   hob: 'kitchen-base-drawers-600',
 }
 
@@ -390,7 +419,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   const hobFuel = hobFuelOf(options)
   const runA = options.modules
     ? options.modules.runA
-    : composeRun(options.lengthA, { sink, appliances, main: true, hob: hobFuel !== 'none' })
+    : composeRun(options.lengthA, { sink, appliances, main: true, hob: hobFuel !== 'none', corner })
   // Қолмен берілген раскладкаға плита ӨЗДІГІНЕН қосылмайды: пайдаланушы
   // оны «Тумба под варочную панель» арқылы өзі қояды.
   const wantHob = hobFuel !== 'none' && !options.modules
@@ -450,6 +479,12 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
       return dressLower(cab, options)
     }
     if (mod.kind === 'sink') return dressLower(withFixture(base, { kind: 'sink' }), options)
+    if (mod.kind === 'cornerSink') {
+      // Соқыр бұрыш `left` жақта: қатардың offset 0-і — дәл бұрыш, ал фронт.
+      // панельдің `left`-і корпустың x = 0 жағына тұрады (generateCabinet).
+      const blind: CabinetConfig = { ...base, frontPanel: { width: CORNER_BLIND, side: 'left' } }
+      return dressLower(withFixture(blind, { kind: 'sink' }), options)
+    }
     return dressLower(base, options)
   }
 
@@ -468,13 +503,25 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
 
   // ── Негізгі қабырға (солтүстік), бұрыштан оңға (offset 0-ден) ─────────────
   let cursor = 0
-  runA.forEach((mod) => {
+  /*
+   * Бұрыштағы модульдің ТЕРЕҢДІГІ: көрші қабырғаның қатары дәл одан кейін
+   * басталады. Бұрын тұрақты `lowerD` еді — бұрышта пенал (560) тұрса, көрші
+   * тумбаға 60 мм кіретін. Екі шеті де ескеріледі (П-пішінде батыс та бұрыш).
+   */
+  let depthAtStart = lowerD
+  let depthAtEnd = lowerD
+  runA.forEach((mod, i) => {
     const cab = build(mod, 'a')
     cabinets.push(cab)
     placements.push({ cabinetId: cab.id, wall: 'north', offset: cursor })
+    if (i === 0) depthAtStart = cab.depth
+    if (i === runA.length - 1) depthAtEnd = cab.depth
     if (takesUpper(mod.kind)) {
       const uid = nextId('a-up')
-      cabinets.push(makeUpper(mod.width, uid))
+      let up = makeUpper(mod.width, uid)
+      // Бұрыштық мойканың үстінде — бұрыштық үстіңгі: соқыр жағы да бұрышта.
+      if (mod.kind === 'cornerSink') up = { ...up, frontPanel: { width: CORNER_UPPER_BLIND, side: 'left' } }
+      cabinets.push(up)
       placements.push({ cabinetId: uid, wall: 'north', offset: cursor, elevation: upperElev })
     }
     cursor += mod.width
@@ -484,7 +531,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   // Шығыстың offset 0-і ОҢТҮСТІК-ШЫҒЫС бұрышында, ал бізге СОЛТҮСТІК-ШЫҒЫС
   // керек: бұрыштан өлшенген `q`-ды offset-ке ауыстырамыз (depth − q − width).
   // Қатар мойка ТЕРЕҢДІГІНЕН басталады, әйтпесе бұрышта A-мен соқтығысады.
-  let q = corner ? lowerD : 0
+  let q = corner ? depthAtStart : 0
   runB.forEach((mod) => {
     const cab = build(mod.kind === 'tall' ? { kind: 'baseDoors', width: mod.width } : mod, 'b')
     cabinets.push(cab)
@@ -500,7 +547,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   // ── Үшінші қабырға (батыс, тек П-пішін) ──────────────────────────────────
   // Батыстың offset 0-і СОЛТҮСТІК-БАТЫС бұрышында, оңтүстікке қарай өседі.
   // Қатар мойка ТЕРЕҢДІГІНЕН басталады (солтүстікпен соқтығыспас үшін).
-  let wOff = lowerD
+  let wOff = depthAtEnd
   runC.forEach((mod) => {
     const cab = build(mod.kind === 'tall' ? { kind: 'baseDoors', width: mod.width } : mod, 'c')
     cabinets.push(cab)

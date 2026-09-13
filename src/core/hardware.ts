@@ -316,19 +316,28 @@ export function generateHardware(
     const surface = config.height + baseHeight + (config.worktop ? (worktopMat?.thickness ?? t) : 0)
     const overhang = config.worktop?.overhangFront ?? 0
     const hob = fixtures.find((f): f is Extract<CabinetFixture, { kind: 'hob' }> => f.kind === 'hob')
+    /*
+     * Техника корпустың АШЫҚ бөлігінің ортасында. Бұрыштық тумбада (фронт.
+     * панельмен, qdesign «Мойка угловая») бір жағы соқыр: мойка бүкіл 1450 мм
+     * енінің ортасына емес, есік жақтағы бөліктің ортасына тұрады — әйтпесе
+     * соқыр бұрышқа, көрші қатардың тумбасының артына кетер еді.
+     */
+    const blind = config.frontPanel?.width ?? 0
+    const openWidth = config.width - blind
+    const openCenter = config.frontPanel?.side === 'left' ? blind + openWidth / 2 : openWidth / 2
 
     fixtures.forEach((fixture, i) => {
       const id: FixtureVisual = fixture.kind === 'hob'
         ? (fixture.fuel === 'gas' ? 'hobGas' : 'hobElectric')
         : fixture.kind
       const model = findFixture(id)
-      if (config.width < model.minWidth) {
+      if (openWidth < model.minWidth) {
         throw new ConfigValidationError(
-          `fixtures[${i}]`, `${model.name}: модуль ${config.width} мм`, `≥ ${model.minWidth} мм`,
+          `fixtures[${i}]`, `${model.name}: модуль ${openWidth} мм`, `≥ ${model.minWidth} мм`,
         )
       }
       // Модульге сыйғызамыз: екі жағынан кемінде 20 мм қалады.
-      const width = Math.min(model.width, config.width - 40)
+      const width = Math.min(model.width, openWidth - 40)
       const common = {
         kind: 'appliance' as const,
         appliance: id,
@@ -345,7 +354,7 @@ export function generateHardware(
         const bottom = surface + HOOD_CLEARANCE[hob ? hob.fuel : 'gas']
         out.push({
           ...common,
-          position: { x: config.width / 2, y: bottom + model.height / 2, z: config.depth - depth / 2 },
+          position: { x: openCenter, y:bottom + model.height / 2, z: config.depth - depth / 2 },
           size: { x: width, y: model.height, z: depth },
         })
         return

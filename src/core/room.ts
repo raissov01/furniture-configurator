@@ -338,6 +338,35 @@ export function validatePlacements(
     }
   }
 
+  /*
+   * ⚠ ҚАБЫРҒАЛАР ТҮЙІСКЕН жердегі қабаттасу (бұрыш).
+   *
+   * Жоғарыдағы тексеру тек БІР қабырғаны көреді. Сондықтан Г-кухняның
+   * бұрышында солтүстік қатардың пеналы (тереңдігі 560) шығыс қатардың
+   * тумбасына 60 мм кіріп тұрса да «қате жоқ» дейтін — генератордың тесті
+   * жасыл болып, коллизия байқалмай жүрді (09-13). Енді ӘРТҮРЛІ қабырғадағы
+   * жұптар нақты төртбұрыштармен (SAT) салыстырылады; жанасу қиылысу емес.
+   */
+  for (let i = 0; i < entries.length; i += 1) {
+    for (let j = i + 1; j < entries.length; j += 1) {
+      const a = entries[i]!
+      const b = entries[j]!
+      if (a.placement.wall === b.placement.wall) continue
+      if (!verticalOverlap(a, b)) continue
+      const hit = rectanglesOverlap(
+        placementCorners(room, a.cabinet, a.placement),
+        placementCorners(room, b.cabinet, b.placement),
+      )
+      if (hit) {
+        issues.push({
+          cabinetId: b.cabinet.id,
+          field: 'overlap',
+          message: `пересекается с «${a.cabinet.name}» в углу`,
+        })
+      }
+    }
+  }
+
   return issues
 }
 

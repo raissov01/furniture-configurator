@@ -124,6 +124,25 @@ describe('жоспарды тексеру', () => {
     expect(validatePlacements(room, [entry('a', 'south', 0), entry('b', 'north', 0)])).toEqual([])
   })
 
+  /*
+   * БҰРЫШ (09-13): бұрын тек бір қабырға тексерілетін, сондықтан көрші
+   * қабырғадағы шкафқа кіріп тұрған модуль «қате жоқ» деп өтетін.
+   */
+  it('бұрыштағы қабаттасуды табады, ал жанасуды — жоқ', () => {
+    const deep = (id: string, wall: WallId, offset: number, depth: number) => ({
+      cabinet: { ...cabinet, id, name: id, width: 600, depth },
+      placement: { cabinetId: id, wall, offset },
+    })
+    // Солтүстік offset 0 — солтүстік-шығыс бұрышы; шығыс қатардың бұрыштағы
+    // модулі (offset = depth − q − width) дәл одан кейін басталады.
+    const eastAt = (q: number) => room.depth - q - 600
+    // Пенал 560 тереңдікте, көршісі 500-ден басталса — 60 мм кіреді.
+    const hit = validatePlacements(room, [deep('pen', 'north', 0, 560), deep('base', 'east', eastAt(500), 500)])
+    expect(hit.some((i) => i.field === 'overlap' && i.message.includes('в углу'))).toBe(true)
+    // Көршісі тура 560-тан басталса — тек жанасады, қате емес.
+    expect(validatePlacements(room, [deep('pen', 'north', 0, 560), deep('base', 'east', eastAt(560), 500)])).toEqual([])
+  })
+
   it('қабырғадан асып кетсе айтады', () => {
     const issues = validatePlacements(room, [entry('a', 'south', 3800, 600)])
     expect(issues.some((i) => i.field === 'width')).toBe(true)
