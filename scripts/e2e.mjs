@@ -103,13 +103,17 @@ async function test(name, fn) {
   }
   const last = results[results.length - 1]
   if (!last.ok && snapshot) {
-    const file = await snapshot(results.length)
+    const file = await (current.shot ?? snapshot(results.length))
     if (file) last.failed.push({ message: `скриншот: ${file}` })
   }
 }
 
 function check(ok, message) {
   current.checks.push({ ok: Boolean(ok), message })
+  // Бірінші құлаған тексерудің ШАМАСЫНДАҒЫ экран: тесттің соңында терезе
+  // жабылып қалады да, «неге таппады» көрінбей кетеді. ⚠ Кадр асинхронды —
+  // келесі 1–2 әрекет үлгеріп кетуі мүмкін, дәл сәт емес.
+  if (!ok && snapshot && !current.shot) current.shot = snapshot(results.length + 1)
 }
 
 // ── Көмекшілер ───────────────────────────────────────────────────────────────
@@ -690,13 +694,26 @@ async function run() {
 
     // ⚠ Кідіріс АЛЫС серверге есептелген: жоба сақталуы жергілікті машинада
     // 300 мс, ал VPS-те (тіркелу + профиль + тізім) секундтарға созылады.
+    // Тіркелгеннен кейін профиль мен тізім жүктелгенше батырма `disabled`:
+    // оны басу үнсіз өтеді де, сұраныс мүлде кетпейді. Белсенді болғанын күтеміз.
+    check(
+      await h.until(`[...document.querySelectorAll('button')]
+        .some((b) => b.textContent.trim() === 'Сохранить текущий' && !b.disabled)`),
+      '«Сохранить текущий» белсенді',
+    )
     check(await h.clickText('Сохранить текущий', 800), 'жоба сақталды')
     check(
       await h.until(`!document.body.innerText.includes('Пока пусто')`),
       'жоба тізімде пайда болды',
     )
 
-    check(await h.clickText('Выйти', 1500), 'шығу')
+    check(await h.clickText('Выйти', 300), 'шығу')
+    // Шығу — сервер сұранысы, содан кейін ғана терезе «Вход/Регистрация»
+    // табына ауысады. Тіркелген 1,5 с дев-серверде жетпей қалатын.
+    check(
+      await h.until(`[...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Вход')`),
+      'шыққан экран көрінді',
+    )
     check(await h.clickText('Вход', 600), 'кіру табы')
     await fill('Почта', email)
     await fill('Пароль', 'password123')
@@ -720,7 +737,15 @@ async function run() {
   await test('Команда: шақыру, қосылу, цехтан шығару', async () => {
     await h.closeModals()
     check(await h.clickText('Аккаунт', 1200), 'аккаунт терезесі ашылды')
-    check(await h.clickText('Пригласить', 2000), 'шақыру жасалды')
+    // «Пригласить» те `disabled={busy}`: кіргеннен кейін профиль мен тізім
+    // жүктелгенше басу үнсіз өтеді. Белсенді болғанын, сосын сілтемені күтеміз.
+    check(
+      await h.until(`[...document.querySelectorAll('button')]
+        .some((b) => b.textContent.trim() === 'Пригласить' && !b.disabled)`),
+      '«Пригласить» белсенді',
+    )
+    check(await h.clickText('Пригласить', 300), 'шақыру жасалды')
+    await h.until(`[...document.querySelectorAll('input[readonly]')].some((x) => x.value.includes('invite='))`)
     const link = await h.evaluate(`(() => {
       const i = [...document.querySelectorAll('input[readonly]')].find((x) => x.value.includes('invite='))
       return i ? i.value : null
@@ -768,12 +793,20 @@ async function run() {
     check(JSON.stringify(labels).includes('Уйти'), `өз жолында «Уйти» (${JSON.stringify(labels)})`)
 
     // Иесі қайта кіріп, жұмысшыны шығарады: екі басу — сұрақ, сосын әрекет.
-    check(await h.clickText('Выйти', 1500), 'жұмысшы шықты')
+    check(await h.clickText('Выйти', 300), 'жұмысшы шықты')
+    await h.until(`[...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Вход')`)
     await h.clickText('Вход', 600)
     await fill('Почта', ownerEmail)
     await fill('Пароль', 'password123')
-    await h.wait(400)
-    check(await h.clickText('Войти', 800), 'иесі қайта кірді')
+    // «Войти» тек `mode === 'login'` кезінде бар. Шақырумен ашылған бетте
+    // терезе «Регистрация»-дан басталады, сондықтан таб ауысқанын күтеміз;
+    // келмесе — терезеде не тұрғаны хабарда көрінсін.
+    const loginReady = await h.until(`[...document.querySelectorAll('button')]
+      .some((b) => b.textContent.trim() === 'Войти')`, 8000)
+    const loginModal = loginReady ? '' : await h.evaluate(
+      `(document.querySelector('.fixed.inset-0.z-50')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 200)`,
+    )
+    check(await h.clickText('Войти', 800), `иесі қайта кірді${loginModal ? ` (терезеде: ${loginModal})` : ''}`)
     /*
      * Батырма ПАЙДА БОЛҒАНЫ жеткіліксіз: сұраныстар бітпей тұрғанда ол әлі
      * `disabled`, ал өшірулі батырманы басу үнсіз өтеді де, тест жалған
@@ -782,7 +815,7 @@ async function run() {
     check(
       await h.until(`[...document.querySelectorAll('button')]
         .some((b) => b.textContent.trim() === 'Убрать' && !b.disabled)`),
-      'иесі қайта кірді',
+      '«Убрать» белсенді',
     )
     check(await h.clickText('Убрать', 600), 'шығару сұралды')
     check(await h.clickText('Точно?', 800), 'шығару расталды')
