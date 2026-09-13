@@ -774,12 +774,15 @@ function Ceiling({ room }: { room: Room }) {
  * деталировкаға да, раскройға да кірмейді.
  */
 function Silhouette({ height, x, z }: { height: number; x: number; z: number }) {
+  const invalidate = useThree((s) => s.invalidate)
   const texture = useMemo(() => {
     const loader = new TextureLoader()
-    const t = loader.load(silhouetteDataUri(height, '#141a22'))
+    // Жүктеу асинхронды: `demand` кадр режимінде сурет келгенде кадрды өзіміз
+    // сұраймыз, әйтпесе силуэт тінтуір қозғалғанша бос тақта болып тұрар еді.
+    const t = loader.load(silhouetteDataUri(height, '#141a22'), () => invalidate())
     t.colorSpace = SRGBColorSpace
     return t
-  }, [height])
+  }, [height, invalidate])
   const size = silhouetteSize(height)
   const ref = useRef<Mesh>(null)
 
@@ -925,6 +928,18 @@ export default function Scene({
   return (
     <Canvas
       shadows
+      /*
+       * КАДР ТЕК КЕРЕК КЕЗДЕ (`demand`). Бұрын әдепкі `always` еді: сахна
+       * ештеңе өзгермесе де секундына 60 рет қайта салынатын. Қасиеттер
+       * панелі кеңейген соң (09-13) 3D-нің ауданы екі есе өсті де, GPU-сыз
+       * ноутбукте (және headless Chrome-да) негізгі ағын үнемі бос болмайтын:
+       * әр әрекет 2–3 с кешігетін, e2e жалған құлайтын.
+       *
+       * `demand`-та R3F өзі кадр сұрайды: пропс өзгергенде (есік, габарит,
+       * разнести), OrbitControls қозғалғанда, CameraRig-тің `invalidate()`-інде.
+       * Тек ПРОГУЛКА (WASD әр кадрда) мен VR (цикл гарнитурада) — `always`.
+       */
+      frameloop={walk || vr ? 'always' : 'demand'}
       /*
        * Сапа адамның баптауынан келеді (`lib/appearance.ts`): 2× пиксель
        * тығыздығы 4 есе көп пиксель деген сөз, ал әлсіз ноутбукте дәл сол
