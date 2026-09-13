@@ -13,7 +13,8 @@ import {
   Environment, Grid, Lightformer, OrbitControls, OrthographicCamera, PointerLockControls,
 } from '@react-three/drei'
 import { EffectComposer, N8AO } from '@react-three/postprocessing'
-import { NeutralToneMapping, Object3D, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3 } from 'three'
+import { Euler, NeutralToneMapping, Object3D, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3 } from 'three'
+import { isTouchDevice, walkInput } from '@/lib/walkInput'
 import type { Group, Mesh } from 'three'
 import { XR, XROrigin, useXRControllerLocomotion } from '@react-three/xr'
 import { getXrStore } from '@/lib/xr'
@@ -99,8 +100,15 @@ function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [n
  * ⚠ OrbitControls-пен ҚАТАР болмауы керек: екеуі де `makeDefault`, сондықтан
  * ол өшкенде ғана осы қосылады (`walk` күйі шешеді).
  */
+/** Телефонда саусақпен қарау сезімталдығы: радиан / px. */
+const LOOK_SPEED = 0.005
+/** Осыдан аз жылжыған саусақ — ТҮРТУ (есік ашу), көп — қарау, px. */
+const TAP_SLOP = 10
+
 function WalkControls({ room }: { room: { width: number; depth: number } }) {
   const { camera, scene, gl } = useThree()
+  // Телефон/планшет: pointer-lock жоқ — қарау саусақпен, жүру джойстикпен.
+  const touch = useMemo(isTouchDevice, [])
   const keys = useRef<Record<string, boolean>>({})
   const stepTimer = useRef(0)
   const audio = useRef<{ ctx: AudioContext } | null>(null)
@@ -120,12 +128,13 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
       }
     }
     const up = (e: KeyboardEvent) => { keys.current[e.code] = false }
-    // БАСЫП АШУ: тінтуір бекітілген кезде экран ортасынан сәуле жіберіп,
-    // тінтуір астындағы КОРПУСТЫ табамыз да, тек соны ашамыз/жабамыз.
-    const click = () => {
-      if (!document.pointerLockElement) return
+    /*
+     * БАСЫП АШУ: сәуле жіберіп, тиген ЕСІКТІ (не корпусты) ашамыз/жабамыз.
+     * Тінтуірде — экран ортасынан (прицел), телефонда — саусақ тиген нүктеден.
+     */
+    const openAt = (ndc: Vector2) => {
       const ray = new Raycaster()
-      ray.setFromCamera(new Vector2(0, 0), camera)
+      ray.setFromCamera(ndc, camera)
       for (const hit of ray.intersectObjects(scene.children, true)) {
         let obj: Object3D | null = hit.object
         while (obj) {
@@ -137,15 +146,62 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
         }
       }
     }
+    const click = () => {
+      if (!document.pointerLockElement) return
+      openAt(new Vector2(0, 0))
+    }
+    /*
+     * ТЕЛЕФОН: саусақпен СҮЙРЕУ — жан-жаққа қарау, ТҮРТУ (жылжымай) — тиген
+     * есікті ашу. Жүру — джойстикпен (`walkInput`, useFrame-де).
+     */
+    const el = gl.domElement
+    const euler = new Euler(0, 0, 0, 'YXZ')
+    let last: { x: number; y: number; id: number } | null = null
+    let travelled = 0
+    const pdown = (e: PointerEvent) => {
+      if (!touch) return
+      last = { x: e.clientX, y: e.clientY, id: e.pointerId }
+      travelled = 0
+    }
+    const pmove = (e: PointerEvent) => {
+      if (!touch || !last || e.pointerId !== last.id) return
+      const dx = e.clientX - last.x
+      const dy = e.clientY - last.y
+      last = { ...last, x: e.clientX, y: e.clientY }
+      travelled += Math.abs(dx) + Math.abs(dy)
+      euler.setFromQuaternion(camera.quaternion)
+      euler.y -= dx * LOOK_SPEED
+      euler.x = Math.max(-1.2, Math.min(1.2, euler.x - dy * LOOK_SPEED))
+      camera.quaternion.setFromEuler(euler)
+    }
+    const pup = (e: PointerEvent) => {
+      if (!touch || !last || e.pointerId !== last.id) return
+      if (travelled < TAP_SLOP) {
+        const r = el.getBoundingClientRect()
+        openAt(new Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1))
+      }
+      last = null
+    }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
-    gl.domElement.addEventListener('click', click)
+    el.addEventListener('click', click)
+    el.addEventListener('pointerdown', pdown)
+    el.addEventListener('pointermove', pmove)
+    el.addEventListener('pointerup', pup)
+    el.addEventListener('pointercancel', pup)
+    // Телефонда сүйреуді браузер беттің айналуына алмауы үшін.
+    if (touch) el.style.touchAction = 'none'
     return () => {
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
-      gl.domElement.removeEventListener('click', click)
+      el.removeEventListener('click', click)
+      el.removeEventListener('pointerdown', pdown)
+      el.removeEventListener('pointermove', pmove)
+      el.removeEventListener('pointerup', pup)
+      el.removeEventListener('pointercancel', pup)
+      el.style.touchAction = ''
     }
-  }, [camera, scene, gl])
+  }, [camera, scene, gl, touch])
 
   /** Аяқ дыбысы: сүзілген шу серпіні (файлсыз, WebAudio). */
   const footstep = () => {
@@ -176,15 +232,23 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
     if (keys.current['KeyS'] || keys.current['ArrowDown']) move.sub(dir)
     if (keys.current['KeyD'] || keys.current['ArrowRight']) move.add(right)
     if (keys.current['KeyA'] || keys.current['ArrowLeft']) move.sub(right)
-    const moving = move.lengthSq() > 0
-    if (moving) camera.position.add(move.normalize().multiplyScalar(speed))
+    // Телефонның джойстигі: жылдамдық — ауытқуына қарай (ақырын итерсе, ақырын).
+    const stick = walkInput.move
+    const stickLen = Math.min(1, Math.hypot(stick.x, stick.y))
+    const moving = move.lengthSq() > 0 || stickLen > 0.05
+    if (move.lengthSq() > 0) {
+      camera.position.add(move.normalize().multiplyScalar(speed))
+    } else if (stickLen > 0.05) {
+      const step = dir.clone().multiplyScalar(stick.y).add(right.clone().multiplyScalar(stick.x))
+      camera.position.add(step.normalize().multiplyScalar(speed * stickLen))
+    }
     // Көз биіктігі тұрақты, бөлмеден шықпайды (0.3 м шетте тоқтайды).
     camera.position.y = 1.6
     const inside = clampInsideRoom(room, { x: camera.position.x * 1000, z: camera.position.z * 1000 })
     camera.position.x = inside.x / 1000
     camera.position.z = inside.z / 1000
     // Қадам дыбысы: жүргенде әр ~0.42 с сайын.
-    if (moving && document.pointerLockElement) {
+    if (moving && (document.pointerLockElement || touch)) {
       stepTimer.current += dt
       if (stepTimer.current >= 0.42) { stepTimer.current = 0; footstep() }
     } else {
@@ -198,7 +262,8 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
    * келген батырманы (Выйти, Вид, мәзір) басқанда қайта прогулкаға кіріп
    * кететін (пайдаланушы, 09-13).
    */
-  return <PointerLockControls makeDefault selector={`#${SCENE_CANVAS_ID} canvas`} />
+  // Телефонда pointer-lock жоқ: қарау — саусақпен (жоғарыдағы pointer оқиғалары).
+  return touch ? null : <PointerLockControls makeDefault selector={`#${SCENE_CANVAS_ID} canvas`} />
 }
 
 /** 3D-холсттың контейнері: прогулканың тінтуір бекітуі тек осыны басқанда. */

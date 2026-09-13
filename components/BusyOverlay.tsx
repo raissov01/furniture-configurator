@@ -13,11 +13,16 @@
 import { t as tr } from '@/lib/i18n'
 import { useConfigurator } from '@/store/configurator'
 
-export function Spinner({ label }: { label: string }) {
+/** `onDark` — қара фондағы бет үшін (клиенттің /view беті). */
+export function Spinner({ label, onDark = false }: { label: string; onDark?: boolean }) {
   return (
     <div role="status" aria-live="polite" className="flex flex-col items-center gap-3">
-      <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-neutral-300 border-t-neutral-900 dark:border-neutral-700 dark:border-t-neutral-100" />
-      <span className="text-sm text-neutral-700 dark:text-neutral-200">{label}</span>
+      <span
+        className={onDark
+          ? 'h-9 w-9 animate-spin rounded-full border-[3px] border-neutral-700 border-t-neutral-100'
+          : 'h-9 w-9 animate-spin rounded-full border-[3px] border-neutral-300 border-t-neutral-900 dark:border-neutral-700 dark:border-t-neutral-100'}
+      />
+      <span className={onDark ? 'text-sm text-neutral-300' : 'text-sm text-neutral-700 dark:text-neutral-200'}>{label}</span>
     </div>
   )
 }

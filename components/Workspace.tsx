@@ -35,6 +35,8 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { ModuleList } from '@/components/ModuleList'
 import { BusyOverlay, Spinner } from '@/components/BusyOverlay'
+import { TouchJoystick } from '@/components/TouchJoystick'
+import { isTouchDevice } from '@/lib/walkInput'
 import { usePanels } from '@/lib/usePanels'
 import { useSceneItems } from '@/lib/useSceneItems'
 import {
@@ -130,6 +132,8 @@ export function Workspace() {
   const setSelected = useConfigurator((s) => s.setSelected)
   const openPanels = useConfigurator((s) => s.openPanels)
   const togglePanelOpen = useConfigurator((s) => s.togglePanelOpen)
+  // Телефон/планшет: прогулкада джойстик пен саусақпен қарау.
+  const touch = useMemo(isTouchDevice, [])
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
   const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
@@ -541,8 +545,11 @@ export function Workspace() {
           </div>
           {walk ? (
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
-              <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/85 px-4 py-2 text-xs text-white shadow-lg backdrop-blur">
-                <span>{tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
+              {/* Жалпақ: тұтас түс, blur жоқ (пайдаланушының дизайн ережесі). */}
+              <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/90 px-4 py-2 text-xs text-white">
+                <span>{touch
+                  ? tr('Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть')
+                  : tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
                 <button
                   type="button"
                   className="rounded-full bg-white/15 px-2.5 py-1 hover:bg-white/25"
@@ -553,6 +560,8 @@ export function Workspace() {
               </div>
             </div>
           ) : null}
+          {/* Телефонда прогулканың жүрісі — джойстик (перне жоқ). */}
+          {walk && touch ? <TouchJoystick /> : null}
         </main>
         <section
           className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72')}

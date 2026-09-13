@@ -18,9 +18,20 @@ import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 import { useSceneItems } from '@/lib/useSceneItems'
 import { Button } from '@/components/ui'
+import { Spinner } from '@/components/BusyOverlay'
+import { TouchJoystick } from '@/components/TouchJoystick'
+import { isTouchDevice } from '@/lib/walkInput'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
-const Scene = dynamic(() => import('@/components/Scene'), { ssr: false })
+// Жүктелгенше «жүктелуде» шеңбері — клиент бет қатып қалды деп ойламасын.
+const Scene = dynamic(() => import('@/components/Scene'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center">
+      <Spinner label={tr('Загрузка 3D…')} onDark />
+    </div>
+  ),
+})
 
 /** Клиентке керегі осы үшеуі: жалпы көрініс, фас және бөлме. */
 const PRESETS: { value: CameraPreset; label: string }[] = [
@@ -68,7 +79,7 @@ function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; messa
     <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-200">
       <div className="max-w-md space-y-3 text-center">
         {state.kind === 'loading' ? (
-          <p className="text-sm text-neutral-400">{tr('Открываем проект…')}</p>
+          <Spinner label={tr('Открываем проект…')} onDark />
         ) : (
           <>
             <h1 className="text-lg font-semibold">{tr('Ссылка не открылась')}</h1>
@@ -95,6 +106,10 @@ function Viewer({
   const activeId = useConfigurator((s) => s.activeId)
   const openness = useConfigurator((s) => s.openness)
   const setOpenness = useConfigurator((s) => s.setOpenness)
+  // ПРОГУЛКА клиентке де (qdesign-да клиент сілтемемен/кодпен жүре алады).
+  const walk = useConfigurator((s) => s.walk)
+  const setWalk = useConfigurator((s) => s.setWalk)
+  const touch = useMemo(isTouchDevice, [])
 
   const items = useSceneItems(room, cabinets, placements, catalog)
 
@@ -110,7 +125,8 @@ function Viewer({
         <span className="text-xs text-neutral-500">
           {cabinets.length === 1 ? '1 корпус' : `${cabinets.length} корпуса`}
         </span>
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex flex-wrap items-center gap-1">
+          <Button active={walk} onClick={() => setWalk(!walk)}>{tr('Прогулка')}</Button>
           {/* Клиент үшін ЕҢ түсінікті батырма: ашылған есік пен шығарылған
               ящик жиһаздың ішін де, өлшемін де сөзсіз түсіндіреді. */}
           <Button active={openness > 0} onClick={() => setOpenness(openness > 0 ? 0 : 1)}>
@@ -128,6 +144,25 @@ function Viewer({
         <div className="absolute inset-0">
           <Scene items={items} room={room} activeId={activeId} catalog={catalog} />
         </div>
+        {walk ? (
+          <>
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-3">
+              <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/90 px-4 py-2 text-xs text-white">
+                <span>{touch
+                  ? tr('Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть')
+                  : tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
+                <button
+                  type="button"
+                  className="rounded-full border border-white/40 px-2.5 py-1 hover:bg-white/15"
+                  onClick={() => setWalk(false)}
+                >
+                  {tr('Выйти')}
+                </button>
+              </div>
+            </div>
+            {touch ? <TouchJoystick /> : null}
+          </>
+        ) : null}
       </div>
 
       <section className="max-h-[30vh] overflow-auto border-t border-neutral-800 px-4 py-3">

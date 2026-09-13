@@ -655,6 +655,9 @@ export const en: Record<string, string> = {
   'Собираем проект…': 'Building the project…',
   'Открыть дверцу': 'Open door',
   'Закрыть дверцу': 'Close door',
+  'Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть':
+    'Joystick — walk · drag — look around · tap a door — open',
+  'Джойстик: идти': 'Joystick: walk',
   'Модуль': 'Module',
   'Язык': 'Language',
   'навес': 'wall',

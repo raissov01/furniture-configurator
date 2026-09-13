@@ -659,6 +659,9 @@ export const uz: Record<string, string> = {
   'Собираем проект…': 'Loyiha yig‘ilmoqda…',
   'Открыть дверцу': 'Eshikni ochish',
   'Закрыть дверцу': 'Eshikni yopish',
+  'Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть':
+    'Joystik — yurish · barmoq bilan suring — qarash · eshikka teging — ochish',
+  'Джойстик: идти': 'Joystik: yurish',
   'Модуль': 'Modul',
   'Язык': 'Til',
   'навес': 'osma',
