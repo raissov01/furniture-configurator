@@ -60,6 +60,14 @@ const FLAP_OPEN_ANGLE = (75 * Math.PI) / 180
 
 const MM = 0.001
 
+/**
+ * Модуль 3D-де сүйреліп жатыр ма. Сол кезде камера модульге ҚАЙТА ҚАРАМАЙДЫ:
+ * әйтпесе ол модульдің соңынан еріп, курсор модульден тағы алыстайды да,
+ * модуль әр қадамда одан әрі лақтырылады (кері байланыс). Сүйреу біткен соң
+ * камера орнында қалады — qdesign-да да солай, көрініс секірмейді.
+ */
+const moduleDrag = { active: false }
+
 export type SceneItem = {
   cabinet: CabinetConfig
   panels: Panel[]
@@ -407,7 +415,10 @@ function CameraRig({
     invalidate()
   }, [preset, camera, controls, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, contentKey, fitNonce])
 
-  useEffect(() => { fit() }, [fit])
+  useEffect(() => {
+    if (moduleDrag.active) return
+    fit()
+  }, [fit])
 
   /*
    * Сахнаның мазмұны (жоба) КЕЙІНІРЕК келуі мүмкін — сілтемемен ашылған бетте
@@ -487,7 +498,7 @@ function CabinetGroup({
     [item.panels, item.cabinet.id, cabinetCount],
   )
   const canDrag = active && !walk && !vr && selected !== null && pids.has(selected)
-  const drag = useRef<{ pointerId: number; plane: Plane; grab: number } | null>(null)
+  const drag = useRef<{ pointerId: number; plane: Plane; grab: number; moved: boolean } | null>(null)
 
   // Қолмен ұстауға болатынын курсор айтады.
   const grabbable = canDrag && hovered !== null && pids.has(hovered)
@@ -505,6 +516,7 @@ function CabinetGroup({
   const endDrag = () => {
     if (!drag.current) return
     drag.current = null
+    moduleDrag.active = false
     if (controls) controls.enabled = true
     gl.domElement.style.cursor = grabbable ? 'grab' : ''
   }
@@ -525,12 +537,23 @@ function CabinetGroup({
         const placement = useConfigurator.getState().placements.find((p) => p.cabinetId === item.cabinet.id)
         if (!placement) return
         e.stopPropagation()
-        // Жазықтық — ұстаған нүктенің биіктігінде: модуль курсордан қалмай жүреді.
-        const plane = new Plane(new Vector3(0, 1, 0), -e.point.y)
-        drag.current = { pointerId: e.pointerId, plane, grab: placement.offset - along(e.point, wallById(room, placement.wall)) }
+        const wall = wallById(room, placement.wall)
+        /*
+         * Жазықтық ұстаған нүкте арқылы өтеді. ⚠ Тек көлденең (еден) жазықтығы
+         * камера адам бойында тұрғанда ЖАРАМАЙДЫ: сәуле оны өте жатық қиып,
+         * курсордың аз қозғалысы модульді метрлерге лақтыратын (160 px → 2840 мм).
+         * Сондықтан камераға көбірек қарайтыны алынады: қабырғаға параллель тік
+         * жазықтық (модульдің алды) не көлденең жазықтық (жоғарыдан қарағанда).
+         */
+        const facing = new Vector3(wall.inward.x, 0, wall.inward.z)
+        const up = new Vector3(0, 1, 0)
+        const normal = Math.abs(e.ray.direction.dot(facing)) >= Math.abs(e.ray.direction.dot(up)) ? facing : up
+        const plane = new Plane().setFromNormalAndCoplanarPoint(normal, e.point)
+        drag.current = { pointerId: e.pointerId, plane, grab: placement.offset - along(e.point, wall), moved: false }
         // OrbitControls оқиғаны бізден БҰРЫН алады, бірақ әр қозғалыста `enabled`-ті
         // тексереді — сондықтан камера бір пиксель де бұрылмайды.
         if (controls) controls.enabled = false
+        moduleDrag.active = true
         gl.domElement.style.cursor = 'grabbing'
         ;(e.target as unknown as Element).setPointerCapture(e.pointerId)
       }}
@@ -549,7 +572,10 @@ function CabinetGroup({
           return other ? [placementSpan(other, p)] : []
         })
         const offset = snapOffset(d.grab + along(hit, wall), item.cabinet.width, wall.length, neighbours)
-        if (offset !== placement.offset) movePlacement(item.cabinet.id, { offset })
+        if (offset === placement.offset) return
+        // Бір сүйреу — бір undo қадамы, қанша баяу сүйресе де (coalesce терезесі 500 мс).
+        movePlacement(item.cabinet.id, { offset }, { continueGesture: d.moved })
+        d.moved = true
       }}
       onPointerUp={(e) => {
         if (!drag.current) return

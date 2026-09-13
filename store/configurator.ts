@@ -266,7 +266,15 @@ type State = Snapshot & {
   duplicateCabinet(id: string): void
   mirrorCabinet(id: string): void
   removeCabinet(id: string): void
-  movePlacement(cabinetId: string, patch: Partial<Omit<Placement, 'cabinetId'>>): void
+  /**
+   * `continueGesture` — 3D-де сүйреудің екінші және кейінгі қадамдары: олар
+   * уақытқа қарамай бір undo қадамына қосылады (сүйреу — бір қимыл).
+   */
+  movePlacement(
+    cabinetId: string,
+    patch: Partial<Omit<Placement, 'cabinetId'>>,
+    opts?: { continueGesture?: boolean },
+  ): void
 
   undo(): void
   redo(): void
@@ -858,11 +866,11 @@ export const useConfigurator = create<State>((set, get) => ({
     })
   },
 
-  movePlacement(cabinetId, patch) {
+  movePlacement(cabinetId, patch, opts) {
     const s = get()
     const now = Date.now()
     const key = `placement:${cabinetId}`
-    const coalesce = s.lastEditKey === key && now - s.lastEditAt < COALESCE_MS
+    const coalesce = opts?.continueGesture === true || (s.lastEditKey === key && now - s.lastEditAt < COALESCE_MS)
     set({
       placements: s.placements.map((p) => (p.cabinetId === cabinetId ? { ...p, ...patch } : p)),
       past: coalesce ? s.past : [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),

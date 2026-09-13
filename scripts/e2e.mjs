@@ -672,18 +672,21 @@ async function run() {
     await mouse('mouseReleased', box.x, box.y, 0)
     check(await h.until(`document.body.innerText.includes('Рез · цех:')`, 5000), 'деталь таңдалды')
     const before = await offset()
-    check(before !== null, 'оң панельде «Смещение» бар')
+    check(before !== null, `оң панельде «Смещение» бар: ${before}`)
 
-    // Сүйреу: 20 қадам × 8 px, әр қадам 500 мс-тан жиі — undo бір қадам болуы керек.
+    // Сүйреу: 5 қадам × 16 px. Swiftshader-де әр кадр ~5 с, яғни қадамдар 500 мс
+    // coalesce терезесінен сирек — undo бәрібір БІР қадам болуы керек (бір қимыл).
     await mouse('mousePressed', box.x, box.y, 1)
-    for (let i = 1; i <= 20; i += 1) {
-      await mouse('mouseMoved', box.x + i * 8, box.y, 1)
+    for (let i = 1; i <= 5; i += 1) {
+      await mouse('mouseMoved', box.x - i * 16, box.y, 1)
       await h.wait(40)
     }
-    await mouse('mouseReleased', box.x + 160, box.y, 0)
-    await h.wait(600)
+    await mouse('mouseReleased', box.x - 80, box.y, 0)
+    await h.wait(1500)
     const after = await offset()
     check(after !== null && after !== before, `модуль жылжыды: ${before} → ${after}`)
+    // 80 px — қабырға бойымен бірнеше жүз мм. Метрлер — жазықтық/камера ақауы.
+    check(Math.abs(Number(after) - Number(before)) <= 1000, `курсордан озып кетпеді: ${before} → ${after}`)
     check(Number.isInteger(Number(after)), `орны бүтін мм: ${after}`)
     check(await h.until(`document.body.innerText.includes('Рез · цех:')`, 2000), 'сүйреуден кейін таңдау қалды')
 
