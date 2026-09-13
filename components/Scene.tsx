@@ -105,7 +105,13 @@ const LOOK_SPEED = 0.005
 /** Осыдан аз жылжыған саусақ — ТҮРТУ (есік ашу), көп — қарау, px. */
 const TAP_SLOP = 10
 
-function WalkControls({ room }: { room: { width: number; depth: number } }) {
+function WalkControls({
+  room, focus,
+}: {
+  room: { width: number; depth: number }
+  /** Прогулка басталғанда қарайтын нүкте (жиһаздың ортасы), мм. */
+  focus: { x: number; z: number }
+}) {
   const { camera, scene, gl } = useThree()
   // Телефон/планшет: pointer-lock жоқ — қарау саусақпен, жүру джойстикпен.
   const touch = useMemo(isTouchDevice, [])
@@ -114,9 +120,19 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
   const audio = useRef<{ ctx: AudioContext } | null>(null)
 
   // Бөлме ішіне, көз биіктігіне қою (бір рет).
+  /*
+   * ЖИҺАЗҒА ҚАРАП бастау. ⚠ Бұрын солтүстік қабырғаның ОРТАСЫНА қарайтын:
+   * бұрыштағы шкаф телефонның тар экранына кірмей, клиент бос қабырғаны
+   * көретін (09-13). Енді — жобаның ортасына (`view.target`), көз деңгейінен
+   * сәл төмен (жиһаз еденде тұрады).
+   */
+  const fx = focus.x
+  const fz = focus.z
   useEffect(() => {
     camera.position.set(room.width / 1000 / 2, 1.6, room.depth / 1000 - 0.6)
-    camera.lookAt(room.width / 1000 / 2, 1.4, 0)
+    camera.lookAt(fx / 1000, 1.1, fz / 1000)
+    // Бір рет, кіргенде: `fx/fz` әдейі тізімде жоқ — жүріп жүргенде
+    // корпус таңдалса да, камера адамның қарап тұрған жерінен бұрылмауы керек.
   }, [camera, room.width, room.depth])
 
   useEffect(() => {
@@ -1153,7 +1169,7 @@ export default function Scene({
         <VrRig room={room} />
         {/* VR-да камераны гарнитура басқарады: екінші басқарушы оған қарсы шығар еді. */}
         {vr ? null : walk ? (
-          <WalkControls room={room} />
+          <WalkControls room={room} focus={{ x: view.target.x, z: view.target.z }} />
         ) : (
           <CameraRig
             target={view.target}
