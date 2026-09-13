@@ -8,13 +8,25 @@
 import * as React from 'react'
 import { cn } from '@/lib/cn'
 
+/**
+ * ТЫҒЫЗ режим — оң жақтағы қасиеттер панелі үшін (qdesign сияқты: өрістер
+ * кішірек, көп нәрсе бір экранға сыяды). Терезелердегі формалар әдепкі
+ * өлшемде қалады, сондықтан глобал класс емес, контекст.
+ */
+const DenseCtx = React.createContext(false)
+
+export function Dense({ children }: { children: React.ReactNode }) {
+  return <DenseCtx.Provider value>{children}</DenseCtx.Provider>
+}
+
 export function Field({
   label, hint, children,
 }: { label: string; hint?: string | undefined; children: React.ReactNode }) {
+  const dense = React.useContext(DenseCtx)
   return (
     <label className="block">
-      <span className="mb-1 flex items-baseline justify-between gap-2">
-        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">{label}</span>
+      <span className={cn('flex items-baseline justify-between gap-2', dense ? 'mb-0.5' : 'mb-1')}>
+        <span className={cn('font-medium text-neutral-700 dark:text-neutral-300', dense ? 'text-[11px]' : 'text-xs')}>{label}</span>
         {hint ? <span className="text-[10px] text-neutral-400 tabular-nums">{hint}</span> : null}
       </span>
       {children}
@@ -22,10 +34,13 @@ export function Field({
   )
 }
 
-const control =
-  'w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm text-neutral-900 ' +
+const controlBase =
+  'w-full rounded-md border border-neutral-300 bg-white text-neutral-900 ' +
   'outline-none transition focus:border-neutral-900 disabled:opacity-40 ' +
   'dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-300'
+const control = `${controlBase} px-2 py-1.5 text-sm`
+const controlDense = `${controlBase} px-1.5 py-1 text-xs`
+const useControl = () => (React.useContext(DenseCtx) ? controlDense : control)
 
 export function NumberInput({
   value, onChange, min, max, step = 1, invalid,
@@ -37,10 +52,11 @@ export function NumberInput({
   step?: number
   invalid?: boolean
 }) {
+  const cls = useControl()
   return (
     <input
       type="number"
-      className={cn(control, 'tabular-nums', invalid && 'border-red-500 dark:border-red-500')}
+      className={cn(cls, 'tabular-nums', invalid && 'border-red-500 dark:border-red-500')}
       value={value}
       min={min}
       max={max}
@@ -56,8 +72,9 @@ export function NumberInput({
 export function Select<T extends string>({
   value, onChange, options,
 }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[] }) {
+  const cls = useControl()
   return (
-    <select className={control} value={value} onChange={(e) => onChange(e.target.value as T)}>
+    <select className={cls} value={value} onChange={(e) => onChange(e.target.value as T)}>
       {options.map((o) => (
         <option key={o.value} value={o.value}>{o.label}</option>
       ))}

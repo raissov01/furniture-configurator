@@ -653,6 +653,8 @@ export const uz: Record<string, string> = {
     '{axis} {value} mm — sex chegarasidan ({limit} mm) KICHIK',
   'Разнести': 'Ajratish',
   'Модули': 'Modullar',
+  'Модуль': 'Modul',
+  'Язык': 'Til',
   'навес': 'osma',
   'Секция': 'Bo\'lim',
   'Секции': 'Bo\'limlar',

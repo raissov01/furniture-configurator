@@ -1,11 +1,17 @@
 'use client'
 
-/** Тілді ауыстыру. Таңдау localStorage-та сақталады. */
+/**
+ * Тілді ауыстыру. Таңдау localStorage-та сақталады.
+ *
+ * Бір батырма + мәзір: бұрын төрт батырма («РУС ҚАЗ UZB ENG») тақтада қатар
+ * тұрып, оны екі қатарға бөліп жіберетін. Тіл сирек ауысады — көзде тек
+ * ағымдағысы тұрса жетеді.
+ */
 
-import { LANGS, getLang, setLang } from '@/lib/i18n'
-import { Button } from '@/components/ui'
+import { LANGS, getLang, setLang, t as tr } from '@/lib/i18n'
+import { Menu, MenuItem } from '@/components/ui'
 
-/** Батырмадағы қысқа белгі: төрт тіл қатарға сыюы керек. */
+/** Батырмадағы қысқа белгі. */
 const SHORT: Record<(typeof LANGS)[number]['value'], string> = {
   ru: 'РУС',
   kk: 'ҚАЗ',
@@ -16,17 +22,13 @@ const SHORT: Record<(typeof LANGS)[number]['value'], string> = {
 export function LangSwitch() {
   const current = getLang()
   return (
-    <div className="flex items-center gap-1">
+    <Menu label={SHORT[current]} title={tr('Язык')} align="right">
       {LANGS.map((l) => (
-        <Button
-          key={l.value}
-          active={current === l.value}
-          onClick={() => setLang(l.value)}
-          title={l.label}
-        >
-          {SHORT[l.value]}
-        </Button>
+        <MenuItem key={l.value} active={current === l.value} onClick={() => setLang(l.value)}>
+          <span className="w-8 tabular-nums">{SHORT[l.value]}</span>
+          {l.label}
+        </MenuItem>
       ))}
-    </div>
+    </Menu>
   )
 }

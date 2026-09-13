@@ -17,7 +17,14 @@ const GROUP_STYLE: Record<string, string> = {
   'КРОМКА · цех': 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
 }
 
-export function CutListTable({ panels, catalog }: { panels: Panel[]; catalog: Catalog }) {
+/**
+ * `collapsed` — жиылған күйде тек тақырып пен «Позиций · Деталей» көрінеді.
+ * Кесте DOM-да ҚАЛАДЫ (класспен жасырылады): e2e мен беттен іздеу оны
+ * жабық күйде де табады (`Collapsible` гочасын қара).
+ */
+export function CutListTable({
+  panels, catalog, collapsed = false, onToggle,
+}: { panels: Panel[]; catalog: Catalog; collapsed?: boolean; onToggle?: () => void }) {
   const rows: CutListRow[] = useMemo(() => formatCutList(panels, catalog), [panels, catalog])
   const pieces = rows.reduce((s, r) => s + r.qty, 0)
   /*
@@ -36,13 +43,29 @@ export function CutListTable({ panels, catalog }: { panels: Panel[]; catalog: Ca
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-baseline justify-between border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{tr('Деталировка')}</h2>
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={!onToggle}
+        aria-expanded={!collapsed}
+        className="flex w-full items-baseline justify-between gap-2 border-b border-neutral-200 px-3 py-2 text-left disabled:cursor-default dark:border-neutral-800"
+      >
+        <span className="flex items-baseline gap-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+          {onToggle ? (
+            <span className={cn('text-[10px] transition-transform', !collapsed && 'rotate-90')}>▶</span>
+          ) : null}
+          {tr('Деталировка')}
+        </span>
         <span className="text-[11px] tabular-nums text-neutral-500">
+          {collapsed && fitWarnings.length > 0 ? (
+            <span className="mr-2 text-amber-700 dark:text-amber-400">
+              {tr('Не помещается на лист')}: {fitWarnings.length}
+            </span>
+          ) : null}
           Позиций: {rows.length} · Деталей: {pieces}
         </span>
-      </div>
-      {fitWarnings.length > 0 ? (
+      </button>
+      {fitWarnings.length > 0 && !collapsed ? (
         <div className="border-b border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
           <div className="font-semibold">{tr('Не помещается на лист')}</div>
           <ul className="mt-1 list-disc pl-4">
@@ -57,7 +80,7 @@ export function CutListTable({ panels, catalog }: { panels: Panel[]; catalog: Ca
           </div>
         </div>
       ) : null}
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className={cn('min-h-0 flex-1 overflow-auto', collapsed && 'hidden')}>
         <table className="w-full border-collapse text-[11px]">
           <thead className="sticky top-0 z-10">
             <tr>

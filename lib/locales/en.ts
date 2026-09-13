@@ -649,6 +649,8 @@ export const en: Record<string, string> = {
     '{axis} {value} mm — under the shop limit ({limit} mm)',
   'Разнести': 'Explode',
   'Модули': 'Modules',
+  'Модуль': 'Module',
+  'Язык': 'Language',
   'навес': 'wall',
   'Секция': 'Section',
   'Секции': 'Sections',

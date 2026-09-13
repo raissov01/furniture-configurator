@@ -4,7 +4,8 @@ import { t as tr, tf } from '@/lib/i18n'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Button, Menu, MenuItem, Slider } from '@/components/ui'
+import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
+import { cn } from '@/lib/cn'
 import { Configurator } from '@/components/Configurator'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
@@ -58,6 +59,9 @@ const PRESETS: { value: CameraPreset; label: string }[] = [
 /** C1 бюджеті: 40 панельге дейін параметр өзгерісі < 100 мс. */
 const BUDGET_MS = 100
 
+/** Деталировка тақтасы ашық па — браузерде сақталады (адамның өз ыңғайы). */
+const CUT_OPEN_KEY = 'furniture-configurator:cutlist-open'
+
 export function Workspace() {
   const cabinet = useConfigurator(activeCabinet)
   const undo = useConfigurator((s) => s.undo)
@@ -80,6 +84,7 @@ export function Workspace() {
   const duplicateCabinet = useConfigurator((s) => s.duplicateCabinet)
   const mirrorCabinet = useConfigurator((s) => s.mirrorCabinet)
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
+  const addCabinet = useConfigurator((s) => s.addCabinet)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
@@ -166,6 +171,25 @@ export function Workspace() {
   // Монтаж корпустардың ЕНІНІҢ қосындысымен саналады.
   const moduleWidths = useMemo(() => cabinets.map((c) => c.width), [cabinets])
   const [shared, setShared] = useState<string | null>(null)
+
+  /*
+   * Деталировка — 3D-нің астындағы ЖИЫЛАТЫН тақта (09-13, qdesign сияқты
+   * макет). Бұрын 460 px баған болып 3D-ні тарылтатын. Күйі браузерде
+   * сақталады, гидратациядан КЕЙІН оқылады (сервер мен клиент бірдей басталсын).
+   */
+  const [cutOpen, setCutOpen] = useState(false)
+  useEffect(() => {
+    try {
+      setCutOpen(window.localStorage.getItem(CUT_OPEN_KEY) === '1')
+    } catch { /* жады жоқ болса — жабық қалады, қате емес */ }
+  }, [])
+  const toggleCut = () => {
+    const next = !cutOpen
+    setCutOpen(next)
+    try {
+      window.localStorage.setItem(CUT_OPEN_KEY, next ? '1' : '0')
+    } catch { /* күй тек осы сессияда тұрады — қате емес */ }
+  }
   useEffect(() => {
     if (!shared) return
     const timer = setTimeout(() => setShared(null), 5000)
@@ -240,12 +264,8 @@ export function Workspace() {
           РЕЗ
         </Link>
 
-        <h1 className="text-sm font-semibold">
-          {cabinet.name}
-          <span className="ml-2 font-normal tabular-nums text-neutral-500">
-            {cabinet.height} (H) × {cabinet.width} (W) × {cabinet.depth} (D)
-          </span>
-        </h1>
+        {/* Тақырыпта ЖОБА; таңдалған модуль мен оның габариті — оң панельде. */}
+        <h1 className="max-w-72 truncate text-sm font-semibold" title={projectName}>{projectName}</h1>
 
         {/*
           ТОПТАЛҒАН ТАҚТА: бұрын 30+ батырма қатар тұрып «каша» болатын. Енді
@@ -293,106 +313,15 @@ export function Workspace() {
 
         <ProjectMenu />
 
-        <AppearanceSwitch />
-        <LangSwitch />
-
-        {cloudEnabled && (
-          <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
-        )}
-
-        {/*
-          КӨРІНІС: жиі керегі (Рендер, Прогулка, AR, Сборка, Распахнуть) —
-          көзде; сирек баптаулар «Вид» мәзіріне жиналды. Бұрын мұнда 12 батырма
-          қатар тұрып «каша» болатын.
-        */}
-        <div className="flex items-center gap-1">
-          <Button onClick={() => setRenderOpen(true)} title={tr('Фотореалистичная картинка для клиента')}>
-            {tr('Рендер')}
-          </Button>
-          <Button
-            active={walk}
-            title={tr('Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы')}
-            onClick={() => setWalk(!walk)}
-          >
-            {tr('Прогулка')}
-          </Button>
-          <ArButton />
-          <VrButton />
-          <Button
-            active={openness > 0}
-            title={`${tr('Открыть или закрыть двери и ящики')} (E)`}
-            onClick={() => setOpenness(openness > 0 ? 0 : 1)}
-          >
-            {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
-          </Button>
-          <Button
-            active={assemblyStep !== null}
-            title={tr('Показать сборку по шагам')}
-            onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}
-          >
-            {tr('Сборка')}
-          </Button>
-          {assemblyStep !== null ? (
-            <>
-              <input
-                type="range"
-                aria-label={tr('Показать сборку по шагам')}
-                className="w-24 accent-neutral-900 dark:accent-neutral-100"
-                min={1}
-                max={Math.max(1, projectPanels.length)}
-                value={Math.min(assemblyStep, projectPanels.length)}
-                onChange={(e) => setAssemblyStep(Number(e.target.value))}
-              />
-              <span className="text-[11px] tabular-nums text-neutral-500">
-                {Math.min(assemblyStep, projectPanels.length)} / {projectPanels.length}
-              </span>
-            </>
-          ) : null}
-          <Menu label={tr('Вид')} title={tr('Прозрачность, фасады, проекция, масштаб')}>
-            <MenuItem
-              active={viewMode !== 'solid'}
-              onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
-            >
-              {viewMode === 'solid' ? tr('Прозрачность') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
-            </MenuItem>
-            <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
-              {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
-            </MenuItem>
-            <MenuItem
-              active={projection === 'ortho'}
-              onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
-            >
-              {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
-            </MenuItem>
-            <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
-            <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
-              {tr('Человек для масштаба')}
-            </MenuItem>
-          </Menu>
-          {silhouette.on ? (
-            <input
-              type="number"
-              className="w-16 rounded-md border border-neutral-300 px-1.5 py-1 text-xs tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
-              value={silhouette.height}
-              min={MIN_SILHOUETTE_HEIGHT}
-              max={MAX_SILHOUETTE_HEIGHT}
-              step={10}
-              title={tr('Рост человека, мм')}
-              onChange={(e) => {
-                const v = Number(e.target.value)
-                if (Number.isFinite(v)) setSilhouette({ height: Math.round(v) })
-              }}
-            />
-          ) : null}
-          <Button onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
+        {/* Сирек керегі оң жақта; көрініс құралдары 3D-нің өз үстіне көшті. */}
+        <div className="ml-auto flex items-center gap-1">
+          <ExportMenu cabinet={cabinet} panels={panels} />
+          {cloudEnabled && (
+            <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
+          )}
+          <AppearanceSwitch />
+          <LangSwitch />
         </div>
-
-        <ExportMenu cabinet={cabinet} panels={panels} />
-
-        <label className="flex min-w-40 flex-1 items-center gap-2 text-[11px] text-neutral-500">
-          {tr('Разнести')}
-          <Slider value={exploded} onChange={setExploded} />
-        </label>
 
         <span
           className={
@@ -445,14 +374,8 @@ export function Workspace() {
               {part.drilling.length} {tr('отв.')}
             </span>
             {part.note ? <span className="truncate text-neutral-400">{part.note}</span> : null}
-            {/* Корпус әрекеттері: 3D-де басқан корпус белсенді, осы жерден
-                бірден көшіруге/айналдыруға/өшіруге болады (тікелей манипуляция). */}
+            {/* Корпус әрекеттері (көшіру/айна/өшіру) енді оң панельдің астында — әрқашан көзде. */}
             <div className="ml-auto flex items-center gap-1">
-              <Button onClick={() => duplicateCabinet(activeId)} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
-              <Button onClick={() => mirrorCabinet(activeId)} title={tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
-              {cabinets.length > 1 ? (
-                <Button onClick={() => { removeCabinet(activeId); setSelected(null) }} title={tr('Удалить корпус')}>{tr('Удалить')}</Button>
-              ) : null}
               <Button onClick={() => setSelected(null)}>{tr('Закрыть')}</Button>
             </div>
           </div>
@@ -479,17 +402,110 @@ export function Workspace() {
         </div>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_minmax(0,460px)]">
-        <aside className="min-h-0 overflow-auto border-r border-neutral-200 p-3 dark:border-neutral-800">
-          <Configurator invalidField={error?.field ?? null} />
-        </aside>
-        <main className="relative min-h-64" data-tour="scene">
+      {/*
+        МАКЕТ (09-13, qdesign сияқты): ортада 3D — сол жақта модульдер тізімі,
+        оң жақ жоғарыда көрініс құралдары, астында жиылатын деталировка; оң
+        жақта таңдалған модульдің қасиеттері мен әрекеттері. Бұрын: сол жақта
+        ұзын форма, оң жақта 460 px деталировка — 3D тарылып, тақта екі қатар.
+      */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex min-h-0 flex-col">
+        <main className="relative min-h-64 flex-1" data-tour="scene">
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} />
           </div>
           {/* Бірнеше корпусты жобада «қай корпус» тізімнен таңдалады (qdesign сияқты). */}
           {walk ? null : <ModuleList />}
+          {/*
+            КӨРІНІС құралдары сахнаның өз үстінде: олар 3D-ге қатысты, ал тақтада
+            тұрғанда оны екі қатарға бөліп жіберетін. Сирек баптаулар «Вид»-те.
+          */}
+          <div className="absolute right-3 top-3 z-10 flex max-w-[70%] flex-wrap items-center justify-end gap-1">
+            <Button onClick={() => setRenderOpen(true)} title={tr('Фотореалистичная картинка для клиента')}>
+              {tr('Рендер')}
+            </Button>
+            <Button
+              active={walk}
+              title={tr('Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы')}
+              onClick={() => setWalk(!walk)}
+            >
+              {tr('Прогулка')}
+            </Button>
+            <ArButton />
+            <VrButton />
+            <Button
+              active={openness > 0}
+              title={`${tr('Открыть или закрыть двери и ящики')} (E)`}
+              onClick={() => setOpenness(openness > 0 ? 0 : 1)}
+            >
+              {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
+            </Button>
+            <Button
+              active={assemblyStep !== null}
+              title={tr('Показать сборку по шагам')}
+              onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}
+            >
+              {tr('Сборка')}
+            </Button>
+            {assemblyStep !== null ? (
+              <span className="flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900">
+                <input
+                  type="range"
+                  aria-label={tr('Показать сборку по шагам')}
+                  className="w-24 accent-neutral-900 dark:accent-neutral-100"
+                  min={1}
+                  max={Math.max(1, projectPanels.length)}
+                  value={Math.min(assemblyStep, projectPanels.length)}
+                  onChange={(e) => setAssemblyStep(Number(e.target.value))}
+                />
+                <span className="text-[11px] tabular-nums text-neutral-500">
+                  {Math.min(assemblyStep, projectPanels.length)} / {projectPanels.length}
+                </span>
+              </span>
+            ) : null}
+            <Menu label={tr('Вид')} title={tr('Прозрачность, фасады, проекция, масштаб')} align="right">
+              <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+                {tr('Разнести')}
+                <Slider value={exploded} onChange={setExploded} />
+              </label>
+              <MenuItem
+                active={viewMode !== 'solid'}
+                onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
+              >
+                {viewMode === 'solid' ? tr('Прозрачность') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
+              </MenuItem>
+              <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
+                {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
+              </MenuItem>
+              <MenuItem
+                active={projection === 'ortho'}
+                onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
+              >
+                {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
+              </MenuItem>
+              <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
+              <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
+                {tr('Человек для масштаба')}
+              </MenuItem>
+            </Menu>
+            {silhouette.on ? (
+              <input
+                type="number"
+                className="w-16 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
+                value={silhouette.height}
+                min={MIN_SILHOUETTE_HEIGHT}
+                max={MAX_SILHOUETTE_HEIGHT}
+                step={10}
+                title={tr('Рост человека, мм')}
+                onChange={(e) => {
+                  const v = Number(e.target.value)
+                  if (Number.isFinite(v)) setSilhouette({ height: Math.round(v) })
+                }}
+              />
+            ) : null}
+            <Button onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
+          </div>
           {walk ? (
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
               <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/85 px-4 py-2 text-xs text-white shadow-lg backdrop-blur">
@@ -505,8 +521,45 @@ export function Workspace() {
             </div>
           ) : null}
         </main>
-        <aside className="min-h-0 border-l border-neutral-200 dark:border-neutral-800" data-tour="cutlist">
-          <CutListTable panels={panels} catalog={catalog} />
+        <section
+          className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72')}
+          data-tour="cutlist"
+        >
+          <CutListTable panels={panels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
+        </section>
+        </div>
+        <aside className="flex min-h-0 flex-col border-l border-neutral-200 dark:border-neutral-800">
+          {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
+          <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+              {tr('Модуль')}
+              {cabinets.length > 1
+                ? ` ${String(cabinets.findIndex((c) => c.id === activeId) + 1).padStart(2, '0')} / ${cabinets.length}`
+                : ''}
+            </div>
+            <div className="truncate text-sm font-semibold" title={cabinet.name}>{cabinet.name}</div>
+            <div className="text-[11px] tabular-nums text-neutral-500">
+              {cabinet.height} (H) × {cabinet.width} (W) × {cabinet.depth} (D)
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto p-3">
+            <Dense>
+              <Configurator invalidField={error?.field ?? null} />
+            </Dense>
+          </div>
+          {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
+          <div className="flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800">
+            <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
+            <Button onClick={() => duplicateCabinet(activeId)} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
+            <Button onClick={() => mirrorCabinet(activeId)} title={tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
+            <Button
+              onClick={() => { removeCabinet(activeId); setSelected(null) }}
+              disabled={cabinets.length < 2}
+              title={tr('Удалить корпус')}
+            >
+              {tr('Удалить')}
+            </Button>
+          </div>
         </aside>
       </div>
     </div>
