@@ -88,6 +88,10 @@ async function connect() {
 const results = []
 let current = null
 
+/** Құлаған тесттің скриншоты осында түседі — «неге таппады» көзбен көрінсін. */
+const SHOT_DIR = process.env['E2E_SHOTS'] ?? '/tmp/e2e-shots'
+let snapshot = null
+
 async function test(name, fn) {
   current = { name, checks: [] }
   try {
@@ -96,6 +100,11 @@ async function test(name, fn) {
     results.push({ name, ok: failed.length === 0, failed })
   } catch (error) {
     results.push({ name, ok: false, failed: [{ message: `қате: ${error.message}` }] })
+  }
+  const last = results[results.length - 1]
+  if (!last.ok && snapshot) {
+    const file = await snapshot(results.length)
+    if (file) last.failed.push({ message: `скриншот: ${file}` })
   }
 }
 
@@ -141,6 +150,25 @@ function makeHelpers({ send }) {
     })()`)
     await wait(settleMs)
     return done
+  }
+
+  /**
+   * Ашылмалы мәзірдегі элемент. 09-06-дан бері тақта топталған: «Смета»,
+   * «Шаблоны» т.б. енді «Проект ▾», «Создать ▾» мәзірлерінің ішінде, әрі
+   * мәзір жабық тұрғанда элементтері DOM-да ЖОҚ. Мәзір батырмасының мәтіні
+   * «Проект ▾» болғандықтан `clickText('Проект')` оны таппайды.
+   */
+  const menu = async (menuLabel, itemLabel, settleMs = 900) => {
+    const opened = await evaluate(`(() => {
+      const b = [...document.querySelectorAll('button')]
+        .find((x) => x.textContent.trim() === ${JSON.stringify(`${menuLabel} ▾`)})
+      if (!b) return false
+      b.click()
+      return true
+    })()`)
+    if (!opened) return false
+    await wait(300)
+    return clickText(itemLabel, settleMs)
   }
 
   /** Деталировка кестесіндегі жолдар. */
@@ -202,7 +230,7 @@ function makeHelpers({ send }) {
   }
 
   return {
-    evaluate, wait, until, goto, text, clickText, clickContains, cutListRows,
+    evaluate, wait, until, goto, text, clickText, clickContains, menu, cutListRows,
     setNumberByLabel, closeModals,
   }
 }
@@ -213,6 +241,15 @@ async function run() {
   await ensureChrome()
   const session = await connect()
   const h = makeHelpers(session)
+  const { mkdirSync, writeFileSync } = await import('node:fs')
+  snapshot = async (n) => {
+    const shot = await session.send('Page.captureScreenshot', { format: 'png' })
+    if (!shot?.data) return null
+    mkdirSync(SHOT_DIR, { recursive: true })
+    const file = `${SHOT_DIR}/${String(n).padStart(2, '0')}.png`
+    writeFileSync(file, Buffer.from(shot.data, 'base64'))
+    return file
+  }
 
   // Тестер бір-бірінен ТӘУЕЛСІЗ болуы керек: алдыңғы жүгіріс сақтаған жоба
   // мен цех профилі жаңа жүгірісте эталон шкафты ауыстырып жіберер еді.
@@ -258,7 +295,7 @@ async function run() {
 
   await test('Шаблон галереясы: ящикті комод', async () => {
     await h.closeModals()
-    check(await h.clickText('Шаблоны', 1500), 'галерея ашылды')
+    check(await h.menu('Создать', 'Готовые шаблоны', 1500), 'галерея ашылды')
     const cards = await h.evaluate(`[...document.querySelectorAll('button')]
       .filter((b) => b.querySelector('svg[role=img]')).length`)
     check(cards >= 30, `шаблон саны ${cards} (≥30)`)
@@ -270,7 +307,7 @@ async function run() {
 
   await test('Жиынтық: бұрыштық шкаф екі корпус қояды', async () => {
     await h.closeModals()
-    check(await h.clickText('Шаблоны', 1200), 'галерея ашылды')
+    check(await h.menu('Создать', 'Готовые шаблоны', 1200), 'галерея ашылды')
     check(await h.clickText('Наборы', 1200), 'наборы табы ашылды')
     check(await h.clickContains('Угловой шкаф', 3500), 'жиынтық таңдалды')
     await h.closeModals()
@@ -282,7 +319,7 @@ async function run() {
   await test('Нарисовать: перегородка, ящики, штанга', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
-    check(await h.clickText('Нарисовать', 1200), 'эскиз ашылды')
+    check(await h.menu('Создать', 'Нарисовать мышью', 1200), 'эскиз ашылды')
 
     const rect = await h.evaluate(`(() => {
       const s = document.querySelector('svg[aria-label="Эскиз корпуса"]')
@@ -351,7 +388,7 @@ async function run() {
 
     // Бұрыштық режим фасадты алып тастайды әрі жоба автосақталады, сондықтан
     // күйді КЕЛЕСІ сценарийге қалдыруға болмайды.
-    check(await h.clickText('Сброс', 2000), 'жоба ысырылды')
+    check(await h.menu('Проект', 'Сброс', 2000), 'жоба ысырылды')
   })
 
   await test('Планка, фальш-панель, фартук', async () => {
@@ -423,7 +460,7 @@ async function run() {
     const body = await h.text()
     check(!/Ошибка|не помести/i.test(body), 'валидация қатесі жоқ')
 
-    check(await h.clickText('Смета', 3000), 'смета ашылды')
+    check(await h.menu('Проект', 'Смета и раскрой', 3000), 'смета ашылды')
     check(await h.clickText('Стоимость', 1500), 'стоимость табы ашылды')
     // ТЕК терезенің ішін оқимыз: астындағы «Техника» селекті де «Духовка»
     // деп тұр, ал ол сметаның мазмұны емес.
@@ -481,7 +518,7 @@ async function run() {
     check(/Межцентровое|Расположение|Глубина/.test(body), 'фурнитура өрістері көрінеді')
 
     // Смета жаңа фурнитураны көруі керек.
-    check(await h.clickText('Смета', 3000), 'смета ашылды')
+    check(await h.menu('Проект', 'Смета и раскрой', 3000), 'смета ашылды')
     const quote = await h.text()
     check(/Hettich/i.test(quote), 'сметада Hettich петлясы бар')
     await h.clickText('Закрыть', 700)
@@ -491,16 +528,23 @@ async function run() {
     await h.closeModals()
     await h.goto('/configurator', 11000)
 
-    check(await h.clickText('Ссылка клиенту', 1500), 'батырма басылды')
-    const notice = await h.text()
-    // Буферге жазу headless-те тыйылуы мүмкін — екі жағдайда да хабар шығады.
-    check(/Ссылка скопирована|скопировать/i.test(notice), 'хабарлама шықты')
+    check(await h.menu('Проект', 'Ссылка клиенту', 300), 'батырма басылды')
+    // Буферге жазу headless-те тыйылуы мүмкін — екі жағдайда да хабар шығады,
+    // бірақ уәде кешігіп орындалады.
+    check(
+      await h.until(`/Ссылка скопирована|скопировать/i.test(document.body.innerText)`, 8000),
+      'хабарлама шықты',
+    )
 
     // Бос хешпен ашылған /view ТҮСІНІКТІ қате беруі керек: клиент «бет
     // ашылмады» дегеннен басқа ештеңе көрмесе, цехқа қоңырау шалады.
-    await h.goto('/view', 5000)
-    const empty = await h.text()
-    check(/Ссылка не открылась|нет проекта/i.test(empty), 'бос сілтемеде түсінікті қате')
+    // Күту НӘТИЖЕ бойынша: дев-серверде /view алғаш компиляцияланғанда 5 с
+    // «Открываем проект…» деп тұрады.
+    await h.goto('/view', 1000)
+    check(
+      await h.until(`/Ссылка не открылась|нет проекта/i.test(document.body.innerText)`),
+      'бос сілтемеде түсінікті қате',
+    )
 
     // Келесі сценарийлер конфигуратордың ашық тұрғанына сүйенеді.
     await h.goto('/configurator', 11000)
@@ -508,7 +552,7 @@ async function run() {
 
   await test('Смета: раскрой мен баға', async () => {
     await h.closeModals()
-    check(await h.clickText('Смета', 3000), 'смета ашылды')
+    check(await h.menu('Проект', 'Смета и раскрой', 3000), 'смета ашылды')
     const body = await h.text()
     check(body.includes('Листов всего'), 'парақ саны көрсетілген')
     check(/отход \d/.test(body), 'қалдық пайызы бар')
@@ -523,7 +567,7 @@ async function run() {
     await h.closeModals()
     await h.goto('/configurator', 11000)
 
-    check(await h.clickText('Смета', 3000), 'смета ашылды')
+    check(await h.menu('Проект', 'Смета и раскрой', 3000), 'смета ашылды')
     check(await h.clickText('Стоимость', 1500), 'стоимость табы ашылды')
 
     const modal = () => h.evaluate(`(() => {
@@ -578,11 +622,13 @@ async function run() {
   })
 
   await test('Жоба бетті жаңартқанда жоғалмайды', async () => {
-    await h.setNumberByLabel('Ширина (W)', 1234, 1200)
-    const before = await h.evaluate(`(() => {
+    await h.setNumberByLabel('Ширина (W)', 1234, 300)
+    // Автосақтау кейінге қалдырылады, ал ауыр сахнада (планка, фартук, AO)
+    // тіркелген 1,2 с жетпей қалатын — күту НӘТИЖЕ бойынша.
+    const before = await h.until(`(() => {
       const raw = localStorage.getItem('furniture-configurator:project')
       return raw ? JSON.parse(raw).cabinets.some((c) => c.width === 1234) : false
-    })()`)
+    })()`, 8000)
     check(before, 'жоба автосақталды')
 
     await h.goto('/configurator', 11000)
@@ -595,7 +641,7 @@ async function run() {
 
   await test('Бөлме: қабырғаға корпус қосу', async () => {
     await h.closeModals()
-    check(await h.clickText('Стены', 1500), 'бөлме терезесі ашылды')
+    check(await h.menu('Проект', 'Стены и комната', 1500), 'бөлме терезесі ашылды')
     // CSS `text-transform: uppercase` innerText-ке де әсер етеді, сондықтан
     // тіркес регистрсіз ізделеді.
     const count = () => h.evaluate(`(document.body.innerText.match(/Корпуса \\((\\d+)\\)/i) || [])[1]`)
@@ -630,10 +676,15 @@ async function run() {
     await fill('Почта', email)
     await fill('Пароль', 'password123')
     await h.wait(400)
-    check(await h.clickText('Создать аккаунт', 2500), 'аккаунт жасалды')
+    check(await h.clickText('Создать аккаунт', 800), 'аккаунт жасалды')
 
+    const shown = await h.until(`document.body.innerText.includes('Цех E2E')`)
+    // Құласа — терезеде НЕ тұрғаны хабарда көрінсін (сервердің қатесі т.б.).
+    const modalText = shown ? '' : await h.evaluate(
+      `(document.querySelector('.fixed.inset-0.z-50')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 200)`,
+    )
+    check(shown, `цех аты көрінді${modalText ? ` (терезеде: ${modalText})` : ''}`)
     const body = await h.text()
-    check(body.includes('Цех E2E'), 'цех аты көрінді')
     // CSS `uppercase` innerText-ке де әсер етеді — регистрсіз тексереміз.
     check(/Проекты в облаке/i.test(body), 'бұлттағы жобалар бөлімі')
 
@@ -760,7 +811,7 @@ async function run() {
     // Осы кезде жобада бірнеше корпус тұр — қадам саны ЖОБА бойынша.
     check(slider && slider.max > 1, `слайдердің шегі — деталь саны (${slider?.max})`)
 
-    check(await h.clickText('Проект', 800), '«Жоба» терезесі ашылды')
+    check(await h.menu('Проект', 'Материалы и сборка', 800), '«Жоба» терезесі ашылды')
     // Терезедегі «Сборка» табы (тақтадағы батырма емес — ол қосулы тұр).
     const tab = await h.evaluate(`(() => {
       const modal = document.querySelector('.fixed.inset-0.z-50')
