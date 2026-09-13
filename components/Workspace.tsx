@@ -128,6 +128,8 @@ export function Workspace() {
   const setAssemblyStep = useConfigurator((s) => s.setAssemblyStep)
   const selected = useConfigurator((s) => s.selected)
   const setSelected = useConfigurator((s) => s.setSelected)
+  const openPanels = useConfigurator((s) => s.openPanels)
+  const togglePanelOpen = useConfigurator((s) => s.togglePanelOpen)
 
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
   const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
@@ -399,6 +401,12 @@ export function Workspace() {
             {part.note ? <span className="truncate text-neutral-400">{part.note}</span> : null}
             {/* Корпус әрекеттері (көшіру/айна/өшіру) енді оң панельдің астында — әрқашан көзде. */}
             <div className="ml-auto flex items-center gap-1">
+              {/* Есік/ящик — осы жерден бір-бірлеп ашылады (екі рет басу да солай). */}
+              {part.opening ? (
+                <Button active={Boolean(openPanels[part.id])} onClick={() => togglePanelOpen(part.id)}>
+                  {openPanels[part.id] ? tr('Закрыть дверцу') : tr('Открыть дверцу')}
+                </Button>
+              ) : null}
               <Button onClick={() => setSelected(null)}>{tr('Закрыть')}</Button>
             </div>
           </div>

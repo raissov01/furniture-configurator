@@ -232,6 +232,12 @@ type State = Snapshot & {
   /** Жеке ашылған корпустар (Прогулкада басып ашу). */
   openCabinets: Record<string, boolean>
   toggleCabinetOpen(id: string): void
+  /**
+   * ҚОЛМЕН, БІР-БІРЛЕП ашылған есік/ящик (пайдаланушы 09-13): жобадағы
+   * детальдің кілті (`projectPanelId`) → ашық. Корпусты тұтас ашудан бөлек.
+   */
+  openPanels: Record<string, boolean>
+  togglePanelOpen(pid: string): void
   setProjection(v: 'perspective' | 'ortho'): void
   fitCamera(): void
   /** Локал тарихқа қазіргі жобаны жазу. */
@@ -311,6 +317,7 @@ export const useConfigurator = create<State>((set, get) => ({
   walk: false,
   vr: false,
   openCabinets: {},
+  openPanels: {},
   projection: 'perspective',
   quality: 'high',
   silhouette: { on: false, height: DEFAULT_SILHOUETTE_HEIGHT },
@@ -633,10 +640,14 @@ export const useConfigurator = create<State>((set, get) => ({
   setWalk: (walk) => set({ walk }),
   setVr: (vr) => set({ vr }),
   toggleCabinetOpen: (id) => set((s) => ({ openCabinets: { ...s.openCabinets, [id]: !s.openCabinets[id] } })),
+  togglePanelOpen: (pid) => set((s) => ({ openPanels: { ...s.openPanels, [pid]: !s.openPanels[pid] } })),
   setLiveScene: (liveScene) => set({ liveScene }),
   setAr: (patch) => set((s) => ({ ar: { ...s.ar, ...patch } })),
   setShowFronts: (showFronts) => set({ showFronts }),
-  setOpenness: (openness) => set({ openness: Math.min(1, Math.max(0, openness)) }),
+  // «Закрыть створки» / E — БӘРІН жабады: қолмен бір-бірлеп ашылғандарын да.
+  setOpenness: (openness) => set(openness <= 0
+    ? { openness: 0, openPanels: {}, openCabinets: {} }
+    : { openness: Math.min(1, openness) }),
   /*
    * ЕКІ КАДР КҮТУ: `set({ busy })` бірден ауыр жұмысқа өтсе, браузер оверлейді
    * салып үлгермейді (JS негізгі ағынды алып қояды) — адам бәрібір қатқан

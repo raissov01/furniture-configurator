@@ -653,6 +653,8 @@ export const en: Record<string, string> = {
   'Загрузка 3D…': 'Loading 3D…',
   'Собираем кухню…': 'Building the kitchen…',
   'Собираем проект…': 'Building the project…',
+  'Открыть дверцу': 'Open door',
+  'Закрыть дверцу': 'Close door',
   'Модуль': 'Module',
   'Язык': 'Language',
   'навес': 'wall',

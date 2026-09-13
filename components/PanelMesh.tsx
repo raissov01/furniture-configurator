@@ -323,6 +323,7 @@ export function PanelMesh({
   const selected = useConfigurator((s) => s.selected)
   const setSelected = useConfigurator((s) => s.setSelected)
   const setActive = useConfigurator((s) => s.setActive)
+  const togglePanelOpen = useConfigurator((s) => s.togglePanelOpen)
   const vr = useConfigurator((s) => s.vr)
   // Жиек сызығы «үнемді» сапада өшеді: әлсіз ноутбукке ол мыңдаған сызық.
   const quality = useConfigurator((s) => s.quality)
@@ -479,6 +480,14 @@ export function PanelMesh({
             setHovered(key)
           }}
           onPointerOut={() => setHovered(null)}
+          // Прогулканың сәулесі осы кілтпен ЖЕКЕ есікті табады.
+          userData={panel.opening ? { doorPid: key } : {}}
+          // ЕКІ РЕТ БАСУ — тек осы есік/ящик ашылады-жабылады (қолмен, бір-бірлеп).
+          onDoubleClick={(e) => {
+            if (vr || !panel.opening) return
+            e.stopPropagation()
+            togglePanelOpen(key)
+          }}
           onClick={(e) => {
             // VR-да оқиға корпустың тобына көтеріледі — ол есікті ашады.
             if (vr) return
@@ -514,6 +523,12 @@ export function PanelMesh({
         setHovered(key)
       }}
       onPointerOut={() => setHovered(null)}
+      userData={panel.opening ? { doorPid: key } : {}}
+      onDoubleClick={(e) => {
+        if (vr || !panel.opening) return
+        e.stopPropagation()
+        togglePanelOpen(key)
+      }}
       onClick={(e) => {
         if (vr) return
         e.stopPropagation()

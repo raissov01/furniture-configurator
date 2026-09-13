@@ -129,8 +129,10 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
       for (const hit of ray.intersectObjects(scene.children, true)) {
         let obj: Object3D | null = hit.object
         while (obj) {
-          const id = (obj.userData as { cabinetId?: string }).cabinetId
-          if (id) { useConfigurator.getState().toggleCabinetOpen(id); return }
+          const data = obj.userData as { cabinetId?: string; doorPid?: string }
+          // Есікке/ящикке тисе — тек СОНЫ (қолмен, бір-бірлеп); әйтпесе корпусты.
+          if (data.doorPid) { useConfigurator.getState().togglePanelOpen(data.doorPid); return }
+          if (data.cabinetId) { useConfigurator.getState().toggleCabinetOpen(data.cabinetId); return }
           obj = obj.parent
         }
       }
@@ -350,6 +352,7 @@ function CabinetGroup({
   const showFronts = useConfigurator((s) => s.showFronts)
   const openness = useConfigurator((s) => s.openness)
   const openCabinets = useConfigurator((s) => s.openCabinets)
+  const openPanels = useConfigurator((s) => s.openPanels)
   // VR-да курок корпусты АШАДЫ: гарнитурада детальді таңдаудың мәні жоқ.
   const vr = useConfigurator((s) => s.vr)
   const toggleCabinetOpen = useConfigurator((s) => s.toggleCabinetOpen)
@@ -406,8 +409,10 @@ function CabinetGroup({
             decorColor={material?.decor?.color}
           />
         )
-        return openAmt > 0 && p.opening ? (
-          <OpenedPanel key={p.id} opening={p.opening} panel={p} openness={openAmt}>
+        // Қолмен ашылған ЖЕКЕ есік — толық ашық; әйтпесе корпустыкі/жаһандық.
+        const amount = openPanels[projectPanelId(item.cabinet.id, p.id, cabinetCount)] ? 1 : openAmt
+        return amount > 0 && p.opening ? (
+          <OpenedPanel key={p.id} opening={p.opening} panel={p} openness={amount}>
             {mesh}
           </OpenedPanel>
         ) : mesh

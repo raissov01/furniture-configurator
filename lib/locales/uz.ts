@@ -657,6 +657,8 @@ export const uz: Record<string, string> = {
   'Загрузка 3D…': '3D yuklanmoqda…',
   'Собираем кухню…': 'Oshxona yig‘ilmoqda…',
   'Собираем проект…': 'Loyiha yig‘ilmoqda…',
+  'Открыть дверцу': 'Eshikni ochish',
+  'Закрыть дверцу': 'Eshikni yopish',
   'Модуль': 'Modul',
   'Язык': 'Til',
   'навес': 'osma',
