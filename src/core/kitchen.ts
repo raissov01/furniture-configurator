@@ -156,6 +156,13 @@ export function splitRun(
 const CORNER_SINK_WIDTH = 1450
 const CORNER_BLIND = 550
 const CORNER_UPPER_BLIND = 350
+/*
+ * СОРҒЫШ ШКАФЫ (qdesign «Сорғышқа», 09-13-те олардың жобасынан оқылды):
+ * ортасындағы труба қорабы — екі стойканың АРАСЫ 120 мм, стойкалар алдыңғы
+ * жиектен 120 мм шегініп тұрады (есік пен топса тимеуі үшін).
+ */
+const HOOD_DUCT_GAP = 120
+const HOOD_STAND_INSET = 120
 const FRIDGE_WIDTH = 600
 const SINK_WIDTH = 800
 const TALL_HEIGHT = 2100
@@ -416,6 +423,34 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     return finishUpper(cab)
   }
 
+  /*
+   * СОРҒЫШ ШКАФЫ плитаның үстінде (qdesign «Сорғышқа»): ортасында труба
+   * өтетін ТІК ҚОРАП — екі стойка, арасы 120 мм; есік екеу, тұтқасыз.
+   * Бөлек «труба» сорғыш бұл кезде ЖОҚ — шкафтың өзі сорғыштың орны.
+   *
+   * ⚠ Бізде стойка мен сөре бір жолаққа сыймайды (әр мазмұн — өз жолағы,
+   * generateCabinet), сондықтан qdesign-дағы бүйір сөрелер әзірге жоқ.
+   */
+  const makeHoodCabinet = (width: number, uid: string): CabinetConfig => {
+    const cab = makeUpper(width, uid)
+    const mat = catalog.materials.find((m) => m.id === cab.carcassMaterialId)
+    if (!mat) throw new Error(`сорғыш шкафы: материал табылмады «${cab.carcassMaterialId}»`)
+    const t = mat.thickness
+    // Ұяның таза ені (бүйірлер крышка мен дноны жабады): W − 2t. Қорап ортада.
+    const left = Math.floor((width - 2 * t - HOOD_DUCT_GAP) / 2) - t
+    return {
+      ...cab,
+      name: 'Кухня: шкаф над вытяжкой',
+      sections: cab.sections.map((sec, i) => (i === 0
+        ? {
+          ...sec,
+          contents: [{ kind: 'stand' as const, count: 2, at: [left, left + t + HOOD_DUCT_GAP], insets: { front: HOOD_STAND_INSET } }],
+          ...(sec.fronts ? { fronts: { ...sec.fronts, handle: null } } : {}),
+        }
+        : sec)),
+    }
+  }
+
   const hobFuel = hobFuelOf(options)
   const runA = options.modules
     ? options.modules.runA
@@ -473,9 +508,11 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
       return dressLower(applianceNiche(base, [{ kind: 'appliance', appliance: 'dishwasher', height: 600 }, { kind: 'empty' }]), options)
     }
     if (mod.kind === 'hob') {
-      // Панельдің үстінде үстіңгі шкаф емес, СОРҒЫШ тұрады.
+      // Үстіңгі қатар болса, плитаның үстінде СОРҒЫШ ШКАФЫ тұрады (сорғыштың
+      // орны сонда) — бөлек «труба» сорғыш тек үстіңгі қатарсыз гарнитурда.
+      // ⚠ Екеуі бірге болса, труба (биіктігі 800) шкафтың ішінен өтіп кетер еді.
       let cab = withFixture(base, { kind: 'hob', fuel: hobFuel === 'electric' ? 'electric' : 'gas' })
-      if (options.hood ?? true) cab = withFixture(cab, { kind: 'hood' })
+      if ((options.hood ?? true) && !withUpper) cab = withFixture(cab, { kind: 'hood' })
       return dressLower(cab, options)
     }
     if (mod.kind === 'sink') return dressLower(withFixture(base, { kind: 'sink' }), options)
@@ -498,8 +535,19 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
    * үстіңгі шкаф ауада ілініп тұрғандай көрінетін (09-13). Ал B/C қабырғасы
    * `kind !== 'hob'` дегенмен биік бағананың үстіне де шкаф қоятын.
    */
-  const takesUpper = (kind: ModuleKind) =>
-    withUpper && kind !== 'hob' && !MODULE_KINDS.some((m) => m.kind === kind && m.upper)
+  /*
+   * БІР ереже үш қабырғаға да (09-13: B/C бұрын `kind !== 'hob'` дейтін де,
+   * биік бағананың үстіне де шкаф қоятын). Плитаның үстінде — сорғыш шкафы
+   * (сорғыш сұралмаса — ештеңе: ашық плитаның үстіне шкаф ілінбейді),
+   * бұрыштық мойканың үстінде — бұрыштық үстіңгі.
+   */
+  const upperFor = (mod: { kind: ModuleKind; width: number }, uid: string): CabinetConfig | null => {
+    if (!withUpper || MODULE_KINDS.some((m) => m.kind === mod.kind && m.upper)) return null
+    if (mod.kind === 'hob') return (options.hood ?? true) ? makeHoodCabinet(mod.width, uid) : null
+    const up = makeUpper(mod.width, uid)
+    // Бұрыштық мойканың үстінде — бұрыштық үстіңгі: соқыр жағы да бұрышта.
+    return mod.kind === 'cornerSink' ? { ...up, frontPanel: { width: CORNER_UPPER_BLIND, side: 'left' } } : up
+  }
 
   // ── Негізгі қабырға (солтүстік), бұрыштан оңға (offset 0-ден) ─────────────
   let cursor = 0
@@ -516,13 +564,10 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     placements.push({ cabinetId: cab.id, wall: 'north', offset: cursor })
     if (i === 0) depthAtStart = cab.depth
     if (i === runA.length - 1) depthAtEnd = cab.depth
-    if (takesUpper(mod.kind)) {
-      const uid = nextId('a-up')
-      let up = makeUpper(mod.width, uid)
-      // Бұрыштық мойканың үстінде — бұрыштық үстіңгі: соқыр жағы да бұрышта.
-      if (mod.kind === 'cornerSink') up = { ...up, frontPanel: { width: CORNER_UPPER_BLIND, side: 'left' } }
+    const up = upperFor(mod, nextId('a-up'))
+    if (up) {
       cabinets.push(up)
-      placements.push({ cabinetId: uid, wall: 'north', offset: cursor, elevation: upperElev })
+      placements.push({ cabinetId: up.id, wall: 'north', offset: cursor, elevation: upperElev })
     }
     cursor += mod.width
   })
@@ -532,14 +577,15 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   // керек: бұрыштан өлшенген `q`-ды offset-ке ауыстырамыз (depth − q − width).
   // Қатар мойка ТЕРЕҢДІГІНЕН басталады, әйтпесе бұрышта A-мен соқтығысады.
   let q = corner ? depthAtStart : 0
-  runB.forEach((mod) => {
-    const cab = build(mod.kind === 'tall' ? { kind: 'baseDoors', width: mod.width } : mod, 'b')
+  runB.forEach((raw) => {
+    const mod = raw.kind === 'tall' ? { kind: 'baseDoors' as ModuleKind, width: raw.width } : raw
+    const cab = build(mod, 'b')
     cabinets.push(cab)
     placements.push({ cabinetId: cab.id, wall: 'east', offset: room.depth - q - mod.width })
-    if (withUpper && mod.kind !== 'hob') {
-      const uid = nextId('b-up')
-      cabinets.push(makeUpper(mod.width, uid))
-      placements.push({ cabinetId: uid, wall: 'east', offset: room.depth - q - mod.width, elevation: upperElev })
+    const up = upperFor(mod, nextId('b-up'))
+    if (up) {
+      cabinets.push(up)
+      placements.push({ cabinetId: up.id, wall: 'east', offset: room.depth - q - mod.width, elevation: upperElev })
     }
     q += mod.width
   })
@@ -548,14 +594,15 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   // Батыстың offset 0-і СОЛТҮСТІК-БАТЫС бұрышында, оңтүстікке қарай өседі.
   // Қатар мойка ТЕРЕҢДІГІНЕН басталады (солтүстікпен соқтығыспас үшін).
   let wOff = depthAtEnd
-  runC.forEach((mod) => {
-    const cab = build(mod.kind === 'tall' ? { kind: 'baseDoors', width: mod.width } : mod, 'c')
+  runC.forEach((raw) => {
+    const mod = raw.kind === 'tall' ? { kind: 'baseDoors' as ModuleKind, width: raw.width } : raw
+    const cab = build(mod, 'c')
     cabinets.push(cab)
     placements.push({ cabinetId: cab.id, wall: 'west', offset: wOff })
-    if (withUpper && mod.kind !== 'hob') {
-      const uid = nextId('c-up')
-      cabinets.push(makeUpper(mod.width, uid))
-      placements.push({ cabinetId: uid, wall: 'west', offset: wOff, elevation: upperElev })
+    const up = upperFor(mod, nextId('c-up'))
+    if (up) {
+      cabinets.push(up)
+      placements.push({ cabinetId: up.id, wall: 'west', offset: wOff, elevation: upperElev })
     }
     wOff += mod.width
   })

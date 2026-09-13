@@ -77,19 +77,28 @@ describe('ас үй генераторы: плита, сорғыш, мойка',
   it('барлық техника өз түрімен шығады', () => {
     const r = kitchen()
     const kinds = new Set(r.cabinets.flatMap((c) => generateHardware(c, SEED_CATALOG)).map((h) => h.appliance))
-    for (const k of ['fridge', 'oven', 'microwave', 'dishwasher', 'sink', 'hobGas', 'hood']) {
+    for (const k of ['fridge', 'oven', 'microwave', 'dishwasher', 'sink', 'hobGas']) {
       expect(kinds.has(k as never)).toBe(true)
     }
+    // Бөлек «труба» сорғыш — тек үстіңгі қатарсыз (09-13: үстіңгі қатарда
+    // плитаның үстінде сорғыш шкафы тұрады, qdesign сияқты).
+    expect(kinds.has('hood' as never)).toBe(false)
+    const flat = kitchen({ upper: false })
+    const flatKinds = new Set(flat.cabinets.flatMap((c) => generateHardware(c, SEED_CATALOG)).map((h) => h.appliance))
+    expect(flatKinds.has('hood' as never)).toBe(true)
   })
 
-  it('плита ЯЩИКТІ тумбада, мойкадан бөлек, үстінде шкаф жоқ', () => {
+  it('плита ЯЩИКТІ тумбада, мойкадан бөлек, үстінде — СОРҒЫШ ШКАФЫ', () => {
     const r = kitchen()
     const hobCab = r.cabinets.find((c) => c.fixtures?.some((f) => f.kind === 'hob'))!
     expect(hobCab.sections.some((s) => s.contents.some((c) => c.kind === 'drawers'))).toBe(true)
     expect(hobCab.fixtures?.some((f) => f.kind === 'sink')).toBe(false)
     const at = r.placements.find((p) => p.cabinetId === hobCab.id)!
     const above = r.placements.filter((p) => p.wall === at.wall && p.offset === at.offset && (p.elevation ?? 0) > 0)
-    expect(above).toEqual([])
+    // Жай үстіңгі шкаф емес — ортасында труба қорабы бар сорғыш шкафы.
+    expect(above).toHaveLength(1)
+    const hood = r.cabinets.find((c) => c.id === above[0]!.cabinetId)!
+    expect(hood.sections[0]!.contents.some((c) => c.kind === 'stand')).toBe(true)
   })
 
   it('негізгі қабырғаға сыймаса, плита КЕЛЕСІ қабырғаға көшеді (бұрыш 3000 × 2400)', () => {
@@ -98,8 +107,11 @@ describe('ас үй генераторы: плита, сорғыш, мойка',
     expect(hobs).toHaveLength(1)
     const wall = r.placements.find((p) => p.cabinetId === hobs[0]!.id)!.wall
     expect(wall).toBe('east')
-    // Плитаның үстінде үстіңгі шкаф жоқ — сорғыш тұрады.
-    expect(hobs[0]!.fixtures?.some((f) => f.kind === 'hood')).toBe(true)
+    // Плитаның үстінде сорғыш ШКАФЫ (qdesign сияқты), бөлек «труба» жоқ.
+    expect(hobs[0]!.fixtures?.some((f) => f.kind === 'hood')).toBe(false)
+    const at = r.placements.find((p) => p.cabinetId === hobs[0]!.id)!
+    const above = r.placements.filter((p) => p.wall === at.wall && p.offset === at.offset && (p.elevation ?? 0) > 0)
+    expect(above).toHaveLength(1)
   })
 
   it('мойка гарнитурда ДӘЛ бір рет (шаблон мен генератор қайталамайды)', () => {

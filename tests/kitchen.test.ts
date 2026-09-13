@@ -83,7 +83,7 @@ describe('generateKitchen', () => {
    * биік бағананың үстінде — жоқ. Бұрын солтүстікте мойка мен посудомойканың
    * үстінде бос қалып, қатар шетінде жалғыз шкаф ауада ілініп тұратын.
    */
-  it('үстіңгі шкаф плитадан басқа әр аласа модульдің үстінде, пеналдың үстінде жоқ', () => {
+  it('үстіңгі шкаф әр аласа модульдің үстінде (плитаның үстінде — сорғыш шкафы), пеналдың үстінде жоқ', () => {
     const r = generateKitchen({ layout: 'corner', lengthA: 3200, lengthB: 2400, sink: true, upper: true }, SEED_CATALOG)
     const byId = new Map(r.cabinets.map((c) => [c.id, c]))
     const isUpper = (p: (typeof r.placements)[number]) => (p.elevation ?? 0) > 0
@@ -92,14 +92,47 @@ describe('generateKitchen', () => {
     for (const low of lowers) {
       const cab = byId.get(low.cabinetId)!
       const tall = cab.height > 1500
-      const hob = (cab.fixtures ?? []).some((f) => f.kind === 'hob')
       const above = uppers.filter((u) => u.wall === low.wall && u.offset === low.offset)
-      expect(above, `${cab.name} @ ${low.wall}:${low.offset}`).toHaveLength(tall || hob ? 0 : 1)
+      // Плитаның үстінде де бір шкаф бар — ол сорғыш шкафы (төмендегі тест).
+      expect(above, `${cab.name} @ ${low.wall}:${low.offset}`).toHaveLength(tall ? 0 : 1)
     }
     // Мойка мен посудомойка солтүстікте — енді олардың үстінде де шкаф бар.
     const sink = lowers.find((p) => (byId.get(p.cabinetId)!.fixtures ?? []).some((f) => f.kind === 'sink'))!
     expect(uppers.some((u) => u.wall === sink.wall && u.offset === sink.offset)).toBe(true)
     expect(validatePlacements(r.room, entriesOf(r))).toEqual([])
+  })
+
+  /*
+   * СОРҒЫШ ШКАФЫ qdesign сияқты (09-13): плитаның үстінде — ортасында
+   * 120 мм труба қорабы бар шкаф (екі стойка, алдынан 120 шегініс), есіктері
+   * тұтқасыз; бөлек «труба» сорғыш бұл кезде жоқ. Үстіңгі қатарсыз — бар.
+   */
+  it('плитаның үстінде сорғыш шкафы: 120 мм қорап, тұтқасыз; бөлек сорғыш жоқ', () => {
+    const r = generateKitchen({ layout: 'corner', lengthA: 3200, lengthB: 2400, sink: true, upper: true }, SEED_CATALOG)
+    const byId = new Map(r.cabinets.map((c) => [c.id, c]))
+    const hobPl = r.placements.find((p) => !(p.elevation ?? 0)
+      && (byId.get(p.cabinetId)!.fixtures ?? []).some((f) => f.kind === 'hob'))!
+    const hobCab = byId.get(hobPl.cabinetId)!
+    expect((hobCab.fixtures ?? []).some((f) => f.kind === 'hood')).toBe(false)
+
+    const hoodPl = r.placements.find((p) => p.wall === hobPl.wall && p.offset === hobPl.offset && (p.elevation ?? 0) > 0)!
+    const hood = byId.get(hoodPl.cabinetId)!
+    expect(hood.width).toBe(hobCab.width)
+    const stand = hood.sections[0]!.contents.find((c) => c.kind === 'stand')
+    expect(stand?.kind).toBe('stand')
+    if (stand?.kind !== 'stand') return
+    const t = SEED_CATALOG.materials.find((m) => m.id === hood.carcassMaterialId)!.thickness
+    expect(stand.at![1]! - (stand.at![0]! + t)).toBe(120)
+    expect(stand.insets?.front).toBe(120)
+    expect(hood.sections[0]!.fronts?.handle).toBeNull()
+    expect(generateCabinet(hood, SEED_CATALOG).filter((p) => p.label === 'Стойка')).toHaveLength(2)
+    expect(validatePlacements(r.room, entriesOf(r))).toEqual([])
+
+    // Үстіңгі қатарсыз: сорғыш шкафы жоқ, бөлек сорғыш — бар. (4200: 3000 мм
+    // түзу қабырғада техника мен мойкадан кейін плитаға ≥ 450 тумба қалмайды.)
+    const flat = generateKitchen({ layout: 'straight', lengthA: 4200, sink: true, upper: false }, SEED_CATALOG)
+    const hobFlat = flat.cabinets.find((c) => (c.fixtures ?? []).some((f) => f.kind === 'hob'))!
+    expect((hobFlat.fixtures ?? []).some((f) => f.kind === 'hood')).toBe(true)
   })
 
   it('төменгі модульде цоколь мен столешница бар', () => {
