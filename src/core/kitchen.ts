@@ -21,7 +21,7 @@ import { defaultMillingSpec } from './milling'
 import type { MillingPatternId } from './milling'
 import { findTemplate, templateToCabinet } from './templates'
 import { findFixture } from './filling'
-import type { CabinetConfig, CabinetFixture, Catalog, Placement, Section } from './types'
+import type { CabinetConfig, CabinetFixture, Catalog, CustomPart, Placement, Section } from './types'
 
 export type KitchenLayout = 'straight' | 'corner' | 'u'
 
@@ -163,6 +163,12 @@ const CORNER_UPPER_BLIND = 350
  */
 const HOOD_DUCT_GAP = 120
 const HOOD_STAND_INSET = 120
+/*
+ * Бір столешница тақтасының ең үлкен ұзындығы, мм. Ядроның өлшем шегі
+ * (`generateCabinet` MAX_DIMENSION = 4000), ал жеткізушінің ең ұзын тақтасы
+ * 4100 — одан ұзын қатарда түйіспе модульдің шекарасына қойылады.
+ */
+const WORKTOP_PIECE_MAX = 4000
 const FRIDGE_WIDTH = 600
 const SINK_WIDTH = 800
 const TALL_HEIGHT = 2100
@@ -376,7 +382,14 @@ function dressLower(cabinet: CabinetConfig, opts: KitchenOptions): CabinetConfig
       ...(plinthMat ? { plinthMaterialId: plinthMat } : {}),
     },
     worktop: {
-      overhangFront: dims?.worktopOverhang ?? cabinet.worktop?.overhangFront ?? WORKTOP_OVERHANG,
+      /*
+       * Шығыңқы БҮКІЛ гарнитурға БІРДЕЙ. ⚠ Бұрын шаблонның өз мәні (кейбірінде
+       * 20) генератордікінен (30) басым еді де, бір кухняда 20 мен 30 аралас
+       * шығатын. Әр тумбаның өз столешницасы болғанда бұл байқалмады, ал
+       * ортақ тақтада шығыңқы біреу ғана: алдыңғы жиегі тісті, мойка мен плита
+       * әр тереңдікте болар еді (09-13-те тест ұстады).
+       */
+      overhangFront: dims?.worktopOverhang ?? WORKTOP_OVERHANG,
       overhangSides: 0,
       ...(worktopMat ? { materialId: worktopMat } : {}),
     },
@@ -606,6 +619,72 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     }
     wOff += mod.width
   })
+
+  /*
+   * СТОЛЕШНИЦА — ӘР ҚАБЫРҒАҒА ТҰТАС ТАҚТА (qdesign сияқты, 09-13).
+   *
+   * Бұрын әр тумбаның ӨЗ столешницасы болатын: деталировкада бір қабырғаға
+   * 5–6 кесек, ал цех бір тұтас постформинг тақтаны кеседі. Енді қабырғадағы
+   * тумбалардың әр ҮЗДІКСІЗ тобына бір тақта — топтың бірінші корпусында
+   * ерікті деталь; корпустарда `shared` (өз детальі жоқ, бірақ қалыңдық пен
+   * шығыңқы сол — мойка мен плитаның биіктігі содан). Бағана топты бөледі.
+   *
+   * Бұрыш: солтүстік тақта бұрыш арқылы ТҰТАС өтеді, көрші қабырғаның тақтасы
+   * оған ТІРЕЛЕДІ — шығыңқы мөлшеріне қысқа (qdesign: 3386 тұтас, 2400 тірелген).
+   * Материал: шеберде таңдалғаны, әйтпесе цехтың постформинг тақтасы.
+   */
+  const worktopId = options.materials?.worktopId ?? catalog.materials.find((m) => m.slab)?.id
+  const byId = new Map(cabinets.map((c) => [c.id, c]))
+  const widthOf = (p: Placement) => byId.get(p.cabinetId)!.width
+  for (const wall of ['north', 'east', 'west'] as const) {
+    const list = placements
+      .filter((p) => p.wall === wall && !(p.elevation ?? 0) && byId.get(p.cabinetId)!.worktop)
+      .sort((a, b) => a.offset - b.offset)
+    const groups: Placement[][] = []
+    let groupLength = 0
+    for (const p of list) {
+      const last = groups[groups.length - 1]
+      const prev = last?.[last.length - 1]
+      // Үзіліссіз әрі тақтаның шегіне сыйса — сол топқа; әйтпесе жаңа тақта
+      // (түйіспе модульдің шекарасында — цех солай кеседі).
+      if (prev && prev.offset + widthOf(prev) === p.offset && groupLength + widthOf(p) <= WORKTOP_PIECE_MAX) {
+        last!.push(p)
+        groupLength += widthOf(p)
+      } else {
+        groups.push([p])
+        groupLength = widthOf(p)
+      }
+    }
+    for (const group of groups) {
+      const head = byId.get(group[0]!.cabinetId)!
+      const start = group[0]!.offset
+      const end = group[group.length - 1]!.offset + widthOf(group[group.length - 1]!)
+      const overhang = head.worktop!.overhangFront
+      // Шығыстың offset-і оңтүстіктен солтүстікке өседі: бұрыштағы шеті — `end`.
+      // Батыстыкі солтүстіктен оңтүстікке: бұрыштағы шеті — `start`.
+      const buttEnd = wall === 'east' && corner && end === room.depth - depthAtStart
+      const buttStart = wall === 'west' && start === depthAtEnd
+      const part: CustomPart = {
+        id: `worktop-${wall}-${start}`,
+        label: 'Столешница',
+        ...(worktopId ? { materialId: worktopId } : {}),
+        length: end - start - (buttEnd ? overhang : 0) - (buttStart ? overhang : 0),
+        width: head.depth + overhang,
+        position: { x: buttStart ? overhang : 0, y: head.height, z: -overhang },
+        plane: 'horizontal',
+        edging: 'none',
+        note: 'Постформинг, общая на ряд',
+      }
+      for (const p of group) {
+        const c = byId.get(p.cabinetId)!
+        cabinets[cabinets.indexOf(c)] = {
+          ...c,
+          worktop: { ...c.worktop!, shared: true, ...(worktopId ? { materialId: worktopId } : {}) },
+          ...(c === head ? { customParts: [...(c.customParts ?? []), part] } : {}),
+        }
+      }
+    }
+  }
 
   return { cabinets, placements, room }
 }

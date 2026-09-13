@@ -1024,7 +1024,8 @@ export function generateCabinet(
     }
   }
 
-  if (config.worktop) {
+  // Ортақ столешница — қатардың бір тақтасы (ерікті деталь), корпуста жоқ.
+  if (config.worktop && !config.worktop.shared) {
     const worktopMat = config.worktop.materialId
       ? requireMaterial(materials, config.worktop.materialId, 'worktop.materialId')
       : carcass
