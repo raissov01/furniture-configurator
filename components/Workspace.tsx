@@ -152,6 +152,21 @@ export function Workspace() {
     return () => clearTimeout(timer)
   }, [room, cabinets, placements, saveProjectLocally, pushHistory])
 
+  /*
+   * Кідірістегі сақтау бет ЖАБЫЛҒАНДА/АУЫСҚАНДА жоғалмауы керек.
+   *
+   * ⚠ 09-13: «Сброс»-тан кейін 500 мс-тық таймер 2 с ішінде де іске
+   * қоспай (кадр `demand` режимінде headless Chrome таймерді кешіктірді),
+   * бет ауысқан бойда жаңа күй жоғалып, ескі жоба қайта ашылатын — e2e-нің
+   * үш тесті құлады. Адам үшін де сол: өрісті өзгертіп, бірден қойындыны
+   * жапса, соңғы өзгеріс кететін. `pagehide` — жабылудың сенімді оқиғасы.
+   */
+  useEffect(() => {
+    const flush = () => saveProjectLocally()
+    window.addEventListener('pagehide', flush)
+    return () => window.removeEventListener('pagehide', flush)
+  }, [saveProjectLocally])
+
   // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
   const spanWarnings = useMemo(() => shelfSpanWarnings(panels, shop), [panels, shop])
 
