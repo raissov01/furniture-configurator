@@ -45,6 +45,7 @@ export function TemplateGallery() {
   const loadTemplate = useConfigurator((s) => s.loadTemplate)
   const loadSet = useConfigurator((s) => s.loadSet)
   const loadKitchen = useConfigurator((s) => s.loadKitchen)
+  const runBusy = useConfigurator((s) => s.runBusy)
   const activeId = useConfigurator((s) => s.templateId)
   const [filter, setFilter] = useState<Filter>('all')
   // Ас үй генераторы формасының күйі.
@@ -172,14 +173,14 @@ export function TemplateGallery() {
                   active
                   onClick={() => {
                     setFirstRun(false)
-                    loadKitchen({
+                    runBusy(tr('Собираем кухню…'), () => loadKitchen({
                       layout: kit.corner ? 'corner' : 'straight',
                       lengthA: kit.lengthA,
                       lengthB: kit.corner ? kit.lengthB : undefined,
                       sink: kit.sink,
                       upper: kit.upper,
                       appliances: kit.appliances,
-                    })
+                    }))
                   }}
                 >
                   {tr('Сгенерировать')}
@@ -197,7 +198,7 @@ export function TemplateGallery() {
                 <button
                   key={preset.id}
                   type="button"
-                  onClick={() => { setFirstRun(false); loadSet(preset.id) }}
+                  onClick={() => { setFirstRun(false); runBusy(tr('Загрузка…'), () => loadSet(preset.id)) }}
                   className="flex flex-col items-start gap-2 rounded-lg border border-neutral-200 p-3 text-left transition hover:border-neutral-500 hover:shadow-sm dark:border-neutral-700"
                 >
                   <div className="flex flex-wrap items-end gap-2">

@@ -99,6 +99,14 @@ type State = Snapshot & {
    * түсіндіреді. Деталировкаға да, раскройға да әсері ЖОҚ.
    */
   openness: number
+  /**
+   * Ауыр әрекет жүріп жатыр (гарнитур құрастыру, жиынтық жүктеу) — экранда
+   * «Жүктелуде…» тұрады. qdesign сияқты: онсыз бет бірнеше секунд қатып
+   * тұрады да, адам «бет тоқтап қалды ма» деп ойлайды (пайдаланушы, 09-13).
+   */
+  busy: string | null
+  /** Ауыр әрекетті оверлеймен орындау: алдымен оверлей салынады, сосын жұмыс. */
+  runBusy(label: string, fn: () => void): void
   /** Камера проекциясы: перспектива (табиғи) не орто (өлшем алуға ыңғайлы). */
   projection: 'perspective' | 'ortho'
   /**
@@ -299,6 +307,7 @@ export const useConfigurator = create<State>((set, get) => ({
   viewMode: 'solid',
   showFronts: true,
   openness: 0,
+  busy: null,
   walk: false,
   vr: false,
   openCabinets: {},
@@ -628,6 +637,26 @@ export const useConfigurator = create<State>((set, get) => ({
   setAr: (patch) => set((s) => ({ ar: { ...s.ar, ...patch } })),
   setShowFronts: (showFronts) => set({ showFronts }),
   setOpenness: (openness) => set({ openness: Math.min(1, Math.max(0, openness)) }),
+  /*
+   * ЕКІ КАДР КҮТУ: `set({ busy })` бірден ауыр жұмысқа өтсе, браузер оверлейді
+   * салып үлгермейді (JS негізгі ағынды алып қояды) — адам бәрібір қатқан
+   * бетті көреді. Сондықтан: оверлей → 2 кадр → жұмыс → жаңа сахна салынатын
+   * 2 кадр → оверлей кетеді. Стор әрекеттері (loadKitchen т.б.) СИНХРОНДЫ
+   * қалады: оларды тест те, ИИ-жол да тура шақырады.
+   */
+  runBusy: (label, fn) => {
+    if (get().busy) return
+    set({ busy: label })
+    const frames = (n: number, then: () => void) =>
+      (n <= 0 ? then() : requestAnimationFrame(() => frames(n - 1, then)))
+    frames(2, () => {
+      try {
+        fn()
+      } finally {
+        frames(2, () => set({ busy: null }))
+      }
+    })
+  },
   setProjection: (projection) => set({ projection }),
   fitCamera: () => set({ fitNonce: get().fitNonce + 1 }),
 

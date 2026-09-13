@@ -34,6 +34,7 @@ import {
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { ModuleList } from '@/components/ModuleList'
+import { BusyOverlay, Spinner } from '@/components/BusyOverlay'
 import { usePanels } from '@/lib/usePanels'
 import { useSceneItems } from '@/lib/useSceneItems'
 import {
@@ -45,7 +46,13 @@ import type { CameraPreset } from '@/store/configurator'
 // R3F тек браузерде жүреді — сервер жағында рендерленбейді.
 const Scene = dynamic(() => import('@/components/Scene'), {
   ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-neutral-100 dark:bg-neutral-950" />,
+  // 3D кітапханасы бірнеше секунд жүктеледі: бос сұр тақта емес, «жүктелуде»
+  // деген белгі — әйтпесе адам бет қатып қалды деп ойлайды (qdesign сияқты).
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-neutral-100 dark:bg-neutral-950">
+      <Spinner label={tr('Загрузка 3D…')} />
+    </div>
+  ),
 })
 
 const PRESETS: { value: CameraPreset; label: string }[] = [
@@ -367,6 +374,7 @@ export function Workspace() {
       ) : null}
 
       <Tour paused={galleryOpen} />
+      <BusyOverlay />
       <RenderPanel />
       {/*
         3D-де БАСЫП таңдалған деталь: цехтың сұрағы «мынау қандай деталь»

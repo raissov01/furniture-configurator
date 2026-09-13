@@ -190,8 +190,17 @@ function WalkControls({ room }: { room: { width: number; depth: number } }) {
     }
   })
 
-  return <PointerLockControls makeDefault />
+  /*
+   * ⚠ `selector` — ТЕК 3D-холст. Онсыз drei тінтуірді бекітуді бүкіл
+   * `document`-тің басылуына ілетін: Esc басып курсорды босатқан адам кез
+   * келген батырманы (Выйти, Вид, мәзір) басқанда қайта прогулкаға кіріп
+   * кететін (пайдаланушы, 09-13).
+   */
+  return <PointerLockControls makeDefault selector={`#${SCENE_CANVAS_ID} canvas`} />
 }
+
+/** 3D-холсттың контейнері: прогулканың тінтуір бекітуі тек осыны басқанда. */
+export const SCENE_CANVAS_ID = 'scene-3d'
 
 /**
  * VR — гарнитурамен бөлменің ішінде тұру. Сол стик — жүру, оң стик — 45°-қа
@@ -927,6 +936,7 @@ export default function Scene({
 
   return (
     <Canvas
+      id={SCENE_CANVAS_ID}
       shadows
       /*
        * КАДР ТЕК КЕРЕК КЕЗДЕ (`demand`). Бұрын әдепкі `always` еді: сахна

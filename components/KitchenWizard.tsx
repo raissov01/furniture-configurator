@@ -116,6 +116,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
   const catalog = useConfigurator((s) => s.catalog)
   const loadKitchen = useConfigurator((s) => s.loadKitchen)
   const loadFurniture = useConfigurator((s) => s.loadFurniture)
+  const runBusy = useConfigurator((s) => s.runBusy)
   const [step, setStep] = useState(0)
   const [d, setD] = useState<Draft>(DEFAULT)
   const [prompt, setPrompt] = useState('')
@@ -206,18 +207,21 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
       milling: d.milling,
       modules: d.modules ?? undefined,
     }
-    if (d.type === 'kitchen') {
-      loadKitchen(options)
-    } else {
-      loadFurniture({
-        type: d.type,
-        // U тек ас үйде; басқа түрде ол болмайды, бірақ TS үшін тарылтамыз.
-        layout: d.type === 'tv' || d.layout === 'u' ? (d.layout === 'u' ? 'corner' : 'straight') : d.layout,
-        lengthA: d.lengthA,
-        lengthB: d.layout === 'corner' ? d.lengthB : undefined,
-        materials: { carcassId: d.carcassId || undefined, frontId: d.frontId || undefined },
-      })
-    }
+    // Құрастыру бірнеше секунд алады — «Жүктелуде…» оверлейімен (qdesign сияқты).
+    runBusy(tr('Собираем проект…'), () => {
+      if (d.type === 'kitchen') {
+        loadKitchen(options)
+      } else {
+        loadFurniture({
+          type: d.type,
+          // U тек ас үйде; басқа түрде ол болмайды, бірақ TS үшін тарылтамыз.
+          layout: d.type === 'tv' || d.layout === 'u' ? (d.layout === 'u' ? 'corner' : 'straight') : d.layout,
+          lengthA: d.lengthA,
+          lengthB: d.layout === 'corner' ? d.lengthB : undefined,
+          materials: { carcassId: d.carcassId || undefined, frontId: d.frontId || undefined },
+        })
+      }
+    })
     onClose()
   }
 
