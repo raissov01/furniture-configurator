@@ -32,6 +32,12 @@ const ROLE_SHADE: Record<string, number> = {
 /** Декоры жоқ материал — бейтарап сұр. */
 const NEUTRAL = '#b8b4ac'
 
+/**
+ * Басу мен сүйреудің шегі, px. Курсор басқан жерінен осыдан көп жылжыса,
+ * бұл — камераны айналдыру не модульді жылжыту, детальді таңдау емес.
+ */
+const CLICK_SLOP = 6
+
 function shade(hex: string, factor: number): string {
   const value = hex.replace('#', '')
   if (value.length !== 6) return hex
@@ -491,10 +497,12 @@ export function PanelMesh({
           onClick={(e) => {
             // VR-да оқиға корпустың тобына көтеріледі — ол есікті ашады.
             if (vr) return
+            // Сүйреудің (модульді жылжыту не камераны айналдыру) соңы — басу емес:
+            // әйтпесе жібергенде таңдау ауысып не алынып кететін.
+            if (e.delta > CLICK_SLOP) return
             e.stopPropagation()
             // Екінші рет басу таңдауды АЛАДЫ: бөлектеу қалып қоймауы керек.
             setSelected(isSelected ? null : key)
-        if (cabinetId) setActive(cabinetId)
             if (cabinetId) setActive(cabinetId)
           }}
         >
@@ -531,8 +539,10 @@ export function PanelMesh({
       }}
       onClick={(e) => {
         if (vr) return
+        if (e.delta > CLICK_SLOP) return
         e.stopPropagation()
         setSelected(isSelected ? null : key)
+        if (cabinetId) setActive(cabinetId)
       }}
     >
       <boxGeometry args={[extents.x, extents.y, extents.z]} />

@@ -236,6 +236,46 @@ export function placementSpan(cabinet: CabinetConfig, placement: Placement): { s
   return { start: placement.offset, end: placement.offset + cabinet.width }
 }
 
+/**
+ * Сүйреген модуль көршісінің шетіне (не қабырғаның шетіне) осы қашықтықтан
+ * «жабысады», мм. Ас үй қатарында модульдер саңылаусыз тұруы керек: қолмен
+ * дәл 600-ге дейін жеткізу қиын, магнитсіз 3–7 мм саңылау қалып қоятын.
+ */
+export const DRAG_MAGNET = 40
+
+/** Сүйрегендегі тор қадамы, мм — оң панельдегі «Смещение» өрісінің қадамымен бірдей. */
+export const DRAG_STEP = 10
+
+/**
+ * 3D-де сүйреген модульдің қабырға бойындағы ЖАҢА орны.
+ *
+ * Алдымен магнит: қабырғаның екі шеті мен сол қабырғадағы көршілердің шеттері
+ * (көршінің оң жағына тіркелу — `end`, сол жағына — `start − width`). Ең жақын
+ * магнит ұтады. Магнит жоқ болса — `step` торына дөңгелектеу. Нәтиже әрқашан
+ * қабырғаның ішінде: `0..wallLength − width`.
+ *
+ * Қабаттасуға ТЫЙЫМ САЛМАЙДЫ — ол `validatePlacements`-тің ісі: пайдаланушы
+ * модульді көршісінің үстінен өткізіп, арғы жағына қоя алуы керек.
+ */
+export function snapOffset(
+  raw: number,
+  width: number,
+  wallLength: number,
+  neighbours: { start: number; end: number }[],
+  magnet: number = DRAG_MAGNET,
+  step: number = DRAG_STEP,
+): number {
+  const max = Math.max(0, wallLength - width)
+  const candidates = [0, max, ...neighbours.flatMap((n) => [n.end, n.start - width])]
+  let best: number | null = null
+  for (const c of candidates) {
+    if (c < 0 || c > max || Math.abs(c - raw) > magnet) continue
+    if (best === null || Math.abs(c - raw) < Math.abs(best - raw)) best = c
+  }
+  if (best !== null) return best
+  return Math.min(max, Math.max(0, Math.round(raw / step) * step))
+}
+
 export type PlacementIssue = {
   cabinetId: string
   /** UI-да қай өріс жанып тұратынын білу үшін */

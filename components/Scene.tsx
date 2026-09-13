@@ -13,7 +13,9 @@ import {
   Environment, Grid, Lightformer, OrbitControls, OrthographicCamera, PointerLockControls,
 } from '@react-three/drei'
 import { EffectComposer, N8AO } from '@react-three/postprocessing'
-import { Euler, NeutralToneMapping, Object3D, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3 } from 'three'
+import {
+  Euler, NeutralToneMapping, Object3D, Plane, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3,
+} from 'three'
 import { isTouchDevice, walkInput } from '@/lib/walkInput'
 import type { Group, Mesh } from 'three'
 import { XR, XROrigin, useXRControllerLocomotion } from '@react-three/xr'
@@ -29,8 +31,8 @@ import { grainTexture } from '@/lib/grainTexture'
 import type { CameraPreset } from '@/store/configurator'
 import {
   DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, placementFootprint,
-  projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, visibleOpenings, wallById,
-  wallPieces,
+  placementSpan, projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, snapOffset,
+  visibleOpenings, wallById, wallPieces,
 } from '@/src/core/index'
 import type {
   CabinetConfig, Catalog, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
@@ -464,6 +466,51 @@ function CabinetGroup({
     [item.panels, item.cabinet.id, cabinetCount, stepOf, stepLimit],
   )
 
+  /*
+   * МОДУЛЬДІ СҮЙРЕП ЖЫЛЖЫТУ (qdesign сияқты): модуль ӨЗ ҚАБЫРҒАСЫ бойымен
+   * сырғиды, 10 мм торға және көршінің шетіне жабысады (`snapOffset`).
+   *
+   * ⚠ Тек модульдің бір детальі БАСЫП ТАҢДАЛҒАНДА. Әйтпесе жалғыз шкаф
+   * (ол әрқашан белсенді) экранның көбін алып тұрады да, камераны айналдырамын
+   * деп басқан сайын шкаф жылжып кетер еді. Бірінші басу — таңдау, сосын сүйреу.
+   * Басқа қабырғаға ауыстыру — оң панельдегі «Стена» өрісі.
+   */
+  const room = useConfigurator((s) => s.room)
+  const walk = useConfigurator((s) => s.walk)
+  const selected = useConfigurator((s) => s.selected)
+  const hovered = useConfigurator((s) => s.hovered)
+  const movePlacement = useConfigurator((s) => s.movePlacement)
+  const controls = useThree((s) => s.controls) as unknown as { enabled: boolean } | null
+  const gl = useThree((s) => s.gl)
+  const pids = useMemo(
+    () => new Set(item.panels.map((p) => projectPanelId(item.cabinet.id, p.id, cabinetCount))),
+    [item.panels, item.cabinet.id, cabinetCount],
+  )
+  const canDrag = active && !walk && !vr && selected !== null && pids.has(selected)
+  const drag = useRef<{ pointerId: number; plane: Plane; grab: number } | null>(null)
+
+  // Қолмен ұстауға болатынын курсор айтады.
+  const grabbable = canDrag && hovered !== null && pids.has(hovered)
+  useEffect(() => {
+    if (!grabbable) return
+    const el = gl.domElement
+    el.style.cursor = 'grab'
+    return () => { el.style.cursor = '' }
+  }, [grabbable, gl])
+
+  /** Әлем нүктесінің (метр) қабырға бойындағы қашықтығы, мм. */
+  const along = (point: Vector3, wall: Wall) =>
+    (point.x / MM - wall.origin.x) * wall.direction.x + (point.z / MM - wall.origin.z) * wall.direction.z
+
+  const endDrag = () => {
+    if (!drag.current) return
+    drag.current = null
+    if (controls) controls.enabled = true
+    gl.domElement.style.cursor = grabbable ? 'grab' : ''
+  }
+  // Сүйреп жатқанда модуль алынып тасталса (undo, жою) — камера қатып қалмасын.
+  useEffect(() => endDrag, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <group
       // Y — ілмелі модульдің еденнен биіктігі (`placement.elevation`).
@@ -473,6 +520,43 @@ function CabinetGroup({
       userData={{ cabinetId: item.cabinet.id }}
       // VR: панель де, техника да басылғанда оқиға осы топқа көтеріледі.
       onClick={(e) => { if (!vr) return; e.stopPropagation(); toggleCabinetOpen(item.cabinet.id) }}
+      onPointerDown={(e) => {
+        if (!canDrag || e.button !== 0) return
+        const placement = useConfigurator.getState().placements.find((p) => p.cabinetId === item.cabinet.id)
+        if (!placement) return
+        e.stopPropagation()
+        // Жазықтық — ұстаған нүктенің биіктігінде: модуль курсордан қалмай жүреді.
+        const plane = new Plane(new Vector3(0, 1, 0), -e.point.y)
+        drag.current = { pointerId: e.pointerId, plane, grab: placement.offset - along(e.point, wallById(room, placement.wall)) }
+        // OrbitControls оқиғаны бізден БҰРЫН алады, бірақ әр қозғалыста `enabled`-ті
+        // тексереді — сондықтан камера бір пиксель де бұрылмайды.
+        if (controls) controls.enabled = false
+        gl.domElement.style.cursor = 'grabbing'
+        ;(e.target as unknown as Element).setPointerCapture(e.pointerId)
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current
+        if (!d || e.pointerId !== d.pointerId) return
+        e.stopPropagation()
+        const s = useConfigurator.getState()
+        const placement = s.placements.find((p) => p.cabinetId === item.cabinet.id)
+        const hit = e.ray.intersectPlane(d.plane, new Vector3())
+        if (!placement || !hit) return
+        const wall = wallById(room, placement.wall)
+        const neighbours = s.placements.flatMap((p) => {
+          if (p.wall !== placement.wall || p.cabinetId === item.cabinet.id) return []
+          const other = s.cabinets.find((c) => c.id === p.cabinetId)
+          return other ? [placementSpan(other, p)] : []
+        })
+        const offset = snapOffset(d.grab + along(hit, wall), item.cabinet.width, wall.length, neighbours)
+        if (offset !== placement.offset) movePlacement(item.cabinet.id, { offset })
+      }}
+      onPointerUp={(e) => {
+        if (!drag.current) return
+        ;(e.target as unknown as Element).releasePointerCapture(e.pointerId)
+        endDrag()
+      }}
+      onLostPointerCapture={endDrag}
     >
       {visible
         .filter((p) => showFronts || p.role !== 'front')
