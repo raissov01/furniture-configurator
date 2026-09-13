@@ -653,6 +653,45 @@ async function run() {
     check(width === '1234', `жаңартудан кейін ені сақталды (${width})`)
   })
 
+  await test('3D: таңдалған модульді сүйреп жылжыту, бір undo', async () => {
+    await h.closeModals()
+    const offset = () => h.evaluate(`(() => {
+      const l = [...document.querySelectorAll('label')].find((x) => x.textContent.includes('Смещение'))
+      return l?.querySelector('input[type=number]')?.value ?? null
+    })()`)
+    const box = JSON.parse(await h.evaluate(`(() => {
+      const r = document.querySelector('#scene-3d canvas').getBoundingClientRect()
+      return JSON.stringify({ x: r.x + r.width / 2, y: r.y + r.height / 2 })
+    })()`))
+    const mouse = (type, x, y, buttons) => session.send('Input.dispatchMouseEvent', {
+      type, x, y, button: 'left', buttons, clickCount: type === 'mouseMoved' ? 0 : 1,
+    })
+    // Бірінші басу — детальді таңдау (таңдалмаған модуль сүйрелмейді).
+    await mouse('mouseMoved', box.x, box.y, 0)
+    await mouse('mousePressed', box.x, box.y, 1)
+    await mouse('mouseReleased', box.x, box.y, 0)
+    check(await h.until(`document.body.innerText.includes('Рез · цех:')`, 5000), 'деталь таңдалды')
+    const before = await offset()
+    check(before !== null, 'оң панельде «Смещение» бар')
+
+    // Сүйреу: 20 қадам × 8 px, әр қадам 500 мс-тан жиі — undo бір қадам болуы керек.
+    await mouse('mousePressed', box.x, box.y, 1)
+    for (let i = 1; i <= 20; i += 1) {
+      await mouse('mouseMoved', box.x + i * 8, box.y, 1)
+      await h.wait(40)
+    }
+    await mouse('mouseReleased', box.x + 160, box.y, 0)
+    await h.wait(600)
+    const after = await offset()
+    check(after !== null && after !== before, `модуль жылжыды: ${before} → ${after}`)
+    check(Number.isInteger(Number(after)), `орны бүтін мм: ${after}`)
+    check(await h.until(`document.body.innerText.includes('Рез · цех:')`, 2000), 'сүйреуден кейін таңдау қалды')
+
+    await h.evaluate(`document.querySelector('button[title="Ctrl+Z"]')?.click()`)
+    await h.wait(600)
+    check(await offset() === before, `бір undo бастапқы орынға қайтарды: ${await offset()} (күтілгені ${before})`)
+  })
+
   await test('Бөлме: қабырғаға корпус қосу', async () => {
     await h.closeModals()
     check(await h.menu('Проект', 'Стены и комната', 1500), 'бөлме терезесі ашылды')
