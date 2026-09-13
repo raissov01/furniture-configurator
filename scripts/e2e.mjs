@@ -66,10 +66,20 @@ async function connect() {
   }
   await new Promise((r) => { ws.onopen = r })
 
+  /*
+   * ⚠ ТАЙМАУТ. Бұрын жауап келмесе `send` мәңгі күтетін: 09-13-те бір CDP
+   * жауабы жоғалып, бүкіл жүгіріс 15+ минут қатып тұрды (бет тірі еді,
+   * Node 0 % CPU-мен күтіп тұрды). Енді 60 с-тан кейін қате — тест құлайды
+   * да, қай әрекет жауап бермегені хабарда көрінеді.
+   */
   const send = (method, params = {}) =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
       const i = ++id
-      pending.set(i, resolve)
+      const timer = setTimeout(() => {
+        pending.delete(i)
+        reject(new Error(`CDP ${method} не ответил за 60 с`))
+      }, 60_000)
+      pending.set(i, (result) => { clearTimeout(timer); resolve(result) })
       ws.send(JSON.stringify({ id: i, method, params }))
     })
 
