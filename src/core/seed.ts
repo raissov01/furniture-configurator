@@ -133,6 +133,28 @@ export const SEED_MATERIALS: Material[] = [
     defaultEdging: { visibleFront: 'abs2-paint', visibleSecondary: 'abs2-paint', hidden: null },
     decor: { color: '#e6e3dd', kind: 'solid' },
   },
+  /*
+   * ПОСТФОРМИНГ СТОЛЕШНИЦА 38 мм (пайдаланушы, 09-13): дайын тақта, жеткізуші
+   * 3050/4100 мм ұзындықпен сатады. Раскройға кірмейді (`slab`), сметаға —
+   * метрмен. Алдыңғы жиегі заводта иілген (постформинг) — кромка ЖОҚ.
+   * Парақ өлшемдері тақтада қолданылмайды; тек схема талабы үшін тұр.
+   */
+  ...([
+    { code: 'stone', name: 'Серый камень', color: '#8f8c86', kind: 'solid' as const },
+    { code: 'oak', name: 'Дуб', color: '#a9805a', kind: 'wood' as const },
+  ]).map((d): Material => ({
+    id: `pf38-${d.code}`,
+    name: `Столешница постформинг 38 мм ${d.name}`,
+    thickness: 38,
+    sheetWidth: 4100,
+    sheetHeight: 600,
+    hasGrain: false,
+    pricePerSheet: 0,
+    trimEdge: 0,
+    defaultEdging: { visibleFront: null, visibleSecondary: null, hidden: null },
+    decor: { color: d.color, kind: d.kind },
+    slab: { stockLengths: [3050, 4100], pricePerMeter: 0 },
+  })),
 ]
 
 export const SEED_CATALOG = { materials: SEED_MATERIALS, edgeBands: SEED_EDGE_BANDS }

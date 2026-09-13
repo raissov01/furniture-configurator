@@ -76,6 +76,13 @@ export function ShopSettings() {
 
   const setPriceSheet = (id: string, tenge: number) =>
     editShop({ materials: shop.materials.map((m) => (m.id === id ? { ...m, pricePerSheet: toMinor(tenge) } : m)) })
+  // Тақта (постформинг) метрмен сатылады — оның бағасы парақтың емес, метрдің.
+  const setPriceMeter = (id: string, tenge: number) =>
+    editShop({
+      materials: shop.materials.map((m) => (m.id === id && m.slab
+        ? { ...m, slab: { ...m.slab, pricePerMeter: toMinor(tenge) } }
+        : m)),
+    })
   const setSheet = (id: string, patch: { sheetWidth?: number; sheetHeight?: number }) =>
     editShop({ materials: shop.materials.map((m) => (m.id === id ? { ...m, ...patch } : m)) })
   const setBandPrice = (id: string, tenge: number) =>
@@ -190,19 +197,34 @@ export function ShopSettings() {
             rows={shop.materials.map((m) => ({
               id: m.id,
               name: m.name,
-              cells: [
-                <span key="t" className="tabular-nums text-neutral-500">{m.thickness}</span>,
-                <span key="s" className="flex items-center gap-1">
-                  <NumberInput value={m.sheetWidth} min={500} step={10}
-                    onChange={(sheetWidth) => setSheet(m.id, { sheetWidth })} />
-                  <NumberInput value={m.sheetHeight} min={500} step={10}
-                    onChange={(sheetHeight) => setSheet(m.id, { sheetHeight })} />
-                </span>,
-                <NumberInput key="p" value={toTenge(m.pricePerSheet)} min={0} step={100}
-                  invalid={m.pricePerSheet <= 0}
-                  onChange={(v) => setPriceSheet(m.id, v)} />,
-                <RemoveMaterial key="x" id={m.id} />,
-              ],
+              cells: m.slab
+                ? [
+                  // ТАҚТА (постформинг): парағы жоқ — ұзындықтары мен МЕТРДІҢ бағасы.
+                  <span key="t" className="tabular-nums text-neutral-500">{m.thickness}</span>,
+                  <span key="s" className="text-[11px] tabular-nums text-neutral-500">
+                    Плита: {m.slab.stockLengths.join(' / ')} мм
+                  </span>,
+                  <span key="p" className="flex items-center gap-1">
+                    <NumberInput value={toTenge(m.slab.pricePerMeter)} min={0} step={100}
+                      invalid={m.slab.pricePerMeter <= 0}
+                      onChange={(v) => setPriceMeter(m.id, v)} />
+                    <span className="text-[11px] text-neutral-500">/м</span>
+                  </span>,
+                  <RemoveMaterial key="x" id={m.id} />,
+                ]
+                : [
+                  <span key="t" className="tabular-nums text-neutral-500">{m.thickness}</span>,
+                  <span key="s" className="flex items-center gap-1">
+                    <NumberInput value={m.sheetWidth} min={500} step={10}
+                      onChange={(sheetWidth) => setSheet(m.id, { sheetWidth })} />
+                    <NumberInput value={m.sheetHeight} min={500} step={10}
+                      onChange={(sheetHeight) => setSheet(m.id, { sheetHeight })} />
+                  </span>,
+                  <NumberInput key="p" value={toTenge(m.pricePerSheet)} min={0} step={100}
+                    invalid={m.pricePerSheet <= 0}
+                    onChange={(v) => setPriceSheet(m.id, v)} />,
+                  <RemoveMaterial key="x" id={m.id} />,
+                ],
             }))}
             />
           </div>

@@ -552,6 +552,16 @@ const MaterialSchema = z.object({
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     kind: z.enum(['solid', 'wood']),
   }).optional(),
+  /*
+   * Тақта (постформинг столешница): раскройға кірмейді, сметаға метрмен.
+   * ⚠ Цех профилінің ӨЗ схемасы (`schema.ts`-тегімен бөлек): мұнда жоқ өріс
+   * zod-та ҮНСІЗ алынып тасталады — профиль сақталып қайта ашылғанда тақта
+   * жай параққа айналар еді (09-13-те тест дәл осыны ұстады).
+   */
+  slab: z.object({
+    stockLengths: z.array(z.number().int().positive()).min(1),
+    pricePerMeter: minorUnits,
+  }).optional(),
 })
 
 const EdgeBandSchema = z.object({

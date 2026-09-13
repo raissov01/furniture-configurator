@@ -238,6 +238,8 @@ function nestOnce(
         [...materials.keys()].join(' | '),
       )
     }
+    // Тақта (постформинг столешница) парақтан кесілмейді — раскройға кірмейді.
+    if (materials.get(p.materialId)!.slab) continue
     const list = groups.get(p.materialId) ?? []
     list.push(p)
     groups.set(p.materialId, list)
@@ -405,7 +407,8 @@ export function panelFitWarnings(
 
   for (const panel of panels) {
     const material = materials.get(panel.materialId)
-    if (!material) continue
+    // Тақта парақта кесілмейді: 3386 мм столешница «параққа сыймайды» ЕМЕС.
+    if (!material || material.slab) continue
     const area = usableAreaOf(material, options.trimEdge)
     const fits = orientationsOf(panel, material)
       .some((o) => o.w <= area.width && o.h <= area.height)

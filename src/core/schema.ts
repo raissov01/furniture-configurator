@@ -39,6 +39,11 @@ export const MaterialSchema = z.object({
   trimEdge: z.number().int().nonnegative(),
   defaultEdging: EdgePolicySchema.optional(),
   decor: DecorSchema.optional(),
+  /** Тақта (постформинг): раскройға кірмейді, сметаға метрмен. */
+  slab: z.object({
+    stockLengths: z.array(mm).min(1),
+    pricePerMeter: minorUnits,
+  }).optional(),
 })
 
 export const EdgeBandSchema = z.object({
@@ -271,6 +276,8 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
     materialId: z.string().min(1).optional(),
     overhangFront: z.number().int().nonnegative(),
     overhangSides: z.number().int().nonnegative(),
+    /** Ортақ (қатардың бір тақтасы) — корпуста өз детальі жоқ. Жоқ болса zod оны үнсіз алып тастар еді. */
+    shared: z.boolean().optional(),
   }).optional(),
   // Техника (мойка, плита, сорғыш). ЕРІКТІ — ескі жобада жоқ.
   fixtures: z.array(z.discriminatedUnion('kind', [

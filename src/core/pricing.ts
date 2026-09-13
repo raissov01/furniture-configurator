@@ -236,12 +236,14 @@ export function priceProject(
     holes: number
     /** bandId → метр */
     edges: Map<string, number>
+    /** Детальдердің ұзындығының қосындысы, м — ТАҚТА (постформинг) метрмен сатылады. */
+    lengthMetres: number
   }
   const stats = new Map<string, Stats>()
   const statFor = (id: string): Stats => {
     let v = stats.get(id)
     if (!v) {
-      v = { area: 0, panels: 0, holes: 0, edges: new Map() }
+      v = { area: 0, panels: 0, holes: 0, edges: new Map(), lengthMetres: 0 }
       stats.set(id, v)
     }
     return v
@@ -250,6 +252,7 @@ export function priceProject(
   for (const p of panels) {
     const st = statFor(p.materialId)
     st.area += (p.finishedLength * p.finishedWidth) / 1_000_000
+    st.lengthMetres += Math.max(p.finishedLength, p.finishedWidth) / 1000
     st.panels += 1
     st.holes += p.drilling.length
     const sides: [keyof Panel['edges'], number][] = [
@@ -289,9 +292,18 @@ export function priceProject(
     const name = material?.name ?? nameByMaterial.get(id) ?? id
     const sheets = sheetsByMaterial.get(id) ?? 0
 
+    /*
+     * ТАҚТА (постформинг столешница) парақпен емес, МЕТРМЕН сатылады: ол
+     * раскройға кірмейді (`sheets` = 0), ал құны — детальдердің ұзындығы ×
+     * метрдің бағасы (пайдаланушы, 09-13).
+     */
+    const slab = material?.slab
     const sheetPrice = material?.pricePerSheet ?? 0
-    if (sheets > 0 && sheetPrice <= 0) missingPrices.push(`${name}: цена листа`)
-    const materialCost = roundTenge(sheets * sheetPrice)
+    if (!slab && sheets > 0 && sheetPrice <= 0) missingPrices.push(`${name}: цена листа`)
+    if (slab && st.lengthMetres > 0 && slab.pricePerMeter <= 0) missingPrices.push(`${name}: цена за метр`)
+    const materialCost = slab
+      ? roundTenge(st.lengthMetres * slab.pricePerMeter)
+      : roundTenge(sheets * sheetPrice)
 
     const cells = new Map<string, number>()
     let edgeCost = 0
@@ -331,7 +343,7 @@ export function priceProject(
   // ── Жолдар: ұяшықтардың ҚОСЫНДЫСЫ ─────────────────────────────────────────
   const materials: PriceLine[] = materialRows
     .filter((r) => r.sheets > 0)
-    .map((r) => ({
+    .map((r): PriceLine => ({
       id: r.materialId,
       name: r.materialName,
       qty: r.sheets,
@@ -339,6 +351,17 @@ export function priceProject(
       unitPrice: materialById.get(r.materialId)?.pricePerSheet ?? 0,
       cost: r.materialCost,
     }))
+    // Тақта (постформинг) — метрмен: раскройда парағы жоқ, сондықтан бөлек жол.
+    .concat(materialRows
+      .filter((r) => materialById.get(r.materialId)?.slab && statFor(r.materialId).lengthMetres > 0)
+      .map((r) => ({
+        id: r.materialId,
+        name: r.materialName,
+        qty: Math.round(statFor(r.materialId).lengthMetres * 100) / 100,
+        unit: 'м' as const,
+        unitPrice: materialById.get(r.materialId)?.slab?.pricePerMeter ?? 0,
+        cost: r.materialCost,
+      })))
 
   const edgeMetresTotal = new Map<string, number>()
   const edgeCostTotal = new Map<string, number>()
