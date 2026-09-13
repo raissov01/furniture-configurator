@@ -19,6 +19,7 @@ import { CustomParts } from '@/components/CustomParts'
 import { ProjectPanel } from '@/components/ProjectPanel'
 import { HelpPanel } from '@/components/HelpPanel'
 import { HistoryPanel } from '@/components/HistoryPanel'
+import { ShareCodeDialog } from '@/components/ShareCodeDialog'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
@@ -124,6 +125,8 @@ export function Workspace() {
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const pushHistory = useConfigurator((s) => s.pushHistory)
+  const syncShare = useConfigurator((s) => s.syncShare)
+  const setShareCodeOpen = useConfigurator((s) => s.setShareCodeOpen)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
   const setRenderOpen = useConfigurator((s) => s.setRenderOpen)
   const assemblyStep = useConfigurator((s) => s.assemblyStep)
@@ -161,9 +164,11 @@ export function Workspace() {
       // Тарихқа да жазамыз: автосақтау бір ғана кілтті қайта жазады да,
       // жарты сағат бұрынғы күйге қайтуға мүмкіндік қалмайды.
       pushHistory()
+      // Клиентке код берілген болса — оның экраны да жаңарсын (автожаңарту).
+      syncShare()
     }, 500)
     return () => clearTimeout(timer)
-  }, [room, cabinets, placements, saveProjectLocally, pushHistory])
+  }, [room, cabinets, placements, saveProjectLocally, pushHistory, syncShare])
 
   /*
    * Кідірістегі сақтау бет ЖАБЫЛҒАНДА/АУЫСҚАНДА жоғалмауы керек.
@@ -272,6 +277,7 @@ export function Workspace() {
       <ProjectPanel panels={projectPanels} catalog={catalog} />
       <HelpPanel />
       <HistoryPanel />
+      <ShareCodeDialog />
       {cloudEnabled && <AccountPanel />}
       <QuoteView
         panels={projectPanels}
@@ -324,6 +330,8 @@ export function Workspace() {
                 () => setShared('Не удалось скопировать — разрешите доступ к буферу обмена'),
               )
             }}>{tr('Ссылка клиенту')}</MenuItem>
+            {/* qdesign «3D-көріністе ашу» сияқты: 6 таңбалы код, 24 сағат, автожаңарту. */}
+            <MenuItem onClick={() => setShareCodeOpen(true)}>{tr('Код для клиента')}</MenuItem>
             <MenuItem onClick={reset}>{tr('Сброс')}</MenuItem>
           </Menu>
           <Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>

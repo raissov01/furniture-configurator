@@ -662,6 +662,23 @@ export const uz: Record<string, string> = {
   'Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть':
     'Joystik — yurish · barmoq bilan suring — qarash · eshikka teging — ochish',
   'Джойстик: идти': 'Joystik: yurish',
+  'Код для клиента': 'Mijoz uchun kod',
+  'Создаём код…': 'Kod yaratilmoqda…',
+  'Клиент открывает страницу и вводит код — проект откроется у него в 3D, с прогулкой.':
+    'Mijoz sahifani ochib kodni kiritadi — loyiha uning qurilmasida 3D da, sayr bilan ochiladi.',
+  'Скопировать код': 'Kodni nusxalash',
+  'Скопировать ссылку': 'Havolani nusxalash',
+  'Код скопирован': 'Kod nusxalandi',
+  'Ссылка на проект скопирована': 'Loyiha havolasi nusxalandi',
+  'Скопировать не удалось': 'Nusxalab bo‘lmadi',
+  'Код действует 24 часа': 'Kod 24 soat amal qiladi',
+  'Автообновление: изменения видны клиенту через несколько секунд.':
+    'Avtoyangilanish: o‘zgarishlar mijozga bir necha soniyada ko‘rinadi.',
+  'В этой сборке нет облака — отправьте клиенту ссылку (Проект → Ссылка клиенту).':
+    'Bu versiyada bulut yo‘q — mijozga havola yuboring (Loyiha → Mijozga havola).',
+  'Открыть проект по коду': 'Loyihani kod bilan ochish',
+  'Введите 6 цифр, которые прислал мастер.': 'Usta yuborgan 6 raqamni kiriting.',
+  'Код — 6 цифр': 'Kod — 6 raqam',
   'Модуль': 'Modul',
   'Язык': 'Til',
   'навес': 'osma',

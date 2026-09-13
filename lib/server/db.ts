@@ -116,6 +116,26 @@ function migrate(database: DatabaseSync): void {
 
     CREATE INDEX IF NOT EXISTS invites_shop ON invites (shop_id, created_at DESC);
   `)
+
+  /*
+   * 4-қадам: клиентке КОД (qdesign «3D-көріністе ашу» сияқты, 09-13).
+   *
+   * 6 таңбалы код 24 сағат жарамды. `key` — ЖАҢАРТУДЫҢ құпиясы: кодты
+   * білген клиент жобаны тек КӨРЕДІ, өзгерте алатын — кодты жасаған цех
+   * (автоматты жаңарту сол кілтпен жүреді).
+   */
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS shares (
+      code       TEXT PRIMARY KEY,
+      key        TEXT NOT NULL,
+      json       TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS shares_expiry ON shares (expires_at);
+  `)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */

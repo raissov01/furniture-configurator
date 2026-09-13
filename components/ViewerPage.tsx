@@ -12,7 +12,7 @@ import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ConfigValidationError, decodeProject } from '@/src/core/index'
+import { ConfigValidationError, decodeProject, parseProject } from '@/src/core/index'
 import type { ProjectFile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
@@ -40,6 +40,9 @@ const PRESETS: { value: CameraPreset; label: string }[] = [
   { value: 'room', label: tr('Комната') },
 ]
 
+/** Кодпен ашылған жобаны серверден қайта тексеру аралығы, мс (автожаңарту). */
+const SHARE_POLL_MS = 5000
+
 export function ViewerPage() {
   const [state, setState] = useState<
     { kind: 'loading' } | { kind: 'ready'; project: ProjectFile } | { kind: 'error'; message: string }
@@ -50,10 +53,12 @@ export function ViewerPage() {
   const cameraPreset = useConfigurator((s) => s.cameraPreset)
 
   useEffect(() => {
+    // Кодпен ашылса (`/view?c=123456`) — төмендегі эффект; мұнда тек хеш.
+    if (new URLSearchParams(window.location.search).get('c')) return undefined
     const hash = window.location.hash.slice(1)
     if (!hash) {
       setState({ kind: 'error', message: 'В ссылке нет проекта. Попросите отправить её целиком.' })
-      return
+      return undefined
     }
     try {
       const project = decodeProject(hash)
@@ -67,6 +72,52 @@ export function ViewerPage() {
           : 'Не удалось открыть проект по этой ссылке.',
       })
     }
+    return undefined
+  }, [loadProject])
+
+  /*
+   * КОДПЕН АШУ (qdesign «3D-көріністе ашу» сияқты): жоба серверден келеді
+   * әрі SHARE_POLL_MS сайын тексеріледі — цех өзгертсе, клиенттің экраны
+   * өзі жаңарады («Автоматты жаңарту»). Өзгермесе — ештеңе қайта салынбайды.
+   */
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('c')
+    if (!code) return undefined
+    let alive = true
+    let seen = 0
+    const pull = async (first: boolean) => {
+      const res = await fetch(`/api/share/${encodeURIComponent(code)}`, { cache: 'no-store' }).catch(() => null)
+      if (!alive) return
+      if (!res || !res.ok) {
+        if (first) {
+          setState({
+            kind: 'error',
+            message: res?.status === 404
+              ? 'Код не найден или его срок истёк: код действует 24 часа. Попросите у мастера новый.'
+              : 'Не удалось открыть проект по коду. Проверьте интернет.',
+          })
+        }
+        return
+      }
+      const data = (await res.json()) as { project: unknown; updatedAt: number }
+      if (!alive || data.updatedAt === seen) return
+      seen = data.updatedAt
+      try {
+        const project = parseProject(data.project)
+        loadProject(project)
+        setState({ kind: 'ready', project })
+      } catch (error) {
+        if (first) {
+          setState({
+            kind: 'error',
+            message: error instanceof ConfigValidationError ? error.message : 'Проект по коду не прочитался.',
+          })
+        }
+      }
+    }
+    void pull(true)
+    const timer = setInterval(() => { void pull(false) }, SHARE_POLL_MS)
+    return () => { alive = false; clearInterval(timer) }
   }, [loadProject])
 
   return state.kind === 'ready'

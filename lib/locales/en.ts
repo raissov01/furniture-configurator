@@ -658,6 +658,23 @@ export const en: Record<string, string> = {
   'Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть':
     'Joystick — walk · drag — look around · tap a door — open',
   'Джойстик: идти': 'Joystick: walk',
+  'Код для клиента': 'Client code',
+  'Создаём код…': 'Creating a code…',
+  'Клиент открывает страницу и вводит код — проект откроется у него в 3D, с прогулкой.':
+    'The client opens the page and enters the code — the project opens on their device in 3D, with a walkthrough.',
+  'Скопировать код': 'Copy code',
+  'Скопировать ссылку': 'Copy link',
+  'Код скопирован': 'Code copied',
+  'Ссылка на проект скопирована': 'Project link copied',
+  'Скопировать не удалось': 'Could not copy',
+  'Код действует 24 часа': 'The code is valid for 24 hours',
+  'Автообновление: изменения видны клиенту через несколько секунд.':
+    'Auto-update: the client sees changes within a few seconds.',
+  'В этой сборке нет облака — отправьте клиенту ссылку (Проект → Ссылка клиенту).':
+    'This build has no cloud — send the client a link (Project → Client link).',
+  'Открыть проект по коду': 'Open a project by code',
+  'Введите 6 цифр, которые прислал мастер.': 'Enter the 6 digits your maker sent you.',
+  'Код — 6 цифр': 'Code — 6 digits',
   'Модуль': 'Module',
   'Язык': 'Language',
   'навес': 'wall',

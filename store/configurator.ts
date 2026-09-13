@@ -107,6 +107,15 @@ type State = Snapshot & {
   busy: string | null
   /** Ауыр әрекетті оверлеймен орындау: алдымен оверлей салынады, сосын жұмыс. */
   runBusy(label: string, fn: () => void): void
+  /** Клиентке КОД терезесі (qdesign «3D-көріністе ашу» сияқты). */
+  shareCodeOpen: boolean
+  setShareCodeOpen(v: boolean): void
+  /** Жасалған код: жоба өзгерсе, клиенттің экраны осы арқылы жаңарады. */
+  shareSession: { code: string; key: string; expiresAt: number } | null
+  /** Код жасау (сервер). Бұлт сөндірулі не желі жоқ болса — қатенің мәтіні. */
+  startShare(): Promise<{ ok: true; code: string; expiresAt: number } | { ok: false; error: string }>
+  /** Жобаны кодқа қайта жіберу (автоматты жаңарту). Код жоқ болса — ештеңе. */
+  syncShare(): void
   /** Камера проекциясы: перспектива (табиғи) не орто (өлшем алуға ыңғайлы). */
   projection: 'perspective' | 'ortho'
   /**
@@ -314,6 +323,8 @@ export const useConfigurator = create<State>((set, get) => ({
   showFronts: true,
   openness: 0,
   busy: null,
+  shareCodeOpen: false,
+  shareSession: null,
   walk: false,
   vr: false,
   openCabinets: {},
@@ -655,6 +666,35 @@ export const useConfigurator = create<State>((set, get) => ({
    * 2 кадр → оверлей кетеді. Стор әрекеттері (loadKitchen т.б.) СИНХРОНДЫ
    * қалады: оларды тест те, ИИ-жол да тура шақырады.
    */
+  setShareCodeOpen: (shareCodeOpen) => set({ shareCodeOpen }),
+  startShare: async () => {
+    const res = await fetch('/api/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(get().exportProject()),
+    }).catch(() => null)
+    if (!res) return { ok: false, error: 'Нет связи с сервером' }
+    const data = (await res.json().catch(() => ({}))) as {
+      code?: string; key?: string; expiresAt?: number; error?: string
+    }
+    if (!res.ok || !data.code || !data.key || !data.expiresAt) {
+      return { ok: false, error: data.error ?? 'Не удалось создать код' }
+    }
+    set({ shareSession: { code: data.code, key: data.key, expiresAt: data.expiresAt } })
+    return { ok: true, code: data.code, expiresAt: data.expiresAt }
+  },
+  syncShare: () => {
+    const session = get().shareSession
+    if (!session || session.expiresAt <= Date.now()) return
+    void fetch(`/api/share/${session.code}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-share-key': session.key },
+      body: JSON.stringify(get().exportProject()),
+    }).catch((error: unknown) => {
+      // Желі үзілсе — келесі өзгерісте қайта жіберіледі; жұмысты тоқтатпаймыз.
+      console.warn('Код клиента: обновление не отправлено', error)
+    })
+  },
   runBusy: (label, fn) => {
     if (get().busy) return
     set({ busy: label })
