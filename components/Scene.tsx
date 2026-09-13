@@ -841,13 +841,44 @@ export default function Scene({
     [items],
   )
 
-  // «Комната» пресеті бүкіл бөлмеге қарайды, қалғаны — белсенді шкафқа.
+  /*
+   * КАМЕРА НЕГЕ ҚАРАЙДЫ.
+   *
+   * «Комната» — бүкіл бөлме, «Внутри» — белсенді корпустың іші. Қалғаны: бір
+   * корпус болса — сол корпус, БІРНЕШЕУ болса — бүкіл жобаның габариті.
+   *
+   * ⚠ Бұрын әрқашан белсенді корпусқа қарайтын (09-13): 13 модульді ас үй
+   * генерацияланған бойда экранда бір пеналдың жартысы ғана көрінетін,
+   * «Вписать в кадр» да сол бір корпусты кадрлайтын, ал корпусты таңдаған
+   * сайын камера секіретін. Енді таңдау камераны қозғамайды.
+   */
   const view = useMemo<{ target: Vec3; box: { W: number; H: number; D: number }; facingY: number }>(() => {
     if (preset === 'room' || !active) {
       return {
         target: { x: room.width / 2, y: room.height / 3, z: room.depth / 2 },
         box: { W: room.width, H: room.height, D: room.depth },
         facingY: 0,
+      }
+    }
+    if (items.length > 1 && preset !== 'inside') {
+      let x0 = Infinity
+      let x1 = -Infinity
+      let z0 = Infinity
+      let z1 = -Infinity
+      let top = 0
+      for (const item of items) {
+        const f = placementFootprint(room, item.cabinet, item.placement)
+        x0 = Math.min(x0, f.x)
+        x1 = Math.max(x1, f.x + f.width)
+        z0 = Math.min(z0, f.z)
+        z1 = Math.max(z1, f.z + f.depth)
+        top = Math.max(top, item.pose.position.y + item.cabinet.height)
+      }
+      return {
+        target: { x: (x0 + x1) / 2, y: top / 2, z: (z0 + z1) / 2 },
+        box: { W: x1 - x0, H: top, D: z1 - z0 },
+        // Көзқарас бірінші корпустың алдынан: генератор оны негізгі қабырғаға қояды.
+        facingY: items[0]!.pose.rotationY,
       }
     }
     const fp = placementFootprint(room, active.cabinet, active.placement)
@@ -861,7 +892,7 @@ export default function Scene({
       box: { W: active.cabinet.width, H: active.cabinet.height, D: active.cabinet.depth },
       facingY: active.pose.rotationY,
     }
-  }, [active, room, preset])
+  }, [active, room, preset, items])
 
   /*
    * Силуэт қайда тұрады.

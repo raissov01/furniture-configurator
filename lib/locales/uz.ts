@@ -652,6 +652,8 @@ export const uz: Record<string, string> = {
   '{axis} {value} мм — меньше предела цеха ({limit} мм)':
     '{axis} {value} mm — sex chegarasidan ({limit} mm) KICHIK',
   'Разнести': 'Ajratish',
+  'Модули': 'Modullar',
+  'навес': 'osma',
   'Секция': 'Bo\'lim',
   'Секции': 'Bo\'limlar',
   'Корпуса': 'Korpuslar',

@@ -648,6 +648,8 @@ export const en: Record<string, string> = {
   '{axis} {value} мм — меньше предела цеха ({limit} мм)':
     '{axis} {value} mm — under the shop limit ({limit} mm)',
   'Разнести': 'Explode',
+  'Модули': 'Modules',
+  'навес': 'wall',
   'Секция': 'Section',
   'Секции': 'Sections',
   'Корпуса': 'Carcasses',

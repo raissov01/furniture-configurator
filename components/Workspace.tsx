@@ -32,6 +32,7 @@ import {
 } from '@/src/core/index'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
+import { ModuleList } from '@/components/ModuleList'
 import { usePanels } from '@/lib/usePanels'
 import { useSceneItems } from '@/lib/useSceneItems'
 import {
@@ -69,6 +70,7 @@ export function Workspace() {
   const cameraPreset = useConfigurator((s) => s.cameraPreset)
   const setCameraPreset = useConfigurator((s) => s.setCameraPreset)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
+  const galleryOpen = useConfigurator((s) => s.galleryOpen)
   const setAiOpen = useConfigurator((s) => s.setAiOpen)
   const setRoomOpen = useConfigurator((s) => s.setRoomOpen)
   const room = useConfigurator((s) => s.room)
@@ -420,7 +422,7 @@ export function Workspace() {
         </div>
       ) : null}
 
-      <Tour />
+      <Tour paused={galleryOpen} />
       <RenderPanel />
       {/*
         3D-де БАСЫП таңдалған деталь: цехтың сұрағы «мынау қандай деталь»
@@ -486,6 +488,8 @@ export function Workspace() {
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} />
           </div>
+          {/* Бірнеше корпусты жобада «қай корпус» тізімнен таңдалады (qdesign сияқты). */}
+          {walk ? null : <ModuleList />}
           {walk ? (
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
               <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/85 px-4 py-2 text-xs text-white shadow-lg backdrop-blur">

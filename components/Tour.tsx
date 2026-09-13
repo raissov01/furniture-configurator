@@ -14,7 +14,7 @@
  * (ал ол өзгереді).
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 
@@ -65,7 +65,7 @@ const STEPS: Step[] = [
   },
 ]
 
-export function Tour() {
+export function Tour({ paused = false }: { paused?: boolean }) {
   const [step, setStep] = useState<number | null>(null)
   const [rect, setRect] = useState<DOMRect | null>(null)
 
@@ -77,19 +77,28 @@ export function Tour() {
     } catch { /* жады жоқ болса, келесі жолы қайта көрсетіледі — қате емес */ }
   }, [])
 
-  // Бірінші кіргенде ғана. Тексеру эффектіде: серверде localStorage жоқ.
+  /*
+   * Бірінші кіргенде ғана. Тексеру эффектіде: серверде localStorage жоқ.
+   *
+   * ⚠ `paused` — ашық терезе жабылғанша күтеміз: бірінші кіргенде шаблон
+   * галереясы өзі ашылады, ал көмекші онымен қатар шығып, бір экранда екі
+   * «бастаушы» тұратын (09-13). Бір жүктелуде өзі бір-ақ рет басталады.
+   */
+  const autoStarted = useRef(false)
   useEffect(() => {
+    if (paused || autoStarted.current) return undefined
     let done = true
     try {
       done = window.localStorage.getItem(DONE_KEY) === '1'
     } catch { /* оқылмаса, көмекшіні МАЗАЛАМАУ үшін көрсетпейміз */ }
-    if (!done) {
-      // Кідіріс: бет пен 3D орнығып болсын, әйтпесе шеңбер қате жерде тұрады.
-      const timer = setTimeout(() => setStep(0), 1200)
-      return () => clearTimeout(timer)
-    }
-    return undefined
-  }, [])
+    if (done) return undefined
+    // Кідіріс: бет пен 3D орнығып болсын, әйтпесе шеңбер қате жерде тұрады.
+    const timer = setTimeout(() => {
+      autoStarted.current = true
+      setStep(0)
+    }, 1200)
+    return () => clearTimeout(timer)
+  }, [paused])
 
   // Басқа жерден қайта қосу: «?» терезесіндегі батырма осы оқиғаны жібереді.
   useEffect(() => {
