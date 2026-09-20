@@ -988,6 +988,33 @@ export function generateCabinet(
     ))
   }
 
+  /*
+   * ── Фронтальдық панельдің СТОЙКАСЫ ──────────────────────────────────────
+   *
+   * K6 / audit C4 (docs/audit/corner-2026-09-20.md §C4). Соқыр (накладной)
+   * фронтальдық панель — тек фасадпен бір жазықтықтағы КӨРІНІС, оның
+   * артында КОРПУС панелі жоқ (корпус ТІКБҰРЫШ күйінде қалады, §558-575).
+   * Сондықтан есіктің ілгек планкасын ілетін ештеңе болмайды: `side-left`/
+   * `side-right` есіктен 500+ мм қашық тұр (нақты санды осы тесттің
+   * есебінде қара).
+   *
+   * Нағыз жиһазда дәл осы жерге — соқыр панельдің артына — ТІК СТОЙКА
+   * қойылады, есік соған ілінеді. Ол `divider`-мен БІРДЕЙ рөл алады: екі
+   * жағы да жасырын, алдыңғы жиегі (L1) көрінеді (`edges.ts` `case
+   * 'divider'`), корпустың толық тереңдігінде тұрады, дно мен крышкаға
+   * конфирматпен бекітіледі — дәл секциялар арасындағы перегородка сияқты.
+   */
+  let frontPanelStand: Panel | null = null
+  if (frontPanel) {
+    const standX = frontPanel.side === 'left' ? frontPanel.width : W - frontPanel.width - t
+    frontPanelStand = make(
+      'front-panel-stand', 'divider', 'Стойка', carcass,
+      innerHeight, carcassDepth, { x: standX, y: t, z: 0 }, ORIENT_SIDE,
+      'Стойка фронтальной панели — ілгек планкасы осыған ілінеді',
+    )
+    panels.push(frontPanelStand)
+  }
+
   // ── Цоколь мен столешница ──────────────────────────────────────────────────
   /** Цоколь ҚОРАП болса — оның буынының түрі; әйтпесе `null`. */
   let plinthBox: 'confirmat' | 'minifix' | null = null
@@ -1241,7 +1268,10 @@ export function generateCabinet(
     // Паз корпустың ішкі бетінде, арт жиектен grooveInset шегініп жүреді.
     // Ұзындығы бойы толық фрезерленеді; тоқтатылған паз — кейінгі жақсарту.
     const grooveCentreZ = D - settings.grooveInset + backMat.thickness / 2
-    for (const panel of [sideLeft, sideRight, bottom, ...topParts, ...dividers]) {
+    const grooved = [sideLeft, sideRight, bottom, ...topParts, ...dividers]
+    // K6: стойка да корпустың толық тереңдігінде тұрады — паз соған да түседі.
+    if (frontPanelStand) grooved.push(frontPanelStand)
+    for (const panel of grooved) {
       const y = grooveCentreZ - subtractedThickness(panel.edges.L1, bands, settings)
       panel.grooves.push({
         face: 'inner',
@@ -1279,6 +1309,11 @@ export function generateCabinet(
   for (const divider of dividers) {
     confirmatJoint(bottom, divider, ctx)
     for (const part of topParts) confirmatJoint(part, divider, ctx)
+  }
+  // K6: фронтальдық панельдің стойкасы — перегородкамен БІРДЕЙ буын
+  if (frontPanelStand) {
+    confirmatJoint(bottom, frontPanelStand, ctx)
+    for (const part of topParts) confirmatJoint(part, frontPanelStand, ctx)
   }
 
   /*
@@ -1428,6 +1463,14 @@ export function generateCabinet(
      * бір жаққа ашылатын жиһаз жиі кездеседі (мыс. қабырғаға тірелген шкаф).
      */
     const opening = spec?.opening ?? 'auto'
+    /*
+     * K6 / audit C4. Осы секцияның сол/оң шетінде фронтальдық панель
+     * тұрса, `left`/`right` (`side-left`/`side-right` немесе перегородка)
+     * есіктен алшақ — сол шетте нақты корпус панелі жоқ, тек соқыр панель
+     * бар. Планка сол жағдайда `frontPanelStand`-қа ілінуі керек.
+     */
+    const blindLeft = frontPanel?.side === 'left' && group.sectionIndex === 0
+    const blindRight = frontPanel?.side === 'right' && group.sectionIndex === layouts.length - 1
     group.fronts.forEach((front, i) => {
       // Шыны фасад — тек КӨРІНІС белгісі: раскрой мен присадка өзгермейді.
       if (spec?.glass) front.glass = true
@@ -1461,8 +1504,8 @@ export function generateCabinet(
       // ілгектің ЖАҒЫМЕН таңдалады — әйтпесе сол жақтан ашылатын фасадтың
       // планкасы оң жақтағы панельге түсіп кетер еді.
       const carcassPanel = side === 'left'
-        ? (i === 0 ? left : undefined)
-        : (i === last ? right : undefined)
+        ? (i === 0 ? (blindLeft ? frontPanelStand ?? undefined : left) : undefined)
+        : (i === last ? (blindRight ? frontPanelStand ?? undefined : right) : undefined)
       // 3D-дегі анимация ІЛГЕКТІҢ жағын осы жерден алады: екеуі бір шешімнен
       // шықса, есік ешқашан «басқа жаққа» ашылмайды.
       front.opening = { kind: 'door', side }
