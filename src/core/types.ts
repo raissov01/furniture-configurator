@@ -108,8 +108,12 @@ export type EdgeSpec = { bandId: string } | null
 /**
  * L1/L2 — панельдің ұзын екі жиегі (finishedLength бойымен),
  * W1/W2 — қысқа екі жиегі (finishedLength-тің екі ұшы).
- * Келісім: L1 = алдыңғы/көрінетін жиек, W1 = үстіңгі (тік панельде) немесе
- * сол жақ (жатық панельде).
+ * Келісім: L1 = алдыңғы/көрінетін жиек, W1 = local x=0 жиегі — ТІК панельде
+ * (боковина, перегородка) бұл АСТЫҢҒЫ жиек (W2 — үстіңгі), ЖАТЫҚ панельде
+ * СОЛ ЖАҚ (W2 — оң жақ). (Аудит Y2, docs/audit/drilling-2026-09-20.md:
+ * бұл жер бұрын «W1 = үстіңгі» деп ЖАЗЫЛҒАН — керісінше, generateCabinet.ts
+ * `sideEdges`/`horizontalEdges` мен edges.ts `topEdgeOf`-тің НАҒЫЗ мінезіне
+ * қайшы келетін. Кодтың өзі дұрыс, тек осы түсініктеме қате болатын.)
  */
 export type PanelEdges = { L1: EdgeSpec; L2: EdgeSpec; W1: EdgeSpec; W2: EdgeSpec }
 
