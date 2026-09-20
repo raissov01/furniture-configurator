@@ -90,3 +90,17 @@ describe('K10c: столешница (worktop, ортақ емес) + бұрыш
     expect(() => generateCabinet(cfg, catalog)).not.toThrow()
   })
 })
+
+// ── K10d: планка (topRails) — қиғаш зонада материалы жоқ жерге тұр ─────────
+
+describe('K10d: планка (topRails) + бұрыштық корпус — қате', () => {
+  /**
+   * Нақты сан (600/350): рейл z=0..100 терезесінде тұрады, ал қиғаш
+   * аймақта (х оң шетке жақын) материалдың шегі ~250 мм-ден басталады —
+   * рейлдің астында МАТЕРИАЛ МҮЛДЕ ЖОҚ, тек «ұзын шеті ілінеді» емес.
+   */
+  it('тыйым салынған', () => {
+    const cfg = corner(350, { topRails: { count: 2, width: 100, orientation: 'flat' as const } })
+    expect(() => generateCabinet(cfg, catalog)).toThrow(/topRails|планка/)
+  })
+})
