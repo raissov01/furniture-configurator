@@ -386,6 +386,12 @@ export function PanelMesh({
       purpose: d.purpose,
     }))
   }, [showDrilling, panel, thickness, bandsMap, drillSettings])
+  /*
+   * ⚠ `frameloop="demand"` гочасы: қосқыш басылғанда React қайта рендерлейді,
+   * бірақ R3F ЖАҢА КАДР САЛМАЙДЫ — камера қозғалмайынша экран өзгермейді.
+   * Пайдаланушыға бұл «қосқыш жұмыс істемейді» болып көрінеді.
+   */
+  useEffect(() => { invalidate() }, [showDrilling, invalidate])
   /** Бокс тармағы: канондық нүкте боксттың ОРТАСЫНАН саналған ығысуға көшеді. */
   const boxDrillMarkers = useMemo((): RenderedDrillMarker[] => {
     if (canonicalDrillMarkers.length === 0) return []
