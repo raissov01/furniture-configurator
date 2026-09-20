@@ -68,6 +68,9 @@ export function QuoteView({
   // Тапсырыс реквизиттері («Проект» терезесінің «Реквизиты» қойындысы) — КП-ға
   // солардан барады. «Заказчик» өрісі осы жерде әлі де қолмен түзетілуі мүмкін.
   const projectInfo = useConfigurator((s) => s.projectInfo)
+  // Баға түзетулері (qdesign паритеті): коэффициент/сату бағасын осы жобаға ғана ауыстыру.
+  const priceOverrides = useConfigurator((s) => s.priceOverrides)
+  const editPriceOverrides = useConfigurator((s) => s.editPriceOverrides)
   const [tab, setTab] = useState<Tab>('nesting')
   const [customer, setCustomer] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
@@ -80,10 +83,16 @@ export function QuoteView({
     }
   }, [panels, catalog, shop])
 
-  const price = useMemo(
-    () => (nesting ? priceProject(panels, nesting, shop, hardware, moduleWidths) : null),
-    [panels, nesting, shop, hardware, moduleWidths],
-  )
+  // Жарамсыз override (теріс/0 коэффициент, теріс сату бағасы) ConfigValidationError
+  // лақтырады — экранда есептеу кезінде ұстап, хабарды көрсетеміз, апп құламауы керек.
+  const [priceError, price] = useMemo((): [string | null, ReturnType<typeof priceProject> | null] => {
+    if (!nesting) return [null, null]
+    try {
+      return [null, priceProject(panels, nesting, shop, hardware, moduleWidths, priceOverrides)]
+    } catch (err) {
+      return [err instanceof Error ? err.message : String(err), null]
+    }
+  }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides])
 
   const run = async (kind: string, action: () => Promise<void>) => {
     setBusy(kind)
@@ -142,9 +151,11 @@ export function QuoteView({
             <Button
               disabled={busy !== null || !price || price.missingPrices.length > 0}
               title={
-                price && price.missingPrices.length > 0
-                  ? 'Пока не заданы все цены, КП выпускать нельзя'
-                  : 'Коммерческое предложение для клиента'
+                priceError
+                  ? priceError
+                  : price && price.missingPrices.length > 0
+                    ? 'Пока не заданы все цены, КП выпускать нельзя'
+                    : 'Коммерческое предложение для клиента'
               }
               onClick={() => void run('quote', async () => {
                 const { quotePdf } = await import('@/src/core/export/quotePdf')
@@ -250,7 +261,14 @@ export function QuoteView({
                 {projectInfo.designer ? ` · ${tr('Дизайнер')} ${projectInfo.designer}` : ''}
               </p>
             ) : null}
-            <PriceTable price={price!} shopName={shop.name} />
+            <PriceOverridesEditor overrides={priceOverrides} onChange={editPriceOverrides} shopCoefficient={shop.coefficient} />
+            {priceError ? (
+              <div className="rounded-md border border-red-300 bg-red-50 px-2.5 py-2 text-[11px] text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+                {priceError}
+              </div>
+            ) : price ? (
+              <PriceTable price={price} shopName={shop.name} />
+            ) : null}
           </div>
         )}
       </div>
@@ -309,6 +327,64 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
         {sheet.offcuts.length > 0 ? ` · деловой отход: ${sheet.offcuts.length}` : ''}
       </figcaption>
     </figure>
+  )
+}
+
+/**
+ * Баға түзетулерін (коэффициент/сату бағасы) қолмен енгізу — qdesign
+ * паритеті. Тек цехтың өз экранында, клиентке шықпайды.
+ *
+ * Коэффициент бос қалдырылса — цехтың әдепкісі (`shopCoefficient`)
+ * қолданылады (`placeholder`-де көрінеді). Сату бағасы бос қалдырылса —
+ * коэффициенттен шыққан сомамен есептеледі.
+ */
+function PriceOverridesEditor({
+  overrides, onChange, shopCoefficient,
+}: {
+  overrides: { coefficient?: number | undefined; salePrice?: number | undefined }
+  onChange: (patch: { coefficient?: number | undefined; salePrice?: number | undefined }) => void
+  shopCoefficient: number
+}) {
+  // Экранда теңгемен көрсетеді, сақтауда тиынмен (§0.2: ақша бүтін минор бірлік).
+  const salePriceTenge = overrides.salePrice !== undefined ? Math.round(overrides.salePrice / 100) : undefined
+
+  return (
+    <div className="flex flex-wrap items-end gap-3 rounded-md border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-700">
+      <label className="flex flex-col gap-1">
+        <span className="text-neutral-500">{tr('Коэффициент (этот проект)')}</span>
+        <input
+          type="number"
+          step="0.1"
+          min="0"
+          value={overrides.coefficient ?? ''}
+          placeholder={String(shopCoefficient)}
+          onChange={(e) => {
+            const raw = e.target.value
+            onChange({ coefficient: raw === '' ? undefined : Number(raw) })
+          }}
+          className="w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-neutral-500">{tr('Цена продажи, ₸ (вручную)')}</span>
+        <input
+          type="number"
+          min="0"
+          value={salePriceTenge ?? ''}
+          placeholder={tr('из коэффициента')}
+          onChange={(e) => {
+            const raw = e.target.value
+            onChange({ salePrice: raw === '' ? undefined : Math.round(Number(raw) * 100) })
+          }}
+          className="w-36 rounded-md border border-neutral-300 bg-white px-2 py-1 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
+        />
+      </label>
+      {overrides.salePrice !== undefined ? (
+        <Button onClick={() => onChange({ salePrice: undefined })}>
+          {tr('Вернуться к коэффициенту')}
+        </Button>
+      ) : null}
+    </div>
   )
 }
 
@@ -419,6 +495,16 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
         ) : null}
         <Row label={tr('Себестоимость')} value={formatTenge(price.subtotal)} />
         <Row label={`Наценка ${price.markupPercent}%`} value={formatTenge(price.markup)} />
+        {/*
+          Толық смета — ТЕК цехтың өз экраны, сондықтан коэффициенттен шыққан
+          сома мен қолмен қойылған сату бағасы екеуі де қатар көрінеді (qdesign
+          паритеті). КП-да (quotePdf.ts) `salePriceOverride` бар болса
+          себестоимость/наценка КӨРІНБЕЙДІ — тек түпкі баға (quoteTotalsView).
+        */}
+        <Row label={tr('Алдын ала сату бағасы')} value={formatTenge(price.calculatedTotal)} />
+        {price.salePriceOverride !== undefined ? (
+          <Row label={tr('Сату бағасы (қолмен)')} value={formatTenge(price.salePriceOverride)} />
+        ) : null}
         <div className="flex items-baseline justify-between border-t border-neutral-200 pt-1.5 text-sm font-semibold dark:border-neutral-700">
           <span>{tr('Итого клиенту')}</span>
           <span className="tabular-nums">{formatTenge(price.total)}</span>

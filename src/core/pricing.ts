@@ -12,9 +12,10 @@ import {
   CONFIRMAT_EDGE_DIAMETER,
   HINGE_CUP_DIAMETER, MINIFIX_CAM_DIAMETER,
 } from './constants'
+import { ConfigValidationError } from './errors'
 import type { HardwarePlacement } from './hardware'
 import type { NestingResult } from './nesting'
-import type { Panel } from './types'
+import type { Panel, PriceOverrides } from './types'
 import { SERVICE_IDS, SERVICE_NAMES } from './shop'
 import type { ServiceId, ServiceRate, ShopProfile } from './shop'
 
@@ -79,7 +80,21 @@ export type PriceBreakdown = {
   markupPercent: number
   /** Үстеме сомасы, тиын */
   markup: number
-  /** Клиентке шығатын сан, тиын */
+  /**
+   * Коэффициенттен шыққан сома (subtotal + markup), qdesign-дегі «Алдын ала
+   * сату бағасы». `priceOverrides.salePrice` берілсе де ӨЗГЕРМЕЙДІ — шебер
+   * кез келген сәтте override-ты алып тастап, осыған қайта орала алады.
+   */
+  calculatedTotal: number
+  /**
+   * Қолмен қойылған сату бағасы, тиын (`priceOverrides.salePrice`-тен,
+   * дөңгелектеусіз, тура сол сома). Берілмесе — undefined.
+   */
+  salePriceOverride?: number | undefined
+  /**
+   * Клиентке шығатын СОҢҒЫ сан, тиын: `salePriceOverride` бар болса сол,
+   * жоқ болса `calculatedTotal`.
+   */
   total: number
   /**
    * Бағасы толтырылмаған позициялар. Бос болмаса — КП шығаруға БОЛМАЙДЫ:
@@ -221,6 +236,12 @@ export function priceProject(
   placements: HardwarePlacement[] = [],
   /** Монтаж үшін: корпустардың ені, мм. Бос болса монтаж есептелмейді. */
   moduleWidths: number[] = [],
+  /**
+   * Жобаның баға түзетулері (qdesign паритеті): коэффициент пен сату
+   * бағасын осы жобаға ғана ауыстыру. Ешбірі берілмесе — цехтың
+   * әдепкісімен, бұрынғыдай.
+   */
+  overrides?: PriceOverrides,
 ): PriceBreakdown {
   const missingPrices: string[] = []
 
@@ -431,9 +452,14 @@ export function priceProject(
   //
   // РЕТІ МАҢЫЗДЫ, ол ақшаны өзгертеді:
   //   goods + services            — цехтың өз шығыны
-  //   × coefficient               — цехтың өз түзетуі (тек шығынға)
+  //   × coefficient               — цехтың өз түзетуі (тек шығынға),
+  //                                  ЖОБА деңгейінде overrides.coefficient
+  //                                  алмастыра алады (qdesign паритеті)
   //   + монтаж                    — БӨЛЕК қызмет, коэффициентке кірмейді
   //   + үстеме %                  — бәрінің үстінен
+  //   → calculatedTotal           — коэффициенттен шыққан СОҢҒЫ сома
+  //   overrides.salePrice бар ма  — болса, СОЛ сан `total` болады,
+  //                                  calculatedTotal бұзылмайды
   const goods =
     materials.reduce((sum, l) => sum + l.cost, 0)
     + edges.reduce((sum, l) => sum + l.cost, 0)
@@ -441,7 +467,15 @@ export function priceProject(
   const servicesTotal = services.reduce((sum, l) => sum + l.cost, 0)
 
   const base = goods + servicesTotal
-  const coefficient = shop.coefficient > 0 ? shop.coefficient : 1
+  /*
+   * Цех коэффициенті (ShopProfile.coefficient) жарамсыз болса — үнсіз 1-ге
+   * теңеледі (ескі мінез, шебер профильді толтырмай қалдырса да жоба
+   * бұзылмауы керек). Ал ЖОБА деңгейіндегі override басқаша: ол — қолмен
+   * арнайы осы жобаға қойылған сан, сондықтан жарамсыз мән ҮНСІЗ түзетілмей,
+   * `ConfigValidationError` лақтырады (§10, `validatePriceOverrides`).
+   */
+  validatePriceOverrides(overrides)
+  const coefficient = overrides?.coefficient ?? (shop.coefficient > 0 ? shop.coefficient : 1)
   const coefficientAmount = roundTenge(base * (coefficient - 1))
 
   const metres = moduleWidths.reduce((sum, w) => sum + w, 0) / 1000
@@ -449,6 +483,14 @@ export function priceProject(
 
   const subtotal = base + coefficientAmount + installationCost
   const markup = roundTenge((subtotal * shop.markupPercent) / 100)
+  /** Коэффициенттен шыққан сома — qdesign-дегі «Алдын ала сату бағасы». */
+  const calculatedTotal = subtotal + markup
+  /**
+   * Қолмен қойылған сату бағасы (qdesign-дегі «Сату бағасы») коэффициенттен
+   * шыққан бағаны БАСЫП ЖАЗАДЫ, бірақ `calculatedTotal` өзгеріссіз қалады —
+   * шебер override-ты алып тастап, коэффициентке қайта орала алады.
+   */
+  const total = overrides?.salePrice ?? calculatedTotal
 
   return {
     materials,
@@ -468,8 +510,63 @@ export function priceProject(
     subtotal,
     markupPercent: shop.markupPercent,
     markup,
-    total: subtotal + markup,
+    calculatedTotal,
+    salePriceOverride: overrides?.salePrice,
+    total,
     missingPrices,
+  }
+}
+
+/**
+ * Баға түзетулерін тексереді: теріс не нөл коэффициент, теріс не бүтін
+ * тиын емес сату бағасы — бәрі ойдан жазылған баға сияқты қате, cоны
+ * бүркемей лақтырамыз (CLAUDE.md §10: silent catch жоқ).
+ *
+ * Коэффициент БҮТІН болуға міндетті ЕМЕС (2, 2.5, 3 — цехтың өз еселігі,
+ * ақша емес, қатынас), тек 0-ден үлкен болуы керек. Сату бағасы — АҚША,
+ * сондықтан бүтін тиын (§0.2).
+ */
+function validatePriceOverrides(overrides: PriceOverrides | undefined): void {
+  if (!overrides) return
+  if (overrides.coefficient !== undefined) {
+    const { coefficient } = overrides
+    if (!Number.isFinite(coefficient) || coefficient <= 0) {
+      throw new ConfigValidationError(
+        'priceOverrides.coefficient', `${coefficient} — нөл немесе теріс`, '> 0',
+      )
+    }
+  }
+  if (overrides.salePrice !== undefined) {
+    const { salePrice } = overrides
+    if (!Number.isInteger(salePrice) || salePrice < 0) {
+      throw new ConfigValidationError(
+        'priceOverrides.salePrice', `${salePrice} — теріс немесе бүтін тиын емес`, '≥ 0, бүтін тиын',
+      )
+    }
+  }
+}
+
+/**
+ * КП-дағы қорытынды блогының қалай шығатынын анықтайды (§6: «клиентке
+ * қорытынды, цехқа жіктеме»).
+ *
+ * `salePriceOverride` берілген жобада өзіндік құн мен коэффициент КЛИЕНТКЕ
+ * КӨРІНБЕУІ керек (qdesign-дың «Предложение клиенту» нұсқасында олар жоқ,
+ * тек түпкі баға бар) — себестоимость/наценка енді `total`-мен сәйкес
+ * келмейді (қолмен басып жазылған сан коэффициенттен өзгеше болуы мүмкін),
+ * ал цехтың ӨЗ есебінде (`QuoteView.tsx`-тегі «Стоимость» қойындысы) бұл
+ * жіктеме әрдайым толық көрінеді — тек КЛИЕНТКЕ шығатын құжатта жасырылады.
+ */
+export function quoteTotalsView(price: PriceBreakdown):
+  | { kind: 'breakdown'; subtotal: number; markupPercent: number; markup: number; total: number }
+  | { kind: 'finalOnly'; total: number } {
+  if (price.salePriceOverride !== undefined) return { kind: 'finalOnly', total: price.total }
+  return {
+    kind: 'breakdown',
+    subtotal: price.subtotal,
+    markupPercent: price.markupPercent,
+    markup: price.markup,
+    total: price.total,
   }
 }
 

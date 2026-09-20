@@ -31,8 +31,8 @@ import {
 } from '@/src/core/index'
 import type { Quality } from '@/lib/appearance'
 import type {
-  CabinetConfig, Catalog, Material, Placement, ProjectFile, ProjectInfo, Room, Section,
-  SectionContent, ShopProfile, WallId,
+  CabinetConfig, Catalog, Material, Placement, PriceOverrides, ProjectFile, ProjectInfo, Room,
+  Section, SectionContent, ShopProfile, WallId,
 } from '@/src/core/index'
 
 /** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
@@ -75,6 +75,12 @@ type State = Snapshot & {
    * жоғалуы қате болар еді).
    */
   projectInfo: ProjectInfo
+  /**
+   * Баға түзетулері (qdesign паритеті): коэффициент/сату бағасын осы жобаға
+   * ғана ауыстыру. `projectInfo`-дай Undo тарихына кірмейді — метадерек,
+   * геометрия емес.
+   */
+  priceOverrides: PriceOverrides
   shopOpen: boolean
   quoteOpen: boolean
   sketchOpen: boolean
@@ -219,6 +225,12 @@ type State = Snapshot & {
   loadProject(file: ProjectFile): void
   /** Тапсырыс реквизиттерін түзету. Бос жол сақталмайды (`exportProject`-те қиылады). */
   editProjectInfo(patch: Partial<ProjectInfo>): void
+  /**
+   * Баға түзетулерін түзету. `undefined` мәні өрісті ТАЗАЛАЙДЫ (мыс.
+   * `editPriceOverrides({ salePrice: undefined })` — шебер override-ты алып
+   * тастап, коэффициентке қайта оралады).
+   */
+  editPriceOverrides(patch: Partial<PriceOverrides>): void
   saveProjectLocally(): void
   hydrateProject(): void
 
@@ -324,6 +336,21 @@ const cleanProjectInfo = (info: ProjectInfo): ProjectInfo | undefined => {
   return Object.keys(cleaned).length > 0 ? cleaned : undefined
 }
 
+/**
+ * Баға түзетулеріндегі бос/жарамсыз мәндерді қияды — `editPriceOverrides`
+ * өрісті тазалау үшін `undefined` жазады, ал сақталған файлда мұндай кілт
+ * мүлде жатпауы керек (`cleanProjectInfo` үлгісі).
+ */
+const cleanPriceOverrides = (overrides: PriceOverrides): PriceOverrides | undefined => {
+  const cleaned: PriceOverrides = {}
+  // Мәннің ӨЗІ жарамды ма (>0, бүтін тиын) — оны priceProject тексереді
+  // (ConfigValidationError). Мұнда тек «толтырылмаған» кілт қиылады, әйтпесе
+  // сақталған файлда `coefficient: undefined` секілді бос кілт қалады.
+  if (overrides.coefficient !== undefined) cleaned.coefficient = overrides.coefficient
+  if (overrides.salePrice !== undefined) cleaned.salePrice = overrides.salePrice
+  return Object.keys(cleaned).length > 0 ? cleaned : undefined
+}
+
 const withOpenings = (room: Room): Room =>
   (room.openings && room.openings.length > 0
     ? { ...room, openings: fitOpenings(room) }
@@ -345,6 +372,7 @@ export const useConfigurator = create<State>((set, get) => ({
   shop: defaultShop,
   catalog: catalogOf(defaultShop),
   projectInfo: {},
+  priceOverrides: {},
   shopOpen: false,
   quoteOpen: false,
   sketchOpen: false,
@@ -549,6 +577,7 @@ export const useConfigurator = create<State>((set, get) => ({
       room: s.room,
       placements: s.placements,
       info: cleanProjectInfo(s.projectInfo),
+      priceOverrides: cleanPriceOverrides(s.priceOverrides),
     }
   },
 
@@ -581,6 +610,7 @@ export const useConfigurator = create<State>((set, get) => ({
       activeId: file.cabinets[0]!.id,
       templateId: '',
       projectInfo: file.info ?? {},
+      priceOverrides: file.priceOverrides ?? {},
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
@@ -590,6 +620,15 @@ export const useConfigurator = create<State>((set, get) => ({
   /** Тапсырыс реквизиттерін түзету. UI өрісте бос жолды бос қалдырады да, `exportProject` оны экспортта қиып тастайды. */
   editProjectInfo(patch) {
     set((s) => ({ projectInfo: { ...s.projectInfo, ...patch } }))
+  },
+
+  /**
+   * Баға түзетулерін түзету. `patch`-та `undefined` берілген өріс өшеді —
+   * мыс. `editPriceOverrides({ salePrice: undefined })` override-ты алып
+   * тастайды да, баға қайта коэффициентпен есептеледі.
+   */
+  editPriceOverrides(patch) {
+    set((s) => ({ priceOverrides: { ...s.priceOverrides, ...patch } }))
   },
 
   saveProjectLocally() {
@@ -617,6 +656,7 @@ export const useConfigurator = create<State>((set, get) => ({
         placements: file.placements,
         activeId: file.cabinets[0]!.id,
         projectInfo: file.info ?? {},
+        priceOverrides: file.priceOverrides ?? {},
         // Жұмыс табылды — бастау экранын көрсетудің қажеті жоқ.
         firstRun: false,
       })

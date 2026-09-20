@@ -14,7 +14,7 @@ import fontkit from '@pdf-lib/fontkit'
 import { PDFDocument, rgb } from 'pdf-lib'
 import type { PDFFont, PDFPage } from 'pdf-lib'
 import { ConfigValidationError } from '../errors'
-import { formatTenge } from '../pricing'
+import { formatTenge, quoteTotalsView } from '../pricing'
 import type { PriceBreakdown, PriceLine } from '../pricing'
 import type { ShopProfile } from '../shop'
 import { projectInfoRows } from './pdf'
@@ -150,16 +150,26 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
   y -= 4
   rule(ctx, y)
   y -= 16
-  label(ctx, MARGIN + 260, y, 'Себестоимость', 9, false, MUTED)
-  right(ctx, COL.sum, y, money(input.price.subtotal), 9)
-  y -= 14
-  label(ctx, MARGIN + 260, y, `Наценка ${input.price.markupPercent}%`, 9, false, MUTED)
-  right(ctx, COL.sum, y, money(input.price.markup), 9)
-  y -= 8
-  rule(ctx, y, MUTED)
-  y -= 18
+  /*
+   * `quoteTotalsView`: қолмен қойылған сату бағасы (`salePriceOverride`)
+   * бар жобада себестоимость пен коэффициент КЛИЕНТКЕ КӨРІНБЕЙДІ (qdesign
+   * «Предложение клиенту» — тек түпкі баға). Толық жіктеме цехтың өз
+   * экранында (`QuoteView.tsx`) әрдайым көрінеді, мұнда — тек осы шарт
+   * орындалғанда.
+   */
+  const totals = quoteTotalsView(input.price)
+  if (totals.kind === 'breakdown') {
+    label(ctx, MARGIN + 260, y, 'Себестоимость', 9, false, MUTED)
+    right(ctx, COL.sum, y, money(totals.subtotal), 9)
+    y -= 14
+    label(ctx, MARGIN + 260, y, `Наценка ${totals.markupPercent}%`, 9, false, MUTED)
+    right(ctx, COL.sum, y, money(totals.markup), 9)
+    y -= 8
+    rule(ctx, y, MUTED)
+    y -= 18
+  }
   label(ctx, MARGIN + 260, y, 'Итого', 12, true)
-  right(ctx, COL.sum, y, money(input.price.total), 12, true)
+  right(ctx, COL.sum, y, money(totals.total), 12, true)
 
   return doc.save()
 }

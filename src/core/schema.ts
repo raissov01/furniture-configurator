@@ -408,12 +408,26 @@ export const ProjectInfoSchema = z.object({
   note: z.string().min(1).optional(),
 })
 
+/**
+ * Баға түзетулері (qdesign паритеті): коэффициент/сату бағасын жоба
+ * деңгейінде алмастыру. Толықтай ЕРІКТІ — ескі жобада жоқ, сондықтан бұл
+ * өріс қосылса да `schemaVersion` көтерілмейді. Терең тексеру (коэффициент
+ * > 0, сату бағасы теріс емес/бүтін) осы жерде емес, `priceProject`-те
+ * жүреді — `ConfigValidationError` жол атымен әрі аралығымен лақтырады,
+ * ал схема тек ПІШІНДІ тексереді.
+ */
+export const PriceOverridesSchema = z.object({
+  coefficient: z.number().positive().optional(),
+  salePrice: z.number().int().min(0).optional(),
+})
+
 export const ProjectFileSchema = ProjectFileV2Schema.extend({
   schemaVersion: z.literal(3),
   room: RoomSchema,
   placements: z.array(PlacementSchema),
   // ЕРІКТІ: ескі жобада жоқ, сондықтан нұсқа көтерілмейді (жоғарыдағы түсінік).
   info: ProjectInfoSchema.optional(),
+  priceOverrides: PriceOverridesSchema.optional(),
 })
 
 export const CURRENT_SCHEMA_VERSION = 3
