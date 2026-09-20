@@ -136,3 +136,51 @@ describe('flattenTree — еркін тақта', () => {
       .toThrow(ConfigValidationError)
   })
 })
+
+const solidNode = (id: string, transform: Transform): SceneNode =>
+  ({ kind: 'solid', id, name: 'Тоңазытқыш', transform, solid: { size: { x: 600, y: 1800, z: 600 } } })
+
+describe('flattenTree — декор қорап', () => {
+  it('деталировкаға ТҮСПЕЙДІ', () => {
+    const scene = flattenTree(root([solidNode('s1', tr())]), SEED_CATALOG)
+    expect(scenePanels(scene)).toEqual([])
+    expect(scene.nodes).toEqual([])
+  })
+
+  it('solids тізімінде позасымен тұрады', () => {
+    const scene = flattenTree(root([solidNode('s1', tr(1200, 0, 0))]), SEED_CATALOG)
+    expect(scene.solids).toHaveLength(1)
+    expect(scene.solids[0]!.pose.position.x).toBe(1200)
+    expect(scene.solids[0]!.spec.size.y).toBe(1800)
+  })
+})
+
+describe('flattenTree — hidden', () => {
+  it('жасырылған корпус деталировкаға түспейді', () => {
+    const node = cabinetNode('c1', cab(), tr())
+    const scene = flattenTree(root([{ ...node, hidden: true }]), SEED_CATALOG)
+    expect(scene.nodes).toEqual([])
+  })
+
+  it('жасырылған топтың БАЛАЛАРЫ да түспейді', () => {
+    const inner: GroupNode = {
+      kind: 'group', id: 'g1', name: 'Қатар', transform: tr(), hidden: true,
+      children: [cabinetNode('c1', cab(), tr()), solidNode('s1', tr())],
+    }
+    const scene = flattenTree(root([inner]), SEED_CATALOG)
+    expect(scene.nodes).toEqual([])
+    expect(scene.solids).toEqual([])
+  })
+
+  it('жасырылған тақта да түспейді', () => {
+    const node = boardNode('b1', board(), tr())
+    const scene = flattenTree(root([{ ...node, hidden: true }]), SEED_CATALOG)
+    expect(scenePanels(scene)).toEqual([])
+  })
+
+  it('көрінетін көршісі қалады', () => {
+    const hiddenCab = { ...cabinetNode('c1', cab(), tr()), hidden: true }
+    const scene = flattenTree(root([hiddenCab, cabinetNode('c2', cab(), tr(600, 0, 0))]), SEED_CATALOG)
+    expect(scene.nodes.map((n) => n.nodeId)).toEqual(['c2'])
+  })
+})

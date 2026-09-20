@@ -12,8 +12,8 @@
  */
 import { generateCabinet } from './generateCabinet'
 import { generateHardware } from './hardware'
-import { walkTree } from './tree'
-import type { GroupNode, Pose, SolidSpec, BoardNode } from './tree'
+import { ORIGIN_POSE, composePose } from './tree'
+import type { GroupNode, Pose, SolidSpec, BoardNode, SceneNode } from './tree'
 import type { Catalog, Panel, SettingsOverride, ConstructionSettings, EdgeBand } from './types'
 import type { HardwarePlacement } from './hardware'
 import { mergeSettings } from './constants'
@@ -96,10 +96,16 @@ export function flattenTree(
   const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
   const merged = mergeSettings(settings)
 
-  walkTree(root, (node, pose) => {
+  const step = (node: SceneNode, parent: Pose): void => {
+    // Көрінбейтін деталь деталировкаға да, сметаға да түспеуі керек:
+    // әйтпесе клиент көрмеген нәрсеге ақша төлейді. Топ жасырылса —
+    // балалары да жасырын, сондықтан рекурсия осы жерде тоқтайды.
+    if (node.hidden === true) return
+    const pose = composePose(parent, node.transform)
     switch (node.kind) {
       case 'group':
         // Топ — контейнер. Өзі ештеңе шығармайды, балалары шығарады.
+        for (const child of node.children) step(child, pose)
         return
       case 'cabinet':
         nodes.push({
@@ -123,7 +129,8 @@ export function flattenTree(
         solids.push({ nodeId: node.id, name: node.name, spec: node.solid, pose })
         return
     }
-  })
+  }
+  step(root, ORIGIN_POSE)
 
   return { nodes, solids }
 }
