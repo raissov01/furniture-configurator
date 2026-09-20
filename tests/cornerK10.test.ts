@@ -73,3 +73,20 @@ describe('K10b: цоколь-КОРОБ (plinthShape box) + бұрыштық к�
     expect(() => generateCabinet(cfg, catalog)).toThrow(/plinth|цоколь|короб/)
   })
 })
+
+// ── K10c: столешница (жеке, ортақ емес) — қиғашты білмейді ─────────────────
+
+describe('K10c: столешница (worktop, ортақ емес) + бұрыштық корпус — қате', () => {
+  it('тыйым салынған', () => {
+    const cfg = corner(350, { worktop: { overhangFront: 20, overhangSides: 20 } })
+    expect(() => generateCabinet(cfg, catalog)).toThrow(/worktop|столешниц/)
+  })
+
+  it('ОРТАҚ (shared: true) столешница — ӘСЕР ЕТПЕЙДІ, ол мүлде жасалмайды', () => {
+    // shared:true болғанда generateCabinet worktop панелін мүлде шығармайды
+    // (кросс-кабинет worktopParts бөлек есептейді) — сондықтан бұрыштық
+    // корпуспен ешбір қайшылық жоқ.
+    const cfg = corner(350, { worktop: { overhangFront: 20, overhangSides: 20, shared: true } })
+    expect(() => generateCabinet(cfg, catalog)).not.toThrow()
+  })
+})
