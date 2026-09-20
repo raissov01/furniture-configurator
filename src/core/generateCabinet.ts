@@ -966,7 +966,14 @@ export function generateCabinet(
       make(
         'plinth', 'plinth', 'Цоколь', plinthMat,
         W, baseHeight,
-        { x: 0, y: -baseHeight, z: settings.plinthSetback }, ORIENT_FACING,
+        // ⚠ 2026-09-20 түзетілді (docs/audit/drilling-2026-09-20.md §R1):
+        // бұрын мұнда ORIENT_FACING тұратын, ол ұзындықты (900 мм, W) БИІКТІККЕ
+        // (world y) түсіретін. Цоколь — «на ребро» тұрған КӨЛДЕНЕҢ планка:
+        // ұзындығы солдан оңға (world x), ені (baseHeight) жоғары қарайды
+        // (world y). Дәл сол қатенің салдары: присадка панельден тыс шығатын
+        // (мыс. y = 890 мм, 93 мм тақтайда). `make()` `y`-ге baseHeight
+        // қосатындықтан (жоғарыдағы `raised`), позиция ӨЗГЕРМЕЙДІ.
+        { x: 0, y: -baseHeight, z: settings.plinthSetback }, ORIENT_UPRIGHT,
         // Конфирматтың басы КӨРІНЕТІН бетке шығады — цех оны заглушкамен
         // жабады. Мұны деталировкада айтпасақ, ол құрастыруда ғана байқалады.
         config.base.plinthShape === 'box' && boxJoint === 'confirmat'
@@ -998,7 +1005,8 @@ export function generateCabinet(
         make(
           'plinth-back', 'plinth', 'Цоколь задний', plinthMat,
           W, baseHeight,
-          { x: 0, y: -baseHeight, z: D - pt }, ORIENT_FACING,
+          // ⚠ 2026-09-20: жоғарыдағы `plinth`-пен бірдей себеп — §R1.
+          { x: 0, y: -baseHeight, z: D - pt }, ORIENT_UPRIGHT,
           'Цоколь, задний',
           // Арт тақтайды ешкім көрмейді — кромка ақшаны бос жейді.
           { L1: null, L2: null, W1: null, W2: null },
