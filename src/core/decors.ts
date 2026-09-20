@@ -16,7 +16,19 @@
  * ⚠ АРТИКУЛ — ӨНДІРУШІНІКІ. Бұл — жеткізушінің каталогындағы ашық деректер
  * (Egger H1145, Kronospan K076 …), сондықтан цех қағазымен салыстыра алады.
  * Бағасы мұнда ЖОҚ әрі болмайды да: ол әр цехта басқа (§6).
+ *
+ * ⚠ `finish` — ШАМАМЕН, дәл `color` сияқты АТЫНАН шығарылған (docs/visual/plan.md
+ * §3). Тек атауда НАҚТЫ сөз кездессе ғана қойылған: «камень»/«мрамор»/«кварц»/
+ * тас (қазақша) → `stone`; «металл»/«алюминий»/«хром» → `metal`; «матовый» →
+ * `matte`; «глянец»/«gloss»/«высокоглянцевый»/«супермат»/«soft touch» осы
+ * кітапханада бірде-бір атауда кездеспейді, сол себепті `gloss` ешқайда
+ * қойылмаған. Күмәнді жағдайда ӘДЕЙІ бос қалдырылған: жалған `gloss` мат
+ * фасадты жылтыр қылып көрсетер еді, ал `undefined` — қазіргі мінез
+ * (`finishToMaterial`), яғни қауіпсіз. Сол себепті көп декорда `finish`
+ * жоқ — бұл баг емес (`tests/decorsFinish.test.ts` санмен растайды).
  */
+
+import type { DecorFinish } from './types'
 
 export type DecorKind = 'chipboard' | 'mdf' | 'hardboard' | 'other'
 
@@ -33,6 +45,8 @@ export type DecorEntry = {
   color: string
   /** Текстурасы бар ма — раскройда деталь бұрылмайды. */
   hasGrain: boolean
+  /** Беттің оптикалық түрі. ЕРІКТІ — жоғарыдағы ескертуді қара. */
+  finish?: DecorFinish | undefined
 }
 
 export const DECOR_LIBRARY: DecorEntry[] = [
@@ -174,7 +188,7 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: 'kronospan-k525', name: 'Kronospan K525 Ясень Серфсайд светлый', brand: 'Kronospan', code: 'K525', kind: 'chipboard', color: '#9a9a97', hasGrain: true },
   { id: 'kronospan-k524', name: 'Kronospan K524 Ясень Серфсайд натуральный', brand: 'Kronospan', code: 'K524', kind: 'chipboard', color: '#9a9a97', hasGrain: true },
   { id: 'kronospan-k523', name: 'Kronospan K523 Диск платиновый', brand: 'Kronospan', code: 'K523', kind: 'chipboard', color: '#f2f0ec', hasGrain: false },
-  { id: 'kronospan-k522', name: 'Kronospan K522 Флэш алюминий', brand: 'Kronospan', code: 'K522', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
+  { id: 'kronospan-k522', name: 'Kronospan K522 Флэш алюминий', brand: 'Kronospan', code: 'K522', kind: 'chipboard', color: '#a2a3a1', hasGrain: false, finish: 'metal' },
   { id: 'kronospan-k521', name: 'Kronospan K521 Дымчато-зеленый', brand: 'Kronospan', code: 'K521', kind: 'chipboard', color: '#4d6350', hasGrain: false },
   { id: 'kronospan-k520', name: 'Kronospan K520 Темный изумруд', brand: 'Kronospan', code: 'K520', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
   { id: 'kronospan-k519', name: 'Kronospan K519 Мышиный серый', brand: 'Kronospan', code: 'K519', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
@@ -195,11 +209,11 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: 'kronospan-k356', name: 'Kronospan K356 Дуб Гранж Песочный', brand: 'Kronospan', code: 'K356', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: 'kronospan-k355', name: 'Kronospan K355 Дуб Гранж Платиновый', brand: 'Kronospan', code: 'K355', kind: 'chipboard', color: '#f2f0ec', hasGrain: true },
   { id: 'kronospan-k354', name: 'Kronospan K354 Дуб Гранж Колониальный', brand: 'Kronospan', code: 'K354', kind: 'chipboard', color: '#b98d57', hasGrain: true },
-  { id: 'kronospan-k353', name: 'Kronospan K353 Угольный Kамень', brand: 'Kronospan', code: 'K353', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
-  { id: 'kronospan-k352', name: 'Kronospan K352 Железный Kамень', brand: 'Kronospan', code: 'K352', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
-  { id: 'kronospan-k351', name: 'Kronospan K351 Ржавый Kамень', brand: 'Kronospan', code: 'K351', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
-  { id: 'kronospan-k350', name: 'Kronospan K350 Бетонный Kамень', brand: 'Kronospan', code: 'K350', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
-  { id: 'kronospan-k349', name: 'Kronospan K349 Шелковый Kамень', brand: 'Kronospan', code: 'K349', kind: 'chipboard', color: '#d9cbb3', hasGrain: false },
+  { id: 'kronospan-k353', name: 'Kronospan K353 Угольный Kамень', brand: 'Kronospan', code: 'K353', kind: 'chipboard', color: '#b8b4ac', hasGrain: false, finish: 'stone' },
+  { id: 'kronospan-k352', name: 'Kronospan K352 Железный Kамень', brand: 'Kronospan', code: 'K352', kind: 'chipboard', color: '#b8b4ac', hasGrain: false, finish: 'stone' },
+  { id: 'kronospan-k351', name: 'Kronospan K351 Ржавый Kамень', brand: 'Kronospan', code: 'K351', kind: 'chipboard', color: '#b8b4ac', hasGrain: false, finish: 'stone' },
+  { id: 'kronospan-k350', name: 'Kronospan K350 Бетонный Kамень', brand: 'Kronospan', code: 'K350', kind: 'chipboard', color: '#a2a3a1', hasGrain: false, finish: 'stone' },
+  { id: 'kronospan-k349', name: 'Kronospan K349 Шелковый Kамень', brand: 'Kronospan', code: 'K349', kind: 'chipboard', color: '#d9cbb3', hasGrain: false, finish: 'stone' },
   { id: 'kronospan-k301', name: 'Kronospan K301 Капучино', brand: 'Kronospan', code: 'K301', kind: 'chipboard', color: '#d9cbb3', hasGrain: false },
   { id: 'kronospan-k2739', name: 'Kronospan K2739 Cannolo Cremona Oak', brand: 'Kronospan', code: 'K2739', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: 'kronospan-k2738', name: 'Kronospan K2738 Torro Cremona Oak', brand: 'Kronospan', code: 'K2738', kind: 'chipboard', color: '#b98d57', hasGrain: true },
@@ -215,7 +229,7 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: 'kronospan-k134', name: 'Kronospan K134 Солнечный Свет', brand: 'Kronospan', code: 'K134', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
   { id: 'kronospan-k132', name: 'Kronospan K132 Оранжевый', brand: 'Kronospan', code: 'K132', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
   { id: 'kronospan-k125', name: 'Kronospan K125 Королевский Синий', brand: 'Kronospan', code: 'K125', kind: 'chipboard', color: '#3a5578', hasGrain: false },
-  { id: 'kronospan-k112', name: 'Kronospan K112 Серый Камень', brand: 'Kronospan', code: 'K112', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
+  { id: 'kronospan-k112', name: 'Kronospan K112 Серый Камень', brand: 'Kronospan', code: 'K112', kind: 'chipboard', color: '#9a9a97', hasGrain: false, finish: 'stone' },
   { id: 'kronospan-k110', name: 'Kronospan K110 Белый', brand: 'Kronospan', code: 'K110', kind: 'chipboard', color: '#f2f0ec', hasGrain: false },
   { id: 'kronospan-k107', name: 'Kronospan K107 Дуб Эндгрейн Элегантный', brand: 'Kronospan', code: 'K107', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: 'kronospan-k105', name: 'Kronospan K105 Дуб Эндгрейн Необработанный', brand: 'Kronospan', code: 'K105', kind: 'chipboard', color: '#b98d57', hasGrain: true },
@@ -275,7 +289,7 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: 'kronospan-3025', name: 'Kronospan 3025 Дуб Сонома Светлый', brand: 'Kronospan', code: '', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: 'kronospan-1912', name: 'Kronospan 1912 Ольха', brand: 'Kronospan', code: '', kind: 'chipboard', color: '#c2a07a', hasGrain: true },
   { id: 'kronospan-1715', name: 'Kronospan 1715 Береза', brand: 'Kronospan', code: '', kind: 'chipboard', color: '#c2a07a', hasGrain: true },
-  { id: 'kronospan-0881', name: 'Kronospan 0881 Алюминий', brand: 'Kronospan', code: '', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
+  { id: 'kronospan-0881', name: 'Kronospan 0881 Алюминий', brand: 'Kronospan', code: '', kind: 'chipboard', color: '#a2a3a1', hasGrain: false, finish: 'metal' },
   { id: 'kronospan-0854', name: 'Kronospan 0854 Венге', brand: 'Kronospan', code: '', kind: 'chipboard', color: '#3b2f2a', hasGrain: true },
   { id: 'kronospan-0740', name: 'Kronospan 0740 Дуб Горный', brand: 'Kronospan', code: '', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: 'kronospan-0729', name: 'Kronospan 0729 Орех', brand: 'Kronospan', code: '', kind: 'chipboard', color: '#6f4b32', hasGrain: true },
@@ -317,13 +331,13 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: 'egger-u748', name: 'Egger U748 ST9 Трюфель коричневый', brand: 'Egger', code: 'U748', kind: 'chipboard', color: '#c8a578', hasGrain: true },
   { id: 'egger-u741', name: 'Egger U741 ST9 Лава серая', brand: 'Egger', code: 'U741', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
   { id: 'egger-u732', name: 'Egger U732 ST9 Серый асфальт', brand: 'Egger', code: 'U732', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
-  { id: 'egger-u727', name: 'Egger U727 ST9 Серый камень', brand: 'Egger', code: 'U727', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
+  { id: 'egger-u727', name: 'Egger U727 ST9 Серый камень', brand: 'Egger', code: 'U727', kind: 'chipboard', color: '#9a9a97', hasGrain: false, finish: 'stone' },
   { id: 'egger-u708', name: 'Egger U708 ST9 Светло-серый', brand: 'Egger', code: 'U708', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
   { id: 'egger-u707', name: 'Egger U707 ST9 Шёлк серый', brand: 'Egger', code: 'U707', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
   { id: 'egger-u705', name: 'Egger U705 ST9 Ангора серая', brand: 'Egger', code: 'U705', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
   { id: 'egger-u702', name: 'Egger U702 ST9 Кашемир серый', brand: 'Egger', code: 'U702', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
   { id: 'egger-u699', name: 'Egger U699 ST9 Зелёный еловый', brand: 'Egger', code: 'U699', kind: 'chipboard', color: '#4d6350', hasGrain: false },
-  { id: 'egger-u665', name: 'Egger U665 ST9 Зелёный камень', brand: 'Egger', code: 'U665', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
+  { id: 'egger-u665', name: 'Egger U665 ST9 Зелёный камень', brand: 'Egger', code: 'U665', kind: 'chipboard', color: '#9a9a97', hasGrain: false, finish: 'stone' },
   { id: 'egger-u638', name: 'Egger U638 ST9 Зелёный шалфей', brand: 'Egger', code: 'U638', kind: 'chipboard', color: '#4d6350', hasGrain: false },
   { id: 'egger-u636', name: 'Egger U636 ST9 Фьёрд зелёный', brand: 'Egger', code: 'U636', kind: 'chipboard', color: '#4d6350', hasGrain: false },
   { id: 'egger-u630', name: 'Egger U630 ST9 Зелёный лайм', brand: 'Egger', code: 'U630', kind: 'chipboard', color: '#4d6350', hasGrain: false },
@@ -373,7 +387,7 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: 'egger-h3198', name: 'Egger H3198 ST19 Файнлайн тёмно-серый', brand: 'Egger', code: 'H3198', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
   { id: 'egger-h3197', name: 'Egger H3197 ST19 Файнлайн средне-серый', brand: 'Egger', code: 'H3197', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
   { id: 'egger-h3195', name: 'Egger H3195 ST19 Файнлайн белый', brand: 'Egger', code: 'H3195', kind: 'chipboard', color: '#f2f0ec', hasGrain: false },
-  { id: 'egger-h3190', name: 'Egger H3190 ST19 Металлик Файнлайн антрацит', brand: 'Egger', code: 'H3190', kind: 'chipboard', color: '#2b2d30', hasGrain: false },
+  { id: 'egger-h3190', name: 'Egger H3190 ST19 Металлик Файнлайн антрацит', brand: 'Egger', code: 'H3190', kind: 'chipboard', color: '#2b2d30', hasGrain: false, finish: 'metal' },
   { id: 'egger-h3176', name: 'Egger H3176 ST37 Дуб Галифакс олово', brand: 'Egger', code: 'H3176', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: 'egger-h3170', name: 'Egger H3170 ST12 Дуб Кендал натуральный', brand: 'Egger', code: 'H3170', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: 'egger-h3157', name: 'Egger H3157 ST12 Дуб Винченца', brand: 'Egger', code: 'H3157', kind: 'chipboard', color: '#b98d57', hasGrain: true },
@@ -422,17 +436,17 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: 'egger-h1145', name: 'Egger H1145 ST10 Дуб Бардолино натуральный', brand: 'Egger', code: 'H1145', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: 'egger-h1142', name: 'Egger H1142 ST36 Дуб Сакраменто коричневый', brand: 'Egger', code: 'H1142', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: 'egger-h1113', name: 'Egger H1113 ST10 Дуб Канзас коричневый', brand: 'Egger', code: 'H1113', kind: 'chipboard', color: '#b98d57', hasGrain: true },
-  { id: 'egger-f765', name: 'Egger F765 ST20 Серебристый матовый', brand: 'Egger', code: 'F765', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
+  { id: 'egger-f765', name: 'Egger F765 ST20 Серебристый матовый', brand: 'Egger', code: 'F765', kind: 'chipboard', color: '#9a9a97', hasGrain: false, finish: 'matte' },
   { id: 'egger-f685', name: 'Egger F685 ST10 Акапулько', brand: 'Egger', code: 'F685', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
-  { id: 'egger-f637', name: 'Egger F637 ST10 Хромикс белый', brand: 'Egger', code: 'F637', kind: 'chipboard', color: '#f2f0ec', hasGrain: false },
-  { id: 'egger-f528', name: 'Egger F528 ST20 Металл брашированный бронзовый', brand: 'Egger', code: 'F528', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
+  { id: 'egger-f637', name: 'Egger F637 ST10 Хромикс белый', brand: 'Egger', code: 'F637', kind: 'chipboard', color: '#f2f0ec', hasGrain: false, finish: 'metal' },
+  { id: 'egger-f528', name: 'Egger F528 ST20 Металл брашированный бронзовый', brand: 'Egger', code: 'F528', kind: 'chipboard', color: '#a2a3a1', hasGrain: false, finish: 'metal' },
   { id: 'egger-f433', name: 'Egger F433 ST10 Лён антрацит', brand: 'Egger', code: 'F433', kind: 'chipboard', color: '#2b2d30', hasGrain: false },
   { id: 'egger-f416', name: 'Egger F416 ST10 Текстиль бежевый', brand: 'Egger', code: 'F416', kind: 'chipboard', color: '#d9cbb3', hasGrain: false },
   { id: 'egger-f323', name: 'Egger F323 ST20 Кобра бронза', brand: 'Egger', code: 'F323', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
   { id: 'egger-f302', name: 'Egger F302 ST87 Ферро бронза', brand: 'Egger', code: 'F302', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
-  { id: 'egger-f243', name: 'Egger F243 ST10 Мрамор Кандела светло-серый', brand: 'Egger', code: 'F243', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
+  { id: 'egger-f243', name: 'Egger F243 ST10 Мрамор Кандела светло-серый', brand: 'Egger', code: 'F243', kind: 'chipboard', color: '#9a9a97', hasGrain: false, finish: 'stone' },
   { id: 'egger-f235', name: 'Egger F235 ST10 Сланец Скиваро', brand: 'Egger', code: 'F235', kind: 'chipboard', color: '#cdc9c2', hasGrain: false },
-  { id: 'egger-f206', name: 'Egger F206 ST9 Камень Пьетра Гриджиа чёрный', brand: 'Egger', code: 'F206', kind: 'chipboard', color: '#2b2d30', hasGrain: false },
+  { id: 'egger-f206', name: 'Egger F206 ST9 Камень Пьетра Гриджиа чёрный', brand: 'Egger', code: 'F206', kind: 'chipboard', color: '#2b2d30', hasGrain: false, finish: 'stone' },
   { id: 'egger-f187', name: 'Egger F187 ST9 Бетон Чикаго тёмно-серый', brand: 'Egger', code: 'F187', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
   { id: 'egger-f186', name: 'Egger F186 ST9 Бетон Чикаго светло-серый', brand: 'Egger', code: 'F186', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
   { id: '', name: 'Томский Шалфей', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
@@ -449,7 +463,7 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: '-12', name: 'Томский Серый', brand: 'Томский', code: '', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
   { id: '-13', name: 'Томский Светло-Жёлтый', brand: 'Томский', code: '', kind: 'chipboard', color: '#c9a227', hasGrain: false },
   { id: '-14', name: 'Томский Салатовый', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
-  { id: '-15', name: 'Томский Розовый кварц', brand: 'Томский', code: '', kind: 'chipboard', color: '#c9a5a0', hasGrain: false },
+  { id: '-15', name: 'Томский Розовый кварц', brand: 'Томский', code: '', kind: 'chipboard', color: '#c9a5a0', hasGrain: false, finish: 'stone' },
   { id: '-16', name: 'Томский Розовый', brand: 'Томский', code: '', kind: 'chipboard', color: '#c9a5a0', hasGrain: false },
   { id: '-17', name: 'Томский Оранж', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
   { id: '-18', name: 'Томский Лаванда', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
@@ -461,7 +475,7 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: '-24', name: 'Томский Голубой', brand: 'Томский', code: '', kind: 'chipboard', color: '#3a5578', hasGrain: false },
   { id: '-25', name: 'Томский Белый', brand: 'Томский', code: '', kind: 'chipboard', color: '#f2f0ec', hasGrain: false },
   { id: '-26', name: 'Томский Базальт', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
-  { id: '-27', name: 'Томский Алюминий', brand: 'Томский', code: '', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
+  { id: '-27', name: 'Томский Алюминий', brand: 'Томский', code: '', kind: 'chipboard', color: '#a2a3a1', hasGrain: false, finish: 'metal' },
   { id: '-28', name: 'Томский Цемент Тёмный', brand: 'Томский', code: '', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
   { id: '-29', name: 'Томский Цемент', brand: 'Томский', code: '', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
   { id: '-30', name: 'Томский Файерстоун', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
@@ -471,7 +485,7 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: '-34', name: 'Томский Планка', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
   { id: '-35', name: 'Томский Лофт', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
   { id: '-36', name: 'Томский Кена', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
-  { id: '-37', name: 'Томский Камень', brand: 'Томский', code: '', kind: 'chipboard', color: '#9a9a97', hasGrain: false },
+  { id: '-37', name: 'Томский Камень', brand: 'Томский', code: '', kind: 'chipboard', color: '#9a9a97', hasGrain: false, finish: 'stone' },
   { id: '-38', name: 'Томский Ена', brand: 'Томский', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
   { id: '-39', name: 'Томский Бетон Пайн', brand: 'Томский', code: '', kind: 'chipboard', color: '#a2a3a1', hasGrain: false },
   { id: '-40', name: 'Томский Ясень Шимо Тёмный', brand: 'Томский', code: '', kind: 'chipboard', color: '#c2a07a', hasGrain: true },
@@ -539,8 +553,8 @@ export const DECOR_LIBRARY: DecorEntry[] = [
   { id: '-96', name: 'ЛДСП Дуб каселла', brand: '', code: '', kind: 'chipboard', color: '#b98d57', hasGrain: true },
   { id: '-97', name: 'Орех', brand: '', code: '', kind: 'chipboard', color: '#6f4b32', hasGrain: true },
   { id: '18', name: 'МДФ краска 18', brand: '', code: '', kind: 'mdf', color: '#b8b4ac', hasGrain: false },
-  { id: '-98', name: 'тас', brand: '', code: '', kind: 'other', color: '#b8b4ac', hasGrain: false },
-  { id: '-99', name: 'тас', brand: '', code: '', kind: 'other', color: '#b8b4ac', hasGrain: false },
+  { id: '-98', name: 'тас', brand: '', code: '', kind: 'other', color: '#b8b4ac', hasGrain: false, finish: 'stone' },
+  { id: '-99', name: 'тас', brand: '', code: '', kind: 'other', color: '#b8b4ac', hasGrain: false, finish: 'stone' },
   { id: '16', name: 'МДФ краска 16', brand: '', code: '', kind: 'mdf', color: '#b8b4ac', hasGrain: false },
   { id: '-100', name: 'ДСП столещница', brand: '', code: '', kind: 'chipboard', color: '#b8b4ac', hasGrain: false },
   { id: '32', name: 'МДФ склейка 32', brand: '', code: '', kind: 'mdf', color: '#b8b4ac', hasGrain: false },
