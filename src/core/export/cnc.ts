@@ -166,7 +166,10 @@ export function cncIndexCsv(panels: Panel[], catalog: Catalog, options: CncOptio
     const material = catalog.materials.find((m) => m.id === panel.materialId)
     if (!material) throw new Error(`Материал табылмады: ${panel.materialId}`)
     const faces = new Set(panel.drilling.map((d) => d.face))
-    const milled = panel.cutouts.length > 0 || panel.grooves.length > 0
+    // K9 / audit C9: трапеция контуры да фрезамен (ойма/паз секілді) ТЕК
+    // DXF-те бар — bevel есепке алынбаса, цех «Фрезеровка: нет» деп оқып,
+    // дно/крышканы тікбұрыш деп кесіп алады.
+    const milled = panel.cutouts.length > 0 || panel.grooves.length > 0 || panel.bevel !== undefined
     return line([
       cncFileName(panel, i),
       // Биркадағы жазумен бірдей: оператор физикалық детальді осымен табады.

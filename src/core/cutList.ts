@@ -7,7 +7,20 @@
  * Экспортта екеуі бөлек топ болып, кімге арналғаны жазылып тұрады.
  */
 
+import { isWidthBevel } from './types'
 import type { Audience, Catalog, CutListRow, EdgeSpec, Panel } from './types'
+
+/**
+ * K9 / audit C9: трапеция детальдің `note` өрісі бос болуы мүмкін (ядро
+ * оны толтырмайды), ал цех дәл осы бағанды оқиды. Тікбұрыш деп кесіп
+ * алмас үшін, ЕН бойынша қиғашты («бұрыштық» корпус) осында ашық жазамыз.
+ * `p.note` бар болса — оны алмастырмаймыз, ядро айтқан нәрсе басым.
+ */
+const bevelNote = (p: Panel): string => {
+  const b = p.bevel
+  if (b && isWidthBevel(b)) return `Трапеция: ${b.widthAtStart}→${b.widthAtEnd}`
+  return ''
+}
 
 export type ColumnKey =
   | 'name' | 'qty'
@@ -90,7 +103,7 @@ export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
       edgeW1: bandLabel(p.edges.W1),
       edgeW2: bandLabel(p.edges.W2),
       grain: material.hasGrain ? (p.grainAlongLength ? 'вдоль длины' : 'поперёк длины') : 'нет',
-      note: p.note,
+      note: p.note || bevelNote(p),
     }
 
     // Бірдей деталь — бір жол. Кілтке орналасу КІРМЕЙДІ: цехқа детальдің
