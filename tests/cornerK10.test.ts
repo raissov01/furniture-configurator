@@ -104,3 +104,17 @@ describe('K10d: планка (topRails) + бұрыштық корпус — қа
     expect(() => generateCabinet(cfg, catalog)).toThrow(/topRails|планка/)
   })
 })
+
+// ── K10e: фронтальдық панель — корпустың нақты алды артта қалып, панель ауада ілінеді
+
+describe('K10e: фронтальдық панель (frontPanel) + бұрыштық корпус — қате', () => {
+  /**
+   * Нақты сан (600/350, side='right', width=200): панель z=-16..0-де,
+   * ал сол жерде (х=400..600) корпустың нақты алды z≈167..250 — панель
+   * мен корпустың арасында сырт ауа, панель ешнәрсеге ілінбейді.
+   */
+  it('тыйым салынған', () => {
+    const cfg = corner(350, { frontPanel: { width: 200, side: 'right' as const } })
+    expect(() => generateCabinet(cfg, catalog)).toThrow(/frontPanel|фронтальд/)
+  })
+})
