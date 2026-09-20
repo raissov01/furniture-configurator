@@ -55,7 +55,10 @@ const DEFAULT: Draft = {
   hob: 'gas', hood: true,
   lowerHeight: 720, lowerDepth: 500, plinthHeight: 95,
   upperDepth: 320, upperHeight: 720, upperElevation: 1460,
-  // Фартук әдепкіде ҚОСУЛЫ: 600 мм — qdesign-дағы фартук биіктігінің эталоны
+  // Фартук әдепкіде ҚОСУЛЫ: 600 мм. Сан qdesign шеберінің 2-қадамындағы
+  // әдепкі баптауынан оқылды («Жұмыс биіктігі 860 · Фартук 600»), жазбасы —
+  // docs/visual/generator-gaps.md. Бұрын әдепкі 0 еді, сондықтан столешница
+  // мен үстіңгі қатардың арасы жалаң қабырға болып тұратын.
   // (қара: docs/audit/qdesign-drilling-reference.md). Столешница мен үстіңгі
   // қатардың арасы жалаң қабырға болып қалмас үшін.
   worktopOverhang: 30, backsplashHeight: 600,
