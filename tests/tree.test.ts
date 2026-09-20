@@ -45,6 +45,21 @@ describe('composePose', () => {
     expect(composePose(parent, tr(0, 0, 0, 45)).rotationY).toBe(135)
   })
 
+  it('ата позасы ДА, бұрыш ТА нөл емес болғанда формула толық жұмыс істейді', () => {
+    // Бар тесттердің бәрінде я ата позасы {0,0,0}, я бұрыш 0 — сондықтан
+    // формуладағы parent.position мүшелері мен child.pos.z·sin мүшесі
+    // ешқашан бірге тексерілмеген. Мұнда екеуі де нөл емес.
+    const parent: Pose = { position: { x: 1000, y: 200, z: 500 }, rotationY: 90 }
+    const child: Transform = { pos: { x: 300, y: 150, z: 400 }, rot: { x: 0, y: 0, z: 0 } }
+    const pose = composePose(parent, child)
+    // cos90 = 0, sin90 = 1 (snapTrig дәл 0/1-ге дөңгелейді):
+    //   x = parent.x + child.x·cos + child.z·sin = 1000 + 300·0 + 400·1 = 1400
+    //   y = parent.y + child.y                    = 200 + 150            = 350
+    //   z = parent.z − child.x·sin + child.z·cos  = 500 − 300·1 + 400·0  = 200
+    expect(pose.position).toEqual({ x: 1400, y: 350, z: 200 })
+    expect(pose.rotationY).toBe(90)
+  })
+
   it('X немесе Z бойынша бұрылыс — қате', () => {
     expect(() => composePose(ORIGIN_POSE, { pos: { x: 0, y: 0, z: 0 }, rot: { x: 10, y: 0, z: 0 } }))
       .toThrow(ConfigValidationError)

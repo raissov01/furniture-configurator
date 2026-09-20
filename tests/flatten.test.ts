@@ -8,9 +8,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   SEED_CATALOG, findTemplate, flattenTree, generateCabinet, scenePanels, templateToCabinet,
-  ConfigValidationError, ORIENT_HORIZONTAL,
+  ConfigValidationError, ORIENT_HORIZONTAL, ORIENT_FACING, rotationFor,
 } from '../src/core/index'
-import type { CabinetConfig, GroupNode, SceneNode, Transform, BoardSpec } from '../src/core/index'
+import type {
+  CabinetConfig, GroupNode, SceneNode, Transform, BoardSpec, Panel,
+  Drill, Cutout, PanelCorners, MillingPath,
+} from '../src/core/index'
 
 const tr = (x = 0, y = 0, z = 0, rotY = 0): Transform =>
   ({ pos: { x, y, z }, rot: { x: 0, y: rotY, z: 0 } })
@@ -134,6 +137,72 @@ describe('flattenTree — еркін тақта', () => {
     const spec = board({ materialId: 'yoq-material' })
     expect(() => flattenTree(root([boardNode('b1', spec, tr())]), SEED_CATALOG))
       .toThrow(ConfigValidationError)
+  })
+
+  it('барлық ерікті өрісі толтырылған BoardSpec — Panel ТОЛЫҚ шығады', () => {
+    // Мутация тестінде boardPanel-дің 12 бұрмалауы бірде-бір тестпен
+    // ұсталмаған (drilling/cutouts/milling жоғалуы, qty еселенуі,
+    // grainAlongLength теріске шығуы, т.б.). Бір толық toEqual бәрін бірден
+    // ұстау үшін — ЕРІКТІ өрістің бәрі толтырылған, ешбір мән бос/әдепкі емес.
+    const drilling: Drill[] = [
+      { face: 'inner', x: 50, y: 60, diameter: 8, depth: 13, purpose: 'shelfPin' },
+    ]
+    const cutouts: Cutout[] = [
+      { id: 'cut1', label: 'Раковина', corner: 'bottomLeft', x: 100, y: 80, shape: 'rect', width: 500, height: 400 },
+    ]
+    const corners: PanelCorners = { bottomLeft: 20, bottomRight: 0, topRight: 20, topLeft: 0 }
+    const milling: MillingPath[] = [
+      { points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }], closed: true },
+    ]
+    // Материалдың өз hasGrain-інен ӘДЕЙІ өзгеше, сонда "материалдан алынып
+    // жатыр ма" деген қате де (grainAlongLength: material.hasGrain) ұсталады.
+    const grainAlongLength = !LDSP_16.hasGrain
+    const spec = board({
+      length: 600,
+      width: 450,
+      orientation: ORIENT_FACING,
+      edges: { L1: { bandId: BAND_2MM.id }, L2: { bandId: BAND_2MM.id }, W1: { bandId: BAND_2MM.id }, W2: { bandId: BAND_2MM.id } },
+      grainAlongLength,
+      role: 'shelf',
+      drilling,
+      cutouts,
+      corners,
+      milling,
+    })
+    // minBandSubtract-ты 3-ке көтеремін: 2 мм кромка ЕНДІ шегерілмейді.
+    // Мұны flattenTree-ге ОВЕРРАЙД ретінде беремін — сонда `mergeSettings(settings)`
+    // шақыруы (аргументсіз `mergeSettings()`-ке бұрмаланса) ӨЗГЕШЕ нәтиже беруі
+    // керек: бұрмаланса, әдепкі minBandSubtract=1 қолданылып, кромка шегеріле
+    // береді де, cutLength/cutWidth 596/446 болып қалады, тест құлайды.
+    const panel = flattenTree(
+      root([boardNode('b1', spec, tr())]), SEED_CATALOG, { minBandSubtract: 3 },
+    ).nodes[0]!.panels[0]!
+
+    const expected: Panel = {
+      id: 'b1',
+      role: 'shelf',
+      label: 'Столешница',
+      materialId: LDSP_16.id,
+      finishedLength: 600,
+      finishedWidth: 450,
+      // minBandSubtract=3 > 2 мм кромка → ЕШҚАЙСЫСЫ шегерілмейді:
+      // cutLength = finishedLength = 600, cutWidth = finishedWidth = 450.
+      cutLength: 600,
+      cutWidth: 450,
+      edges: spec.edges,
+      grainAlongLength,
+      qty: 1,
+      position: { x: 0, y: 0, z: 0 },
+      rotation: rotationFor(ORIENT_FACING),
+      orientation: ORIENT_FACING,
+      note: '',
+      drilling,
+      cutouts,
+      grooves: [],
+      milling,
+      corners,
+    }
+    expect(panel).toEqual(expected)
   })
 })
 
