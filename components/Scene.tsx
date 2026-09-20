@@ -68,6 +68,16 @@ const MM = 0.001
  */
 const MAIN_LIGHT_OFFSET: Vec3 = { x: 3, y: 5, z: 4 }
 
+/**
+ * RIM (артқы бөлектеу) жарығының бөлме центріне қатысты офсеті, МЕТРМЕН.
+ *
+ * Негізгі жарыққа (`MAIN_LIGHT_OFFSET`) қарама-қарсы бұрыштан, камераға
+ * қарсы бағытта тұрады: мақсаты — жиһаздың контурын фоннан бөлектеу
+ * (`docs/visual/light.md` §3). Негізгі жарық сияқты бөлме центрінен
+ * есептеледі, сондықтан бөлме үлкейгенде де дұрыс бұрышта қалады.
+ */
+const RIM_LIGHT_OFFSET: Vec3 = { x: -2, y: 3, z: -4 }
+
 export type SceneItem = {
   cabinet: CabinetConfig
   panels: Panel[]
@@ -1157,6 +1167,11 @@ export default function Scene({
     () => [roomCenterM.x + MAIN_LIGHT_OFFSET.x, roomCenterM.y + MAIN_LIGHT_OFFSET.y, roomCenterM.z + MAIN_LIGHT_OFFSET.z],
     [roomCenterM],
   )
+  /** Rim жарығының дүниедегі позициясы — сол `roomCenterM` тәсілімен. */
+  const rimLightPosition = useMemo<[number, number, number]>(
+    () => [roomCenterM.x + RIM_LIGHT_OFFSET.x, roomCenterM.y + RIM_LIGHT_OFFSET.y, roomCenterM.z + RIM_LIGHT_OFFSET.z],
+    [roomCenterM],
+  )
   /*
    * Target — бөлек Object3D: Three.js `directionalLight.target` әдепкісі
    * сахнаға ешқашан ҚОСЫЛМАЙДЫ, сондықтан оның `matrixWorld`-і жаңармай,
@@ -1269,12 +1284,16 @@ export default function Scene({
           <Lightformer form="rect" intensity={1} position={[7, 2, -3]} rotation={[0, -Math.PI / 2, 0]} scale={[12, 3, 1]} />
         </Environment>
         {/*
-          Жарық: әлсіз ambient (негізгі жарықты орта береді) + ЖЫЛЫ негізгі
-          жарық (көлеңке тастайды) + суық толтырғыш (қарама-қарсы жақ тым
-          қараңғы қалмасын).
+          Жарық — үш нүктелі схема (§7, `docs/visual/light.md`): әлсіз
+          ambient (негізгі жарықты орта береді) + ЖЫЛЫ негізгі жарық
+          (көлеңке тастайды) + суық толтырғыш (қарама-қарсы жақ тым
+          қараңғы қалмасын) + суық RIM (контурды фоннан бөлектейді, төменде).
+          Ambient/hemisphere rim қосылған соң сәл АЗАЙТЫЛДЫ — жалпы
+          жарықтылық сол қалпында, бірақ контраст (демек AO мен көлеңкенің
+          көрінуі) қалпына келеді.
         */}
-        <ambientLight intensity={0.12} />
-        <hemisphereLight intensity={0.3} color="#ffffff" groundColor="#b5b0a8" />
+        <ambientLight intensity={0.08} />
+        <hemisphereLight intensity={0.22} color="#ffffff" groundColor="#b5b0a8" />
         {/* Түсі БЕЙТАРАП: Neutral tone mapping жылы жарықты басып тастамайды —
             ақ қабырға мен ақ ЛДСП кремге ауып кететін. */}
         <directionalLight
@@ -1301,6 +1320,15 @@ export default function Scene({
         */}
         <primitive object={mainLightTarget} position={[roomCenterM.x, roomCenterM.y, roomCenterM.z]} />
         <directionalLight position={[-4, 2, -3]} intensity={0.3} color="#e6eeff" />
+        {/*
+          RIM (артқы бөлектеу): негізгі жарыққа қарама-қарсы бұрыштан,
+          жиһаз контурын фоннан бөлектейді (§7). `target` негізгі жарықпен
+          ОРТАҚ — бөлме центріне бағытталған, сондықтан бөлек Object3D
+          керек емес. `castShadow` ӘДЕЙІ жоқ: көлеңке картасы (2048×2048)
+          екінші рет есептелмесін — шығыны бір қосымша directional шейдинг
+          қана, кадр жиілігіне әсері жоқ.
+        */}
+        <directionalLight position={rimLightPosition} target={mainLightTarget} intensity={0.45} color="#eef2ff" castShadow={false} />
         <group scale={MM}>
           <RoomShell room={room} walk={walk || vr} entries={items} />
         </group>
