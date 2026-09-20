@@ -15,6 +15,7 @@ import {
 import { ConfigValidationError } from './errors'
 import type { HardwarePlacement } from './hardware'
 import type { NestingResult } from './nesting'
+import { isWidthBevel } from './types'
 import type { Panel, PriceOverrides } from './types'
 import { SERVICE_IDS, SERVICE_NAMES } from './shop'
 import type { ServiceId, ServiceRate, ShopProfile } from './shop'
@@ -103,15 +104,42 @@ export type PriceBreakdown = {
   missingPrices: string[]
 }
 
+/**
+ * Жиектің НАҒЫЗ ұзындығы, кромка есебі үшін. Әдетте L1/L2 = `finishedLength`,
+ * W1/W2 = `finishedWidth` — бірақ ЕН бойынша қиғаш (`PanelBevel`
+ * `widthAtStart`/`widthAtEnd`, бұрыштық корпустың дно/крышка/сөресі) панельде
+ * бір ұзын жиек ТІК ЕМЕС, ГИПОТЕНУЗА (audit C10,
+ * docs/audit/corner-2026-09-20.md): `finishedLength`-ті тура алса, әр жатық
+ * детальде кромка шамамен 9% кем есептеледі — ақша ғана емес, материал
+ * тапсырысы да сол саннан шығады.
+ *
+ * Қай жиек диагональ екені `alignWidth`-пен анықталады: 'end' — арты (L2)
+ * тураланып тік қалады (мыс. қабырғаға тіреледі), алды (L1) диагональ;
+ * 'start' — керісінше. Тек ЕН бойынша қиғаш әсер етеді — ҰЗЫНДЫҚ бойынша
+ * қиғаш (мансард бүйірі, `lengthAtStart`/`lengthAtEnd`) W1/W2-ге тиеді, бұл
+ * жерде әдейі қаралмайды (C10 тек L1/L2-ні түзетеді).
+ */
+function edgeLength(p: Panel, side: keyof Panel['edges']): number {
+  const b = p.bevel
+  if (b && isWidthBevel(b) && (side === 'L1' || side === 'L2')) {
+    const diagonalSide = b.alignWidth === 'end' ? 'L1' : 'L2'
+    if (side === diagonalSide) {
+      const rise = Math.abs(b.widthAtEnd - b.widthAtStart)
+      return Math.round(Math.sqrt(p.finishedLength ** 2 + rise ** 2))
+    }
+  }
+  return side === 'L1' || side === 'L2' ? p.finishedLength : p.finishedWidth
+}
+
 /** Кромка жиегінің ұзындығы: L1/L2 — детальдің ұзындығы, W1/W2 — ені. */
 export function edgeMetresByBand(panels: Panel[]): Map<string, number> {
   const mm = new Map<string, number>()
   for (const p of panels) {
     const sides: [keyof Panel['edges'], number][] = [
-      ['L1', p.finishedLength],
-      ['L2', p.finishedLength],
-      ['W1', p.finishedWidth],
-      ['W2', p.finishedWidth],
+      ['L1', edgeLength(p, 'L1')],
+      ['L2', edgeLength(p, 'L2')],
+      ['W1', edgeLength(p, 'W1')],
+      ['W2', edgeLength(p, 'W2')],
     ]
     for (const [side, length] of sides) {
       const spec = p.edges[side]
@@ -277,8 +305,8 @@ export function priceProject(
     st.panels += 1
     st.holes += p.drilling.length
     const sides: [keyof Panel['edges'], number][] = [
-      ['L1', p.finishedLength], ['L2', p.finishedLength],
-      ['W1', p.finishedWidth], ['W2', p.finishedWidth],
+      ['L1', edgeLength(p, 'L1')], ['L2', edgeLength(p, 'L2')],
+      ['W1', edgeLength(p, 'W1')], ['W2', edgeLength(p, 'W2')],
     ]
     for (const [side, length] of sides) {
       const spec = p.edges[side]
