@@ -814,4 +814,27 @@ export const uz: Record<string, string> = {
   'свой': 'alohida',
   'как у корпуса': 'korpusdagidek',
   'Вернуть декор корпуса': 'Korpus dekoriga qaytarish',
+
+  // ── «Almashtirish» — materialni ommaviy almashtirish (dok paneli) ──────────
+  'Заменить один материал на другой одним действием — по всему проекту или по выбранным корпусам (Ctrl+Z отменяет).':
+    'Bitta materialni boshqasiga bir amal bilan almashtirish — butun loyiha yoki tanlangan korpuslar bo\'yicha (Ctrl+Z qaytaradi).',
+  'Материалы в проекте': 'Loyihadagi materiallar',
+  'В проекте нет деталей': 'Loyihada detal yo\'q',
+  'Новый материал': 'Yangi material',
+  'Область': 'Qamrov',
+  'По всему проекту': 'Butun loyiha bo\'yicha',
+  'Выберите область': 'Qamrovni tanlang',
+  'Деталей изменится': 'O\'zgaradigan detallar',
+  'Изменение цены': 'Narx o\'zgarishi',
+  'Новая сумма': 'Yangi summa',
+  'Толщина материала другая — размер реза тоже пересчитан (§4.3).':
+    'Yangi materialning qalinligi boshqa — kesim o\'lchami ham qayta hisoblandi (§4.3).',
+  'Заменить': 'Almashtirish',
+  'Заменено.': 'Almashtirildi.',
+
+  // ── «Qidirish» — loyiha bo'yicha qidiruv (dok paneli) ───────────────────────
+  'Поиск по названию, материалу или размеру детали.': 'Detal nomi, materiali yoki o\'lchami bo\'yicha qidiruv.',
+  'Например: полка, 600, Дуб': 'Masalan: polka, 600, Dub',
+  'Ничего не найдено': 'Hech narsa topilmadi',
+  'Найдено деталей': 'Topilgan detallar',
 }

@@ -810,4 +810,27 @@ export const en: Record<string, string> = {
   'свой': 'custom',
   'как у корпуса': 'as carcass',
   'Вернуть декор корпуса': 'Reset to carcass decor',
+
+  // ── "Replace" — bulk material swap (dock panel) ─────────────────────────────
+  'Заменить один материал на другой одним действием — по всему проекту или по выбранным корпусам (Ctrl+Z отменяет).':
+    'Replace one material with another in a single action — across the whole project or selected cabinets (Ctrl+Z undoes it).',
+  'Материалы в проекте': 'Materials in project',
+  'В проекте нет деталей': 'No parts in project',
+  'Новый материал': 'New material',
+  'Область': 'Scope',
+  'По всему проекту': 'Whole project',
+  'Выберите область': 'Choose a scope',
+  'Деталей изменится': 'Parts affected',
+  'Изменение цены': 'Price change',
+  'Новая сумма': 'New total',
+  'Толщина материала другая — размер реза тоже пересчитан (§4.3).':
+    'The new material has a different thickness — cut size was recalculated too (§4.3).',
+  'Заменить': 'Replace',
+  'Заменено.': 'Replaced.',
+
+  // ── "Find" — project search (dock panel) ────────────────────────────────────
+  'Поиск по названию, материалу или размеру детали.': 'Search by part name, material or size.',
+  'Например: полка, 600, Дуб': 'e.g. shelf, 600, Oak',
+  'Ничего не найдено': 'Nothing found',
+  'Найдено деталей': 'Parts found',
 }
