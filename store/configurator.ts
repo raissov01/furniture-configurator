@@ -114,6 +114,12 @@ type State = Snapshot & {
   /** Фасадтарды көрсету. Өшірсе, корпустың ішкі құрылымы ашылады. */
   showFronts: boolean
   /**
+   * Присадка (тесік) белгілерін 3D-де көрсету — Ø бойынша нағыз масштабта,
+   * мақсатына қарай түсті (`components/DrillMarkers.tsx`). Әдепкіде ӨШІРУЛІ:
+   * клиентке көрсеткенде керек емес, тек цех/тексеру үшін.
+   */
+  showDrilling: boolean
+  /**
    * Есік пен ящиктің АШЫЛУЫ: 0 — жабық, 1 — толық ашық.
    *
    * Бұл — клиентке көрсететін нәрсе: жабық шкаф суреттен айнымайды, ал
@@ -261,6 +267,7 @@ type State = Snapshot & {
   setLiveScene(scene: unknown): void
   setAr(patch: Partial<{ busy: boolean; link: string | null; error: string | null }>): void
   setShowFronts(v: boolean): void
+  setShowDrilling(v: boolean): void
   setOpenness(v: number): void
   /** Бірінші жақтан жүру режимі (Прогулка). */
   walk: boolean
@@ -391,6 +398,7 @@ export const useConfigurator = create<State>((set, get) => ({
   historyOpen: false,
   viewMode: 'solid',
   showFronts: true,
+  showDrilling: false,
   openness: 0,
   busy: null,
   shareCodeOpen: false,
@@ -745,6 +753,7 @@ export const useConfigurator = create<State>((set, get) => ({
   setLiveScene: (liveScene) => set({ liveScene }),
   setAr: (patch) => set((s) => ({ ar: { ...s.ar, ...patch } })),
   setShowFronts: (showFronts) => set({ showFronts }),
+  setShowDrilling: (showDrilling) => set({ showDrilling }),
   // «Закрыть створки» / E — БӘРІН жабады: қолмен бір-бірлеп ашылғандарын да.
   setOpenness: (openness) => set(openness <= 0
     ? { openness: 0, openPanels: {}, openCabinets: {} }

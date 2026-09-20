@@ -14,8 +14,11 @@ import { boxGrainUAxis, decorTexture, grainRotation, type GrainUVAxis } from '@/
 import { finishToMaterial } from '@/lib/materialLook'
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
-import type { Axis, Catalog, Panel, PanelHandle, SettingsOverride } from '@/src/core/index'
+import type { Axis, Catalog, EdgeBand, Panel, PanelHandle, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
+import { drillToLocalMarker } from '@/lib/drillGeometry'
+import { DrillMarkers } from '@/components/DrillMarkers'
+import type { RenderedDrillMarker } from '@/components/DrillMarkers'
 
 /**
  * Панельдің түсі МАТЕРИАЛДЫҢ декорынан алынады — цех қай плитаны таңдаса,
@@ -336,6 +339,9 @@ export function PanelMesh({
   const vr = useConfigurator((s) => s.vr)
   // Жиек сызығы «үнемді» сапада өшеді: әлсіз ноутбукке ол мыңдаған сызық.
   const quality = useConfigurator((s) => s.quality)
+  // Присадка белгісі — әдепкіде ӨШІРУЛІ (store/configurator.ts), клиентке
+  // көрсеткенде керек емес.
+  const showDrilling = useConfigurator((s) => s.showDrilling)
   const key = pid ?? panel.id
   const decor = useMemo(
     () => catalog.materials.find((m) => m.id === panel.materialId)?.decor,
@@ -359,6 +365,42 @@ export function PanelMesh({
   const invalidate = useThree((s) => s.invalidate)
 
   const extents = useMemo(() => panelExtents(panel, thickness), [panel, thickness])
+
+  /*
+   * Присадка белгісі. `lib/drillGeometry.ts` панельдің КАНОНДЫҚ локал
+   * кеңістігін қайтарады (x — ұзындық, y — ен, z — қалыңдық, бұрылусыз,
+   * бұрышы (0,0,0)-де) — дәл осы кеңістік ТӨМЕНДЕГІ shape/tilted тармағының
+   * ӨЗ жергілікті кеңістігі, сондықтан сол жерде ТІКЕЛЕЙ қолданылады.
+   * Қарапайым бокс тармағында (рендер world осіне тураланған, боксттың
+   * ОРТАСЫНАН) `orientation` арқылы қайта ыңғайланады — `boxDrillMarkers`.
+   */
+  const bandsMap = useMemo(
+    () => new Map(catalog.edgeBands.map((b): [string, EdgeBand] => [b.id, b])),
+    [catalog],
+  )
+  const drillSettings = useMemo(() => mergeSettings(settings), [settings])
+  const canonicalDrillMarkers = useMemo((): RenderedDrillMarker[] => {
+    if (!showDrilling || panel.drilling.length === 0) return []
+    return panel.drilling.map((d) => ({
+      ...drillToLocalMarker(panel, d, thickness, bandsMap, drillSettings),
+      purpose: d.purpose,
+    }))
+  }, [showDrilling, panel, thickness, bandsMap, drillSettings])
+  /** Бокс тармағы: канондық нүкте боксттың ОРТАСЫНАН саналған ығысуға көшеді. */
+  const boxDrillMarkers = useMemo((): RenderedDrillMarker[] => {
+    if (canonicalDrillMarkers.length === 0) return []
+    return canonicalDrillMarkers.map((m) => {
+      const point = { x: 0, y: 0, z: 0 }
+      point[panel.orientation.length] = m.point.x - panel.finishedLength / 2
+      point[panel.orientation.width] = m.point.y - panel.finishedWidth / 2
+      point[panel.orientation.thickness] = m.point.z - thickness / 2
+      const direction = { x: 0, y: 0, z: 0 }
+      direction[panel.orientation.length] = m.direction.x
+      direction[panel.orientation.width] = m.direction.y
+      direction[panel.orientation.thickness] = m.direction.z
+      return { ...m, point, direction }
+    })
+  }, [canonicalDrillMarkers, panel.orientation, panel.finishedLength, panel.finishedWidth, thickness])
 
   const position = useMemo(() => {
     const base = {
@@ -586,6 +628,9 @@ export function PanelMesh({
           )}
           {outline}
         </mesh>
+        {/* Канондық кеңістік (ұзындық/ен/қалыңдық, бұрылусыз) — дәл осы
+            топтың ӨЗ жергілікті кеңістігі, сондықтан ешбір ауыстырусыз. */}
+        <DrillMarkers markers={canonicalDrillMarkers} />
       </group>
     )
   }
@@ -662,6 +707,10 @@ export function PanelMesh({
       ) : null}
       {/* Тұтқа тек тікбұрышты фасадта: қиғаш/оймалы фасадтың жазықтығы басқа. */}
       {panel.role === 'front' && panel.handle ? <HandleMesh handle={panel.handle} extents={extents} /> : null}
+      {/* Канондық нүкте боксттың ОРТАСЫНАН саналған ығысуға ауыстырылды
+          (`boxDrillMarkers`, жоғарыда) — бұл мештің өз жергілікті кеңістігі
+          дәл сол орталықтан саналады. */}
+      <DrillMarkers markers={boxDrillMarkers} />
       {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>
           <div className="pointer-events-none whitespace-nowrap rounded bg-neutral-900/90 px-2 py-1 text-[11px] text-white shadow">
