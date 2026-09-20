@@ -748,10 +748,15 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
   }
 
   // Алдыңғы жиектегі дәлдеу шканттары.
+  // edgeL1 беті — x осы торцтың ұзындығы бойымен (ені, W1↔W2), сол себепті
+  // РЕЗ координатасына ауыстыру үшін W1 кромкасы шегеріледі (§4.9,
+  // edgeXShiftFor-тегі !alongLength жағдайымен бірдей: face L1/L2 → W1 шегеріледі).
+  // Аудит: docs/audit/drilling-2026-09-20.md §O2 — бұл жер 10d97c6-да түзетілмей қалған еді.
+  const frontDowelXShift = subtractedThickness(bottom.edges.W1, ctx.bands, ctx.settings)
   for (const x of [DRAWER_BOTTOM_DOWEL_FROM_END, width - DRAWER_BOTTOM_DOWEL_FROM_END]) {
     bottom.drilling.push({
       face: 'edgeL1',
-      x: Math.round(x),
+      x: Math.round(x - frontDowelXShift),
       y: Math.round(t / 2),
       diameter: DRAWER_BOTTOM_DOWEL_DIAMETER,
       depth: DRAWER_BOTTOM_DOWEL_DEPTH,
