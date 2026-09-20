@@ -13,6 +13,8 @@ import type {
   CabinetConfig, Drill, Orientation,
   PanelCorners, PanelEdges, PanelRole, Vec3,
 } from './types'
+import type { Cutout } from './cutouts'
+import type { MillingPath } from './milling'
 
 /** Ата-түйінге ҚАТЫСТЫ орны. Орын — бүтін мм (§0.2), бұрыш — градус. */
 export type Transform = { pos: Vec3; rot: Vec3 }
@@ -64,7 +66,9 @@ export type BoardSpec = {
   grainAlongLength: boolean
   role: PanelRole
   drilling?: Drill[] | undefined
+  cutouts?: Cutout[] | undefined
   corners?: PanelCorners | undefined
+  milling?: MillingPath[] | undefined
 }
 
 /** Өндіріске КЕТПЕЙТІН қорап: техника, тас, декор. */
