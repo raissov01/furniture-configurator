@@ -283,14 +283,54 @@ export function hingeHoles(
   }
 
   if (!carcassPanel) return
-  // Планка бүйірдің ішкі бетінде: алдыңғы жиектен plateFromFront, чашка
-  // ортасына симметриялы екі тесік.
+  /*
+   * Планка тік панельдің КЕҢ бетіне бұрғыланады: алдыңғы жиектен
+   * plateFromFront, чашка ортасына симметриялы екі тесік.
+   *
+   * ⚠ §R4 түзетуі (docs/audit/drilling-2026-09-20.md). Бүйір панельдің
+   * (side-left/side-right) тек БІР ғана көрші секциясы бар, сондықтан
+   * планка әрқашан 'inner' бетіне түседі — бұл ескі мінез, өзгермейді.
+   *
+   * Перегородканың ЕКІ жағында да секция бар: солай болғандықтан ескі
+   * «inner әрқашан ішке қарайды» деген жорамал бұзылады —
+   * екі бет те бірдей «ішке» қарайды. `generateCabinet.ts`-те `hingeHoles`
+   * әр секцияның шеткі фасадына бөлек шақырылады (`boundsOf` арқылы), әрі
+   * сол бір перегородка екі шақыруда да ДӘЛ СОЛ `carcassPanel` болып келеді
+   * (divider-N — i-ші секцияның оң шегі де, i+1-ші секцияның сол шегі де).
+   * Ескі кодта екеуі де 'inner'-ге жазылатын да, координата (фасад биіктігі
+   * бойынша) кездейсоқ сәйкес келгенде бір-бірінің үстіне түсетін.
+   *
+   * Перегородканың екі кең беті геометриялық тұрғыда бұрыннан inner/outer
+   * болып ажыратылған: `orientation.thickness` осі бойынша (дивайдерде —
+   * ORIENT_SIDE, thickness = 'x') панель [position, position+t] аралығын
+   * алады. Локал +қалыңдық жағы (world x = position+t, панельдің «арғы»
+   * беті) — inner, қарсы жақ (world x = position, панельдің «бергі» беті)
+   * — outer (types.ts-тегі Drill түсініктемесін қара). Фасадтың орталығы
+   * осы аралықтың қай жағында тұрғанына қарай екі секцияның планкасы екі
+   * бөлек бетке бөлінеді: перегородканың оң жағындағы секция — inner,
+   * сол жағындағы секция — outer. Бүйір панельде (thickness осінің бір
+   * ұшы 0-де, екіншісі W-де тұрады) фасад әрқашан «арғы» жақта болады,
+   * сондықтан формула да, ескі мінез де сәйкес келеді — side-left үшін
+   * әрқашан inner. side-right үшін фасад әрқашан «бергі» жақта тұрғандықтан
+   * формула 'outer' береді: бұл ЕСКІ ЖАЛҒАН МІНЕЗДІ түзетеді (side-right
+   * планкасы да бұрын қате 'inner' болатын, тек бүйірде екінші сектор
+   * болмағандықтан ешкім қақтығыспайтын, сондықтан байқалмаған).
+   */
+  const carcassThickness = ctx.thickness(carcassPanel)
+  const thicknessAxis = carcassPanel.orientation.thickness
+  const carcassFarFace = carcassPanel.position[thicknessAxis] + carcassThickness
+  // Фасадтың ені де дәл сол осьте жатыр (ORIENT_FACING.width === 'x' ===
+  // ORIENT_SIDE.thickness) — жоба бойынша тұрақты, generateCabinet.ts-те
+  // ешқашан өзгермейді.
+  const frontCentre = front.position[thicknessAxis] + front.finishedWidth / 2
+  const plateFace: 'inner' | 'outer' = frontCentre >= carcassFarFace ? 'inner' : 'outer'
+
   const frontWorldY = front.position.y
   for (const x of positions) {
     const worldY = frontWorldY + x
     for (const d of [-plateSpacing / 2, plateSpacing / 2]) {
       pushFace(
-        carcassPanel, 'inner',
+        carcassPanel, plateFace,
         localX(carcassPanel, worldY + d),
         localY(carcassPanel, plateFromFront),
         HINGE_PLATE_DIAMETER, HINGE_PLATE_DEPTH, 'hinge', ctx, system?.plateHardwareId,
