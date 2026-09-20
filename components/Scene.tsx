@@ -60,6 +60,14 @@ const FLAP_OPEN_ANGLE = (75 * Math.PI) / 180
 
 const MM = 0.001
 
+/**
+ * Негізгі жарықтың бөлме центріне қатысты офсеті, МЕТРМЕН (жоғарыдан,
+ * алдыңғы оң жақтан) — ескі қатып қалған `position={[3, 5, 4]}`-тің
+ * бағыты, енді бөлменің центрінен есептеледі (`Scene`-тегі
+ * `mainLightPosition`-ды қара).
+ */
+const MAIN_LIGHT_OFFSET: Vec3 = { x: 3, y: 5, z: 4 }
+
 export type SceneItem = {
   cabinet: CabinetConfig
   panels: Panel[]
@@ -1126,6 +1134,63 @@ export default function Scene({
     }
   }, [active, room])
 
+  /*
+   * НЕГІЗГІ ЖАРЫҚ бөлмеге БАЙЛАНЫСТЫ.
+   *
+   * Бұл `directionalLight` `<group scale={MM}>`-тан ТЫС тұр (АР экспорты
+   * үшін бөлек), сондықтан оның координаттары МЕТРМЕН, ал `room.*` —
+   * МИЛЛИМЕТРМЕН. Соңғысын `MM`-ге көбейтіп қана салыстыруға болады.
+   *
+   * ⚠ `target` қойылмаса, Three.js оны әлемнің (0,0,0) нүктесіне бағыттайды.
+   * Бөлме дәл сол нүктеден БАСТАЛады (бұрышы 0, ені/тереңдігі оң жаққа
+   * созылады), сондықтан жарық бөлменің ОРТАСЫНА емес, БҰРЫШЫНА қарап
+   * тұрған. Түзету: target-ты бөлменің геометриялық центріне қоямыз, ал
+   * `position`-ды сол центрге қатысты, ескі `[3, 5, 4]` бағытын сақтап
+   * есептейміз (жоғарыдан, алдыңғы оң жақтан түсетін бағыт өзгермейді).
+   */
+  const roomCenterM = useMemo<Vec3>(
+    () => ({ x: (room.width / 2) * MM, y: (room.height / 2) * MM, z: (room.depth / 2) * MM }),
+    [room.width, room.height, room.depth],
+  )
+  const mainLightPosition = useMemo<[number, number, number]>(
+    () => [roomCenterM.x + MAIN_LIGHT_OFFSET.x, roomCenterM.y + MAIN_LIGHT_OFFSET.y, roomCenterM.z + MAIN_LIGHT_OFFSET.z],
+    [roomCenterM],
+  )
+  /*
+   * Target — бөлек Object3D: Three.js `directionalLight.target` әдепкісі
+   * сахнаға ешқашан ҚОСЫЛМАЙДЫ, сондықтан оның `matrixWorld`-і жаңармай,
+   * позициясы әрқашан (0,0,0) болып қалады. Шешім — өз Object3D-ымызды
+   * жасап (`<primitive>` арқылы сахна ағашына қосамыз), соны `target`
+   * ретінде береміз. Референс тұрақты (`useMemo`, тәуелділіксіз) — жарық
+   * әр рендерде жаңа объектіге ауыспасын.
+   */
+  const mainLightTarget = useMemo(() => new Object3D(), [])
+  /*
+   * Көлеңке камерасының шекарасы бөлменің ДИАГОНАЛІНЕ сай.
+   *
+   * Бұрын ±8 м (16×16 м) қатып тұрған — 4×3 м бөлмеге 2048×2048 көлеңке
+   * картасының жартысынан көбі бос ауаға кетіп, контакт көлеңкесі бұлыңғыр
+   * шығатын. Дұрысы: бөлменің центрден бұрышына дейінгі қашықтығын (3D
+   * диагональдің жартысы — шар тәрізді қамту радиусы) есептеп, соған сай
+   * ортографиялық жақтауды тарылту/өсіру. Радиус қолданылады, өйткені
+   * сфераның кез келген қимасы диаметрден аспайды — жарықтың бағыты қандай
+   * болса да бөлме толық сияды.
+   */
+  const mainLightShadow = useMemo(() => {
+    const widthM = room.width * MM
+    const depthM = room.depth * MM
+    const heightM = room.height * MM
+    const radius = Math.sqrt(widthM ** 2 + depthM ** 2 + heightM ** 2) / 2
+    const margin = 1.15 // 15% қор — бұрыштағы жиһаздың көлеңкесі кесілмесін
+    const offsetLength = Math.sqrt(
+      MAIN_LIGHT_OFFSET.x ** 2 + MAIN_LIGHT_OFFSET.y ** 2 + MAIN_LIGHT_OFFSET.z ** 2,
+    )
+    return {
+      half: radius * margin,
+      far: (offsetLength + radius) * margin,
+    }
+  }, [room.width, room.depth, room.height])
+
   return (
     <Canvas
       id={SCENE_CANVAS_ID}
@@ -1212,7 +1277,8 @@ export default function Scene({
         {/* Түсі БЕЙТАРАП: Neutral tone mapping жылы жарықты басып тастамайды —
             ақ қабырға мен ақ ЛДСП кремге ауып кететін. */}
         <directionalLight
-          position={[3, 5, 4]}
+          position={mainLightPosition}
+          target={mainLightTarget}
           intensity={1.5}
           color="#fffaf3"
           castShadow
@@ -1220,12 +1286,19 @@ export default function Scene({
           shadow-mapSize-height={2048}
           shadow-bias={-0.0005}
           shadow-camera-near={0.1}
-          shadow-camera-far={25}
-          shadow-camera-left={-8}
-          shadow-camera-right={8}
-          shadow-camera-top={8}
-          shadow-camera-bottom={-8}
+          shadow-camera-far={mainLightShadow.far}
+          shadow-camera-left={-mainLightShadow.half}
+          shadow-camera-right={mainLightShadow.half}
+          shadow-camera-top={mainLightShadow.half}
+          shadow-camera-bottom={-mainLightShadow.half}
         />
+        {/*
+          `directionalLight`-тың target-і: Three.js әдепкі target-ты сахнаға
+          қоспайды, сондықтан оны өз алдымызға `<primitive>` арқылы ағашқа
+          қосамыз (жоғарыдағы `mainLightTarget`-ті қара). Позициясы —
+          бөлменің геометриялық центрі.
+        */}
+        <primitive object={mainLightTarget} position={[roomCenterM.x, roomCenterM.y, roomCenterM.z]} />
         <directionalLight position={[-4, 2, -3]} intensity={0.3} color="#e6eeff" />
         <group scale={MM}>
           <RoomShell room={room} walk={walk || vr} entries={items} />
