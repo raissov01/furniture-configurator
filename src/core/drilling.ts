@@ -521,7 +521,7 @@ export function drawerFacadeScrews(wall: Panel, facade: Panel, ctx: Ctx): void {
   for (const x of rows) {
     for (const y of columns) {
       // Қораптың ІШКІ бетінен бұрғыланады да, қабырғаны тесіп өтеді.
-      pushFace(wall, 'inner', x, y, DRAWER_FACADE_SCREW_DIAMETER, wallThickness, 'dowel', ctx)
+      pushFace(wall, 'inner', x, y, DRAWER_FACADE_SCREW_DIAMETER, wallThickness, 'facadeScrew', ctx)
 
       /*
        * Фасадтағы жұбы — ДӘЛ сол физикалық нүкте, бірақ фасадтың өз
@@ -536,7 +536,7 @@ export function drawerFacadeScrews(wall: Panel, facade: Panel, ctx: Ctx): void {
       if (facadeY < 0 || facadeY > facade.finishedWidth) continue
       pushFace(
         facade, 'inner', facadeX, facadeY,
-        DRAWER_FACADE_SCREW_DIAMETER, DRAWER_FACADE_SCREW_PILOT_DEPTH, 'dowel', ctx,
+        DRAWER_FACADE_SCREW_DIAMETER, DRAWER_FACADE_SCREW_PILOT_DEPTH, 'facadeScrew', ctx,
       )
     }
   }

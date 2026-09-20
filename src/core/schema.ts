@@ -237,7 +237,9 @@ const DrillSchema = z.object({
   y: z.number().int(),
   diameter: z.number().positive(),
   depth: z.number().positive(),
-  purpose: z.enum(['confirmat', 'dowel', 'minifix', 'shelfPin', 'hinge', 'runner', 'handle', 'leg']),
+  purpose: z.enum([
+    'confirmat', 'dowel', 'minifix', 'shelfPin', 'hinge', 'runner', 'handle', 'leg', 'facadeScrew',
+  ]),
   hardwareId: z.string().min(1).optional(),
 })
 

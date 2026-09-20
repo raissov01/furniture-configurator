@@ -54,6 +54,7 @@ const DRILL_PURPOSE_RU: Record<Drill['purpose'], string> = {
   runner: 'направляющая',
   handle: 'ручка',
   leg: 'ножка',
+  facadeScrew: 'евровинт фасада',
 }
 
 const DRILL_FACE_RU: Record<Drill['face'], string> = {

@@ -22,6 +22,7 @@ const PURPOSE_LABEL: Record<DrillPurpose, string> = {
   runner: 'направляющая',
   leg: 'ножка',
   handle: 'ручка',
+  facadeScrew: 'евровинт фасада',
 }
 
 function main(): number {

@@ -156,6 +156,16 @@ export type DrillPurpose =
   | 'confirmat' | 'dowel' | 'minifix' | 'shelfPin' | 'hinge' | 'runner' | 'handle'
   /** Реттелетін аяқтың бұрандасы — дноның астында. */
   | 'leg'
+  /**
+   * Ящик фасадын металл қораптың (metalBoxSystem) алдыңғы қабырғасына
+   * бекітетін Ø3 еврошуруп (`DRAWER_FACADE_SCREW_DIAMETER`, `drawerFacadeScrews`).
+   * ШКАНТ ЕМЕС — бұрын 'dowel' деп жазылатын (audit Y2/Y3,
+   * docs/audit/drilling-2026-09-20.md), CNC экспортында «Назначение: шкант»
+   * болып шығып, цех операторын шатастыратын. `drawerBottomJoints`-тағы
+   * шынайы шкант (`DRAWER_BOTTOM_DOWEL_DIAMETER`, Ø6) әлі де 'dowel' болып
+   * қалады — тек осы, Ø3 еврошуруп өзгертілді.
+   */
+  | 'facadeScrew'
 
 /**
  * Панельдің локал координаталары (присадка мен DXF үшін):
