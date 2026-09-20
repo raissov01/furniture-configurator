@@ -459,6 +459,7 @@ export const en: Record<string, string> = {
   'Прозрачность: тело → полупрозрачно → контур': 'Transparency: solid → translucent → outline',
   'Проекция: перспектива ↔ ортогональная': 'Projection: perspective ↔ orthographic',
   'Размеры на сцене': 'Dimensions in the scene',
+  'Присадка на сцене': 'Drilling in the scene',
   'Эта справка': 'This help',
   'Отменить': 'Undo',
   'CNC CSV': 'CNC CSV',

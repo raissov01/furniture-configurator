@@ -152,6 +152,10 @@ export function Workspace() {
   const fitCamera = useConfigurator((s) => s.fitCamera)
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
+  // Присадканы 3D-де көрсету. Әдепкіде ӨШІРУЛІ: клиентке көрсеткенде
+  // тесіктер керек емес, ал цехта — керек.
+  const showDrilling = useConfigurator((s) => s.showDrilling)
+  const setShowDrilling = useConfigurator((s) => s.setShowDrilling)
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const syncShare = useConfigurator((s) => s.syncShare)
   const setShareCodeOpen = useConfigurator((s) => s.setShareCodeOpen)
@@ -441,6 +445,9 @@ export function Workspace() {
           <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
             {tr('Размеры на сцене')}
           </MenuItem>
+          <MenuItem active={showDrilling} onClick={() => setShowDrilling(!showDrilling)}>
+            {tr('Присадка на сцене')}
+          </MenuItem>
           <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
           <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
             {tr('Человек для масштаба')}
@@ -678,6 +685,9 @@ export function Workspace() {
           </MenuItem>
           <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
             {tr('Размеры на сцене')}
+          </MenuItem>
+          <MenuItem active={showDrilling} onClick={() => setShowDrilling(!showDrilling)}>
+            {tr('Присадка на сцене')}
           </MenuItem>
           <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
           <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>

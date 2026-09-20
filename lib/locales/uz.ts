@@ -463,6 +463,7 @@ export const uz: Record<string, string> = {
   'Прозрачность: тело → полупрозрачно → контур': 'Shaffoflik: to\'liq → yarim shaffof → kontur',
   'Проекция: перспектива ↔ ортогональная': 'Proyeksiya: perspektiva ↔ ortogonal',
   'Размеры на сцене': 'Sahnadagi o\'lchamlar',
+  'Присадка на сцене': 'Sahnadagi prisadka',
   'Эта справка': 'Shu ma\'lumotnoma',
   'Отменить': 'Bekor qilish',
   'CNC CSV': 'CNC CSV',
