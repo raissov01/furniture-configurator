@@ -37,6 +37,38 @@ describe('splitRun', () => {
   })
 })
 
+/*
+ * АҚАУ (sweep.ts дәлелдеген, 76 генерацияның 51-і): splitRun ұзындықты жай
+ * ТЕҢ бөледі де, ендер стандарт қатарда (300/400/450/500/600/800/900) шықпай
+ * қалады (мыс. 667/666, 584/583). Цех оларды бөлек кесуге мәжбүр болады.
+ *
+ * Талап: қатардағы модульдердің ЕҢ КӨБІ біреуі стандарт емес болсын (қалған
+ * добор), қосынды қабырға ұзындығына дәл тең қалсын. `cornerSink` (1450 мм,
+ * `CORNER_SINK_WIDTH`) — әдейі ерекшелік, ол ақау емес.
+ */
+describe('composeRun — стандарт ен (ақау түзетуі)', () => {
+  const STANDARD = new Set([300, 400, 450, 500, 600, 800, 900])
+
+  it('әр қатарда ЕҢ КӨБІ бір стандарт емес ен', () => {
+    for (const len of [1500, 2000, 2250, 3000, 4000, 5500]) {
+      const { runA, runB } = kitchenLayout({
+        layout: 'corner', lengthA: len, lengthB: 2400, sink: true, appliances: true,
+      })
+      for (const run of [runA, runB]) {
+        const odd = run.filter((m) => m.kind !== 'cornerSink' && !STANDARD.has(m.width))
+        expect(odd.length, `len=${len} run=${JSON.stringify(run)}`).toBeLessThanOrEqual(1)
+      }
+    }
+  })
+
+  it('стандарт емес енге қарамастан қосынды қабырға ұзындығына дәл тең', () => {
+    for (const len of [1500, 2000, 2250, 3000, 4000, 5500]) {
+      const { runA } = kitchenLayout({ layout: 'straight', lengthA: len, sink: true, appliances: true })
+      expect(runA.reduce((s, m) => s + m.width, 0)).toBe(len)
+    }
+  })
+})
+
 const entriesOf = (r: ReturnType<typeof generateKitchen>) =>
   r.cabinets.map((cabinet) => ({
     cabinet,

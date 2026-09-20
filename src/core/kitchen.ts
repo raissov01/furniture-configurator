@@ -121,13 +121,27 @@ const MODULE_MIN = 300
 const MODULE_MAX = 900
 const ROOM_MARGIN = 400
 
+/*
+ * ЦЕХТЫҢ фасад/направляющая каталогы осы ЖЕТІ ЕНГЕ есептелген (qdesign
+ * «Этапты конструктор» модульдерінен өлшенген, 09-20 sweep.ts дәлелі).
+ * `splitRun` қалдықты тең бөлгенде (ескі алгоритм) осы қатардан тыс ен
+ * шығатын — сонда фасад бөлек кесіледі, фурнитура сәйкес келмейді.
+ */
+const STANDARD_WIDTHS = [300, 400, 450, 500, 600, 800, 900]
+
 /**
  * Қабырға ұзындығын шкаф ЕНДЕРІНЕ бөлу.
  *
- * Мақсат — бәрі бірдей әрі ~600 мм-ге жақын: модуль саны ұзындыққа қарай
- * есептеледі, қалдық бірінші модульдерге бір миллиметрден таратылады
- * (қосынды ӘРҚАШАН дәл ұзындыққа тең — бұрыш пен столешница дәлме-дәл
- * отыруы үшін маңызды). Модуль [min,max] аралығынан шықпайды.
+ * Модуль саны ұзындыққа қарай есептеледі (`n`), сосын бірінші `n − 1` модуль
+ * БІРДЕЙ стандарт енге (`STANDARD_WIDTHS`) қойылады, ал қалдықты СОҢҒЫ модуль
+ * алады (нақты добор, цех оны солай кеседі — тапсырмадағы «ережелер» §3).
+ * Осылай қатарда ЕҢ КӨБІ БІР стандарт емес ен қалады. Қосынды ӘРҚАШАН дәл
+ * ұзындыққа тең (бұрыш пен столешница дәлме-дәл отыруы үшін маңызды) —
+ * бұл — ЕҢ МАҢЫЗДЫ инвариант, стандартқа жанасу оны бұзбайды.
+ *
+ * Сәйкес `n`/стандарт ен табылмаса (сирек, тар [min,max] диапазонында),
+ * ЕСКІ тең бөлу алгоритміне қайтады — сомасы бәрібір дәл, тек стандартқа
+ * жанаспауы мүмкін.
  */
 export function splitRun(
   length: number,
@@ -142,9 +156,50 @@ export function splitRun(
   while (length / n > max) n += 1
   while (n > 1 && length / n < min) n -= 1
 
+  const snapped = snapToStandardWidths(Math.round(length), n, min, max, preferred)
+  if (snapped) return snapped
+
   const base = Math.floor(length / n)
   const remainder = Math.round(length) - base * n
   return Array.from({ length: n }, (_, i) => base + (i < remainder ? 1 : 0))
+}
+
+/**
+ * `n`-ге жуық модуль санымен `length`-ті стандарт енге жанастырып бөлуге
+ * тырысады: `n − 1` модуль БІР стандарт ен (`S`) алады, соңғысы — қалдық.
+ * `S` `preferred`-ге ең жақыннан бастап сыналады; `n` да ±2 аралықта
+ * ауытқиды (кейбір ұзындықта дәл бастапқы `n`-мен жарамды `S` табылмайды,
+ * мыс. добор [min,max]-тан асып кетеді). Ештеңе сәйкес келмесе — `null`
+ * (шақырушы ескі тең бөлуге қайтады).
+ */
+function snapToStandardWidths(
+  length: number, n: number, min: number, max: number, preferred: number,
+): number[] | null {
+  const candidates = [...STANDARD_WIDTHS]
+    .filter((w) => w >= min && w <= max)
+    .sort((a, b) => Math.abs(a - preferred) - Math.abs(b - preferred))
+  if (candidates.length === 0) return null
+
+  const nOrder: number[] = [n]
+  for (let d = 1; d <= 2; d += 1) {
+    if (n - d >= 1) nOrder.push(n - d)
+    nOrder.push(n + d)
+  }
+
+  for (const cand of nOrder) {
+    if (cand === 1) {
+      if (length >= min && length <= max) return [length]
+      continue
+    }
+    if (length < cand * min || length > cand * max) continue
+    for (const width of candidates) {
+      const rest = length - width * (cand - 1)
+      if (rest >= min && rest <= max) {
+        return Array.from({ length: cand }, (_, i) => (i < cand - 1 ? width : rest))
+      }
+    }
+  }
+  return null
 }
 
 /*
