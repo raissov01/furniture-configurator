@@ -31,19 +31,30 @@ describe('DXF', () => {
     expect(outline).toContain(`\n20\n${side.cutWidth}.0`)
   })
 
-  it('әр диаметр+тереңдік жұбына жеке қабат — станок қабатты аспапқа байлайды', () => {
+  it('әр диаметр+тереңдік+бет жиынтығына жеке қабат — станок қабатты аспапқа байлайды', () => {
     // §O5 аудит: тереңдік атта МІНДЕТТІ, әйтпесе бір диаметрдің соқыр
     // (ілгек ұясы) мен өтпелі нұсқасы бір қабатқа түсіп кетеді.
+    // §O4 аудит: бет те атта — оператор detальді қашан аударатынын біледі.
     expect(drillLayerName(5, 8)).toBe('DRILL_5_D8')
-    expect(drillLayerName(12.5, 12.5)).toBe('DRILL_12_5_D12_5')
-    expect(dxf).toContain('DRILL_5')
+    expect(drillLayerName(5, 8, 'inner')).toBe('DRILL_INNER_5_D8')
+    expect(drillLayerName(12.5, 12.5, 'outer')).toBe('DRILL_OUTER_12_5_D12_5')
+    const pin = side.drilling.find((d) => d.face === 'inner' && d.diameter === 5)!
+    expect(dxf).toContain(drillLayerName(pin.diameter, pin.depth, 'inner'))
     // Ø7 тесіктер торцте — контур бетінде салынбайды
     expect(dxf).not.toContain('DRILL_7')
   })
 
-  it('шеңберлер саны сол беттегі тесіктерге тең', () => {
-    const inner = side.drilling.filter((d) => d.face === 'inner')
+  it('§O4 аудит: әдепкіде ЕКІ бет те шығады (нақты шақырушылардың бәрі face бермейді)', () => {
+    const bothFaces = side.drilling.filter((d) => d.face === 'inner' || d.face === 'outer')
     const circles = dxf.split('\nCIRCLE\n').length - 1
+    expect(circles).toBe(bothFaces.length)
+    expect(bothFaces.some((d) => d.face === 'outer')).toBe(true) // тест мағыналы болуы үшін
+  })
+
+  it('нақты face сұралса — тек сол бет (ескі мінез)', () => {
+    const inner = side.drilling.filter((d) => d.face === 'inner')
+    const dxfInner = panelToDxf(side, { face: 'inner' })
+    const circles = dxfInner.split('\nCIRCLE\n').length - 1
     expect(circles).toBe(inner.length)
   })
 

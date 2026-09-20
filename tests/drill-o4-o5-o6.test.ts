@@ -28,11 +28,13 @@ describe('O5 — Ø35 тесіктің ТЕРЕҢДІГІ DXF қабат аты�
   const dxf = panelToDxf(panel)
 
   it('екі тесік БӨЛЕК қабатта — атында тереңдігі бар', () => {
-    // Аудиттің ұсынысы: DRILL_35_D12_5 (§O5). Қазір екеуі де жай DRILL_35-ке
-    // түседі де, ілгек ұясы мен өтпелі тесік бір станок қабатына байланады —
-    // цех ілгектің тереңдігімен (12.5 мм) фасатты тесіп жіберуі мүмкін.
-    expect(dxf).toContain('DRILL_35_D12_5')
-    expect(dxf).toContain('DRILL_35_D16')
+    // Аудиттің ұсынысы: DRILL_35_D12_5 (§O5). Бет те атта (§O4, кейінгі
+    // коммит) — екеуі де inner болғандықтан DRILL_INNER_…. Қазір екеуі де
+    // жай DRILL_35-ке түседі де, ілгек ұясы мен өтпелі тесік бір станок
+    // қабатына байланады — цех ілгектің тереңдігімен (12.5 мм) фасатты
+    // тесіп жіберуі мүмкін.
+    expect(dxf).toContain('DRILL_INNER_35_D12_5')
+    expect(dxf).toContain('DRILL_INNER_35_D16')
     expect(dxf).not.toMatch(/\nDRILL_35\n/) // тереңдіксіз ЕСКІ атау қалмауы керек
   })
 
@@ -76,5 +78,43 @@ describe('O6 — ойманың РЕЗ координатасы присадка
   it('ойма бар да, catalog/settings берілмесе — ҚАТЕ (үнсіз қате санамайды)', () => {
     expect(() => panelToDxf(panel)).toThrow()
     expect(() => cabinetToDxfFiles([panel])).toThrow()
+  })
+})
+
+describe('O4 — DXF-те тек inner беті шығады, фрезеровка МҮЛДЕ шықпайды', () => {
+  // Inner: конфирматтың Ø8 өтпелі тесігі. Outer: тұтқаның Ø8 тесігі —
+  // бірде-бір шақырушы (cli/export.ts, ExportMenu, CutPage) `face: 'outer'`
+  // бермейді, сондықтан бұл ешқашан DXF-ке түспейтін (§O4 аудит).
+  const panel: Panel = {
+    ...sideLeft,
+    drilling: [
+      { face: 'inner', x: 10, y: 10, diameter: 8, depth: 16, purpose: 'confirmat' },
+      { face: 'outer', x: 50, y: 50, diameter: 8, depth: 3, purpose: 'handle' },
+    ],
+    // Фасаттың өрнегі — тек outer бетте мағыналы, dxf.ts:120 бойынша
+    // `face === 'outer'` кезінде ғана қосылады, ал әдепкі шақыру ешқашан
+    // outer сұрамайды → milling ешқашан шықпайды.
+    milling: [{ points: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }], closed: true }],
+    cutouts: [],
+    grooves: [],
+  }
+
+  it('шақырушы face бермесе (нақты шақырушылардың бәрі солай) — ЕКІ бет те, фрезеровка да шығады', () => {
+    const dxf = panelToDxf(panel)
+    const circles = dxf.split('\nCIRCLE\n').length - 1
+    expect(circles).toBe(2) // inner + outer, екеуі де — қазір тек 1 (inner)
+    expect(dxf).toContain('MILLING') // қазір мүлде жоқ
+  })
+
+  it('inner мен outer БӨЛЕК қабат тобында — оператор қай бетті бұрғылап жатқанын біледі', () => {
+    const dxf = panelToDxf(panel)
+    expect(dxf).toContain('DRILL_INNER_8_D16')
+    expect(dxf).toContain('DRILL_OUTER_8_D3')
+  })
+
+  it('нақты `face` сұралса — тек сол бет (ескі мінез сақталады)', () => {
+    const inner = panelToDxf(panel, { face: 'inner' })
+    expect(inner.split('\nCIRCLE\n').length - 1).toBe(1)
+    expect(inner).not.toContain('MILLING')
   })
 })

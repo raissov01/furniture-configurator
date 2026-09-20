@@ -11,6 +11,13 @@
  *     docs/audit/drilling-2026-09-20.md): Ø35 ілгек ұясы (12.5 мм, соқыр) мен
  *     Ø35 өтпелі тесік бір қабатқа түссе, цех соқыр тесіктің тереңдігімен
  *     өтпелі тесікті бұрғылап, фасатты тесіп жіберуі мүмкін.
+ *   - бір файлда ЕКІ БЕТ те бар (§O4 аудит): станок детальді екі рет
+ *     бұрғылайды (inner, содан кейін outer), сондықтан inner/outer
+ *     қабаттары да БӨЛЕК топта — DRILL_INNER_… / DRILL_OUTER_… — оператор
+ *     қай кезде детальді аударатынын қабат атынан біледі. Екі бөлек DXF
+ *     файлына БӨЛМЕЙМІЗ: `cnc.ts`/`labels.ts` бір деталь = бір DXF деген
+ *     келісімге сүйенеді (файл аты — панельдің идентификаторы), ол осылай
+ *     сақталады.
  */
 
 import type { NestedSheet, NestingResult } from '../nesting'
@@ -26,13 +33,22 @@ export const LAYER_MILLING = 'MILLING'
 export const LAYER_TEXT = 'TEXT'
 
 /**
- * Ø35, тереңдігі 12.5 → "DRILL_35_D12_5" (DXF қабат атауында нүкте болмағаны
- * жөн). Тереңдік МІНДЕТТІ түрде атында: бір диаметрдің соқыр (мыс. ілгек
- * ұясы) және өтпелі нұсқасын бір қабатқа қосуға болмайды (§O5 аудит).
+ * Ø35, тереңдігі 12.5, inner бет → "DRILL_INNER_35_D12_5" (DXF қабат
+ * атауында нүкте болмағаны жөн).
+ *
+ *   - тереңдік МІНДЕТТІ түрде атында: бір диаметрдің соқыр (мыс. ілгек
+ *     ұясы) және өтпелі нұсқасын бір қабатқа қосуға болмайды (§O5 аудит);
+ *   - `face` берілсе, атына қосылады: inner мен outer бір диаметр+тереңдік
+ *     жұбын пайдаланса да (мыс. симметриялы конфирмат), олар БӨЛЕК
+ *     қабатта қалады — станок операторы қай бетті бұрғылап жатқанын
+ *     қабат атынан біледі (§O4 аудит). Торц тесіктері (edgeL1 …) үшін
+ *     `face` берілмейді — олар контурда салынбайды, бөлек топтың қажеті
+ *     жоқ.
  */
-export function drillLayerName(diameter: number, depth: number): string {
+export function drillLayerName(diameter: number, depth: number, face?: 'inner' | 'outer'): string {
   const fmt = (n: number) => String(n).replace('.', '_')
-  return `DRILL_${fmt(diameter)}_D${fmt(depth)}`
+  const facePart = face ? `${face.toUpperCase()}_` : ''
+  return `DRILL_${facePart}${fmt(diameter)}_D${fmt(depth)}`
 }
 
 type Group = [number, string | number]
@@ -110,8 +126,17 @@ function text(layer: string, x: number, y: number, height: number, value: string
 }
 
 export type DxfOptions = {
-  /** Тек осы беттегі присадка шығады. Станок детальді бір жағынан бұрғылайды. */
-  face?: 'inner' | 'outer'
+  /**
+   * Қай бет(тер) шығады. Әдепкі — `'both'`: inner мен outer бір файлда,
+   * бөлек қабат топтарында (`DRILL_INNER_…` / `DRILL_OUTER_…`). §O4 аудит:
+   * бұрын әдепкі тек `'inner'` еді, ал бірде бір нақты шақырушы `'outer'`
+   * бермейтін — соның салдарынан outer беттегі тесіктер (конфирмат бас
+   * жағы, аяқ, тұтқа) және фрезеровка (тек outer кезде қосылады) DXF-ке
+   * мүлде түспей тұрды. Нақты бір бетті керек қылатын шақырушы (мыс. екі
+   * бөлек операциямен жұмыс істейтін станок) `'inner'`/`'outer'` беріп,
+   * ескі мінезді сақтай алады.
+   */
+  face?: 'inner' | 'outer' | 'both'
   /** Мәтін биіктігі, мм */
   textHeight?: number
   /**
@@ -128,16 +153,18 @@ export type DxfOptions = {
 
 /** Бір панельдің DXF мазмұны. */
 export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
-  const face = options.face ?? 'inner'
+  const requestedFace = options.face ?? 'both'
+  const faces: ('inner' | 'outer')[] = requestedFace === 'both' ? ['inner', 'outer'] : [requestedFace]
   const textHeight = options.textHeight ?? 12
   const L = panel.cutLength
   const Wd = panel.cutWidth
 
-  const drills = panel.drilling.filter((d) => d.face === face || isEdgeFace(d.face))
-  const grooves = panel.grooves.filter((gr) => gr.face === face)
+  const drills = panel.drilling.filter((d) => isEdgeFace(d.face) || faces.includes(d.face))
+  const grooves = panel.grooves.filter((gr) => faces.includes(gr.face))
   // Өрнек ӘРҚАШАН сыртқы бетте: оны клиент көреді, ал ішкі бетте
-  // фрезерлеудің мағынасы жоқ.
-  const milling = face === 'outer' ? panel.milling : []
+  // фрезерлеудің мағынасы жоқ. `outer` сұралмаса (мыс. тек `face: 'inner'`),
+  // шығармаймыз — сол жағдайда бұл файл inner бет үшін ғана.
+  const milling = faces.includes('outer') ? panel.milling : []
 
   // §O6 аудит: присадка cutOrigin арқылы готовый→рез аударуды ТЕК W1/L1
   // кромкасынан шегереді (симметриялы емес — drilling.ts:455-463 қара).
@@ -159,7 +186,8 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
 
   const layers = [
     LAYER_OUTLINE,
-    ...[...new Set(drills.map((d) => drillLayerName(d.diameter, d.depth)))].sort(),
+    ...[...new Set(drills.map((d) => drillLayerName(d.diameter, d.depth, isEdgeFace(d.face) ? undefined : d.face)))]
+      .sort(),
     ...(grooves.length > 0 ? [LAYER_GROOVE] : []),
     ...(milling.length > 0 ? [LAYER_MILLING] : []),
     ...(panel.cutouts.length > 0 ? [LAYER_CUTOUT] : []),
@@ -229,7 +257,7 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
 
   for (const d of drills) {
     if (isEdgeFace(d.face)) continue // торц тесіктері бөлек операция, контурда салынбайды
-    entities.push(...circle(drillLayerName(d.diameter, d.depth), d.x, d.y, d.diameter / 2))
+    entities.push(...circle(drillLayerName(d.diameter, d.depth, d.face), d.x, d.y, d.diameter / 2))
   }
 
   for (const gr of grooves) {
@@ -280,7 +308,7 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
   return render([...header(), ...tables(layers), ...entities, g(0, 'EOF')])
 }
 
-function isEdgeFace(face: Drill['face']): boolean {
+function isEdgeFace(face: Drill['face']): face is Exclude<Drill['face'], 'inner' | 'outer'> {
   return face !== 'inner' && face !== 'outer'
 }
 
