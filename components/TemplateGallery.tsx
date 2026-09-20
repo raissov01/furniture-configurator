@@ -8,14 +8,19 @@
 import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import { SEED_SETS, SEED_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
-import type { TemplateCategory } from '@/src/core/index'
+import type { Material, TemplateCategory } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
-import { Button } from '@/components/ui'
+import { Button, Field } from '@/components/ui'
+import { DecorPicker } from '@/components/DecorPicker'
 import { cn } from '@/lib/cn'
 import { KitchenWizard } from '@/components/KitchenWizard'
 
 type Filter = TemplateCategory | 'all' | 'sets'
+
+/** Корпус материалы — цоколь/арт қабырғадан ажырату үшін бірдей шарт
+ * `Configurator.tsx`-тегі `isCarcass`-пен бірдей: 10 мм-ден жуан плита. */
+const isCarcass = (m: Material) => m.thickness >= 10
 
 /** Ең биік шаблон карточкада осынша пиксель болады. */
 const THUMB_MAX_PX = 104
@@ -48,10 +53,22 @@ export function TemplateGallery() {
   const runBusy = useConfigurator((s) => s.runBusy)
   const activeId = useConfigurator((s) => s.templateId)
   const [filter, setFilter] = useState<Filter>('all')
-  // Ас үй генераторы формасының күйі.
-  const [kit, setKit] = useState({ lengthA: 3000, lengthB: 2400, corner: true, sink: true, upper: true, appliances: true })
-  const [wizardOpen, setWizardOpen] = useState(false)
   const catalog = useConfigurator((s) => s.catalog)
+  // Жылдам генератордың материал таңдағыштары үшін: корпус/фасад бірдей
+  // пулдан (қалыңдығы ≥10 мм), столешница — тек slab деп белгіленгендерден
+  // (G5, `KitchenOptions.materials`-пен бірдей ядро — жаңа геометрия жоқ).
+  const carcassMaterials = useMemo(() => catalog.materials.filter(isCarcass), [catalog])
+  const worktopMaterials = useMemo(() => catalog.materials.filter((m) => m.slab), [catalog])
+  // Ас үй генераторы формасының күйі.
+  const [kit, setKit] = useState(() => ({
+    lengthA: 3000, lengthB: 2400, corner: true, sink: true, upper: true, appliances: true,
+    // G1: фартук әдепкіде ҚОСУЛЫ, шебердегі жаңа әдепкімен (600 мм) бірдей.
+    backsplash: true,
+    carcassId: carcassMaterials[0]?.id ?? '',
+    frontId: carcassMaterials[0]?.id ?? '',
+    worktopId: worktopMaterials[0]?.id ?? '',
+  }))
+  const [wizardOpen, setWizardOpen] = useState(false)
 
   const counts = useMemo(() => {
     const map = new Map<TemplateCategory, number>()
@@ -169,6 +186,11 @@ export function TemplateGallery() {
                   <input type="checkbox" checked={kit.appliances} onChange={(e) => setKit((k) => ({ ...k, appliances: e.target.checked }))} />
                   {tr('Техника')}
                 </label>
+                {/* G1: фартук — жылдам генераторда бұрын мүлде болмаған жалауша. */}
+                <label className="flex items-center gap-1.5 text-xs">
+                  <input type="checkbox" checked={kit.backsplash} onChange={(e) => setKit((k) => ({ ...k, backsplash: e.target.checked }))} />
+                  {tr('Фартук')}
+                </label>
                 <Button
                   active
                   onClick={() => {
@@ -180,12 +202,49 @@ export function TemplateGallery() {
                       sink: kit.sink,
                       upper: kit.upper,
                       appliances: kit.appliances,
+                      dims: { backsplashHeight: kit.backsplash ? 600 : 0 },
+                      materials: {
+                        carcassId: kit.carcassId || undefined,
+                        frontId: kit.frontId || undefined,
+                        worktopId: kit.worktopId || undefined,
+                      },
                     }))
                   }}
                 >
                   {tr('Сгенерировать')}
                 </Button>
               </div>
+
+              {/*
+                G5: материал таңдағыштары — qdesign шебері корпус/фасад/
+                столешницаны БӨЛЕК сұрайды, ал жылдам генератор бұрын бәрін
+                бір сұр түспен шығаратын. `KitchenOptions.materials` ядрода
+                бұрыннан бар (kitchen.ts), тек осы UI жетіспеп еді.
+              */}
+              <div className="mt-3 grid grid-cols-1 gap-3 border-t border-neutral-200 pt-3 sm:grid-cols-3 dark:border-neutral-700">
+                <Field label={tr('Корпус')}>
+                  <DecorPicker
+                    materials={carcassMaterials}
+                    value={kit.carcassId}
+                    onChange={(carcassId) => setKit((k) => ({ ...k, carcassId }))}
+                  />
+                </Field>
+                <Field label={tr('Фасады')}>
+                  <DecorPicker
+                    materials={carcassMaterials}
+                    value={kit.frontId}
+                    onChange={(frontId) => setKit((k) => ({ ...k, frontId }))}
+                  />
+                </Field>
+                <Field label={tr('Столешница')}>
+                  <DecorPicker
+                    materials={worktopMaterials}
+                    value={kit.worktopId}
+                    onChange={(worktopId) => setKit((k) => ({ ...k, worktopId }))}
+                  />
+                </Field>
+              </div>
+
               <p className="mt-2 text-[11px] leading-snug text-neutral-400">
                 {tr('Стена делится на стандартные модули автоматически. Столешница, цоколь и мойка добавляются сами. Ctrl+Z возвращает.')}
               </p>

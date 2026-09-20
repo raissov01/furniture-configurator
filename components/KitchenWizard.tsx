@@ -55,7 +55,10 @@ const DEFAULT: Draft = {
   hob: 'gas', hood: true,
   lowerHeight: 720, lowerDepth: 500, plinthHeight: 95,
   upperDepth: 320, upperHeight: 720, upperElevation: 1460,
-  worktopOverhang: 30, backsplashHeight: 0,
+  // Фартук әдепкіде ҚОСУЛЫ: 600 мм — qdesign-дағы фартук биіктігінің эталоны
+  // (қара: docs/audit/qdesign-drilling-reference.md). Столешница мен үстіңгі
+  // қатардың арасы жалаң қабырға болып қалмас үшін.
+  worktopOverhang: 30, backsplashHeight: 600,
   carcassId: '', frontId: '', worktopId: '',
   milling: 'plain',
   modules: null,
