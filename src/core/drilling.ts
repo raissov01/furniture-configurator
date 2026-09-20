@@ -8,7 +8,7 @@
 
 import {
   DRAWER_FACADE_SCREW_DIAMETER, DRAWER_FACADE_SCREW_END_OFFSET,
-  DRAWER_FACADE_SCREW_PILOT_DEPTH,
+  DRAWER_FACADE_SCREW_PILOT_DEPTH, DRAWER_FACADE_SCREW_ROW_FRACTIONS,
   CONFIRMAT_EDGE_DEPTH, CONFIRMAT_EDGE_DIAMETER, CONFIRMAT_FACE_DIAMETER,
   CONFIRMAT_FIRST_OFFSET, CONFIRMAT_MIN_EDGE, CONFIRMAT_MIN_PER_JOINT,
   HINGE_COUNT_BY_HEIGHT, HINGE_CUP_DEPTH, HINGE_CUP_DIAMETER, HINGE_CUP_FROM_EDGE,
@@ -535,7 +535,7 @@ export function drawerFacadeScrews(wall: Panel, facade: Panel, ctx: Ctx): void {
   // қысылады — тесік әрқашан қабырғаның ішінде қалуы керек.
   const offset = Math.min(DRAWER_FACADE_SCREW_END_OFFSET, Math.floor(wallWidth / 4))
   const columns = [offset, wallWidth - offset]
-  const rows = [Math.round(wallHeight / 3), Math.round((wallHeight * 2) / 3)]
+  const rows = DRAWER_FACADE_SCREW_ROW_FRACTIONS.map((f) => Math.round(wallHeight * f))
 
   for (const x of rows) {
     for (const y of columns) {

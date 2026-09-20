@@ -174,6 +174,13 @@ export const DRAWER_FACADE_SCREW_DIAMETER = 3
 export const DRAWER_FACADE_SCREW_PILOT_DEPTH = 3
 /** Қораптың алдыңғы қабырғасының әр ұшынан шегініс, мм. */
 export const DRAWER_FACADE_SCREW_END_OFFSET = 80
+/**
+ * Тік бойынша екі бұранда қабырға биіктігінің 1/3 мен 2/3-інде (жоғарыдағы
+ * qdesign экспортындағы мысал: 92 мм қабырғада 30,7 және 61,3 болып шыққан).
+ * Аудит Y4, docs/audit/drilling-2026-09-20.md — бұрын осы бөлшек
+ * `drilling.ts`-те тікелей жазылатын, шебер бір жерден өзгерте алмайтын.
+ */
+export const DRAWER_FACADE_SCREW_ROW_FRACTIONS: readonly [number, number] = [1 / 3, 2 / 3]
 
 export const RUNNER_FIRST_HOLE_OFFSET = 37
 
