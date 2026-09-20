@@ -159,7 +159,15 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
   const L = panel.cutLength
   const Wd = panel.cutWidth
 
-  const drills = panel.drilling.filter((d) => isEdgeFace(d.face) || faces.includes(d.face))
+  /*
+   * Торц тесіктерін (edgeL1 …) ӘДЕЙІ КІРГІЗБЕЙМІЗ: олар контурда салынбайды
+   * (төмендегі entity циклінде `isEdgeFace` арқылы өткізіп жіберіледі),
+   * сондықтан LAYER кестесіне де түспеуі керек — әйтпесе іші бос қабат
+   * («DRILL_5_D35» сияқты, face жоқ болғандықтан INNER_/OUTER_ префиксі де
+   * жоқ) пайда болады да, оператор оны ашса ештеңе жоқ (Аудит Y7,
+   * docs/audit/drilling-2026-09-20.md).
+   */
+  const drills = panel.drilling.filter((d) => !isEdgeFace(d.face) && faces.includes(d.face))
   const grooves = panel.grooves.filter((gr) => faces.includes(gr.face))
   // Өрнек ӘРҚАШАН сыртқы бетте: оны клиент көреді, ал ішкі бетте
   // фрезерлеудің мағынасы жоқ. `outer` сұралмаса (мыс. тек `face: 'inner'`),
