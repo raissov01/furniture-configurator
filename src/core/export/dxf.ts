@@ -5,8 +5,12 @@
  * Келісімдер:
  *   - өлшем бірлігі миллиметр, $INSUNITS = 4
  *   - координата басы — детальдің сол-төменгі бұрышы, X рез ұзындығы бойымен
- *   - әр диаметрге ЖЕКЕ қабат (DRILL_5, DRILL_7, DRILL_35 …): станок қабатты
- *     аспапқа байлайды, сондықтан диаметрлерді араластыруға болмайды
+ *   - әр диаметр+ТЕРЕҢДІК жұбына ЖЕКЕ қабат (DRILL_5_D8, DRILL_35_D12_5 …):
+ *     станок қабатты аспапқа байлайды, сондықтан диаметрді араластыруға
+ *     болмайды. Тереңдік атында болуы МІНДЕТТІ (§O5 аудит,
+ *     docs/audit/drilling-2026-09-20.md): Ø35 ілгек ұясы (12.5 мм, соқыр) мен
+ *     Ø35 өтпелі тесік бір қабатқа түссе, цех соқыр тесіктің тереңдігімен
+ *     өтпелі тесікті бұрғылап, фасатты тесіп жіберуі мүмкін.
  */
 
 import type { NestedSheet, NestingResult } from '../nesting'
@@ -20,9 +24,14 @@ export const LAYER_GROOVE = 'GROOVE'
 export const LAYER_MILLING = 'MILLING'
 export const LAYER_TEXT = 'TEXT'
 
-/** Ø12.5 → "DRILL_12_5" (DXF қабат атауында нүкте болмағаны жөн). */
-export function drillLayerName(diameter: number): string {
-  return `DRILL_${String(diameter).replace('.', '_')}`
+/**
+ * Ø35, тереңдігі 12.5 → "DRILL_35_D12_5" (DXF қабат атауында нүкте болмағаны
+ * жөн). Тереңдік МІНДЕТТІ түрде атында: бір диаметрдің соқыр (мыс. ілгек
+ * ұясы) және өтпелі нұсқасын бір қабатқа қосуға болмайды (§O5 аудит).
+ */
+export function drillLayerName(diameter: number, depth: number): string {
+  const fmt = (n: number) => String(n).replace('.', '_')
+  return `DRILL_${fmt(diameter)}_D${fmt(depth)}`
 }
 
 type Group = [number, string | number]
@@ -121,7 +130,7 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
 
   const layers = [
     LAYER_OUTLINE,
-    ...[...new Set(drills.map((d) => drillLayerName(d.diameter)))].sort(),
+    ...[...new Set(drills.map((d) => drillLayerName(d.diameter, d.depth)))].sort(),
     ...(grooves.length > 0 ? [LAYER_GROOVE] : []),
     ...(milling.length > 0 ? [LAYER_MILLING] : []),
     ...(panel.cutouts.length > 0 ? [LAYER_CUTOUT] : []),
@@ -191,7 +200,7 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
 
   for (const d of drills) {
     if (isEdgeFace(d.face)) continue // торц тесіктері бөлек операция, контурда салынбайды
-    entities.push(...circle(drillLayerName(d.diameter), d.x, d.y, d.diameter / 2))
+    entities.push(...circle(drillLayerName(d.diameter, d.depth), d.x, d.y, d.diameter / 2))
   }
 
   for (const gr of grooves) {

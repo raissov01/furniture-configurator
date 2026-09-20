@@ -31,9 +31,11 @@ describe('DXF', () => {
     expect(outline).toContain(`\n20\n${side.cutWidth}.0`)
   })
 
-  it('әр диаметрге жеке қабат — станок қабатты аспапқа байлайды', () => {
-    expect(drillLayerName(5)).toBe('DRILL_5')
-    expect(drillLayerName(12.5)).toBe('DRILL_12_5')
+  it('әр диаметр+тереңдік жұбына жеке қабат — станок қабатты аспапқа байлайды', () => {
+    // §O5 аудит: тереңдік атта МІНДЕТТІ, әйтпесе бір диаметрдің соқыр
+    // (ілгек ұясы) мен өтпелі нұсқасы бір қабатқа түсіп кетеді.
+    expect(drillLayerName(5, 8)).toBe('DRILL_5_D8')
+    expect(drillLayerName(12.5, 12.5)).toBe('DRILL_12_5_D12_5')
     expect(dxf).toContain('DRILL_5')
     // Ø7 тесіктер торцте — контур бетінде салынбайды
     expect(dxf).not.toContain('DRILL_7')
