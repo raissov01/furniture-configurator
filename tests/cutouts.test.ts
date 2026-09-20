@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CUTOUT_PRESETS, SEED_CATALOG, cabinetToDxfFiles, cutoutBounds, cutoutCount,
   cutoutPerimeter, cutoutWarnings, findCutoutPreset, findTemplate, generateCabinet,
-  millingMetres, nestPanels, parseProject, templateToCabinet,
+  mergeSettings, millingMetres, nestPanels, parseProject, templateToCabinet,
 } from '../src/core/index'
 import type { CabinetConfig, Cutout, Panel } from '../src/core/index'
 
@@ -168,7 +168,11 @@ describe('пресеттер', () => {
 
 describe('экспорт пен сақтау', () => {
   it('DXF-те ойма БӨЛЕК қабатта', () => {
-    const dxf = cabinetToDxfFiles(build([socket({ x: 200, y: 200 })])).get('back.dxf')!
+    // §O6: ойманың рез координатасын дұрыс шығару үшін catalog/settings керек.
+    const dxf = cabinetToDxfFiles(
+      build([socket({ x: 200, y: 200 })]),
+      { catalog: SEED_CATALOG, settings: mergeSettings() },
+    ).get('back.dxf')!
     expect(dxf).toContain('CUTOUT')
   })
 

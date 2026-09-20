@@ -12,6 +12,7 @@ import { t as tr } from '@/lib/i18n'
 import { useState } from 'react'
 import { Menu, MenuItem } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
+import { mergeSettings } from '@/src/core/index'
 import type { CabinetConfig, Panel } from '@/src/core/index'
 
 function download(filename: string, data: Uint8Array | string, mime: string): void {
@@ -26,8 +27,12 @@ function download(filename: string, data: Uint8Array | string, mime: string): vo
 
 export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels: Panel[] }) {
   const catalog = useConfigurator((s) => s.catalog)
+  const shop = useConfigurator((s) => s.shop)
   const [busy, setBusy] = useState<string | null>(null)
   const base = cabinet.id || 'cabinet'
+  // §O6: ойма бар панельдің DXF рез координатасы үшін генерациямен ДӘЛ сол
+  // catalog/settings керек (generateCabinet ішінде осылай құрастырылады).
+  const dxfOptions = { catalog, settings: mergeSettings(shop.settings, cabinet.settings) }
 
   const run = async (kind: string, action: () => Promise<void> | void) => {
     setBusy(kind)
@@ -69,7 +74,7 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
               import('fflate'),
             ])
             const entries: Record<string, Uint8Array> = {}
-            for (const [name, content] of cabinetToDxfFiles(panels)) entries[name] = strToU8(content)
+            for (const [name, content] of cabinetToDxfFiles(panels, dxfOptions)) entries[name] = strToU8(content)
             download(`${base}-dxf.zip`, zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
               'application/zip')
           })}

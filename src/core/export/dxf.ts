@@ -15,8 +15,9 @@
 
 import type { NestedSheet, NestingResult } from '../nesting'
 import { cutoutBounds } from '../cutouts'
+import { subtractedThickness } from '../edges'
 import { isWidthBevel } from '../types'
-import type { Drill, Groove, Panel } from '../types'
+import type { Catalog, ConstructionSettings, Drill, EdgeBand, Groove, Panel } from '../types'
 
 export const LAYER_OUTLINE = 'OUTLINE'
 export const LAYER_GROOVE = 'GROOVE'
@@ -113,6 +114,16 @@ export type DxfOptions = {
   face?: 'inner' | 'outer'
   /** Мәтін биіктігі, мм */
   textHeight?: number
+  /**
+   * Оймалардың готовый→рез координатасын присадкамен (`cutOrigin`,
+   * drilling.ts) БІР ЖҮЙЕДЕ есептеу үшін керек (§O6 аудит). Панельде ойма
+   * (`cutouts`) жоқ болса, қажеті жоқ. Ойма бар да, осы екеуі берілмесе —
+   * ҚАТЕ шығады: симметриялы (қате) есеппен үнсіз жалғастырғаннан гөрі
+   * дұрыс, себебі бұл — мойка/розетка ойымының жиекке 1-2 мм жылжуы,
+   * жиналғанда байқалатын дефект.
+   */
+  catalog?: Catalog
+  settings?: ConstructionSettings
 }
 
 /** Бір панельдің DXF мазмұны. */
@@ -127,6 +138,24 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
   // Өрнек ӘРҚАШАН сыртқы бетте: оны клиент көреді, ал ішкі бетте
   // фрезерлеудің мағынасы жоқ.
   const milling = face === 'outer' ? panel.milling : []
+
+  // §O6 аудит: присадка cutOrigin арқылы готовый→рез аударуды ТЕК W1/L1
+  // кромкасынан шегереді (симметриялы емес — drilling.ts:455-463 қара).
+  // Ойма да дәл сол жүйеде болуы керек, әйтпесе екеуінің координатасы
+  // 1-2 мм алшақтап кетеді.
+  const cutOrigin = { x: 0, y: 0 }
+  if (panel.cutouts.length > 0) {
+    if (!options.catalog || !options.settings) {
+      throw new Error(
+        `panelToDxf: «${panel.id}» панелінде ойма бар, DXF-ке рез координатасын дұрыс ` +
+        'шығару үшін options.catalog мен options.settings керек (§O6 аудит) — ' +
+        'үнсіз симметриялы есеппен жалғастыру мойка/розетка ойымын 1-2 мм жылжытып жіберуі мүмкін.',
+      )
+    }
+    const bands: Map<string, EdgeBand> = new Map(options.catalog.edgeBands.map((b) => [b.id, b]))
+    cutOrigin.x = subtractedThickness(panel.edges.W1, bands, options.settings)
+    cutOrigin.y = subtractedThickness(panel.edges.L1, bands, options.settings)
+  }
 
   const layers = [
     LAYER_OUTLINE,
@@ -218,12 +247,14 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
    * ара кеседі, ойманы фреза алады. Бір қабатқа қоссақ, оператор ойманы
    * контурдың бір бөлігі деп оқып, детальді қиып жіберуі мүмкін.
    *
-   * Координата РЕЗ детальінде: кромка шегерілген жиектен саналады.
+   * Координата РЕЗ детальінде: кромка шегерілген жиектен саналады. Шегеру
+   * присадкамен БІРДЕЙ: тек W1 (x) / L1 (y) кромкасы, симметриялы ЕМЕС
+   * (§O6, `cutOrigin` жоғарыда).
    */
   for (const cutout of panel.cutouts) {
     const bounds = cutoutBounds(cutout, panel.finishedLength, panel.finishedWidth)
-    const x = bounds.x - (panel.finishedLength - L) / 2
-    const y = bounds.y - (panel.finishedWidth - Wd) / 2
+    const x = bounds.x - cutOrigin.x
+    const y = bounds.y - cutOrigin.y
     if (cutout.shape === 'circle') {
       entities.push(...circle(LAYER_CUTOUT, x + bounds.width / 2, y + bounds.height / 2, cutout.diameter / 2))
     } else {

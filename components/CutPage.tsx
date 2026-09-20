@@ -21,6 +21,7 @@ import { useSceneItems } from '@/lib/useSceneItems'
 import {
   cutPlan,
   mergeProjectPanels,
+  mergeSettings,
   nestPanels,
   nestingOptionsOf,
   partLabels,
@@ -100,6 +101,11 @@ export function CutPage() {
     [items],
   )
   const projectName = cabinets.length === 1 ? cabinets[0]!.name : `Проект (${cabinets.length} корпуса)`
+  // §O6: ойма бар панельдің DXF рез координатасы генерациямен бір
+  // catalog/settings-ке сүйенуі керек (`useSceneItems` осы shop.settings-ті
+  // қолданады). Кабинет деңгейіндегі жеке override мұнда бірнеше корпус
+  // араласқандықтан ескерілмейді — nestPanels/unplacedAdvice те солай.
+  const dxfOptions = useMemo(() => ({ catalog, settings: mergeSettings(shop.settings) }), [catalog, shop.settings])
 
   const cutting = shop.cutting
   const options = useMemo(() => nestingOptionsOf(shop), [shop])
@@ -214,7 +220,7 @@ export function CutPage() {
                 for (const [name, content] of nestingToDxfFiles(nesting!)) {
                   entries[`raskroy/${name}`] = strToU8(content)
                 }
-                for (const [name, content] of cabinetToDxfFiles(panels)) {
+                for (const [name, content] of cabinetToDxfFiles(panels, dxfOptions)) {
                   entries[`detali/${name}`] = strToU8(content)
                 }
                 entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(panels, catalog)}`)
@@ -264,7 +270,7 @@ export function CutPage() {
                 const options = { projectName }
                 const entries: Record<string, Uint8Array> = {}
                 for (const [name, bytes] of basisFiles(panels, catalog, options)) entries[name] = bytes
-                for (const [name, content] of cabinetToDxfFiles(panels)) {
+                for (const [name, content] of cabinetToDxfFiles(panels, dxfOptions)) {
                   entries[`dxf/${name}`] = strToU8(content)
                 }
                 download(

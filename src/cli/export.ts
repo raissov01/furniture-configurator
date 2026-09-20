@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { ZodError } from 'zod'
 import {
   ConfigValidationError, assemblyDrawingPdf, cabinetToDxfFiles, cutListToCsv,
-  cutListToXlsx, drillingToCsv, generateCabinet, parseProject,
+  cutListToXlsx, drillingToCsv, generateCabinet, mergeSettings, parseProject,
 } from '../core/index'
 
 const ASSETS = resolve(dirname(fileURLToPath(import.meta.url)), '../../assets')
@@ -69,7 +69,10 @@ async function main(): Promise<number> {
       written.push([path, typeof data === 'string' ? Buffer.byteLength(data) : data.byteLength])
     }
 
-    for (const [name, content] of cabinetToDxfFiles(panels)) write(join('dxf', name), content)
+    // §O6: ойма бар панельдің рез координатасын дұрыс шығару үшін
+    // generateCabinet-пен ДӘЛ сол catalog/settings берілуі керек.
+    const dxfOptions = { catalog, settings: mergeSettings(project.settings, cabinet.settings) }
+    for (const [name, content] of cabinetToDxfFiles(panels, dxfOptions)) write(join('dxf', name), content)
     write('cutlist.csv', cutListToCsv(panels, catalog))
     write('drilling.csv', drillingToCsv(panels))
     write('cutlist.xlsx', cutListToXlsx(panels, catalog, project.name))
