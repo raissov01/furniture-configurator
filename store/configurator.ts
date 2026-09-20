@@ -49,7 +49,15 @@ const COALESCE_MS = 500
 /** Тарих тереңдігі. */
 const HISTORY_LIMIT = 100
 
-export type CameraPreset = 'front' | 'three-quarter' | 'inside' | 'plan' | 'room'
+/**
+ * `wall-*` — PRO100-дың астыңғы қойынды қатары («Стена С/З/Ю/В»,
+ * `docs/pro100/ui-design.md`): бөлменің сол қабырғасының СЫРТЫНАН қарайтын
+ * элевация, `src/core/room.ts`-тегі `WallId`-мен бірдей атаумен
+ * (north=С, west=З, south=Ю, east=В).
+ */
+export type CameraPreset =
+  | 'front' | 'three-quarter' | 'inside' | 'plan' | 'room'
+  | 'wall-north' | 'wall-east' | 'wall-south' | 'wall-west'
 
 /** Undo/redo бүкіл жобаны қайтарады: шкафты жылжыту да қайтарылуы керек. */
 type Snapshot = {

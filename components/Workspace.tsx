@@ -67,6 +67,33 @@ const PRESETS: { value: CameraPreset; label: string }[] = [
   { value: 'room', label: tr('Комната') },
 ]
 
+/**
+ * PRO100-дың АСТЫҢҒЫ ҚОЙЫНДЫ ҚАТАРЫ (docs/pro100/ui-design.md, §4 «ЕҢ
+ * ҚҰНДЫСЫ»): Перспектива · Аксонометрия · План · Стена С · З · Ю · В.
+ *
+ * Бізде камера пресеті (`cameraPreset`) мен проекция (`projection`) БӨЛЕК
+ * күй, ал PRO100-дың бір қойындысы екеуін де бірге қояды — сондықтан әр
+ * қойынды осы екеуінің бір ЖҰБЫН таңдайды. «Стена …» — жаңа функция емес,
+ * `src/core/room.ts`-тегі `roomWalls()` төрт қабырғасының СЫРТЫНАН қарайтын
+ * элевация («Scene.tsx»-тегі `WALL_VIEW_TARGET`); компас әрпі `WallId`-мен
+ * бірдей: north=С, west=З, south=Ю, east=В.
+ */
+const VIEW_TABS: {
+  key: string
+  ruLabel: string
+  preset: CameraPreset
+  /** Көрсетілмесе — қазіргі проекция сол күйі қалады (жоспар, мысалы). */
+  projection?: 'perspective' | 'ortho'
+}[] = [
+  { key: 'perspective', ruLabel: 'Перспектива', preset: 'three-quarter', projection: 'perspective' },
+  { key: 'axo', ruLabel: 'Аксонометрия', preset: 'three-quarter', projection: 'ortho' },
+  { key: 'plan', ruLabel: 'План', preset: 'plan' },
+  { key: 'wall-north', ruLabel: 'Стена С', preset: 'wall-north', projection: 'ortho' },
+  { key: 'wall-west', ruLabel: 'Стена З', preset: 'wall-west', projection: 'ortho' },
+  { key: 'wall-south', ruLabel: 'Стена Ю', preset: 'wall-south', projection: 'ortho' },
+  { key: 'wall-east', ruLabel: 'Стена В', preset: 'wall-east', projection: 'ortho' },
+]
+
 /** C1 бюджеті: 40 панельге дейін параметр өзгерісі < 100 мс. */
 const BUDGET_MS = 100
 
@@ -307,6 +334,155 @@ export function Workspace() {
         projectName={projectName}
         moduleWidths={moduleWidths}
       />
+      {/*
+        PRO100-ДЕГІ МӘЗІР ЖОЛАҒЫ (docs/pro100/ui-design.md, §1: «Файл · Правка ·
+        Вид · Элемент · Инструменты · Справка»). Мұнда ЖАҢА ӘРЕКЕТ жоқ — әр
+        пункт төмендегі `<header>`-дегі БАР батырмалар шақыратын СОЛ store
+        әрекетін шақырады.
+
+        ⚠ Ескі «Создать ▾» / «Проект ▾» мәзірлері (төменде, өзгеріссіз)
+        ӘДЕЙІ ҚАЛДЫРЫЛДЫ: e2e (`scripts/e2e.mjs`-тегі `h.menu('Создать', …)`
+        / `h.menu('Проект', …)`) мен оқыту турына (`Tour.tsx`,
+        `[data-tour="export"]` / `[data-tour="shop"]`) нақ солардың мәтіні
+        мен орны бойынша тіреледі. Бұл жолақ — ҮСТІНЕ қосылған, PRO100-ге
+        таныс навигация, ескісін алмастырмайды.
+      */}
+      <nav className="flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+        <Menu label={tr('Файл')} size="sm">
+          <MenuItem onClick={() => setGalleryOpen(true)}>{tr('Готовые шаблоны')}</MenuItem>
+          <MenuItem onClick={() => setAiOpen(true)}>{tr('Техзадание (словами)')}</MenuItem>
+          <MenuItem onClick={() => setSketchOpen(true)}>{tr('Нарисовать мышью')}</MenuItem>
+          <MenuItem onClick={() => setPartsOpen(true)}>{tr('Своя деталь')}</MenuItem>
+          <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
+          <MenuItem
+            onClick={() => {
+              const file = exportProject()
+              const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `${file.name || 'проект'}.json`
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
+          >
+            {tr('Сохранить проект')}
+          </MenuItem>
+          {/*
+            Файлды таңдау терезесі ЕКІНШІ РЕТ жазылмайды: `ProjectMenu.tsx`-тегі
+            жасырын input-тың `id`-і бойынша соны басамыз (логика біреу ғана).
+          */}
+          <MenuItem onClick={() => document.getElementById('project-open-input')?.click()}>
+            {tr('Открыть проект')}
+          </MenuItem>
+          {/* Экспорт та солай: `ExportMenu`-дің өз батырмасын басамыз — xlsx/csv/dxf
+              логикасы (ауыр динамик импорт) бір ғана жерде қалады. */}
+          <MenuItem
+            onClick={() => document.querySelector<HTMLButtonElement>('[data-tour="export"] button')?.click()}
+          >
+            {tr('Экспорт для цеха')}
+          </MenuItem>
+          <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
+          <MenuItem
+            onClick={() => {
+              const link = shareLink(window.location.origin, exportProject())
+              void navigator.clipboard.writeText(link).then(
+                () => setShared(
+                  link.length > SHARE_LINK_WARN_LENGTH
+                    ? 'Ссылка скопирована, но она длинная: мессенджер может её обрезать. Надёжнее отправить файл проекта.'
+                    : 'Ссылка скопирована',
+                ),
+                () => setShared('Не удалось скопировать — разрешите доступ к буферу обмена'),
+              )
+            }}
+          >
+            {tr('Ссылка клиенту')}
+          </MenuItem>
+          <MenuItem onClick={() => setShareCodeOpen(true)}>{tr('Код для клиента')}</MenuItem>
+          <MenuItem onClick={reset}>{tr('Сброс')}</MenuItem>
+        </Menu>
+
+        <Menu label={tr('Правка')} size="sm">
+          <MenuItem onClick={undo} disabled={!canUndo}>
+            {tr('Отменить')} <span className="ml-auto text-neutral-400">Ctrl+Z</span>
+          </MenuItem>
+          <MenuItem onClick={redo} disabled={!canRedo}>
+            {tr('Повторить')} <span className="ml-auto text-neutral-400">Ctrl+⇧Z</span>
+          </MenuItem>
+          <MenuItem onClick={() => setHistoryOpen(true)}>{tr('История изменений')}</MenuItem>
+        </Menu>
+
+        <Menu label={tr('Вид')} size="sm">
+          {PRESETS.map((p) => (
+            <MenuItem key={p.value} active={cameraPreset === p.value} onClick={() => setCameraPreset(p.value)}>
+              {p.label}
+            </MenuItem>
+          ))}
+          <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
+          <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+            {tr('Разнести')}
+            <Slider value={exploded} onChange={setExploded} />
+          </label>
+          <MenuItem
+            active={viewMode !== 'solid'}
+            onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
+          >
+            {viewMode === 'solid' ? tr('Прозрачность') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
+          </MenuItem>
+          <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
+            {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
+          </MenuItem>
+          <MenuItem
+            active={projection === 'ortho'}
+            onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
+          >
+            {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
+          </MenuItem>
+          <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
+            {tr('Размеры на сцене')}
+          </MenuItem>
+          <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
+          <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
+            {tr('Человек для масштаба')}
+          </MenuItem>
+        </Menu>
+
+        <Menu label={tr('Элемент')} size="sm">
+          <MenuItem onClick={addCabinet}>{tr('Новый корпус')}</MenuItem>
+          <MenuItem onClick={() => duplicateCabinet(activeId)}>{tr('Дублировать')}</MenuItem>
+          <MenuItem onClick={() => mirrorCabinet(activeId)}>{tr('Зеркальная копия')}</MenuItem>
+          <MenuItem
+            onClick={() => { removeCabinet(activeId); setSelected(null) }}
+            disabled={cabinets.length < 2}
+          >
+            {tr('Удалить корпус')}
+          </MenuItem>
+          <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
+          <MenuItem active={openness > 0} onClick={() => setOpenness(openness > 0 ? 0 : 1)}>
+            {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
+          </MenuItem>
+          <MenuItem active={assemblyStep !== null} onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}>
+            {tr('Сборка')}
+          </MenuItem>
+        </Menu>
+
+        <Menu label={tr('Инструменты')} size="sm">
+          <MenuItem onClick={() => setShopOpen(true)}>{tr('Цех: материалы и цены')}</MenuItem>
+          <MenuItem onClick={() => setProjectOpen(true)}>{tr('Материалы и сборка')}</MenuItem>
+          <MenuItem onClick={() => setQuoteOpen(true)}>{tr('Смета и раскрой')}</MenuItem>
+          <MenuItem onClick={() => setDrillOpen(true)}>{tr('Присадка')}</MenuItem>
+          <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
+          <MenuItem onClick={() => { window.location.href = '/cut' }}>{tr('Раскрой (отдельный экран)')}</MenuItem>
+        </Menu>
+
+        <Menu label={tr('Справка')} size="sm" align="right">
+          <MenuItem onClick={() => setHelpOpen(true)}>
+            {tr('Горячие клавиши')} <span className="ml-auto text-neutral-400">?</span>
+          </MenuItem>
+          <MenuItem onClick={() => { window.location.href = '/' }}>{tr('На главную')}</MenuItem>
+        </Menu>
+      </nav>
+
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <Link
           href="/"
@@ -405,6 +581,127 @@ export function Workspace() {
         </span>
       </header>
 
+      {/*
+        PRO100-ДЕГІ ЕКІ ҰСАҚ БЕЛГІШЕ ҚАТАРЫ (docs/pro100/ui-design.md, §2).
+        Бұрын «Рендер · Прогулка · AR · VR · Распахнуть · Сборка · Вид»
+        3D көрінісінің ҮСТІНДЕ қалқып тұратын (`absolute bottom-3/top-3`) —
+        енді осында, PRO100-дегідей тұрақты қатарда. Модуль КРУД-ы
+        (жаңа/дубль/айна/өшіру) — аяста да қалды (астыңғы «Модуль» тобы),
+        мұнда тек ЖЫЛДАМ белгіше нұсқасы.
+      */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
+        <Button size="sm" onClick={addCabinet} title={tr('Новый корпус')}>+</Button>
+        <Button size="sm" onClick={() => duplicateCabinet(activeId)} title={tr('Дублировать корпус')}>⧉</Button>
+        <Button size="sm" onClick={() => mirrorCabinet(activeId)} title={tr('Зеркальная копия')}>⇋</Button>
+        <Button
+          size="sm"
+          onClick={() => { removeCabinet(activeId); setSelected(null) }}
+          disabled={cabinets.length < 2}
+          title={tr('Удалить корпус')}
+        >
+          ✕
+        </Button>
+        <span className="mx-1 h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+        <Button size="sm" onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
+        <Button size="sm" onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
+        <Button
+          size="sm"
+          active={viewMode !== 'solid'}
+          onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
+          title={`${tr('Прозрачность')} (T)`}
+        >
+          {viewMode === 'solid' ? tr('Тело') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
+        </Button>
+        <span className="mx-1 h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+        <Button size="sm" onClick={() => setRenderOpen(true)} title={tr('Фотореалистичная картинка для клиента')}>
+          {tr('Рендер')}
+        </Button>
+        <Button
+          size="sm"
+          active={walk}
+          title={tr('Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы')}
+          onClick={() => setWalk(!walk)}
+        >
+          {tr('Прогулка')}
+        </Button>
+        <ArButton />
+        <VrButton />
+        <Button
+          size="sm"
+          active={openness > 0}
+          title={`${tr('Открыть или закрыть двери и ящики')} (E)`}
+          onClick={() => setOpenness(openness > 0 ? 0 : 1)}
+        >
+          {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
+        </Button>
+        <Button
+          size="sm"
+          active={assemblyStep !== null}
+          title={tr('Показать сборку по шагам')}
+          onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}
+        >
+          {tr('Сборка')}
+        </Button>
+        {assemblyStep !== null ? (
+          <span className="flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2 py-0.5 dark:border-neutral-700 dark:bg-neutral-900">
+            <input
+              type="range"
+              aria-label={tr('Показать сборку по шагам')}
+              className="w-20 accent-neutral-900 dark:accent-neutral-100"
+              min={1}
+              max={Math.max(1, projectPanels.length)}
+              value={Math.min(assemblyStep, projectPanels.length)}
+              onChange={(e) => setAssemblyStep(Number(e.target.value))}
+            />
+            <span className="text-[10px] tabular-nums text-neutral-500">
+              {Math.min(assemblyStep, projectPanels.length)} / {projectPanels.length}
+            </span>
+          </span>
+        ) : null}
+      </div>
+
+      {/* Екінші қатар: сирек баптаулар («Вид»), силуэт биіктігі, анықтама. */}
+      <div className="flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
+        <Menu label={tr('Вид')} size="sm" title={tr('Прозрачность, фасады, проекция, масштаб')}>
+          <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+            {tr('Разнести')}
+            <Slider value={exploded} onChange={setExploded} />
+          </label>
+          <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
+            {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
+          </MenuItem>
+          <MenuItem
+            active={projection === 'ortho'}
+            onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
+          >
+            {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
+          </MenuItem>
+          <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
+            {tr('Размеры на сцене')}
+          </MenuItem>
+          <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
+          <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
+            {tr('Человек для масштаба')}
+          </MenuItem>
+        </Menu>
+        {silhouette.on ? (
+          <input
+            type="number"
+            className="w-16 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
+            value={silhouette.height}
+            min={MIN_SILHOUETTE_HEIGHT}
+            max={MAX_SILHOUETTE_HEIGHT}
+            step={10}
+            title={tr('Рост человека, мм')}
+            onChange={(e) => {
+              const v = Number(e.target.value)
+              if (Number.isFinite(v)) setSilhouette({ height: Math.round(v) })
+            }}
+          />
+        ) : null}
+        <Button size="sm" onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
+      </div>
+
       {error ? (
         <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <b className="font-mono">{error.field}</b> — {error.message.replace(`${error.field}: `, '')}
@@ -485,7 +782,30 @@ export function Workspace() {
         жақта таңдалған модульдің қасиеттері мен әрекеттері. Бұрын: сол жақта
         ұзын форма, оң жақта 460 px деталировка — 3D тарылып, тақта екі қатар.
       */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[28px_minmax(0,1fr)_340px]">
+        {/*
+          СОЛ ЖАҚТАҒЫ ТАР ТІК ҚҰРАЛДАР ЖОЛАҒЫ (docs/pro100/ui-design.md, §3).
+          Бізде PRO100-дегідей БӨЛЕК режим жүйесі (таңдау/жылжыту курсоры)
+          ЖОҚ — таңдау сахнада басу арқылы, ал орынды ауыстыру сахнадағы
+          сүйреумен өзі істелінеді (`Scene.tsx`-тегі қабырғаға сүйреу).
+          Сондықтан бұл жолақ жаңа режим ОЙЛАП ТАППАЙДЫ, тек бар екеуін
+          көрсетеді: «Выбор» — нақты әрекет (Escape эквиваленті), «Сместить»
+          — үнсіз ескерту (сахнада тартып апарыңыз), батырма емес.
+          Телефонда жасырын: PRO100 макеті десктопқа арналған.
+        */}
+        <div className="hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
+          <Button
+            size="sm"
+            active={!selected}
+            title={tr('Выбор — щёлкните по модулю в сцене, Esc — снять выделение')}
+            onClick={() => setSelected(null)}
+          >
+            ⊙
+          </Button>
+          <Button size="sm" disabled title={tr('Переместить — перетащите выбранный модуль по стене прямо в 3D-сцене')}>
+            ✥
+          </Button>
+        </div>
         <div className="flex min-h-0 flex-col">
         {/* Телефонда 3D экранның жартысынан астам: 256 px-те ештеңе көрінбейтін. */}
         <main className="relative min-h-[55vh] flex-1 lg:min-h-64" data-tour="scene">
@@ -496,95 +816,12 @@ export function Workspace() {
           {/* Бірнеше корпусты жобада «қай корпус» тізімнен таңдалады (qdesign сияқты). */}
           {walk ? null : <ModuleList />}
           {/*
-            КӨРІНІС құралдары сахнаның өз үстінде: олар 3D-ге қатысты, ал тақтада
-            тұрғанда оны екі қатарға бөліп жіберетін. Сирек баптаулар «Вид»-те.
+            КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
+            §2): PRO100-де олар сахнаның үстінде қалқымайды, тар белгіше
+            қатарында тұрады. Бұрын осында `absolute bottom-3/top-3` тобы
+            болатын («Рендер · Прогулка · AR · VR · Распахнуть · Сборка · Вид») —
+            енді төмендегі `<header>`-ден кейінгі екі қатарда.
           */}
-          {/* Телефонда АСТЫҢҒЫ бұрышта: жоғарыда модульдер тізімімен соқтығысатын. */}
-          <div className="absolute bottom-3 right-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end gap-1 lg:bottom-auto lg:top-3 lg:max-w-[70%]">
-            <Button onClick={() => setRenderOpen(true)} title={tr('Фотореалистичная картинка для клиента')}>
-              {tr('Рендер')}
-            </Button>
-            <Button
-              active={walk}
-              title={tr('Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы')}
-              onClick={() => setWalk(!walk)}
-            >
-              {tr('Прогулка')}
-            </Button>
-            <ArButton />
-            <VrButton />
-            <Button
-              active={openness > 0}
-              title={`${tr('Открыть или закрыть двери и ящики')} (E)`}
-              onClick={() => setOpenness(openness > 0 ? 0 : 1)}
-            >
-              {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
-            </Button>
-            <Button
-              active={assemblyStep !== null}
-              title={tr('Показать сборку по шагам')}
-              onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}
-            >
-              {tr('Сборка')}
-            </Button>
-            {assemblyStep !== null ? (
-              <span className="flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900">
-                <input
-                  type="range"
-                  aria-label={tr('Показать сборку по шагам')}
-                  className="w-24 accent-neutral-900 dark:accent-neutral-100"
-                  min={1}
-                  max={Math.max(1, projectPanels.length)}
-                  value={Math.min(assemblyStep, projectPanels.length)}
-                  onChange={(e) => setAssemblyStep(Number(e.target.value))}
-                />
-                <span className="text-[11px] tabular-nums text-neutral-500">
-                  {Math.min(assemblyStep, projectPanels.length)} / {projectPanels.length}
-                </span>
-              </span>
-            ) : null}
-            <Menu label={tr('Вид')} title={tr('Прозрачность, фасады, проекция, масштаб')} align="right">
-              <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
-                {tr('Разнести')}
-                <Slider value={exploded} onChange={setExploded} />
-              </label>
-              <MenuItem
-                active={viewMode !== 'solid'}
-                onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
-              >
-                {viewMode === 'solid' ? tr('Прозрачность') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
-              </MenuItem>
-              <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
-                {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
-              </MenuItem>
-              <MenuItem
-                active={projection === 'ortho'}
-                onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
-              >
-                {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
-              </MenuItem>
-              <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
-              <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
-                {tr('Человек для масштаба')}
-              </MenuItem>
-            </Menu>
-            {silhouette.on ? (
-              <input
-                type="number"
-                className="w-16 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
-                value={silhouette.height}
-                min={MIN_SILHOUETTE_HEIGHT}
-                max={MAX_SILHOUETTE_HEIGHT}
-                step={10}
-                title={tr('Рост человека, мм')}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  if (Number.isFinite(v)) setSilhouette({ height: Math.round(v) })
-                }}
-              />
-            ) : null}
-            <Button onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
-          </div>
           {walk ? (
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
               {/* Жалпақ: тұтас түс, blur жоқ (пайдаланушының дизайн ережесі). */}
@@ -605,6 +842,36 @@ export function Workspace() {
           {/* Телефонда прогулканың жүрісі — джойстик (перне жоқ). */}
           {walk && touch ? <TouchJoystick /> : null}
         </main>
+        {/*
+          АСТЫҢҒЫ КӨРІНІС ҚОЙЫНДЫЛАРЫ (docs/pro100/ui-design.md, §4 — «ЕҢ
+          ҚҰНДЫСЫ»): Перспектива · Аксонометрия · План · Стена С · З · Ю · В.
+          Соңғы төртеуі — БАР бөлме қабырғаларының (`src/core/room.ts`,
+          `WallId`) сыртынан қарайтын элевация (`Scene.tsx`-тегі
+          `WALL_VIEW_TARGET`), жаңа камера пресеттері. `cameraPreset` мен
+          `projection` бөлек күй болғандықтан, әр қойынды екеуінің де жұбын
+          қояды — активтілік те содан есептеледі.
+        */}
+        <div
+          className="flex items-center gap-0.5 overflow-x-auto border-t border-neutral-200 bg-neutral-50 px-1 py-1 dark:border-neutral-800 dark:bg-neutral-900"
+          data-tour="viewtabs"
+        >
+          {VIEW_TABS.map((v) => {
+            const isActive = cameraPreset === v.preset && (v.projection === undefined || projection === v.projection)
+            return (
+              <Button
+                key={v.key}
+                size="sm"
+                active={isActive}
+                onClick={() => {
+                  setCameraPreset(v.preset)
+                  if (v.projection) setProjection(v.projection)
+                }}
+              >
+                {tr(v.ruLabel)}
+              </Button>
+            )
+          })}
+        </div>
         <section
           className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72')}
           data-tour="cutlist"

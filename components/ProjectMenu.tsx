@@ -50,6 +50,10 @@ export function ProjectMenu() {
       <Button onClick={() => input.current?.click()} title={tr('Открыть проект из файла')}>{tr('Открыть')}</Button>
       <input
         ref={input}
+        // PRO100-дың «Файл → Открыть» мәзір пунктінен де осы файл терезесі
+        // шақырылады (`Workspace.tsx`-тегі жаңа мәзір жолағы): логиканы
+        // ЕКІНШІ РЕТ жазбау үшін, сол жерде осы `id` бойынша табылып басылады.
+        id="project-open-input"
         type="file"
         accept="application/json,.json"
         className="hidden"

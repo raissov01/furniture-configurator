@@ -114,13 +114,15 @@ const MenuCtx = React.createContext<() => void>(() => {})
  * жабылады, элемент таңдалғанда да жабылады.
  */
 export function Menu({
-  label, title, active, children, align = 'left',
+  label, title, active, children, align = 'left', size,
 }: {
   label: React.ReactNode
   title?: string
   active?: boolean
   children: React.ReactNode
   align?: 'left' | 'right'
+  /** Тек батырманың сыртқы түрі (`Button`-дегі `size`); мәзірдің өзі емес. */
+  size?: 'sm' | 'md'
 }) {
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
@@ -134,7 +136,12 @@ export function Menu({
   }, [open])
   return (
     <div ref={ref} className="relative">
-      <Button active={active || open} {...(title ? { title } : {})} onClick={() => setOpen((v) => !v)}>
+      <Button
+        active={active || open}
+        {...(title ? { title } : {})}
+        {...(size ? { size } : {})}
+        onClick={() => setOpen((v) => !v)}
+      >
         {label} <span className="text-[9px] opacity-60">▾</span>
       </Button>
       {open ? (
@@ -197,7 +204,7 @@ export function Slider({
 }
 
 export function Button({
-  children, onClick, disabled, active, title, tour,
+  children, onClick, disabled, active, title, tour, size = 'md',
 }: {
   children: React.ReactNode
   onClick?: () => void
@@ -206,6 +213,12 @@ export function Button({
   title?: string
   /** Оқыту көмекшісінің белгісі (`components/Tour.tsx`). */
   tour?: string
+  /**
+   * `sm` — PRO100-дың тығыз белгіше қатарлары үшін (`docs/pro100/ui-design.md`):
+   * жоғарғы екі қатар, сол жақтағы тар құралдар жолағы. Әдепкі `md` —
+   * бұрынғы батырмалардың бәрі (сыртқы түрі өзгермейді).
+   */
+  size?: 'sm' | 'md'
 }) {
   return (
     <button
@@ -215,7 +228,8 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'rounded-md border px-2.5 py-1.5 text-xs font-medium transition',
+        'rounded-md border font-medium transition',
+        size === 'sm' ? 'px-1.5 py-0.5 text-[11px] leading-4' : 'px-2.5 py-1.5 text-xs',
         'disabled:cursor-not-allowed disabled:opacity-35',
         active
           ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'

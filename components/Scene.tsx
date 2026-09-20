@@ -36,7 +36,7 @@ import {
 } from '@/src/core/index'
 import type {
   CabinetConfig, Catalog, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
-  Vec3, Wall,
+  Vec3, Wall, WallId,
 } from '@/src/core/index'
 
 type Controls = ComponentRef<typeof OrbitControls>
@@ -87,6 +87,17 @@ export type SceneItem = {
   pose: { position: Vec3; rotationY: number }
 }
 
+/**
+ * `wall-*` пресеттерін нақты қабырғаға айналдыру
+ * (PRO100-дың «Стена С/З/Ю/В» қойындылары, `docs/pro100/ui-design.md`).
+ */
+const WALL_VIEW_TARGET: Partial<Record<CameraPreset, WallId>> = {
+  'wall-north': 'north',
+  'wall-east': 'east',
+  'wall-south': 'south',
+  'wall-west': 'west',
+}
+
 /** Камера пресеттері: көзқарас нүктесі нысанның габаритіне қатысты есептеледі. */
 function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [number, number, number] {
   const span = Math.max(W, H, D)
@@ -101,6 +112,14 @@ function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [n
     case 'room':
       // Бүкіл бөлме: биіктен әрі қиғаш — қай қабырғада не тұрғаны көріну керек.
       return [span * 0.9, span * 1.3, span * 1.3]
+    // Қабырғаның ЭЛЕВАЦИЯСЫ: тура алдынан, тегіс — «front»-пен бірдей бағыт,
+    // тек нысана (target/facingY) бүкіл бөлме мен сол қабырғаның бұрышы
+    // болады («view» useMemo-ды қара).
+    case 'wall-north':
+    case 'wall-east':
+    case 'wall-south':
+    case 'wall-west':
+      return [0, 0, -span * 1.7]
     case 'three-quarter':
     default:
       return [span * 0.95, span * 0.55, -span * 1.15]
@@ -1076,6 +1095,17 @@ export default function Scene({
    * сайын камера секіретін. Енді таңдау камераны қозғамайды.
    */
   const view = useMemo<{ target: Vec3; box: { W: number; H: number; D: number }; facingY: number }>(() => {
+    const wallId = WALL_VIEW_TARGET[preset]
+    if (wallId) {
+      // Элевация: бүкіл бөлме, көзқарас — сол қабырғаның СЫРТЫНАН, бұрышы
+      // `placementPose`-тегімен бірдей (`wall.rotationY`), сондықтан сол
+      // қабырғаға қойылған шкафтар камераға ТУРА қарайды.
+      return {
+        target: { x: room.width / 2, y: room.height / 2, z: room.depth / 2 },
+        box: { W: room.width, H: room.height, D: room.depth },
+        facingY: wallById(room, wallId).rotationY,
+      }
+    }
     if (preset === 'room' || !active) {
       return {
         target: { x: room.width / 2, y: room.height / 3, z: room.depth / 2 },
