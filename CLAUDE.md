@@ -44,10 +44,20 @@ web UI; the system produces, from a single source of truth:
 The 3D view is a *consequence* of the panel model, never a separate model.
 If the 3D and the cut list can ever disagree, the architecture is wrong.
 
+**Free-form editor (added 2026-09-20, explicitly requested).** The project now
+has a node tree (`src/core/tree.ts`): a node is a group, a parametric cabinet,
+a free board, or a decorative solid. Boards may be placed by hand anywhere in
+the scene. See `docs/superpowers/specs/2026-09-20-free-form-editor-design.md`.
+
+This does **not** relax §0.2 or §4.3. Every board is still an axis-aligned
+rectangular panel, its cut size is still derived from its edge banding, and
+`Panel[]` is still the single source of truth. What changed is who places the
+panel, not what a panel is.
+
 **Non-goals (do not build these unless explicitly asked):**
-- Free-form / organic modelling. Everything is axis-aligned rectangular panels.
-- A general CAD editor. This is a configurator with constrained parameters.
-- Full room / interior design in phase 1. Room context comes later.
+- Organic / curved modelling — lathed or bent parts. Nodes are boxes.
+- Automatic joint detection between hand-placed boards. Drilling for a free
+  board is entered by hand in `DrillEditor`; `autoJoint.ts` is a later spec.
 - CNC G-code post-processors. We export DXF + drilling data; postprocessing is downstream.
 
 ---
