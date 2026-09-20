@@ -226,7 +226,17 @@ const HOOD_STAND_INSET = 120
 const WORKTOP_PIECE_MAX = 4000
 const FRIDGE_WIDTH = 600
 const SINK_WIDTH = 800
-const TALL_HEIGHT = 2100
+/*
+ * ⚠ 2026-09-20 ЖОЙЫЛДЫ («коллега» тапсырмасы, kitchen.test.ts «биік
+ * модуль... түзу»). Бұрын мұнда `TALL_HEIGHT = 2100` тұратын — биік
+ * модульдің (пенал/тоңазытқыш/духовка мұнарасы) биіктігі ҚАТЫРЫЛҒАН еді,
+ * үстіңгі қатардың геометриясынан (`upperElevation`/`upperHeight`)
+ * ТУЫНДАМАЙТЫН. Нәтижесінде пеналдың үсті мен үстіңгі қатардың үсті
+ * ӘРТҮРЛІ биіктікте шығатын (әдепкіде 2100 vs 1460+720=2180 — 80 мм),
+ * ал `dims`-ті өзгертсе алшақтық тіпті үлкейетін. Енді `generateKitchen`
+ * ішінде ЕСЕПТЕЛЕДІ (`towerHeight`): биік модульдің АБСОЛЮТ үсті
+ * (цоколь + корпус) дәл `upperElevation + upperHeight`-ке тең болатындай.
+ */
 const TALL_DEPTH = 560
 
 /**
@@ -360,13 +370,26 @@ function withFixture(cabinet: CabinetConfig, fixture: CabinetFixture): CabinetCo
  * Ұяда цех фасады болмайды — техниканың өз есігі бар (тоңазытқыш, духовка).
  * 3D-де техника ӨЗ РЕҢКІМЕН көрінеді (`filling.ts` APPLIANCES). Раскрой тек
  * корпусты санайды: техниканы клиент өзі алады.
+ *
+ * ⚠ G3 (docs/visual/generator-gaps.md, 2026-09-20). Техника ұясының
+ * ҮСТІНДЕ сөре тұрса (мыс. духовка мұнарасында, тоңазытқыш бағанасында),
+ * сол сөрені ЖАБАТЫН фасад керек — бұрын БҮКІЛ секция `fronts: null`
+ * болатын да, техниканың үстіндегі сөрелер де ашық қалатын («ашық шкаф»
+ * көрінісі, аудитте расталды). `keepFronts: true` берілсе, секцияның
+ * ӨЗ фасады (шаблоннан) сақталады: `generateCabinet.ts`-тегі
+ * `hingedFrontFrom` ережесі (техника бандісі ⇒ фасад содан ЖОҒАРЫ
+ * басталады) фасадты техниканың ҮСТІНЕ ҒАНА түсіреді, техниканың өзін
+ * жаппайды. Посудомойкада (жұқа қалдық жолақ, нақты есік жоқ) әдепкі
+ * бойынша `false` — фасад бұрынғыдай жоқ.
  */
 function applianceNiche(
-  cabinet: CabinetConfig, contents: Section['contents'],
+  cabinet: CabinetConfig, contents: Section['contents'], opts: { keepFronts?: boolean } = {},
 ): CabinetConfig {
   return {
     ...cabinet,
-    sections: cabinet.sections.map((sec, i) => (i === 0 ? { ...sec, contents, fronts: null } : sec)),
+    sections: cabinet.sections.map((sec, i) => (
+      i === 0 ? { ...sec, contents, ...(opts.keepFronts ? {} : { fronts: null }) } : sec
+    )),
   }
 }
 
@@ -422,20 +445,41 @@ function withMaterials(cabinet: CabinetConfig, m: KitchenOptions['materials']): 
 }
 
 /**
+ * Цоколь БІР биіктікте — G2 диагнозы (docs/audit/qdesign-drilling-reference.md
+ * §7, docs/visual/generator-gaps.md §G2).
+ *
+ * ⚠ 2026-09-20 ТҮЗЕТІЛДІ. Бұрын биіктік `cabinet.base?.height`-ті (шаблонның
+ * ӨЗ мәні) `PLINTH_HEIGHT`-тен басым қоятын: `kitchen-base-full-600`
+ * (баседорс) шаблонында 100 мм тұр, ал `kitchen-base-drawers-600`/
+ * `kitchen-sink-800`-те шаблон base мүлде жоқ болғандықтан 95 мм-ге
+ * түсетін. Нәтижесінде БІР ҚАТАРДА баседорс пен базящик кезектессе, олардың
+ * цокольдары 5 мм-ге сатылап тұратын — нақты генерацияда расталды
+ * (`kitchen-a-9`: 100 мм, көршілері: 95 мм). Тұтас цоколь ЖОЛАҒЫ үшін
+ * бүкіл қатарда ДӘЛ БІР БИІКТІК керек, сондықтан шаблон мәні енді
+ * ЕСКЕРІЛМЕЙДІ — тек жоба параметрі (`dims.plinthHeight`) немесе
+ * генератордың әдепкісі (`PLINTH_HEIGHT`).
+ */
+function dressBase(cabinet: CabinetConfig, opts: KitchenOptions): CabinetConfig {
+  const plinthMat = opts.materials?.plinthId ?? opts.materials?.frontId
+  return {
+    ...cabinet,
+    base: {
+      kind: 'plinth',
+      height: opts.dims?.plinthHeight ?? PLINTH_HEIGHT,
+      ...(plinthMat ? { plinthMaterialId: plinthMat } : {}),
+    },
+  }
+}
+
+/**
  * Төменгі модульді ТОЛЫҚ безендіру: цоколь + столешница + (қаласа) фартук,
- * материал мен фрезеровка. Шаблонда цоколь/столешница болса — сақталады.
+ * материал мен фрезеровка.
  */
 function dressLower(cabinet: CabinetConfig, opts: KitchenOptions): CabinetConfig {
   const dims = opts.dims
   const worktopMat = opts.materials?.worktopId
-  const plinthMat = opts.materials?.plinthId ?? opts.materials?.frontId
   let out: CabinetConfig = {
-    ...cabinet,
-    base: {
-      kind: 'plinth',
-      height: dims?.plinthHeight ?? cabinet.base?.height ?? PLINTH_HEIGHT,
-      ...(plinthMat ? { plinthMaterialId: plinthMat } : {}),
-    },
+    ...dressBase(cabinet, opts),
     worktop: {
       /*
        * Шығыңқы БҮКІЛ гарнитурға БІРДЕЙ. ⚠ Бұрын шаблонның өз мәні (кейбірінде
@@ -481,6 +525,15 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   const upperD = d.upperDepth ?? UPPER_DEPTH
   const upperH = d.upperHeight ?? UPPER_HEIGHT
   const upperElev = d.upperElevation ?? UPPER_ELEVATION
+  const plinthH = d.plinthHeight ?? PLINTH_HEIGHT
+  /*
+   * Биік модульдің (пенал/тоңазытқыш/духовка мұнарасы) АБСОЛЮТ үсті
+   * (`dressBase`-тен цоколь + корпустың өз биіктігі) үстіңгі қатардың
+   * үстімен («еденнен» `upperElev` + өз биіктігі `upperH`) ДӘЛ бір
+   * сызықта болуы үшін корпустың ӨЗ биіктігі цоколь мөлшеріне КЕМІТІЛІП
+   * есептеледі — әйтпесе пенал упперден дәл цоколь биіктігіне асып кетер еді.
+   */
+  const towerHeight = upperElev + upperH - plinthH
   const finishUpper = (c: CabinetConfig) => withMilling(withMaterials(c, options.materials), options.milling)
   const glassUpper = options.glassUpper ?? false
   const makeUpper = (width: number, uid: string): CabinetConfig => {
@@ -550,25 +603,36 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   /** Бір модульден корпус жасау (әр түрі — өз шаблоны, өз безендірілуі). */
   const build = (mod: { kind: ModuleKind; width: number }, role: string): CabinetConfig => {
     const id = nextId(role)
-    const tower = () => ({ ...templateToCabinet(tplOf(mod.kind), catalog, { width: mod.width, height: TALL_HEIGHT, depth: TALL_DEPTH }), id })
+    const tower = () => ({ ...templateToCabinet(tplOf(mod.kind), catalog, { width: mod.width, height: towerHeight, depth: TALL_DEPTH }), id })
     if (mod.kind === 'tall') {
-      // Пенал (қойма бағанасы): толық биік, өз цоколі бар.
-      return finishUpper(tower())
+      /*
+       * Пенал (қойма бағанасы): толық биік, цоколі базалармен БІР биіктікте
+       * (`dressBase`, G2). ⚠ 2026-09-20-ге дейін мұнда цоколь мүлде
+       * қойылмайтын («kitchen-tall-600» шаблонында `base` жоқ): бағана
+       * еденге ЖАЛПАҚ тұратын да, көршілес базалар 95 мм биіктікте
+       * тұрғандықтан пенал мен базаның арасында саты, ал пеналдың өз
+       * табаны ЖАБЫЛМАҒАН күйінде қалатын — дәл «аяқ ашық тұр» дегені осы.
+       */
+      return finishUpper(dressBase(tower(), options))
     }
     if (mod.kind === 'fridge') {
-      // Тоңазытқыш бағанасы: ұя + үстінде кішкене шкаф.
-      return finishUpper(applianceNiche(tower(), [
+      // Тоңазытқыш бағанасы: ұя + үстінде кішкене шкаф. Цоколі — жоғарыдағыдай.
+      // G3: `keepFronts` — үстіңгі сөре фасадпен жабылады, тоңазытқыштың
+      // өзі — жоқ (`hingedFrontFrom`, generateCabinet.ts).
+      return finishUpper(dressBase(applianceNiche(tower(), [
         { kind: 'appliance', appliance: 'fridge' },
         { kind: 'shelves', count: 1, shelfKind: 'adjustable' },
-      ]))
+      ], { keepFronts: true }), options))
     }
     if (mod.kind === 'oven') {
       // Духовка мұнарасы: духовка + СВЧ + сөрелер (qdesign «Пенал духовка+СВЧ»).
-      return finishUpper(applianceNiche(tower(), [
+      // G3: `keepFronts` — сөрелер фасадпен жабылады, духовка мен СВЧ-ға
+      // фасад ТИМЕЙДІ (олардың өз есігі бар).
+      return finishUpper(dressBase(applianceNiche(tower(), [
         { kind: 'appliance', appliance: 'oven', height: 595 },
         { kind: 'appliance', appliance: 'microwave', height: 380 },
         { kind: 'shelves', count: 2, shelfKind: 'adjustable' },
-      ]))
+      ], { keepFronts: true }), options))
     }
     const base = { ...templateToCabinet(tplOf(mod.kind), catalog, { width: mod.width, height: lowerH, depth: lowerD }), id }
     if (mod.kind === 'dishwasher') {

@@ -788,6 +788,22 @@ export function generateCabinet(
         return
       }
 
+      if (content.kind === 'appliance') {
+        /*
+         * G3 (docs/visual/generator-gaps.md). Техника ҰЯСЫНЫҢ өз панелі жоқ
+         * (жоғарыдағы «Техниканың ҰЯСЫ» түсіндірмесі), бірақ секцияда одан
+         * ЖОҒАРЫ жолақ (сөре) болса, соны жабатын ілмелі фасад техниканың
+         * ҮСТІНЕН басталуы керек — әйтпесе фасад техниканың өзін де жауып,
+         * есігіне кедергі жасайды. Ереже ящиктікімен БІРДЕЙ (жоғарыдағы
+         * §D1), тек панель шықпайды: тек шек жылжиды.
+         */
+        hingedFrontFrom[sectionIndex] = Math.max(
+          hingedFrontFrom[sectionIndex] ?? t,
+          band.y + band.height + t,
+        )
+        return
+      }
+
       if (content.kind === 'drawers') {
         const created = makeDrawers({
           section, sectionIndex, bandIndex, band, layout,

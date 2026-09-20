@@ -205,11 +205,31 @@ describe('generateKitchen', () => {
     expect(appliances).toContain('fridge')
     expect(appliances).toContain('oven')
     expect(appliances).toContain('dishwasher')
-    // Техника ұясында цех фасады болмайды (техниканың өз есігі бар).
-    const applianceSection = r.cabinets
-      .flatMap((c) => c.sections)
-      .find((sec) => sec.contents.some((x) => x.kind === 'appliance' && x.appliance === 'fridge'))
-    expect(applianceSection?.fronts).toBeNull()
+    /*
+     * ⚠ 2026-09-20 ТҮЗЕТІЛДІ (G3, docs/visual/generator-gaps.md). Бұрын
+     * техника бар секцияның ФАСАДЫ БҮКІЛ секцияға `null` болатын — сонда
+     * духовка мұнарасының техникадан ЖОҒАРҒЫ сөрелері де ашық қалатын
+     * («ашық шкаф», аудитте расталды). Енді секцияның fronts-і САҚТАЛАДЫ
+     * (сөрені жабу үшін), ал НАҚТЫ фасад панелі `hingedFrontFrom`
+     * ережесімен техниканың биіктігінен ЖОҒАРЫ басталады — техниканың
+     * өзін жаппайды. Сондықтан мұнда екі нәрсе тексеріледі: секцияның
+     * fronts-і бар (null ЕМЕС) ЖӘНЕ нақты фасад панелі техника аймағын
+     * баспайды.
+     */
+    const ovenCab = r.cabinets.find((c) => c.sections.some(
+      (sec) => sec.contents.some((x) => x.kind === 'appliance' && x.appliance === 'oven'),
+    ))!
+    const applianceSection = ovenCab.sections.find(
+      (sec) => sec.contents.some((x) => x.kind === 'appliance' && x.appliance === 'oven'),
+    )!
+    expect(applianceSection.fronts).not.toBeNull()
+    const ovenFronts = generateCabinet(ovenCab, SEED_CATALOG).filter((p) => p.role === 'front')
+    expect(ovenFronts.length).toBeGreaterThan(0)
+    // Духовка (595) + СВЧ (380) + аралық сөрелер — фасад олардан ЖОҒАРЫ
+    // басталуы керек, цоколь биіктігін (95) қосқанда да.
+    for (const front of ovenFronts) {
+      expect(front.position.y).toBeGreaterThan(595 + 380 + 95)
+    }
   })
 
   it('П-пішін (U): ҮШ қабырға, қабаттаспайды, сыяды', () => {
@@ -255,5 +275,39 @@ describe('generateKitchen', () => {
     expect(noUpper.placements.every((p) => (p.elevation ?? 0) === 0)).toBe(true)
     // Үстіңгі қатар төменгіден АЗ болуы керек: мойканың үстінде шкаф жоқ.
     expect(uppers.length).toBeLessThan(withUpper.placements.length - uppers.length)
+  })
+
+  /*
+   * Коллега тапсырды (2026-09-20): биік модульдің (пенал/тоңазытқыш/духовка
+   * мұнарасы) үсті ҮСТІҢГІ ҚАТАРДЫҢ үстімен ДӘЛ бір сызықта болуы керек.
+   * Бұрын пеналдың биіктігі `TALL_HEIGHT = 2100` деп ҚАТЫРЫП жазылған еді —
+   * `dims.upperElevation`/`dims.upperHeight` өзгерсе, пенал онымен бірге
+   * жүрмейтін, сызық сынатын (нақты өлшенген: 4000 мм түзу қабырғада
+   * пеналдың үсті 2100, үстіңгі қатардікі 1460+720=2180 — 80 мм айырма).
+   */
+  describe('биік модуль (пенал/тоңазытқыш/духовка) — үсті үстіңгі қатармен түзу (G4-ұқсас)', () => {
+    it.each([
+      [1460, 720],
+      [1400, 720],
+      [1500, 720],
+      [1460, 900],
+    ])('upperElevation=%d, upperHeight=%d', (upperElevation, upperHeight) => {
+      const r = generateKitchen(
+        {
+          layout: 'straight', lengthA: 4000, sink: true, upper: true, appliances: true,
+          dims: { upperElevation, upperHeight },
+        },
+        SEED_CATALOG,
+      )
+      const upperTop = upperElevation + upperHeight
+      // Барлық биік модуль («Кухня: пенал 600» — пенал/тоңазытқыш/духовка
+      // мұнарасы үшеуі де сол шаблонды қолданады) осы биіктікте тұруы керек.
+      const towers = r.cabinets.filter((c) => c.name === 'Кухня: пенал 600')
+      expect(towers.length).toBeGreaterThan(0)
+      for (const tower of towers) {
+        const baseHeight = tower.base?.height ?? 0
+        expect(baseHeight + tower.height).toBe(upperTop)
+      }
+    })
   })
 })
