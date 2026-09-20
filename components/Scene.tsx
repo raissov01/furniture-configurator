@@ -804,10 +804,11 @@ function RoomShell({ room, walk, entries }: {
   // олар керек емес, қабырға тұтас (`room.ts`, «Терезе мен есік»).
   const openings = useMemo(() => (walk ? visibleOpenings(room, entries) : []), [walk, room, entries])
   const wallColor = room.finish?.wallColor ?? DEFAULT_WALL_COLOR
-  const look = FLOOR_LOOK[room.finish?.floor ?? 'oak']
+  const floorKind = room.finish?.floor ?? 'oak'
+  const look = FLOOR_LOOK[floorKind]
   const floorMap = useMemo(
-    () => (look.pattern ? floorTexture(look.pattern, room.width, room.depth) : null),
-    [look.pattern, room.width, room.depth],
+    () => (look.pattern ? floorTexture(look.pattern, floorKind, room.width, room.depth) : null),
+    [look.pattern, floorKind, room.width, room.depth],
   )
 
   return (

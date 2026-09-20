@@ -10,16 +10,22 @@
  */
 
 import { CanvasTexture, RepeatWrapping, SRGBColorSpace, type Texture } from 'three'
+import type { FloorKind } from '@/src/core/types'
 
 export type FloorPattern = 'planks' | 'tiles'
 
-const cache = new Map<FloorPattern, Texture>()
+// Кэш кілті ТЕК `pattern` болса, әртүрлі ағаш кэшті бөліседі: `oak` мен
+// `walnut` екеуі де `pattern: 'planks'`, сондықтан бір текстураға түседі де,
+// тек `material.color` арқылы реңкі ғана өзгереді — талшық өрнегі бірдей
+// болып қалады. Сол үшін кілт `pattern:kind` болып құрылады.
+const cache = new Map<string, Texture>()
 
 /** Канвастың бір данасы еденде қанша мм алады: 8 тақтай × 150 мм, 2 плитка × 600 мм. */
 const SPAN_MM = 1200
 
-function paint(pattern: FloorPattern): Texture | null {
-  const hit = cache.get(pattern)
+function paint(pattern: FloorPattern, kind: FloorKind): Texture | null {
+  const key = `${pattern}:${kind}`
+  const hit = cache.get(key)
   if (hit) return hit
   if (typeof document === 'undefined') return null
 
@@ -31,20 +37,27 @@ function paint(pattern: FloorPattern): Texture | null {
   if (!ctx) return null
 
   if (pattern === 'planks') {
-    const rows = 8
+    // Ағаш түріне қарай ӨЗ талшық өрнегі — тек түс емес: дуб жіңішке
+    // тақтайлы, ашық әрі жиі талшықты (тік құрылым), жаңғақ кең тақтайлы,
+    // сирек әрі толқынды талшықты (майда-шұйке текстура). Түс материалдың
+    // өзінде (`FLOOR_LOOK`), мұнда тек ӨРНЕК ерекшеленеді.
+    const isWalnut = kind === 'walnut'
+    const rows = isWalnut ? 6 : 8
     const h = size / rows
+    const linesPerRow = isWalnut ? 10 : 16
+    const waveAmp = isWalnut ? 2.4 : 1.2
     for (let r = 0; r < rows; r += 1) {
       // Әр тақтайдың өз реңкі: бірдей реңк ламинат емес, пластик болып көрінеді.
       const tone = 226 + Math.round((Math.random() - 0.5) * 34)
       ctx.fillStyle = `rgb(${tone}, ${tone - 6}, ${tone - 14})`
       ctx.fillRect(0, r * h, size, h)
-      for (let i = 0; i < 16; i += 1) {
+      for (let i = 0; i < linesPerRow; i += 1) {
         const y = r * h + 3 + Math.random() * (h - 6)
         ctx.strokeStyle = `rgba(110, 84, 54, ${0.04 + Math.random() * 0.08})`
-        ctx.lineWidth = 0.6 + Math.random() * 1.2
+        ctx.lineWidth = isWalnut ? 1.2 + Math.random() * 2 : 0.6 + Math.random() * 1.2
         ctx.beginPath()
         ctx.moveTo(0, y)
-        for (let x = 0; x <= size; x += 32) ctx.lineTo(x, y + Math.sin(x / 40 + i) * 1.2)
+        for (let x = 0; x <= size; x += 32) ctx.lineTo(x, y + Math.sin(x / 40 + i) * waveAmp)
         ctx.stroke()
       }
       // Тақтайдың ұшы — әр қатарда өз жерінде (кірпіш тәрізді төсеу).
@@ -77,13 +90,13 @@ function paint(pattern: FloorPattern): Texture | null {
   tex.wrapS = RepeatWrapping
   tex.wrapT = RepeatWrapping
   tex.colorSpace = SRGBColorSpace
-  cache.set(pattern, tex)
+  cache.set(key, tex)
   return tex
 }
 
 /** Бөлменің өлшеміне сай қайталанатын еден текстурасы. */
-export function floorTexture(pattern: FloorPattern, widthMm: number, depthMm: number): Texture | null {
-  const base = paint(pattern)
+export function floorTexture(pattern: FloorPattern, kind: FloorKind, widthMm: number, depthMm: number): Texture | null {
+  const base = paint(pattern, kind)
   if (!base) return null
   const tex = base.clone()
   tex.repeat.set(widthMm / SPAN_MM, depthMm / SPAN_MM)
