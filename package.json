@@ -16,7 +16,8 @@
     "plan": "node scripts/plan.mjs",
     "deploy": "bash scripts/deploy.sh",
     "icons": "node scripts/icons.mjs",
-    "import:basis": "node scripts/importBasis.mjs"
+    "import:basis": "node scripts/importBasis.mjs",
+    "import:pro100": "node scripts/importPro100.mjs"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
