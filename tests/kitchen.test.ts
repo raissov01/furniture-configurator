@@ -121,10 +121,22 @@ describe('generateKitchen', () => {
     const isUpper = (p: (typeof r.placements)[number]) => (p.elevation ?? 0) > 0
     const lowers = r.placements.filter((p) => !isUpper(p))
     const uppers = r.placements.filter(isUpper)
+    /*
+     * K8 / audit C6+C7 (2026-09-20): `offset` теңдігі бұрышқа жақын шкафты
+     * ТЕК СОЛТҮСТІК қабырғада ұстайды. Шығыс қабырғада төменгі мен үстіңгі
+     * қатардың бұрыштан бастапқы ЫҒЫСУЫ ӘДЕЙІ бөлек (`qLower` ≠ `qUpper`,
+     * kitchen.ts): төменгі бұрыштық корпус (500 мм) шығыс қатарды
+     * үстіңгіге (320 мм) қарағанда алысырақ бастатады. Сондықтан «дәл сол
+     * offset-те» шкаф іздеу орнына генератордың ӨЗ ретін қолданамыз: әр
+     * төменгі орналасудан кейін бірден келетін орналасу — сол модульдің
+     * үстіңгісі (`build()` екеуін бір итерацияда, кезек-кезек қосады).
+     */
     for (const low of lowers) {
+      const i = r.placements.indexOf(low)
       const cab = byId.get(low.cabinetId)!
       const tall = cab.height > 1500
-      const above = uppers.filter((u) => u.wall === low.wall && u.offset === low.offset)
+      const next = r.placements[i + 1]
+      const above = next && isUpper(next) && next.wall === low.wall && uppers.includes(next) ? [next] : []
       // Плитаның үстінде де бір шкаф бар — ол сорғыш шкафы (төмендегі тест).
       expect(above, `${cab.name} @ ${low.wall}:${low.offset}`).toHaveLength(tall ? 0 : 1)
     }

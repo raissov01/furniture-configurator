@@ -109,8 +109,19 @@ describe('ас үй генераторы: плита, сорғыш, мойка',
     expect(wall).toBe('east')
     // Плитаның үстінде сорғыш ШКАФЫ (qdesign сияқты), бөлек «труба» жоқ.
     expect(hobs[0]!.fixtures?.some((f) => f.kind === 'hood')).toBe(false)
+    /*
+     * K8 / audit C6+C7 (2026-09-20): бұрышта шығыс қатардың төменгі мен
+     * үстіңгі жолы бастапқы ЫҒЫСУЫ ӘДЕЙІ бөлек (`qLower` ≠ `qUpper`,
+     * kitchen.ts) — төменгі бұрыштық корпус тереңірек (500 мм), сондықтан
+     * шығыс қатарды үстіңгіге (320 мм) қарағанда алысырақ бастатады. Сол
+     * себепті «дәл сол offset» іздеу орнына генератордың ӨЗ ретін
+     * қолданамыз: төменгі орналасудан кейін бірден келетін орналасу — сол
+     * модульдің үстіңгісі.
+     */
     const at = r.placements.find((p) => p.cabinetId === hobs[0]!.id)!
-    const above = r.placements.filter((p) => p.wall === at.wall && p.offset === at.offset && (p.elevation ?? 0) > 0)
+    const atIndex = r.placements.indexOf(at)
+    const next = r.placements[atIndex + 1]
+    const above = next && next.wall === at.wall && (next.elevation ?? 0) > 0 ? [next] : []
     expect(above).toHaveLength(1)
   })
 

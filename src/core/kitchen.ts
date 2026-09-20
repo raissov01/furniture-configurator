@@ -681,25 +681,52 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     return mod.kind === 'cornerSink' ? { ...up, frontPanel: { width: CORNER_UPPER_BLIND, side: 'left' } } : up
   }
 
+  /*
+   * K8 / audit C6+C7: бұрыштағы соқыр панельдің (`frontPanel`) қалыңдығы.
+   *
+   * Панель — накладной деталь, корпустың АЛДЫНДА тұрады (`generateCabinet.ts`:
+   * `z: -panelMat.thickness`), яғни корпустың номиналды тереңдігінен тыс,
+   * көрші қабырғаның қатарына қарай шығыңқы. Көрші қатар тек корпус
+   * тереңдігінен басталса (`depthAtStart`), соқыр панельге КІРІП тұрады
+   * (C6). Материал табылмаса — ҮНСІЗ ЕМЕС, қате лақтырамыз (§10).
+   */
+  const frontPanelThickness = (cab: CabinetConfig): number => {
+    if (!cab.frontPanel) return 0
+    const matId = cab.frontPanel.materialId ?? cab.frontMaterialId
+    const mat = catalog.materials.find((m) => m.id === matId)
+    if (!mat) throw new Error(`бұрыштық соқыр панель: материал табылмады «${matId}»`)
+    return mat.thickness
+  }
+
   // ── Негізгі қабырға (солтүстік), бұрыштан оңға (offset 0-ден) ─────────────
   let cursor = 0
   /*
    * Бұрыштағы модульдің ТЕРЕҢДІГІ: көрші қабырғаның қатары дәл одан кейін
    * басталады. Бұрын тұрақты `lowerD` еді — бұрышта пенал (560) тұрса, көрші
    * тумбаға 60 мм кіретін. Екі шеті де ескеріледі (П-пішінде батыс та бұрыш).
+   *
+   * `depthAtStart`/`depthAtEnd` — таза КОРПУС тереңдігі, столешница
+   * есебінде (§ worktop) бұрынғыдай қолданылады. Шығыс қатардың бастапқы
+   * ығысуы (`qLower`/`qUpper`) оған соқыр панельдің қалыңдығын қосады.
    */
   let depthAtStart = lowerD
   let depthAtEnd = lowerD
+  let cornerLowerPanel = 0
+  let cornerUpperPanel = 0
   runA.forEach((mod, i) => {
     const cab = build(mod, 'a')
     cabinets.push(cab)
     placements.push({ cabinetId: cab.id, wall: 'north', offset: cursor })
-    if (i === 0) depthAtStart = cab.depth
+    if (i === 0) {
+      depthAtStart = cab.depth
+      cornerLowerPanel = frontPanelThickness(cab)
+    }
     if (i === runA.length - 1) depthAtEnd = cab.depth
     const up = upperFor(mod, nextId('a-up'))
     if (up) {
       cabinets.push(up)
       placements.push({ cabinetId: up.id, wall: 'north', offset: cursor, elevation: upperElev })
+      if (i === 0) cornerUpperPanel = frontPanelThickness(up)
     }
     cursor += mod.width
   })
@@ -707,19 +734,27 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   // ── Перпендикуляр қабырға (шығыс) ────────────────────────────────────────
   // Шығыстың offset 0-і ОҢТҮСТІК-ШЫҒЫС бұрышында, ал бізге СОЛТҮСТІК-ШЫҒЫС
   // керек: бұрыштан өлшенген `q`-ды offset-ке ауыстырамыз (depth − q − width).
-  // Қатар мойка ТЕРЕҢДІГІНЕН басталады, әйтпесе бұрышта A-мен соқтығысады.
-  let q = corner ? depthAtStart : 0
+  // Қатар мойка ТЕРЕҢДІГІ + соқыр панель қалыңдығынан басталады, әйтпесе
+  // бұрышта A-мен соқтығысады (C6) не A-дан алшақ тұрады (C7).
+  //
+  // ТӨМЕНГІ мен ҮСТІҢГІ қатардың ӨЗ бастапқы ығысуы БӨЛЕК (C7): үстіңгі
+  // тереңдік төменгіден өзгеше (320 vs 500), ал бір q екеуіне бірдей
+  // қолданылса, солтүстіктің үстіңгі қатары шығыс қатардан 164 мм алшақ
+  // қалады.
+  let qLower = corner ? depthAtStart + cornerLowerPanel : 0
+  let qUpper = corner ? upperD + cornerUpperPanel : 0
   runB.forEach((raw) => {
     const mod = raw.kind === 'tall' ? { kind: 'baseDoors' as ModuleKind, width: raw.width } : raw
     const cab = build(mod, 'b')
     cabinets.push(cab)
-    placements.push({ cabinetId: cab.id, wall: 'east', offset: room.depth - q - mod.width })
+    placements.push({ cabinetId: cab.id, wall: 'east', offset: room.depth - qLower - mod.width })
     const up = upperFor(mod, nextId('b-up'))
     if (up) {
       cabinets.push(up)
-      placements.push({ cabinetId: up.id, wall: 'east', offset: room.depth - q - mod.width, elevation: upperElev })
+      placements.push({ cabinetId: up.id, wall: 'east', offset: room.depth - qUpper - mod.width, elevation: upperElev })
     }
-    q += mod.width
+    qLower += mod.width
+    qUpper += mod.width
   })
 
   // ── Үшінші қабырға (батыс, тек П-пішін) ──────────────────────────────────
@@ -781,7 +816,9 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
       const overhang = head.worktop!.overhangFront
       // Шығыстың offset-і оңтүстіктен солтүстікке өседі: бұрыштағы шеті — `end`.
       // Батыстыкі солтүстіктен оңтүстікке: бұрыштағы шеті — `start`.
-      const buttEnd = wall === 'east' && corner && end === room.depth - depthAtStart
+      // K8: шығыс қатар енді `depthAtStart + cornerLowerPanel`-ден басталады
+      // (`qLower`), сондықтан бұрыштағы нүкте де сол қалыңдықты есептейді.
+      const buttEnd = wall === 'east' && corner && end === room.depth - depthAtStart - cornerLowerPanel
       const buttStart = wall === 'west' && start === depthAtEnd
       const part: CustomPart = {
         id: `worktop-${wall}-${start}`,
