@@ -59,3 +59,17 @@ describe('K10a: аяқ (legs) + бұрыштық корпус — қате', () 
     expect(byId(panels, 'plinth')).toBeDefined()
   })
 })
+
+// ── K10b: цоколь-короб — оң жақ қиғаштың алдынан шығып тұр ─────────────────
+
+describe('K10b: цоколь-КОРОБ (plinthShape box) + бұрыштық корпус — қате', () => {
+  /**
+   * Нақты сан (600/350): `plinth-right` (боковой) тақтайы `boxDepth = D −
+   * plinthSetback − 2·pt`-мен есептеледі — номиналды D (=600), сол жақтың
+   * тереңдігі. Оң жақта нақты тереңдік 350, яғни тақтай ~184 мм шығып тұрады.
+   */
+  it('box пішіні тыйым салынған', () => {
+    const cfg = corner(350, { base: { kind: 'plinth', height: 95, plinthShape: 'box' as const } })
+    expect(() => generateCabinet(cfg, catalog)).toThrow(/plinth|цоколь|короб/)
+  })
+})
