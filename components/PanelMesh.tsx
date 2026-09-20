@@ -10,7 +10,7 @@ import { t as tr } from '@/lib/i18n'
 import { Edges, Html } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { grainTexture } from '@/lib/grainTexture'
-import { decorTexture } from '@/lib/decorTexture'
+import { boxGrainUAxis, decorTexture, grainRotation, type GrainUVAxis } from '@/lib/decorTexture'
 import { finishToMaterial } from '@/lib/materialLook'
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
@@ -357,16 +357,6 @@ export function PanelMesh({
   // қалғаны арзанырақ `meshStandardMaterial`-де қалады.
   const usesPhysical = quality !== 'low' && (decor?.finish === 'gloss' || decor?.finish === 'stone')
   const invalidate = useThree((s) => s.invalidate)
-  const texture = useMemo(() => {
-    // `mapUrl` берілсе — НАҒЫЗ сурет, физикалық мм-мен масштабталған
-    // (`lib/floorTexture.ts`-тегі SPAN_MM тәсілі). Жүктеу асинхронды —
-    // `demand` кадр режимінде сурет келгенде кадрды өзіміз сұраймыз.
-    if (decor?.mapUrl && decor.mapSizeMm) {
-      return decorTexture(decor.mapUrl, panel.finishedLength, panel.finishedWidth, decor.mapSizeMm, () => invalidate())
-    }
-    return woodDecor ? grainTexture() : null
-  }, [decor, woodDecor, panel.finishedLength, panel.finishedWidth, invalidate])
-
 
   const extents = useMemo(() => panelExtents(panel, thickness), [panel, thickness])
 
@@ -475,6 +465,49 @@ export function PanelMesh({
     s0.holes = cutoutHoles(panel)
     return s0
   }, [panel.bevel, panel.finishedWidth, panel.finishedLength, panel.cutouts, panel.corners])
+
+  const texture = useMemo(() => {
+    /*
+     * `grainAlongLength` (CLAUDE.md §3, docs/visual/texture.md §1.5): раскрой
+     * (`nesting.ts`) `hasGrain` панельді 90°-қа бұруға тыйым салады,
+     * сондықтан 3D дәл сол бағытты көрсетуі керек — әйтпесе клиентке
+     * көрсетілген сурет пен цехтың кескен парағы алшақтап кетеді.
+     *
+     * Пішінді/қиғаш панельде (`shape || tilted`, төменде) текстура тікелей
+     * локал x=ұзындық, y=ен етіп салынады (`ExtrudeGeometry`-нің әдепкі UV
+     * генераторы сол координатаны тікелей қолданады), ал жай `boxGeometry`
+     * панельде U-осі `orientation`-ға қарай ауысады — `boxGrainUAxis`.
+     */
+    const uAxis: GrainUVAxis = shape || tilted ? 'length' : boxGrainUAxis(panel.orientation)
+    const rotation = grainRotation(uAxis, panel.grainAlongLength)
+
+    // `mapUrl` берілсе — НАҒЫЗ сурет, физикалық мм-мен масштабталған
+    // (`lib/floorTexture.ts`-тегі SPAN_MM тәсілі). Жүктеу асинхронды —
+    // `demand` кадр режимінде сурет келгенде кадрды өзіміз сұраймыз.
+    if (decor?.mapUrl && decor.mapSizeMm) {
+      const tex = decorTexture(decor.mapUrl, panel.finishedLength, panel.finishedWidth, decor.mapSizeMm, () => invalidate())
+      if (tex) {
+        tex.center.set(0.5, 0.5)
+        tex.rotation = rotation
+      }
+      return tex
+    }
+    if (!woodDecor) return null
+    /*
+     * `grainTexture()` — БҮКІЛ қосымшаға ОРТАҚ singleton (`lib/grainTexture.ts`).
+     * Оны тікелей бұруға БОЛМАЙДЫ: екі панельдің `grainAlongLength`-і басқа
+     * болса, соңғы қойылған бұрыш екеуіне де қолданылып кетеді — олар бір
+     * ғана Texture объектісін бөліседі. Сол үшін панель өз данасын клондайды,
+     * дәл `lib/floorTexture.ts`-тегі `base.clone()` үлгісімен.
+     */
+    const base = grainTexture()
+    if (!base) return null
+    const tex = base.clone()
+    tex.center.set(0.5, 0.5)
+    tex.rotation = rotation
+    tex.needsUpdate = true
+    return tex
+  }, [decor, woodDecor, panel.finishedLength, panel.finishedWidth, panel.grainAlongLength, panel.orientation, shape, tilted, invalidate])
 
   const color = isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
   /*

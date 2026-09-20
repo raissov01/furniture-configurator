@@ -17,6 +17,7 @@
  */
 
 import { Cache, RepeatWrapping, SRGBColorSpace, TextureLoader, type Texture } from 'three'
+import type { Axis, Orientation } from '@/src/core/types'
 
 // Бір URL — бір желі сұранысы. Cache болмаса, бір декорды қолданатын әр
 // панель суретті ЖЕКЕ жүктеп алар еді (500 декордың кез келгені бірнеше рет
@@ -46,4 +47,68 @@ export function decorTexture(
   tex.colorSpace = SRGBColorSpace
   tex.repeat.set(spanXMm / mapSizeMm.x, spanYMm / mapSizeMm.y)
   return tex
+}
+
+/**
+ * `grainAlongLength` 3D-де — CLAUDE.md §3, docs/visual/texture.md §1.5.
+ *
+ * Раскройда (`nesting.ts`) `hasGrain` панельді 90°-қа бұруға тыйым салады,
+ * ал 3D-де ешбір жер `Panel.grainAlongLength`-ті оқымайтын: текстура
+ * әрдайым бір бағытта салынатын (тексерілді, толық grep). Бұл жай эстетика
+ * емес — раскрой мен 3D екі БАСҚА көрініс беруі мүмкін, ал клиент 3D-ге
+ * қарап ақша төлейді.
+ *
+ * Төмендегі екі функция ТАЗА (three.js-тен тыс, тек сан/жол қайтарады) —
+ * рендерді тестпен ұстау қиын, сол үшін «қай бұрышқа бұру керек» есебі
+ * бөлек шығарылған. Шақырушы (`PanelMesh.tsx`) нәтижені `Texture.rotation`-ге
+ * тікелей береді.
+ */
+
+/** Панельдің локал ұзындық/ен өсі — текстура қай өске «желісі бойымен» жату керек соны айту үшін. */
+export type GrainUVAxis = 'length' | 'width'
+
+/**
+ * BoxGeometry-дің (тегіс, бұрылмаған қорап-панель) қалыңдық осіне
+ * ПЕРПЕНДИКУЛЯР бетінде (яғни клиент көретін «inner»/«outer» бет) текстураның
+ * U-осі қай world-осіне сәйкес келетінін қайтарады.
+ *
+ * Себебі: three.js `BoxGeometry` дереккөзінде әр беттің UV құрылысы
+ * (`buildPlane` шақырулары) қатаң бекітілген, панельдің world-бағдарына
+ * тәуелсіз:
+ *
+ *   thickness='x' бет (px/nx) → buildPlane('z','y','x', …) → U = world z
+ *   thickness='y' бет (py/ny) → buildPlane('x','z','y', …) → U = world x
+ *   thickness='z' бет (pz/nz) → buildPlane('x','y','z', …) → U = world x
+ *
+ * `PanelMesh.tsx`-тегі жай (бұрылмаған, орта таяқ) панель `boxGeometry`
+ * өлшемдерін ТІКЕЛЕЙ world AABB-тан алады (`panelExtents`), яғни әр
+ * `orientation` (side/horizontal/facing/upright) панельдің ұзындық/ен
+ * өрісін БАСҚА world осіне қояды. Сондықтан U-осінің панельдің ЛОКАЛ
+ * ұзындығына сәйкес пе, еніне сәйкес пе — соны есептеу керек, ол
+ * `orientation`-ға тәуелді.
+ */
+export function boxGrainUAxis(orientation: Orientation): GrainUVAxis {
+  const uWorldAxis: Axis = orientation.thickness === 'x' ? 'z' : 'x'
+  return orientation.length === uWorldAxis ? 'length' : 'width'
+}
+
+/**
+ * Текстураны (canvas grain не decorTexture) 90°-қа бұру керек пе.
+ *
+ * `currentUAxis` — геометрия ҚАЗІР текстураның U-осіне қай локал өсті
+ * (length/width) салып тұрғаны:
+ *   - жай box панельде — `boxGrainUAxis(panel.orientation)`
+ *   - extrude/shape панельде (қиғаш, дөңгелектелген бұрыш, ойма) — әрқашан
+ *     `'length'`, себебі пішін тікелей локал x=finishedLength,
+ *     y=finishedWidth етіп салынады (`PanelMesh.tsx`-тегі `shape`
+ *     құрылысы), ал three.js `ExtrudeGeometry`-нің әдепкі UV генераторы
+ *     сол координатаны тікелей қолданады.
+ *
+ * Нәтиже — радиан (0 не Math.PI/2), `Texture.rotation`-ге тікелей беруге
+ * болады (`Texture.center` (0.5, 0.5) қойылған болу керек, әйтпесе бұрылу
+ * бұрыштан емес, ортадан ауытқып кетеді).
+ */
+export function grainRotation(currentUAxis: GrainUVAxis, grainAlongLength: boolean): number {
+  const wantAxis: GrainUVAxis = grainAlongLength ? 'length' : 'width'
+  return currentUAxis === wantAxis ? 0 : Math.PI / 2
 }
