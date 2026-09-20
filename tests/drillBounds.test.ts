@@ -61,6 +61,24 @@ describe('присадка координатасы — әр панельдің 
     for (const panel of panels) expectDrillingWithinPanel(panel)
   })
 
+  /**
+   * 2026-09-20 (drill-a4): цоколь ҚОРАП + МИНИФИКС буыны — жоғарыдағы
+   * конфирмат сценарийінің минификс нұсқасы. Әдейі қосылған: дәл осы
+   * сценарийде `generateCabinet.ts`-тегі `minifixJoint(face, side, ctx)`
+   * рөлдері ауысқан шақыруы `plinth-left/right`-тың тесіктерін панельден
+   * тыс шығаратын (`tests/minifixEdgeFace.test.ts`-те `it.fails` ретінде
+   * құжатталған болатын). Бұл тест жалпы тексерудің бөлігі болмағандықтан
+   * ақау бұрын осы файлда ұсталмайтын — енді ұсталады, ақау қайта оралса.
+   */
+  it('цоколь ҚОРАП, МИНИФИКС буыны — plinth-left/right де шегінде (drill-a4)', () => {
+    const panels = generateCabinet(withCabinet({
+      width: 900, height: 1540, depth: 700,
+      base: { kind: 'plinth', height: 95, plinthShape: 'box', plinthJoint: 'minifix' },
+    }), catalog)
+    expect(panels.some((p) => p.id === 'plinth-left')).toBe(true)
+    for (const panel of panels) expectDrillingWithinPanel(panel)
+  })
+
   it('цокольсіз эталон шкаф — жалпы тексеру барлық рөлге қолданылады', () => {
     for (const panel of generateCabinet(referenceWardrobe, catalog)) expectDrillingWithinPanel(panel)
   })

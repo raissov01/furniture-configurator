@@ -1260,7 +1260,29 @@ export function generateCabinet(
     const boxFaces = panels.filter((p) => p.id === 'plinth' || p.id === 'plinth-back')
     for (const face of boxFaces) {
       for (const side of boxSides) {
-        if (plinthBox === 'minifix') minifixJoint(face, side, ctx)
+        // ⚠ 2026-09-20 түзетілді (docs/audit/drilling-2026-09-20.md §R2,
+        // drill-a4 тапсырмасы): `confirmatJoint` мен `minifixJoint`
+        // аргумент реттерінің РӨЛ МАҒЫНАСЫ КЕРІСІНШЕ.
+        //
+        // `confirmatJoint(facePanel, edgePanel)`: 1-ші аргумент — бетінен
+        // бұранда өтетін панель (face рөлі), 2-ші — торціне пилот кіретін
+        // панель (edge рөлі). Жоғарыдағы түсініктемедегідей, бұранда
+        // алды/арты тақтасының БЕТІНЕН өтіп, бүйірдің ТОРЦІНЕ барады —
+        // сондықтан `confirmatJoint(face, side, ctx)` дәл (face=face
+        // рөлінде, side=edge рөлінде, айнымалы атаулар рөлмен сәйкес).
+        //
+        // `minifixJoint(wall, side)` — керісінше: `wall` параметрі ӘРҚАШАН
+        // edge рөлінде (штифт торцке кіреді), `side` параметрі ӘРҚАШАН face
+        // рөлінде (штифт бетінен өтеді) — бұл `drilling.ts`-тегі функция
+        // қолтаңбасының өз шарты, циклдегі айнымалы атауларға қатысы жоқ.
+        // Цоколь қорабында да рөл өзгермейді: алды/арты тақтасы — face,
+        // бүйір — edge (бүйір екі тақтайдың АРАСЫНА кіреді, сондықтан оның
+        // торці алды/арты тақтасының бетіне тіреледі, §985-995 қара). Демек
+        // `wall` аргументіне БҮЙІРДІ (`side` цикл айнымалысы), `side`
+        // аргументіне АЛДЫ/АРТЫ тақтасын (`face` цикл айнымалысы) беру
+        // керек — яғни рет `confirmatJoint`-ке қарағанда КЕРІ:
+        // `minifixJoint(side, face, ctx)`.
+        if (plinthBox === 'minifix') minifixJoint(side, face, ctx)
         else confirmatJoint(face, side, ctx)
       }
     }

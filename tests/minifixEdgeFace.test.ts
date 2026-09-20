@@ -140,28 +140,23 @@ describe('минификс тесіктері панель шегінде (§R2 
   })
 
   /**
-   * ⚠ БҰЛ ТЕСТ ӘДЕЙІ ҚҰЛАЙДЫ (`it.fails`) — деп белгіленген белгілі ақау.
+   * 2026-09-20 түзетілді (drill-a4): бұрын бұл тест `it.fails` болатын —
+   * белгілі ақаудың құжатталуы.
    *
    * Цоколь қорабында (`plinthJoint: 'minifix'`) `plinth-left/right`
    * панельдің ТОРЦІ (өз ұзындығының ұшы емес, `boxDepth` осіндегі ұшы)
    * `plinth`/`plinth-back`-тың БЕТІНЕ тіреледі — яғни бұл жерде рөлдер
    * КЕРІСІНШЕ: `side` (бүйір) — «edge» рөлінде (торц тесігі КЕРЕК), ал
-   * `wall` (плинт тақтасы) — «face» рөлінде. `generateCabinet.ts:1255`
-   * бұрынғыдай `minifixJoint(face, side, ctx)` деп шақырады — аргумент
-   * реті `minifixJoint`-тің ЖОРАМАЛЫНА (wall=edge, side=face) СӘЙКЕС ЕМЕС.
+   * `wall` (плинт тақтасы) — «face» рөлінде. `generateCabinet.ts` бұрын
+   * `minifixJoint(face, side, ctx)` деп шақыратын — аргумент реті
+   * `minifixJoint`-тің ЖОРАМАЛЫНА (wall=edge, side=face) СӘЙКЕС ЕМЕС еді.
    *
-   * Дәлел (қолмен тексерілді, `minifixJoint(plinthLeft, plinthBoard, ctx)`
-   * деп РӨЛДІ АУЫСТЫРЫП шақырғанда — барлық тесік шегінде шығады, демек
-   * `drilling.ts`-тегі координата логикасы ӨЗІ дұрыс, тек осы шақыру
-   * жердегі аргумент реті бұрыс).
-   *
-   * Бұл — дәл `docs/audit/drilling-2026-09-20.md`-тегі, тапсырмада АНЫҚ
-   * «БҰЛ ТАПСЫРМАДА ТҮЗЕТПЕ» деп белгіленген рөл ауысуы
-   * (`generateCabinet.ts:1255`), оны басқа агент өзгертіп жатыр. Сол
-   * түзетілгенде бұл тест те ЖАСЫЛ болады — сонда `it.fails`-ті `it`-ке
-   * ауыстыру керек.
+   * Түзету: `generateCabinet.ts` енді `minifixJoint(side, face, ctx)` деп
+   * шақырады (§1246 маңындағы түсініктемені қара) — `drilling.ts`-тегі
+   * координата логикасының өзі дұрыс болатын, тек шақыру жердегі аргумент
+   * реті бұрыс еді. Енді тест ЖАСЫЛ өтеді.
    */
-  it.fails('ЦОКОЛЬ қорабы, минификс: plinth-left/right де шегінде (generateCabinet.ts:1255 түзетілгенше құлайды)', () => {
+  it('ЦОКОЛЬ қорабы, минификс: plinth-left/right де шегінде (generateCabinet.ts:1255 түзетілді)', () => {
     const plinthPanels = generateCabinet(withCabinet({
       width: 900, height: 1540, depth: 700,
       base: { kind: 'plinth', height: 95, plinthShape: 'box', plinthJoint: 'minifix' },
