@@ -23,9 +23,16 @@ export const EdgePolicySchema = z.object({
   hidden: z.string().nullable(),
 })
 
+export const DecorFinishSchema = z.enum(['matte', 'satin', 'gloss', 'stone', 'metal'])
+
 export const DecorSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   kind: z.enum(['solid', 'wood']),
+  // ЕРІКТІ: ескі жобада жоқ, сондықтан бұл өріс қосылса да schemaVersion
+  // көтерілмейді (types.ts-тегі Decor.finish түсінігі).
+  finish: DecorFinishSchema.optional(),
+  mapUrl: z.string().url().optional(),
+  mapSizeMm: z.object({ x: mm, y: mm }).optional(),
 })
 
 export const MaterialSchema = z.object({

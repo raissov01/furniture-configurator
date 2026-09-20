@@ -15865,21 +15865,6 @@
   }
  },
  {
-  "id": "basis-hdf-HDF-04",
-  "name": "ХДФ 04мм",
-  "thickness": 4,
-  "sheetWidth": 1000,
-  "sheetHeight": 1000,
-  "hasGrain": false,
-  "pricePerSheet": 0,
-  "trimEdge": 10,
-  "defaultEdging": {
-   "visibleFront": null,
-   "visibleSecondary": null,
-   "hidden": null
-  }
- },
- {
   "id": "basis-hdf-HDF-04-S-SOD",
   "name": "ХДФ 04мм, Дуб Сакраменто тёмный",
   "thickness": 4,
@@ -18360,21 +18345,6 @@
   "thickness": 3,
   "sheetWidth": 2800,
   "sheetHeight": 2070,
-  "hasGrain": false,
-  "pricePerSheet": 0,
-  "trimEdge": 10,
-  "defaultEdging": {
-   "visibleFront": null,
-   "visibleSecondary": null,
-   "hidden": null
-  }
- },
- {
-  "id": "basis-hdf-HDF-03",
-  "name": "ХДФ 03мм",
-  "thickness": 3,
-  "sheetWidth": 1000,
-  "sheetHeight": 1000,
   "hasGrain": false,
   "pricePerSheet": 0,
   "trimEdge": 10,

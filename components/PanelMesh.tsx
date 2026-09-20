@@ -8,7 +8,10 @@
 import { useEffect, useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Edges, Html } from '@react-three/drei'
+import { useThree } from '@react-three/fiber'
 import { grainTexture } from '@/lib/grainTexture'
+import { decorTexture } from '@/lib/decorTexture'
+import { finishToMaterial } from '@/lib/materialLook'
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import type { Axis, Catalog, Panel, PanelHandle, SettingsOverride } from '@/src/core/index'
@@ -334,16 +337,35 @@ export function PanelMesh({
   // Жиек сызығы «үнемді» сапада өшеді: әлсіз ноутбукке ол мыңдаған сызық.
   const quality = useConfigurator((s) => s.quality)
   const key = pid ?? panel.id
+  const decor = useMemo(
+    () => catalog.materials.find((m) => m.id === panel.materialId)?.decor,
+    [catalog, panel.materialId],
+  )
   /*
    * Тақта түйіршігі ТЕК АҒАШ декорға. Бұрын ол бәріне жабыстырылатын да,
    * ақ ЛДСП ашық ағаш болып көрінетін (qdesign-мен салыстыруда байқалды):
    * клиентке «ақ» деп сатылған корпус экранда жолақты болып тұратын.
    */
-  const woodDecor = useMemo(
-    () => catalog.materials.find((m) => m.id === panel.materialId)?.decor?.kind === 'wood',
-    [catalog, panel.materialId],
+  const woodDecor = decor?.kind === 'wood'
+  // Әлсіз құрылғыда (quality==='low') `finish` әрдайым 'matte'-ке құлайды:
+  // `meshPhysicalMaterial`/`clearcoat` тек GPU-ы жеткілікті құрылғыда қосылады.
+  const look = useMemo(
+    () => finishToMaterial(quality === 'low' ? undefined : decor?.finish),
+    [decor?.finish, quality],
   )
-  const grain = woodDecor ? grainTexture() : null
+  // Тек екеуі ғана лак қабатын алады (§docs/visual/material.md §3) —
+  // қалғаны арзанырақ `meshStandardMaterial`-де қалады.
+  const usesPhysical = quality !== 'low' && (decor?.finish === 'gloss' || decor?.finish === 'stone')
+  const invalidate = useThree((s) => s.invalidate)
+  const texture = useMemo(() => {
+    // `mapUrl` берілсе — НАҒЫЗ сурет, физикалық мм-мен масштабталған
+    // (`lib/floorTexture.ts`-тегі SPAN_MM тәсілі). Жүктеу асинхронды —
+    // `demand` кадр режимінде сурет келгенде кадрды өзіміз сұраймыз.
+    if (decor?.mapUrl && decor.mapSizeMm) {
+      return decorTexture(decor.mapUrl, panel.finishedLength, panel.finishedWidth, decor.mapSizeMm, () => invalidate())
+    }
+    return woodDecor ? grainTexture() : null
+  }, [decor, woodDecor, panel.finishedLength, panel.finishedWidth, invalidate])
 
 
   const extents = useMemo(() => panelExtents(panel, thickness), [panel, thickness])
@@ -513,10 +535,22 @@ export function PanelMesh({
           ) : (
             <boxGeometry args={[panel.finishedLength, panel.finishedWidth, thickness]} />
           )}
-          <meshStandardMaterial
-            color={color} map={grain} roughness={0.7} metalness={0}
-            transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
-          />
+          {usesPhysical ? (
+            <meshPhysicalMaterial
+              color={color} map={texture}
+              roughness={look.roughness} metalness={look.metalness}
+              clearcoat={look.clearcoat} clearcoatRoughness={look.clearcoatRoughness}
+              envMapIntensity={look.envMapIntensity}
+              transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
+            />
+          ) : (
+            <meshStandardMaterial
+              color={color} map={texture}
+              roughness={look.roughness} metalness={look.metalness}
+              envMapIntensity={look.envMapIntensity}
+              transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
+            />
+          )}
           {outline}
         </mesh>
       </group>
@@ -557,12 +591,27 @@ export function PanelMesh({
           opacity={0.28 * (opacity === 1 ? 1 : opacity)}
           depthWrite={false}
         />
+      ) : usesPhysical ? (
+        <meshPhysicalMaterial
+          color={color}
+          map={texture}
+          roughness={look.roughness}
+          metalness={look.metalness}
+          clearcoat={look.clearcoat}
+          clearcoatRoughness={look.clearcoatRoughness}
+          envMapIntensity={look.envMapIntensity}
+          transparent={opacity < 1}
+          opacity={opacity}
+          // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.
+          depthWrite={opacity === 1}
+        />
       ) : (
         <meshStandardMaterial
           color={color}
-          map={grain}
-          roughness={0.7}
-          metalness={0}
+          map={texture}
+          roughness={look.roughness}
+          metalness={look.metalness}
+          envMapIntensity={look.envMapIntensity}
           transparent={opacity < 1}
           opacity={opacity}
           // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.

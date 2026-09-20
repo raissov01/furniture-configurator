@@ -4,7 +4,7 @@ import { t as tr, tf } from '@/lib/i18n'
 import Link from 'next/link'
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Button, Collapsible, Dense, Field, Menu, MenuItem, NumberInput, Slider } from '@/components/ui'
+import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { Configurator } from '@/components/Configurator'
 import { TemplateGallery } from '@/components/TemplateGallery'
@@ -31,9 +31,8 @@ import { RenderPanel } from '@/components/RenderPanel'
 import { cloudEnabled } from '@/lib/cloud'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
-  formatTenge, nestPanels, nestingOptionsOf, priceProject, roomWalls, wallById,
+  formatTenge, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
-import type { WallId } from '@/src/core/index'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { ModuleList } from '@/components/ModuleList'
@@ -97,7 +96,6 @@ export function Workspace() {
   const mirrorCabinet = useConfigurator((s) => s.mirrorCabinet)
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
   const addCabinet = useConfigurator((s) => s.addCabinet)
-  const movePlacement = useConfigurator((s) => s.movePlacement)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
@@ -227,7 +225,6 @@ export function Workspace() {
       return null
     }
   }, [deferredPanels, catalog, shop, projectHardware, moduleWidths])
-  const activePlacement = placements.find((p) => p.cabinetId === activeId)
   const [shared, setShared] = useState<string | null>(null)
 
   /*
@@ -632,59 +629,12 @@ export function Workspace() {
           <div className="min-h-0 flex-1 overflow-auto p-3">
             <Dense>
               {/*
-                МОДУЛЬДІҢ ОРНЫ (qdesign «Модуль орны, мм»: X/Y/Z, Бұрылыс). Бұрын
-                тек «Стены» терезесінде еді — модульді жылжыту үшін бөлек терезе
-                ашу керек болатын. Өрістер RoomPlan-дағымен бірдей (бір store әрекеті).
+                МОДУЛЬДІҢ ОРНЫ (qdesign «Модуль орны, мм»: X/Y/Z, Бұрылыс) енді
+                Configurator-дың ІШІНДЕ, «Общее» қосымшасында — PRO100-дың
+                «бәрі бір терезеде» идеясы бойынша (docs/pro100/ui-design.md).
+                Бұрын осында бөлек Collapsible еді.
               */}
-              {activePlacement ? (
-                <div className="mb-3">
-                  <Collapsible id="placement" title={tr('Положение в комнате')} defaultOpen>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Field label={tr('Стена')}>
-                        <select
-                          className="w-full rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
-                          value={activePlacement.wall}
-                          onChange={(e) => movePlacement(activeId, { wall: e.target.value as WallId })}
-                        >
-                          {roomWalls(room).map((w) => (
-                            <option key={w.id} value={w.id}>{w.label}</option>
-                          ))}
-                        </select>
-                      </Field>
-                      <Field
-                        label={tr('Смещение')}
-                        hint={`0..${Math.max(0, wallById(room, activePlacement.wall).length - cabinet.width)}`}
-                      >
-                        <NumberInput
-                          value={activePlacement.offset}
-                          min={0}
-                          step={10}
-                          onChange={(offset) => movePlacement(activeId, { offset })}
-                        />
-                      </Field>
-                      <Field label={tr('От пола')} hint="мм">
-                        <NumberInput
-                          value={activePlacement.elevation ?? 0}
-                          min={0}
-                          max={4000}
-                          step={10}
-                          onChange={(elevation) => movePlacement(activeId, { elevation })}
-                        />
-                      </Field>
-                      <Field label={tr('Поворот')} hint="°">
-                        <NumberInput
-                          value={activePlacement.rotate ?? 0}
-                          min={-180}
-                          max={180}
-                          step={5}
-                          onChange={(rotate) => movePlacement(activeId, { rotate })}
-                        />
-                      </Field>
-                    </div>
-                  </Collapsible>
-                </div>
-              ) : null}
-              <Configurator invalidField={error?.field ?? null} />
+              <Configurator invalidField={error?.field ?? null} panels={panels} />
             </Dense>
           </div>
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}

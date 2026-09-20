@@ -226,11 +226,22 @@ export function shelfPinHoles(
   const nearestIndex = Math.round((shelf.position.y - datum) / SHELF_PIN_PITCH)
   const half = Math.floor(SHELF_PIN_GROUP / 2)
 
-  const shelfDepth = shelf.finishedWidth
-  const shelfFrontWorldZ = shelf.position.z
+  /*
+   * Баған СӨРЕНІҢ емес, тесік бұрғыланатын ТІК ПАНЕЛЬДІҢ өз жиегінен
+   * алынады (docs/audit/corner-2026-09-20.md §C2 / drilling-fix-plan.md K4).
+   * Бұрыштық шкафта сөре трапеция болғандықтан оның `finishedWidth`-і сол
+   * жақтың толық тереңдігімен (мыс. 600) тең, ал `side-right` тек өз
+   * тереңдігінде (мыс. 350) тұрады — сөреден алса, алдыңғы баған оң
+   * бүйірде теріс координатаға шығады. Түзу шкафта екі есеп те бірдей
+   * нәтиже береді, себебі сонда тік панель мен сөре тереңдігі тең.
+   */
+  const verticalT = ctx.thickness(verticalPanel)
+  const [panelFrontWorldZ, panelBackWorldZ] = worldRange(
+    verticalPanel, verticalPanel.orientation.width, verticalT,
+  )
   const columns = [
-    shelfFrontWorldZ + SHELF_PIN_FRONT_OFFSET,
-    shelfFrontWorldZ + shelfDepth - SHELF_PIN_BACK_OFFSET,
+    panelFrontWorldZ + SHELF_PIN_FRONT_OFFSET,
+    panelBackWorldZ - SHELF_PIN_BACK_OFFSET,
   ]
 
   for (let k = -half; k <= half; k += 1) {

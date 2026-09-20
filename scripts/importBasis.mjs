@@ -109,6 +109,9 @@ function slug(s) {
  * Парақ өлшемі: `Длина`/`Ширина` нөл болмаса — солар нақты өлшем (тексерілді,
  * docs/basis/import.md §2: Lamarty/Увадрев/Egger-де толтырылған). Нөл болса —
  * «Шаг по Х/Y» (текстура қадамы) fallback ретінде, үлкені sheetWidth-ке.
+ *
+ * ТҮЗЕТУ 2026-09-20: fallback-та де екеуі де жарамсыз болса (шегерімде 1000×1000),
+ * жазбаны ТАСТАУ. Бұл МДФ-ті тастау шешімімен бірдей логика (§«Не алынбады»).
  */
 function sheetDims(row) {
   const length = Number(row.length) || 0
@@ -118,7 +121,17 @@ function sheetDims(row) {
   }
   const stepX = Number(row.stepX) || 0
   const stepY = Number(row.stepY) || 0
-  return { sheetWidth: Math.max(stepX, stepY), sheetHeight: Math.min(stepX, stepY) }
+  if (stepX > 0 && stepY > 0) {
+    const sheetWidth = Math.max(stepX, stepY)
+    const sheetHeight = Math.min(stepX, stepY)
+    // Fallback-та кіші өлшемі < 1500 болса (мыс., 1000×1000), жазбаны
+    // өткез. Нарықтағы ең кіші парақ 2440×1220-дан басталады.
+    if (sheetWidth < 1500 || sheetHeight < 1500) {
+      return { sheetWidth: 0, sheetHeight: 0 }
+    }
+    return { sheetWidth, sheetHeight }
+  }
+  return { sheetWidth: 0, sheetHeight: 0 }
 }
 
 /** Материал парағының жарамсыз жиегі — базада жоқ, цех константасы (seed.ts-пен бірдей). */

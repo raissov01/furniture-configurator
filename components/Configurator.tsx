@@ -3,20 +3,35 @@
 /**
  * Сол жақ панель: параметрлер. Мұнда геометрия ЕСЕПТЕЛМЕЙДІ — тек конфиг
  * өзгереді, қалғанын ядро жасайды (CLAUDE.md §3).
+ *
+ * PRO100-дың Properties идеясы (docs/pro100/ui-design.md): тоғызға жуық
+ * жылжымалы «▶» бөлімнің арасынан керегін іздеудің орнына БЕС ҚОСЫМШАҒА
+ * топтаймыз — Общее · Размеры · Материал · Расчёт · Производство. Бөлімдердің
+ * ІШІ өзгермейді (бар компоненттер сол күйі), тек орналасуы топталады.
+ *
+ * Соңғы екеуі («Расчёт», «Производство») — біздің қосымша мүмкіндігіміз
+ * (PRO100-да присадка мен ЧПУ экспорты мүлде жоқ, ол жұмысты Базиске
+ * тапсырады). Олардың нақты редакторлары (смета, присадка, экспорт) бөлек
+ * терезелер болып қала береді — мұнда тек СІЛТЕЙТІН қысқаша үзінді, ешнәрсе
+ * қайта жазылмайды.
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { t as tr } from '@/lib/i18n'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
+import { ExportMenu } from '@/components/ExportMenu'
+import { cn } from '@/lib/cn'
 import {
   APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
-  defaultHandleSpec, defaultMillingSpec, findTemplate, handlePositionName, millingPattern,
+  defaultHandleSpec, defaultMillingSpec, findTemplate, formatCutList, handlePositionName, millingPattern,
+  roomWalls, wallById,
 } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import type {
-  ApplianceKind, CabinetConfig, CabinetFixture, FillingKind, HandleSpec, Material, MillingSpec,
-  RailKind, RailPosition, Section, SectionContent, SectionFronts,
+  ApplianceKind, CabinetConfig, CabinetFixture, Catalog, FillingKind, HandleSpec, Material, MillingSpec,
+  Panel, RailKind, RailPosition, Section, SectionContent, SectionFronts, WallId,
 } from '@/src/core/index'
 
 const materialOptions = (list: Material[]) => list.map((m) => ({ value: m.id, label: m.name }))
@@ -707,7 +722,15 @@ function FixtureFields() {
 const AXIS_MIN = { height: 'minHeight', width: 'minWidth', depth: 'minDepth' } as const
 const AXIS_MAX = { height: 'maxHeight', width: 'maxWidth', depth: 'maxDepth' } as const
 
-export function Configurator({ invalidField }: { invalidField: string | null }) {
+/**
+ * PRO100-дың төрт қосымшасы + бесінші («Производство» — біздің артықшылығымыз,
+ * PRO100-да жоқ). Атаулар docs/pro100/ui-design.md-дегі кестемен бірдей.
+ */
+type Tab = 'general' | 'dimensions' | 'material' | 'calc' | 'production'
+
+const tabButtonCls = 'flex-1 min-w-[5.5rem]'
+
+export function Configurator({ invalidField, panels }: { invalidField: string | null; panels: Panel[] }) {
   const cabinet: CabinetConfig = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
   const addSection = useConfigurator((s) => s.addSection)
@@ -720,6 +743,44 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
   const carcassMaterials = materials.filter(isCarcass)
   const backMaterials = materials.filter((m) => !isCarcass(m))
   const template = findTemplate(useConfigurator((s) => s.templateId))
+  const catalog: Catalog = useConfigurator((s) => s.catalog)
+
+  // «Общее» қосымшасындағы модульдің бөлмедегі орны. Бұрын Workspace.tsx-те
+  // Configurator-дан ТЫС тұратын, енді — PRO100-дың «бәрі бір терезеде»
+  // идеясы бойынша осында (ProjectPanel.tsx-тегі «Реквизиты» қосымшасы
+  // сияқты, дерек көзі — сол бір global store).
+  const room = useConfigurator((s) => s.room)
+  const placements = useConfigurator((s) => s.placements)
+  const activeId = useConfigurator((s) => s.activeId)
+  const movePlacement = useConfigurator((s) => s.movePlacement)
+  const activePlacement = placements.find((p) => p.cabinetId === activeId)
+
+  // «Производство» қосымшасының батырмалары — присадка мен смета өз
+  // терезелерінде қалады (қайта жазылмайды), мұнда тек ашатын жол.
+  const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
+  const setDrillOpen = useConfigurator((s) => s.setDrillOpen)
+
+  /*
+   * Тарихи әдепкі қосымша — «Размеры»: оқыту көмекшісінің (Tour.tsx) бірінші
+   * екі қадамы («Начните с габарита», «Наполнение — в разделах слева»)
+   * `[data-tour="size"]` мен `[data-tour="sections"]`-қа сілтейді, ал екеуі
+   * де осы қосымшада. «Общее»-ден бастасақ, көмекші жасырын қосымшадағы
+   * нөлдік өлшемді элементті бөлектеп тұрар еді (getBoundingClientRect 0).
+   */
+  const [tab, setTab] = useState<Tab>('dimensions')
+
+  // «Расчёт» қосымшасының қысқаша деталировкасы: толық кесте — астыңғы
+  // CutListTable-де, толық баға — «Смета и раскрой» терезесінде; мұнда тек
+  // көз алдында тұратын үзінді. Ядро функциясы қайта жазылмайды, солай
+  // шақырылады (`formatCutList`) — материал өтпелі күйде табылмаса, бос тізім.
+  const cutRows = useMemo(() => {
+    try {
+      return formatCutList(panels, catalog)
+    } catch {
+      return []
+    }
+  }, [panels, catalog])
+  const CUT_SNIPPET_LIMIT = 6
 
   const invalid = (field: string) => invalidField === field
   /**
@@ -741,695 +802,838 @@ export function Configurator({ invalidField }: { invalidField: string | null }) 
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <SectionTitle>{tr('Шаблон')}</SectionTitle>
-        <Button onClick={() => setGalleryOpen(true)}>{tr('Выбрать')}</Button>
+      {/*
+        PRO100-дың Properties терезесі: бір панель, бес қосымша. Ауысу тек
+        КЛАСС арқылы (Collapsible-дегі гочамен бірдей себеп): жасырын
+        қосымшаның мазмұны DOM-да қалуы керек, әйтпесе беттен іздеу мен e2e
+        оны таппайды (docs/pro100/ui-design.md).
+      */}
+      <div className="flex flex-wrap gap-1 border-b border-neutral-200 pb-2 dark:border-neutral-800" data-tour="tabs">
+        <Button active={tab === 'general'} onClick={() => setTab('general')}><span className={tabButtonCls}>{tr('Общее')}</span></Button>
+        <Button active={tab === 'dimensions'} onClick={() => setTab('dimensions')}><span className={tabButtonCls}>{tr('Размеры')}</span></Button>
+        <Button active={tab === 'material'} onClick={() => setTab('material')}><span className={tabButtonCls}>{tr('Материал')}</span></Button>
+        <Button active={tab === 'calc'} onClick={() => setTab('calc')}><span className={tabButtonCls}>{tr('Расчёт')}</span></Button>
+        <Button active={tab === 'production'} onClick={() => setTab('production')}><span className={tabButtonCls}>{tr('Производство')}</span></Button>
       </div>
-      <div className="rounded-lg border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-800">
-        <div className="font-medium">{template ? template.name: tr('Свой корпус')}</div>
-        {template ? (
-          <div className="mt-0.5 text-[11px] leading-snug text-neutral-400">{template.description}</div>
+
+      {/* ═══ ОБЩЕЕ: аты, шаблон, орны бөлмеде, есік/фасад түрі ═══ */}
+      <div className={cn('flex-col gap-3', tab === 'general' ? 'flex' : 'hidden')}>
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle>{tr('Шаблон')}</SectionTitle>
+          <Button onClick={() => setGalleryOpen(true)}>{tr('Выбрать')}</Button>
+        </div>
+        <div className="rounded-lg border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-800">
+          <div className="font-medium">{template ? template.name: tr('Свой корпус')}</div>
+          {template ? (
+            <div className="mt-0.5 text-[11px] leading-snug text-neutral-400">{template.description}</div>
+          ) : null}
+        </div>
+
+        {activePlacement ? (
+          <Collapsible id="placement" title={tr('Положение в комнате')} defaultOpen>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label={tr('Стена')}>
+                <select
+                  className="w-full rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                  value={activePlacement.wall}
+                  onChange={(e) => movePlacement(activeId, { wall: e.target.value as WallId })}
+                >
+                  {roomWalls(room).map((w) => (
+                    <option key={w.id} value={w.id}>{w.label}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                label={tr('Смещение')}
+                hint={`0..${Math.max(0, wallById(room, activePlacement.wall).length - cabinet.width)}`}
+              >
+                <NumberInput
+                  value={activePlacement.offset}
+                  min={0}
+                  step={10}
+                  onChange={(offset) => movePlacement(activeId, { offset })}
+                />
+              </Field>
+              <Field label={tr('От пола')} hint="мм">
+                <NumberInput
+                  value={activePlacement.elevation ?? 0}
+                  min={0}
+                  max={4000}
+                  step={10}
+                  onChange={(elevation) => movePlacement(activeId, { elevation })}
+                />
+              </Field>
+              <Field label={tr('Поворот')} hint="°">
+                <NumberInput
+                  value={activePlacement.rotate ?? 0}
+                  min={-180}
+                  max={180}
+                  step={5}
+                  onChange={(rotate) => movePlacement(activeId, { rotate })}
+                />
+              </Field>
+            </div>
+          </Collapsible>
         ) : null}
-      </div>
 
-      <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
-      <div className="grid grid-cols-3 gap-2" data-tour="size">
-        <Field label={tr('Высота (H)')} hint={hint('height')}>
-          <NumberInput
-            value={cabinet.height} min={100} max={4000} step={10} invalid={invalid('cabinet.height')}
-            onChange={(height) => edit('height', { height })}
-          />
-        </Field>
-        <Field label={tr('Ширина (W)')} hint={hint('width')}>
-          <NumberInput
-            value={cabinet.width} min={100} max={4000} step={10} invalid={invalid('cabinet.width')}
-            onChange={(width) => edit('width', { width })}
-          />
-        </Field>
-        <Field label={tr('Глубина (D)')} hint={hint('depth')}>
-          <NumberInput
-            value={cabinet.depth} min={100} max={4000} step={10} invalid={invalid('cabinet.depth')}
-            onChange={(depth) => edit('depth', { depth })}
-          />
-        </Field>
-      </div>
-
-      <Collapsible id="construction" title={tr('Конструкция')} defaultOpen tour="sections">
-      <Field label={tr('Метод сборки')} hint={tr('обе панели сразу')}>
-        <Select
-          value={cabinet.construction}
-          onChange={(construction) =>
-            // Жалпы әдіс екеуін де қатар ауыстырады: бұл — жиі керек болатын
-            // жылдам таңдау. Бөлек-бөлек баптау төменде тұр.
-            edit('construction', { construction, mounts: undefined })
-          }
-          options={[
-            { value: 'sidesOverlay', label: tr('Боковины накрывают крышку и дно') },
-            { value: 'topBottomOverlay', label: tr('Крышка и дно накрывают боковины') },
-          ]}
-        />
-      </Field>
-
-      {/* Элемент бойынша: қатарға тұратын модульдің крышкасы тек сыртқы
-          бүйірді жабады, ал ішкі жағы көршісіне тіреледі.
-
-          Крышканың тізімінде бекітілуден БӨЛЕК «Планка» мен «Нет» те тұр —
-          үшеуі де бір сұрақтың жауабы («үстінде не бар?»), сондықтан бір
-          тізімде. qdesign да дәл солай жасаған. */}
-      <div className="grid grid-cols-2 gap-2">
-        <Field label={tr('Крышка')}>
+        <Collapsible id="sliding" title={tr('Двери')} badge={cabinet.sliding ? `${cabinet.sliding.count}` : tr('нет')}>
+        <Field
+          label={tr('Двери-купе')}
+          hint={cabinet.sliding ? 'вместо распашных' : 'нет'}
+        >
           <Select
-            value={cabinet.openTop ? 'none' : cabinet.topRails ? 'rails'
-              : (cabinet.mounts?.top ?? (cabinet.construction === 'sidesOverlay' ? 'inset' : 'overlay'))}
-            onChange={(value) => edit('mounts.top', value === 'rails'
-              ? { openTop: undefined, topRails: cabinet.topRails ?? { width: 100, count: 2 } }
-              : value === 'none'
-                ? { openTop: true, topRails: undefined }
-                : {
-                  openTop: undefined,
-                  topRails: undefined,
-                  mounts: { ...cabinet.mounts, top: value },
-                })}
+            value={String(cabinet.sliding?.count ?? 0)}
+            onChange={(value) => {
+              const count = Number(value)
+              edit('sliding', count > 0
+                ? {
+                    sliding: { count },
+                    // Купе мен ілмелі фасад бір корпуста болмайды.
+                    sections: cabinet.sections.map((sec) => ({ ...sec, fronts: null })),
+                  }
+                : { sliding: undefined })
+            }}
             options={[
-              { value: 'inset' as const, label: tr('Вкладной') },
-              { value: 'overlay' as const, label: tr('Накладной') },
-              { value: 'overlayLeft' as const, label: tr('Накладной слева') },
-              { value: 'overlayRight' as const, label: tr('Накладной справа') },
-              { value: 'rails' as const, label: tr('Планка (царга)') },
-              { value: 'none' as const, label: tr('Нет') },
+              { value: '0', label: tr('Нет, распашные фасады') },
+              { value: '2', label: tr('2 двери') },
+              { value: '3', label: tr('3 двери') },
+              { value: '4', label: tr('4 двери') },
             ]}
           />
         </Field>
-        <Field label={tr('Дно')}>
-          <Select
-            value={cabinet.mounts?.bottom ?? (cabinet.construction === 'sidesOverlay' ? 'inset' : 'overlay')}
-            onChange={(mount) => edit('mounts.bottom', {
-              mounts: { ...cabinet.mounts, bottom: mount },
-            })}
-            options={[
-              { value: 'inset' as const, label: tr('Вкладной') },
-              { value: 'overlay' as const, label: tr('Накладной') },
-              { value: 'overlayLeft' as const, label: tr('Накладной слева') },
-              { value: 'overlayRight' as const, label: tr('Накладной справа') },
-            ]}
-          />
-        </Field>
+
+        </Collapsible>
       </div>
-      {/* Направляющаның жүйесі: саңылауы да, тесігі де, қораптың тереңдігі де
-          содан шығады. «Цехтың профилінен» — ескі мінез. */}
-      <Field label={tr('Направляющие')} hint={tr('размер короба зависит от них')}>
-        <Select
-          value={cabinet.drawerSystem ?? 'profile'}
-          onChange={(value) => edit('drawerSystem', {
-            drawerSystem: value === 'profile' ? undefined : value,
-          })}
-          options={[
-            { value: 'profile' as const, label: tr('Из профиля цеха') },
-            { value: 'roller' as const, label: tr('Роликовые (телескопические)') },
-            { value: 'ball' as const, label: tr('Шариковые полного выдвижения') },
-            { value: 'tandem' as const, label: tr('Blum TANDEM (скрытые)') },
-            // Металл жәшік: қорап сатып алынады, парақтан түбі мен арты ғана.
-            { value: 'legrabox' as const, label: tr('Blum LEGRABOX (металлический ящик)') },
-            { value: 'tandembox' as const, label: tr('Blum TANDEMBOX (металлический ящик)') },
-            { value: 'merivobox' as const, label: tr('Blum MERIVOBOX (металлический ящик)') },
-          ]}
-        />
-      </Field>
 
-      {/* Арт қабырғаның биіктігі биіктік класына байланысты, ал бізде әр
-          жүйеден бір ғана класс өлшенген — цех оны өз кестесінен қояды. */}
-      {cabinet.drawerSystem && METAL_BOX_IDS.includes(cabinet.drawerSystem) ? (
-        <Field label={tr('Задняя стенка ящика')} hint={tr('высота по таблице производителя, мм')}>
-          <NumberInput
-            value={cabinet.metalBoxBackHeight ?? 0}
-            min={0}
-            max={400}
-            onChange={(value) => edit('metalBoxBackHeight', {
-              metalBoxBackHeight: value > 0 ? value : undefined,
-            })}
-          />
-        </Field>
-      ) : null}
-
-      {cabinet.topRails ? (
-        <div className="grid grid-cols-3 gap-2">
-          <Field label={tr('Ширина планки')} hint={tr('мм')}>
+      {/* ═══ РАЗМЕРЫ: H×W×D, конструкция, скос, угловой, фронт. панель, основание ═══ */}
+      <div className={cn('flex-col gap-3', tab === 'dimensions' ? 'flex' : 'hidden')}>
+        <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
+        <div className="grid grid-cols-3 gap-2" data-tour="size">
+          <Field label={tr('Высота (H)')} hint={hint('height')}>
             <NumberInput
-              value={cabinet.topRails.width}
-              min={20} max={cabinet.depth} step={10}
-              invalid={invalid('cabinet.topRails.width')}
-              onChange={(width) => edit('topRails.width', {
-                topRails: { ...cabinet.topRails!, width },
-              })}
+              value={cabinet.height} min={100} max={4000} step={10} invalid={invalid('cabinet.height')}
+              onChange={(height) => edit('height', { height })}
             />
           </Field>
-          <Field label={tr('Количество')}>
+          <Field label={tr('Ширина (W)')} hint={hint('width')}>
+            <NumberInput
+              value={cabinet.width} min={100} max={4000} step={10} invalid={invalid('cabinet.width')}
+              onChange={(width) => edit('width', { width })}
+            />
+          </Field>
+          <Field label={tr('Глубина (D)')} hint={hint('depth')}>
+            <NumberInput
+              value={cabinet.depth} min={100} max={4000} step={10} invalid={invalid('cabinet.depth')}
+              onChange={(depth) => edit('depth', { depth })}
+            />
+          </Field>
+        </div>
+
+        <Collapsible id="construction" title={tr('Конструкция')} defaultOpen tour="sections">
+        <Field label={tr('Метод сборки')} hint={tr('обе панели сразу')}>
+          <Select
+            value={cabinet.construction}
+            onChange={(construction) =>
+              // Жалпы әдіс екеуін де қатар ауыстырады: бұл — жиі керек болатын
+              // жылдам таңдау. Бөлек-бөлек баптау төменде тұр.
+              edit('construction', { construction, mounts: undefined })
+            }
+            options={[
+              { value: 'sidesOverlay', label: tr('Боковины накрывают крышку и дно') },
+              { value: 'topBottomOverlay', label: tr('Крышка и дно накрывают боковины') },
+            ]}
+          />
+        </Field>
+
+        {/* Элемент бойынша: қатарға тұратын модульдің крышкасы тек сыртқы
+            бүйірді жабады, ал ішкі жағы көршісіне тіреледі.
+
+            Крышканың тізімінде бекітілуден БӨЛЕК «Планка» мен «Нет» те тұр —
+            үшеуі де бір сұрақтың жауабы («үстінде не бар?»), сондықтан бір
+            тізімде. qdesign да дәл солай жасаған. */}
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={tr('Крышка')}>
             <Select
-              value={cabinet.topRails.count === 1 ? 'one' : 'two'}
-              onChange={(count) => edit('topRails.count', {
-                topRails: { ...cabinet.topRails!, count: count === 'one' ? 1 : 2 },
-              })}
+              value={cabinet.openTop ? 'none' : cabinet.topRails ? 'rails'
+                : (cabinet.mounts?.top ?? (cabinet.construction === 'sidesOverlay' ? 'inset' : 'overlay'))}
+              onChange={(value) => edit('mounts.top', value === 'rails'
+                ? { openTop: undefined, topRails: cabinet.topRails ?? { width: 100, count: 2 } }
+                : value === 'none'
+                  ? { openTop: true, topRails: undefined }
+                  : {
+                    openTop: undefined,
+                    topRails: undefined,
+                    mounts: { ...cabinet.mounts, top: value },
+                  })}
               options={[
-                { value: 'two' as const, label: tr('Две (перёд и зад)') },
-                { value: 'one' as const, label: tr('Одна (только зад)') },
+                { value: 'inset' as const, label: tr('Вкладной') },
+                { value: 'overlay' as const, label: tr('Накладной') },
+                { value: 'overlayLeft' as const, label: tr('Накладной слева') },
+                { value: 'overlayRight' as const, label: tr('Накладной справа') },
+                { value: 'rails' as const, label: tr('Планка (царга)') },
+                { value: 'none' as const, label: tr('Нет') },
               ]}
             />
           </Field>
-          <Field label={tr('Положение')} hint={tr('на ребро жёстче')}>
+          <Field label={tr('Дно')}>
             <Select
-              value={cabinet.topRails.orientation ?? 'flat'}
-              onChange={(orientation) => edit('topRails.orientation', {
-                topRails: { ...cabinet.topRails!, orientation },
+              value={cabinet.mounts?.bottom ?? (cabinet.construction === 'sidesOverlay' ? 'inset' : 'overlay')}
+              onChange={(mount) => edit('mounts.bottom', {
+                mounts: { ...cabinet.mounts, bottom: mount },
               })}
               options={[
-                { value: 'flat' as const, label: tr('Плашмя') },
-                { value: 'edge' as const, label: tr('На ребро') },
+                { value: 'inset' as const, label: tr('Вкладной') },
+                { value: 'overlay' as const, label: tr('Накладной') },
+                { value: 'overlayLeft' as const, label: tr('Накладной слева') },
+                { value: 'overlayRight' as const, label: tr('Накладной справа') },
               ]}
             />
           </Field>
         </div>
-      ) : null}
-
-      <Field label={tr('Задняя стенка')}>
-        <Select
-          value={cabinet.back.mode}
-          onChange={(mode) => edit('back', { back: { ...cabinet.back, mode } })}
-          options={[
-            { value: 'overlay', label: tr('Внакладку (на скобы)') },
-            { value: 'inset', label: tr('Вкладная (внутрь корпуса)') },
-            { value: 'groove', label: tr('В паз 4 мм') },
-            // Ядро мұны бұрыннан біледі (ашық стеллаж, стол, кереует
-            // каркасы), бірақ экранда таңдау жоқ болатын.
-            { value: 'none', label: tr('Без стенки') },
-          ]}
-        />
-      </Field>
-
-      {cabinet.back.mode === 'inset' ? (
-        <Field label={tr('Отступ задней стенки')} hint={tr('от заднего края, мм')}>
-          <NumberInput
-            value={cabinet.back.inset ?? 0}
-            min={0}
-            max={200}
-            onChange={(inset) => edit('back.inset', { back: { ...cabinet.back, inset } })}
-          />
-        </Field>
-      ) : null}
-
-      </Collapsible>
-      <Collapsible id="slope" title={tr('Скос (мансарда)')} badge={cabinet.slope ? tr('есть') : tr('нет')}>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label={tr('Скос потолка')} hint={cabinet.slope ? 'боковины трапеции' : 'нет'}>
+        {/* Направляющаның жүйесі: саңылауы да, тесігі де, қораптың тереңдігі де
+            содан шығады. «Цехтың профилінен» — ескі мінез. */}
+        <Field label={tr('Направляющие')} hint={tr('размер короба зависит от них')}>
           <Select
-            value={cabinet.slope?.towards ?? 'none'}
-            onChange={(value) =>
-              edit('slope', value === 'none'
-                ? { slope: undefined }
-                : {
-                    slope: {
-                      towards: value as 'back' | 'front',
-                      lowHeight: cabinet.slope?.lowHeight ?? Math.round(cabinet.height * 0.6),
-                    },
-                    // Қиғаш тек осы құрастыруда есептеледі.
-                    construction: 'sidesOverlay',
-                  })
-            }
-            options={[
-              { value: 'none', label: tr('Нет') },
-              { value: 'back', label: tr('Понижается назад') },
-              { value: 'front', label: tr('Понижается вперёд') },
-            ]}
-          />
-        </Field>
-        <Field label={tr('Низкая сторона')} hint={cabinet.slope ? 'мм' : undefined}>
-          <NumberInput
-            value={cabinet.slope?.lowHeight ?? 0}
-            min={0}
-            max={4000}
-            step={10}
-            onChange={(lowHeight) => {
-              if (!cabinet.slope) return
-              edit('slope.low', { slope: { ...cabinet.slope, lowHeight } })
-            }}
-          />
-        </Field>
-      </div>
-
-      </Collapsible>
-      <Collapsible id="corner" title={tr('Угловой (переходной)')} badge={cabinet.corner ? `${cabinet.corner.depthAtRight} мм` : tr('нет')}>
-      <p className="text-[11px] text-neutral-500">
-        Глубина меняется слева направо, задняя стенка встаёт к стене. Пока такой корпус
-        делается открытым: фасады, ящики, перегородки и задняя стенка на скошенной
-        плоскости требуют своей присадки, и лучше сказать «нельзя», чем присадить
-        наполовину верно.
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label={tr('Переходной корпус')}>
-          <Select
-            value={cabinet.corner ? 'yes' : 'no'}
-            onChange={(v) =>
-              edit('corner', v === 'yes'
-                ? {
-                  corner: { depthAtRight: Math.round(cabinet.depth / 2) },
-                  // Шектеулерді UI-дың өзінде орындаймыз: әйтпесе қосқан бойда
-                  // қате шығып, пайдаланушы себебін іздеп отырар еді.
-                  back: { mode: 'none' as const },
-                  sections: [{ ...cabinet.sections[0]!, fronts: null }],
-                }
-                : { corner: undefined })
-            }
-            options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
-          />
-        </Field>
-        <Field label={tr('Глубина справа, мм')} hint={cabinet.corner ? `слева ${cabinet.depth}` : undefined}>
-          <NumberInput
-            value={cabinet.corner?.depthAtRight ?? 0}
-            min={100}
-            max={cabinet.depth}
-            step={10}
-            onChange={(depthAtRight) => {
-              if (!cabinet.corner) return
-              edit('corner.depth', { corner: { depthAtRight } })
-            }}
-          />
-        </Field>
-      </div>
-
-      {/* Фронтальдық панель: бұрыштық орындағы модульдің фасады көршісінің
-          тұтқасына соғылмауы үшін. Корпус тікбұрыш күйінде қалады. */}
-      </Collapsible>
-      <Collapsible id="frontPanel" title={tr('Фронтальная панель')} badge={cabinet.frontPanel ? `${cabinet.frontPanel.width} мм` : tr('нет')}>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label={tr('Ширина')} hint={tr('0 — нет; ниша сужается, мм')}>
-          <NumberInput
-            value={cabinet.frontPanel?.width ?? 0}
-            min={0}
-            max={Math.max(0, cabinet.width - 100)}
-            step={10}
-            invalid={invalid('cabinet.frontPanel.width')}
-            onChange={(width) => edit('frontPanel.width', {
-              frontPanel: width > 0
-                ? { width, side: cabinet.frontPanel?.side ?? 'left' }
-                : undefined,
+            value={cabinet.drawerSystem ?? 'profile'}
+            onChange={(value) => edit('drawerSystem', {
+              drawerSystem: value === 'profile' ? undefined : value,
             })}
-          />
-        </Field>
-        <Field label={tr('Сторона')}>
-          <Select
-            value={cabinet.frontPanel?.side ?? 'left'}
-            onChange={(side) => {
-              if (!cabinet.frontPanel) return
-              edit('frontPanel.side', { frontPanel: { ...cabinet.frontPanel, side } })
-            }}
             options={[
-              { value: 'left' as const, label: tr('Слева') },
-              { value: 'right' as const, label: tr('Справа') },
+              { value: 'profile' as const, label: tr('Из профиля цеха') },
+              { value: 'roller' as const, label: tr('Роликовые (телескопические)') },
+              { value: 'ball' as const, label: tr('Шариковые полного выдвижения') },
+              { value: 'tandem' as const, label: tr('Blum TANDEM (скрытые)') },
+              // Металл жәшік: қорап сатып алынады, парақтан түбі мен арты ғана.
+              { value: 'legrabox' as const, label: tr('Blum LEGRABOX (металлический ящик)') },
+              { value: 'tandembox' as const, label: tr('Blum TANDEMBOX (металлический ящик)') },
+              { value: 'merivobox' as const, label: tr('Blum MERIVOBOX (металлический ящик)') },
             ]}
           />
         </Field>
-      </div>
 
-      </Collapsible>
-      <Collapsible id="base" title={tr('Основание и столешница')} defaultOpen>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label={tr('Основание')} hint={cabinet.base ? `${cabinet.base.height} мм` : 'нет'}>
-          <Select
-            value={cabinet.base?.kind ?? 'none'}
-            onChange={(kind) =>
-              edit('base', kind === 'none'
-                ? { base: undefined }
-                : { base: { kind: kind as 'plinth' | 'legs', height: cabinet.base?.height ?? 100 } })
-            }
-            options={[
-              { value: 'none', label: tr('Нет') },
-              { value: 'plinth', label: tr('Цоколь') },
-              { value: 'legs', label: tr('Ножки') },
-            ]}
-          />
-        </Field>
-        <Field label={tr('Высота основания')}>
-          <NumberInput
-            value={cabinet.base?.height ?? 0}
-            min={0}
-            max={400}
-            step={10}
-            onChange={(height) => {
-              if (!cabinet.base) return
-              edit('base.height', { base: { ...cabinet.base, height } })
-            }}
-          />
-        </Field>
-      </div>
+        {/* Арт қабырғаның биіктігі биіктік класына байланысты, ал бізде әр
+            жүйеден бір ғана класс өлшенген — цех оны өз кестесінен қояды. */}
+        {cabinet.drawerSystem && METAL_BOX_IDS.includes(cabinet.drawerSystem) ? (
+          <Field label={tr('Задняя стенка ящика')} hint={tr('высота по таблице производителя, мм')}>
+            <NumberInput
+              value={cabinet.metalBoxBackHeight ?? 0}
+              min={0}
+              max={400}
+              onChange={(value) => edit('metalBoxBackHeight', {
+                metalBoxBackHeight: value > 0 ? value : undefined,
+              })}
+            />
+          </Field>
+        ) : null}
 
-      {cabinet.base?.kind === 'legs' ? (
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            <Field label={tr('Стойка (опора)')} hint={tr('отдельный артикул в смете')}>
+        {cabinet.topRails ? (
+          <div className="grid grid-cols-3 gap-2">
+            <Field label={tr('Ширина планки')} hint={tr('мм')}>
+              <NumberInput
+                value={cabinet.topRails.width}
+                min={20} max={cabinet.depth} step={10}
+                invalid={invalid('cabinet.topRails.width')}
+                onChange={(width) => edit('topRails.width', {
+                  topRails: { ...cabinet.topRails!, width },
+                })}
+              />
+            </Field>
+            <Field label={tr('Количество')}>
               <Select
-                value={cabinet.base.legType ?? 'cylinder'}
-                onChange={(legType) => edit('base.legType', {
-                  base: { ...cabinet.base!, legType },
+                value={cabinet.topRails.count === 1 ? 'one' : 'two'}
+                onChange={(count) => edit('topRails.count', {
+                  topRails: { ...cabinet.topRails!, count: count === 'one' ? 1 : 2 },
                 })}
                 options={[
-                  { value: 'cylinder' as const, label: tr('Цилиндр (регулируемая)') },
-                  { value: 'cone' as const, label: tr('Конус') },
-                  { value: 'square' as const, label: tr('Квадратная') },
-                  { value: 'vector' as const, label: tr('Вектор (наклонная)') },
-                  { value: 'none' as const, label: tr('Без стойки (скрытая)') },
+                  { value: 'two' as const, label: tr('Две (перёд и зад)') },
+                  { value: 'one' as const, label: tr('Одна (только зад)') },
                 ]}
               />
             </Field>
-            {/* Табан — бұранда тесіктерін БЕРЕТІН бөлік. «Жоқ» таңдалса,
-                дноға тесік бұрғыланбайды. */}
-            <Field label={tr('Основание')} hint={tr('оно даёт отверстия')}>
+            <Field label={tr('Положение')} hint={tr('на ребро жёстче')}>
               <Select
-                value={cabinet.base.legPlate ?? 'round'}
-                onChange={(legPlate) => edit('base.legPlate', {
-                  base: { ...cabinet.base!, legPlate },
+                value={cabinet.topRails.orientation ?? 'flat'}
+                onChange={(orientation) => edit('topRails.orientation', {
+                  topRails: { ...cabinet.topRails!, orientation },
                 })}
                 options={[
-                  { value: 'round' as const, label: tr('Круглое Ø108') },
-                  { value: 'square' as const, label: tr('Квадратное 81×81') },
-                  { value: 'none' as const, label: tr('Без основания') },
+                  { value: 'flat' as const, label: tr('Плашмя') },
+                  { value: 'edge' as const, label: tr('На ребро') },
                 ]}
               />
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Field label={tr('Расстояние отверстий')} hint={tr('мм')}>
-              <NumberInput
-                value={cabinet.base.legHoleSpacing ?? 65}
-                min={20} max={200}
-                onChange={(legHoleSpacing) => edit('base.legHoleSpacing', {
-                  base: { ...cabinet.base!, legHoleSpacing },
-                })}
-              />
-            </Field>
-            <Field label={tr('Шаг опор')} hint={tr('мм')}>
-              <NumberInput
-                value={cabinet.base.legStep ?? 600}
-                min={200} max={1200} step={50}
-                onChange={(legStep) => edit('base.legStep', {
-                  base: { ...cabinet.base!, legStep },
-                })}
-              />
-            </Field>
-          </div>
-        </>
-      ) : null}
+        ) : null}
 
-      {/* Цоколь — КӨРІНЕТІН деталь: көбіне фасадпен бір түсте. */}
-      {cabinet.base?.kind === 'plinth' ? (
-        <Field
-          label={tr('Форма цоколя')}
-          hint={cabinet.base.plinthShape === 'box' ? tr('+3 детали') : undefined}
-        >
+        <Field label={tr('Задняя стенка')}>
           <Select
-            value={cabinet.base.plinthShape ?? 'front'}
-            onChange={(plinthShape) => edit('base.plinthShape', {
-              base: { ...cabinet.base!, plinthShape },
-            })}
+            value={cabinet.back.mode}
+            onChange={(mode) => edit('back', { back: { ...cabinet.back, mode } })}
             options={[
-              { value: 'front' as const, label: tr('Только передняя планка') },
-              { value: 'box' as const, label: tr('Короб: перед, зад и бока') },
+              { value: 'overlay', label: tr('Внакладку (на скобы)') },
+              { value: 'inset', label: tr('Вкладная (внутрь корпуса)') },
+              { value: 'groove', label: tr('В паз 4 мм') },
+              // Ядро мұны бұрыннан біледі (ашық стеллаж, стол, кереует
+              // каркасы), бірақ экранда таңдау жоқ болатын.
+              { value: 'none', label: tr('Без стенки') },
             ]}
           />
         </Field>
-      ) : null}
 
-      {cabinet.base?.kind === 'plinth' && cabinet.base.plinthShape === 'box' ? (
-        <Field
-          label={tr('Сборка короба')}
-          hint={(cabinet.base.plinthJoint ?? 'confirmat') === 'confirmat'
-            ? tr('шляпки на лице')
-            : tr('лицо чистое')}
-        >
-          <Select
-            value={cabinet.base.plinthJoint ?? 'confirmat'}
-            onChange={(plinthJoint) => edit('base.plinthJoint', {
-              base: { ...cabinet.base!, plinthJoint },
-            })}
-            options={[
-              { value: 'confirmat' as const, label: tr('Конфирмат (нужны заглушки)') },
-              { value: 'minifix' as const, label: tr('Минификс (дороже, лицо чистое)') },
-            ]}
-          />
-        </Field>
-      ) : null}
+        {cabinet.back.mode === 'inset' ? (
+          <Field label={tr('Отступ задней стенки')} hint={tr('от заднего края, мм')}>
+            <NumberInput
+              value={cabinet.back.inset ?? 0}
+              min={0}
+              max={200}
+              onChange={(inset) => edit('back.inset', { back: { ...cabinet.back, inset } })}
+            />
+          </Field>
+        ) : null}
 
-      {cabinet.base?.kind === 'plinth' ? (
-        <Field label={tr('Материал цоколя')} hint={tr('обычно как фасад')}>
-          <Select
-            value={cabinet.base.plinthMaterialId ?? cabinet.carcassMaterialId}
-            onChange={(plinthMaterialId) => edit('base.plinthMaterialId', {
-              base: { ...cabinet.base!, plinthMaterialId },
-            })}
-            options={materialOptions(materials.filter(isCarcass))}
-          />
-        </Field>
-      ) : null}
-
-      <div className="grid grid-cols-2 gap-2">
-        <Field label={tr('Столешница')}>
-          <Select
-            value={cabinet.worktop ? 'yes' : 'no'}
-            onChange={(value) =>
-              edit('worktop', value === 'yes'
-                ? { worktop: { overhangFront: 20, overhangSides: 0 } }
-                : { worktop: undefined })
-            }
-            options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
-          />
-        </Field>
-        <Field label={tr('Свес вперёд')} hint={cabinet.worktop ? 'мм' : undefined}>
-          <NumberInput
-            value={cabinet.worktop?.overhangFront ?? 0}
-            min={0}
-            max={200}
-            step={5}
-            onChange={(overhangFront) => {
-              if (!cabinet.worktop) return
-              edit('worktop.front', { worktop: { ...cabinet.worktop, overhangFront } })
-            }}
-          />
-        </Field>
-      </div>
-      <FixtureFields />
-
-      </Collapsible>
-      <Collapsible id="rails" title={tr('Планки и фартук')} badge={`${(cabinet.rails ?? []).length + (cabinet.backsplash ? 1 : 0)}`}>
-      <p className="text-[11px] text-neutral-500">
-        Планка (царга) ставится вместо сплошной крышки: под столешницей она не нужна.
-        Фальш-панель закрывает зазор сбоку от корпуса.
-      </p>
-      <div className="space-y-2">
-        {(cabinet.rails ?? []).map((r, i) => (
-          <div key={r.id} className="space-y-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-neutral-500">
-                {r.kind === 'filler' ? 'Фальш-панель' : 'Планка'} {i + 1}
-              </span>
-              <Button
-                title={tr('Удалить')}
-                onClick={() => edit('rails', { rails: (cabinet.rails ?? []).filter((x) => x.id !== r.id) })}
-              >
-                ✕
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Field label={tr('Тип')}>
-                <Select
-                  value={r.kind}
-                  onChange={(kind) =>
-                    edit('rails', {
-                      rails: (cabinet.rails ?? []).map((x) =>
-                        x.id === r.id
-                          // Фальш-панель тек бүйірде тұрады: түрін ауыстырғанда
-                          // орнын да дұрыстаймыз, әйтпесе қате шығар еді.
-                          ? {
-                            ...x,
-                            kind: kind as RailKind,
-                            position: kind === 'filler' && (x.position === 'top' || x.position === 'bottom')
-                              ? 'left'
-                              : x.position,
-                          }
-                          : x),
+        </Collapsible>
+        <Collapsible id="slope" title={tr('Скос (мансарда)')} badge={cabinet.slope ? tr('есть') : tr('нет')}>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={tr('Скос потолка')} hint={cabinet.slope ? 'боковины трапеции' : 'нет'}>
+            <Select
+              value={cabinet.slope?.towards ?? 'none'}
+              onChange={(value) =>
+                edit('slope', value === 'none'
+                  ? { slope: undefined }
+                  : {
+                      slope: {
+                        towards: value as 'back' | 'front',
+                        lowHeight: cabinet.slope?.lowHeight ?? Math.round(cabinet.height * 0.6),
+                      },
+                      // Қиғаш тек осы құрастыруда есептеледі.
+                      construction: 'sidesOverlay',
                     })
+              }
+              options={[
+                { value: 'none', label: tr('Нет') },
+                { value: 'back', label: tr('Понижается назад') },
+                { value: 'front', label: tr('Понижается вперёд') },
+              ]}
+            />
+          </Field>
+          <Field label={tr('Низкая сторона')} hint={cabinet.slope ? 'мм' : undefined}>
+            <NumberInput
+              value={cabinet.slope?.lowHeight ?? 0}
+              min={0}
+              max={4000}
+              step={10}
+              onChange={(lowHeight) => {
+                if (!cabinet.slope) return
+                edit('slope.low', { slope: { ...cabinet.slope, lowHeight } })
+              }}
+            />
+          </Field>
+        </div>
+
+        </Collapsible>
+        <Collapsible id="corner" title={tr('Угловой (переходной)')} badge={cabinet.corner ? `${cabinet.corner.depthAtRight} мм` : tr('нет')}>
+        <p className="text-[11px] text-neutral-500">
+          Глубина меняется слева направо, задняя стенка встаёт к стене. Пока такой корпус
+          делается открытым: фасады, ящики, перегородки и задняя стенка на скошенной
+          плоскости требуют своей присадки, и лучше сказать «нельзя», чем присадить
+          наполовину верно.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={tr('Переходной корпус')}>
+            <Select
+              value={cabinet.corner ? 'yes' : 'no'}
+              onChange={(v) =>
+                edit('corner', v === 'yes'
+                  ? {
+                    corner: { depthAtRight: Math.round(cabinet.depth / 2) },
+                    // Шектеулерді UI-дың өзінде орындаймыз: әйтпесе қосқан бойда
+                    // қате шығып, пайдаланушы себебін іздеп отырар еді.
+                    back: { mode: 'none' as const },
+                    sections: [{ ...cabinet.sections[0]!, fronts: null }],
                   }
+                  : { corner: undefined })
+              }
+              options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
+            />
+          </Field>
+          <Field label={tr('Глубина справа, мм')} hint={cabinet.corner ? `слева ${cabinet.depth}` : undefined}>
+            <NumberInput
+              value={cabinet.corner?.depthAtRight ?? 0}
+              min={100}
+              max={cabinet.depth}
+              step={10}
+              onChange={(depthAtRight) => {
+                if (!cabinet.corner) return
+                edit('corner.depth', { corner: { depthAtRight } })
+              }}
+            />
+          </Field>
+        </div>
+
+        {/* Фронтальдық панель: бұрыштық орындағы модульдің фасады көршісінің
+            тұтқасына соғылмауы үшін. Корпус тікбұрыш күйінде қалады. */}
+        </Collapsible>
+        <Collapsible id="frontPanel" title={tr('Фронтальная панель')} badge={cabinet.frontPanel ? `${cabinet.frontPanel.width} мм` : tr('нет')}>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={tr('Ширина')} hint={tr('0 — нет; ниша сужается, мм')}>
+            <NumberInput
+              value={cabinet.frontPanel?.width ?? 0}
+              min={0}
+              max={Math.max(0, cabinet.width - 100)}
+              step={10}
+              invalid={invalid('cabinet.frontPanel.width')}
+              onChange={(width) => edit('frontPanel.width', {
+                frontPanel: width > 0
+                  ? { width, side: cabinet.frontPanel?.side ?? 'left' }
+                  : undefined,
+              })}
+            />
+          </Field>
+          <Field label={tr('Сторона')}>
+            <Select
+              value={cabinet.frontPanel?.side ?? 'left'}
+              onChange={(side) => {
+                if (!cabinet.frontPanel) return
+                edit('frontPanel.side', { frontPanel: { ...cabinet.frontPanel, side } })
+              }}
+              options={[
+                { value: 'left' as const, label: tr('Слева') },
+                { value: 'right' as const, label: tr('Справа') },
+              ]}
+            />
+          </Field>
+        </div>
+
+        </Collapsible>
+        <Collapsible id="base" title={tr('Основание и столешница')} defaultOpen>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={tr('Основание')} hint={cabinet.base ? `${cabinet.base.height} мм` : 'нет'}>
+            <Select
+              value={cabinet.base?.kind ?? 'none'}
+              onChange={(kind) =>
+                edit('base', kind === 'none'
+                  ? { base: undefined }
+                  : { base: { kind: kind as 'plinth' | 'legs', height: cabinet.base?.height ?? 100 } })
+              }
+              options={[
+                { value: 'none', label: tr('Нет') },
+                { value: 'plinth', label: tr('Цоколь') },
+                { value: 'legs', label: tr('Ножки') },
+              ]}
+            />
+          </Field>
+          <Field label={tr('Высота основания')}>
+            <NumberInput
+              value={cabinet.base?.height ?? 0}
+              min={0}
+              max={400}
+              step={10}
+              onChange={(height) => {
+                if (!cabinet.base) return
+                edit('base.height', { base: { ...cabinet.base, height } })
+              }}
+            />
+          </Field>
+        </div>
+
+        {cabinet.base?.kind === 'legs' ? (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label={tr('Стойка (опора)')} hint={tr('отдельный артикул в смете')}>
+                <Select
+                  value={cabinet.base.legType ?? 'cylinder'}
+                  onChange={(legType) => edit('base.legType', {
+                    base: { ...cabinet.base!, legType },
+                  })}
                   options={[
-                    { value: 'carcass', label: tr('Корпусная') },
-                    { value: 'facade', label: tr('Фасадная') },
-                    { value: 'filler', label: tr('Фальш-панель') },
+                    { value: 'cylinder' as const, label: tr('Цилиндр (регулируемая)') },
+                    { value: 'cone' as const, label: tr('Конус') },
+                    { value: 'square' as const, label: tr('Квадратная') },
+                    { value: 'vector' as const, label: tr('Вектор (наклонная)') },
+                    { value: 'none' as const, label: tr('Без стойки (скрытая)') },
                   ]}
                 />
               </Field>
-              <Field label={tr('Расположение')}>
+              {/* Табан — бұранда тесіктерін БЕРЕТІН бөлік. «Жоқ» таңдалса,
+                  дноға тесік бұрғыланбайды. */}
+              <Field label={tr('Основание')} hint={tr('оно даёт отверстия')}>
                 <Select
-                  value={r.position}
-                  onChange={(position) =>
-                    edit('rails', {
-                      rails: (cabinet.rails ?? []).map((x) =>
-                        x.id === r.id ? { ...x, position: position as RailPosition } : x),
-                    })
-                  }
-                  options={
-                    r.kind === 'filler'
-                      ? [{ value: 'left', label: tr('Слева') }, { value: 'right', label: tr('Справа') }]
-                      : [
-                        { value: 'top', label: tr('Сверху') },
-                        { value: 'bottom', label: tr('Снизу') },
-                        { value: 'left', label: tr('Слева') },
-                        { value: 'right', label: tr('Справа') },
-                      ]
-                  }
+                  value={cabinet.base.legPlate ?? 'round'}
+                  onChange={(legPlate) => edit('base.legPlate', {
+                    base: { ...cabinet.base!, legPlate },
+                  })}
+                  options={[
+                    { value: 'round' as const, label: tr('Круглое Ø108') },
+                    { value: 'square' as const, label: tr('Квадратное 81×81') },
+                    { value: 'none' as const, label: tr('Без основания') },
+                  ]}
                 />
               </Field>
-              <Field label={tr('Ширина, мм')}>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label={tr('Расстояние отверстий')} hint={tr('мм')}>
                 <NumberInput
-                  value={r.width}
-                  min={20}
-                  step={10}
-                  onChange={(width) =>
-                    edit('rails.width', {
-                      rails: (cabinet.rails ?? []).map((x) => (x.id === r.id ? { ...x, width } : x)),
-                    })
-                  }
+                  value={cabinet.base.legHoleSpacing ?? 65}
+                  min={20} max={200}
+                  onChange={(legHoleSpacing) => edit('base.legHoleSpacing', {
+                    base: { ...cabinet.base!, legHoleSpacing },
+                  })}
                 />
               </Field>
-              <Field label={r.kind === 'filler' ? 'Отступ от корпуса, мм' : 'Отступ по краю, мм'}>
+              <Field label={tr('Шаг опор')} hint={tr('мм')}>
                 <NumberInput
-                  value={r.inset}
-                  min={0}
-                  step={5}
-                  onChange={(inset) =>
-                    edit('rails.inset', {
-                      rails: (cabinet.rails ?? []).map((x) => (x.id === r.id ? { ...x, inset } : x)),
-                    })
-                  }
+                  value={cabinet.base.legStep ?? 600}
+                  min={200} max={1200} step={50}
+                  onChange={(legStep) => edit('base.legStep', {
+                    base: { ...cabinet.base!, legStep },
+                  })}
                 />
               </Field>
-              {r.kind === 'carcass' ? (
-                <Field label={tr('Отступ от фронта, мм')}>
+            </div>
+          </>
+        ) : null}
+
+        {/* Цоколь — КӨРІНЕТІН деталь: көбіне фасадпен бір түсте. */}
+        {cabinet.base?.kind === 'plinth' ? (
+          <Field
+            label={tr('Форма цоколя')}
+            hint={cabinet.base.plinthShape === 'box' ? tr('+3 детали') : undefined}
+          >
+            <Select
+              value={cabinet.base.plinthShape ?? 'front'}
+              onChange={(plinthShape) => edit('base.plinthShape', {
+                base: { ...cabinet.base!, plinthShape },
+              })}
+              options={[
+                { value: 'front' as const, label: tr('Только передняя планка') },
+                { value: 'box' as const, label: tr('Короб: перед, зад и бока') },
+              ]}
+            />
+          </Field>
+        ) : null}
+
+        {cabinet.base?.kind === 'plinth' && cabinet.base.plinthShape === 'box' ? (
+          <Field
+            label={tr('Сборка короба')}
+            hint={(cabinet.base.plinthJoint ?? 'confirmat') === 'confirmat'
+              ? tr('шляпки на лице')
+              : tr('лицо чистое')}
+          >
+            <Select
+              value={cabinet.base.plinthJoint ?? 'confirmat'}
+              onChange={(plinthJoint) => edit('base.plinthJoint', {
+                base: { ...cabinet.base!, plinthJoint },
+              })}
+              options={[
+                { value: 'confirmat' as const, label: tr('Конфирмат (нужны заглушки)') },
+                { value: 'minifix' as const, label: tr('Минификс (дороже, лицо чистое)') },
+              ]}
+            />
+          </Field>
+        ) : null}
+
+        {cabinet.base?.kind === 'plinth' ? (
+          <Field label={tr('Материал цоколя')} hint={tr('обычно как фасад')}>
+            <Select
+              value={cabinet.base.plinthMaterialId ?? cabinet.carcassMaterialId}
+              onChange={(plinthMaterialId) => edit('base.plinthMaterialId', {
+                base: { ...cabinet.base!, plinthMaterialId },
+              })}
+              options={materialOptions(materials.filter(isCarcass))}
+            />
+          </Field>
+        ) : null}
+
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={tr('Столешница')}>
+            <Select
+              value={cabinet.worktop ? 'yes' : 'no'}
+              onChange={(value) =>
+                edit('worktop', value === 'yes'
+                  ? { worktop: { overhangFront: 20, overhangSides: 0 } }
+                  : { worktop: undefined })
+              }
+              options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
+            />
+          </Field>
+          <Field label={tr('Свес вперёд')} hint={cabinet.worktop ? 'мм' : undefined}>
+            <NumberInput
+              value={cabinet.worktop?.overhangFront ?? 0}
+              min={0}
+              max={200}
+              step={5}
+              onChange={(overhangFront) => {
+                if (!cabinet.worktop) return
+                edit('worktop.front', { worktop: { ...cabinet.worktop, overhangFront } })
+              }}
+            />
+          </Field>
+        </div>
+        <FixtureFields />
+
+        </Collapsible>
+        <Collapsible id="rails" title={tr('Планки и фартук')} badge={`${(cabinet.rails ?? []).length + (cabinet.backsplash ? 1 : 0)}`}>
+        <p className="text-[11px] text-neutral-500">
+          Планка (царга) ставится вместо сплошной крышки: под столешницей она не нужна.
+          Фальш-панель закрывает зазор сбоку от корпуса.
+        </p>
+        <div className="space-y-2">
+          {(cabinet.rails ?? []).map((r, i) => (
+            <div key={r.id} className="space-y-2 rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-neutral-500">
+                  {r.kind === 'filler' ? 'Фальш-панель' : 'Планка'} {i + 1}
+                </span>
+                <Button
+                  title={tr('Удалить')}
+                  onClick={() => edit('rails', { rails: (cabinet.rails ?? []).filter((x) => x.id !== r.id) })}
+                >
+                  ✕
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label={tr('Тип')}>
+                  <Select
+                    value={r.kind}
+                    onChange={(kind) =>
+                      edit('rails', {
+                        rails: (cabinet.rails ?? []).map((x) =>
+                          x.id === r.id
+                            // Фальш-панель тек бүйірде тұрады: түрін ауыстырғанда
+                            // орнын да дұрыстаймыз, әйтпесе қате шығар еді.
+                            ? {
+                              ...x,
+                              kind: kind as RailKind,
+                              position: kind === 'filler' && (x.position === 'top' || x.position === 'bottom')
+                                ? 'left'
+                                : x.position,
+                            }
+                            : x),
+                      })
+                    }
+                    options={[
+                      { value: 'carcass', label: tr('Корпусная') },
+                      { value: 'facade', label: tr('Фасадная') },
+                      { value: 'filler', label: tr('Фальш-панель') },
+                    ]}
+                  />
+                </Field>
+                <Field label={tr('Расположение')}>
+                  <Select
+                    value={r.position}
+                    onChange={(position) =>
+                      edit('rails', {
+                        rails: (cabinet.rails ?? []).map((x) =>
+                          x.id === r.id ? { ...x, position: position as RailPosition } : x),
+                      })
+                    }
+                    options={
+                      r.kind === 'filler'
+                        ? [{ value: 'left', label: tr('Слева') }, { value: 'right', label: tr('Справа') }]
+                        : [
+                          { value: 'top', label: tr('Сверху') },
+                          { value: 'bottom', label: tr('Снизу') },
+                          { value: 'left', label: tr('Слева') },
+                          { value: 'right', label: tr('Справа') },
+                        ]
+                    }
+                  />
+                </Field>
+                <Field label={tr('Ширина, мм')}>
                   <NumberInput
-                    value={r.depthOffset}
-                    min={0}
-                    step={5}
-                    onChange={(depthOffset) =>
-                      edit('rails.depth', {
-                        rails: (cabinet.rails ?? []).map((x) => (x.id === r.id ? { ...x, depthOffset } : x)),
+                    value={r.width}
+                    min={20}
+                    step={10}
+                    onChange={(width) =>
+                      edit('rails.width', {
+                        rails: (cabinet.rails ?? []).map((x) => (x.id === r.id ? { ...x, width } : x)),
                       })
                     }
                   />
                 </Field>
-              ) : null}
+                <Field label={r.kind === 'filler' ? 'Отступ от корпуса, мм' : 'Отступ по краю, мм'}>
+                  <NumberInput
+                    value={r.inset}
+                    min={0}
+                    step={5}
+                    onChange={(inset) =>
+                      edit('rails.inset', {
+                        rails: (cabinet.rails ?? []).map((x) => (x.id === r.id ? { ...x, inset } : x)),
+                      })
+                    }
+                  />
+                </Field>
+                {r.kind === 'carcass' ? (
+                  <Field label={tr('Отступ от фронта, мм')}>
+                    <NumberInput
+                      value={r.depthOffset}
+                      min={0}
+                      step={5}
+                      onChange={(depthOffset) =>
+                        edit('rails.depth', {
+                          rails: (cabinet.rails ?? []).map((x) => (x.id === r.id ? { ...x, depthOffset } : x)),
+                        })
+                      }
+                    />
+                  </Field>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ))}
-        <Button
-          onClick={() =>
-            edit('rails', {
-              rails: [
-                ...(cabinet.rails ?? []),
-                {
-                  id: `r${Date.now().toString(36)}`,
-                  kind: 'carcass' as const,
-                  position: 'top' as const,
-                  width: 100,
-                  inset: 0,
-                  depthOffset: 0,
-                },
-              ],
-            })
-          }
-        >
-          + Планка
-        </Button>
+          ))}
+          <Button
+            onClick={() =>
+              edit('rails', {
+                rails: [
+                  ...(cabinet.rails ?? []),
+                  {
+                    id: `r${Date.now().toString(36)}`,
+                    kind: 'carcass' as const,
+                    position: 'top' as const,
+                    width: 100,
+                    inset: 0,
+                    depthOffset: 0,
+                  },
+                ],
+              })
+            }
+          >
+            + Планка
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={tr('Фартук')}>
+            <Select
+              value={cabinet.backsplash ? 'yes' : 'no'}
+              onChange={(v) =>
+                edit('backsplash', v === 'yes'
+                  ? { backsplash: { height: 600 } }
+                  : { backsplash: undefined })
+              }
+              options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
+            />
+          </Field>
+          <Field label={tr('Высота фартука, мм')}>
+            <NumberInput
+              value={cabinet.backsplash?.height ?? 0}
+              min={100}
+              max={1200}
+              step={10}
+              onChange={(height) => {
+                if (!cabinet.backsplash) return
+                edit('backsplash.height', { backsplash: { ...cabinet.backsplash, height } })
+              }}
+            />
+          </Field>
+        </div>
+
+        </Collapsible>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Field label={tr('Фартук')}>
-          <Select
-            value={cabinet.backsplash ? 'yes' : 'no'}
-            onChange={(v) =>
-              edit('backsplash', v === 'yes'
-                ? { backsplash: { height: 600 } }
-                : { backsplash: undefined })
-            }
-            options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
-          />
-        </Field>
-        <Field label={tr('Высота фартука, мм')}>
-          <NumberInput
-            value={cabinet.backsplash?.height ?? 0}
-            min={100}
-            max={1200}
-            step={10}
-            onChange={(height) => {
-              if (!cabinet.backsplash) return
-              edit('backsplash.height', { backsplash: { ...cabinet.backsplash, height } })
+      {/* ═══ МАТЕРИАЛ: корпус, фасад, задняя стенка (декор + кромка одним выбором) ═══ */}
+      <div className={cn('flex-col gap-3', tab === 'material' ? 'flex' : 'hidden')}>
+        <Collapsible id="materials" title={tr('Материалы')} defaultOpen>
+        <Field label={tr('Корпус')}>
+          <DecorPicker
+            materials={carcassMaterials}
+            value={cabinet.carcassMaterialId}
+            onChange={(id) => {
+              const m = carcassMaterials.find((x) => x.id === id)
+              edit('carcassMaterial', {
+                carcassMaterialId: id,
+                // Кромка декорға байланады: декоры сәйкес келмеген кромка — брак.
+                ...(m?.defaultEdging ? { edging: m.defaultEdging } : {}),
+              })
             }}
           />
         </Field>
+        <Field label={tr('Фасад')}>
+          <DecorPicker
+            materials={carcassMaterials}
+            value={cabinet.frontMaterialId}
+            onChange={(frontMaterialId) => edit('frontMaterial', { frontMaterialId })}
+          />
+        </Field>
+        <Field label={tr('Задняя стенка')}>
+          <Select
+            value={cabinet.backMaterialId}
+            onChange={(backMaterialId) => edit('backMaterial', { backMaterialId })}
+            options={materialOptions(backMaterials)}
+          />
+        </Field>
+        </Collapsible>
       </div>
 
-      </Collapsible>
-      <Collapsible id="sliding" title={tr('Двери')} badge={cabinet.sliding ? `${cabinet.sliding.count}` : tr('нет')}>
-      <Field
-        label={tr('Двери-купе')}
-        hint={cabinet.sliding ? 'вместо распашных' : 'нет'}
-      >
-        <Select
-          value={String(cabinet.sliding?.count ?? 0)}
-          onChange={(value) => {
-            const count = Number(value)
-            edit('sliding', count > 0
-              ? {
-                  sliding: { count },
-                  // Купе мен ілмелі фасад бір корпуста болмайды.
-                  sections: cabinet.sections.map((sec) => ({ ...sec, fronts: null })),
-                }
-              : { sliding: undefined })
-          }}
-          options={[
-            { value: '0', label: tr('Нет, распашные фасады') },
-            { value: '2', label: tr('2 двери') },
-            { value: '3', label: tr('3 двери') },
-            { value: '4', label: tr('4 двери') },
-          ]}
-        />
-      </Field>
+      {/*
+        ═══ РАСЧЁТ: баға, деталировка үзіндісі, фурнитура ═══
+        PRO100-дың «Calculation» қосымшасына сәйкес, бірақ толық есеп бөлек
+        терезеде («Смета и раскрой») қалады — мұнда тек қысқа үзінді әрі
+        сол терезеге апаратын батырма. Ядроның `formatCutList`-і қайта
+        жазылмайды, дәл CutListTable қолданатын функция осында да шақырылады.
+      */}
+      <div className={cn('flex-col gap-3', tab === 'calc' ? 'flex' : 'hidden')}>
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle>{tr('Деталировка — кратко')}</SectionTitle>
+          <Button onClick={() => setQuoteOpen(true)}>{tr('Открыть смету')}</Button>
+        </div>
+        {cutRows.length === 0 ? (
+          <p className="text-xs text-neutral-500">{tr('Нет деталей.')}</p>
+        ) : (
+          <>
+            <table className="w-full text-xs">
+              <thead className="text-[10px] uppercase tracking-wider text-neutral-500">
+                <tr>
+                  <th className="py-1 text-left">{tr('Наименование')}</th>
+                  <th className="py-1 text-right">{tr('Кол-во')}</th>
+                  <th className="py-1 text-right">{tr('Готовый')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cutRows.slice(0, CUT_SNIPPET_LIMIT).map((r, i) => (
+                  <tr key={`${r.name}-${i}`} className="border-t border-neutral-200 dark:border-neutral-800">
+                    <td className="py-1">{r.name}</td>
+                    <td className="py-1 text-right tabular-nums">{r.qty}</td>
+                    <td className="py-1 text-right tabular-nums text-neutral-500">
+                      {r.finishedLength}×{r.finishedWidth}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {cutRows.length > CUT_SNIPPET_LIMIT ? (
+              <p className="text-[11px] text-neutral-400">
+                {tr('и ещё')} {cutRows.length - CUT_SNIPPET_LIMIT}…
+              </p>
+            ) : null}
+          </>
+        )}
+        <p className="text-[10px] leading-relaxed text-neutral-400">
+          {tr('Цена, услуги цеха и полный список фурнитуры — в смете. Здесь только деталировка для ориентира.')}
+        </p>
+      </div>
 
-      </Collapsible>
-      <Collapsible id="materials" title={tr('Материалы')} defaultOpen>
-      <Field label={tr('Корпус')}>
-        <DecorPicker
-          materials={carcassMaterials}
-          value={cabinet.carcassMaterialId}
-          onChange={(id) => {
-            const m = carcassMaterials.find((x) => x.id === id)
-            edit('carcassMaterial', {
-              carcassMaterialId: id,
-              // Кромка декорға байланады: декоры сәйкес келмеген кромка — брак.
-              ...(m?.defaultEdging ? { edging: m.defaultEdging } : {}),
-            })
-          }}
-        />
-      </Field>
-      <Field label={tr('Фасад')}>
-        <DecorPicker
-          materials={carcassMaterials}
-          value={cabinet.frontMaterialId}
-          onChange={(frontMaterialId) => edit('frontMaterial', { frontMaterialId })}
-        />
-      </Field>
-      <Field label={tr('Задняя стенка')}>
-        <Select
-          value={cabinet.backMaterialId}
-          onChange={(backMaterialId) => edit('backMaterial', { backMaterialId })}
-          options={materialOptions(backMaterials)}
-        />
-      </Field>
-      </Collapsible>
+      {/*
+        ═══ ПРОИЗВОДСТВО: присадка, раскрой, ЧПУ-экспорт ═══
+        Бізде бар, PRO100-да ЖОҚ (ол жұмысты Базиске тапсырады). Редакторлар
+        бөлек терезелерде/беттерде қалады — мұнда PRO100-дың «бесінші
+        қосымшасы» ретінде тек ашатын жол.
+      */}
+      <div className={cn('flex-col gap-3', tab === 'production' ? 'flex' : 'hidden')}>
+        <p className="text-[11px] text-neutral-500">
+          {tr('Присадка, раскрой и экспорт для станка — то, чего нет в PRO100 (там эту работу отдают Базису).')}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => setDrillOpen(true)}>{tr('Открыть присадку')}</Button>
+          <Link
+            href="/cut"
+            title={tr('Отдельный экран раскроя: КИМ, резы, бирки')}
+            className="rounded-md border border-neutral-300 px-2.5 py-1.5 text-xs font-medium transition hover:border-neutral-500 dark:border-neutral-700 dark:hover:border-neutral-500"
+          >
+            {tr('Открыть раскрой')}
+          </Link>
+        </div>
+        <ExportMenu cabinet={cabinet} panels={panels} />
+      </div>
 
       <div className="flex items-center justify-between pt-1">
         <SectionTitle>{tr('Секции')} ({cabinet.sections.length})</SectionTitle>

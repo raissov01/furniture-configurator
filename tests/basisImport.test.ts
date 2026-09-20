@@ -69,6 +69,16 @@ describe('Базис импорты — Material/EdgeBand пішіні', () => {
     expect(grain.has(true)).toBe(true)
     expect(grain.has(false)).toBe(true)
   })
+
+  it('парақ өлшемі кемінде 1500 мм (1000×1000 fallback ақауы жоқ)', () => {
+    // Нарықтағы ең кіші ЛДСП парағы 2440×1220-дан басталады,
+    // ХДФ 2800×2070. 1000×1000 ондай емес — fallback ершігі.
+    // Материалдағы толлыдың бір өлшемі ≥1500 болуы керек.
+    for (const m of BASIS_MATERIALS) {
+      const minDim = Math.min(m.sheetWidth, m.sheetHeight)
+      expect(minDim, `${m.name} өлшемі ${m.sheetWidth}×${m.sheetHeight}`).toBeGreaterThanOrEqual(1500)
+    }
+  })
 })
 
 describe('Базис каталогымен generateCabinet', () => {
