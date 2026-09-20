@@ -4,8 +4,20 @@
  * Бұлар — адамның ыңғайы, сондықтан жобаға жазылмайды. Тест дәл сол
  * шекараны әрі 3D-нің «үнемді» режимінің шынымен жеңілдететінін күзетеді.
  */
-import { describe, expect, it } from 'vitest'
-import { QUALITIES, THEMES, canvasSettings } from '../lib/appearance'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { QUALITIES, THEMES, canvasSettings, readQuality } from '../lib/appearance'
+
+/** Node ортасында `window` жоқ — әр тестке керегінше өзіміз қоямыз. */
+function stubWindow(opts: { saved?: string | null; coarsePointer?: boolean }): void {
+  vi.stubGlobal('window', {
+    localStorage: {
+      getItem: () => opts.saved ?? null,
+    },
+    matchMedia: (query: string) => ({
+      matches: query === '(pointer: coarse)' ? (opts.coarsePointer ?? false) : false,
+    }),
+  })
+}
 
 describe('3D сапасы', () => {
   it('«үнемді» режим пиксель тығыздығын да, тегістеуді де түсіреді', () => {
@@ -26,5 +38,26 @@ describe('3D сапасы', () => {
 describe('тема', () => {
   it('үш күй бар әрі «жүйедегідей» солардың бірі', () => {
     expect(THEMES).toEqual(['system', 'light', 'dark'])
+  })
+})
+
+describe('әдепкі 3D сапасы (§6 — телефонда түсіру)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('сақталған таңдау болса — құрылғыға қарамай соны қайтарады', () => {
+    stubWindow({ saved: 'low', coarsePointer: true })
+    expect(readQuality()).toBe('low')
+  })
+
+  it('сақталған таңдау ЖОҚ, тач-экран (coarse pointer) — «орта» сапа', () => {
+    stubWindow({ saved: null, coarsePointer: true })
+    expect(readQuality()).toBe('medium')
+  })
+
+  it('сақталған таңдау ЖОҚ, тінтуір (fine pointer) — бұрынғыдай «максимум»', () => {
+    stubWindow({ saved: null, coarsePointer: false })
+    expect(readQuality()).toBe('high')
   })
 })

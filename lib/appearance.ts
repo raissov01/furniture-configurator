@@ -30,8 +30,33 @@ export function readTheme(): Theme {
   return read(THEME_KEY, THEMES, 'system')
 }
 
+/**
+ * Құрылғыға қарап әдепкі сапаны таңдау (тек сақталған таңдау ЖОҚ болғанда
+ * қолданылады — пайдаланушы қолмен таңдаса, оны баспаймыз).
+ *
+ * `(pointer: coarse)` — негізгі көрсеткіш саусақ (тач-экран): телефон мен
+ * планшетте GPU әдетте әлсіз, сондықтан «орташа» сапа әдепкі болады.
+ * Тінтуірлі құрылғыда (десктоп/ноутбук) бұрынғыдай «максимум».
+ */
+function defaultQualityForDevice(): Quality {
+  try {
+    return window.matchMedia('(pointer: coarse)').matches ? 'medium' : 'high'
+  } catch {
+    // matchMedia жоқ орта (ескі браузер, тест) — бұрынғы әдепкі.
+    return 'high'
+  }
+}
+
 export function readQuality(): Quality {
-  return read(QUALITY_KEY, QUALITIES, 'high')
+  try {
+    const saved = window.localStorage.getItem(QUALITY_KEY)
+    if (QUALITIES.includes(saved as Quality)) {
+      return saved as Quality
+    }
+  } catch {
+    // Жеке терезеде localStorage тыйылуы мүмкін — құрылғы бойынша шешеміз.
+  }
+  return defaultQualityForDevice()
 }
 
 export function saveTheme(theme: Theme): void {
