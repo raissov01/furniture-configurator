@@ -1141,74 +1141,106 @@ export function generateCabinet(
       : carcass
     // Цоколь алдыңғы жиектен ішке шегіндіріледі: аяқ тұратын орын.
     const boxJoint = config.base.plinthJoint ?? 'confirmat'
-    panels.push(
-      make(
-        'plinth', 'plinth', 'Цоколь', plinthMat,
-        W, baseHeight,
-        // ⚠ 2026-09-20 түзетілді (docs/audit/drilling-2026-09-20.md §R1):
-        // бұрын мұнда ORIENT_FACING тұратын, ол ұзындықты (900 мм, W) БИІКТІККЕ
-        // (world y) түсіретін. Цоколь — «на ребро» тұрған КӨЛДЕНЕҢ планка:
-        // ұзындығы солдан оңға (world x), ені (baseHeight) жоғары қарайды
-        // (world y). Дәл сол қатенің салдары: присадка панельден тыс шығатын
-        // (мыс. y = 890 мм, 93 мм тақтайда). `make()` `y`-ге baseHeight
-        // қосатындықтан (жоғарыдағы `raised`), позиция ӨЗГЕРМЕЙДІ.
-        { x: 0, y: -baseHeight, z: settings.plinthSetback }, ORIENT_UPRIGHT,
-        // Конфирматтың басы КӨРІНЕТІН бетке шығады — цех оны заглушкамен
-        // жабады. Мұны деталировкада айтпасақ, ол құрастыруда ғана байқалады.
-        config.base.plinthShape === 'box' && boxJoint === 'confirmat'
-          ? 'Цоколь, лицевой; шляпки конфирматов на лице — заглушки'
-          : 'Цоколь, лицевой',
-      ),
-    )
 
     /*
-     * ЖАБЫҚ ҚОРАП (qdesign: «накладной короб»).
-     *
-     * Алды мен арты — ТОЛЫҚ ені, ал бүйірлері екеуінің АРАСЫНА кіреді.
-     * Дәл осылай: бәсекелестің сол өлшемдегі модулінен өлшенді (2026-09-04),
-     * әрі бұл цехта да қисынды — көрінетін алдыңғы планканың торцы бүйірмен
-     * жабылмайды, ал жинағанда қорап тікбұрышты болып шығады.
-     *
-     * Шегініс тек АЛДЫНДА: арт жағы қабырғаға тіреледі, оны шегіндірудің
-     * мағынасы жоқ әрі жүк түсетін тірек ауданы азаяр еді.
+     * ОРТАҚ цоколь (G2 — docs/visual/generator-gaps.md §G2, диагноз
+     * docs/audit/qdesign-drilling-reference.md §7). `kitchen.ts`-тегі
+     * `mergeSharedPlinths` көрші модульдердің цокольін `base.shared`-пен
+     * белгілейді: топтың БАСЫНДА (`base.sharedSpan` бар) БІР ұзын панель,
+     * қалған мүшелерде («shared» ғана) — меншікті панелі МҮЛДЕ жоқ.
+     * «box» ешқашан бірікпейді (бүйір/арт тақтайлары бар) — қате конфиг.
      */
-    if (config.base.plinthShape === 'box') {
-      const pt = plinthMat.thickness
-      const boxDepth = D - settings.plinthSetback - 2 * pt
-      if (boxDepth < MIN_DIMENSION) {
-        throw new ConfigValidationError(
-          'base.plinthShape', `просвет короба ${boxDepth} мм`, `≥ ${MIN_DIMENSION} мм`,
-        )
-      }
+    if (config.base.shared && config.base.plinthShape === 'box') {
+      throw new ConfigValidationError(
+        'base.shared', 'true',
+        '«box» пішінді цоколь ортақ жолаққа бірікпейді: бүйір/арт тақтайлары бар, '
+        + 'тұтас жолаққа сыймайды. Ортақ жолаққа тек «front» пішінін қолданыңыз',
+      )
+    }
+
+    if (!config.base.shared) {
       panels.push(
         make(
-          'plinth-back', 'plinth', 'Цоколь задний', plinthMat,
+          'plinth', 'plinth', 'Цоколь', plinthMat,
           W, baseHeight,
-          // ⚠ 2026-09-20: жоғарыдағы `plinth`-пен бірдей себеп — §R1.
-          { x: 0, y: -baseHeight, z: D - pt }, ORIENT_UPRIGHT,
-          'Цоколь, задний',
-          // Арт тақтайды ешкім көрмейді — кромка ақшаны бос жейді.
-          { L1: null, L2: null, W1: null, W2: null },
+          // ⚠ 2026-09-20 түзетілді (docs/audit/drilling-2026-09-20.md §R1):
+          // бұрын мұнда ORIENT_FACING тұратын, ол ұзындықты (900 мм, W) БИІКТІККЕ
+          // (world y) түсіретін. Цоколь — «на ребро» тұрған КӨЛДЕНЕҢ планка:
+          // ұзындығы солдан оңға (world x), ені (baseHeight) жоғары қарайды
+          // (world y). Дәл сол қатенің салдары: присадка панельден тыс шығатын
+          // (мыс. y = 890 мм, 93 мм тақтайда). `make()` `y`-ге baseHeight
+          // қосатындықтан (жоғарыдағы `raised`), позиция ӨЗГЕРМЕЙДІ.
+          { x: 0, y: -baseHeight, z: settings.plinthSetback }, ORIENT_UPRIGHT,
+          // Конфирматтың басы КӨРІНЕТІН бетке шығады — цех оны заглушкамен
+          // жабады. Мұны деталировкада айтпасақ, ол құрастыруда ғана байқалады.
+          config.base.plinthShape === 'box' && boxJoint === 'confirmat'
+            ? 'Цоколь, лицевой; шляпки конфирматов на лице — заглушки'
+            : 'Цоколь, лицевой',
         ),
       )
-      for (const side of ['left', 'right'] as const) {
+
+      /*
+       * ЖАБЫҚ ҚОРАП (qdesign: «накладной короб»).
+       *
+       * Алды мен арты — ТОЛЫҚ ені, ал бүйірлері екеуінің АРАСЫНА кіреді.
+       * Дәл осылай: бәсекелестің сол өлшемдегі модулінен өлшенді (2026-09-04),
+       * әрі бұл цехта да қисынды — көрінетін алдыңғы планканың торцы бүйірмен
+       * жабылмайды, ал жинағанда қорап тікбұрышты болып шығады.
+       *
+       * Шегініс тек АЛДЫНДА: арт жағы қабырғаға тіреледі, оны шегіндірудің
+       * мағынасы жоқ әрі жүк түсетін тірек ауданы азаяр еді.
+       */
+      if (config.base.plinthShape === 'box') {
+        const pt = plinthMat.thickness
+        const boxDepth = D - settings.plinthSetback - 2 * pt
+        if (boxDepth < MIN_DIMENSION) {
+          throw new ConfigValidationError(
+            'base.plinthShape', `просвет короба ${boxDepth} мм`, `≥ ${MIN_DIMENSION} мм`,
+          )
+        }
         panels.push(
           make(
-            `plinth-${side}`, 'plinth', `Цоколь боковой ${side === 'left' ? 'левый' : 'правый'}`,
-            plinthMat,
-            baseHeight, boxDepth,
-            {
-              x: side === 'left' ? 0 : W - pt,
-              y: -baseHeight,
-              z: settings.plinthSetback + pt,
-            },
-            ORIENT_SIDE,
-            `Цоколь, ${side === 'left' ? 'левый' : 'правый'}`,
+            'plinth-back', 'plinth', 'Цоколь задний', plinthMat,
+            W, baseHeight,
+            // ⚠ 2026-09-20: жоғарыдағы `plinth`-пен бірдей себеп — §R1.
+            { x: 0, y: -baseHeight, z: D - pt }, ORIENT_UPRIGHT,
+            'Цоколь, задний',
+            // Арт тақтайды ешкім көрмейді — кромка ақшаны бос жейді.
+            { L1: null, L2: null, W1: null, W2: null },
           ),
         )
+        for (const side of ['left', 'right'] as const) {
+          panels.push(
+            make(
+              `plinth-${side}`, 'plinth', `Цоколь боковой ${side === 'left' ? 'левый' : 'правый'}`,
+              plinthMat,
+              baseHeight, boxDepth,
+              {
+                x: side === 'left' ? 0 : W - pt,
+                y: -baseHeight,
+                z: settings.plinthSetback + pt,
+              },
+              ORIENT_SIDE,
+              `Цоколь, ${side === 'left' ? 'левый' : 'правый'}`,
+            ),
+          )
+        }
+        plinthBox = boxJoint
       }
-      plinthBox = boxJoint
+    } else if (config.base.sharedSpan) {
+      // Топтың БАСЫ: бір ORIENT_UPRIGHT панель, ұзындығы — бүкіл топтың
+      // қосындысы («plinth» id-і бұрынғыдай — не жеке, не ортақ, ешқашан
+      // екеуі бірге болмайды).
+      panels.push(
+        make(
+          'plinth', 'plinth', 'Цоколь (объединённый)', plinthMat,
+          config.base.sharedSpan, baseHeight,
+          { x: 0, y: -baseHeight, z: settings.plinthSetback }, ORIENT_UPRIGHT,
+          'Цоколь, лицевой, объединённый — қатардың бір жолағы (G2, qdesign)',
+        ),
+      )
     }
+    // else: shared === true, sharedSpan жоқ — топтың басы емес, меншікті панелі жоқ.
   }
 
   // Ортақ столешница — қатардың бір тақтасы (ерікті деталь), корпуста жоқ.

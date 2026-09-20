@@ -21,7 +21,7 @@ import { defaultMillingSpec } from './milling'
 import type { MillingPatternId } from './milling'
 import { findTemplate, templateToCabinet } from './templates'
 import { findFixture } from './filling'
-import type { CabinetConfig, CabinetFixture, Catalog, CustomPart, Placement, Section } from './types'
+import type { CabinetConfig, CabinetFixture, Catalog, CustomPart, Material, Placement, Section } from './types'
 
 export type KitchenLayout = 'straight' | 'corner' | 'u'
 
@@ -842,5 +842,112 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
     }
   }
 
-  return { cabinets, placements, room }
+  return { cabinets: mergeSharedPlinths(cabinets, placements, catalog), placements, room }
+}
+
+/**
+ * ЦОКОЛЬ — көрші модульдердің плинтусын БІР жолаққа біріктіру (G2,
+ * docs/visual/generator-gaps.md §G2; диагноз docs/audit/qdesign-drilling-
+ * reference.md §7: qdesign «Цоколь (объединенный)», 2633×95×16, модуль
+ * тізімінде «01.05 Ірге (біріктірілген)»). `dressBase` бүкіл гарнитурға
+ * (база + пенал) бір биіктік/материал бергендіктен (2026-09-20,
+ * commit c92afad) көрші корпустардың цоколі енді нақты бірігуге дайын.
+ *
+ * ӘДІСІ столешницамен (`worktop.shared`) БІРДЕЙ — көрші топты жинау,
+ * топ басында бір ерікті деталь. БІРАҚ МЕХАНИЗМІ БӨЛЕК: столешница жатық
+ * (`ORIENT_HORIZONTAL`) панель, ал цоколь ТІК тұрған (`ORIENT_UPRIGHT`,
+ * `length→x, width→y, thickness→z`) панель — `customParts`-тың үш
+ * пландасының (`horizontal`/`vertical`/`front`, `geometry.ts`) ешқайсысы
+ * дәл осы сәйкестікті бермейді («front» = `ORIENT_FACING` десе, ұзындық
+ * БИІКТІККЕ түсіп кетеді — 2026-09-20 дәл осы қатеден таза ORIENT_UPRIGHT-қа
+ * көшкен, жоғарыдағы `dressBase`-тің комментарийін қара). Сондықтан бөлек
+ * `CustomPart`-қа емес, тікелей `base.sharedSpan`-ға саламыз:
+ * `generateCabinet.ts` соны оқып, топтың БАСЫНДА (head) бір ORIENT_UPRIGHT
+ * панель шығарады, қалған мүшелерде («shared» ғана, `sharedSpan` жоқ) —
+ * меншікті панелі МҮЛДЕ жоқ.
+ *
+ * Бірікпейтін жағдайлар (тапсырма: күмәнді жерде БІРІКТІРМЕ):
+ *   - биіктігі не тиімді материалы (`plinthMaterialId ?? carcassMaterialId`)
+ *     әртүрлі — қалыпты жағдайда `dressBase` мұны болдырмайды, бірақ қолмен
+ *     құрастырылған/аралас жобаға қорғаныс ретінде тексеріледі;
+ *   - `plinthShape === 'box'` — қорапта бүйір/арт тақтайлар бар, тұтас
+ *     жолаққа сыймайды («front» ғана бірігеді);
+ *   - аралары ашық (offset үзіліссіз болмаса) — тек ТУРА көрші модульдер;
+ *   - қабырға (wall) ауысқанда, яғни БҰРЫШТА — біз топтастыруды әр
+ *     қабырғаға БӨЛЕК жүргіземіз, сондықтан бұрыш ЕШҚАШАН бірікпейді.
+ *     qdesign-нің бұрыштағы мінезі расталмаған — цехпен растау керек;
+ *   - бір топ (материал сыятын парақ, `sheetWidth`) ұзындығынан аспайды —
+ *     физикалық шектеу: одан ұзын деталь бір парақтан кесілмейді.
+ *
+ * Биік бағана (пенал/тоңазытқыш/духовка мұнарасы) — ЕНЕДІ: `dressBase`
+ * оларға да қатардың биіктігі мен материалын береді, ал «front» пішінді
+ * цокольдің геометриясы корпустың ТЕРЕҢДІГІНЕ (`D`) тәуелді емес (тек
+ * `settings.plinthSetback`-тен), сондықтан пеналдың тереңдігі басқа болса
+ * да (`TALL_DEPTH` ≠ `LOWER_DEPTH`) қатарға қауіпсіз қосылады — qdesign да
+ * солай (табалдырық үзілмейді).
+ */
+export function mergeSharedPlinths(
+  cabinets: CabinetConfig[], placements: Placement[], catalog: Catalog,
+): CabinetConfig[] {
+  const out = [...cabinets]
+  const byId = new Map(out.map((c) => [c.id, c]))
+  const indexOf = new Map(out.map((c, i) => [c.id, i]))
+  const widthOf = (p: Placement) => byId.get(p.cabinetId)!.width
+  const plinthMaterial = (c: CabinetConfig): Material | undefined => {
+    const matId = c.base?.plinthMaterialId ?? c.carcassMaterialId
+    return catalog.materials.find((m) => m.id === matId)
+  }
+
+  for (const wall of new Set(placements.map((p) => p.wall))) {
+    const list = placements
+      .filter((p) => {
+        if (p.wall !== wall || (p.elevation ?? 0)) return false
+        const c = byId.get(p.cabinetId)!
+        return c.base?.kind === 'plinth' && c.base.plinthShape !== 'box'
+      })
+      .sort((a, b) => a.offset - b.offset)
+
+    const groups: Placement[][] = []
+    let groupLength = 0
+    let groupHeight = 0
+    let groupMat: Material | undefined
+    for (const p of list) {
+      const c = byId.get(p.cabinetId)!
+      const h = c.base!.height
+      const mat = plinthMaterial(c)
+      const last = groups[groups.length - 1]
+      const prev = last?.[last.length - 1]
+      // Тура көрші (үзіліссіз), бірдей биіктік/материал, парақтан аспайды.
+      const contiguous = !!prev && prev.offset + widthOf(prev) === p.offset
+      const sameSpec = !!last && h === groupHeight && !!mat && !!groupMat && mat.id === groupMat.id
+      const fits = !!mat && groupLength + widthOf(p) <= mat.sheetWidth
+      if (contiguous && sameSpec && fits) {
+        last!.push(p)
+        groupLength += widthOf(p)
+      } else {
+        groups.push([p])
+        groupLength = widthOf(p)
+        groupHeight = h
+        groupMat = mat
+      }
+    }
+
+    for (const group of groups) {
+      // Жалғыз модуль — бірігетін көршісі жоқ, бұрыннан дұрыс өз панелі қалады.
+      if (group.length < 2) continue
+      const start = group[0]!.offset
+      const end = group[group.length - 1]!.offset + widthOf(group[group.length - 1]!)
+      const span = end - start
+      group.forEach((p, i) => {
+        const c = byId.get(p.cabinetId)!
+        const idx = indexOf.get(p.cabinetId)!
+        out[idx] = {
+          ...c,
+          base: { ...c.base!, shared: true, ...(i === 0 ? { sharedSpan: span } : {}) },
+        }
+      })
+    }
+  }
+
+  return out
 }

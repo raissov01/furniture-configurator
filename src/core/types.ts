@@ -882,6 +882,21 @@ export type CabinetConfig = {
      * бұл — ЦЕХТЫҢ шешімі, сондықтан таңдау ашық тұр.
      */
     plinthJoint?: 'confirmat' | 'minifix' | undefined
+    /**
+     * ОРТАҚ цоколь: корпустың ӨЗ панелі жоқ, ол қатардың бір тұтас
+     * жолағының астында тұр (`worktop.shared` үлгісімен, G2 —
+     * docs/audit/qdesign-drilling-reference.md §7: qdesign «Цоколь
+     * (объединенный)»). `kitchen.ts`-тегі `mergeSharedPlinths` көрші
+     * модульдерді осылай белгілейді; тек `plinthShape !== 'box'` бірігеді.
+     */
+    shared?: boolean | undefined
+    /**
+     * Тек ТОП БАСЫНДА (head) болады: біріктірілген жолақтың толық
+     * ұзындығы, мм. `generateCabinet.ts` осыны оқып, БІР `ORIENT_UPRIGHT`
+     * панель шығарады (қалған топ мүшелерінде — тек `shared: true`,
+     * меншікті панелі жоқ).
+     */
+    sharedSpan?: number | undefined
   } | undefined
 
   /**
