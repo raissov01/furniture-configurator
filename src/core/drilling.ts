@@ -110,6 +110,43 @@ function confirmatCount(jointLength: number, settings: ConstructionSettings): nu
     : CONFIRMAT_MIN_PER_JOINT
 }
 
+// ── Торц буындарының ортақ көмекшілері ──────────────────────────────────────
+
+/**
+ * Штифт/бұранда `edgePanel`-дің торціне қай жиекте кіретінін анықтайды.
+ *
+ * `screwAxis` — штифттің/бұранданың бағыты (әдетте екінші панельдің
+ * қалыңдық өсі — ол панельдің бетінен өтіп, осы `edgePanel`-дің торціне
+ * кіреді). Торц панельдің `orientation.length` осінің ұшында тұрса (яғни
+ * штифт сол өс бойымен жүреді) — бұл W1/W2 (types.ts §76-77: W1/W2 —
+ * ұзындықтың екі ұшы), әйтпесе — L1/L2.
+ *
+ * ⚠ БҰРЫН минификс буындарында (`minifixJoint`, `drawerBottomJoints`) бұл
+ * әрқашан ТҰРАҚТЫ `edgeW1/edgeW2` болатын — тек `edgePanel.orientation`
+ * сәйкес келгенде ғана дұрыс шығатын (қорап дносында кездейсоқ дұрыс, ал
+ * ORIENT_FACING қабырғада қате: сол/оң тік жиектің орнына үсті/асты
+ * жазылатын). Аудит: `docs/audit/drilling-2026-09-20.md` §R2.
+ */
+function edgeFaceFor(edgePanel: Panel, screwAxis: Axis, atStart: boolean): Drill['face'] {
+  const alongLength = screwAxis === edgePanel.orientation.length
+  return alongLength
+    ? (atStart ? 'edgeW1' : 'edgeW2')
+    : (atStart ? 'edgeL1' : 'edgeL2')
+}
+
+/**
+ * Торц бетіндегі x РЕЗ координатасынан шегерілетін кромка қалыңдығы.
+ * edgeW*-та x панельдің ені бойымен жүреді → L1 кромкасы шегеріледі;
+ * edgeL*-та ұзындығы бойымен → W1.
+ */
+function edgeXShiftFor(edgePanel: Panel, screwAxis: Axis, ctx: Ctx): number {
+  const alongLength = screwAxis === edgePanel.orientation.length
+  return subtractedThickness(
+    alongLength ? edgePanel.edges.L1 : edgePanel.edges.W1,
+    ctx.bands, ctx.settings,
+  )
+}
+
 // ── Конфирмат буыны ──────────────────────────────────────────────────────────
 
 /**
@@ -142,17 +179,8 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
   const [eMin, eMax] = worldRange(edgePanel, screwAxis, edgeT)
   const [fMin, fMax] = worldRange(facePanel, screwAxis, faceT)
   const atStart = Math.abs(eMin - fMax) < Math.abs(eMax - fMin)
-  const alongLength = screwAxis === edgePanel.orientation.length
-  const edgeFace: Drill['face'] = alongLength
-    ? (atStart ? 'edgeW1' : 'edgeW2')
-    : (atStart ? 'edgeL1' : 'edgeL2')
-
-  // Торц бетіндегі x РЕЗ координатасында болуы керек. edgeW*-та x панельдің
-  // ені бойымен жүреді → L1 кромкасы шегеріледі; edgeL*-та ұзындығы бойымен → W1.
-  const edgeXShift = subtractedThickness(
-    alongLength ? edgePanel.edges.L1 : edgePanel.edges.W1,
-    ctx.bands, ctx.settings,
-  )
+  const edgeFace = edgeFaceFor(edgePanel, screwAxis, atStart)
+  const edgeXShift = edgeXShiftFor(edgePanel, screwAxis, ctx)
 
   for (const offset of offsets) {
     const alongWorld = jointStart + offset
@@ -532,7 +560,7 @@ export function legScrewHoles(
 
 
 /**
- * МИНИФИКС буыны: ящиктің қорабын жинайды.
+ * МИНИФИКС буыны: ящиктің қорабын (немесе цоколь қорабының бұрышын) жинайды.
  *
  * Бұрын қораптың буындарында присадка МҮЛДЕ жоқ еді — цех оны қолмен өлшеп
  * бұрғылайтын, ал қорап қисайса, ящик тартылмай қалады.
@@ -541,54 +569,84 @@ export function legScrewHoles(
  * бетінде эксцентриктің ұясы, торцінде штифттің тесігі.
  * `side` — қораптың бүйірі: оның бетінде штифт бұралатын Ø5.
  *
- * Екі стяжка қойылады: биіктік бойынша ортадан 32 мм-ге ажыратылып
+ * Екі стяжка қойылады: буын сызығы бойымен ортадан 32 мм-ге ажыратылып
  * (`MINIFIX_PAIR_SPACING`) — бір стяжка панельді айналдырып жібереді.
+ *
+ * ⚠ §R2 дейін мұнда `wall.orientation` ЕСКЕРІЛМЕЙТІН: `wall.finishedLength`
+ * әрқашан «биіктік», `wall.position.y/z` әрқашан «ұзындық/қалыңдық осі»
+ * деп ҚАТЫРЫЛҒАН еді (ORIENT_FACING деп есептеп). Ол ORIENT_UPRIGHT
+ * қабырғада (мыс. минификс режиміндегі цоколь тақтасы) тесікті панельден
+ * ТЫС шығаратын — `confirmatJoint`-тегідей, буын осін (`jointAxis`) де,
+ * бұранда осін де (`screwAxis`) `orientation`-нан ДИНАМИКАЛЫҚ есептейміз.
  */
 export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
   const wallT = ctx.thickness(wall)
   const sideT = ctx.thickness(side)
 
-  // Қабырға ORIENT_FACING: локал x — БИІКТІК, локал y — ЕН (types.ts).
-  const wallHeight = wall.finishedLength
-  const wallWidth = wall.finishedWidth
-  const rows = [
-    Math.round(wallHeight / 2 - MINIFIX_PAIR_SPACING / 2),
-    Math.round(wallHeight / 2 + MINIFIX_PAIR_SPACING / 2),
-  ]
-  if (rows[0]! <= 0 || rows[1]! >= wallHeight) return
+  /*
+   * Штифт `side`-тың ІШКІ бетінен өтіп, `wall`-дың торціне кіреді —
+   * `confirmatJoint`-тегідей рөл: `side` = "face" (бұранда бетінен өтеді),
+   * `wall` = "edge" (штифт торціне кіреді).
+   */
+  const screwAxis = side.orientation.thickness
+  /** Буын сызығы — екі панельдің де жазықтығында жатқан ортақ өс. */
+  const jointAxis = (['x', 'y', 'z'] as Axis[]).find(
+    (a) => a !== screwAxis && a !== wall.orientation.thickness,
+  )
+  if (!jointAxis) throw new Error(`Буын осі табылмады: ${wall.id} ↔ ${side.id}`)
 
-  // Қабырғаның қай ұшы осы бүйірге тіреледі: жақынырағы.
-  const wallLeftWorld = wall.position.x
-  const wallRightWorld = wall.position.x + wallWidth
-  const sideCentreWorld = side.position.x + sideT / 2
-  const atLeft = Math.abs(sideCentreWorld - wallLeftWorld) < Math.abs(sideCentreWorld - wallRightWorld)
+  const [jointStart, jointEnd] = worldRange(wall, jointAxis, wallT)
+  if (jointEnd - jointStart <= MINIFIX_PAIR_SPACING) return
+  const jointCentre = (jointStart + jointEnd) / 2
+  const rowsWorld = [jointCentre - MINIFIX_PAIR_SPACING / 2, jointCentre + MINIFIX_PAIR_SPACING / 2]
 
-  // Ұяның ортасы — торцтан 34 мм ішке қарай.
-  const camY = atLeft ? MINIFIX_CAM_FROM_EDGE : wallWidth - MINIFIX_CAM_FROM_EDGE
-  const edgeFace: Drill['face'] = atLeft ? 'edgeW1' : 'edgeW2'
+  // wall-дың қай ұшы осы бүйірге тіреледі: жақынырағы (screwAxis бойымен).
+  const [wallMin, wallMax] = worldRange(wall, screwAxis, wallT)
+  const [sideMin, sideMax] = worldRange(side, screwAxis, sideT)
+  const atLeft = Math.abs(wallMin - sideMax) < Math.abs(wallMax - sideMin)
 
-  for (const x of rows) {
+  // side-тың қалыңдығының ортасы — штифт world-та осы деңгейде жатыр.
+  const [wallThickMin, wallThickMax] = worldRange(wall, wall.orientation.thickness, wallT)
+  const thicknessLineWorld = (wallThickMin + wallThickMax) / 2
+
+  // Ұяның ортасы — торцтан 34 мм ішке қарай (screwAxis бойынша, wall-дың өз өлшемі).
+  const wallScrewDim = wall.orientation.length === screwAxis ? wall.finishedLength : wall.finishedWidth
+  const camPos = atLeft ? MINIFIX_CAM_FROM_EDGE : wallScrewDim - MINIFIX_CAM_FROM_EDGE
+
+  const edgeFace = edgeFaceFor(wall, screwAxis, atLeft)
+  const edgeXShift = edgeXShiftFor(wall, screwAxis, ctx)
+
+  for (const rowWorld of rowsWorld) {
+    // wall-дың локал координатасы: jointAxis бойынша — буын сызығындағы орны,
+    // screwAxis бойынша — жиектен camPos.
+    const alongLocal = wall.orientation.length === jointAxis
+      ? localX(wall, rowWorld) : localY(wall, rowWorld)
+    const wx = wall.orientation.length === jointAxis ? alongLocal : camPos
+    const wy = wall.orientation.width === jointAxis ? alongLocal : camPos
+
     // 1. Эксцентриктің ұясы — қабырғаның ішкі бетінде.
-    pushFace(wall, 'inner', x, camY, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
+    pushFace(wall, 'inner', wx, wy, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
 
     // 2. Штифттің тесігі — сол қабырғаның ТОРЦІНДЕ, қалыңдықтың ортасында.
+    // Торц бетінің x-і — jointAxis бойынша РАУ локал координата (alongLocal),
+    // W1/L1 кромкасы шегеріліп (edgeXShiftFor, §4.9).
     wall.drilling.push({
       face: edgeFace,
-      x: Math.round(x),
+      x: Math.round(alongLocal - edgeXShift),
       y: Math.round(wallT / 2),
       diameter: MINIFIX_DOWEL_DIAMETER,
       depth: MINIFIX_DOWEL_DEPTH,
       purpose: 'minifix',
     })
 
-    // 3. Штифт бұралатын тесік — бүйірдің ІШКІ бетінде, дәл сол биіктікте.
-    const worldY = wall.position.y + x
-    const worldZ = wall.position.z + wallT / 2
-    pushFace(
-      side, 'inner',
-      localX(side, worldY), localY(side, worldZ),
-      MINIFIX_SCREW_DIAMETER, MINIFIX_SCREW_DEPTH, 'minifix', ctx,
-    )
+    // 3. Штифт бұралатын тесік — бүйірдің ІШКІ бетінде, дәл сол буын
+    // сызығында әрі wall-дың қалыңдығының ортасында (confirmatJoint-тегі
+    // fx/fy үлгісімен: jointAxis сай осьте rowWorld, қалғанында thicknessLineWorld).
+    const sx = side.orientation.length === jointAxis
+      ? localX(side, rowWorld) : localX(side, thicknessLineWorld)
+    const sy = side.orientation.width === jointAxis
+      ? localY(side, rowWorld) : localY(side, thicknessLineWorld)
+    pushFace(side, 'inner', sx, sy, MINIFIX_SCREW_DIAMETER, MINIFIX_SCREW_DEPTH, 'minifix', ctx)
   }
 }
 
@@ -613,10 +671,16 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
   const positions = spreadAlongJoint(depth, 2, MINIFIX_FROM_END)
 
   for (const side of sides) {
-    // Бүйір түптің қай ұшында тұр: сол жақта ма, оң жақта ма.
-    const atLeft = side.position.x < bottom.position.x
+    const sideT = ctx.thickness(side)
+    // Штифт side-тың ІШКІ бетінен өтіп, bottom-ның торціне кіреді — жоғарыдағы
+    // minifixJoint-тегідей рөл (§R2): screwAxis = side-тың қалыңдық осі.
+    const screwAxis = side.orientation.thickness
+    const [bottomMin, bottomMax] = worldRange(bottom, screwAxis, t)
+    const [sideMin, sideMax] = worldRange(side, screwAxis, sideT)
+    const atLeft = Math.abs(bottomMin - sideMax) < Math.abs(bottomMax - sideMin)
     const camX = atLeft ? MINIFIX_CAM_FROM_EDGE : width - MINIFIX_CAM_FROM_EDGE
-    const edgeFace: Drill['face'] = atLeft ? 'edgeW1' : 'edgeW2'
+    const edgeFace = edgeFaceFor(bottom, screwAxis, atLeft)
+    const edgeXShift = edgeXShiftFor(bottom, screwAxis, ctx)
 
     for (const along of positions) {
       // 1. Эксцентриктің ұясы — түптің ҮСТІҢГІ бетінде.
@@ -625,7 +689,7 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
       // 2. Штифттің тесігі — түптің сол/оң ТОРЦІНДЕ.
       bottom.drilling.push({
         face: edgeFace,
-        x: Math.round(along),
+        x: Math.round(along - edgeXShift),
         y: Math.round(t / 2),
         diameter: MINIFIX_DOWEL_DIAMETER,
         depth: MINIFIX_DOWEL_DEPTH,
