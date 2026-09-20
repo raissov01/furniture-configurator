@@ -17,6 +17,7 @@ import {
   Euler, NeutralToneMapping, Object3D, Plane, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3,
 } from 'three'
 import { isTouchDevice, walkInput } from '@/lib/walkInput'
+import { wallElevationOffset, wallElevationTarget } from '@/lib/wallElevation'
 import type { Group, Mesh } from 'three'
 import { XR, XROrigin, useXRControllerLocomotion } from '@react-three/xr'
 import { getXrStore } from '@/lib/xr'
@@ -98,8 +99,20 @@ const WALL_VIEW_TARGET: Partial<Record<CameraPreset, WallId>> = {
   'wall-west': 'west',
 }
 
-/** Камера пресеттері: көзқарас нүктесі нысанның габаритіне қатысты есептеледі. */
-function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [number, number, number] {
+/**
+ * Камера пресеттері: көзқарас нүктесі нысанның габаритіне қатысты есептеледі.
+ *
+ * `wallId`/`room` тек `wall-*` пресеттерінде беріледі. Бағыт
+ * `lib/wallElevation.ts`-тегі `wallElevationOffset`-пен есептеледі — ЖАЛҒЫЗ
+ * көз, мутациямен тексерілген (`tests/wallElevation.test.ts`). Қайтарылатын
+ * вектор бұл жағдайда ӘЛЕМДІК кадрде дайын тұр (айналым ЖОҚ), сондықтан
+ * CameraRig-тегі `facingY` wall-* пресетінде 0 болуы КЕРЕК — әйтпесе бағыт
+ * ЕКІ РЕТ бұрылып кетеді.
+ */
+function cameraOffset(
+  preset: CameraPreset, W: number, H: number, D: number,
+  wallCtx?: { room: Room; wallId: WallId } | undefined,
+): [number, number, number] {
   const span = Math.max(W, H, D)
   switch (preset) {
     // Z ТЕРІС — корпустың АЛДЫ сол жақта (локал z алдынан артына қарай өседі).
@@ -112,14 +125,19 @@ function cameraOffset(preset: CameraPreset, W: number, H: number, D: number): [n
     case 'room':
       // Бүкіл бөлме: биіктен әрі қиғаш — қай қабырғада не тұрғаны көріну керек.
       return [span * 0.9, span * 1.3, span * 1.3]
-    // Қабырғаның ЭЛЕВАЦИЯСЫ: тура алдынан, тегіс — «front»-пен бірдей бағыт,
-    // тек нысана (target/facingY) бүкіл бөлме мен сол қабырғаның бұрышы
-    // болады («view» useMemo-ды қара).
+    // Қабырғаның ЭЛЕВАЦИЯСЫ: камера сол қабырғаның inward нормалі бойымен
+    // СЫРТҚА (қабырғадан алыс) тұрады да, кері бағытта (сол қабырғаға қарай)
+    // қарайды — сонда ғана сол қабырғаға қойылған жиһаз камераға ТУРА
+    // қарайды (2026-09-20: цех адамы «Стена С бос» деп хабарлағаннан кейін
+    // дәл осы бағыт бөлек, мутациямен тексерілген функцияға көшірілді).
     case 'wall-north':
     case 'wall-east':
     case 'wall-south':
-    case 'wall-west':
-      return [0, 0, -span * 1.7]
+    case 'wall-west': {
+      if (!wallCtx) return [0, 0, span * 1.7] // қауіпсіз әдепкі, іс жүзінде әрқашан беріледі
+      const off = wallElevationOffset(wallCtx.room, wallCtx.wallId, span * 1.7)
+      return [off.x, 0, off.z]
+    }
     case 'three-quarter':
     default:
       return [span * 0.95, span * 0.55, -span * 1.15]
@@ -354,7 +372,7 @@ function VrRig({ room }: { room: Room }) {
 }
 
 function CameraRig({
-  target, box, facingY, layoutKey,
+  target, box, facingY, layoutKey, wallCtx,
 }: {
   target: Vec3
   box: { W: number; H: number; D: number }
@@ -367,6 +385,8 @@ function CameraRig({
    * ‹ ›, «От пола») кілтке КІРМЕЙДІ — төмендегі эффектіні қара.
    */
   layoutKey: string
+  /** Тек `wall-*` пресетінде: `cameraOffset`-тің қай қабырғаны есептеу керегі. */
+  wallCtx?: { room: Room; wallId: WallId } | undefined
 }) {
   const preset = useConfigurator((s) => s.cameraPreset)
   const fitNonce = useConfigurator((s) => s.fitNonce)
@@ -391,7 +411,7 @@ function CameraRig({
   const { x: tx, y: ty, z: tz } = target
 
   const fit = useCallback(() => {
-    const [lx0, oy0, lz0] = cameraOffset(preset, W, H, D)
+    const [lx0, oy0, lz0] = cameraOffset(preset, W, H, D, wallCtx)
 
     /*
      * Қашықтықты КАДРҒА қарап түзетеміз.
@@ -443,7 +463,7 @@ function CameraRig({
     controls?.target.set(tx * MM, ty * MM, tz * MM)
     controls?.update()
     invalidate()
-  }, [preset, camera, controls, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY])
+  }, [preset, camera, controls, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, wallCtx])
 
   /*
    * ҚАЙТА КАДРЛАУ ТЕК КӨРІНІС ӨЗГЕРГЕНДЕ, нысана жылжығанда ЕМЕС.
@@ -1094,16 +1114,23 @@ export default function Scene({
    * «Вписать в кадр» да сол бір корпусты кадрлайтын, ал корпусты таңдаған
    * сайын камера секіретін. Енді таңдау камераны қозғамайды.
    */
-  const view = useMemo<{ target: Vec3; box: { W: number; H: number; D: number }; facingY: number }>(() => {
+  const view = useMemo<{
+    target: Vec3
+    box: { W: number; H: number; D: number }
+    facingY: number
+    wallCtx?: { room: Room; wallId: WallId } | undefined
+  }>(() => {
     const wallId = WALL_VIEW_TARGET[preset]
     if (wallId) {
-      // Элевация: бүкіл бөлме, көзқарас — сол қабырғаның СЫРТЫНАН, бұрышы
-      // `placementPose`-тегімен бірдей (`wall.rotationY`), сондықтан сол
-      // қабырғаға қойылған шкафтар камераға ТУРА қарайды.
+      // Элевация: бүкіл бөлме, көзқарас — сол қабырғаның СЫРТЫНАН (нысана
+      // мен бағыт `lib/wallElevation.ts`-те, `wallCtx` арқылы `cameraOffset`-ке
+      // беріледі). `facingY: 0` — вектор ӘЛЕМДІК кадрде дайын, қайта
+      // бұрылмауы керек (жоғарыдағы `cameraOffset`-тегі ескертуді қара).
       return {
-        target: { x: room.width / 2, y: room.height / 2, z: room.depth / 2 },
+        target: wallElevationTarget(room),
         box: { W: room.width, H: room.height, D: room.depth },
-        facingY: wallById(room, wallId).rotationY,
+        facingY: 0,
+        wallCtx: { room, wallId },
       }
     }
     if (preset === 'room' || !active) {
@@ -1413,6 +1440,7 @@ export default function Scene({
             target={view.target}
             box={view.box}
             facingY={view.facingY}
+            wallCtx={view.wallCtx}
             // Орын (offset, «От пола») ӘДЕЙІ жоқ — CameraRig-тің эффектісін қара.
             layoutKey={[
               room.width, room.depth, room.height, active?.cabinet.id ?? '',
