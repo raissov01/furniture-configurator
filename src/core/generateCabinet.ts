@@ -1443,8 +1443,14 @@ export function generateCabinet(
   // Направляющая: ящиктің екі жағындағы тік панельге
   for (const run of drawerRuns) {
     const [left, right] = boundsOf(run.sectionIndex)
-    runnerHoles(left, run.boxBottomY, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
-    runnerHoles(right, run.boxBottomY, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
+    // K12: run.boxBottomY — makeDrawers-тен ШИКІ локал y (цокольге
+    // көтерілмеген), ал runnerHoles бұл мәнді ӘЛЕМ координатасы деп
+    // қабылдайды (бүйір панельдің өз позициясы make() арқылы baseHeight-ке
+    // көтерілген). Сондықтан осында да +baseHeight — shelfPinHoles-тегі
+    // `t + baseHeight` үлгісімен бірдей (§1339: "shelfPinHoles(left, shelf,
+    // t + baseHeight, ctx)").
+    runnerHoles(left, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
+    runnerHoles(right, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
   }
 
   // Ілгектер: шеткі фасадтар секцияның тік панеліне ілінеді.
