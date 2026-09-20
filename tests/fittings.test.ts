@@ -8,6 +8,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  ConfigValidationError,
   DEFAULT_HANDLE_ID,
   HANDLE_BORE_SPACINGS,
   HINGE_BRANDS,
@@ -96,15 +97,34 @@ describe('тұтқа тесіктерінің орны', () => {
     expect(right.map((p) => p.across)).toEqual([436, 564])
   })
 
-  it('фасадтан кең тұтқа тесікті СЫРТҚА шығармайды', () => {
-    // 1024 мм тұтқа 300 мм фасадта: тесік теріс координатаға кетуі мүмкін еді.
-    const pts = handleBorePoints(bar, spec({ position: 'top', boreSpacing: 1024 }), 800, 300)
-    for (const p of pts) {
-      expect(p.across).toBeGreaterThanOrEqual(0)
-      expect(p.across).toBeLessThanOrEqual(300)
-      expect(p.along).toBeGreaterThanOrEqual(0)
-      expect(p.along).toBeLessThanOrEqual(800)
+  it('фасадтан кең тұтқа берілсе — ConfigValidationError (§10, audit O10)', () => {
+    // Audit O10: бұрын мұнда тесік жиекке ҮНСІЗ ҚЫСЫЛАТЫН (clamp). Ескі тест
+    // осы қысу мінезін тексеретін ("тесікті СЫРТҚА шығармайды"), яғни ескірген
+    // күтілім болатын — CLAUDE.md §10 «сыймаса — валидация қатесі, үнсіз қысу
+    // емес» дегенге тікелей қайшы келеді. Дұрысы: 1024 мм тұтқа 300 мм фасатта
+    // сыймайды, сондықтан ConfigValidationError лақтырылуы керек.
+    expect(() => handleBorePoints(bar, spec({ position: 'top', boreSpacing: 1024 }), 800, 300))
+      .toThrow(ConfigValidationError)
+    expect(() => handleBorePoints(bar, spec({ position: 'top', boreSpacing: 1024 }), 800, 300))
+      .toThrow(/boreSpacing/)
+  })
+
+  it('§O10: 295 мм фасатқа 320 мм межцентрлік тұтқа — тесік жиекке жабыспайды, қате шығады', () => {
+    // Аудиттегі нақты мысал: drilling-2026-09-20.md §O10.
+    // `handleBorePoints(..., 1994, 295)` бұрын [{along:50, across:0}, {along:50, across:295}]
+    // қайтаратын — Ø5 тесік дәл фасадтың жиегінде. Енді валидация керек.
+    let error: unknown
+    try {
+      handleBorePoints(bar, spec({ position: 'top', boreSpacing: 320, edgeOffset: 35 }), 1994, 295)
+    } catch (e) {
+      error = e
     }
+    expect(error).toBeInstanceOf(ConfigValidationError)
+    const err = error as InstanceType<typeof ConfigValidationError>
+    // §10: қате өрісі мен рұқсат етілген аралық көрсетілуі керек.
+    expect(err.field).toMatch(/boreSpacing/)
+    expect(err.allowed).toBeDefined()
+    expect(err.message).toMatch(/0\.\.295/)
   })
 
   it('каталогтағы аралықтар 32 мм жүйесінің еселігі', () => {

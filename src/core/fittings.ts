@@ -17,6 +17,7 @@
  */
 
 import { z } from 'zod'
+import { ConfigValidationError } from './errors'
 import type { PanelHandle } from './types'
 
 // ── Ілгек ────────────────────────────────────────────────────────────────────
@@ -314,50 +315,102 @@ export function handleBorePoints(
 ): { along: number; across: number }[] {
   if (model.kind === 'profile' || model.kind === 'none') return []
 
+  /*
+   * `Math.max(0, ...)` мұнда ҚЫСУ ЕМЕС — теріс аралықтан қорғау. Zod схемасы
+   * (`HandleSpecSchema.boreSpacing`) оны бәрібір `nonnegative()` етіп талап
+   * етеді, сондықтан бұл жай ғана соңғы шеп; валидацияланбаған теріс санды
+   * 0-ге (яғни «бір тесік») түсіру дұрыс әдепкі, өлшемнен АСЫП КЕТУмен
+   * (audit O10) байланысы жоқ.
+   */
   const spacing = model.kind === 'knob' ? 0 : Math.max(0, spec.boreSpacing)
   const half = spacing / 2
 
-  // Жиектен қашықтық — тұтқаның осі. Фасадтан шығып кетпеуін қадағалаймыз.
-  const clampAlong = (v: number): number => Math.min(Math.max(v, 0), frontLength)
-  const clampAcross = (v: number): number => Math.min(Math.max(v, 0), frontWidth)
+  /*
+   * Audit O10 (drilling-2026-09-20.md §O10). Бұрын мұнда `Math.min(Math.max(...))`
+   * тесіктің координатасын `[0, өлшем]` аралығына ҮНСІЗ ҚЫСАТЫН — фасадтан
+   * үлкен межцентрлік тұтқа таңдалса, тесік ЖИЕККЕ жабысып қалатын, ал цех
+   * мұны тек бұрғылағаннан кейін байқайтын (фасад қоқысқа кетеді).
+   * CLAUDE.md §10: «сыймаса — валидация қатесін шығар, үнсіз бұрыс санды
+   * таңдама». Сондықтан енді қысудың орнына — `ConfigValidationError`,
+   * параметр аты мен рұқсат етілген аралықпен.
+   */
+  const assertAlong = (v: number, field: string): number => {
+    if (v < 0 || v > frontLength) {
+      throw new ConfigValidationError(
+        field,
+        `тесік along=${v} мм, фасад ұзындығы ${frontLength} мм`,
+        `0..${frontLength} мм`,
+      )
+    }
+    return v
+  }
+  const assertAcross = (v: number, field: string): number => {
+    if (v < 0 || v > frontWidth) {
+      throw new ConfigValidationError(
+        field,
+        `тесік across=${v} мм, фасад ені ${frontWidth} мм`,
+        `0..${frontWidth} мм`,
+      )
+    }
+    return v
+  }
 
   const p = spec.position
   const vertical = p === 'left' || p === 'right'
 
   if (vertical) {
     // Тік тұтқа: бір бағанда, фасадтың биіктігі бойымен таралады.
-    const across = p === 'left' ? spec.edgeOffset : frontWidth - spec.edgeOffset
+    // `across` тек `edgeOffset`-тен шығады (spacing-ке байланыссыз), сондықтан
+    // асып кетсе — кінәлі өріс `handle.edgeOffset`.
+    const across = assertAcross(
+      p === 'left' ? spec.edgeOffset : frontWidth - spec.edgeOffset,
+      'handle.edgeOffset',
+    )
     const centre = frontLength / 2
+    // `centre ± half` тек spacing-ке байланысты (centre әрқашан аралықта),
+    // сондықтан асып кетсе — кінәлі өріс `handle.boreSpacing`.
     return spacing === 0
-      ? [{ along: clampAlong(centre), across: clampAcross(across) }]
+      ? [{ along: assertAlong(centre, 'handle.boreSpacing'), across }]
       : [
-        { along: clampAlong(centre - half), across: clampAcross(across) },
-        { along: clampAlong(centre + half), across: clampAcross(across) },
+        { along: assertAlong(centre - half, 'handle.boreSpacing'), across },
+        { along: assertAlong(centre + half, 'handle.boreSpacing'), across },
       ]
   }
 
   if (p === 'top' || p === 'bottom') {
     // Көлденең тұтқа фасадтың ортасында.
-    const along = p === 'top' ? frontLength - spec.edgeOffset : spec.edgeOffset
+    const along = assertAlong(
+      p === 'top' ? frontLength - spec.edgeOffset : spec.edgeOffset,
+      'handle.edgeOffset',
+    )
     const centre = frontWidth / 2
     return spacing === 0
-      ? [{ along: clampAlong(along), across: clampAcross(centre) }]
+      ? [{ along, across: assertAcross(centre, 'handle.boreSpacing') }]
       : [
-        { along: clampAlong(along), across: clampAcross(centre - half) },
-        { along: clampAlong(along), across: clampAcross(centre + half) },
+        { along, across: assertAcross(centre - half, 'handle.boreSpacing') },
+        { along, across: assertAcross(centre + half, 'handle.boreSpacing') },
       ]
   }
 
   // Бұрыштар: көлденең, бірақ ортасы торцтен `endOffset` қашықтықта.
   const top = p === 'topLeft' || p === 'topRight'
   const left = p === 'topLeft' || p === 'bottomLeft'
-  const along = top ? frontLength - spec.edgeOffset : spec.edgeOffset
-  const centre = left ? spec.endOffset : frontWidth - spec.endOffset
+  const along = assertAlong(
+    top ? frontLength - spec.edgeOffset : spec.edgeOffset,
+    'handle.edgeOffset',
+  )
+  // Алдымен `centre`-нің өзін (тек `endOffset`-тен) тексереміз: содан кейін
+  // ғана `± half` (spacing) қосамыз. Осылай қатенің өрісі endOffset пен
+  // boreSpacing арасында дәл ажыратылады.
+  const centre = assertAcross(
+    left ? spec.endOffset : frontWidth - spec.endOffset,
+    'handle.endOffset',
+  )
   return spacing === 0
-    ? [{ along: clampAlong(along), across: clampAcross(centre) }]
+    ? [{ along, across: centre }]
     : [
-      { along: clampAlong(along), across: clampAcross(centre - half) },
-      { along: clampAlong(along), across: clampAcross(centre + half) },
+      { along, across: assertAcross(centre - half, 'handle.boreSpacing') },
+      { along, across: assertAcross(centre + half, 'handle.boreSpacing') },
     ]
 }
 
