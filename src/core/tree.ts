@@ -39,6 +39,15 @@ type NodeBase = {
   /** Көрінбейтін түйін деталировкаға да, сметаға да ТҮСПЕЙДІ */
   hidden?: boolean | undefined
   locked?: boolean | undefined
+  /**
+   * Қабат (слои, PRO100 паритеті `docs/pro100/parity.md` §2.1
+   * `TLAYERSFORM`). Қабаттың өзі (аты/көрінуі/құлпы/түсі) осында ЖОҚ —
+   * ол жоба деңгейінде сақталады (`src/core/layers.ts` `Layer`,
+   * `src/core/schema.ts` `ProjectFileWithLayersSchema`). Мұнда тек СІЛТЕМЕ:
+   * түйін қай қабатқа тиесілі. Жоқ болса — әдепкі қабат
+   * (`src/core/layers.ts` `DEFAULT_LAYER_ID`).
+   */
+  layerId?: string | undefined
 }
 
 export type GroupNode = NodeBase & { kind: 'group'; children: SceneNode[] }

@@ -8,6 +8,7 @@
 
 import { z } from 'zod'
 import { ApplianceKindSchema, FillingKindSchema } from './filling'
+import type { Layer } from './layers'
 import { HandleSpecSchema } from './fittings'
 import { MillingSpecSchema } from './milling'
 import type { ProjectFile } from './types'
@@ -500,4 +501,51 @@ export function parseProject(raw: unknown): ProjectFile {
         `Белгісіз schemaVersion: ${String(version)}. Қолдау бар нұсқалар: 1, 2, ${CURRENT_SCHEMA_VERSION}`,
       )
   }
+}
+
+// ── Қабаттар (слои) ──────────────────────────────────────────────────────────
+//
+// `docs/pro100/parity.md` §2.1 («Қабат (слои) басқару...» ❌ болатын).
+// Қабат типінің өзі `src/core/layers.ts`-те (Layer). Мұнда — оның сақталу
+// пішіні.
+//
+// ⚠ Неге ProjectFileSchema/ProjectFile ӨЗГЕРТІЛМЕДІ: `types.ts` дәл қазір
+// БАСҚА АГЕНТТЕ жұмыс істеп жатыр (тапсырмадағы тыйым). Сондықтан `layers`
+// өрісі ProjectFile-дың (types.ts) типіне ҮСТЕМЕЛЕНЕДІ (intersection),
+// types.ts-тегі жарияланымды бір жолмен де тимей. Өрістің өзі толықтай
+// ЕРІКТІ — жоқ жобада бос тізім, бұл файлдағы қалыптасқан үлгі бойынша
+// (`info`, `priceOverrides` секілді ерікті өрістер) `schemaVersion`
+// КӨТЕРІЛМЕЙДІ: ескі жоба (қабатсыз) дәл сол күйінде оқылады, тек бос
+// қабат тізімімен.
+
+/** Бір қабат — «Слои» панеліндегі бір жол (аты, көз, құлып, түс). */
+export const LayerSchema: z.ZodType<Layer> = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  visible: z.boolean(),
+  locked: z.boolean(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+})
+
+export const ProjectLayersSchema = z.array(LayerSchema)
+
+/** `ProjectFile`-ге (types.ts) `layers`-ты ҮСТЕМЕЛЕЙТІН тип — types.ts-ке тимейді. */
+export type ProjectFileWithLayers = ProjectFile & { layers: Layer[] }
+
+/**
+ * Кез келген нұсқадағы жобаны (v1/v2/v3, `parseProject` арқылы) оқып,
+ * қабаттарды қоса шығарады. Қабат жоқ/бос жоба — бос тізім (§ silent
+ * catch емес: пішіні бұзық `layers` болса, `z.array(LayerSchema).parse`
+ * өз алдына қатесін лақтырады, үнсіз жұтпайды).
+ */
+export function parseProjectWithLayers(raw: unknown): ProjectFileWithLayers {
+  const project = parseProject(raw)
+  const rawLayers = (raw as { layers?: unknown } | null | undefined)?.layers
+  const layers = rawLayers === undefined ? [] : ProjectLayersSchema.parse(rawLayers)
+  return { ...project, layers }
+}
+
+/** Жобаны қабаттарымен бірге сақтауға дайындайды (JSON.stringify алдында). */
+export function serializeProjectWithLayers(project: ProjectFileWithLayers): unknown {
+  return { ...project, layers: project.layers }
 }

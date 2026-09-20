@@ -20,6 +20,8 @@ import { mergeSettings } from './constants'
 import { calculateCutDimensions } from './edges'
 import { ConfigValidationError } from './errors'
 import { rotationFor } from './geometry'
+import { isNodeHiddenByLayer } from './layers'
+import type { Layer } from './layers'
 
 export type FlatNode = {
   nodeId: string
@@ -90,6 +92,12 @@ export function flattenTree(
   root: GroupNode,
   catalog: Catalog,
   settings?: SettingsOverride,
+  /**
+   * Жобаның қабаттары (`layers.ts`). ЕРІКТІ: берілмесе, тек `node.hidden`
+   * қаралады — ескі шақырулар (тесттер, `flattenEquivalence.test.ts`)
+   * өзгеріссіз жұмыс істейді.
+   */
+  layers?: Layer[],
 ): FlatScene {
   const nodes: FlatNode[] = []
   const solids: PlacedSolid[] = []
@@ -100,7 +108,12 @@ export function flattenTree(
     // Көрінбейтін деталь деталировкаға да, сметаға да түспеуі керек:
     // әйтпесе клиент көрмеген нәрсеге ақша төлейді. Топ жасырылса —
     // балалары да жасырын, сондықтан рекурсия осы жерде тоқтайды.
+    //
+    // ⚠ Қабаттың жасырылуы (`layers.ts`) ЖАҢА МЕХАНИЗМ ЕМЕС — дәл осы
+    // `hidden` жолымен өтеді, тек шарт кеңейді: түйіннің өз `hidden`
+    // белгісі НЕМЕСЕ оның қабаты жасырын болса, рекурсия осында тоқтайды.
     if (node.hidden === true) return
+    if (layers !== undefined && isNodeHiddenByLayer(node, layers)) return
     const pose = composePose(parent, node.transform)
     switch (node.kind) {
       case 'group':
