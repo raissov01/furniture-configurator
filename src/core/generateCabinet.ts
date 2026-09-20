@@ -960,7 +960,11 @@ export function generateCabinet(
       heightAtDepth(0), frontPanel.width,
       {
         x: frontPanel.side === 'left' ? 0 : W - frontPanel.width,
-        y: baseHeight,
+        // K5 / audit C3: y ЕМЕС baseHeight — make() позицияны ӨЗІ
+        // baseHeight-ке көтереді (`raised`, жоғарыда). Мұнда тағы бір рет
+        // қоссақ, панель цоколь биіктігіне ЕКІ РЕТ көтеріліп, столешницадан
+        // асып шығады.
+        y: 0,
         z: -panelMat.thickness,
       },
       ORIENT_FACING,
@@ -1093,7 +1097,9 @@ export function generateCabinet(
       const x = rail.position === 'left' ? -rail.width - rail.inset : W + rail.inset
       return make(
         id, 'rail', label, mat, H, rail.width,
-        { x, y: baseHeight, z: -mat.thickness }, ORIENT_FACING,
+        // K5 / audit C3: y ЕМЕС baseHeight — make() позицияны ӨЗІ
+        // baseHeight-ке көтереді, мұнда тағы бір рет қоссақ, екі есе шығады.
+        { x, y: 0, z: -mat.thickness }, ORIENT_FACING,
         `${label}, ${rail.position === 'left' ? 'слева' : 'справа'}`,
       )
     }

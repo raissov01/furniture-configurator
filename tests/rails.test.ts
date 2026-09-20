@@ -143,6 +143,26 @@ describe('фальш-панель', () => {
       generateCabinet(withRails([rail({ kind: 'filler', position: 'top' })]), catalog),
     ).toThrow(/left\/right/)
   })
+
+  /**
+   * K5 / audit C3 (docs/audit/corner-2026-09-20.md §C3): `make()` позицияны
+   * ӨЗІ `baseHeight`-ке көтереді, ал фальш-панель шақыруында `y: baseHeight`
+   * тағы бір рет беріледі — цоколі бар корпуста панель столешницадан асып
+   * шығады. Цокольсіз фикстурада (`baseHeight = 0`) бұл көрінбейді.
+   */
+  it('цоколі бар кезде корпус биіктігінде тұрады, одан асып шықпайды (K5 / audit C3)', () => {
+    const panels = generateCabinet(
+      withRails([rail({ kind: 'filler', position: 'left', width: 80 })], {
+        base: { kind: 'plinth', height: 95, plinthShape: 'box' },
+      }),
+      catalog,
+    )
+    const railPanel = byId(panels, 'rail-r1')
+    const side = panels.find((p) => p.id === 'side-left')!
+
+    expect(railPanel.position.y).toBe(side.position.y)
+    expect(railPanel.position.y + railPanel.finishedLength).toBe(side.position.y + side.finishedLength)
+  })
 })
 
 // ── Фартук ───────────────────────────────────────────────────────────────────

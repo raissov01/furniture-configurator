@@ -119,3 +119,25 @@ describe('тексерулер', () => {
   })
 })
 
+/**
+ * K5 / audit C3 (docs/audit/corner-2026-09-20.md §C3): `make()` позицияны
+ * ӨЗІ `baseHeight`-ке көтереді (`raised = { ...position, y: position.y +
+ * baseHeight }`), ал фронтальдық панель шақыруында `y: baseHeight` тағы бір
+ * рет беріліп, панель цоколь биіктігіне ЕКІ РЕТ көтеріледі. Цокольсіз
+ * корпуста (`baseHeight = 0`) ақау көрінбейді — сондықтан осы тестке дейін
+ * ешбір фикстурада цоколь болмаған.
+ */
+describe('цоколі бар (K5 / audit C3)', () => {
+  it('панельдің y аралығы корпустың (бүйірдің) y аралығымен сәйкес келуі керек', () => {
+    const panels = gen({
+      frontPanel: { width: 120, side: 'left' },
+      base: { kind: 'plinth', height: 95, plinthShape: 'box' },
+    })
+    const panel = byLabel(panels, 'Фронтальная панель')[0]!
+    const side = panels.find((p) => p.id === 'side-left')!
+
+    expect(panel.position.y).toBe(side.position.y)
+    expect(panel.position.y + panel.finishedLength).toBe(side.position.y + side.finishedLength)
+  })
+})
+
