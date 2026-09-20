@@ -4,15 +4,32 @@
 
 import type {
   ConstructionMethod, ConstructionSettings, EdgeBand, EdgePolicy,
-  EdgeSpec, PanelEdges, PanelRole,
+  EdgeSpec, Orientation, PanelEdges, PanelRole,
 } from './types'
 
 export type EdgeClass = 'visibleFront' | 'visibleSecondary' | 'hidden'
+
+/**
+ * Панельдің world Y бойынша ЕҢ ЖОҒАРҒЫ жиегін анықтайды — тұрақтыдан емес,
+ * `orientation`-нан (drilling.ts §R2 `edgeFaceFor`-мен бірдей тәсіл, §O11
+ * аудит). `position` панельдің төменгі-сол-алдыңғы бұрышы (`worldRange`,
+ * drilling.ts:46-49), ал локал x/y оң бағытта world-ке түседі (geometry.ts
+ * `rotationFor`), сондықтан белгілі бір локал өс world y-мен сәйкес келсе,
+ * сол өстің СОҢЫ (ұзындығы/ені толық) — үстіңгі жиек:
+ *   orientation.length === 'y'  →  W2 (types.ts: x=0 W1, x=length W2)
+ *   orientation.width  === 'y'  →  L2 (y=0 L1, y=width L2)
+ */
+function topEdgeOf(orientation: Orientation): 'W2' | 'L2' {
+  if (orientation.length === 'y') return 'W2'
+  if (orientation.width === 'y') return 'L2'
+  throw new Error(`topEdgeOf: панель тік болуы керек (length немесе width = 'y'), алды: ${JSON.stringify(orientation)}`)
+}
 
 /** Панель рөлі мен құрастыру әдісі бойынша әр жиектің көріну класы. */
 export function edgeClasses(
   role: PanelRole,
   construction: ConstructionMethod,
+  orientation: Orientation,
 ): Record<keyof PanelEdges, EdgeClass> {
   switch (role) {
     case 'divider':
@@ -47,10 +64,17 @@ export function edgeClasses(
       // ХДФ-қа кромка жабыспайды.
       return { L1: 'hidden', L2: 'hidden', W1: 'hidden', W2: 'hidden' }
     case 'drawerSide':
-    case 'drawerBack':
+    case 'drawerBack': {
       // Ящик қорабының ҮСТІҢГІ жиегі ғана көрінеді — ішіне қол салғанда
-      // сол жиек көрінеді әрі тиеді. Қалғаны қораптың ішінде.
-      return { L1: 'visibleSecondary', L2: 'hidden', W1: 'hidden', W2: 'hidden' }
+      // сол жиек көрінеді әрі тиеді. Қалғаны қораптың ішінде. Қай жиек
+      // «үстіңгі» екені ТҰРАҚТЫДАН емес, panel.orientation-нан шығады
+      // (§O11 аудит: бұрын үнемі L1 еді — ORIENT_SIDE/ORIENT_FACING-те L1
+      // алды/арты, ал үстіңгі жиек W2 болатын).
+      const top = topEdgeOf(orientation)
+      const base: Record<keyof PanelEdges, EdgeClass> = { L1: 'hidden', L2: 'hidden', W1: 'hidden', W2: 'hidden' }
+      base[top] = 'visibleSecondary'
+      return base
+    }
     case 'plinth':
       // Цокольдің тек ҮСТІҢГІ жиегі жасырын — қалғаны көрінеді әрі аяқ тиеді.
       return { L1: 'visibleFront', L2: 'hidden', W1: 'visibleSecondary', W2: 'visibleSecondary' }
@@ -66,8 +90,9 @@ export function resolveEdges(
   role: PanelRole,
   construction: ConstructionMethod,
   policy: EdgePolicy,
+  orientation: Orientation,
 ): PanelEdges {
-  const classes = edgeClasses(role, construction)
+  const classes = edgeClasses(role, construction, orientation)
   const pick = (c: EdgeClass): EdgeSpec => {
     const bandId = policy[c]
     return bandId ? { bandId } : null

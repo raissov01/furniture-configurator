@@ -317,7 +317,7 @@ export function generateCabinet(
     note = '',
     edgesOverride?: PanelEdges,
   ): Panel => {
-    const edges = edgesOverride ?? resolveEdges(role, config.construction, config.edging)
+    const edges = edgesOverride ?? resolveEdges(role, config.construction, config.edging, orientation)
     const { cutLength, cutWidth } = calculateCutDimensions(
       finishedLength, finishedWidth, edges, bands, settings,
     )
