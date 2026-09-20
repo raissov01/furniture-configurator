@@ -23,7 +23,33 @@ import {
   RUNNER_SCREW_DEPTH, RUNNER_SCREW_DIAMETER, SHELF_PIN_DEPTH, SHELF_PIN_DIAMETER,
   SHELF_PIN_PITCH,
 } from './constants'
+import { materialWidthRangeAt } from './bevelBounds'
 import type { Drill, DrillPurpose, Panel } from './types'
+
+/**
+ * Қолмен қосылатын тесіктің координатасы панельдің НАҒЫЗ материалы ішінде ме
+ * (Аудит Y6, docs/audit/drilling-2026-09-20.md: «Қолмен қосылған тесіктің
+ * координатасы ешбір шекпен салыстырылмайды» — `DrillEditor` тікбұрышты
+ * шектен (0 ≤ x ≤ cutLength, 0 ≤ y ≤ cutWidth) тыс шықпаса ғана рұқсат
+ * беретін, бірақ ЕН бойынша қиғаш (бұрыштық корпус) панельде заготовка
+ * тікбұрыш болғанымен нақты материал трапеция — тікбұрыштың ІШІНДЕ, бірақ
+ * кесіліп кететін үшбұрышта жатқан тесік сол тексеруден ӨТІП КЕТЕДІ).
+ *
+ * Кең бетте (`inner`/`outer`) `bevelBounds.ts`-тегі `materialWidthRangeAt`-пен
+ * тексереді — ГЕОМЕТРИЯНЫ ҚАЙТАЛАМАЙДЫ, сол көмекшіні қайта пайдаланады
+ * (dxf.ts-тің контур есебімен ӘДЕЙІ бірдей формула, сонда осы тексеру мен
+ * станокқа кететін пішін екі басқа геометрия болып алшақтамайды).
+ *
+ * Торц беттерін (edgeL1/L2/W1/W2) бұл жерде қарастырмайды: `DrillEditor`-дің
+ * 2D жаймасы оларды әрдайым тікбұрышты жолақ ретінде салады, ескі
+ * (тікбұрыш) тексеру сол жерде дұрыс.
+ */
+export function isDrillWithinMaterial(panel: Panel, face: Drill['face'], x: number, y: number): boolean {
+  if (x < 0 || x > panel.cutLength) return false
+  if (face !== 'inner' && face !== 'outer') return y >= 0 && y <= panel.cutWidth
+  const [yMin, yMax] = materialWidthRangeAt(panel, x)
+  return y >= yMin && y <= yMax
+}
 
 /** Бір панельдің присадкасына енгізілген түзету. */
 export type DrillEdit = {

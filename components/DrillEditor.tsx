@@ -29,6 +29,7 @@ import {
   drillKey,
   drillFromPreset,
   findDrillPreset,
+  isDrillWithinMaterial,
   isManualDrill,
   removeDrill,
   resetPanelDrills,
@@ -221,6 +222,10 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
     const x = snap && !onEdge ? snapToPitch(spot.x) : spot.x
     const y = onEdge ? t / 2 : snap ? snapToPitch(spot.y) : spot.y
     const drill = drillFromPreset(preset, spot.face, x, y, t)
+    // Аудит Y6: ЕН бойынша қиғаш (бұрыштық корпус) панельде тікбұрышты
+    // заготовканың ІШІНДЕ, бірақ кесіліп кететін үшбұрышта жатқан нүктеге
+    // тесік қоюға болмайды — ҮНСІЗ бас тартамыз (onEdge сәйкессіздігіндей).
+    if (!isDrillWithinMaterial(panel, drill.face, drill.x, drill.y)) return
     setEdits(addDrill(edits, panel.id, drill), `add:${drillKey(drill)}`)
     setSelected(drillKey(drill))
   }
