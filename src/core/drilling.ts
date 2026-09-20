@@ -165,7 +165,20 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
   )
   if (!jointAxis) throw new Error(`Буын осі табылмады: ${facePanel.id} ↔ ${edgePanel.id}`)
 
-  const [jointStart, jointEnd] = worldRange(edgePanel, jointAxis, edgeT)
+  /*
+   * Буын ұзындығы — ЕКІ панельдің де `jointAxis` бойындағы қиылысы, тек
+   * `edgePanel`-дің өз ұзындығы емес (docs/audit/corner-2026-09-20.md §C1 /
+   * drilling-fix-plan.md K3). Түзу шкафта `facePanel` (крышка/дно) сол
+   * осьте `edgePanel`-мен (боковина) бірдей аралықта тұрады, сондықтан
+   * қиылыс толық ұзындықты береді — бұл жерде ештеңе өзгермейді. Бұрыштық
+   * шкафта `side-right` тек өз тереңдігінде тұрады (мыс. 250..600), ал
+   * дно бүкіл тереңдікте (0..600) — ескі код дноның ТОЛЫҚ ұзындығын алатын,
+   * нәтижесінде материал жоқ жерге (0..250) тесік түсетін.
+   */
+  const [edgeStart, edgeEnd] = worldRange(edgePanel, jointAxis, edgeT)
+  const [faceStart, faceEnd] = worldRange(facePanel, jointAxis, faceT)
+  const jointStart = Math.max(edgeStart, faceStart)
+  const jointEnd = Math.min(edgeEnd, faceEnd)
   const jointLength = jointEnd - jointStart
   const count = confirmatCount(jointLength, ctx.settings)
   const offsets = spreadAlongJoint(jointLength, count, CONFIRMAT_FIRST_OFFSET)
@@ -194,10 +207,14 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
       : localY(facePanel, jointLineWorld)
     pushFace(facePanel, 'outer', fx, fy, CONFIRMAT_FACE_DIAMETER, faceT, 'confirmat', ctx)
 
-    // Edge панель: Ø7×50 торцке, қалыңдықтың дәл ортасына
+    // Edge панель: Ø7×50 торцке, қалыңдықтың дәл ортасына. Edge панельдің
+    // ӨЗ локал координатасы `alongWorld − edgeStart` — `offset` буынның
+    // басынан (`jointStart`) өлшенеді, ал `jointStart` енді `edgeStart`-пен
+    // сәйкес келмеуі мүмкін (қиылыс edge панельдің басынан ілгері басталуы
+    // мүмкін, жоғарыдағы K3 түзетуін қара).
     edgePanel.drilling.push({
       face: edgeFace,
-      x: Math.round(offset - edgeXShift),
+      x: Math.round(alongWorld - edgeStart - edgeXShift),
       y: Math.round(edgeT / 2),
       diameter: CONFIRMAT_EDGE_DIAMETER,
       depth: CONFIRMAT_EDGE_DEPTH,
