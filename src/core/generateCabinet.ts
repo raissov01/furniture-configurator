@@ -336,6 +336,26 @@ export function generateCabinet(
   }
 
   /**
+   * K10f / audit C8 (docs/audit/corner-2026-09-20.md §C8): бұрыштық корпуста
+   * берілген Х (сол→оң) нүктесіндегі НАҚТЫ сөре тереңдігі.
+   *
+   * `stand` (жолақ ішіндегі тік стойка) бір ғана Х нүктесінде тұрады, сол
+   * себепті оған `widthBevel` СЫЙМАЙДЫ (ол екі ұшы бар детальге арналған) —
+   * оның орнына сол нүктедегі ЖАЛҒЫЗ тереңдік санын білу жеткілікті.
+   *
+   * Шеткі мәндер `bottom`/`top`-тың өз bevel-імен ДӘЛ СӘЙКЕС келеді: х = t
+   * (ішкі кеңістіктің сол шеті, `bottom.position.x`) — `shelfDepth`, х = W − t
+   * (оң шеті, `bottom.position.x + bottom.finishedLength`) — `shelfDepthRight`.
+   * Аралығында — СЫЗЫҚТЫҚ интерполяция (трапеция қиғашы да сызықтық).
+   */
+  const depthAtX = (x: number): { z: number; depth: number } => {
+    if (!corner) return { z: settings.shelfSetback, depth: shelfDepth }
+    const ratio = innerWidth > 0 ? Math.min(1, Math.max(0, (x - t) / innerWidth)) : 0
+    const depth = shelfDepth + (shelfDepthRight - shelfDepth) * ratio
+    return { z: carcassDepth - depth, depth }
+  }
+
+  /**
    * Корпус тіректің ҮСТІНДЕ тұрады, сондықтан барлық панель осыған көтеріледі.
    * Жалғыз ерекшелік — цокольдің өзі: ол `y = -baseHeight` деп беріледі де,
    * көтерілгеннен кейін дәл еденге түседі.
@@ -833,16 +853,12 @@ export function generateCabinet(
         const front = insets.front ?? 0
         const back = insets.back ?? 0
 
-        // Тереңдік жолақтың ОРТАСЫНАН алынады: қиғаш төбеде стойка да
-        // қысқарады, ал ортасы — оның орташа тереңдігі.
-        const space = shelfSpaceAt(band.y + Math.round(band.height / 2))
         const standHeight = band.height - top - bottom
-        const standDepth = space.depth - front - back
-        if (standHeight < MIN_RAIL_WIDTH || standDepth < MIN_RAIL_WIDTH) {
+        if (standHeight < MIN_RAIL_WIDTH) {
           throw new ConfigValidationError(
             `${field}.insets`,
-            `отступы оставляют стойку ${standHeight}×${standDepth} мм`,
-            `каждая сторона ≥ ${MIN_RAIL_WIDTH} мм`,
+            `отступы оставляют стойку биіктігі ${standHeight} мм`,
+            `биіктік ≥ ${MIN_RAIL_WIDTH} мм`,
           )
         }
 
@@ -876,6 +892,22 @@ export function generateCabinet(
         let x = layout.x
         for (let i = 0; i < standCount; i += 1) {
           x = explicit ? layout.x + explicit[i]! : x + (openings[i] ?? 0)
+          /*
+           * K10f / audit C8: тереңдік осы стойканың ӨЗ Х нүктесінен алынады
+           * (стойканың ортасы, `x + t/2`) — жолақтың ортасынан ЕМЕС. Бұрыштық
+           * корпуста сол жақ стойка терең жерде, оң жақ стойка қиғаш жерде
+           * тұрады: екеуінің тереңдігі бірдей болуы МҮМКІН ЕМЕС.
+           * Бұрыштық емес корпуста (не slope-та) — бұрынғыдай, х-тен тәуелсіз.
+           */
+          const space = corner ? depthAtX(x + Math.round(t / 2)) : shelfSpaceAt(band.y + Math.round(band.height / 2))
+          const standDepth = space.depth - front - back
+          if (standDepth < MIN_RAIL_WIDTH) {
+            throw new ConfigValidationError(
+              `${field}.insets`,
+              `отступы (х=${x} мм-де) стойка тереңдігін ${standDepth} мм-ге дейін қысады`,
+              `тереңдік ≥ ${MIN_RAIL_WIDTH} мм`,
+            )
+          }
           panels.push(make(
             `${section.id}${bandTag(bandIndex)}-stand-${i + 1}`, 'divider', 'Стойка', carcass,
             standHeight, standDepth,

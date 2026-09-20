@@ -118,3 +118,52 @@ describe('K10e: фронтальдық панель (frontPanel) + бұрышт�
     expect(() => generateCabinet(cfg, catalog)).toThrow(/frontPanel|фронтальд/)
   })
 })
+
+// ── K10f: стойка (stand) — НАҚТЫ ТҮЗЕТУ: тереңдігі Х нүктесінен есептеледі ─
+
+describe('K10f: стойка (stand) + бұрыштық корпус — Х нүктесінен тереңдік', () => {
+  /**
+   * Сол жақтағы стойка (х аз) терең жерде тұрады — тереңдігі сол бүйірге
+   * жуық (600-ге жақын). Оң жақтағы стойка (х көп) қиғаш жерде тұрады —
+   * тереңдігі 350-ге жуық. Түзетуге дейін екеуі БІРДЕЙ болатын (тереңдік
+   * Х-тен тәуелсіз, slope-тың орта нүктесінен ғана есептелетін).
+   */
+  it('сол жақ стойка терең, оң жақ стойка тайыз — екеуі ӘРТҮРЛІ', () => {
+    const cfg = corner(350, {
+      sections: [{
+        ...template.sections[0]!,
+        fronts: null,
+        contents: [{ kind: 'stand', count: 2, at: [20, 500] }],
+      }],
+    })
+    const panels = generateCabinet(cfg, catalog)
+    const stands = panels.filter((p) => p.role === 'divider').sort((a, b) => a.position.x - b.position.x)
+    expect(stands).toHaveLength(2)
+    const [leftStand, rightStand] = stands
+    expect(leftStand!.finishedWidth).toBeGreaterThan(rightStand!.finishedWidth)
+    // Сол жақ х=20 — корпустың сол шетіне жақын, тереңдігі толық сол
+    // бүйірдің тереңдігіне (600) жуық болуы керек.
+    expect(leftStand!.finishedWidth).toBeGreaterThan(560)
+    // Оң жақ х=500 — қиғаш аяқталар алдында, тереңдігі 350-ге жуық.
+    expect(rightStand!.finishedWidth).toBeLessThan(400)
+  })
+
+  it('стойка МАТЕРИАЛДЫҢ ІШІНДЕ тұрады: z + тереңдік әрқашан бүйірдің тереңдігінен аспайды', () => {
+    const cfg = corner(350, {
+      sections: [{
+        ...template.sections[0]!,
+        fronts: null,
+        contents: [{ kind: 'stand', count: 3 }],
+      }],
+    })
+    const panels = generateCabinet(cfg, catalog)
+    const stands = panels.filter((p) => p.role === 'divider')
+    expect(stands.length).toBe(3)
+    for (const s of stands) {
+      // Артқы жиегі әрқашан 600-ден аспауы керек (қабырғаға тіреледі, одан әрі емес).
+      expect(s.position.z + s.finishedWidth).toBeLessThanOrEqual(600)
+      // Алдыңғы жиегі теріс болмауы керек.
+      expect(s.position.z).toBeGreaterThanOrEqual(0)
+    }
+  })
+})
