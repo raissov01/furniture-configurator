@@ -388,10 +388,25 @@ export const PlacementSchema = z.object({
   rotate: z.number().min(-180).max(180).optional(),
 })
 
+/**
+ * Тапсырыс реквизиттері (PRO100 паритеті §4.1): Заказ · Дата · Клиент ·
+ * Дизайнер · Примечание. Толықтай ЕРІКТІ — ескі жобада `info` жоқ,
+ * сондықтан бұл өріс қосылса да `schemaVersion` көтерілмейді.
+ */
+export const ProjectInfoSchema = z.object({
+  orderNo: z.string().min(1).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  client: z.string().min(1).optional(),
+  designer: z.string().min(1).optional(),
+  note: z.string().min(1).optional(),
+})
+
 export const ProjectFileSchema = ProjectFileV2Schema.extend({
   schemaVersion: z.literal(3),
   room: RoomSchema,
   placements: z.array(PlacementSchema),
+  // ЕРІКТІ: ескі жобада жоқ, сондықтан нұсқа көтерілмейді (жоғарыдағы түсінік).
+  info: ProjectInfoSchema.optional(),
 })
 
 export const CURRENT_SCHEMA_VERSION = 3

@@ -15,10 +15,20 @@ import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { ASSEMBLY_STAGE_NAMES, assemblySteps, projectUsage, rolesLabel } from '@/src/core/index'
-import type { AssemblyStage, Catalog, Panel } from '@/src/core/index'
+import type { AssemblyStage, Catalog, Panel, ProjectInfo } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
-type Tab = 'materials' | 'assembly'
+type Tab = 'materials' | 'assembly' | 'info'
+
+/** Реквизит өрісі: input стилі бүкіл жобада бірдей — QuoteView-дегі «Заказчик»-пен бірдей. */
+const FIELD_CLASS = 'w-full rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900'
+
+const INFO_FIELDS: { key: keyof ProjectInfo; label: string; type: 'text' | 'date' }[] = [
+  { key: 'orderNo', label: 'Заказ', type: 'text' },
+  { key: 'date', label: 'Дата', type: 'date' },
+  { key: 'client', label: 'Заказчик', type: 'text' },
+  { key: 'designer', label: 'Дизайнер', type: 'text' },
+]
 
 const squareMetres = (mm2: number): string => (mm2 / 1_000_000).toFixed(2)
 
@@ -40,6 +50,8 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
   const selected = useConfigurator((s) => s.selected)
   const assemblyStep = useConfigurator((s) => s.assemblyStep)
   const setAssemblyStep = useConfigurator((s) => s.setAssemblyStep)
+  const projectInfo = useConfigurator((s) => s.projectInfo)
+  const editProjectInfo = useConfigurator((s) => s.editProjectInfo)
   const [tab, setTab] = useState<Tab>('materials')
 
   const usage = useMemo(() => {
@@ -66,6 +78,7 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
           <h2 className="mr-1 text-sm font-semibold">{tr('Проект')}</h2>
           <Button active={tab === 'materials'} onClick={() => setTab('materials')}>{tr('Материалы')}</Button>
           <Button active={tab === 'assembly'} onClick={() => setTab('assembly')}>{tr('Сборка')}</Button>
+          <Button active={tab === 'info'} onClick={() => setTab('info')}>{tr('Реквизиты')}</Button>
           <span className="text-[11px] text-neutral-500">
             {tr('деталей')}: <b className="tabular-nums">{panels.length}</b>
           </span>
@@ -126,7 +139,7 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
               </p>
             </div>
           )
-        ) : (
+        ) : tab === 'assembly' ? (
           <div className="space-y-1">
             {steps.map((step, i) => {
               const previous = steps[i - 1]
@@ -171,6 +184,34 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
             })}
             <p className="mt-3 text-[10px] leading-relaxed text-neutral-400">
               {tr('Наведите на строку — деталь подсветится в 3D, нажмите — корпус соберётся до этого шага. Порядок выводится из геометрии: снизу вверх, снаружи внутрь, крышка последней.')}
+            </p>
+          </div>
+        ) : (
+          <div className="max-w-sm space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              {INFO_FIELDS.map((f) => (
+                <label key={f.key} className="flex flex-col gap-1 text-xs">
+                  <span className="text-neutral-500">{tr(f.label)}</span>
+                  <input
+                    type={f.type}
+                    value={projectInfo[f.key] ?? ''}
+                    onChange={(e) => editProjectInfo({ [f.key]: e.target.value })}
+                    className={FIELD_CLASS}
+                  />
+                </label>
+              ))}
+            </div>
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="text-neutral-500">{tr('Примечание')}</span>
+              <textarea
+                value={projectInfo.note ?? ''}
+                onChange={(e) => editProjectInfo({ note: e.target.value })}
+                rows={3}
+                className={FIELD_CLASS}
+              />
+            </label>
+            <p className="text-[10px] leading-relaxed text-neutral-400">
+              {tr('Реквизиты попадают в КП и в сборочный чертёж для цеха. Пустое поле нигде не печатается.')}
             </p>
           </div>
         )}

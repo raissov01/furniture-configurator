@@ -17,6 +17,7 @@ import { ConfigValidationError } from '../errors'
 import { formatTenge } from '../pricing'
 import type { PriceBreakdown, PriceLine } from '../pricing'
 import type { ShopProfile } from '../shop'
+import { projectInfoRows } from './pdf'
 import type { PdfFonts } from './pdf'
 
 /** A4 портрет, пункт. */
@@ -41,6 +42,12 @@ export type QuotePdfInput = {
   date: string
   /** Клиенттің аты — бос болса, жол мүлде басылмайды. */
   customer?: string
+  /** Тапсырыс нөмірі — «Заказ». Бос болса, жол мүлде басылмайды. */
+  orderNo?: string
+  /** Жобаны жасаған дизайнер/менеджер аты. Бос болса, жол мүлде басылмайды. */
+  designer?: string
+  /** Еркін ескертпе. Бос болса, жол мүлде басылмайды. */
+  note?: string
   fonts: PdfFonts
 }
 
@@ -98,8 +105,12 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
   }
   label(ctx, MARGIN, y, `Проект: ${input.projectName}`, 10)
   y -= 14
-  if (input.customer) {
-    label(ctx, MARGIN, y, `Заказчик: ${input.customer}`, 10)
+  // Тапсырыс реквизиттері (Заказ/Заказчик/Дизайнер/Примечание) — толтырылмаған
+  // өріс мүлде басылмайды, projectInfoRows соны кепілдейді.
+  for (const row of projectInfoRows({
+    orderNo: input.orderNo, client: input.customer, designer: input.designer, note: input.note,
+  })) {
+    label(ctx, MARGIN, y, `${row.label}: ${row.value}`, 10)
     y -= 14
   }
 

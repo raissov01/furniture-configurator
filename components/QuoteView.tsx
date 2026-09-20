@@ -44,6 +44,12 @@ function download(filename: string, data: Uint8Array | string, mime: string): vo
   URL.revokeObjectURL(url)
 }
 
+/** ISO (YYYY-MM-DD) → «ДД.ММ.ГГГГ», КП-дағы басқа даталармен бір пішінде. */
+function isoToRu(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return y && m && d ? `${d}.${m}.${y}` : iso
+}
+
 /** `panels` — БҮКІЛ ЖОБАНЫҢ детальдары. Геометрия store-да есептелмейді (§3). */
 export function QuoteView({
   panels, hardware, projectName, moduleWidths,
@@ -59,6 +65,9 @@ export function QuoteView({
   const setOpen = useConfigurator((s) => s.setQuoteOpen)
   const shop = useConfigurator((s) => s.shop)
   const catalog = useConfigurator((s) => s.catalog)
+  // Тапсырыс реквизиттері («Проект» терезесінің «Реквизиты» қойындысы) — КП-ға
+  // солардан барады. «Заказчик» өрісі осы жерде әлі де қолмен түзетілуі мүмкін.
+  const projectInfo = useConfigurator((s) => s.projectInfo)
   const [tab, setTab] = useState<Tab>('nesting')
   const [customer, setCustomer] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
@@ -139,10 +148,15 @@ export function QuoteView({
               }
               onClick={() => void run('quote', async () => {
                 const { quotePdf } = await import('@/src/core/export/quotePdf')
+                const orderDate = projectInfo.date ? isoToRu(projectInfo.date) : new Date().toLocaleDateString('ru-RU')
+                const client = customer.trim() || projectInfo.client
                 const bytes = await quotePdf({
                   price: price!, shop, projectName,
-                  date: new Date().toLocaleDateString('ru-RU'),
-                  ...(customer.trim() ? { customer: customer.trim() } : {}),
+                  date: orderDate,
+                  ...(client ? { customer: client } : {}),
+                  ...(projectInfo.orderNo ? { orderNo: projectInfo.orderNo } : {}),
+                  ...(projectInfo.designer ? { designer: projectInfo.designer } : {}),
+                  ...(projectInfo.note ? { note: projectInfo.note } : {}),
                   fonts: await loadFonts(),
                 })
                 download(`${projectName}-КП.pdf`, bytes, 'application/pdf')
@@ -225,10 +239,17 @@ export function QuoteView({
               <input
                 value={customer}
                 onChange={(e) => setCustomer(e.target.value)}
-                placeholder={tr('имя клиента — попадёт в КП')}
+                placeholder={projectInfo.client || tr('имя клиента — попадёт в КП')}
                 className="w-64 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
               />
             </label>
+            {projectInfo.orderNo || projectInfo.designer || projectInfo.note ? (
+              <p className="text-[11px] text-neutral-400">
+                {tr('В КП также попадут реквизиты из «Проект → Реквизиты»')}
+                {projectInfo.orderNo ? ` · ${tr('Заказ')} ${projectInfo.orderNo}` : ''}
+                {projectInfo.designer ? ` · ${tr('Дизайнер')} ${projectInfo.designer}` : ''}
+              </p>
+            ) : null}
             <PriceTable price={price!} shopName={shop.name} />
           </div>
         )}

@@ -1127,6 +1127,28 @@ export type Placement = {
   rotate?: number | undefined
 }
 
+/**
+ * Тапсырыстың реквизиттері — КП мен цех құжаттарына шығады (PRO100
+ * паритеті, docs/pro100/parity.md §4-тің 1-тармағы): Заказ · Дата · Клиент ·
+ * Дизайнер · Примечание.
+ *
+ * Толықтай ЕРІКТІ өріс: ескі жобада `info` мүлде жоқ, сондықтан
+ * `schemaVersion` көтерілмейді (CLAUDE.md §7) — реквизитсіз жоба дәл сол
+ * күйінде ашылады.
+ */
+export type ProjectInfo = {
+  /** Тапсырыс нөмірі — «Заказ». */
+  orderNo?: string | undefined
+  /** ISO, YYYY-MM-DD. */
+  date?: string | undefined
+  /** Клиент/тапсырыс беруші аты — «Заказчик». */
+  client?: string | undefined
+  /** Жобаны жасаған дизайнер/менеджер аты. */
+  designer?: string | undefined
+  /** Еркін ескертпе. */
+  note?: string | undefined
+}
+
 export type ProjectFile = {
   /** Ағымдағы нұсқа = 3. Ескі файлдар parseProject() арқылы көтеріледі. */
   schemaVersion: 3
@@ -1141,6 +1163,8 @@ export type ProjectFile = {
    */
   room: Room
   placements: Placement[]
+  /** Тапсырыс реквизиттері. ЕРІКТІ — ескі жобада жоқ. */
+  info?: ProjectInfo | undefined
 }
 
 // ── Деталировка ──────────────────────────────────────────────────────────────

@@ -27,6 +27,7 @@ function download(filename: string, data: Uint8Array | string, mime: string): vo
 
 export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels: Panel[] }) {
   const catalog = useConfigurator((s) => s.catalog)
+  const projectInfo = useConfigurator((s) => s.projectInfo)
   const shop = useConfigurator((s) => s.shop)
   const [busy, setBusy] = useState<string | null>(null)
   const base = cabinet.id || 'cabinet'
@@ -94,6 +95,7 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
               cabinet, panels, catalog,
               projectName: cabinet.name,
               fonts: { regular: new Uint8Array(regular), bold: new Uint8Array(bold) },
+              info: projectInfo,
             })
             download(`${base}-assembly.pdf`, bytes, 'application/pdf')
           })}

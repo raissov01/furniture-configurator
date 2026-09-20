@@ -12,7 +12,7 @@ import type { PDFFont, PDFPage } from 'pdf-lib'
 import { CUT_LIST_COLUMNS, formatCutList, partNumbers } from '../cutList'
 import { fitTransform, projectElevation, projectIsometric } from './drawing'
 import type { Bounds, ElevationView } from './drawing'
-import type { CabinetConfig, Catalog, Panel } from '../types'
+import type { CabinetConfig, Catalog, Panel, ProjectInfo } from '../types'
 
 export type PdfFonts = { regular: Uint8Array; bold: Uint8Array }
 
@@ -22,6 +22,34 @@ export type AssemblyPdfInput = {
   catalog: Catalog
   projectName: string
   fonts: PdfFonts
+  /** Тапсырыс реквизиттері (Заказ/Клиент/Дизайнер/Примечание). ЕРІКТІ. */
+  info?: ProjectInfo | undefined
+}
+
+/**
+ * Реквизиттің қай жолдары басылатыны осы функциямен анықталады: бос өріс
+ * тізімге кірмейді, сондықтан ешбір экспорт бос жол шығармайды. Реті —
+ * PRO100 TPROJECTINFOFORM-мен бірдей: Заказ · Заказчик · Дизайнер · Примечание
+ * («Дата» құжаттың өз күнінде бөлек басылады, себебі ол әрдайым толы).
+ */
+export type ProjectInfoField = { label: string; value: string }
+
+export function projectInfoRows(info: {
+  orderNo?: string | undefined
+  client?: string | undefined
+  designer?: string | undefined
+  note?: string | undefined
+}): ProjectInfoField[] {
+  const rows: ProjectInfoField[] = []
+  const add = (label: string, value: string | undefined) => {
+    const trimmed = value?.trim()
+    if (trimmed) rows.push({ label, value: trimmed })
+  }
+  add('Заказ', info.orderNo)
+  add('Заказчик', info.client)
+  add('Дизайнер', info.designer)
+  add('Примечание', info.note)
+  return rows
 }
 
 /** A4 альбом, пункт. */
@@ -88,6 +116,15 @@ function fitText(font: PDFFont, value: string, size: number, maxWidth: number): 
   return `${text}…`
 }
 
+/**
+ * Реквизит жолы қосымша биіктік алады — тақырып блогының қалған бөлігі мен
+ * содан кейінгі мазмұн осы шаманы бірге ескеруі керек, әйтпесе жолдар
+ * бір-бірінің үстіне түседі.
+ */
+function titleBlockExtra(input: AssemblyPdfInput): number {
+  return projectInfoRows(input.info ?? {}).length > 0 ? 12 : 0
+}
+
 function titleBlock(ctx: Ctx, input: AssemblyPdfInput, page: string): void {
   const { cabinet, projectName } = input
   const y = PAGE.h - MARGIN
@@ -99,7 +136,13 @@ function titleBlock(ctx: Ctx, input: AssemblyPdfInput, page: string): void {
   const meta = `${page}   ·   ${cabinet.construction === 'sidesOverlay' ? 'боковины накрывают крышку и дно' : 'крышка и дно накрывают боковины'}   ·   задняя стенка: ${cabinet.back.mode === 'overlay' ? 'внакладку' : 'в паз'}`
   const mw = ctx.regular.widthOfTextAtSize(meta, 8)
   label(ctx, PAGE.w - MARGIN - mw, y - 22, meta, 8, false, THIN)
-  line(ctx.page, MARGIN, y - 30, PAGE.w - MARGIN, y - 30, THIN, 0.5)
+  const rows = projectInfoRows(input.info ?? {})
+  if (rows.length > 0) {
+    const infoLine = rows.map((r) => `${r.label}: ${r.value}`).join('   ·   ')
+    label(ctx, MARGIN, y - 34, infoLine, 8, false, THIN)
+  }
+  const ruleY = y - 30 - titleBlockExtra(input)
+  line(ctx.page, MARGIN, ruleY, PAGE.w - MARGIN, ruleY, THIN, 0.5)
 }
 
 function drawElevation(
@@ -227,7 +270,7 @@ function drawCutList(ctx: Ctx, input: AssemblyPdfInput): void {
   const numberColumn = 20
 
   const x = MARGIN
-  let y = PAGE.h - MARGIN - 55
+  let y = PAGE.h - MARGIN - 55 - titleBlockExtra(input)
 
   const colX: number[] = [x + numberColumn]
   widths.forEach((w, i) => colX.push(colX[i]! + w))
@@ -284,7 +327,7 @@ export async function assemblyDrawingPdf(input: AssemblyPdfInput): Promise<Uint8
     const page = doc.addPage([PAGE.w, PAGE.h])
     const ctx: Ctx = { page, regular, bold }
     titleBlock(ctx, input, 'Лист 1 из 3 — проекции')
-    const top = PAGE.h - MARGIN - 40
+    const top = PAGE.h - MARGIN - 40 - titleBlockExtra(input)
     const colW = (PAGE.w - 2 * MARGIN) / 3
     const h = top - MARGIN
     const views: ElevationView[] = ['front', 'side', 'plan']
@@ -298,7 +341,7 @@ export async function assemblyDrawingPdf(input: AssemblyPdfInput): Promise<Uint8
     const page = doc.addPage([PAGE.w, PAGE.h])
     const ctx: Ctx = { page, regular, bold }
     titleBlock(ctx, input, 'Лист 2 из 3 — сборка')
-    const top = PAGE.h - MARGIN - 40
+    const top = PAGE.h - MARGIN - 40 - titleBlockExtra(input)
     drawIsometric(
       ctx, input,
       { x: MARGIN, y: MARGIN, w: PAGE.w - 2 * MARGIN, h: top - MARGIN },

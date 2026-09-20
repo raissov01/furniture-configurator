@@ -31,8 +31,8 @@ import {
 } from '@/src/core/index'
 import type { Quality } from '@/lib/appearance'
 import type {
-  CabinetConfig, Catalog, Material, Placement, ProjectFile, Room, Section, SectionContent,
-  ShopProfile, WallId,
+  CabinetConfig, Catalog, Material, Placement, ProjectFile, ProjectInfo, Room, Section,
+  SectionContent, ShopProfile, WallId,
 } from '@/src/core/index'
 
 /** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
@@ -67,6 +67,14 @@ type State = Snapshot & {
    */
   shop: ShopProfile
   catalog: Catalog
+  /**
+   * Тапсырыс реквизиттері (Заказ/Дата/Клиент/Дизайнер/Примечание). КП мен
+   * цех құжаттарына шығады. Undo тарихына кірмейді — бұл геометрия емес,
+   * метадерек (§7-дегі «конфиг қана сақталады» ережесіне қайшы емес: файлда
+   * жатады, тек undo-стектің бөлігі емес — шкафты қайтарғанда реквизиттің
+   * жоғалуы қате болар еді).
+   */
+  projectInfo: ProjectInfo
   shopOpen: boolean
   quoteOpen: boolean
   sketchOpen: boolean
@@ -209,6 +217,8 @@ type State = Snapshot & {
 
   exportProject(): ProjectFile
   loadProject(file: ProjectFile): void
+  /** Тапсырыс реквизиттерін түзету. Бос жол сақталмайды (`exportProject`-те қиылады). */
+  editProjectInfo(patch: Partial<ProjectInfo>): void
   saveProjectLocally(): void
   hydrateProject(): void
 
@@ -299,6 +309,21 @@ const snapshot = (s: State): Snapshot => ({
  * Жаңа өлшемді бөлме. Терезе мен есік бар болса — жаңа қабырғаға қысылады,
  * жоқ болса — әдепкісі қойылады: прогулкада бөлме бос қорап болмасын.
  */
+/**
+ * Реквизиттегі бос/бос-орыннан тұратын өрістерді қияды: сақталған файлда
+ * толтырылмаған өріс мүлде жатпауы керек, әйтпесе экспорттар «бос жол»
+ * басып шығарады.
+ */
+const cleanProjectInfo = (info: ProjectInfo): ProjectInfo | undefined => {
+  const cleaned: ProjectInfo = {}
+  if (info.orderNo?.trim()) cleaned.orderNo = info.orderNo.trim()
+  if (info.date?.trim()) cleaned.date = info.date.trim()
+  if (info.client?.trim()) cleaned.client = info.client.trim()
+  if (info.designer?.trim()) cleaned.designer = info.designer.trim()
+  if (info.note?.trim()) cleaned.note = info.note.trim()
+  return Object.keys(cleaned).length > 0 ? cleaned : undefined
+}
+
 const withOpenings = (room: Room): Room =>
   (room.openings && room.openings.length > 0
     ? { ...room, openings: fitOpenings(room) }
@@ -319,6 +344,7 @@ export const useConfigurator = create<State>((set, get) => ({
   ...initial,
   shop: defaultShop,
   catalog: catalogOf(defaultShop),
+  projectInfo: {},
   shopOpen: false,
   quoteOpen: false,
   sketchOpen: false,
@@ -522,6 +548,7 @@ export const useConfigurator = create<State>((set, get) => ({
       cabinets: s.cabinets,
       room: s.room,
       placements: s.placements,
+      info: cleanProjectInfo(s.projectInfo),
     }
   },
 
@@ -553,10 +580,16 @@ export const useConfigurator = create<State>((set, get) => ({
       placements: file.placements,
       activeId: file.cabinets[0]!.id,
       templateId: '',
+      projectInfo: file.info ?? {},
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
     })
+  },
+
+  /** Тапсырыс реквизиттерін түзету. UI өрісте бос жолды бос қалдырады да, `exportProject` оны экспортта қиып тастайды. */
+  editProjectInfo(patch) {
+    set((s) => ({ projectInfo: { ...s.projectInfo, ...patch } }))
   },
 
   saveProjectLocally() {
@@ -583,6 +616,7 @@ export const useConfigurator = create<State>((set, get) => ({
         cabinets: file.cabinets,
         placements: file.placements,
         activeId: file.cabinets[0]!.id,
+        projectInfo: file.info ?? {},
         // Жұмыс табылды — бастау экранын көрсетудің қажеті жоқ.
         firstRun: false,
       })
