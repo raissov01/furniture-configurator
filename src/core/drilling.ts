@@ -170,7 +170,10 @@ function edgeXShiftFor(edgePanel: Panel, screwAxis: Axis, ctx: Ctx): number {
 
 /**
  * `edgePanel`-дің торці `facePanel`-дің бетіне тіреледі.
- * Бұранда face панельдің бетінен өтіп (Ø5), edge панельдің торціне кіреді (Ø7×50).
+ * Бұранда face панельдің бетінен өтіп (Ø8), edge панельдің торціне кіреді
+ * (Ø5×35) — §4.9, 2026-09-02 түзетуі (Аудит Y1, docs/audit/drilling-2026-09-20.md:
+ * бұл комментарий сол түзетуден бұрынғы ЕСКІ санды айтатын, тек мәтін,
+ * `constants.ts`/код бұрыннан дұрыс).
  */
 export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): void {
   const faceT = ctx.thickness(facePanel)
@@ -217,7 +220,7 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
   for (const offset of offsets) {
     const alongWorld = jointStart + offset
 
-    // Face панель: Ø5 өтпелі
+    // Face панель: Ø8 өтпелі
     const fx = facePanel.orientation.length === jointAxis
       ? localX(facePanel, alongWorld)
       : localX(facePanel, jointLineWorld)
@@ -226,7 +229,7 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
       : localY(facePanel, jointLineWorld)
     pushFace(facePanel, 'outer', fx, fy, CONFIRMAT_FACE_DIAMETER, faceT, 'confirmat', ctx)
 
-    // Edge панель: Ø7×50 торцке, қалыңдықтың дәл ортасына. Edge панельдің
+    // Edge панель: Ø5×35 торцке, қалыңдықтың дәл ортасына. Edge панельдің
     // ӨЗ локал координатасы `alongWorld − edgeStart` — `offset` буынның
     // басынан (`jointStart`) өлшенеді, ал `jointStart` енді `edgeStart`-пен
     // сәйкес келмеуі мүмкін (қиылыс edge панельдің басынан ілгері басталуы
