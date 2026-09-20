@@ -61,6 +61,25 @@ const localX = (panel: Panel, world: number): number => world - panel.position[p
 /** Әлемдегі мәнді панельдің локал y (ен) координатасына аудару. */
 const localY = (panel: Panel, world: number): number => world - panel.position[panel.orientation.width]
 
+/**
+ * 0.1 мм-ге дөңгелектеу. CLAUDE.md §0.2 «бүтін мм» ережесі ДЕТАЛЬДІҢ өлшеміне
+ * қатысты (кесу ұзындығы/ені) — бұл координата басқа нәрсе. Кромка
+ * қалыңдығы (`EdgeBand.thickness`) бүтін мм болмауы мүмкін (каталогта
+ * шектеусіз), ал беттегі де (`toCut`), торцтағы да (`edgeXShiftFor`/
+ * `subtractedThickness`) координатадан осы шама шегеріледі: бүтін мм-ге
+ * дейін дөңгелектесе, 0.5 мм-ге дейін жоғалады. §4.9-да ілгек тереңдігі
+ * 12,5 мм болып ерекшелік ретінде жазылған — бұл доменде 1 мм-ден жіңішке
+ * дәлдік бұрыннан рұқсат етілген (Аудит Y5, docs/audit/drilling-2026-09-20.md).
+ *
+ * ⚠ `pushFace`-те ҒАНА ЕМЕС: бір буынның БЕТ тесігі мен ТОРЦ тесігі бір
+ * физикалық нүкте болғанда (мыс. `minifixJoint`, `confirmatJoint`), екеуі
+ * ДӘЛ бір санмен сәйкес келуі керек — сондықтан осы функция барлық ТІКЕЛЕЙ
+ * `drilling.push` шақыруларында да қолданылады, тек `pushFace`-те емес.
+ */
+function roundCoord(value: number): number {
+  return Math.round(value * 10) / 10
+}
+
 function pushFace(
   panel: Panel, face: 'inner' | 'outer', x: number, y: number,
   diameter: number, depth: number, purpose: Drill['purpose'], ctx: Ctx,
@@ -68,7 +87,7 @@ function pushFace(
 ): void {
   const p = toCut(panel, x, y, ctx)
   panel.drilling.push({
-    face, x: Math.round(p.x), y: Math.round(p.y), diameter, depth, purpose,
+    face, x: roundCoord(p.x), y: roundCoord(p.y), diameter, depth, purpose,
     ...(hardwareId ? { hardwareId } : {}),
   })
 }
@@ -214,8 +233,8 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
     // мүмкін, жоғарыдағы K3 түзетуін қара).
     edgePanel.drilling.push({
       face: edgeFace,
-      x: Math.round(alongWorld - edgeStart - edgeXShift),
-      y: Math.round(edgeT / 2),
+      x: roundCoord(alongWorld - edgeStart - edgeXShift),
+      y: roundCoord(edgeT / 2),
       diameter: CONFIRMAT_EDGE_DIAMETER,
       depth: CONFIRMAT_EDGE_DEPTH,
       purpose: 'confirmat',
@@ -700,8 +719,8 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
     // W1/L1 кромкасы шегеріліп (edgeXShiftFor, §4.9).
     wall.drilling.push({
       face: edgeFace,
-      x: Math.round(alongLocal - edgeXShift),
-      y: Math.round(wallT / 2),
+      x: roundCoord(alongLocal - edgeXShift),
+      y: roundCoord(wallT / 2),
       diameter: MINIFIX_DOWEL_DIAMETER,
       depth: MINIFIX_DOWEL_DEPTH,
       purpose: 'minifix',
@@ -757,8 +776,8 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
       // 2. Штифттің тесігі — түптің сол/оң ТОРЦІНДЕ.
       bottom.drilling.push({
         face: edgeFace,
-        x: Math.round(along - edgeXShift),
-        y: Math.round(t / 2),
+        x: roundCoord(along - edgeXShift),
+        y: roundCoord(t / 2),
         diameter: MINIFIX_DOWEL_DIAMETER,
         depth: MINIFIX_DOWEL_DEPTH,
         purpose: 'minifix',
@@ -784,8 +803,8 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
   for (const x of [DRAWER_BOTTOM_DOWEL_FROM_END, width - DRAWER_BOTTOM_DOWEL_FROM_END]) {
     bottom.drilling.push({
       face: 'edgeL1',
-      x: Math.round(x - frontDowelXShift),
-      y: Math.round(t / 2),
+      x: roundCoord(x - frontDowelXShift),
+      y: roundCoord(t / 2),
       diameter: DRAWER_BOTTOM_DOWEL_DIAMETER,
       depth: DRAWER_BOTTOM_DOWEL_DEPTH,
       purpose: 'dowel',
