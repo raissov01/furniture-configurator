@@ -15,7 +15,8 @@
     "test:e2e": "node scripts/e2e.mjs",
     "plan": "node scripts/plan.mjs",
     "deploy": "bash scripts/deploy.sh",
-    "icons": "node scripts/icons.mjs"
+    "icons": "node scripts/icons.mjs",
+    "import:basis": "node scripts/importBasis.mjs"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
