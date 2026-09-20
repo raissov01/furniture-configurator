@@ -1,0 +1,61 @@
+/**
+ * K10 / audit C8 (docs/audit/corner-2026-09-20.md §C8,
+ * docs/audit/drilling-fix-plan.md К10): бұрыштық (трапеция) корпуста
+ * трапецияны БІЛМЕЙТІН детальдар — аяқ, столешница, планка, стойка,
+ * цоколь-короб, фронтальдық панель.
+ *
+ * Тіркесім қазіргі генераторда (kitchen.ts) МҮЛДЕ қолданылмайды: `corner`
+ * өрісі тек осы тесттер мен Configurator.tsx-тің қолмен түзетілетін
+ * «Угловой (переходной)» тумблерінде ғана орнатылады.
+ */
+import { describe, expect, it } from 'vitest'
+import {
+  catalogOf, defaultShopProfile, findTemplate, generateCabinet, templateToCabinet,
+} from '../src/core/index'
+import type { CabinetConfig, Panel } from '../src/core/index'
+
+const shop = defaultShopProfile()
+const catalog = catalogOf(shop)
+const template = templateToCabinet(findTemplate('wardrobe-penal-600')!, catalog)
+
+/** corner.test.ts-тегімен бірдей: ашық переходной модуль. */
+const corner = (depthAtRight: number, patch: Partial<CabinetConfig> = {}): CabinetConfig => ({
+  ...template,
+  depth: 600,
+  back: { mode: 'none' },
+  corner: { depthAtRight },
+  sections: [{
+    ...template.sections[0]!,
+    fronts: null,
+    contents: [{ kind: 'shelves', count: 3, shelfKind: 'adjustable' }],
+  }],
+  ...patch,
+})
+
+const byId = (panels: Panel[], id: string) => panels.find((p) => p.id === id)!
+
+// ── K10a: аяқ — ЕҢ ҚАУІПТІ, тесігі ауада ───────────────────────────────────
+
+describe('K10a: аяқ (legs) + бұрыштық корпус — қате', () => {
+  /**
+   * Нақты генерациямен тексерілді (түзетуге дейін): `corner(350)` +
+   * `base.kind: 'legs'` кезінде дноның 16 тесігінің 4-уі (алдыңғы-оң аяқтың
+   * бұрандалары, x≈464..529, y≈70..135) МАТЕРИАЛСЫЗ аймаққа түседі — сол
+   * жерде трапецияның материал шегі y ≥ ~218 мм-ден басталады. Дұрыс орынды
+   * қайда жылжыту керегі (қанша шегіну, асимметриялы аяқ санын рұқсат ету
+   * керек пе) — цехтың шешімі, сондықтан кодтан ойдан шығармай қате
+   * лақтырамыз (§10, drilling-fix-plan.md «B тобы»).
+   */
+  it('дноның бұрандасы ауада тұрмас үшін: legs + corner тыйым салынған', () => {
+    const cfg = corner(350, { base: { kind: 'legs', height: 95 } })
+    expect(() => generateCabinet(cfg, catalog)).toThrow(/legs|аяқ/)
+  })
+
+  it('цоколь (plinth, front) режимі — ӘСЕР ЕТПЕЙДІ, бұрынғыдай жұмыс істейді', () => {
+    // Тек «front» пішінді цоколь трапецияға тәуелсіз: ол тек алдыңғы жиекте
+    // тұрған жалпақ тақта, тереңдікке кірмейді.
+    const cfg = corner(350, { base: { kind: 'plinth', height: 95 } })
+    const panels = generateCabinet(cfg, catalog)
+    expect(byId(panels, 'plinth')).toBeDefined()
+  })
+})
