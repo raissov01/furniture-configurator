@@ -160,6 +160,22 @@ export function generateCabinet(
    */
   const corner = config.corner
   if (corner) {
+    /**
+     * K7 / audit C5: `slope` (мансарда скосы) мен `corner` (бұрыштық
+     * трапеция) екеуі де жатық панельдің `bevel`-іне жазылады да, соңғысы
+     * бұрынғысын ҮНСІЗ ауыстырады — екі байланыссыз қиғаш бір панельде
+     * қатар «өмір сүреді». Мыс. `top.finishedWidth` corner-ден гипотенуза
+     * болып шығады, ал `bevel.widthAtStart/End` slope-тан мүлде басқа
+     * санды айтады — DXF (§K9) екеуін қосып мүлде басқа пішін салады.
+     * Тіркесімге тыйым: анық қате үнсіз бұрыс геометрадан жақсы (§10).
+     */
+    if (config.slope) {
+      throw new ConfigValidationError(
+        'slope',
+        'corner (бұрыштық трапеция) берілгенде slope (қиғаш төбе) қатар жасалмайды',
+        'slope-ты алып тастаңыз немесе corner-ды алып тастаңыз — екеуін бірге қоюға болмайды',
+      )
+    }
     if (corner.depthAtRight < MIN_DIMENSION || corner.depthAtRight > D) {
       throw new ConfigValidationError(
         'corner.depthAtRight', `${corner.depthAtRight}`,
