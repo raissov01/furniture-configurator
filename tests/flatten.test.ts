@@ -8,8 +8,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   SEED_CATALOG, findTemplate, flattenTree, generateCabinet, scenePanels, templateToCabinet,
+  ConfigValidationError, ORIENT_HORIZONTAL,
 } from '../src/core/index'
-import type { CabinetConfig, GroupNode, SceneNode, Transform } from '../src/core/index'
+import type { CabinetConfig, GroupNode, SceneNode, Transform, BoardSpec } from '../src/core/index'
 
 const tr = (x = 0, y = 0, z = 0, rotY = 0): Transform =>
   ({ pos: { x, y, z }, rot: { x: 0, y: rotY, z: 0 } })
@@ -74,5 +75,64 @@ describe('scenePanels', () => {
       cabinetNode('c2', config, tr(600, 0, 0)),
     ]), SEED_CATALOG)
     expect(scenePanels(scene)).toHaveLength(generateCabinet(config, SEED_CATALOG).length * 2)
+  })
+})
+
+const BAND_2MM = SEED_CATALOG.edgeBands.find((b) => b.thickness === 2)!
+const LDSP_16 = SEED_CATALOG.materials.find((m) => m.thickness === 16)!
+
+const board = (over: Partial<BoardSpec> = {}): BoardSpec => ({
+  materialId: LDSP_16.id,
+  length: 600,
+  width: 450,
+  orientation: ORIENT_HORIZONTAL,
+  edges: { L1: { bandId: BAND_2MM.id }, L2: null, W1: null, W2: null },
+  grainAlongLength: LDSP_16.hasGrain,
+  role: 'custom',
+  ...over,
+})
+
+const boardNode = (id: string, spec: BoardSpec, transform: Transform): SceneNode =>
+  ({ kind: 'board', id, name: 'Столешница', transform, board: spec })
+
+describe('flattenTree — еркін тақта', () => {
+  it('бір Panel береді', () => {
+    const scene = flattenTree(root([boardNode('b1', board(), tr())]), SEED_CATALOG)
+    expect(scene.nodes).toHaveLength(1)
+    expect(scene.nodes[0]!.panels).toHaveLength(1)
+    expect(scene.nodes[0]!.hardware).toEqual([])
+  })
+
+  it('рез өлшемі кромкадан есептеледі (§4.3)', () => {
+    // L1-де 2 мм кромка → cutWidth = 450 − 2 = 448; ұзындығы тимейді.
+    const panel = flattenTree(root([boardNode('b1', board(), tr())]), SEED_CATALOG).nodes[0]!.panels[0]!
+    expect(panel.finishedLength).toBe(600)
+    expect(panel.finishedWidth).toBe(450)
+    expect(panel.cutLength).toBe(600)
+    expect(panel.cutWidth).toBe(448)
+  })
+
+  it('0.4 мм кромка рез өлшемін ӨЗГЕРТПЕЙДІ (§4.3 minBandSubtract)', () => {
+    const thin = SEED_CATALOG.edgeBands.find((b) => b.thickness === 0.4)!
+    const spec = board({ edges: { L1: { bandId: thin.id }, L2: null, W1: null, W2: null } })
+    const panel = flattenTree(root([boardNode('b1', spec, tr())]), SEED_CATALOG).nodes[0]!.panels[0]!
+    expect(panel.cutWidth).toBe(450)
+  })
+
+  it('түйіннің аты — панельдің белгісі', () => {
+    const panel = flattenTree(root([boardNode('b1', board(), tr())]), SEED_CATALOG).nodes[0]!.panels[0]!
+    expect(panel.label).toBe('Столешница')
+    expect(panel.id).toBe('b1')
+  })
+
+  it('деталировкаға түседі', () => {
+    const scene = flattenTree(root([boardNode('b1', board(), tr())]), SEED_CATALOG)
+    expect(scenePanels(scene)).toHaveLength(1)
+  })
+
+  it('жоқ материал — ConfigValidationError', () => {
+    const spec = board({ materialId: 'yoq-material' })
+    expect(() => flattenTree(root([boardNode('b1', spec, tr())]), SEED_CATALOG))
+      .toThrow(ConfigValidationError)
   })
 })

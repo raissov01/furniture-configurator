@@ -13,9 +13,13 @@
 import { generateCabinet } from './generateCabinet'
 import { generateHardware } from './hardware'
 import { walkTree } from './tree'
-import type { GroupNode, Pose, SolidSpec } from './tree'
-import type { Catalog, Panel, SettingsOverride } from './types'
+import type { GroupNode, Pose, SolidSpec, BoardNode } from './tree'
+import type { Catalog, Panel, SettingsOverride, ConstructionSettings, EdgeBand } from './types'
 import type { HardwarePlacement } from './hardware'
+import { mergeSettings } from './constants'
+import { calculateCutDimensions } from './edges'
+import { ConfigValidationError } from './errors'
+import { rotationFor } from './geometry'
 
 export type FlatNode = {
   nodeId: string
@@ -35,6 +39,53 @@ export type PlacedSolid = {
 
 export type FlatScene = { nodes: FlatNode[]; solids: PlacedSolid[] }
 
+/**
+ * Еркін тақта → деталь.
+ *
+ * Орны {0,0,0}: түйіннің ЛОКАЛ басы тақтаның өз басы. Әлемдегі орны
+ * `FlatNode.pose`-та.
+ */
+function boardPanel(
+  node: BoardNode,
+  catalog: Catalog,
+  bands: Map<string, EdgeBand>,
+  settings: ConstructionSettings,
+): Panel {
+  const spec = node.board
+  const material = catalog.materials.find((m) => m.id === spec.materialId)
+  if (!material) {
+    throw new ConfigValidationError(
+      `board[${node.id}].materialId`,
+      `материал табылмады: "${spec.materialId}"`,
+    )
+  }
+  const { cutLength, cutWidth } = calculateCutDimensions(
+    spec.length, spec.width, spec.edges, bands, settings,
+  )
+  return {
+    id: node.id,
+    role: spec.role,
+    label: node.name,
+    materialId: material.id,
+    finishedLength: spec.length,
+    finishedWidth: spec.width,
+    cutLength,
+    cutWidth,
+    edges: spec.edges,
+    grainAlongLength: spec.grainAlongLength,
+    qty: 1,
+    position: { x: 0, y: 0, z: 0 },
+    rotation: rotationFor(spec.orientation),
+    orientation: spec.orientation,
+    note: '',
+    drilling: spec.drilling ?? [],
+    cutouts: spec.cutouts ?? [],
+    grooves: [],
+    milling: spec.milling ?? [],
+    ...(spec.corners ? { corners: spec.corners } : {}),
+  }
+}
+
 export function flattenTree(
   root: GroupNode,
   catalog: Catalog,
@@ -42,6 +93,8 @@ export function flattenTree(
 ): FlatScene {
   const nodes: FlatNode[] = []
   const solids: PlacedSolid[] = []
+  const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
+  const merged = mergeSettings(settings)
 
   walkTree(root, (node, pose) => {
     switch (node.kind) {
@@ -58,7 +111,13 @@ export function flattenTree(
         })
         return
       case 'board':
-        // Task 3-те толады.
+        nodes.push({
+          nodeId: node.id,
+          name: node.name,
+          panels: [boardPanel(node, catalog, bands, merged)],
+          hardware: [],
+          pose,
+        })
         return
       case 'solid':
         solids.push({ nodeId: node.id, name: node.name, spec: node.solid, pose })
