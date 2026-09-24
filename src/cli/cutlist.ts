@@ -9,7 +9,7 @@ import { resolve } from 'node:path'
 import { ZodError } from 'zod'
 import {
   CUT_LIST_COLUMNS, ConfigValidationError,
-  edgeBandTotals, formatCutList, generateCabinet, parseProject,
+  edgeBandTotals, findNode, flattenTree, formatCutList, parseProjectV4,
 } from '../core/index'
 import type { Column, CutListRow, DrillPurpose } from '../core/index'
 
@@ -34,7 +34,7 @@ function main(): number {
 
   let project
   try {
-    project = parseProject(JSON.parse(readFileSync(resolve(file), 'utf8')))
+    project = parseProjectV4(JSON.parse(readFileSync(resolve(file), 'utf8')))
   } catch (err) {
     if (err instanceof ZodError) {
       console.error(`Конфиг қатесі — ${file}:`)
@@ -49,24 +49,30 @@ function main(): number {
   const catalog = { materials: project.materials, edgeBands: project.edgeBands }
   console.log(`\nПроект: ${project.name}`)
 
-  for (const cabinet of project.cabinets) {
-    let panels
-    try {
-      panels = generateCabinet(cabinet, catalog, project.settings)
-    } catch (err) {
-      if (err instanceof ConfigValidationError) {
-        console.error(`\n✗ ${cabinet.name}\n  ${err.message}`)
-        return 1
-      }
-      throw err
+  let scene
+  try {
+    scene = flattenTree(project.root, catalog, project.settings, project.layers)
+  } catch (err) {
+    if (err instanceof ConfigValidationError) {
+      console.error(`\n✗ ${project.name}\n  ${err.message}`)
+      return 1
     }
+    throw err
+  }
+
+  for (const node of scene.nodes) {
+    const { panels } = node
+    const source = findNode(project.root, node.nodeId)
 
     const rows = formatCutList(panels, catalog)
 
-    console.log(`\n${cabinet.name}`)
-    console.log(`Габарит H × W × D: ${cabinet.height} × ${cabinet.width} × ${cabinet.depth} мм`)
-    console.log(`Конструкция: ${cabinet.construction}, задняя стенка: ${cabinet.back.mode}`)
-    console.log(`Секций: ${cabinet.sections.length}, перегородок: ${cabinet.sections.length - 1}\n`)
+    console.log(`\n${node.name}`)
+    if (source?.kind === 'cabinet') {
+      const cabinet = source.config
+      console.log(`Габарит H × W × D: ${cabinet.height} × ${cabinet.width} × ${cabinet.depth} мм`)
+      console.log(`Конструкция: ${cabinet.construction}, задняя стенка: ${cabinet.back.mode}`)
+      console.log(`Секций: ${cabinet.sections.length}, перегородок: ${cabinet.sections.length - 1}\n`)
+    }
     console.log(renderTable(rows))
 
     const pieces = rows.reduce((sum, r) => sum + r.qty, 0)

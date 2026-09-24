@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { ZodError } from 'zod'
 import {
   ConfigValidationError, assemblyDrawingPdf, cabinetToDxfFiles, cutListToCsv,
-  cutListToXlsx, drillingToCsv, generateCabinet, mergeSettings, parseProject,
+  cutListToXlsx, drillingToCsv, findNode, flattenTree, mergeSettings, parseProjectV4,
 } from '../core/index'
 
 const ASSETS = resolve(dirname(fileURLToPath(import.meta.url)), '../../assets')
@@ -30,7 +30,7 @@ async function main(): Promise<number> {
 
   let project
   try {
-    project = parseProject(JSON.parse(readFileSync(resolve(file), 'utf8')))
+    project = parseProjectV4(JSON.parse(readFileSync(resolve(file), 'utf8')))
   } catch (err) {
     if (err instanceof ZodError) {
       console.error(`Конфиг қатесі — ${file}:`)
@@ -48,19 +48,26 @@ async function main(): Promise<number> {
 
   console.log(`\nПроект: ${project.name}`)
 
-  for (const cabinet of project.cabinets) {
-    let panels
-    try {
-      panels = generateCabinet(cabinet, catalog, project.settings)
-    } catch (err) {
-      if (err instanceof ConfigValidationError) {
-        console.error(`\n✗ ${cabinet.name}\n  ${err.message}`)
-        return 1
-      }
-      throw err
+  let scene
+  try {
+    scene = flattenTree(project.root, catalog, project.settings, project.layers)
+  } catch (err) {
+    if (err instanceof ConfigValidationError) {
+      console.error(`\n✗ ${project.name}\n  ${err.message}`)
+      return 1
     }
+    throw err
+  }
 
-    const dir = join(outRoot, cabinet.id)
+  for (const node of scene.nodes) {
+    const { panels } = node
+    const source = findNode(project.root, node.nodeId)
+    const cabinet = source?.kind === 'cabinet' ? source.config : undefined
+
+    // Tree ids are data, not paths: a slash or '..' must not escape --out.
+    const directoryId = /^\.+$/.test(node.nodeId)
+      ? node.nodeId.replaceAll('.', '%2E') : encodeURIComponent(node.nodeId)
+    const dir = join(outRoot, directoryId)
     mkdirSync(join(dir, 'dxf'), { recursive: true })
 
     const written: [string, number][] = []
@@ -71,16 +78,19 @@ async function main(): Promise<number> {
 
     // §O6: ойма бар панельдің рез координатасын дұрыс шығару үшін
     // generateCabinet-пен ДӘЛ сол catalog/settings берілуі керек.
-    const dxfOptions = { catalog, settings: mergeSettings(project.settings, cabinet.settings) }
+    const dxfOptions = { catalog, settings: mergeSettings(project.settings, cabinet?.settings) }
     for (const [name, content] of cabinetToDxfFiles(panels, dxfOptions)) write(join('dxf', name), content)
     write('cutlist.csv', cutListToCsv(panels, catalog))
     write('drilling.csv', drillingToCsv(panels))
     write('cutlist.xlsx', cutListToXlsx(panels, catalog, project.name))
-    write('assembly.pdf', await assemblyDrawingPdf({
-      cabinet, panels, catalog, projectName: project.name, fonts, info: project.info,
-    }))
+    if (cabinet) {
+      write('assembly.pdf', await assemblyDrawingPdf({
+        cabinet, panels, catalog, projectName: project.name, fonts, info: project.info,
+      }))
+    }
 
-    console.log(`\n${cabinet.name}\n  → ${dir}`)
+    console.log(`\n${node.name}\n  → ${dir}`)
+    if (!cabinet) console.log('  Жинау PDF-і тек параметрлік корпусқа жасалады.')
     const dxfCount = written.filter(([p]) => p.startsWith('dxf')).length
     const dxfBytes = written.filter(([p]) => p.startsWith('dxf')).reduce((s, [, b]) => s + b, 0)
     console.log(`  ${String(dxfCount).padStart(3)} × dxf/*.dxf   ${kb(dxfBytes)}`)
