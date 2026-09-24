@@ -32,7 +32,11 @@ describe('cabinet-free v4 editor shell', () => {
     Object.assign(initialSnapshot, useConfigurator.getState())
     const editor = renderToString(createElement(Workspace))
     expect(editor).toContain('Выберите корпус в структуре проекта')
-    expect(editor).not.toContain('2000 (H)')
+    expect(editor.match(/data-testid="tree-dock"/g)).toHaveLength(1)
+    const properties = editor.match(/<aside\b[\s\S]*?<\/aside>/)?.[0]
+    expect(properties).toBeDefined()
+    expect(properties).not.toContain('2000 (H)')
+    expect(properties).not.toContain('<input')
     expect(editor.includes('Free-board-target')).toBe(kind === 'board')
     useConfigurator.getState().setRoomOpen(true)
     Object.assign(initialSnapshot, useConfigurator.getState())
@@ -53,6 +57,9 @@ describe('cabinet-free v4 editor shell', () => {
     Object.assign(initialSnapshot, useConfigurator.getState())
     const editor = renderToString(createElement(Workspace))
     expect(editor).toContain('Выберите корпус в структуре проекта')
-    expect(editor).not.toContain('2000 (H)')
+    const properties = editor.match(/<aside\b[\s\S]*?<\/aside>/)?.[0]
+    expect(properties).toBeDefined()
+    expect(properties).not.toContain('2000 (H)')
+    expect(properties).not.toContain('<input')
   })
 })
