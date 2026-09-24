@@ -113,6 +113,42 @@ describe('маршруттарда permission және 4xx', () => {
     expect(team.listMembers(owner.account.shopId).map((member) => member.userId)).toEqual([owner.account.userId])
   })
 
+  it('owner емес адам рөл ауыстыра, шақыруды қайтара алмайды; shop inbox оқи, share жасай алмайды', async () => {
+    const team = await import('../lib/server/team')
+    const owner = auth.register('routes-escalate-owner@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    const worker = auth.register('routes-escalate-shop@example.kz', 'password123', '', owner.account.shopId, 'shop')
+    const designer = auth.register('routes-escalate-designer@example.kz', 'password123', '', owner.account.shopId)
+    if (!worker.ok || !designer.ok) throw new Error('registration failed')
+    const invite = team.createInvite(owner.account.shopId, owner.account.userId)
+    const roleOf = (userId: string) => team.listMembers(owner.account.shopId).find((m) => m.userId === userId)?.role
+
+    // shop өзін designer етіп, ішкі бағаға қол жеткізбеуі керек.
+    actor.value = worker.account
+    const escalate = await memberRoute.PATCH(new Request('http://localhost', { method: 'PATCH',
+      body: JSON.stringify({ userId: worker.account.userId, role: 'designer' }) }))
+    expect(escalate.status).toBe(403)
+    expect(roleOf(worker.account.userId)).toBe('shop')
+    expect((await replyRoute.GET()).status).toBe(403)
+    const { catalogOf, defaultShopProfile, findTemplate, templateToCabinet } = await import('../src/core/index')
+    const catalog = catalogOf(defaultShopProfile())
+    const project = JSON.stringify({ name: 'Ж', schemaVersion: 3, placements: [],
+      cabinets: [templateToCabinet(findTemplate('wardrobe-penal-600')!, catalog)],
+      room: { width: 4000, depth: 3000, height: 2700 }, materials: catalog.materials, edgeBands: catalog.edgeBands })
+    expect((await shareRoute.POST(new Request('http://localhost', { method: 'POST', body: project }))).status).toBe(403)
+
+    // designer басқаның рөлін өзгертпейді және owner шақыруын қайтармайды.
+    actor.value = designer.account
+    const demote = await memberRoute.PATCH(new Request('http://localhost', { method: 'PATCH',
+      body: JSON.stringify({ userId: worker.account.userId, role: 'designer' }) }))
+    expect(demote.status).toBe(403)
+    expect(roleOf(worker.account.userId)).toBe('shop')
+    const revoke = await teamRoute.DELETE(new Request('http://localhost', { method: 'DELETE',
+      body: JSON.stringify({ token: invite.token }) }))
+    expect(revoke.status).toBe(403)
+    expect(team.checkInvite(invite.token).ok).toBe(true)
+  })
+
   it('share, project, team қате сұраныстары 4xx және таза жауап қайтарады', async () => {
     const owner = auth.register('routes-bad@example.kz', 'password123', 'Цех')
     if (!owner.ok) throw new Error(owner.error)
