@@ -22,6 +22,7 @@ export async function POST(request: Request): Promise<Response> {
    * жіберілгеннен бері цехқа басқа адам қосылып, орын бітіп қалуы мүмкін.
    */
   let joinShopId: string | undefined
+  let joinRole: 'designer' | 'shop' = 'designer'
   if (invite) {
     const check = checkInvite(invite)
     if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 })
@@ -30,9 +31,10 @@ export async function POST(request: Request): Promise<Response> {
     const room = canAddMember(plan, usageOf(check.shopId))
     if (!room.ok) return NextResponse.json({ error: room.reason }, { status: 409 })
     joinShopId = check.shopId
+    joinRole = check.role
   }
 
-  const result = register(email, password, shopName, joinShopId)
+  const result = register(email, password, shopName, joinShopId, joinRole)
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
   if (invite) markInviteUsed(invite, result.account.userId)
 

@@ -23,6 +23,7 @@ import { XR, XROrigin, useXRControllerLocomotion } from '@react-three/xr'
 import { getXrStore } from '@/lib/xr'
 import { ApplianceMesh } from '@/components/ApplianceMesh'
 import { DimensionLabels } from '@/components/DimensionLabels'
+import { shouldRenderDimensions } from '@/lib/sceneDimensionVisibility'
 import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
 import { canvasSettings } from '@/lib/appearance'
@@ -486,7 +487,7 @@ function CameraRig({
 }
 
 function CabinetGroup({
-  item, catalog, active, cabinetCount, stepOf,
+  item, catalog, active, cabinetCount, stepOf, allowDimensionLabels,
 }: {
   item: SceneItem
   catalog: Catalog
@@ -495,6 +496,7 @@ function CabinetGroup({
   cabinetCount: number
   /** Жоба бойынша жинау қадамы: кілт → нөмір. */
   stepOf: Map<string, number>
+  allowDimensionLabels: boolean
 }) {
   const showDimensions = useConfigurator((s) => s.showDimensions)
   // Фасадты жасыру — корпустың ішін көрудің ең тура жолы (мөлдірлікпен қатар).
@@ -753,7 +755,8 @@ function CabinetGroup({
 
         return null
       })}
-      {active && showDimensions ? <DimensionLabels cabinet={item.cabinet} /> : null}
+      {shouldRenderDimensions(active, showDimensions, allowDimensionLabels)
+        ? <DimensionLabels cabinet={item.cabinet} /> : null}
       {/*
         LED ПОДСВЕТКА: корпустың астыңғы-алдыңғы жиегінде жарқыраған жолақ.
         Тек эмиссив (нақты жарық емес — көп корпуста ондаған жарық баяулатар
@@ -1064,12 +1067,13 @@ function Silhouette({ height, x, z }: { height: number; x: number; z: number }) 
 }
 
 export default function Scene({
-  items, room, activeId, catalog,
+  items, room, activeId, catalog, allowDimensionLabels = true,
 }: {
   items: SceneItem[]
   room: Room
   activeId: string
   catalog: Catalog
+  allowDimensionLabels?: boolean
 }) {
   const active = items.find((i) => i.cabinet.id === activeId) ?? items[0]
   const preset = useConfigurator((s) => s.cameraPreset)
@@ -1405,6 +1409,7 @@ export default function Scene({
               active={item.cabinet.id === activeId}
               cabinetCount={items.length}
               stepOf={stepOf}
+              allowDimensionLabels={allowDimensionLabels}
             />
           ))}
         </group>

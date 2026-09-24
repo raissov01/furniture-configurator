@@ -18,6 +18,9 @@ import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate'
 import { ConfigValidationError } from './errors'
 import { parseProject } from './schema'
 import type { ProjectFile } from './types'
+import { toPublicProject } from './publicProject'
+import { parseProjectV4 } from './projectV4'
+import type { ProjectFileV4 } from './projectV4'
 
 const PREFIX = 'v1.'
 
@@ -66,8 +69,8 @@ function fromBase64Url(text: string): Uint8Array {
 }
 
 /** Жобаны сілтемеге сыятын жолға айналдыру. */
-export function encodeProject(project: ProjectFile): string {
-  const json = JSON.stringify(project)
+export function encodeProject(project: ProjectFile | ProjectFileV4): string {
+  const json = JSON.stringify(toPublicProject(project))
   // Деңгей 9: сілтеме бір рет жасалады да, ұзақ жүреді — уақыттан гөрі
   // ұзындығы маңызды.
   return PREFIX + toBase64Url(deflateSync(strToU8(json), { level: 9 }))
@@ -79,7 +82,7 @@ export function encodeProject(project: ProjectFile): string {
  * Кез келген бүлінген кірісте ТҮСІНІКТІ қате беріледі: клиент «бет ашылмады»
  * емес, «сілтеме бүлінген» дегенді көруі керек.
  */
-export function decodeProject(token: string): ProjectFile {
+function decodeRawProject(token: string): unknown {
   const clean = token.trim().replace(/^#/, '')
   if (!clean.startsWith(PREFIX)) {
     throw new ConfigValidationError(
@@ -102,10 +105,19 @@ export function decodeProject(token: string): ProjectFile {
     throw new ConfigValidationError('link', 'ссылка повреждена', 'не удалось прочитать проект')
   }
   // Пішінін ЯДРО тексереді — сілтемемен бүлінген жоба келуі мүмкін.
-  return parseProject(raw)
+  return raw
+}
+
+export function decodeProject(token: string): ProjectFile {
+  return parseProject(decodeRawProject(token))
+}
+
+/** Canonical tree project decoder for the v4 editor and its client viewer. */
+export function decodeProjectV4(token: string): ProjectFileV4 {
+  return parseProjectV4(decodeRawProject(token))
 }
 
 /** Толық сілтеме. `origin` сыртта беріледі: ядро браузерге тәуелді емес. */
-export function shareLink(origin: string, project: ProjectFile): string {
+export function shareLink(origin: string, project: ProjectFile | ProjectFileV4): string {
   return `${origin.replace(/\/$/, '')}/view#${encodeProject(project)}`
 }

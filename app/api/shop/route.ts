@@ -3,6 +3,7 @@ import { parseShopProfile } from '@/src/core/index'
 import { currentAccount } from '@/lib/server/session'
 import { readShopProfile, writeShopProfile } from '@/lib/server/store'
 import { cloudOff } from '@/lib/server/cloud'
+import { can } from '@/lib/permissions'
 
 export async function GET(): Promise<Response> {
   const off = cloudOff()
@@ -10,6 +11,7 @@ export async function GET(): Promise<Response> {
 
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
+  if (!can(account.role, 'readInternalPrice')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
   return NextResponse.json({ profile: readShopProfile(account.shopId) })
 }
 
@@ -19,6 +21,7 @@ export async function PUT(request: Request): Promise<Response> {
 
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
+  if (!can(account.role, 'manageShop')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
 
   const body = (await request.json().catch(() => null)) as { profile?: unknown } | null
   try {

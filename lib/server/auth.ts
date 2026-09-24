@@ -11,6 +11,7 @@
 
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
 import { db } from './db'
+import type { Role } from '../permissions'
 
 export const SESSION_COOKIE = 'furniture_session'
 /** Сессия осынша күн жарамды. */
@@ -23,6 +24,7 @@ export type Account = {
   email: string
   shopId: string
   shopName: string
+  role: Role
 }
 
 function hashPassword(password: string): string {
@@ -56,6 +58,7 @@ export function register(
   password: string,
   shopName: string,
   joinShopId?: string,
+  joinRole: Extract<Role, 'designer' | 'shop'> = 'designer',
 ): AuthResult {
   const clean = email.trim().toLowerCase()
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) return { ok: false, error: 'Неверный адрес почты' }
@@ -86,22 +89,22 @@ export function register(
   }
 
   database
-    .prepare('INSERT INTO users (id, email, password_hash, shop_id, created_at) VALUES (?, ?, ?, ?, ?)')
-    .run(userId, clean, hashPassword(password), shopId, now)
+    .prepare('INSERT INTO users (id, email, password_hash, shop_id, created_at, role) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(userId, clean, hashPassword(password), shopId, now, joinShopId ? joinRole : 'owner')
 
-  return { ok: true, token: startSession(userId), account: { userId, email: clean, shopId, shopName: name } }
+  return { ok: true, token: startSession(userId), account: { userId, email: clean, shopId, shopName: name, role: joinShopId ? joinRole : 'owner' } }
 }
 
 export function login(email: string, password: string): AuthResult {
   const clean = email.trim().toLowerCase()
   const row = db()
     .prepare(`
-      SELECT u.id, u.email, u.password_hash, u.shop_id, s.name AS shop_name
+      SELECT u.id, u.email, u.password_hash, u.shop_id, u.role, s.name AS shop_name
       FROM users u JOIN shops s ON s.id = u.shop_id
       WHERE u.email = ?
     `)
     .get(clean) as
-      | { id: string; email: string; password_hash: string; shop_id: string; shop_name: string }
+      | { id: string; email: string; password_hash: string; shop_id: string; shop_name: string; role: Role }
       | undefined
 
   // Қате хабары бірдей: пошта тіркелген бе екенін білдіріп алмау үшін.
@@ -112,7 +115,7 @@ export function login(email: string, password: string): AuthResult {
   return {
     ok: true,
     token: startSession(row.id),
-    account: { userId: row.id, email: row.email, shopId: row.shop_id, shopName: row.shop_name },
+    account: { userId: row.id, email: row.email, shopId: row.shop_id, shopName: row.shop_name, role: row.role },
   }
 }
 
@@ -134,14 +137,14 @@ export function accountFromToken(token: string | undefined): Account | null {
   if (!token) return null
   const row = db()
     .prepare(`
-      SELECT u.id, u.email, u.shop_id, s.name AS shop_name, ss.expires_at
+      SELECT u.id, u.email, u.shop_id, u.role, s.name AS shop_name, ss.expires_at
       FROM sessions ss
       JOIN users u ON u.id = ss.user_id
       JOIN shops s ON s.id = u.shop_id
       WHERE ss.token = ?
     `)
     .get(token) as
-      | { id: string; email: string; shop_id: string; shop_name: string; expires_at: number }
+      | { id: string; email: string; shop_id: string; shop_name: string; role: Role; expires_at: number }
       | undefined
 
   if (!row) return null
@@ -149,7 +152,7 @@ export function accountFromToken(token: string | undefined): Account | null {
     endSession(token)
     return null
   }
-  return { userId: row.id, email: row.email, shopId: row.shop_id, shopName: row.shop_name }
+  return { userId: row.id, email: row.email, shopId: row.shop_id, shopName: row.shop_name, role: row.role }
 }
 
 export const sessionCookieOptions = {

@@ -159,8 +159,8 @@
 | Жоба метаданные: клиент/дизайнер/тапсырыс №/күні/ескерту (`TPROJECTINFOFORM`, №143-148 «Заказ, Дата, Клиент, Дизайнер, Примечание», №498-503) | ✅ бар | `src/core/types.ts` `ProjectInfo`; `src/core/schema.ts` `ProjectInfoSchema`; `components/ProjectPanel.tsx` `INFO_FIELDS` | Заказ/Дата/Клиент/Дизайнер/Примечание сақталып, PDF/КП-ға шығады. |
 | Клиентке серверсіз URL-сілтеме арқылы бөлісу | ✅ бар | `src/core/share.ts` `shareLink`, `encodeProject` | Серверсіз URL токені бар. |
 | Клиентке 6-таңбалы код арқылы ашу, прогулкамен | ✅ бар | `components/ShareCodeDialog.tsx` `ShareCodeDialog`; `components/CodeEntryPage.tsx` `CodeEntryPage` | Алты таңбалы кодпен қарау бар. |
-| Клиент комментарийі, үлгіге тіркелген пікір (PHASE-2 C3) | ❌ жоқ | — | Клиент пікірін үлгіге тіркеу жоқ. |
-| Рөлдер: owner/designer/shop/client (PHASE-2 B3) | ⚠ ішінара | `lib/server/auth.ts` `Account`; `components/AccountPanel.tsx` `AccountPanel` | Цех мүшесі/иесі бар, бірақ designer/shop/client рөлдік рұқсат жүйесі жоқ. |
+| Клиент комментарийі, үлгіге тіркелген пікір (PHASE-2 C3) | ✅ кодпен | `lib/server/comments.ts`; `components/ClientComments.tsx`; `components/CommentsInbox.tsx` | `/view?c=`-те жалпы не нысан пікірін қалдырады; дизайнер жауап береді. Серверсіз ескі `#` сілтемеде пікір сақталмайды. |
+| Рөлдер: owner/designer/shop/client (PHASE-2 B3) | ⚠ ішінара | `lib/permissions.ts`; `lib/server/auth.ts`; `components/AccountPanel.tsx` | Серверлік матрица, сақталатын owner/designer/shop рөлі және client share рұқсаты бар. Жазылым/төлем бөлек; shop редактор UI-ының толық read-only қабаты әлі керек. |
 
 ### 2.10 Баптау
 

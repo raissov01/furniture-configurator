@@ -15,6 +15,7 @@ import { cloudEnabled } from '@/lib/cloud'
 import { Button } from '@/components/ui'
 import { Spinner } from '@/components/BusyOverlay'
 import { useConfigurator } from '@/store/configurator'
+import { CommentsInbox } from '@/components/CommentsInbox'
 
 export function ShareCodeDialog() {
   const open = useConfigurator((s) => s.shareCodeOpen)
@@ -83,6 +84,7 @@ export function ShareCodeDialog() {
             <p className="mt-1 text-center text-[11px] text-neutral-500">
               {tr('Автообновление: изменения видны клиенту через несколько секунд.')}
             </p>
+            <div className="mt-3"><CommentsInbox session={session} /></div>
             {copied ? (
               <p role="status" className="mt-2 text-center text-xs text-neutral-700 dark:text-neutral-200">{copied}</p>
             ) : null}
