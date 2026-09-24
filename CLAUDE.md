@@ -24,6 +24,11 @@ caused a real misreading during M1 design and is banned.
 - Dimensions: **millimetres, integers**, everywhere. Never floats for dimensions.
   Two documented exceptions, both physical constants, never derived dimensions:
   edge-band thickness (0.4 mm) and hinge cup drill depth (12.5 mm).
+  The same class covers every size taken from a hardware article's drawing
+  (drill Ø/depth such as minifix cam 12.7 or a pilot Ø2.8 × 11.5, the Blum
+  fixing pattern 45 / 9.5): 0.1 mm precision in Shop Settings and `Drill`.
+  Offsets measured from a panel edge (shelf-pin rows, runner holes) stay
+  integer.
 - Money: integer minor units (тиын). Never floats for money.
 
 ---

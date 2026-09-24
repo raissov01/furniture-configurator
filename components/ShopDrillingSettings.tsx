@@ -9,24 +9,29 @@ import { Button, Field, NumberInput, Select } from '@/components/ui'
 
 // Баптау бір профильде сақталады, бірақ әр жоба mergeSettings арқылы алады.
 // Каталогтың артикула тәуелді сандарын әмбебап стандарт ретінде ұсынбаймыз.
+//
+// ҚАДАМ (CLAUDE.md §0.2): орын/шегініс — бүтін мм; фурнитура артикулының
+// физикалық Ø мен тереңдігі (ілгек чашкасы 12.5, минификс ұясы 12.7 сияқты)
+// 0.1 мм дәлдікпен — `step: 0.1`. Ереже схемамен бірге тексеріледі: Zod бөлшекті
+// қабылдайтын өрісте ғана 0.1 (tests/shopDrillingSettingsUi.test.ts).
 type NumericKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
 type ArrayKey = 'runnerRollerHoleOffsets' | 'runnerBallHoleOffsets' | 'runnerTandemHoleOffsets'
 type ChoiceKey = 'minifixBoltMount' | 'hingeCupMount' | 'minifixPairPlacement' | 'outerFlipAxis'
 
-const NUMBERS: { key: NumericKey; label: string; hint: string; step?: number }[] = [
+export const DRILLING_NUMBER_FIELDS: { key: NumericKey; label: string; hint: string; step?: number }[] = [
   { key: 'shelfPinDatum', label: 'Первый полкодержатель от дна', hint: 'мм от верхней пласти дна; стандартного начала сетки нет' },
   { key: 'shelfPinFrontOffset', label: 'Передний ряд полкодержателей', hint: 'мм от передней кромки; System 32 — 37' },
   { key: 'shelfPinBackOffset', label: 'Задний ряд полкодержателей', hint: 'мм от задней кромки; задаёт цех' },
-  { key: 'confirmatFaceDiameter', label: 'Конфирмат: отверстие в пласти', hint: 'Ø мм сквозное; проверьте артикул' },
+  { key: 'confirmatFaceDiameter', label: 'Конфирмат: отверстие в пласти', hint: 'Ø мм сквозное; проверьте артикул', step: 0.1 },
   { key: 'confirmatEdgeDepth', label: 'Конфирмат: пилот в торце', hint: 'глубина Ø5, мм; проверьте артикул' },
   { key: 'confirmatScrewLength', label: 'Длина конфирмата', hint: 'мм; справка к артикулу, пилот задаётся отдельно' },
-  { key: 'confirmatCountersinkDiameter', label: 'Зенковка конфирмата', hint: 'Ø мм; 0 — нет. Автоматическая зенковка без глубины и угла запрещена' },
-  { key: 'minifixSleeveDepth', label: 'Футорка Ø8: глубина', hint: 'мм; 0 — не задана, при выборе футорки генерация остановится' },
-  { key: 'hingeFixingSpacing', label: 'Чашка: расстояние креплений', hint: 'мм; Blum INSERTA — 45' },
+  { key: 'confirmatCountersinkDiameter', label: 'Зенковка конфирмата', hint: 'Ø мм; 0 — нет. Автоматическая зенковка без глубины и угла запрещена', step: 0.1 },
+  { key: 'minifixSleeveDepth', label: 'Футорка Ø8: глубина', hint: 'мм; 0 — не задана, при выборе футорки генерация остановится', step: 0.1 },
+  { key: 'hingeFixingSpacing', label: 'Чашка: расстояние креплений', hint: 'мм; Blum INSERTA — 45', step: 0.1 },
   { key: 'hingeFixingOffset', label: 'Чашка: боковое смещение креплений', hint: 'мм от центра чашки; Blum INSERTA — 9.5', step: 0.1 },
   { key: 'hingeScrewPilotDiameter', label: 'Чашка: пилот под винт', hint: 'Ø мм; 0 — не задан, нужен чертёж артикула', step: 0.1 },
-  { key: 'hingeScrewPilotDepth', label: 'Чашка: глубина пилота', hint: 'мм; 0 — не задана, нужен чертёж артикула' },
-  { key: 'hingePressFitDiameter', label: 'Чашка: отверстие INSERTA', hint: 'Ø мм; только для подходящего артикула' },
+  { key: 'hingeScrewPilotDepth', label: 'Чашка: глубина пилота', hint: 'мм; 0 — не задана, нужен чертёж артикула', step: 0.1 },
+  { key: 'hingePressFitDiameter', label: 'Чашка: отверстие INSERTA', hint: 'Ø мм; только для подходящего артикула', step: 0.1 },
   { key: 'hingePressFitDepth', label: 'Чашка: глубина INSERTA', hint: 'мм; 0 — не задана, нужен чертёж артикула', step: 0.1 },
   { key: 'runnerRollerVerticalOffset', label: 'Ролик: подъём отверстий', hint: 'мм от низа ящика; 0 — прежний шаблон' },
   { key: 'runnerBallVerticalOffset', label: 'Шарик: подъём отверстий', hint: 'мм от низа ящика; 0 — прежний шаблон' },
@@ -125,7 +130,7 @@ export function ShopDrillingSettings({ shop, editShop }: {
       <p className="text-xs text-neutral-500 dark:text-neutral-400">{tr('Проверьте размеры по чертежам вашей фурнитуры. Значения без общего стандарта оставлены как в прежнем шаблоне.')}</p>
       {choiceError ? <p role="alert" className="text-xs text-red-700 dark:text-red-300">{choiceError}</p> : null}
       <div className="grid gap-3 sm:grid-cols-2">
-        {NUMBERS.map(({ key, label, hint, step }) => {
+        {DRILLING_NUMBER_FIELDS.map(({ key, label, hint, step }) => {
           const raw = shop.settings[key] ?? DEFAULT_SETTINGS[key]
           return <Field key={key} label={tr(label)} hint={tr(hint)}>
             <div className="flex gap-1">
@@ -133,7 +138,8 @@ export function ShopDrillingSettings({ shop, editShop }: {
                 <input type="number" className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-900"
                   value={raw ?? 0} min={POSITIVE_NUMBERS.has(key) ? 0.1 : 0} step={step}
                   onChange={(event) => {
-                    const value = Number(event.currentTarget.value)
+                    // 0.1 мм — drilling.ts-тегі roundCoord дәлдігі.
+                    const value = Math.round(Number(event.currentTarget.value) * 10) / 10
                     setNumber(key, value)
                   }} />
               ) : (
