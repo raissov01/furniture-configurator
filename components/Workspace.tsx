@@ -46,7 +46,7 @@ import { useProjectProduction } from '@/lib/useProjectProduction'
 import {
   DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, shelfSpanWarnings,
 } from '@/src/core/index'
-import { activeCabinet, useConfigurator } from '@/store/configurator'
+import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 
 // R3F тек браузерде жүреді — сервер жағында рендерленбейді.
@@ -103,7 +103,7 @@ const BUDGET_MS = 100
 const CUT_OPEN_KEY = 'furniture-configurator:cutlist-open'
 
 export function Workspace() {
-  const cabinet = useConfigurator(activeCabinet)
+  const cabinet = useConfigurator((s) => s.cabinets.find((entry) => entry.id === s.activeId))
   const undo = useConfigurator((s) => s.undo)
   const redo = useConfigurator((s) => s.redo)
   const reset = useConfigurator((s) => s.reset)
@@ -180,7 +180,7 @@ export function Workspace() {
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, settings)
   const { scene, items, error: sceneError } = useTreeSceneItems(root, room, catalog, settings, layers)
   const production = useProjectProduction()
-  const hasActiveCabinet = cabinets.some((entry) => entry.id === activeId)
+  const hasActiveCabinet = Boolean(cabinet)
   const activePanels = hasActiveCabinet ? panels : []
   const activeEditable = useMemo(() => {
     if (!hasActiveCabinet) return false
@@ -586,7 +586,7 @@ export function Workspace() {
               </Button>
             )
           ) : null}
-          {hasActiveCabinet && !production.error ? <ExportMenu cabinet={cabinet} panels={activePanels} /> : null}
+          {cabinet && !production.error ? <ExportMenu cabinet={cabinet} panels={activePanels} /> : null}
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}
@@ -922,7 +922,7 @@ export function Workspace() {
                 ? ` ${String(cabinets.findIndex((c) => c.id === activeId) + 1).padStart(2, '0')} / ${cabinets.length}`
                 : ''}
             </div>
-            {hasActiveCabinet ? <>
+            {cabinet ? <>
               <div className="truncate text-sm font-semibold" title={cabinet.name}>{cabinet.name}</div>
               <div className="text-[11px] tabular-nums text-neutral-500">
                 {cabinet.height} (H) × {cabinet.width} (W) × {cabinet.depth} (D)

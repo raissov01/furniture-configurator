@@ -22,7 +22,9 @@ import {
   wallById,
 } from '@/src/core/index'
 import type { CabinetConfig, Placement, Room, RoomFinish, WallId } from '@/src/core/index'
-import { activeCabinet, useConfigurator } from '@/store/configurator'
+import { useConfigurator } from '@/store/configurator'
+import { assertTreeNodeEditable } from '@/src/core/treeEditing'
+import { ConfigValidationError } from '@/src/core/errors'
 import { Button, Field, NumberInput, SectionTitle, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
 
@@ -42,10 +44,22 @@ export function RoomPlan() {
   const setOpen = useConfigurator((s) => s.setRoomOpen)
   const room = useConfigurator((s) => s.room)
   const cabinets = useConfigurator((s) => s.cabinets)
+  const root = useConfigurator((s) => s.root)
+  const layers = useConfigurator((s) => s.layers)
   const placements = useConfigurator((s) => s.placements)
   const activeId = useConfigurator((s) => s.activeId)
   const selectedWall = useConfigurator((s) => s.selectedWall)
-  const active = useConfigurator(activeCabinet)
+  const active = cabinets.find((cabinet) => cabinet.id === activeId)
+  const editableIds = useMemo(() => new Set(cabinets.flatMap((cabinet) => {
+    try {
+      assertTreeNodeEditable(root, cabinet.id, layers)
+      return [cabinet.id]
+    } catch (error) {
+      if (!(error instanceof ConfigValidationError)) throw error
+      return []
+    }
+  })), [root, layers, cabinets])
+  const roomEditable = editableIds.size === cabinets.length
 
   const editRoom = useConfigurator((s) => s.editRoom)
   const setSelectedWall = useConfigurator((s) => s.setSelectedWall)
@@ -106,12 +120,12 @@ export function RoomPlan() {
             selectedWall={selectedWall}
             onWall={setSelectedWall}
             onCabinet={setActive}
-            onMove={(id, offset) => movePlacement(id, { offset })}
+            onMove={(id, offset) => { if (editableIds.has(id)) movePlacement(id, { offset }) }}
           />
 
           <div className="space-y-3">
             <SectionTitle>{tr('Размеры комнаты, мм')}</SectionTitle>
-            <div className="grid grid-cols-3 gap-2">
+            <fieldset disabled={!roomEditable} className="grid grid-cols-3 gap-2">
               <Field label={tr('Ширина')}>
                 <NumberInput value={room.width} min={500} max={20000} step={50}
                   onChange={(width) => editRoom({ width })} />
@@ -124,10 +138,12 @@ export function RoomPlan() {
                 <NumberInput value={room.height} min={2000} max={4000} step={50}
                   onChange={(height) => editRoom({ height })} />
               </Field>
-            </div>
+            </fieldset>
 
             <SectionTitle>{tr('Отделка')}</SectionTitle>
-            <FinishEditor room={room} onChange={(finish) => editRoom({ finish })} />
+            <fieldset disabled={!roomEditable}>
+              <FinishEditor room={room} onChange={(finish) => editRoom({ finish })} />
+            </fieldset>
 
             <SectionTitle>{tr('Стена')}</SectionTitle>
             <div className="flex flex-wrap gap-1">
@@ -138,8 +154,8 @@ export function RoomPlan() {
               ))}
             </div>
 
-            <SectionTitle>{tr('Текущий корпус')}</SectionTitle>
-            <div className="grid grid-cols-2 gap-2">
+            {active ? <><SectionTitle>{tr('Текущий корпус')}</SectionTitle>
+            <fieldset disabled={!editableIds.has(active.id)} className="grid grid-cols-2 gap-2">
               <Field label={tr('Стена')}>
                 <select
                   className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
@@ -184,7 +200,7 @@ export function RoomPlan() {
                   onChange={(rotate) => movePlacement(activeId, { rotate })}
                 />
               </Field>
-            </div>
+            </fieldset></> : null}
 
             <div className="flex items-center justify-between">
               <SectionTitle>{tr('Корпуса')} ({cabinets.length})</SectionTitle>
@@ -212,6 +228,7 @@ export function RoomPlan() {
                       </button>
                       <Button
                         title={tr('Копия корпуса')}
+                        disabled={!editableIds.has(cabinet.id)}
                         onClick={() => duplicateCabinet(cabinet.id)}
                       >
                         ⧉
@@ -222,12 +239,12 @@ export function RoomPlan() {
                       */}
                       <Button
                         title={canMirror(cabinet).ok ? tr('Зеркальный корпус') : mirrorReason(cabinet)}
-                        disabled={!canMirror(cabinet).ok}
+                        disabled={!canMirror(cabinet).ok || !editableIds.has(cabinet.id)}
                         onClick={() => mirrorCabinet(cabinet.id)}
                       >
                         ⇄
                       </Button>
-                      <Button onClick={() => removeCabinet(cabinet.id)} disabled={cabinets.length <= 1}>✕</Button>
+                      <Button onClick={() => removeCabinet(cabinet.id)} disabled={cabinets.length <= 1 || !editableIds.has(cabinet.id)}>✕</Button>
                     </div>
                     {bad.map((i, k) => (
                       <p key={k} className="mt-0.5 pl-2 text-[11px] text-red-600 dark:text-red-400">{i.message}</p>
