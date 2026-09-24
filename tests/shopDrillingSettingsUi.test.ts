@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
-import { DRILLING_NUMBER_FIELDS, ShopDrillingSettings } from '../components/ShopDrillingSettings'
+import { DRILLING_NUMBER_FIELDS, ShopDrillingSettings, resetDrillingSetting } from '../components/ShopDrillingSettings'
 import {
   SEED_TEMPLATES, catalogOf, defaultShopProfile, generateCabinet, parseShopProfile, templateToCabinet,
 } from '../src/core/index'
@@ -37,5 +37,24 @@ describe('Shop Settings → Присадка', () => {
     expect(mismatched).toEqual([])
     expect(DRILLING_NUMBER_FIELDS.find(({ key }) => key === 'hingeScrewPilotDepth')?.step).toBe(0.1)
     expect(DRILLING_NUMBER_FIELDS.find(({ key }) => key === 'minifixSleeveDepth')?.step).toBe(0.1)
+  })
+
+  it('Reset тек өзіне тәуелді бекіту режимін қайтарады, басқасын қозғамайды', () => {
+    const pressFit = { hingeCupMount: 'press-fit' as const, hingePressFitDepth: 12,
+      hingeScrewPilotDiameter: 2.8, hingeScrewPilotDepth: 8 }
+    // Бұрын пилот Ø/тереңдігін Reset жасау press-fit режимін де cup-only-ге қайтаратын.
+    expect(resetDrillingSetting(pressFit, 'hingeScrewPilotDiameter'))
+      .toEqual({ hingeCupMount: 'press-fit', hingePressFitDepth: 12, hingeScrewPilotDepth: 8 })
+    expect(resetDrillingSetting(pressFit, 'hingeScrewPilotDepth').hingeCupMount).toBe('press-fit')
+    // Белсенді режимнің міндетті өрісі null-ға қайтса — режим де қайтады.
+    expect(resetDrillingSetting(pressFit, 'hingePressFitDepth').hingeCupMount).toBeUndefined()
+    const screw = { ...pressFit, hingeCupMount: 'screw' as const }
+    expect(resetDrillingSetting(screw, 'hingeScrewPilotDiameter').hingeCupMount).toBeUndefined()
+    expect(resetDrillingSetting(screw, 'hingeScrewPilotDepth').hingeCupMount).toBeUndefined()
+    expect(resetDrillingSetting(screw, 'hingePressFitDepth').hingeCupMount).toBe('screw')
+    const sleeve = { minifixBoltMount: 'sleeve-8' as const, minifixSleeveDepth: 12 }
+    expect(resetDrillingSetting(sleeve, 'minifixSleeveDepth')).toEqual({})
+    expect(resetDrillingSetting({ ...sleeve, minifixBoltMount: 'screw-5' }, 'minifixSleeveDepth'))
+      .toEqual({ minifixBoltMount: 'screw-5' })
   })
 })

@@ -72,6 +72,28 @@ const POSITIVE_NUMBERS = new Set<NumericKey>([
 
 const ARRAY_PATTERN = /^\s*\d+(?:\s*,\s*\d+)*\s*$/
 
+/**
+ * Бір өрісті әдепкіге қайтару. Әдепкісі `null` өріс белсенді бекіту
+ * режимінің МІНДЕТТІ дерегі болса ғана, сол режим де әдепкіге қайтады —
+ * әйтпесе генерация тоқтар еді. Бұрын режим шартсыз өшірілетін: screw
+ * пилотын Reset жасау press-fit таңдауын да cup-only-ге қайтаратын.
+ */
+const REQUIRED_BY_MOUNT: Partial<Record<keyof ConstructionSettings,
+  readonly ['minifixBoltMount', 'sleeve-8'] | readonly ['hingeCupMount', 'screw' | 'press-fit']>> = {
+  minifixSleeveDepth: ['minifixBoltMount', 'sleeve-8'],
+  hingeScrewPilotDiameter: ['hingeCupMount', 'screw'],
+  hingeScrewPilotDepth: ['hingeCupMount', 'screw'],
+  hingePressFitDepth: ['hingeCupMount', 'press-fit'],
+}
+
+export function resetDrillingSetting(current: SettingsOverride, key: keyof ConstructionSettings): SettingsOverride {
+  const settings: SettingsOverride = { ...current }
+  delete settings[key]
+  const requirement = REQUIRED_BY_MOUNT[key]
+  if (requirement && current[requirement[0]] === requirement[1]) delete settings[requirement[0]]
+  return settings
+}
+
 export function ShopDrillingSettings({ shop, editShop }: {
   shop: ShopProfile
   editShop: (patch: Partial<ShopProfile>) => void
@@ -117,13 +139,7 @@ export function ShopDrillingSettings({ shop, editShop }: {
     change(key, value)
   }
   const reset = (key: keyof ConstructionSettings) => {
-    const settings: SettingsOverride = { ...shop.settings }
-    delete settings[key]
-    if (key === 'minifixSleeveDepth') delete settings.minifixBoltMount
-    if (key === 'hingeScrewPilotDiameter') delete settings.hingeCupMount
-    if (key === 'hingeScrewPilotDepth') delete settings.hingeCupMount
-    if (key === 'hingePressFitDepth') delete settings.hingeCupMount
-    editShop({ settings })
+    editShop({ settings: resetDrillingSetting(shop.settings, key) })
   }
   return (
     <div className="space-y-3">
