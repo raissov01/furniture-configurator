@@ -13,7 +13,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  DEFAULT_SETTINGS, IDENTITY_TRANSFORM, SEED_CATALOG, SEED_SETS, findTemplate, flattenTree,
+  DEFAULT_SETTINGS, IDENTITY_TRANSFORM, SEED_CATALOG, SEED_SETS, SEED_TEMPLATES, findTemplate, flattenTree,
   formatCutList, generateCabinet, generateHardware, placementPose, scenePanels, setToProject,
   templateToCabinet, treeFromProject,
 } from '../src/core/index'
@@ -95,6 +95,45 @@ describe('ағаш жолы = ескі жол', () => {
       })
     })
   }
+})
+
+describe('SEED_TEMPLATES толық қамтуы — ағаш жолы = ескі жол', () => {
+  it('барлық шаблонға жеке тексеру тіркелген', () => {
+    expect(SEED_TEMPLATES.length).toBeGreaterThan(0)
+    expect(new Set(SEED_TEMPLATES.map((template) => template.id)).size).toBe(SEED_TEMPLATES.length)
+  })
+
+  it.each(SEED_TEMPLATES.map((template, index) => [template.id, template, index] as const))
+  ('%s: панель, фурнитура, поза және деталировка дәл бірдей', (_id, template, index) => {
+    const cabinet = templateToCabinet(template, SEED_CATALOG)
+    const placement = {
+      cabinetId: cabinet.id,
+      wall: (['north', 'east', 'south', 'west'] as const)[index % 4]!,
+      offset: 100 + index * 5,
+      elevation: index % 3 === 0 ? 700 : 0,
+      rotate: index % 2 === 0 ? 15 : -15,
+    }
+    const project: ProjectFile = {
+      schemaVersion: 3,
+      name: template.name,
+      materials: SEED_CATALOG.materials,
+      edgeBands: SEED_CATALOG.edgeBands,
+      cabinets: [cabinet],
+      room: { width: 8000, depth: 8000, height: 4000 },
+      placements: [placement],
+      settings: { shelfSetback: 8 },
+    }
+    const scene = flattenTree(treeFromProject(project), SEED_CATALOG, project.settings)
+    const node = scene.nodes[0]!
+    expect(scene.nodes).toHaveLength(1)
+    expect(node.nodeId).toBe(cabinet.id)
+    const oldPanels = generateCabinet(cabinet, SEED_CATALOG, project.settings)
+    expect(node.panels).toEqual(oldPanels)
+    expect(node.hardware).toEqual(generateHardware(cabinet, SEED_CATALOG, project.settings))
+    expect(node.pose).toEqual(placementPose(project.room, cabinet, placement))
+    expect(formatCutList(scenePanels(scene), SEED_CATALOG))
+      .toEqual(formatCutList(oldPanels, SEED_CATALOG))
+  })
 })
 
 /**
