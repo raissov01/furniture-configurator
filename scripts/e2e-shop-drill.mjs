@@ -12,7 +12,7 @@ const base = (process.argv[2] ?? 'http://localhost:3093').replace(/\/$/, '')
 const port = 10000 + Math.floor(Math.random() * 40000)
 const profile = await mkdtemp(join(tmpdir(), 'shop-drill-e2e-'))
 const chrome = spawn(process.env['CHROME'] ?? 'google-chrome', [
-  '--headless=new', '--disable-gpu', '--use-gl=swiftshader', '--no-first-run',
+  '--headless=new', '--disable-gpu', '--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--no-first-run',
   `--user-data-dir=${profile}`, `--remote-debugging-port=${port}`,
   '--window-size=1500,1000', 'about:blank',
 ], { stdio: 'ignore', detached: true })
@@ -61,7 +61,8 @@ try {
   await send('Page.enable')
   await send('Runtime.enable')
   await send('Page.navigate', { url: `${base}/configurator` })
-  await waitFor(() => evaluate("document.body?.innerText.includes('Цех')"), 'app')
+  // Server HTML already contains the toolbar; a canvas proves React has mounted.
+  await waitFor(() => evaluate("Boolean(document.querySelector('#scene-3d canvas'))"), 'hydrated app')
   const click = async (label) => evaluate(`(() => {
     const button = [...document.querySelectorAll('button')].find((item) => item.textContent?.trim() === ${JSON.stringify(label)});
     if (!button) return false; button.click(); return true;
@@ -88,7 +89,7 @@ try {
   pageLoaded = () => { reloaded = true }
   await send('Page.reload', { ignoreCache: true })
   await waitFor(async () => reloaded, 'reload')
-  await waitFor(() => evaluate("document.body?.innerText.includes('Цех')"), 'reloaded app')
+  await waitFor(() => evaluate("Boolean(document.querySelector('#scene-3d canvas'))"), 'hydrated reloaded app')
   if (!await click('Цех')) throw new Error('Қайта ашылған Цех батырмасы табылмады')
   await waitFor(() => evaluate("document.body.innerText.includes('Настройки цеха')"), 'reloaded shop dialog')
   if (!await click('Присадка')) throw new Error('Қайта ашылған Присадка табы табылмады')
@@ -164,12 +165,18 @@ try {
   process.stdout.write('Shop drilling E2E: сақтау, reload, screw depth guard және Reset PASS\n')
 } finally {
   ws?.close()
-  if (chrome.pid) {
-    try { process.kill(-chrome.pid, 'SIGTERM') } catch { /* Chrome exited already */ }
+  const exited = chrome.exitCode === null
+    ? new Promise((resolve) => chrome.once('exit', resolve)) : Promise.resolve()
+  const stop = (signal) => {
+    if (!chrome.pid) return
+    try { process.kill(-chrome.pid, signal) }
+    catch (error) { if (error.code !== 'ESRCH') throw error }
   }
-  await Promise.race([
-    new Promise((resolve) => chrome.once('exit', resolve)),
-    pause(3000),
-  ])
-  await rm(profile, { recursive: true, force: true })
+  stop('SIGTERM')
+  await Promise.race([exited, pause(5000)])
+  if (chrome.exitCode === null) {
+    stop('SIGKILL')
+    await Promise.race([exited, pause(2000)])
+  }
+  await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 }
