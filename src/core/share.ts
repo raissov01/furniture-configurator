@@ -108,6 +108,7 @@ function decodeRawProject(token: string): unknown {
   return raw
 }
 
+/** Ескі v1–v3 share callers үшін сақталған декодер. */
 export function decodeProject(token: string): ProjectFile {
   return parseProject(decodeRawProject(token))
 }

@@ -58,4 +58,22 @@ describe('клиент пікірі', () => {
     share.createShare('{}', Date.now() + 2000)
     expect(comments.listForShop(owner.account.shopId).some((c) => c.id === comment?.id)).toBe(true)
   })
+
+  it('архив тек цех share-іне: аноним share мерзімі өткенде өшеді, архивте жоба JSON-ы сақталмайды', async () => {
+    const { db } = await import('../lib/server/db')
+    const owner = auth.register('comments-retention@example.kz', 'password123', 'Архив 2')
+    if (!owner.ok) throw new Error(owner.error)
+    const past = Date.now() - share.SHARE_TTL_MS + 1000
+    const big = JSON.stringify({ name: 'x'.repeat(10_000) })
+    // Кез келген адам аноним share жасап, бір пікір жазып, оны мәңгі қалдыра алмауы керек.
+    const anon = share.createShare(big, past).code
+    comments.addClientComment(anon, null, 'spam', 'bot')
+    const owned = share.createShare(big, past, owner.account.shopId).code
+    comments.addClientComment(owned, null, 'Сақтаңыз', 'Айша')
+    share.createShare('{}', Date.now() + 2000)
+    const row = (code: string) => db().prepare('SELECT json FROM shares WHERE code = ?').get(code) as { json: string } | undefined
+    expect(row(anon)).toBeUndefined()
+    expect(row(owned)?.json.length).toBeLessThan(100)
+    expect(comments.listForShop(owner.account.shopId).some((c) => c.code === owned)).toBe(true)
+  })
 })

@@ -3,25 +3,70 @@ import { composePose, isNodeHiddenByLayer, ORIGIN_POSE, placementPose, roomWalls
 import { relativeTransform } from '../src/core/treeEditing'
 import type { CabinetConfig, GroupNode, Layer, Placement, Pose, Room, SceneNode, WallId } from '../src/core/index'
 
-function closestWall(room: Room, rotationY: number): WallId {
-  const walls = roomWalls(room)
-  let winner = walls[0]!
-  let error = Infinity
-  for (const wall of walls) {
-    const delta = ((rotationY - wall.rotationY + 180) % 360 + 360) % 360 - 180
-    if (Math.abs(delta) < error) { winner = wall; error = Math.abs(delta) }
+/**
+ * Шкаф қай қабырғаға тіреліп тұр — ОРНЫНАН анықталады, бұрышынан ЕМЕС.
+ *
+ * `placementPose` орынды `origin + direction·offset + inward·depth` деп
+ * есептейді, ал `rotate` тек бұрышқа қосылады. Сондықтан 90°-қа бұрылған
+ * оңтүстік шкафтың бұрышы шығыс қабырғаныкімен бірдей, бірақ орны әлі де
+ * оңтүстік қабырғада. Бұрыш бойынша таңдау оны басқа қабырғаға секіртеді.
+ * Шын қабырға үшін `inward` бойынша қалдық нөлге тең; тең болса ғана бұрыш шешеді.
+ */
+function closestWall(room: Room, cabinet: CabinetConfig, pose: Pose): WallId {
+  let winner = roomWalls(room)[0]!
+  let best = Infinity
+  let bestAngle = Infinity
+  for (const wall of roomWalls(room)) {
+    const x = pose.position.x - wall.origin.x - wall.inward.x * cabinet.depth
+    const z = pose.position.z - wall.origin.z - wall.inward.z * cabinet.depth
+    const residual = Math.abs(x * wall.inward.x + z * wall.inward.z)
+    const angle = Math.abs(((pose.rotationY - wall.rotationY + 180) % 360 + 360) % 360 - 180)
+    if (residual < best - 0.5 || (Math.abs(residual - best) <= 0.5 && angle < bestAngle)) {
+      winner = wall; best = residual; bestAngle = angle
+    }
   }
   return winner.id
 }
 
 function placementFromPose(room: Room, cabinet: CabinetConfig, pose: Pose): Placement {
-  const wall = roomWalls(room).find((entry) => entry.id === closestWall(room, pose.rotationY))!
+  const wall = roomWalls(room).find((entry) => entry.id === closestWall(room, cabinet, pose))!
   const x = pose.position.x - wall.origin.x - wall.inward.x * cabinet.depth
   const z = pose.position.z - wall.origin.z - wall.inward.z * cabinet.depth
   const offset = Math.round(x * wall.direction.x + z * wall.direction.z)
   return { cabinetId: cabinet.id, wall: wall.id, offset,
     ...(pose.position.y ? { elevation: pose.position.y } : {}),
     ...(pose.rotationY !== wall.rotationY ? { rotate: pose.rotationY - wall.rotationY } : {}) }
+}
+
+/**
+ * Қабырғаға ДӘЛ тіреліп тұрған шкафтардың placement-і (жасырындары да).
+ *
+ * Бөлме өлшемі өзгергенде тек осылар қабырғамен бірге жылжиды. Еркін
+ * тұрған шкафты `placementFromPose` ең жақын қабырғаға «тартады» — оны
+ * жылжытсақ, биіктікті өзгерту шкафты 600 мм-ге секіртеді. 90°-қа еселі
+ * емес бұрылған топтың ішіндегі шкаф та алынбайды: оның жаңа орны топ
+ * ішінде бүтін мм болмайды да, `relativeTransform` қате лақтырады.
+ */
+export function wallAttachedPlacements(root: GroupNode, room: Room): Placement[] {
+  const result: Placement[] = []
+  const step = (node: SceneNode, parent: Pose, square: boolean): void => {
+    const pose = composePose(parent, node.transform)
+    if (node.kind === 'cabinet') {
+      const config = node.config.id === node.id ? node.config : { ...node.config, id: node.id }
+      const placement = placementFromPose(room, config, pose)
+      const back = placementPose(room, config, placement)
+      const same = Math.abs(back.position.x - pose.position.x) < 1e-6
+        && Math.abs(back.position.y - pose.position.y) < 1e-6
+        && Math.abs(back.position.z - pose.position.z) < 1e-6
+        && Math.abs(back.rotationY - pose.rotationY) < 1e-6
+      if (square && same) result.push(placement)
+    } else if (node.kind === 'group') {
+      const childSquare = square && node.transform.rot.y % 90 === 0
+      for (const child of node.children) step(child, pose, childSquare)
+    }
+  }
+  step(root, ORIGIN_POSE, true)
+  return result
 }
 
 /** Derived adapter only; production and persistence always use `root`. */

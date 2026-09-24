@@ -25,8 +25,13 @@ export type ShareCreated = { code: string; key: string; expiresAt: number }
 /** Жаңа код. Мерзімі өткендер осы жерде тазаланады. */
 export function createShare(json: string, now = Date.now(), shopId?: string): ShareCreated {
   const database = db()
-  // Пікір жазылған share кейін де дизайнер inbox-ында сақталады.
-  database.prepare('DELETE FROM shares WHERE expires_at <= ? AND NOT EXISTS (SELECT 1 FROM comments WHERE comments.code = shares.code)').run(now)
+  // Пікір жазылған ЦЕХ share-і кейін де дизайнер inbox-ында сақталады.
+  // Аноним share-дің inbox-ы жоқ: оны қалдырсақ, кез келген адам share + бір
+  // пікірмен кодтар мен дискіні мәңгіге толтырар еді. Архивке жоба JSON-ы
+  // керек емес (оны мерзімі өткен соң ешкім оқымайды) — тек пікірлер.
+  database.prepare(`DELETE FROM shares WHERE expires_at <= ? AND (shop_id IS NULL
+    OR NOT EXISTS (SELECT 1 FROM comments WHERE comments.code = shares.code))`).run(now)
+  database.prepare("UPDATE shares SET json = '{}' WHERE expires_at <= ? AND json <> '{}'").run(now)
   const key = randomBytes(24).toString('hex')
   const expiresAt = now + SHARE_TTL_MS
   // 1 000 000 кодтың ішінде бос біреуін табу: қайталанса — қайта таңдау.

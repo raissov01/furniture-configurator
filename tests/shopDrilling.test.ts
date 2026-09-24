@@ -59,6 +59,25 @@ describe('цех присадка профилі', () => {
     expect(shiftedRows).toEqual([originalRows[0]! + 13, originalRows[1]!])
   })
 
+  it('аласа шкафта әдепкі профиль генерацияны тоқтатпайды, топтың панельден тыс қатары түспейді', () => {
+    // 48c6041-де бұл шкафтар генерацияланатын (тек топтың шеткі қатары
+    // панельден тыс x=912/x=0 болып түсетін). Әдепкі баптауда қате
+    // `settings.shelfPinDatum` деп лақтырылмауы керек.
+    for (const [id, height] of [['wardrobe-drawers-1200', 900], ['bookcase-2sec-1200', 500]] as const) {
+      const template = SEED_TEMPLATES.find((item) => item.id === id)!
+      const config = { ...templateToCabinet(template, catalog), height }
+      const panels = generateCabinet(config, catalog, shop.settings)
+      const pins = panels.flatMap((panel) => panel.drilling
+        .filter((d) => d.purpose === 'shelfPin')
+        .map((d) => ({ panel, d })))
+      expect(pins.length).toBeGreaterThan(0)
+      for (const { panel, d } of pins) {
+        expect(d.x).toBeGreaterThanOrEqual(d.diameter / 2)
+        expect(d.x).toBeLessThanOrEqual(panel.cutLength - d.diameter / 2)
+      }
+    }
+  })
+
   it('полкодержательдің цех офсеті кесілген бүйірден тыс шықса генерация тоқтайды', () => {
     expect(() => panelsFor('wardrobe-penal-600', { shelfPinFrontOffset: 1000 }))
       .toThrow(/shelfPinFrontOffset/)
@@ -327,5 +346,63 @@ describe('DXF-де күрделі контурдың outer қауіпсізді�
     }
     const dxf = panelToDxf(custom, { settings: { ...DEFAULT_SETTINGS, outerFlipAxis: 'length' } })
     expect(dxf).toContain(`0\nARC\n8\nOUTLINE_OUTER_REFERENCE\n10\n10.0\n20\n${panel.cutWidth - 10}.0\n30\n0.0\n40\n10.0\n50\n90.0\n51\n180.0`)
+  })
+})
+
+// Ревью: бұрынғы тесттер төмендегі мутацияларды ұстамайтын (өс елемеу,
+// ілгек бекіткішінің бағыты, ball тармағы, фрезер айнасы, минификс Ø8).
+describe('shop-drill мутацияларын ұстайтын тексерулер', () => {
+  const outerHole = { face: 'outer' as const, x: 123, y: 47, diameter: 5, depth: 8, purpose: 'handle' as const }
+
+  it('CNC ен өсін таңдаса X айналады, Y өзгермейді', async () => {
+    const { cncPanelCsv } = await import('../src/core/export/cnc')
+    const panel = panelsFor('wardrobe-penal-600').find((p) => p.id === 'side-left')!
+    const csv = cncPanelCsv({ ...panel, drilling: [outerHole] }, catalog, { projectName: 'test', outerFlipAxis: 'width' })
+    const fields = csv.replace('﻿', '').trim().split('\r\n')[1]!.split(';')
+    expect(fields[8]).toBe(String(panel.cutLength - 123))
+    expect(fields[9]).toBe('47')
+  })
+
+  it('DXF outer фрезер жолы тесікпен бірге айналады', async () => {
+    const { panelToDxf } = await import('../src/core/export/dxf')
+    const panel = panelsFor('wardrobe-penal-600').find((p) => p.id === 'side-left')!
+    const dxf = panelToDxf({ ...panel, drilling: [], milling: [{ closed: false, points: [{ x: 123, y: 47 }, { x: 200, y: 47 }] }] },
+      { settings: { ...DEFAULT_SETTINGS, outerFlipAxis: 'length' } })
+    expect(dxf).toContain(`8\nMILLING\n90\n2.0\n70\n0.0\n10\n123.0\n20\n${panel.cutWidth - 47}.0`)
+  })
+
+  it('чашканың бекіту тесіктері фасадтың ортасына қарай ығысады', () => {
+    const fronts = panelsFor('wardrobe-penal-600', { hingeCupMount: 'screw', hingeScrewPilotDiameter: 2.8, hingeScrewPilotDepth: 8 })
+      .filter((p) => p.role === 'front')
+    expect(fronts.length).toBeGreaterThan(0)
+    for (const front of fronts) {
+      const centre = front.cutWidth / 2
+      const cup = front.drilling.find((d) => d.purpose === 'hinge' && d.diameter === 35)!
+      const pilots = front.drilling.filter((d) => d.purpose === 'hinge' && d.diameter === 2.8)
+      expect(pilots.length).toBeGreaterThan(0)
+      for (const pilot of pilots) expect(Math.abs(pilot.y - centre)).toBeLessThan(Math.abs(cup.y - centre))
+    }
+  })
+
+  it('шарикті направляющаның тесігі ball баптауынан алынады', () => {
+    const template = SEED_TEMPLATES.find((t) => t.id === 'kitchen-base-drawers-600')!
+    const config = { ...templateToCabinet(template, catalog), drawerSystem: 'ball' as const }
+    const runners = (settings: object) => generateCabinet(config, catalog, settings)
+      .find((p) => p.id === 'side-left')!.drilling.filter((d) => d.purpose === 'runner')
+    const original = runners({})
+    const modified = runners({ runnerBallHoleOffsets: [40, 120, 200] })
+    expect(original.length % 2).toBe(0)
+    expect(modified.length).toBe((original.length / 2) * 3)
+    expect(modified[1]!.y - modified[0]!.y).toBe(80)
+  })
+
+  it('sleeve-8 болса бірде-бір минификс штифті Ø5 болып қалмайды', () => {
+    const drills = (settings: object) => panelsFor('kitchen-base-drawers-600', settings)
+      .flatMap((p) => p.drilling).filter((d) => d.purpose === 'minifix' && d.face === 'inner')
+    const screws = drills({}).filter((d) => d.diameter === 5)
+    const sleeves = drills({ minifixBoltMount: 'sleeve-8', minifixSleeveDepth: 12 })
+    expect(screws.length).toBeGreaterThan(0)
+    expect(sleeves.filter((d) => d.diameter === 5)).toHaveLength(0)
+    expect(sleeves.filter((d) => d.diameter === 8)).toHaveLength(screws.length)
   })
 })

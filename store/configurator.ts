@@ -45,7 +45,7 @@ import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as crea
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
   setNodeLayer, treeFromProject } from '@/src/core/index'
 import { assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, ungroupNode } from '@/src/core/treeEditing'
-import { cabinetsFromTree, reconcileCabinetsInTree } from './treeAdapters'
+import { cabinetsFromTree, reconcileCabinetsInTree, wallAttachedPlacements } from './treeAdapters'
 
 /** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
 const SHOP_KEY = 'furniture-configurator:shop'
@@ -397,6 +397,10 @@ function replaceProjectScene(s: State, cabinets: CabinetConfig[], placements: Pl
   const layers = [createDefaultLayer()]
   return { root, layers, ...cabinetsFromTree(root, room, layers) }
 }
+
+/** Қабырғамен бірге нақты жылжитын корпустардың ID тізімі. */
+const placedIds = (placements: Placement[]): ReadonlySet<string> =>
+  new Set(placements.map((placement) => placement.cabinetId))
 
 /** Project's physical geometry wins; current shop provides prices for matching IDs. */
 function projectCatalog(shop: ShopProfile, materials?: Material[], edgeBands?: EdgeBand[]): Catalog {
@@ -1086,10 +1090,19 @@ export const useConfigurator = create<State>((set, get) => ({
   editRoom(patch) {
     const s = get()
     const room = { ...s.room, ...patch }
+    // Қабырғамен бірге тек қабырғаға тіреліп тұрған әрі өңделетін шкаф
+    // жылжиды. Құлыпталғаны орнында қалады — бөлмені өзгертуді бұғаттамайды.
+    const attached = wallAttachedPlacements(s.root, s.room).filter((placement) => {
+      try {
+        assertTreeNodeEditable(s.root, placement.cabinetId, s.layers)
+        return true
+      } catch {
+        return false
+      }
+    })
     set({
       room,
-      ...legacyEdit(s, s.cabinets, s.placements, room,
-        new Set(s.placements.map((placement) => placement.cabinetId))),
+      ...legacyEdit(s, s.cabinets, attached, room, placedIds(attached)),
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
