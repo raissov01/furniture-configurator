@@ -10,6 +10,7 @@ import fontkit from '@pdf-lib/fontkit'
 import { PDFDocument, rgb } from 'pdf-lib'
 import type { PDFFont, PDFPage } from 'pdf-lib'
 import { CUT_LIST_COLUMNS, formatCutList, partNumbers } from '../cutList'
+import { formatProjectDate } from '../projectDate'
 import { fitTransform, projectElevation, projectIsometric } from './drawing'
 import type { Bounds, ElevationView } from './drawing'
 import type { CabinetConfig, Catalog, Panel, ProjectInfo } from '../types'
@@ -22,30 +23,26 @@ export type AssemblyPdfInput = {
   catalog: Catalog
   projectName: string
   fonts: PdfFonts
-  /** Тапсырыс реквизиттері (Заказ/Клиент/Дизайнер/Примечание). ЕРІКТІ. */
+  /** Тапсырыс реквизиттері (Заказ/Дата/Клиент/Дизайнер/Примечание). ЕРІКТІ. */
   info?: ProjectInfo | undefined
 }
 
 /**
  * Реквизиттің қай жолдары басылатыны осы функциямен анықталады: бос өріс
  * тізімге кірмейді, сондықтан ешбір экспорт бос жол шығармайды. Реті —
- * PRO100 TPROJECTINFOFORM-мен бірдей: Заказ · Заказчик · Дизайнер · Примечание
- * («Дата» құжаттың өз күнінде бөлек басылады, себебі ол әрдайым толы).
+ * PRO100 TPROJECTINFOFORM-мен бірдей: Заказ · Дата · Заказчик · Дизайнер ·
+ * Примечание. Дата жоқта ол ойдан толтырылмайды.
  */
 export type ProjectInfoField = { label: string; value: string }
 
-export function projectInfoRows(info: {
-  orderNo?: string | undefined
-  client?: string | undefined
-  designer?: string | undefined
-  note?: string | undefined
-}): ProjectInfoField[] {
+export function projectInfoRows(info: ProjectInfo): ProjectInfoField[] {
   const rows: ProjectInfoField[] = []
   const add = (label: string, value: string | undefined) => {
     const trimmed = value?.trim()
     if (trimmed) rows.push({ label, value: trimmed })
   }
   add('Заказ', info.orderNo)
+  if (info.date?.trim()) add('Дата', formatProjectDate(info.date.trim()))
   add('Заказчик', info.client)
   add('Дизайнер', info.designer)
   add('Примечание', info.note)
@@ -122,7 +119,7 @@ function fitText(font: PDFFont, value: string, size: number, maxWidth: number): 
  * бір-бірінің үстіне түседі.
  */
 function titleBlockExtra(input: AssemblyPdfInput): number {
-  return projectInfoRows(input.info ?? {}).length > 0 ? 12 : 0
+  return projectInfoRows(input.info ?? {}).length * 12
 }
 
 function titleBlock(ctx: Ctx, input: AssemblyPdfInput, page: string): void {
@@ -137,10 +134,7 @@ function titleBlock(ctx: Ctx, input: AssemblyPdfInput, page: string): void {
   const mw = ctx.regular.widthOfTextAtSize(meta, 8)
   label(ctx, PAGE.w - MARGIN - mw, y - 22, meta, 8, false, THIN)
   const rows = projectInfoRows(input.info ?? {})
-  if (rows.length > 0) {
-    const infoLine = rows.map((r) => `${r.label}: ${r.value}`).join('   ·   ')
-    label(ctx, MARGIN, y - 34, infoLine, 8, false, THIN)
-  }
+  rows.forEach((row, index) => label(ctx, MARGIN, y - 34 - index * 12, `${row.label}: ${row.value}`, 8, false, THIN))
   const ruleY = y - 30 - titleBlockExtra(input)
   line(ctx.page, MARGIN, ruleY, PAGE.w - MARGIN, ruleY, THIN, 0.5)
 }

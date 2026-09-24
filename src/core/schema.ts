@@ -11,6 +11,7 @@ import { ApplianceKindSchema, FillingKindSchema } from './filling'
 import type { Layer } from './layers'
 import { HandleSpecSchema } from './fittings'
 import { MillingSpecSchema } from './milling'
+import { isValidProjectDate } from './projectDate'
 import type { ProjectFile } from './types'
 
 /** Өлшем: мм, бүтін, оң сан. */
@@ -405,7 +406,7 @@ export const PlacementSchema = z.object({
  */
 export const ProjectInfoSchema = z.object({
   orderNo: z.string().min(1).optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  date: z.string().refine(isValidProjectDate, { message: 'YYYY-MM-DD түріндегі нақты күн қажет' }).optional(),
   client: z.string().min(1).optional(),
   designer: z.string().min(1).optional(),
   note: z.string().min(1).optional(),
