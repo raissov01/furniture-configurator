@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import baseline from './fixtures/shop-drill-seed-baseline.json'
 import {
-  DEFAULT_SETTINGS, SEED_TEMPLATES, catalogOf, defaultShopProfile, generateCabinet,
+  ConfigValidationError, DEFAULT_SETTINGS, SEED_TEMPLATES, catalogOf, defaultShopProfile, generateCabinet,
   mergeSettings, parseShopProfile, templateToCabinet,
 } from '../src/core/index'
 
@@ -466,5 +466,26 @@ describe('shop-drill мутациялары, 2-топ', () => {
     expect(readme('length')).toContain('вокруг оси ДЛИНЫ (X); Y отражён')
     expect(readme('width')).toContain('вокруг оси ШИРИНЫ (Y); X отражён')
     expect(cncFiles(panels, catalog, { projectName: 'test' }).get('README.txt')).toContain('оси ДЛИНЫ (X)')
+  })
+})
+
+describe('аласа шкафта сөре жолағы сөрелерді сыйдырмаса', () => {
+  // 760–770 мм шкаф + 700 мм ящик стегі: сөре жолағына 12–22 мм қалады,
+  // ал 3 сөреге 48 мм керек. Автоматты бөлу теріс саңылау беріп, сөрелер
+  // бірін-бірі басатын; генерацияны тек присадка guard-ы «settings.shelfPinDatum»
+  // деп тоқтататын — цехтың баптауы кінәлі емес.
+  it.each([
+    ['wardrobe-drawers-1200', 760, 'sections[0].contents[1].count'],
+    ['wardrobe-drawers-1200', 770, 'sections[0].contents[1].count'],
+    ['wardrobe-drawers-1200', 790, 'sections[0].contents[1].count'],
+    ['wardrobe-sliding-3-2400', 760, 'sections[2].contents[1].count'],
+    ['wardrobe-sliding-3-2400', 770, 'sections[2].contents[1].count'],
+  ] as const)('%s биіктігі %i → %s', (id, height, field) => {
+    const template = SEED_TEMPLATES.find((item) => item.id === id)!
+    const config = { ...templateToCabinet(template, catalog), height }
+    let error: unknown
+    try { generateCabinet(config, catalog, shop.settings) } catch (caught) { error = caught }
+    expect(error).toBeInstanceOf(ConfigValidationError)
+    expect((error as ConfigValidationError).field).toBe(field)
   })
 })
