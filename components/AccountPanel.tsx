@@ -354,7 +354,7 @@ export function AccountPanel() {
               </div>
             ) : null}
 
-            {account.role === 'owner' && team ? (
+            {team ? (
               <div className="rounded-lg border border-neutral-200 px-2.5 py-2 dark:border-neutral-800">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
@@ -363,15 +363,19 @@ export function AccountPanel() {
                       {team.members.length}{!billing || team.limit === null ? '' : ` / ${team.limit}`}
                     </span>
                   </span>
-                  <select aria-label={tr('Роль приглашения')} value={inviteRole}
-                    className="rounded border border-neutral-300 bg-white px-1 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
-                    onChange={(event) => setInviteRole(event.target.value as 'designer' | 'shop')}>
-                    <option value="designer">{tr('Дизайнер')}</option>
-                    <option value="shop">{tr('Цех')}</option>
-                  </select>
-                  <Button onClick={() => void makeInvite()} disabled={busy}>
-                    {tr('Пригласить')}
-                  </Button>
+                  {account.role === 'owner' ? (
+                    <>
+                      <select aria-label={tr('Роль приглашения')} value={inviteRole}
+                        className="rounded border border-neutral-300 bg-white px-1 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                        onChange={(event) => setInviteRole(event.target.value as 'designer' | 'shop')}>
+                        <option value="designer">{tr('Дизайнер')}</option>
+                        <option value="shop">{tr('Цех')}</option>
+                      </select>
+                      <Button onClick={() => void makeInvite()} disabled={busy}>
+                        {tr('Пригласить')}
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
 
                 {/*
@@ -395,7 +399,7 @@ export function AccountPanel() {
                           <span className="text-[10px] tabular-nums text-neutral-400">
                             {new Date(m.joinedAt).toLocaleDateString('ru-RU')}
                           </span>
-                          {!owner ? <select aria-label={tr('Роль участника')} value={m.role}
+                          {account.role === 'owner' && !owner ? <select aria-label={tr('Роль участника')} value={m.role}
                             className="rounded border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900"
                             onChange={(event) => void (async () => {
                               const res = await fetch('/api/team/member', { method: 'PATCH',
@@ -435,7 +439,7 @@ export function AccountPanel() {
                   Сілтеме ТЕК ЖАСАЛҒАН СӘТТЕ көрсетіледі: токен — құпия, оны
                   тізімде тұрақты ұстаудың қажеті жоқ.
                 */}
-                {inviteLink ? (
+                {account.role === 'owner' && inviteLink ? (
                   <div className="mt-2 space-y-1">
                     <p className="text-[11px] text-neutral-500">
                       {tr('Ссылка одноразовая и живёт 7 дней. Отправьте её сотруднику.')}
@@ -449,7 +453,7 @@ export function AccountPanel() {
                   </div>
                 ) : null}
 
-                {team.invites.filter((i) => !i.usedBy && !i.revoked && i.expiresAt > Date.now()).length > 0 ? (
+                {account.role === 'owner' && team.invites.filter((i) => !i.usedBy && !i.revoked && i.expiresAt > Date.now()).length > 0 ? (
                   <ul className="mt-2 space-y-1">
                     {team.invites
                       .filter((i) => !i.usedBy && !i.revoked && i.expiresAt > Date.now())
