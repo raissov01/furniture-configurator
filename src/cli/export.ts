@@ -79,7 +79,11 @@ async function main(): Promise<number> {
     // §O6: ойма бар панельдің рез координатасын дұрыс шығару үшін
     // generateCabinet-пен ДӘЛ сол catalog/settings берілуі керек.
     const dxfOptions = { catalog, settings: mergeSettings(project.settings, cabinet?.settings) }
-    for (const [name, content] of cabinetToDxfFiles(panels, dxfOptions)) write(join('dxf', name), content)
+    for (const [name, content] of cabinetToDxfFiles(panels, dxfOptions)) {
+      // A free board's panel id is also user data. Encode the complete filename
+      // so slashes cannot traverse directories and literal '%' ids stay distinct.
+      write(join('dxf', encodeURIComponent(name)), content)
+    }
     write('cutlist.csv', cutListToCsv(panels, catalog))
     write('drilling.csv', drillingToCsv(panels))
     write('cutlist.xlsx', cutListToXlsx(panels, catalog, project.name))

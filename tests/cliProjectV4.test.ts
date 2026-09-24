@@ -48,6 +48,21 @@ function nested(): ProjectFileV4 {
 afterEach(() => { for (const dir of temporary.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
 describe('CLI accepts the canonical saved v4 project', () => {
+  it('keeps board DXF filenames inside their export folder without encoding collisions', () => {
+    const dir = folder()
+    const project = nested()
+    const ids = ['../../../escaped', '..%2F..%2F..%2Fescaped']
+    project.root.children = ids.map((id) => ({ ...board(), id }))
+    const out = join(dir, 'output')
+    const result = run('export', fixture(dir, project), out)
+    expect(result.status, result.stderr).toBe(0)
+    expect(existsSync(join(dir, 'escaped.dxf'))).toBe(false)
+    for (const id of ids) {
+      expect(readdirSync(join(out, encodeURIComponent(id), 'dxf')))
+        .toEqual([`${encodeURIComponent(id)}.dxf`])
+    }
+  })
+
   it('keeps node ids containing path separators inside the chosen export directory', () => {
     const dir = folder()
     const project = nested()
