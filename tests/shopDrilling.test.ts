@@ -132,6 +132,23 @@ describe('цех присадка профилі', () => {
     expect(panels.flatMap((p) => p.drilling).some((d) => d.purpose === 'hinge' && d.diameter === 8 && d.depth === 12)).toBe(true)
   })
 
+  it('бекіткіш тесігі Ø35 чашкамен қиылысса генерация өріс атымен тоқтайды', () => {
+    // hingeCupMount бүкіл цехқа ортақ, ал чашка диаметрі әр HingeSystem-де.
+    // Орта ара қашықтығы √((spacing/2)² + offset²) ≥ (Ø чашка + Ø бекіткіш)/2.
+    const pressFit = { hingeCupMount: 'press-fit' as const, hingePressFitDepth: 12 }
+    expect(() => panelsFor('wardrobe-penal-600', { ...pressFit, hingeFixingSpacing: 20, hingeFixingOffset: 0 }))
+      .toThrow(/hingeFixingSpacing/)
+    // Шекара: 45/9.5 Ø8 → 24.4 ≥ 21.5 — өтеді; 30/9.5 Ø8 → 17.8 < 21.5 — қиылысады.
+    expect(() => panelsFor('wardrobe-penal-600', { ...pressFit, hingeFixingSpacing: 30 }))
+      .toThrow(/Ø35/)
+    expect(() => panelsFor('wardrobe-penal-600', pressFit)).not.toThrow()
+    // Тек жанасу (дәл 21.5) — қиылыс емес: spacing 43, offset 0 → 21.5.
+    expect(() => panelsFor('wardrobe-penal-600', { ...pressFit, hingeFixingSpacing: 43, hingeFixingOffset: 0 }))
+      .not.toThrow()
+    expect(() => panelsFor('wardrobe-penal-600', { ...pressFit, hingeFixingSpacing: 42.8, hingeFixingOffset: 0 }))
+      .toThrow(/hingeFixingSpacing/)
+  })
+
   it('минификс штифті sleeve-8 болса бетіндегі диаметр Ø8', () => {
     expect(() => panelsFor('kitchen-base-drawers-600', { minifixBoltMount: 'sleeve-8' })).toThrow()
     expect(() => panelsFor('kitchen-base-drawers-600', { minifixBoltMount: 'sleeve-8', minifixSleeveDepth: 100 }))

@@ -429,6 +429,19 @@ export function hingeHoles(
       const depth = ctx.settings.hingeCupMount === 'screw'
         ? requireBlindDepth(ctx.settings.hingeScrewPilotDepth, ctx.thickness(front), 'hingeScrewPilotDepth')
         : requireBlindDepth(ctx.settings.hingePressFitDepth, ctx.thickness(front), 'hingePressFitDepth')
+      /*
+       * Бекіткіш тесігі чашканың Ø-імен қиылыспауы тиіс. `hingeCupMount` пен
+       * spacing/offset бүкіл цехқа ортақ, ал чашка диаметрі әр HingeSystem-де
+       * — сондықтан тексеру осында, нақты жүйемен. Жанасу (тең) рұқсат.
+       */
+      const centreDistance = Math.hypot(spacing / 2, offset)
+      const minDistance = (cupDiameter + diameter) / 2
+      if (centreDistance < minDistance - 1e-9) {
+        throw new ConfigValidationError('settings.hingeFixingSpacing',
+          `${front.id}: Ø${diameter} бекіткіш тесігі Ø${cupDiameter} чашкамен қиылысады `
+          + `(орталар арасы ${roundCoord(centreDistance)} мм, spacing ${spacing}, offset ${offset})`,
+          `√((spacing/2)² + offset²) ≥ ${minDistance} мм`)
+      }
       // Blum сызбасындағы 45 мм — фасад биіктігі бойымен, 9.5 мм — чашка
       // ортасынан бүйірге. Координата 0.1 мм дәлдікпен сақталады.
       const fixingY = hingeSide === 'left' ? cupY + offset : cupY - offset
