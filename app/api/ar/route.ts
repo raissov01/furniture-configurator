@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { NextResponse } from 'next/server'
 import { cloudOff } from '@/lib/server/cloud'
+import { arDir } from '@/lib/server/arStorage'
 
 /**
  * AR үшін GLB қабылдау.
@@ -17,13 +18,6 @@ import { cloudOff } from '@/lib/server/cloud'
  */
 const TTL_MS = 60 * 60 * 1000
 const MAX_BYTES = 25 * 1024 * 1024
-
-export function arDir(): string {
-  const base = process.env['DATA_DIR'] ?? join(process.cwd(), '.data')
-  const dir = join(base, 'ar')
-  mkdirSync(dir, { recursive: true })
-  return dir
-}
 
 function sweep(dir: string, now: number): void {
   for (const name of readdirSync(dir)) {
