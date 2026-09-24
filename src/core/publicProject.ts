@@ -1,5 +1,6 @@
 import type { ProjectFile } from './types'
 import type { ProjectFileV4 } from './projectV4'
+import { discountAmount } from './pricing'
 
 type SavedProject = ProjectFile | ProjectFileV4
 
@@ -20,11 +21,18 @@ export function toProductionProject<T extends SavedProject>(project: T): T {
 /** Shareable copy: the manually agreed sale price is the sole price retained. */
 export function toPublicProject<T extends SavedProject>(project: T): T {
   const production = toProductionProject(project)
+  const overrides = project.priceOverrides
+  // Жолдық жеңілдікті бағалар өшірілгеннен кейін қайта есептеу мүмкін емес.
+  // Дәл соңғы сома белгілі болмаса клиентке бастапқы бағаны көрсетпейміз.
+  const hasLineDiscounts = Object.keys(overrides?.lineDiscounts ?? {}).length > 0
+  const salePrice = overrides?.salePrice
+  const finalPrice = salePrice === undefined || hasLineDiscounts ? undefined
+    : salePrice - (overrides?.overallDiscount
+      ? discountAmount(overrides.overallDiscount, salePrice, 'priceOverrides.overallDiscount') : 0)
   return {
     ...production,
     materials: production.materials.map(({ slab: _slab, ...material }) => material),
     info: undefined,
-    priceOverrides: project.priceOverrides?.salePrice === undefined
-      ? undefined : { salePrice: project.priceOverrides.salePrice },
+    priceOverrides: finalPrice === undefined ? undefined : { salePrice: finalPrice },
   } as T
 }

@@ -171,6 +171,12 @@ function migrate(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS comments_code ON comments (code, created_at);
   `)
+
+  // 7-қадам: share кодын болжау мен пікір спамына арналған қысқа мерзімді есептегіш.
+  database.exec(`CREATE TABLE IF NOT EXISTS request_limits (
+    bucket TEXT NOT NULL, subject TEXT NOT NULL, window_start INTEGER NOT NULL,
+    attempts INTEGER NOT NULL, PRIMARY KEY (bucket, subject, window_start)
+  )`)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */

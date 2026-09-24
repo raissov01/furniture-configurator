@@ -88,7 +88,19 @@ describe('маршруттарда permission және 4xx', () => {
     expect(text).not.toContain('coefficient')
     expect((await projectRoute.DELETE(new Request('http://localhost', { method: 'DELETE' }), projectContext)).status).toBe(403)
     expect((await projectsRoute.POST(new Request('http://localhost', { method: 'POST', body: '{}' }))).status).toBe(403)
-    expect((await shopRoute.GET()).status).toBe(403)
+    const shopProfile = { ...((await import('../src/core/index')).defaultShopProfile()),
+      settings: { ...((await import('../src/core/index')).defaultShopProfile()).settings, shelfPinDatum: 64 },
+      coefficient: 2.5 }
+    store.writeShopProfile(owner.account.shopId, shopProfile)
+    const shopResponse = await shopRoute.GET()
+    expect(shopResponse.status).toBe(200)
+    const shopText = await shopResponse.text()
+    expect(shopText).toContain('shelfPinDatum')
+    expect(shopText).toContain('64')
+    expect(shopText).not.toContain('123456')
+    const shopData = JSON.parse(shopText) as { profile: unknown }
+    expect((shopData.profile as { coefficient: number }).coefficient).toBe(1)
+    expect((await import('../src/core/index')).parseShopProfile(shopData.profile).settings.shelfPinDatum).toBe(64)
     expect((await shopRoute.PUT(new Request('http://localhost', { method: 'PUT', body: '{}' }))).status).toBe(403)
     expect((await teamRoute.GET()).status).toBe(200)
   })
@@ -167,5 +179,93 @@ describe('маршруттарда permission және 4xx', () => {
       expect(response.status).toBeLessThan(500)
       expect(await response.text()).not.toMatch(/stack|node_modules|\/home\//i)
     }
+  })
+
+  it('цех share-ін ескі кілті бар шығарылған адам өзгерте не автор болып жауап бере алмайды', async () => {
+    const owner = auth.register('share-key-owner@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    const created = share.createShare('{}', Date.now(), owner.account.shopId)
+    const posted = await commentRoute.POST(new Request('http://localhost', { method: 'POST',
+      body: JSON.stringify({ body: 'Сұрақ', author: 'Клиент', targetId: null }) }), context(created.code))
+    const { comment } = await posted.json() as { comment: { id: string } }
+    actor.value = null
+    const reply = await replyRoute.POST(new Request('http://localhost', { method: 'POST',
+      headers: { 'x-share-key': created.key },
+      body: JSON.stringify({ code: created.code, replyTo: comment.id, body: 'Жалған автор' }) }))
+    expect(reply.status).toBe(401)
+    const put = await sharedRoute.PUT(new Request('http://localhost', { method: 'PUT',
+      headers: { 'x-share-key': created.key }, body: '{}' }), context(created.code))
+    expect(put.status).toBe(401)
+    expect(share.readShare(created.code)?.json).toBe('{}')
+  })
+
+  it('аноним share авторы кіргеннен кейін де өз кілтімен жауап береді', async () => {
+    const owner = auth.register('anonymous-login@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    const created = share.createShare('{}')
+    const posted = await commentRoute.POST(new Request('http://localhost', { method: 'POST',
+      body: JSON.stringify({ body: 'Сұрақ', author: 'Клиент', targetId: null }) }), context(created.code))
+    const { comment } = await posted.json() as { comment: { id: string } }
+    actor.value = owner.account
+    const reply = await replyRoute.POST(new Request('http://localhost', { method: 'POST',
+      headers: { 'x-share-key': created.key },
+      body: JSON.stringify({ code: created.code, replyTo: comment.id, body: 'Жауап' }) }))
+    expect(reply.status).toBe(201)
+    expect((await reply.json() as { comment: { authorRole: string } }).comment.authorRole).toBe('creator')
+  })
+
+  it('20 қате кодтан кейін бір IP 429 алады, өзге IP әсерленбейді', async () => {
+    actor.value = null
+    for (let index = 0; index < 20; index += 1) {
+      const response = await sharedRoute.GET(new Request('http://localhost', { headers: { 'x-real-ip': '192.0.2.15' } }), context(`invalid-${index}`))
+      expect(response.status).toBe(404)
+    }
+    const blocked = await sharedRoute.GET(new Request('http://localhost', { headers: { 'x-real-ip': '192.0.2.15' } }), context('invalid-next'))
+    expect(blocked.status).toBe(429)
+    const spoofed = await sharedRoute.GET(new Request('http://localhost', { headers: {
+      'x-real-ip': '192.0.2.15', 'x-forwarded-for': '203.0.113.99',
+    } }), context('invalid-next'))
+    expect(spoofed.status).toBe(429)
+    const other = await sharedRoute.GET(new Request('http://localhost', { headers: { 'x-real-ip': '192.0.2.16' } }), context('invalid-next'))
+    expect(other.status).toBe(404)
+  })
+
+  it('бір IP бір share-ге минутына 5 пікірден артық жаза алмайды', async () => {
+    const code = share.createShare('{}').code
+    const request = () => new Request('http://localhost', { method: 'POST', headers: { 'x-real-ip': '192.0.2.20' },
+      body: JSON.stringify({ body: 'Пікір', author: 'Клиент', targetId: null }) })
+    for (let index = 0; index < 5; index += 1) {
+      expect((await commentRoute.POST(request(), context(code))).status).toBe(201)
+    }
+    expect((await commentRoute.POST(request(), context(code))).status).toBe(429)
+  })
+
+  it('қатар келген қате код сұраулары лимитті аттап өте алмайды', async () => {
+    const responses = await Promise.all(Array.from({ length: 30 }, (_, index) =>
+      sharedRoute.GET(new Request('http://localhost', { headers: { 'x-real-ip': '192.0.2.30' } }),
+        context(`parallel-${index}`))))
+    expect(responses.filter((response) => response.status === 404)).toHaveLength(20)
+    expect(responses.filter((response) => response.status === 429)).toHaveLength(10)
+  })
+
+  it('share жасау және жаңарту v4 ағаш жобасын сақтайды', async () => {
+    const owner = auth.register('share-v4-owner@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    actor.value = owner.account
+    const { parseProjectV4, catalogOf, defaultShopProfile, findTemplate, templateToCabinet } = await import('../src/core/index')
+    const catalog = catalogOf(defaultShopProfile())
+    const project = parseProjectV4({ schemaVersion: 3, name: 'v4',
+      cabinets: [templateToCabinet(findTemplate('wardrobe-penal-600')!, catalog)], placements: [],
+      room: { width: 4000, depth: 3000, height: 2700 }, materials: catalog.materials, edgeBands: catalog.edgeBands })
+    const create = await shareRoute.POST(new Request('http://localhost', { method: 'POST', body: JSON.stringify(project) }))
+    expect(create.status).toBe(200)
+    const { code } = await create.json() as { code: string; key: string }
+    const next = { ...project, name: 'v4 өзгерді' }
+    const updated = await sharedRoute.PUT(new Request('http://localhost', { method: 'PUT',
+      body: JSON.stringify(next) }), context(code))
+    expect(updated.status).toBe(200)
+    const got = await sharedRoute.GET(new Request('http://localhost'), context(code))
+    expect((await got.json() as { project: { schemaVersion: number; name: string; root: unknown } }).project)
+      .toMatchObject({ schemaVersion: 4, name: 'v4 өзгерді' })
   })
 })

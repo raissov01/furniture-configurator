@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { cloudOff } from '@/lib/server/cloud'
 import { addClientComment, listForShare } from '@/lib/server/comments'
 import { readShare } from '@/lib/server/share'
+import { allowComment, allowShareMiss, isShareLimited, requestIp } from '@/lib/server/rateLimit'
 
 type Context = { params: Promise<{ code: string }> }
 const Input = z.strictObject({
@@ -32,11 +33,16 @@ function targetExists(json: string, id: string): boolean {
   }
 }
 
-export async function GET(_request: Request, { params }: Context): Promise<Response> {
+export async function GET(request: Request, { params }: Context): Promise<Response> {
   const off = cloudOff()
   if (off) return off
   const { code } = await params
-  if (!readShare(code)) return NextResponse.json({ error: 'Код не найден или истёк' }, { status: 404 })
+  const ip = requestIp(request)
+  if (isShareLimited(ip, code)) return NextResponse.json({ error: 'Слишком много попыток' }, { status: 429 })
+  if (!readShare(code)) {
+    if (!allowShareMiss(ip, code)) return NextResponse.json({ error: 'Слишком много попыток' }, { status: 429 })
+    return NextResponse.json({ error: 'Код не найден или истёк' }, { status: 404 })
+  }
   return NextResponse.json({ comments: listForShare(code) }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
@@ -44,8 +50,13 @@ export async function POST(request: Request, { params }: Context): Promise<Respo
   const off = cloudOff()
   if (off) return off
   const { code } = await params
+  const ip = requestIp(request)
+  if (isShareLimited(ip, code)) return NextResponse.json({ error: 'Слишком много попыток' }, { status: 429 })
   const share = readShare(code)
-  if (!share) return NextResponse.json({ error: 'Код не найден или истёк' }, { status: 404 })
+  if (!share) {
+    if (!allowShareMiss(ip, code)) return NextResponse.json({ error: 'Слишком много попыток' }, { status: 429 })
+    return NextResponse.json({ error: 'Код не найден или истёк' }, { status: 404 })
+  }
   const text = await request.text()
   if (text.length > 3000) return NextResponse.json({ error: 'Комментарий слишком длинный' }, { status: 413 })
   let raw: unknown
@@ -60,6 +71,7 @@ export async function POST(request: Request, { params }: Context): Promise<Respo
   if (listForShare(code).length >= 200) {
     return NextResponse.json({ error: 'Достигнут предел комментариев' }, { status: 409 })
   }
+  if (!allowComment(ip, code)) return NextResponse.json({ error: 'Слишком много комментариев' }, { status: 429 })
   const comment = addClientComment(code, input.data.targetId, input.data.body, input.data.author)
   if (!comment) return NextResponse.json({ error: 'Код истёк' }, { status: 404 })
   return NextResponse.json({ comment }, { status: 201 })

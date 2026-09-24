@@ -60,16 +60,26 @@ export function readShare(
 }
 
 /** Автоматты жаңарту: тек кодты жасаған (кілті бар) адам өзгерте алады. */
-export function updateShare(code: string, key: string, json: string, now = Date.now()): boolean {
-  if (!CODE_RE.test(code) || !key) return false
-  const result = db()
-    .prepare('UPDATE shares SET json = ?, updated_at = ? WHERE code = ? AND key = ? AND expires_at > ?')
-    .run(json, now, code, key, now)
+export function updateShare(code: string, key: string, json: string, now = Date.now(), shopId?: string): boolean {
+  if (!CODE_RE.test(code)) return false
+  if (!shopId && !key) return false
+  const result = shopId
+    ? db().prepare('UPDATE shares SET json = ?, updated_at = ? WHERE code = ? AND shop_id = ? AND expires_at > ?')
+      .run(json, now, code, shopId, now)
+    : db().prepare('UPDATE shares SET json = ?, updated_at = ? WHERE code = ? AND key = ? AND shop_id IS NULL AND expires_at > ?')
+      .run(json, now, code, key, now)
   return Number(result.changes) > 0
 }
 
-/** The creator's update key also authorizes replying in that share thread. */
+/** Тек аноним share-дің авторлық кілті. Цех share-і сессия/рөлмен қорғалады. */
 export function ownsShareKey(code: string, key: string): boolean {
   if (!CODE_RE.test(code) || !/^[0-9a-f]{48}$/.test(key)) return false
-  return Boolean(db().prepare('SELECT 1 FROM shares WHERE code = ? AND key = ?').get(code, key))
+  return Boolean(db().prepare('SELECT 1 FROM shares WHERE code = ? AND key = ? AND shop_id IS NULL AND expires_at > ?').get(code, key, Date.now()))
+}
+
+export function shareShopId(code: string): string | null | undefined {
+  if (!CODE_RE.test(code)) return undefined
+  const row = db().prepare('SELECT shop_id FROM shares WHERE code = ? AND expires_at > ?')
+    .get(code, Date.now()) as { shop_id: string | null } | undefined
+  return row?.shop_id
 }
