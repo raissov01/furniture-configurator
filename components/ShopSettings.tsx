@@ -210,7 +210,7 @@ export function ShopSettings() {
                       onChange={(v) => setPriceMeter(m.id, v)} />
                     <span className="text-[11px] text-neutral-500">/м</span>
                   </span>,
-                  <RemoveMaterial key="x" id={m.id} />,
+                  <MaterialActions key="x" id={m.id} />,
                 ]
                 : [
                   <span key="t" className="tabular-nums text-neutral-500">{m.thickness}</span>,
@@ -223,7 +223,7 @@ export function ShopSettings() {
                   <NumberInput key="p" value={toTenge(m.pricePerSheet)} min={0} step={100}
                     invalid={m.pricePerSheet <= 0}
                     onChange={(v) => setPriceSheet(m.id, v)} />,
-                  <RemoveMaterial key="x" id={m.id} />,
+                  <MaterialActions key="x" id={m.id} />,
                 ],
             }))}
             />
@@ -666,18 +666,24 @@ function AddMaterial() {
   )
 }
 
-function RemoveMaterial({ id }: { id: string }) {
+function MaterialActions({ id }: { id: string }) {
+  const cloneMaterial = useConfigurator((s) => s.cloneMaterial)
   const removeMaterial = useConfigurator((s) => s.removeMaterial)
   const used = useConfigurator((s) =>
     s.cabinets.some((c) => c.carcassMaterialId === id || c.frontMaterialId === id || c.backMaterialId === id))
   return (
-    <Button
-      onClick={() => removeMaterial(id)}
-      disabled={used}
-      title={used ? 'Используется в проекте' : 'Удалить из каталога'}
-    >
-      ✕
-    </Button>
+    <span className="flex items-center gap-1">
+      <Button onClick={() => cloneMaterial(id)} title={tr('Клонировать материал')}>
+        {tr('Клонировать')}
+      </Button>
+      <Button
+        onClick={() => removeMaterial(id)}
+        disabled={used}
+        title={used ? 'Используется в проекте' : 'Удалить из каталога'}
+      >
+        ✕
+      </Button>
+    </span>
   )
 }
 
