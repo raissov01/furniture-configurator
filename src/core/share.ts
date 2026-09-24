@@ -17,9 +17,9 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate'
 import { ConfigValidationError } from './errors'
 import { parseProject } from './schema'
+import { parseProjectV4 } from './projectV4'
 import type { ProjectFile } from './types'
 import { toPublicProject } from './publicProject'
-import { parseProjectV4 } from './projectV4'
 import type { ProjectFileV4 } from './projectV4'
 
 const PREFIX = 'v1.'
@@ -107,7 +107,7 @@ function decodeRawProject(token: string): unknown {
   // Пішінін ЯДРО тексереді — сілтемемен бүлінген жоба келуі мүмкін.
   return raw
 }
-
+/** Ескі v1–v3 share callers үшін сақталған декодер. */
 export function decodeProject(token: string): ProjectFile {
   return parseProject(decodeRawProject(token))
 }
