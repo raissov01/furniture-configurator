@@ -38,6 +38,37 @@ function placementFromPose(room: Room, cabinet: CabinetConfig, pose: Pose): Plac
     ...(pose.rotationY !== wall.rotationY ? { rotate: pose.rotationY - wall.rotationY } : {}) }
 }
 
+/**
+ * Қабырғаға ДӘЛ тіреліп тұрған шкафтардың placement-і (жасырындары да).
+ *
+ * Бөлме өлшемі өзгергенде тек осылар қабырғамен бірге жылжиды. Еркін
+ * тұрған шкафты `placementFromPose` ең жақын қабырғаға «тартады» — оны
+ * жылжытсақ, биіктікті өзгерту шкафты 600 мм-ге секіртеді. 90°-қа еселі
+ * емес бұрылған топтың ішіндегі шкаф та алынбайды: оның жаңа орны топ
+ * ішінде бүтін мм болмайды да, `relativeTransform` қате лақтырады.
+ */
+export function wallAttachedPlacements(root: GroupNode, room: Room): Placement[] {
+  const result: Placement[] = []
+  const step = (node: SceneNode, parent: Pose, square: boolean): void => {
+    const pose = composePose(parent, node.transform)
+    if (node.kind === 'cabinet') {
+      const config = node.config.id === node.id ? node.config : { ...node.config, id: node.id }
+      const placement = placementFromPose(room, config, pose)
+      const back = placementPose(room, config, placement)
+      const same = Math.abs(back.position.x - pose.position.x) < 1e-6
+        && Math.abs(back.position.y - pose.position.y) < 1e-6
+        && Math.abs(back.position.z - pose.position.z) < 1e-6
+        && Math.abs(back.rotationY - pose.rotationY) < 1e-6
+      if (square && same) result.push(placement)
+    } else if (node.kind === 'group') {
+      const childSquare = square && node.transform.rot.y % 90 === 0
+      for (const child of node.children) step(child, pose, childSquare)
+    }
+  }
+  step(root, ORIGIN_POSE, true)
+  return result
+}
+
 /** Derived adapter only; production and persistence always use `root`. */
 export function cabinetsFromTree(root: GroupNode, room: Room, layers?: Layer[]): { cabinets: CabinetConfig[]; placements: Placement[] } {
   const cabinets: CabinetConfig[] = []
