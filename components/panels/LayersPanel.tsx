@@ -27,6 +27,32 @@ export type LayersPanelNode = {
   layerId?: string | undefined
 }
 
+/** A layer rename is one committed edit/undo step, not one edit per keystroke. */
+function LayerNameInput({ layer, onRename }: { layer: Layer; onRename: (id: string, name: string) => void }) {
+  const [draft, setDraft] = React.useState(layer.name)
+  const cancel = React.useRef(false)
+  React.useEffect(() => setDraft(layer.name), [layer.name])
+  return <input
+    aria-label={tr('Название слоя')}
+    className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm text-neutral-900 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-300"
+    value={draft}
+    onChange={(event) => setDraft(event.target.value)}
+    onBlur={(event) => {
+      if (cancel.current) { cancel.current = false; return }
+      const name = event.target.value.trim()
+      if (!name) { setDraft(layer.name); return }
+      if (name !== layer.name) onRename(layer.id, name)
+      // The store supplies the committed name on rerender; a rejected edit
+      // must not leave a local draft masquerading as saved data.
+      setDraft(layer.name)
+    }}
+    onKeyDown={(event) => {
+      if (event.key === 'Enter') event.currentTarget.blur()
+      if (event.key === 'Escape') { cancel.current = true; setDraft(layer.name); event.currentTarget.blur() }
+    }}
+  />
+}
+
 export function LayersPanel({
   layers,
   nodes = [],
@@ -101,11 +127,7 @@ export function LayersPanel({
                   value={layer.color}
                   onChange={(e) => onSetColor(layer.id, e.target.value)}
                 />
-                <input
-                  className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm text-neutral-900 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-300"
-                  value={layer.name}
-                  onChange={(e) => onRenameLayer(layer.id, e.target.value)}
-                />
+                <LayerNameInput layer={layer} onRename={onRenameLayer} />
                 <span className="shrink-0 text-[10px] tabular-nums text-neutral-400">
                   {nodeCount}
                 </span>
