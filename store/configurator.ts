@@ -652,6 +652,7 @@ export const useConfigurator = create<State>((set, get) => ({
   /** Тапсырыс реквизиттерін түзету. UI өрісте бос жолды бос қалдырады да, `exportProject` оны экспортта қиып тастайды. */
   editProjectInfo(patch) {
     set((s) => ({ projectInfo: { ...s.projectInfo, ...patch } }))
+    get().saveProjectLocally()
   },
 
   /**
@@ -661,6 +662,7 @@ export const useConfigurator = create<State>((set, get) => ({
    */
   editPriceOverrides(patch) {
     set((s) => ({ priceOverrides: { ...s.priceOverrides, ...patch } }))
+    get().saveProjectLocally()
   },
 
   saveProjectLocally() {
