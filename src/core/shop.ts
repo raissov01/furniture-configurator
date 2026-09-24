@@ -21,6 +21,7 @@ import {
 import type { HandleModel, HingeSystem } from './fittings'
 import type { NestingOptions, OptimizationLevel } from './nesting'
 import { SEED_EDGE_BANDS, SEED_MATERIALS } from './seed'
+import { EdgeBandSchema, MaterialSchema } from './schema'
 import type { CabinetConfig, Catalog, EdgeBand, Material, Panel, SettingsOverride } from './types'
 
 export type HardwareKind =
@@ -335,6 +336,24 @@ export function makeMaterial(input: {
   }
 }
 
+/**
+ * Каталогтағы материалды бөлек өңделетін жазба ретінде көшіру.
+ * Бағасы, парақ/тақта өлшемі, кромка саясаты және декор сілтемесі дәл сақталады;
+ * жаңа бағаны ойдан шығармаймыз. Ішкі объектілер де тәуелсіз көшіріледі.
+ */
+export function cloneMaterial(source: Material, existingIds: Iterable<string>): Material {
+  const used = new Set(existingIds)
+  const baseId = `${source.id}-copy`
+  let id = baseId
+  let number = 2
+  while (used.has(id)) {
+    id = `${baseId}-${number}`
+    number += 1
+  }
+
+  return { ...structuredClone(source), id, name: `${source.name} (копия)` }
+}
+
 export function defaultHardware(): HardwareItem[] {
   return SEED_HARDWARE.map((h) => ({ ...h, pricePerUnit: 0 }))
 }
@@ -530,45 +549,6 @@ export const HardwareItemSchema = z.object({
   kind: z.enum(['confirmat', 'dowel', 'minifix', 'shelfPin', 'hinge', 'runner', 'handle', 'leg', 'other']),
   name: z.string().min(1),
   pricePerUnit: minorUnits,
-})
-
-const EdgePolicySchema = z.object({
-  visibleFront: z.string().nullable(),
-  visibleSecondary: z.string().nullable(),
-  hidden: z.string().nullable(),
-})
-
-const MaterialSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  thickness: z.number().positive(),
-  sheetWidth: z.number().int().positive(),
-  sheetHeight: z.number().int().positive(),
-  hasGrain: z.boolean(),
-  pricePerSheet: minorUnits,
-  trimEdge: z.number().int().nonnegative(),
-  defaultEdging: EdgePolicySchema.optional(),
-  decor: z.object({
-    color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-    kind: z.enum(['solid', 'wood']),
-  }).optional(),
-  /*
-   * Тақта (постформинг столешница): раскройға кірмейді, сметаға метрмен.
-   * ⚠ Цех профилінің ӨЗ схемасы (`schema.ts`-тегімен бөлек): мұнда жоқ өріс
-   * zod-та ҮНСІЗ алынып тасталады — профиль сақталып қайта ашылғанда тақта
-   * жай параққа айналар еді (09-13-те тест дәл осыны ұстады).
-   */
-  slab: z.object({
-    stockLengths: z.array(z.number().int().positive()).min(1),
-    pricePerMeter: minorUnits,
-  }).optional(),
-})
-
-const EdgeBandSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  thickness: z.number().positive(),
-  pricePerMeter: minorUnits,
 })
 
 const SettingsOverrideSchema = z.object({
