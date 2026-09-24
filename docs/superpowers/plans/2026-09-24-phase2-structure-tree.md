@@ -17,19 +17,19 @@ PRO100 v7.08 screenshot-ында Structure dialog-ы Project/Selection қойы�
 
 ## Міндеттер
 
-- [ ] v4 модельге арналған таза tree edit операциялары мен TDD: rename,
+- [x] v4 модельге арналған таза tree edit операциялары мен TDD: rename,
   hide/lock, group/ungroup, reparent (cycle/lock қорғанысы), parent-relative
   позаны сақтау, қабат құлпы.
-- [ ] Store-ды root/layers canonical күйге көшіру; v1–v3/localStorage/cloud
+- [x] Store-ды root/layers canonical күйге көшіру; v1–v3/localStorage/cloud
   жүктеу `parseProjectV4`, v4 export. Ескі UI командалары root-ты түзетсін;
   undo/redo бір әрекетке бір snapshot. Migration/equivalence тесттері.
-- [ ] 3D/cut/pricing/drilling/DXF selector-ларын бір `FlatScene` дерек көзіне
+- [x] 3D/cut/pricing/drilling/DXF selector-ларын бір `FlatScene` дерек көзіне
   жалғау; UI деңгейіндегі эквиваленттік тест.
-- [ ] Бар Structure dock-ты негізгі Workspace-ке жалғап, tree action UI,
+- [x] Бар Structure dock-ты негізгі Workspace-ке жалғап, tree action UI,
   3D selection sync және LayersPanel-ді негізгі UI-ға қосу; e2e сценарийін
   `scripts/e2e-structure-tree.mjs` файлына дайындау.
-- [ ] PRO100 Properties құжатын нақты 3 tab-қа түзету.
-- [ ] Толық Vitest (`NODE_OPTIONS=--max-old-space-size=2048 npm test --
+- [x] PRO100 Properties құжатын нақты 3 tab-қа түзету.
+- [x] Толық Vitest (`NODE_OPTIONS=--max-old-space-size=2048 npm test --
   --maxWorkers=2`) және typecheck; маңызды тест мутациясы `cp` restore;
   diff review, шағын қазақша conventional commits, есеп.
 
@@ -38,3 +38,10 @@ PRO100 v7.08 screenshot-ында Structure dialog-ы Project/Selection қойы�
 Roles агенті project/share route-теріне auth guard қосады. Осы тармақтағы
 parser өзгерісі guard-тарды алмастырмайды; root merge кезінде екі өзгеріс те
 сақталады. Root build/dev/e2e орындайды, бұл worktree ол процестерді қоспайды.
+
+## Resume интеграциясы
+
+`8129fdc` UI → `a111fc2` Workspace wiring → `31420fc` main. Канондық
+өндіріс пен бос жоба қорғаныстары сақталды. Түпкі интеграция unit163/1775
+және typecheck PASS; webpack build PASS. Жеке Structure e2e PASS, бірақ негізгі 22 e2e жабылмады. Браузер дәлелі толқын есебінде
+жеке жазылады. Тақта қосу/Properties редакторы 3-фазаға қалады.
