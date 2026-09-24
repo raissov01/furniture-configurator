@@ -27,10 +27,21 @@ export function assertTreeNodeEditable(root: GroupNode, id: string, layers: Laye
   // A locked parent also locks every descendant, regardless of the child's flag.
   let cursor: SceneNode | undefined = node
   while (cursor) {
-    assertNodeEditable(cursor, layers)
+    assertChainNodeEditable(root, cursor, layers)
     cursor = parentOf(root, cursor.id)
   }
   return node
+}
+
+/**
+ * Түбір — жоба контейнері, қабатқа жатпайды: оның тек өз `locked` белгісі
+ * есептеледі. Әйтпесе «Әдепкі қабатты» құлыптау бүкіл жобаны құлыптайды.
+ */
+function assertChainNodeEditable(root: GroupNode, node: SceneNode, layers: Layer[]): void {
+  if (node !== root) return assertNodeEditable(node, layers)
+  if (node.locked === true) {
+    throw new ConfigValidationError('node.locked', `түйін құлыпталған: "${node.name}"`, 'locked = false')
+  }
 }
 
 function mapGroup(root: GroupNode, id: string, update: (group: GroupNode) => GroupNode): GroupNode {
@@ -82,7 +93,7 @@ export function setTreeNodeFlag(root: GroupNode, id: string, flag: 'hidden' | 'l
     // Unlocking oneself is allowed, but a locked ancestor/layer still blocks it.
     assertNodeEditable({ ...node, locked: false }, layers)
     let cursor: SceneNode | undefined = parentOf(root, id)
-    while (cursor) { assertNodeEditable(cursor, layers); cursor = parentOf(root, cursor.id) }
+    while (cursor) { assertChainNodeEditable(root, cursor, layers); cursor = parentOf(root, cursor.id) }
   } else assertTreeNodeEditable(root, id, layers)
   const parent = parentOf(root, id)!
   return mapGroup(root, parent.id, (group) => ({ ...group, children: group.children.map((node) =>
