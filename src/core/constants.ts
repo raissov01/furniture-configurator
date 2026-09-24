@@ -301,7 +301,13 @@ export const DEFAULT_SETTINGS: ConstructionSettings = {
   minifixPairPlacement: 'center',
   minifixPairSpacing: MINIFIX_PAIR_SPACING,
   minifixPairEndOffset: MINIFIX_FROM_END,
-  outerFlipAxis: 'length', // ескі локал келісім; экспортта айқын көрсетіледі
+  /*
+   * ⚠ Бұл «ескі келісім» ЕМЕС: 5fcd529-ға (2026-09-24) дейін CNC/DXF экспорты
+   * outer тесіктерін МҮЛДЕ айналдырмайтын — канондық x/y сол күйінде кететін.
+   * 'length' — shop-drill-де таңдалған жаңа әдепкі (y айналады); станокта
+   * қай өспен аударатынын цех растауы керек (shop-drilling-standards №12).
+   */
+  outerFlipAxis: 'length',
 
   /**
    * ⚠ КУПЕ ЖҮЙЕСІНІҢ САНДАРЫ. Әр профиль жүйесінде (Aristo, Absolut, Raumplus)

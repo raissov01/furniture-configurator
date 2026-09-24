@@ -783,6 +783,20 @@ export function generateCabinet(
           }
         }
 
+        /*
+         * Автоматты бөлуде де `at`-тағыдай ереже: сөрелер жолаққа сыйып,
+         * бірін-бірі баспауы тиіс. Бұрын тексерілмейтін — аласа шкафта
+         * (мыс. 760 мм + 700 мм ящик стегі) саңылау ТЕРІС шығып, сөрелер
+         * бір-біріне кіретін, ал генерацияны тек присадка guard-ы
+         * `settings.shelfPinDatum` деп тоқтататын (цех баптауы кінәсіз).
+         */
+        if (!explicit && band.height < content.count * t) {
+          throw new ConfigValidationError(
+            `${field}.count`,
+            `${content.count} полок × ${t} мм не помещаются в полосу высотой ${band.height} мм`,
+            `≤ ${Math.floor(band.height / t)} полок или больше высоты полосе`,
+          )
+        }
         const openings = distributeMillimetres(band.height - content.count * t, content.count + 1)
         const note = content.shelfKind === 'fixed'
           ? 'Фиксированная, конфирмат'
@@ -1597,8 +1611,11 @@ export function generateCabinet(
     // көтерілген). Сондықтан осында да +baseHeight — shelfPinHoles-тегі
     // `t + baseHeight` үлгісімен бірдей (§1339: "shelfPinHoles(left, shelf,
     // t + baseHeight, ctx)").
-    runnerHoles(left, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
-    runnerHoles(right, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
+    // Ящик секцияның ортасында: сол/оң шектің арасы (перегородкада тесік
+    // көрші секцияның бетіне емес, осы секцияның бетіне түседі).
+    const sectionCentreX = (left.position.x + ctx.thickness(left) + right.position.x) / 2
+    runnerHoles(left, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, sectionCentreX, ctx, drawerSystem)
+    runnerHoles(right, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, sectionCentreX, ctx, drawerSystem)
   }
 
   // Ілгектер: шеткі фасадтар секцияның тік панеліне ілінеді.

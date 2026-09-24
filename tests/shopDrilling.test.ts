@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import baseline from './fixtures/shop-drill-seed-baseline.json'
 import {
-  DEFAULT_SETTINGS, SEED_TEMPLATES, catalogOf, defaultShopProfile, generateCabinet,
+  ConfigValidationError, DEFAULT_SETTINGS, SEED_TEMPLATES, catalogOf, defaultShopProfile, generateCabinet,
   mergeSettings, parseShopProfile, templateToCabinet,
 } from '../src/core/index'
 
@@ -130,6 +130,23 @@ describe('цех присадка профилі', () => {
       .toThrow(/hingePressFitDepth/)
     const panels = panelsFor('wardrobe-penal-600', { hingeCupMount: 'press-fit', hingePressFitDepth: 12 })
     expect(panels.flatMap((p) => p.drilling).some((d) => d.purpose === 'hinge' && d.diameter === 8 && d.depth === 12)).toBe(true)
+  })
+
+  it('бекіткіш тесігі Ø35 чашкамен қиылысса генерация өріс атымен тоқтайды', () => {
+    // hingeCupMount бүкіл цехқа ортақ, ал чашка диаметрі әр HingeSystem-де.
+    // Орта ара қашықтығы √((spacing/2)² + offset²) ≥ (Ø чашка + Ø бекіткіш)/2.
+    const pressFit = { hingeCupMount: 'press-fit' as const, hingePressFitDepth: 12 }
+    expect(() => panelsFor('wardrobe-penal-600', { ...pressFit, hingeFixingSpacing: 20, hingeFixingOffset: 0 }))
+      .toThrow(/hingeFixingSpacing/)
+    // Шекара: 45/9.5 Ø8 → 24.4 ≥ 21.5 — өтеді; 30/9.5 Ø8 → 17.8 < 21.5 — қиылысады.
+    expect(() => panelsFor('wardrobe-penal-600', { ...pressFit, hingeFixingSpacing: 30 }))
+      .toThrow(/Ø35/)
+    expect(() => panelsFor('wardrobe-penal-600', pressFit)).not.toThrow()
+    // Тек жанасу (дәл 21.5) — қиылыс емес: spacing 43, offset 0 → 21.5.
+    expect(() => panelsFor('wardrobe-penal-600', { ...pressFit, hingeFixingSpacing: 43, hingeFixingOffset: 0 }))
+      .not.toThrow()
+    expect(() => panelsFor('wardrobe-penal-600', { ...pressFit, hingeFixingSpacing: 42.8, hingeFixingOffset: 0 }))
+      .toThrow(/hingeFixingSpacing/)
   })
 
   it('минификс штифті sleeve-8 болса бетіндегі диаметр Ø8', () => {
@@ -397,12 +414,78 @@ describe('shop-drill мутацияларын ұстайтын тексерул�
   })
 
   it('sleeve-8 болса бірде-бір минификс штифті Ø5 болып қалмайды', () => {
+    // Кең беттің екеуі де: оң бүйірдің штифт тесігі outer-де (faceToward).
     const drills = (settings: object) => panelsFor('kitchen-base-drawers-600', settings)
-      .flatMap((p) => p.drilling).filter((d) => d.purpose === 'minifix' && d.face === 'inner')
+      .flatMap((p) => p.drilling).filter((d) => d.purpose === 'minifix' && (d.face === 'inner' || d.face === 'outer'))
     const screws = drills({}).filter((d) => d.diameter === 5)
     const sleeves = drills({ minifixBoltMount: 'sleeve-8', minifixSleeveDepth: 12 })
     expect(screws.length).toBeGreaterThan(0)
     expect(sleeves.filter((d) => d.diameter === 5)).toHaveLength(0)
     expect(sleeves.filter((d) => d.diameter === 8)).toHaveLength(screws.length)
+  })
+})
+
+// Ревью 2: follow-up §7 — әлі ұсталмайтын төрт мутация.
+describe('shop-drill мутациялары, 2-топ', () => {
+  const sideLeft = () => panelsFor('wardrobe-penal-600').find((p) => p.id === 'side-left')!
+
+  it('DXF outer пазының екі ұшы да аудару өсімен айналады', async () => {
+    const { panelToDxf } = await import('../src/core/export/dxf')
+    const panel = sideLeft()
+    const groove = { face: 'outer' as const, x1: 30, y1: 20, x2: 300, y2: 60, width: 3, depth: 4 }
+    const dxf = (axis: 'length' | 'width') => panelToDxf({ ...panel, drilling: [], grooves: [groove] },
+      { settings: { ...DEFAULT_SETTINGS, outerFlipAxis: axis } })
+    expect(dxf('length')).toContain(`8\nGROOVE_OUTER\n90\n2.0\n70\n0.0\n10\n30.0\n20\n${panel.cutWidth - 20}.0\n10\n300.0\n20\n${panel.cutWidth - 60}.0`)
+    expect(dxf('width')).toContain(`8\nGROOVE_OUTER\n90\n2.0\n70\n0.0\n10\n${panel.cutLength - 30}.0\n20\n20.0\n10\n${panel.cutLength - 300}.0\n20\n60.0`)
+  })
+
+  it('ен өсімен аударғанда ARC бұрыштары 180° − α болып айналады', async () => {
+    const { panelToDxf } = await import('../src/core/export/dxf')
+    const panel = sideLeft()
+    const custom = { ...panel,
+      corners: { bottomLeft: 10, bottomRight: 0, topRight: 0, topLeft: 0 },
+      drilling: [{ face: 'outer' as const, x: 123, y: 47, diameter: 5, depth: 8, purpose: 'handle' as const }],
+    }
+    const dxf = panelToDxf(custom, { settings: { ...DEFAULT_SETTINGS, outerFlipAxis: 'width' } })
+    // bl доғасы 180…270 → айнада (L − 10, 10) центрлі 270…360(0).
+    expect(dxf).toContain(`0\nARC\n8\nOUTLINE_OUTER_REFERENCE\n10\n${panel.cutLength - 10}.0\n20\n10.0\n30\n0.0\n40\n10.0\n50\n270.0\n51\n0.0`)
+  })
+
+  it('press-fit бекіткішінің Ø-і hingePressFitDiameter-ден алынады', () => {
+    const holes = panelsFor('wardrobe-penal-600', { hingeCupMount: 'press-fit', hingePressFitDepth: 12, hingePressFitDiameter: 10 })
+      .filter((p) => p.role === 'front')
+      .flatMap((p) => p.drilling).filter((d) => d.purpose === 'hinge' && d.depth === 12)
+    expect(holes.length).toBeGreaterThan(0)
+    expect(new Set(holes.map((d) => d.diameter))).toEqual(new Set([10]))
+  })
+
+  it('CNC README таңдалған өсті және айналатын координатаны дұрыс атайды', async () => {
+    const { cncFiles } = await import('../src/core/export/cnc')
+    const panels = panelsFor('wardrobe-penal-600')
+    const readme = (axis: 'length' | 'width') => cncFiles(panels, catalog, { projectName: 'test', outerFlipAxis: axis }).get('README.txt')!
+    expect(readme('length')).toContain('вокруг оси ДЛИНЫ (X); Y отражён')
+    expect(readme('width')).toContain('вокруг оси ШИРИНЫ (Y); X отражён')
+    expect(cncFiles(panels, catalog, { projectName: 'test' }).get('README.txt')).toContain('оси ДЛИНЫ (X)')
+  })
+})
+
+describe('аласа шкафта сөре жолағы сөрелерді сыйдырмаса', () => {
+  // 760–770 мм шкаф + 700 мм ящик стегі: сөре жолағына 12–22 мм қалады,
+  // ал 3 сөреге 48 мм керек. Автоматты бөлу теріс саңылау беріп, сөрелер
+  // бірін-бірі басатын; генерацияны тек присадка guard-ы «settings.shelfPinDatum»
+  // деп тоқтататын — цехтың баптауы кінәлі емес.
+  it.each([
+    ['wardrobe-drawers-1200', 760, 'sections[0].contents[1].count'],
+    ['wardrobe-drawers-1200', 770, 'sections[0].contents[1].count'],
+    ['wardrobe-drawers-1200', 790, 'sections[0].contents[1].count'],
+    ['wardrobe-sliding-3-2400', 760, 'sections[2].contents[1].count'],
+    ['wardrobe-sliding-3-2400', 770, 'sections[2].contents[1].count'],
+  ] as const)('%s биіктігі %i → %s', (id, height, field) => {
+    const template = SEED_TEMPLATES.find((item) => item.id === id)!
+    const config = { ...templateToCabinet(template, catalog), height }
+    let error: unknown
+    try { generateCabinet(config, catalog, shop.settings) } catch (caught) { error = caught }
+    expect(error).toBeInstanceOf(ConfigValidationError)
+    expect((error as ConfigValidationError).field).toBe(field)
   })
 })

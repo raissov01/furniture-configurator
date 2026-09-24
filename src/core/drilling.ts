@@ -113,6 +113,31 @@ function requireCutFaceCoordinate(
 }
 
 /**
+ * Тесік `panel`-дің ҚАЙ кең бетіне түседі — тесік қызмет ететін көлемнің
+ * (секция, сөре, ящик қорабы) қай жақта тұрғанына қарай.
+ *
+ * `targetWorld` — сол көлемнің `panel.orientation.thickness` осіндегі әлем
+ * координатасы (мыс. сөренің ортасы). `Drill.face` келісімі бойынша
+ * (types.ts) inner — +қалыңдық жағы (`position + t`), outer — қарсы жақ.
+ *
+ * ⚠ Бұрын `shelfPinHoles`/`runnerHoles` бетті ТҰРАҚТЫ 'inner' деп жазатын,
+ * яғни «inner = корпустың ішіне қарайды» деп жорамалдайтын. Ол тек
+ * `side-left`-те дұрыс: перегородкада көрші екі секция бір бетке, бір
+ * координатаға жазылып қосарланатын (8 seed шаблон), ал `side-right`-та
+ * тесік СЫРТҚЫ бетке түсетін. §R4-тегі ілгек планкасының ақауымен бір түбір.
+ */
+export function faceToward(panel: Panel, targetWorld: number, ctx: Ctx): 'inner' | 'outer' {
+  const farFace = panel.position[panel.orientation.thickness] + ctx.thickness(panel)
+  return targetWorld >= farFace ? 'inner' : 'outer'
+}
+
+/** Панельдің `axis` бойындағы әлемдік ортасы. */
+function centreAlong(panel: Panel, axis: Axis, t: number): number {
+  const [min, max] = worldRange(panel, axis, t)
+  return (min + max) / 2
+}
+
+/**
  * Буын бойындағы тесік орындары. Шеткілері жиектен CONFIRMAT_FIRST_OFFSET,
  * қалғандары солардың арасына тең таралады. Барлығы бүтін мм.
  *
@@ -329,6 +354,10 @@ export function shelfPinHoles(
   const [panelFrontWorldZ, panelBackWorldZ] = worldRange(
     verticalPanel, verticalPanel.orientation.width, verticalT,
   )
+  // Сөре тік панельдің қай жағында тұр — тесік сол бетке (faceToward).
+  const across = verticalPanel.orientation.thickness
+  const shelfCentre = shelf.position[across] + panelExtents(shelf, ctx.thickness(shelf))[across] / 2
+  const face = faceToward(verticalPanel, shelfCentre, ctx)
   const columns = [
     { worldZ: panelFrontWorldZ + ctx.settings.shelfPinFrontOffset, field: 'shelfPinFrontOffset' },
     { worldZ: panelBackWorldZ - ctx.settings.shelfPinBackOffset, field: 'shelfPinBackOffset' },
@@ -350,7 +379,7 @@ export function shelfPinHoles(
       requireCutFaceCoordinate(verticalPanel, x, y, SHELF_PIN_DIAMETER, 'x', 'shelfPinDatum', ctx)
       requireCutFaceCoordinate(verticalPanel, x, y, SHELF_PIN_DIAMETER, 'y', field, ctx)
       pushFace(
-        verticalPanel, 'inner',
+        verticalPanel, face,
         x, y,
         SHELF_PIN_DIAMETER, SHELF_PIN_DEPTH, 'shelfPin', ctx,
       )
@@ -400,6 +429,19 @@ export function hingeHoles(
       const depth = ctx.settings.hingeCupMount === 'screw'
         ? requireBlindDepth(ctx.settings.hingeScrewPilotDepth, ctx.thickness(front), 'hingeScrewPilotDepth')
         : requireBlindDepth(ctx.settings.hingePressFitDepth, ctx.thickness(front), 'hingePressFitDepth')
+      /*
+       * Бекіткіш тесігі чашканың Ø-імен қиылыспауы тиіс. `hingeCupMount` пен
+       * spacing/offset бүкіл цехқа ортақ, ал чашка диаметрі әр HingeSystem-де
+       * — сондықтан тексеру осында, нақты жүйемен. Жанасу (тең) рұқсат.
+       */
+      const centreDistance = Math.hypot(spacing / 2, offset)
+      const minDistance = (cupDiameter + diameter) / 2
+      if (centreDistance < minDistance - 1e-9) {
+        throw new ConfigValidationError('settings.hingeFixingSpacing',
+          `${front.id}: Ø${diameter} бекіткіш тесігі Ø${cupDiameter} чашкамен қиылысады `
+          + `(орталар арасы ${roundCoord(centreDistance)} мм, spacing ${spacing}, offset ${offset})`,
+          `√((spacing/2)² + offset²) ≥ ${minDistance} мм`)
+      }
       // Blum сызбасындағы 45 мм — фасад биіктігі бойымен, 9.5 мм — чашка
       // ортасынан бүйірге. Координата 0.1 мм дәлдікпен сақталады.
       const fixingY = hingeSide === 'left' ? cupY + offset : cupY - offset
@@ -445,14 +487,12 @@ export function hingeHoles(
    * планкасы да бұрын қате 'inner' болатын, тек бүйірде екінші сектор
    * болмағандықтан ешкім қақтығыспайтын, сондықтан байқалмаған).
    */
-  const carcassThickness = ctx.thickness(carcassPanel)
   const thicknessAxis = carcassPanel.orientation.thickness
-  const carcassFarFace = carcassPanel.position[thicknessAxis] + carcassThickness
   // Фасадтың ені де дәл сол осьте жатыр (ORIENT_FACING.width === 'x' ===
   // ORIENT_SIDE.thickness) — жоба бойынша тұрақты, generateCabinet.ts-те
   // ешқашан өзгермейді.
   const frontCentre = front.position[thicknessAxis] + front.finishedWidth / 2
-  const plateFace: 'inner' | 'outer' = frontCentre >= carcassFarFace ? 'inner' : 'outer'
+  const plateFace = faceToward(carcassPanel, frontCentre, ctx)
 
   const frontWorldY = front.position.y
   for (const x of positions) {
@@ -510,6 +550,8 @@ export function runnerHoles(
   boxBottomWorldY: number,
   boxFrontWorldZ: number,
   boxDepth: number,
+  /** Ящик қай жақта: `verticalPanel.orientation.thickness` осіндегі әлем координатасы (faceToward). */
+  towardWorld: number,
   ctx: Ctx,
   system?: DrawerSystem | null,
 ): void {
@@ -563,7 +605,7 @@ export function runnerHoles(
     requireCutFaceCoordinate(verticalPanel, x, y, diameter, 'x', verticalField, ctx)
     requireCutFaceCoordinate(verticalPanel, x, y, diameter, 'y', offsetField, ctx)
     pushFace(
-      verticalPanel, 'inner',
+      verticalPanel, faceToward(verticalPanel, towardWorld, ctx),
       x, y,
       // Артикул тесікте жүреді: смета осыдан ҚАЙ направляющая екенін біледі
       // (ілгек пен тұтқада да дәл солай).
@@ -840,6 +882,13 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
 
   const edgeFace = edgeFaceFor(wall, screwAxis, atLeft)
   const edgeXShift = edgeXShiftFor(wall, screwAxis, ctx)
+  /*
+   * Ұя қораптың ІШІНЕ (бүйір тұрған жаққа), бүйірдегі тесік қабырға тұрған
+   * жаққа қарайды (faceToward). Бұрын екеуі де тұрақты 'inner' еді: артқы
+   * қабырғаның ұясы мен оң бүйірдің тесігі қораптың СЫРТҚЫ бетіне түсетін.
+   */
+  const camFace = faceToward(wall, centreAlong(side, wall.orientation.thickness, sideT), ctx)
+  const boltFace = faceToward(side, (wallMin + wallMax) / 2, ctx)
 
   for (const rowWorld of rowsWorld) {
     // wall-дың локал координатасы: jointAxis бойынша — буын сызығындағы орны,
@@ -855,7 +904,7 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
       requireCutFaceCoordinate(wall, wx, wy, MINIFIX_CAM_DIAMETER, 'x', field, ctx)
       requireCutFaceCoordinate(wall, wx, wy, MINIFIX_CAM_DIAMETER, 'y', field, ctx)
     }
-    pushFace(wall, 'inner', wx, wy, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
+    pushFace(wall, camFace, wx, wy, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
 
     // 2. Штифттің тесігі — сол қабырғаның ТОРЦІНДЕ, қалыңдықтың ортасында.
     // Торц бетінің x-і — jointAxis бойынша РАУ локал координата (alongLocal),
@@ -882,7 +931,7 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
       requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'x', field, ctx)
       requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'y', field, ctx)
     }
-    pushFace(side, 'inner', sx, sy,
+    pushFace(side, boltFace, sx, sy,
       boltDiameter,
       ctx.settings.minifixBoltMount === 'sleeve-8'
         ? requireBlindDepth(ctx.settings.minifixSleeveDepth, sideT, 'minifixSleeveDepth') : MINIFIX_SCREW_DEPTH,
@@ -908,6 +957,9 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
   const depth = bottom.finishedWidth
 
   // Тереңдік бойынша екі стяжка: жиектен MINIFIX_FROM_END шегініп.
+  // ⚠ `minifixPairPlacement` мұнда ҚОЛДАНЫЛМАЙДЫ: буын ұзын (қорап тереңдігі),
+  // ортадан ±16 мағынасыз — сондықтан `minifixPairEndOffset` center режимінде
+  // де осы буынды жылжытады. UI түсіндірмесі соны айтады (ShopDrillingSettings).
   const customEndOffset = ctx.settings.minifixPairEndOffset !== DEFAULT_SETTINGS.minifixPairEndOffset
   const positions = customEndOffset
     ? [ctx.settings.minifixPairEndOffset, depth - ctx.settings.minifixPairEndOffset]
@@ -929,6 +981,8 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
     const camX = atLeft ? MINIFIX_CAM_FROM_EDGE : width - MINIFIX_CAM_FROM_EDGE
     const edgeFace = edgeFaceFor(bottom, screwAxis, atLeft)
     const edgeXShift = edgeXShiftFor(bottom, screwAxis, ctx)
+    // Бүйірдегі тесік түп тұрған жаққа қарайды (minifixJoint-тегідей).
+    const boltFace = faceToward(side, (bottomMin + bottomMax) / 2, ctx)
 
     for (const along of positions) {
       // 1. Эксцентриктің ұясы — түптің ҮСТІҢГІ бетінде.
@@ -959,7 +1013,7 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
         requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'y', 'minifixPairEndOffset', ctx)
       }
       pushFace(
-        side, 'inner',
+        side, boltFace,
         sx, sy,
         boltDiameter,
         ctx.settings.minifixBoltMount === 'sleeve-8'
