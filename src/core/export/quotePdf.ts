@@ -14,8 +14,8 @@ import fontkit from '@pdf-lib/fontkit'
 import { PDFDocument, rgb } from 'pdf-lib'
 import type { PDFFont, PDFPage } from 'pdf-lib'
 import { ConfigValidationError } from '../errors'
-import { formatTenge, quoteTotalsView } from '../pricing'
-import type { PriceBreakdown, PriceLine } from '../pricing'
+import { formatTengeExact, quoteLineGroups, quoteTotalsView } from '../pricing'
+import type { PriceBreakdown } from '../pricing'
 import type { ShopProfile } from '../shop'
 import { projectInfoRows } from './pdf'
 import type { PdfFonts } from './pdf'
@@ -32,7 +32,7 @@ const RULE = rgb(0.8, 0.8, 0.84)
  * ЖОҚ, ал жоқ таңба үнсіз түсіп қалады — клиент валютасы көрсетілмеген КП алады.
  */
 const CURRENCY = 'тг'
-const money = (minor: number) => formatTenge(minor, CURRENCY)
+const money = (minor: number) => formatTengeExact(minor, CURRENCY)
 
 export type QuotePdfInput = {
   price: PriceBreakdown
@@ -114,21 +114,17 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
     y -= 14
   }
 
-  y -= 8
-  label(ctx, MARGIN, y, 'Позиция', 8, true, MUTED)
-  right(ctx, COL.unit, y, 'Кол-во', 8, true, MUTED)
-  right(ctx, COL.price, y, 'Цена', 8, true, MUTED)
-  right(ctx, COL.sum, y, 'Сумма', 8, true, MUTED)
-  y -= 6
-  rule(ctx, y)
-  y -= 14
-
-  const groups: { title: string; lines: PriceLine[] }[] = [
-    { title: 'Материалы', lines: input.price.materials },
-    { title: 'Кромка', lines: input.price.edges },
-    { title: 'Фурнитура', lines: input.price.hardware },
-    { title: 'Услуги цеха', lines: input.price.services },
-  ]
+  const groups = quoteLineGroups(input.price)
+  if (groups.length > 0) {
+    y -= 8
+    label(ctx, MARGIN, y, 'Позиция', 8, true, MUTED)
+    right(ctx, COL.unit, y, 'Кол-во', 8, true, MUTED)
+    right(ctx, COL.price, y, 'Цена', 8, true, MUTED)
+    right(ctx, COL.sum, y, 'Сумма', 8, true, MUTED)
+    y -= 6
+    rule(ctx, y)
+    y -= 14
+  }
 
   for (const group of groups) {
     if (group.lines.length === 0) continue
@@ -142,11 +138,17 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
       right(ctx, COL.price, y, money(line.unitPrice), 9, false, MUTED)
       right(ctx, COL.sum, y, money(line.cost), 9)
       y -= 13
+      if (line.discountAmount) {
+        need(24)
+        label(ctx, MARGIN + 12, y, 'Скидка', 8, false, MUTED)
+        right(ctx, COL.sum, y, `-${money(line.discountAmount)}`, 8, false, MUTED)
+        y -= 13
+      }
     }
     y -= 4
   }
 
-  need(70)
+  need(105)
   y -= 4
   rule(ctx, y)
   y -= 16
@@ -168,7 +170,15 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
     rule(ctx, y, MUTED)
     y -= 18
   }
-  label(ctx, MARGIN + 260, y, 'Итого', 12, true)
+  label(ctx, MARGIN + 260, y, 'ВСЕГО', 9, true)
+  right(ctx, COL.sum, y, money(totals.grossTotal), 9, true)
+  y -= 15
+  label(ctx, MARGIN + 260, y, 'СКИДКА', 9, false, MUTED)
+  right(ctx, COL.sum, y, `-${money(totals.discount)}`, 9, false, MUTED)
+  y -= 8
+  rule(ctx, y, MUTED)
+  y -= 18
+  label(ctx, MARGIN + 260, y, 'К ОПЛАТЕ', 12, true)
   right(ctx, COL.sum, y, money(totals.total), 12, true)
 
   return doc.save()
