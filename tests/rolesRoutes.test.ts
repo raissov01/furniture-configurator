@@ -90,7 +90,27 @@ describe('маршруттарда permission және 4xx', () => {
     expect((await projectsRoute.POST(new Request('http://localhost', { method: 'POST', body: '{}' }))).status).toBe(403)
     expect((await shopRoute.GET()).status).toBe(403)
     expect((await shopRoute.PUT(new Request('http://localhost', { method: 'PUT', body: '{}' }))).status).toBe(403)
-    expect((await teamRoute.GET()).status).toBe(403)
+    expect((await teamRoute.GET()).status).toBe(200)
+  })
+
+  it('designer өз командасын оқиды және өзі шығады, бірақ шақыру жасай алмайды', async () => {
+    const team = await import('../lib/server/team')
+    const owner = auth.register('routes-team-owner@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    const joined = auth.register('routes-team-designer@example.kz', 'password123', '', owner.account.shopId)
+    if (!joined.ok) throw new Error(joined.error)
+    team.createInvite(owner.account.shopId, owner.account.userId)
+    actor.value = joined.account
+    const listed = await teamRoute.GET()
+    expect(listed.status).toBe(200)
+    const data = await listed.json() as { members: { userId: string }[]; invites: unknown[] }
+    expect(data.members.map((member) => member.userId)).toEqual([owner.account.userId, joined.account.userId])
+    expect(data.invites).toEqual([])
+    expect((await teamRoute.POST(new Request('http://localhost', { method: 'POST', body: '{}' }))).status).toBe(403)
+    const left = await memberRoute.DELETE(new Request('http://localhost', { method: 'DELETE',
+      body: JSON.stringify({ userId: joined.account.userId }) }))
+    expect(left.status).toBe(200)
+    expect(team.listMembers(owner.account.shopId).map((member) => member.userId)).toEqual([owner.account.userId])
   })
 
   it('share, project, team қате сұраныстары 4xx және таза жауап қайтарады', async () => {

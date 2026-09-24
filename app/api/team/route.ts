@@ -13,12 +13,12 @@ export async function GET(): Promise<Response> {
 
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
-  if (!can(account.role, 'manageTeam')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
+  if (!can(account.role, 'readTeam')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
 
   const { plan } = readPlan(account.shopId)
   return NextResponse.json({
     members: listMembers(account.shopId),
-    invites: listInvites(account.shopId),
+    invites: can(account.role, 'manageTeam') ? listInvites(account.shopId) : [],
     limit: plan.members,
   })
 }
