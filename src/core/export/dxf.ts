@@ -410,8 +410,22 @@ export function transliterate(value: string): string {
 /** Әр панельге бір файл: аты → мазмұны. */
 export function cabinetToDxfFiles(panels: Panel[], options?: DxfOptions): Map<string, string> {
   const files = new Map<string, string>()
+  // Windows treats filenames case-insensitively. Reserve ordinary names first
+  // so a collision suffix cannot steal a later panel's original filename.
+  const ordinaryNames = new Set(panels.map((panel) => `${panel.id}.dxf`.toLowerCase()))
+  const usedNames = new Set<string>()
   for (const panel of panels) {
-    files.set(`${panel.id}.dxf`, panelToDxf(panel, options))
+    const ordinaryName = `${panel.id}.dxf`
+    let name = ordinaryName
+    if (usedNames.has(name.toLowerCase())) {
+      let suffix = 2
+      do {
+        name = `${panel.id}--${suffix}.dxf`
+        suffix += 1
+      } while (ordinaryNames.has(name.toLowerCase()) || usedNames.has(name.toLowerCase()))
+    }
+    files.set(name, panelToDxf(panel, options))
+    usedNames.add(name.toLowerCase())
   }
   return files
 }
