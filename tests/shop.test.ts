@@ -10,6 +10,7 @@ import {
   DEFAULT_SETTINGS,
   SHEET_FORMATS,
   catalogOf,
+  cloneMaterial,
   defaultLimits,
   defaultShopProfile,
   dimensionWarningText,
@@ -23,7 +24,7 @@ import {
   shopReadiness,
   templateToCabinet,
 } from '../src/core/index'
-import type { ShopProfile } from '../src/core/index'
+import type { Material, ShopProfile } from '../src/core/index'
 
 const shop = defaultShopProfile()
 
@@ -168,6 +169,49 @@ describe('цехтың өз материалы', () => {
       expect(Number.isInteger(f.height)).toBe(true)
       expect(f.width).toBeGreaterThan(f.height)
     }
+  })
+})
+
+describe('материалды клондау', () => {
+  const original: Material = {
+    id: 'egger-h1145', name: 'ЛДСП Egger H1145', thickness: 18,
+    sheetWidth: 2800, sheetHeight: 2070, hasGrain: true,
+    pricePerSheet: 2850000, trimEdge: 12,
+    defaultEdging: { visibleFront: 'band-2', visibleSecondary: 'band-04', hidden: null },
+    decor: {
+      color: '#b69770', kind: 'wood', finish: 'satin',
+      mapUrl: 'https://example.com/H1145.jpg', mapSizeMm: { x: 900, y: 600 },
+    },
+    slab: { stockLengths: [3050, 4100], pricePerMeter: 123400 },
+  }
+
+  it('жаңа id бірегей, аты ажыратылады; барлық физикалық және бағалық қасиет сақталады', () => {
+    const copy = cloneMaterial(original, [original.id, 'egger-h1145-copy', 'band-2'])
+    expect(copy.id).toBe('egger-h1145-copy-2')
+    expect(copy.name).toBe('ЛДСП Egger H1145 (копия)')
+    expect({ ...copy, id: original.id, name: original.name }).toEqual(original)
+    expect(original.id).toBe('egger-h1145')
+    expect(copy).not.toBe(original)
+  })
+
+  it('екі рет клондағанда id қайталанбайды, профиль схемасынан өтеді', () => {
+    const first = cloneMaterial(original, [original.id])
+    const second = cloneMaterial(original, [original.id, first.id])
+    expect([first.id, second.id]).toEqual(['egger-h1145-copy', 'egger-h1145-copy-2'])
+    const saved = { ...shop, materials: [...shop.materials, original, first, second] }
+    expect(parseShopProfile(saved).materials.slice(-2)).toEqual([first, second])
+  })
+
+  it('ішкі объектілер де бөлек: көшірмені өңдеу түпнұсқаға тимейді', () => {
+    const copy = cloneMaterial(original, [original.id])
+    copy.defaultEdging!.visibleFront = 'other-band'
+    copy.decor!.color = '#ffffff'
+    copy.decor!.mapSizeMm!.x = 450
+    copy.slab!.stockLengths[0] = 2500
+    copy.slab!.pricePerMeter = 432100
+    expect(original.defaultEdging!.visibleFront).toBe('band-2')
+    expect(original.decor).toMatchObject({ color: '#b69770', mapSizeMm: { x: 900, y: 600 } })
+    expect(original.slab).toEqual({ stockLengths: [3050, 4100], pricePerMeter: 123400 })
   })
 })
 

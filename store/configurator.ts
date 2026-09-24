@@ -14,8 +14,10 @@ import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import {
   DEFAULT_ROOM,
   DEFAULT_SILHOUETTE_HEIGHT,
+  ConfigValidationError,
   canMirror,
   catalogOf,
+  cloneMaterial as cloneCatalogMaterial,
   defaultOpenings,
   fitOpenings,
   findSet,
@@ -251,6 +253,7 @@ type State = Snapshot & {
   setShop(shop: ShopProfile): void
   editShop(patch: Partial<ShopProfile>): void
   addMaterial(material: Material): void
+  cloneMaterial(id: string): void
   removeMaterial(id: string): void
   hydrateShop(): void
   setShopOpen(v: boolean): void
@@ -703,6 +706,21 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     if (s.shop.materials.some((m) => m.id === material.id)) return
     get().setShop({ ...s.shop, materials: [...s.shop.materials, material] })
+  },
+
+  cloneMaterial(id) {
+    const shop = get().shop
+    const source = shop.materials.find((material) => material.id === id)
+    if (!source) {
+      throw new ConfigValidationError('materialId', `материал табылмады: "${id}"`,
+        shop.materials.map((material) => material.id).join(' | '))
+    }
+    const existingIds = [
+      ...shop.materials.map((material) => material.id),
+      ...shop.edgeBands.map((band) => band.id),
+    ]
+    const copy = cloneCatalogMaterial(source, existingIds)
+    get().setShop({ ...shop, materials: [...shop.materials, copy] })
   },
 
   /**
