@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { SEED_SETS, findNode, parseProjectV4 } from '../src/core/index'
+import { SEED_SETS, findNode, flattenTree, parseProjectV4, scenePanels } from '../src/core/index'
 import { useConfigurator } from '../store/configurator'
 import { referenceProject } from './fixtures'
 
@@ -7,11 +7,36 @@ const baseline = useConfigurator.getState()
 const s = () => useConfigurator.getState()
 afterEach(() => { useConfigurator.setState(baseline, true); vi.restoreAllMocks() })
 
+const localStore = () => {
+  const values = new Map<string, string>()
+  vi.stubGlobal('window', { localStorage: {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value) },
+  } })
+  return values
+}
+
 describe('v4 редактор тәуекелдері', () => {
   it('v3 бос қабат тізімінен әдепкі қабатты көрсетеді', () => {
     s().loadProject({ ...referenceProject, layers: [] })
     expect(s().layers).toHaveLength(1)
     expect(s().layers[0]?.id).toBe('default')
+  })
+
+  it('жоба settings-і цех settings-інен басым: UI мен CLI бір өндіріс панелін береді', () => {
+    const file = parseProjectV4({ ...referenceProject,
+      settings: { ...s().shop.settings, shelfPinDatum: 64 } })
+    s().loadProject(file)
+    const ui = s()
+    expect(ui.shop.settings.shelfPinDatum).not.toBe(64)
+    const uiPanels = scenePanels(flattenTree(ui.root, ui.catalog, ui.projectSettings ?? ui.shop.settings, ui.layers))
+    const cliPanels = scenePanels(flattenTree(file.root,
+      { materials: file.materials, edgeBands: file.edgeBands }, file.settings, file.layers))
+    const manufacturing = (panels: typeof uiPanels) => panels.map((panel) => ({
+      id: panel.id, cutLength: panel.cutLength, cutWidth: panel.cutWidth,
+      shelfPins: panel.drilling.filter((drill) => drill.purpose === 'shelfPin'),
+    }))
+    expect(manufacturing(uiPanels)).toEqual(manufacturing(cliPanels))
   })
 
   it('бір миллисекундтағы көшірме, айна және қабат ID-лері қайталанбайды', () => {
@@ -54,5 +79,22 @@ describe('v4 редактор тәуекелдері', () => {
     s().loadProject(file)
     s().loadSet(SEED_SETS[0]!.id)
     expect(findNode(s().root, 'old-solid')).toBeUndefined()
+  })
+
+  it('бүлінген local жобаны бөлек backup-қа жазып, қалпына келтіргенше автосақтамайды', () => {
+    const values = localStore()
+    const key = 'furniture-configurator:project'
+    const backup = 'furniture-configurator:project-corrupt-backup'
+    values.set(key, '{invalid JSON')
+    s().hydrateProject()
+    expect(s().projectLoadError).toMatch(/оқылмады/)
+    expect(s().firstRun).toBe(false)
+    expect(values.get(backup)).toBe('{invalid JSON')
+    s().saveProjectLocally()
+    expect(values.get(key)).toBe('{invalid JSON')
+    s().reset()
+    expect(s().projectLoadError).toBeNull()
+    expect(JSON.parse(values.get(key)!).schemaVersion).toBe(4)
+    expect(values.get(backup)).toBe('{invalid JSON')
   })
 })

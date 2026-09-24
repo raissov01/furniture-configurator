@@ -51,6 +51,8 @@ import { cabinetsFromTree, reconcileCabinetsInTree, wallAttachedPlacements } fro
 const SHOP_KEY = 'furniture-configurator:shop'
 /** Ағымдағы жоба — бетті жаңартқанда жұмыс жоғалмауы үшін. */
 const PROJECT_KEY = 'furniture-configurator:project'
+/** Parsing failed: preserve the exact raw bytes before a deliberate replacement. */
+const CORRUPT_PROJECT_BACKUP_KEY = 'furniture-configurator:project-corrupt-backup'
 /** Локал сақтаулар тарихы: соңғы бірнеше нұсқа. */
 const HISTORY_KEY = 'furniture-configurator:history'
 /** Тарихта неше жазба тұрады. Көбейтсе, қойма толады (жоба ~6 КБ). */
@@ -850,7 +852,7 @@ export const useConfigurator = create<State>((set, get) => ({
     try {
       raw = window.localStorage.getItem(PROJECT_KEY)
     } catch (error) {
-      set({ projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}` })
+      set({ firstRun: false, projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}` })
       return
     }
     if (!raw) return
@@ -876,7 +878,14 @@ export const useConfigurator = create<State>((set, get) => ({
     } catch (error) {
       // Қате файлды автосақтау басып кетпеуі керек: пайдаланушы басқа жобаны
       // анық ашқанша немесе Reset басқанша түпнұсқа localStorage-та қалады.
-      set({ projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}` })
+      let backupError = ''
+      try {
+        window.localStorage.setItem(CORRUPT_PROJECT_BACKUP_KEY, raw)
+      } catch (cause) {
+        backupError = `; сақтық көшірме жазылмады: ${cause instanceof Error ? cause.message : String(cause)}`
+      }
+      set({ firstRun: false,
+        projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}${backupError}` })
     }
   },
 
@@ -1344,6 +1353,8 @@ export const useConfigurator = create<State>((set, get) => ({
       future: [],
       lastEditKey: null,
     })
+    // Explicit reset replaces the unreadable source; its raw backup remains.
+    if (s.projectLoadError) get().saveProjectLocally()
   },
 
   setExploded: (exploded) => set({ exploded }),
