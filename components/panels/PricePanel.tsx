@@ -20,35 +20,22 @@ import {
 } from '@/src/core/index'
 import type { NestingResult, PriceBreakdown } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
-import { useSceneItems } from '@/lib/useSceneItems'
-import { mergeProjectPanels } from '@/src/core/index'
+import { useProjectProduction } from '@/lib/useProjectProduction'
 import { nestingSummary, priceGroups, uniqueMissingPrices } from './priceSummary'
 
 export function PricePanel() {
-  const room = useConfigurator((s) => s.room)
-  const cabinets = useConfigurator((s) => s.cabinets)
-  const placements = useConfigurator((s) => s.placements)
-  const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const priceOverrides = useConfigurator((s) => s.priceOverrides)
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
 
-  const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
-  const panels = useMemo(
-    () => mergeProjectPanels(items.map((i) => ({ cabinetId: i.cabinet.id, panels: i.panels }))),
-    [items],
-  )
-  const hardware = useMemo(() => items.flatMap((i) => i.hardware), [items])
-  const moduleWidths = useMemo(() => cabinets.map((c) => c.width), [cabinets])
+  const { panels, hardware, moduleWidths, catalog, error: generationError } = useProjectProduction()
 
-  const nesting: NestingResult | null = useMemo(() => {
-    if (panels.length === 0) return null
+  const [nestingError, nesting]: [string | null, NestingResult | null] = useMemo(() => {
+    if (panels.length === 0) return [null, null]
     try {
-      return nestPanels(panels, catalog, nestingOptionsOf(shop))
-    } catch {
-      // Раскрой уақытша есептелмесе (мыс., жарамсыз конфиг), панель үнсіз
-      // бос қалады — бос смета көрсетуден жақсырақ (§ QuoteView-дегі ереже).
-      return null
+      return [null, nestPanels(panels, catalog, nestingOptionsOf(shop))]
+    } catch (error) {
+      return [error instanceof Error ? error.message : String(error), null]
     }
   }, [panels, catalog, shop])
 
@@ -60,6 +47,11 @@ export function PricePanel() {
       return [err instanceof Error ? err.message : String(err), null]
     }
   }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides])
+
+  const error = generationError ?? nestingError ?? priceError
+  if (error) {
+    return <div data-panel="price" role="alert" className="border border-red-900 bg-red-950 px-2 py-1 text-xs text-red-300">{error}</div>
+  }
 
   if (panels.length === 0) {
     return (
