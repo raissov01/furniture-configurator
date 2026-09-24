@@ -112,6 +112,7 @@ async function test(name, fn) {
     results.push({ name, ok: false, failed: [{ message: `қате: ${error.message}` }] })
   }
   const last = results[results.length - 1]
+  console.log(`  ${last.ok ? '✓' : '✗'} ${results.length}: ${name}`, last.failed)
   if (!last.ok && snapshot) {
     const file = await (current.shot ?? snapshot(results.length))
     if (file) last.failed.push({ message: `скриншот: ${file}` })
@@ -572,7 +573,7 @@ async function run() {
     check(/отход \d/.test(body), 'қалдық пайызы бар')
     check(await h.clickText('Стоимость', 1500), 'стоимость табы ашылды')
     const priced = await h.text()
-    check(priced.includes('Итого клиенту'), 'қорытынды жол бар')
+    check(['ВСЕГО', 'СКИДКА', 'К ОПЛАТЕ'].every((label) => priced.includes(label)), 'сома, жеңілдік және төлем қорытындысы бар')
     check(priced.includes('Не заданы цены') || priced.includes('₸'), 'баға немесе ескерту көрсетілген')
     await h.clickText('Закрыть', 800)
   })
