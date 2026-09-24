@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { ZodError } from 'zod'
 import {
   ConfigValidationError, assemblyDrawingPdf, cabinetToDxfFiles, cutListToCsv,
-  cutListToXlsx, drillingToCsv, generateCabinet, mergeSettings, parseProject,
+  cutListToXlsx, drillingToCsv, generateCabinet, mergeSettings, parseProjectV4, productionCabinets,
 } from '../core/index'
 
 const ASSETS = resolve(dirname(fileURLToPath(import.meta.url)), '../../assets')
@@ -30,7 +30,7 @@ async function main(): Promise<number> {
 
   let project
   try {
-    project = parseProject(JSON.parse(readFileSync(resolve(file), 'utf8')))
+    project = parseProjectV4(JSON.parse(readFileSync(resolve(file), 'utf8')))
   } catch (err) {
     if (err instanceof ZodError) {
       console.error(`Конфиг қатесі — ${file}:`)
@@ -48,7 +48,7 @@ async function main(): Promise<number> {
 
   console.log(`\nПроект: ${project.name}`)
 
-  for (const cabinet of project.cabinets) {
+  for (const cabinet of productionCabinets(project)) {
     let panels
     try {
       panels = generateCabinet(cabinet, catalog, project.settings)

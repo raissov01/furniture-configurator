@@ -9,7 +9,7 @@ import { resolve } from 'node:path'
 import { ZodError } from 'zod'
 import {
   CUT_LIST_COLUMNS, ConfigValidationError,
-  edgeBandTotals, formatCutList, generateCabinet, parseProject,
+  edgeBandTotals, formatCutList, generateCabinet, parseProjectV4, productionCabinets,
 } from '../core/index'
 import type { Column, CutListRow, DrillPurpose } from '../core/index'
 
@@ -34,7 +34,7 @@ function main(): number {
 
   let project
   try {
-    project = parseProject(JSON.parse(readFileSync(resolve(file), 'utf8')))
+    project = parseProjectV4(JSON.parse(readFileSync(resolve(file), 'utf8')))
   } catch (err) {
     if (err instanceof ZodError) {
       console.error(`Конфиг қатесі — ${file}:`)
@@ -49,7 +49,7 @@ function main(): number {
   const catalog = { materials: project.materials, edgeBands: project.edgeBands }
   console.log(`\nПроект: ${project.name}`)
 
-  for (const cabinet of project.cabinets) {
+  for (const cabinet of productionCabinets(project)) {
     let panels
     try {
       panels = generateCabinet(cabinet, catalog, project.settings)

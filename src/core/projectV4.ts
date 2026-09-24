@@ -11,11 +11,12 @@ import {
   MaterialSchema, PriceOverridesSchema, ProjectInfoSchema, ProjectLayersSchema,
   RoomSchema, parseProjectWithLayers,
 } from './schema'
+import { isNodeHiddenByLayer } from './layers'
 import { IDENTITY_TRANSFORM } from './tree'
 import { treeFromProject } from './treeFromProject'
 import type { BoardSpec, GroupNode, SceneNode } from './tree'
 import type { Layer } from './layers'
-import type { ProjectFile } from './types'
+import type { CabinetConfig, ProjectFile } from './types'
 
 /** v4-те корпус конфигінің жалғыз орны — root ішіндегі CabinetNode. */
 export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'placements'> & {
@@ -152,4 +153,25 @@ export function parseProjectV4(raw: unknown): ProjectFileV4 {
   if (version === 4) return ProjectFileV4Schema.parse(raw)
   const legacy = parseProjectWithLayers(raw)
   return ProjectFileV4Schema.parse(migrateV3ToV4(legacy))
+}
+
+/**
+ * Цехқа баратын шкафтар: `flattenTree`-дің ережесімен — түйіннің өзі, оның
+ * топтарының бірі не қабаты жасырын болса, шкаф алынбайды. Ағаштағы ретпен.
+ * CLI (`cutlist`, `export`) шкаф бойынша жұмыс істейді; еркін тақталар
+ * (`board`) мұнда кірмейді.
+ */
+export function productionCabinets(project: ProjectFileV4): CabinetConfig[] {
+  const result: CabinetConfig[] = []
+  const layers = project.layers ?? []
+  const step = (node: SceneNode): void => {
+    if (node.hidden === true || isNodeHiddenByLayer(node, layers)) return
+    if (node.kind === 'cabinet') {
+      result.push(node.config.id === node.id ? node.config : { ...node.config, id: node.id })
+    } else if (node.kind === 'group') {
+      node.children.forEach(step)
+    }
+  }
+  step(project.root)
+  return result
 }
