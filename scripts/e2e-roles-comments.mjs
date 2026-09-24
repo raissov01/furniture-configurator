@@ -60,11 +60,15 @@ try {
   const email = `roles-e2e-${Date.now()}@example.kz`
   const register = await h.evaluate(`fetch('/api/auth/register', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:${JSON.stringify(email)},password:'password123',shopName:'E2E'})}).then(r=>r.status)`)
   assert(register === 200, `registration: ${register}`)
+  assert(await h.until("document.querySelectorAll('[data-dimension-label]').length === 3", 20000), 'editor dimension labels missing')
   assert(await h.menu('Проект', 'Код для клиента', 1500), 'client code menu missing')
   const code = await h.evaluate("document.querySelector('[data-share-code]')?.textContent?.trim()")
   assert(/^\d{6}$/.test(code), 'share code missing')
   await h.goto(`/view?c=${code}`, 8000)
   assert(!(await h.text()).includes('Размер, H × W × D'), 'client dimensions visible')
+  assert(await h.until("Boolean(document.querySelector('#scene-3d canvas'))", 20000), 'client 3D scene missing')
+  await h.wait(1000)
+  assert(await h.evaluate("document.querySelectorAll('[data-dimension-label]').length === 0"), 'client 3D dimension labels visible')
   assert(await h.until("Boolean(document.querySelector('textarea[aria-label=\"Комментарий\"]'))", 12000), 'comment form did not load')
   const entered = await h.evaluate(`(() => {
     const name = document.querySelector('input[aria-label="Ваше имя"]')

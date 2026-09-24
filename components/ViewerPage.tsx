@@ -197,7 +197,7 @@ function Viewer({
 
       <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
-          <Scene items={items} room={room} activeId={activeId} catalog={catalog} />
+          <Scene items={items} room={room} activeId={activeId} catalog={catalog} allowDimensionLabels={false} />
         </div>
         {walk ? (
           <>
