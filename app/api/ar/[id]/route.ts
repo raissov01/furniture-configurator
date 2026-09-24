@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { NextResponse } from 'next/server'
-import { arDir } from '../route'
+import { arDir } from '@/lib/server/arStorage'
 
 /** GLB беру. Scene Viewer файлды дәл осы мекенжайдан алады. */
 export async function GET(
