@@ -665,6 +665,11 @@ export const ShopProfileSchema = z.object({
   }
 })
 
+/** v6-ның өз өрістерін баға тізімін құрастырмай тұрып тексереміз. */
+const ShopProfileV6Schema = z.object(ShopProfileSchema.shape)
+  .omit({ priceLists: true, activePriceListId: true })
+  .extend({ schemaVersion: z.literal(6) })
+
 /**
  * Сақталған профильді оқу. Ескі нұсқа жаңасына КӨТЕРІЛЕДІ — цех бір рет
  * толтырған бағалары нұсқа ауысқанда жоғалмауы керек (§7).
@@ -740,7 +745,7 @@ export function parseShopProfile(raw: unknown): ShopProfile {
   // v6 → v7: қазіргі нақты бағалар бірінші прайсқа түседі; бос/ойдан баға жоқ.
   const v6 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
   if (v6 === 6) {
-    const old = migrated as ShopProfile
+    const old = ShopProfileV6Schema.parse(migrated)
     migrated = {
       ...old,
       schemaVersion: 7,
