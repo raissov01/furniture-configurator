@@ -74,6 +74,7 @@ export type CameraPreset =
 /** Undo/redo бүкіл жобаны қайтарады: шкафты жылжыту да қайтарылуы керек. */
 type Snapshot = {
   room: Room
+  projectName: string
   root: GroupNode
   layers: Layer[]
   projectSettings: SettingsOverride | undefined
@@ -367,6 +368,7 @@ type State = Snapshot & {
 
 const snapshot = (s: State): Snapshot => ({
   room: s.room,
+  projectName: s.projectName,
   root: s.root,
   layers: s.layers,
   projectSettings: s.projectSettings,
@@ -388,11 +390,15 @@ function legacyEdit(s: State, cabinets: CabinetConfig[], placements = s.placemen
   return { root, ...cabinetsFromTree(root, room, s.layers) }
 }
 
-/**
- * Жобаны алмастыратын генератор (жиынтық, ас үй, жиһаз) id-лері тұрақты:
- * `kitchen-a-1` қайта генерацияда да сол id. Оларды «жылжыған» деп белгілемесек,
- * reconcile ескі transform-ды қалдырады да, жаңа ені бар модуль ескі орында тұрады.
- */
+/** A preset replaces scene content, while order metadata and material choices remain. */
+function replaceProjectScene(s: State, cabinets: CabinetConfig[], placements: Placement[], room: Room) {
+  const root = treeFromProject({ schemaVersion: 3, name: s.root.name, room, cabinets, placements,
+    materials: s.catalog.materials, edgeBands: s.catalog.edgeBands })
+  const layers = [createDefaultLayer()]
+  return { root, layers, ...cabinetsFromTree(root, room, layers) }
+}
+
+/** Қабырғамен бірге нақты жылжитын корпустардың ID тізімі. */
 const placedIds = (placements: Placement[]): ReadonlySet<string> =>
   new Set(placements.map((placement) => placement.cabinetId))
 
@@ -403,8 +409,12 @@ function projectCatalog(shop: ShopProfile, materials?: Material[], edgeBands?: E
   const materialMap = new Map(base.materials.map((material) => [material.id, material]))
   const bandMap = new Map(base.edgeBands.map((band) => [band.id, band]))
   for (const material of materials ?? []) {
+    const local = materialMap.get(material.id)
     materialMap.set(material.id, { ...material,
-      pricePerSheet: materialMap.get(material.id)?.pricePerSheet ?? 0 })
+      // Legacy files omit template preferences; their physical dimensions
+      // still win, but new templates can use the local material's edge defaults.
+      defaultEdging: material.defaultEdging ?? local?.defaultEdging,
+      pricePerSheet: local?.pricePerSheet ?? 0 })
   }
   for (const band of edgeBands ?? []) {
     bandMap.set(band.id, { ...band,
@@ -457,13 +467,19 @@ function projectSettingsAfterShopEdit(
   before: SettingsOverride,
   after: SettingsOverride,
 ): SettingsOverride {
-  const merged: Record<string, number | null | undefined> = { ...saved }
-  const previous: Record<string, number | null | undefined> = before
-  const edited: Record<string, number | null | undefined> = after
-  for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
-    if (previous[key] !== edited[key]) merged[key] = edited[key]
+  const merged: SettingsOverride = { ...(saved ?? before) }
+  const apply = <K extends keyof SettingsOverride>(key: K): void => {
+    const previous = before[key]
+    const edited = after[key]
+    const unchanged = Array.isArray(previous) && Array.isArray(edited)
+      ? previous.length === edited.length && previous.every((value, index) => value === edited[index])
+      : previous === edited
+    if (unchanged) return
+    if (edited === undefined) delete merged[key]
+    else merged[key] = edited
   }
-  return merged as SettingsOverride
+  for (const key of new Set([...Object.keys(before), ...Object.keys(after)] as (keyof SettingsOverride)[])) apply(key)
+  return merged
 }
 
 function treeEdit(s: State, root: GroupNode, layers = s.layers) {
@@ -516,6 +532,7 @@ const withOpenings = (room: Room): Room =>
 
 const initial: Snapshot = {
   room: withOpenings(DEFAULT_ROOM),
+  projectName: defaultCabinet.name,
   root: treeFromProject({ schemaVersion: 3, name: defaultCabinet.name,
     room: withOpenings(DEFAULT_ROOM), materials: defaultShop.materials,
     edgeBands: defaultShop.edgeBands, cabinets: [defaultCabinet],
@@ -634,6 +651,11 @@ export const useConfigurator = create<State>((set, get) => ({
     const template = findTemplate(id)
     if (!template) return
     const s = get()
+    if (!s.cabinets.some((cabinet) => cabinet.id === s.activeId)) {
+      get().appendCabinet({ ...templateToCabinet(template, s.catalog), id: `cabinet-${crypto.randomUUID()}` })
+      set({ templateId: id, galleryOpen: false })
+      return
+    }
     const next = { ...templateToCabinet(template, s.catalog), id: s.activeId }
     set({
       ...legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c))),
@@ -656,16 +678,14 @@ export const useConfigurator = create<State>((set, get) => ({
     if (!preset) return
     const s = get()
     const { cabinets, placements } = setToProject(preset, s.catalog)
+    const room = {
+      width: Math.max(s.room.width, preset.room.width),
+      depth: Math.max(s.room.depth, preset.room.depth),
+      height: Math.max(s.room.height, preset.room.height),
+    }
     set({
-      room: {
-        width: Math.max(s.room.width, preset.room.width),
-        depth: Math.max(s.room.depth, preset.room.depth),
-        height: Math.max(s.room.height, preset.room.height),
-      },
-      ...legacyEdit(s, cabinets, placements, {
-        width: Math.max(s.room.width, preset.room.width), depth: Math.max(s.room.depth, preset.room.depth),
-        height: Math.max(s.room.height, preset.room.height),
-      }, placedIds(placements)),
+      room,
+      ...replaceProjectScene(s, cabinets, placements, room),
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
@@ -685,9 +705,10 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const { cabinets, placements, room } = generateKitchen(options, s.catalog)
     if (cabinets.length === 0) return
+    const nextRoom = withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) })
     set({
-      room: withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) }),
-      ...legacyEdit(s, cabinets, placements, room, placedIds(placements)),
+      room: nextRoom,
+      ...replaceProjectScene(s, cabinets, placements, nextRoom),
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
@@ -705,9 +726,10 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const { cabinets, placements, room } = generateFurniture(options, s.catalog)
     if (cabinets.length === 0) return
+    const nextRoom = withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) })
     set({
-      room: withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) }),
-      ...legacyEdit(s, cabinets, placements, room, placedIds(placements)),
+      room: nextRoom,
+      ...replaceProjectScene(s, cabinets, placements, nextRoom),
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
@@ -720,6 +742,11 @@ export const useConfigurator = create<State>((set, get) => ({
   /** Дайын конфигті жүктеу — чат-боттың варианты осы жолмен түседі. */
   loadCabinet(cabinet) {
     const s = get()
+    if (!s.cabinets.some((item) => item.id === s.activeId)) {
+      get().appendCabinet({ ...cabinet, id: `cabinet-${crypto.randomUUID()}` })
+      set({ aiOpen: false })
+      return
+    }
     const next = { ...cabinet, id: s.activeId }
     set({
       ...legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c))),
@@ -736,7 +763,7 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     return {
       schemaVersion: 4 as const,
-      name: s.root.name,
+      name: s.projectName,
       materials: s.catalog.materials,
       edgeBands: s.catalog.edgeBands,
       settings: s.projectSettings ?? s.shop.settings,
@@ -773,6 +800,7 @@ export const useConfigurator = create<State>((set, get) => ({
       shop,
       catalog: projectCatalog(shop, project.materials, project.edgeBands),
       room: project.room,
+      projectName: project.name,
       root: project.root,
       layers: project.layers ?? [createDefaultLayer()],
       projectSettings: project.settings,
@@ -829,6 +857,7 @@ export const useConfigurator = create<State>((set, get) => ({
       const file = parseProjectV4(JSON.parse(raw))
       set({
         room: file.room,
+        projectName: file.name,
         root: file.root,
         layers: file.layers ?? [createDefaultLayer()],
         projectSettings: file.settings,
@@ -1152,8 +1181,10 @@ export const useConfigurator = create<State>((set, get) => ({
       const placement = s.placements.find((p) => p.cabinetId === c.id)
       return placement ? [{ cabinet: c, placement }] : []
     })
-    const id = `cabinet-${Date.now().toString(36)}`
-    const cabinet = { ...activeCabinet(s), id }
+    const id = `cabinet-${crypto.randomUUID()}`
+    const source = s.cabinets.find((item) => item.id === s.activeId)
+      ?? templateToCabinet(findTemplate(defaultTemplateId)!, s.catalog)
+    const cabinet = { ...source, id }
     set({
       ...legacyEdit(s, [...s.cabinets, cabinet], [
         ...s.placements,

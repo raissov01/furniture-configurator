@@ -61,9 +61,26 @@ function boardPanel(
       `материал табылмады: "${spec.materialId}"`,
     )
   }
+  for (const [edge, band] of Object.entries(spec.edges)) {
+    if (band && !bands.has(band.bandId)) {
+      throw new ConfigValidationError(
+        `board[${node.id}].edges.${edge}.bandId`,
+        `кромка табылмады: "${band.bandId}"`,
+        [...bands.keys()].join(' | '),
+      )
+    }
+  }
   const { cutLength, cutWidth } = calculateCutDimensions(
     spec.length, spec.width, spec.edges, bands, settings,
   )
+  for (const [field, value] of Object.entries({ cutLength, cutWidth })) {
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new ConfigValidationError(
+        `board[${node.id}].${field}`, `кромка шегерілгеннен кейінгі өлшем: ${value}`,
+        'бүтін мм > 0',
+      )
+    }
+  }
   return {
     id: node.id,
     role: spec.role,

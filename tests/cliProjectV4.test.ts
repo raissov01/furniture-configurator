@@ -47,7 +47,10 @@ function nested(): ProjectFileV4 {
 
 afterEach(() => { for (const dir of temporary.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
-describe('CLI accepts the canonical saved v4 project', () => {
+// These tests start real TypeScript CLI processes. Their startup under parallel
+// CPU load is not a 5-second product performance requirement; keep the same
+// 30-second bound as the export integration test and every child process.
+describe('CLI accepts the canonical saved v4 project', { timeout: 30000 }, () => {
   it('keeps board DXF filenames inside their export folder without encoding collisions', () => {
     const dir = folder()
     const project = nested()

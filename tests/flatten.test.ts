@@ -99,6 +99,30 @@ const boardNode = (id: string, spec: BoardSpec, transform: Transform): SceneNode
   ({ kind: 'board', id, name: 'Столешница', transform, board: spec })
 
 describe('flattenTree — еркін тақта', () => {
+  it('rejects zero or negative cut sizes after edge subtraction', () => {
+    for (const length of [1, 4]) {
+      const spec = board({ length, edges: {
+        L1: null, L2: null, W1: { bandId: BAND_2MM.id }, W2: { bandId: BAND_2MM.id },
+      } })
+      expect(() => flattenTree(root([boardNode('tiny', spec, tr())]), SEED_CATALOG))
+        .toThrow(/board\[tiny\].cutLength/)
+    }
+    const narrow = board({ width: 1 })
+    expect(() => flattenTree(root([boardNode('narrow', narrow, tr())]), SEED_CATALOG))
+      .toThrow(/board\[narrow\].cutWidth/)
+  })
+
+  it('reports a missing edge band with its board field instead of a raw error', () => {
+    const spec = board({ edges: { L1: { bandId: 'missing' }, L2: null, W1: null, W2: null } })
+    try {
+      flattenTree(root([boardNode('unknown-edge', spec, tr())]), SEED_CATALOG)
+      throw new Error('expected validation failure')
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigValidationError)
+      expect((error as ConfigValidationError).field).toBe('board[unknown-edge].edges.L1.bandId')
+    }
+  })
+
   it('бір Panel береді', () => {
     const scene = flattenTree(root([boardNode('b1', board(), tr())]), SEED_CATALOG)
     expect(scene.nodes).toHaveLength(1)

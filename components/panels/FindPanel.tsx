@@ -6,8 +6,7 @@
  * болатын, жалпы нысан іздеуі жоқ еді).
  *
  * Іздеу логикасы `src/core/searchPanels.ts`-те (таза, ГОЧА №1/№2 сонда
- * түсіндірілген). Бұл файл тек панельдерді жинайды (`generateCabinet`
- * әр корпус үшін), нәтижені көрсетеді, БАСҚАНДА `store/configurator.ts`-тегі
+ * түсіндірілген). Бұл файл канондық ағаштың панельдерін оқиды, нәтижені көрсетеді, БАСҚАНДА `store/configurator.ts`-тегі
  * БАР таңдау механизмін (`selected`/`setSelected`) қолданады — жаңасын
  * ойлап таппайды (тапсырмадағы талап).
  *
@@ -21,51 +20,40 @@
 import * as React from 'react'
 import { t as tr } from '@/lib/i18n'
 import { useConfigurator } from '@/store/configurator'
-import { ConfigValidationError, generateCabinet, searchProjectPanels } from '@/src/core/index'
-import type { Panel } from '@/src/core/index'
+import { projectPanelId, searchProjectPanels } from '@/src/core/index'
+import { useProjectProduction } from '@/lib/useProjectProduction'
 import { cn } from '@/lib/cn'
 
 const rowBase = 'flex w-full flex-col gap-0.5 border border-neutral-800 px-2 py-1.5 text-left text-[11px] transition hover:border-neutral-600'
 
 export function FindPanel() {
-  const cabinets = useConfigurator((s) => s.cabinets)
-  const catalog = useConfigurator((s) => s.catalog)
-  const shop = useConfigurator((s) => s.shop)
+  const { scene, catalog, error } = useProjectProduction()
   const selected = useConfigurator((s) => s.selected)
   const setSelected = useConfigurator((s) => s.setSelected)
   const setActive = useConfigurator((s) => s.setActive)
 
   const [query, setQuery] = React.useState('')
 
-  /**
-   * Корпус бойынша топталған панельдер. `useSceneItems`-тегідей: жарамсыз
-   * конфигі бар корпустың панельдерін ЛАҚТЫРМАЙМЫЗ (бос тастаймыз) — іздеу
-   * панелі бір қате өріс үшін бүкіл нәтижені жоғалтпауы керек.
-   */
-  const items = React.useMemo(() => {
-    const out: { cabinetId: string; panels: Panel[] }[] = []
-    for (const cabinet of cabinets) {
-      try {
-        out.push({ cabinetId: cabinet.id, panels: generateCabinet(cabinet, catalog, shop.settings) })
-      } catch (err) {
-        if (!(err instanceof ConfigValidationError)) throw err
-        // Осы корпус қазір жарамсыз конфигпен тұр — іздеуге қатыспайды.
-      }
-    }
-    return out
-  }, [cabinets, catalog, shop.settings])
-
+  const items = React.useMemo(() => scene.nodes.map((node) => ({
+    cabinetId: node.nodeId,
+    panels: node.panels.map((panel) => ({ ...panel,
+      id: projectPanelId(node.nodeId, panel.id, scene.nodes.length),
+    })),
+  })), [scene])
   const hits = React.useMemo(
-    () => searchProjectPanels(items, shop.materials, query),
-    [items, shop.materials, query],
+    () => searchProjectPanels(items, catalog.materials, query),
+    [items, catalog.materials, query],
   )
-
-  const cabinetName = (cabinetId: string): string =>
-    cabinets.find((c) => c.id === cabinetId)?.name ?? cabinetId
+  const cabinetName = (nodeId: string): string =>
+    scene.nodes.find((node) => node.nodeId === nodeId)?.name ?? nodeId
 
   const goTo = (cabinetId: string, panelId: string) => {
     setActive(cabinetId)
     setSelected(panelId)
+  }
+
+  if (error) {
+    return <div data-panel="find" role="alert" className="border border-red-900 bg-red-950 px-2 py-1 text-xs text-red-300">{error}</div>
   }
 
   return (
