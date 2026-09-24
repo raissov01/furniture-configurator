@@ -22,6 +22,8 @@ import type { HandleModel, HingeSystem } from './fittings'
 import type { NestingOptions, OptimizationLevel } from './nesting'
 import { SEED_EDGE_BANDS, SEED_MATERIALS } from './seed'
 import { EdgeBandSchema, MaterialSchema } from './schema'
+import { capturePriceValues, syncActivePriceList } from './priceLists'
+import type { PriceList } from './priceLists'
 import type { CabinetConfig, Catalog, EdgeBand, Material, Panel, SettingsOverride } from './types'
 
 export type HardwareKind =
@@ -136,7 +138,7 @@ export function defaultServices(): Services {
 }
 
 export type ShopProfile = {
-  schemaVersion: 6
+  schemaVersion: 7
   id: string
   /** КП-да тұратын атау */
   name: string
@@ -149,6 +151,10 @@ export type ShopProfile = {
   materials: Material[]
   edgeBands: EdgeBand[]
   hardware: HardwareItem[]
+  /** Атаулы баға жиынтықтары; өндірістік сипаттамалар бұл тізімге кірмейді. */
+  priceLists: PriceList[]
+  /** Белсенді прайстың ақшасы жоғарыдағы material/hardware/service өрістерінде де тұр. */
+  activePriceListId: string
   /**
    * Ілгек жүйелері. Бренд ПРИСАДКАҒА әсер етеді (чашканың K өлшемі),
    * сондықтан бұл сметаның жолы емес, геометрияның кірісі.
@@ -363,8 +369,8 @@ export function defaultHardware(): HardwareItem[] {
  * кіргенде тек бағаларын енгізсе жеткілікті, ештеңе құрастырудың қажеті жоқ.
  */
 export function defaultShopProfile(id = 'shop-1'): ShopProfile {
-  return {
-    schemaVersion: 6,
+  const base = {
+    schemaVersion: 7 as const,
     id,
     name: '',
     city: '',
@@ -383,6 +389,11 @@ export function defaultShopProfile(id = 'shop-1'): ShopProfile {
     markupPercent: 0,
     maxShelfSpan: null,
     limits: defaultLimits(),
+  }
+  return {
+    ...base,
+    activePriceListId: 'price-default',
+    priceLists: [{ id: 'price-default', name: 'Основной', ...capturePriceValues(base) }],
   }
 }
 
@@ -595,8 +606,29 @@ const DimensionLimitsSchema = z.object({
   maxDepth: dimensionLimit,
 })
 
+const PriceListSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(1),
+  materialPrices: z.record(z.string(), z.object({
+    pricePerSheet: minorUnits,
+    slabPricePerMeter: minorUnits.optional(),
+  })),
+  edgeBandPrices: z.record(z.string(), minorUnits),
+  hardwarePrices: z.record(z.string(), minorUnits),
+  serviceRates: z.object({
+    cutting: minorUnits,
+    drilling: minorUnits,
+    edging: minorUnits,
+    packing: minorUnits,
+    assembly: minorUnits,
+  }),
+  installationRatePerMetreWidth: minorUnits,
+  coefficient: z.number().positive(),
+  markupPercent: z.number().int().min(0).max(1000),
+})
+
 export const ShopProfileSchema = z.object({
-  schemaVersion: z.literal(6),
+  schemaVersion: z.literal(7),
   id: z.string().min(1),
   name: z.string(),
   city: z.string(),
@@ -605,6 +637,8 @@ export const ShopProfileSchema = z.object({
   materials: z.array(MaterialSchema).min(1),
   edgeBands: z.array(EdgeBandSchema),
   hardware: z.array(HardwareItemSchema),
+  priceLists: z.array(PriceListSchema).min(1),
+  activePriceListId: z.string().min(1),
   hingeSystems: z.array(HingeSystemSchema),
   handles: z.array(HandleModelSchema),
   services: z.object({
@@ -615,12 +649,20 @@ export const ShopProfileSchema = z.object({
     assembly: ServiceRateSchema,
   }),
   cutting: CuttingSettingsSchema,
-  installation: z.object({ ratePerMetreWidth: z.number().min(0) }),
+  installation: z.object({ ratePerMetreWidth: minorUnits }),
   coefficient: z.number().positive(),
   labour: LabourRatesSchema,
   markupPercent: z.number().int().min(0).max(1000),
   maxShelfSpan: z.number().int().positive().nullable(),
   limits: DimensionLimitsSchema,
+}).superRefine((shop, context) => {
+  const ids = shop.priceLists.map((list) => list.id)
+  if (new Set(ids).size !== ids.length) {
+    context.addIssue({ code: 'custom', path: ['priceLists'], message: 'прайс id қайталанады' })
+  }
+  if (!ids.includes(shop.activePriceListId)) {
+    context.addIssue({ code: 'custom', path: ['activePriceListId'], message: 'белсенді прайс табылмады' })
+  }
 })
 
 /**
@@ -695,5 +737,17 @@ export function parseShopProfile(raw: unknown): ShopProfile {
     migrated = { ...(migrated as ShopProfile), schemaVersion: 6, limits: defaultLimits() }
   }
 
-  return ShopProfileSchema.parse(migrated) as ShopProfile
+  // v6 → v7: қазіргі нақты бағалар бірінші прайсқа түседі; бос/ойдан баға жоқ.
+  const v6 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
+  if (v6 === 6) {
+    const old = migrated as ShopProfile
+    migrated = {
+      ...old,
+      schemaVersion: 7,
+      activePriceListId: 'price-default',
+      priceLists: [{ id: 'price-default', name: 'Основной', ...capturePriceValues(old) }],
+    }
+  }
+
+  return syncActivePriceList(ShopProfileSchema.parse(migrated) as ShopProfile)
 }

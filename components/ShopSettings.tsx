@@ -8,7 +8,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   DECOR_BRANDS,
   DECOR_LIBRARY,
@@ -186,6 +186,7 @@ export function ShopSettings() {
             <p className="text-[11px] text-neutral-400">
               Профиль хранится в этом браузере. Когда появятся аккаунты, он переедет на сервер как есть.
             </p>
+            <PriceListManager shop={shop} />
           </div>
         ) : null}
 
@@ -427,6 +428,58 @@ export function ShopSettings() {
             </p>
           </div>
         ) : null}
+      </div>
+    </div>
+  )
+}
+
+/** Бір каталогқа байланған атаулы бағалар; геометрия мен қызмет basis-і ортақ. */
+function PriceListManager({ shop }: { shop: ShopProfile }) {
+  const createPriceList = useConfigurator((s) => s.createPriceList)
+  const selectPriceList = useConfigurator((s) => s.selectPriceList)
+  const renamePriceList = useConfigurator((s) => s.renamePriceList)
+  const deletePriceList = useConfigurator((s) => s.deletePriceList)
+  const active = shop.priceLists.find((list) => list.id === shop.activePriceListId)!
+  const [nameDraft, setNameDraft] = useState(active.name)
+
+  useEffect(() => setNameDraft(active.name), [active.id, active.name])
+
+  return (
+    <div className="space-y-2">
+      <SectionTitle>{tr('Прайс-листы')}</SectionTitle>
+      <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+        Материалы, размеры и правила цеха общие для всех прайсов. В новом прайсе цены равны нулю;
+        материал, добавленный позже, в старом прайсе тоже получает нулевую цену.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+        <Select
+          value={shop.activePriceListId}
+          onChange={selectPriceList}
+          options={shop.priceLists.map((list) => ({ value: list.id, label: list.name }))}
+        />
+        <input
+          className={text}
+          value={nameDraft}
+          aria-label={tr('Название прайса')}
+          onChange={(event) => setNameDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && nameDraft.trim()) renamePriceList(active.id, nameDraft)
+          }}
+        />
+        <Button disabled={!nameDraft.trim() || nameDraft.trim() === active.name}
+          onClick={() => renamePriceList(active.id, nameDraft)}>{tr('Переименовать')}</Button>
+        <Button disabled={shop.priceLists.length <= 1}
+          onClick={() => {
+            if (window.confirm(tr('Удалить этот прайс?'))) deletePriceList(active.id)
+          }}>{tr('Удалить')}</Button>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        <Button onClick={() => createPriceList(`Прайс ${shop.priceLists.length + 1}`, 'blank')}>
+          {tr('+ Новый прайс')}
+        </Button>
+        <Button onClick={() => createPriceList(`${active.name} (копия)`, 'copy')}>
+          {tr('Копировать текущий')}
+        </Button>
       </div>
     </div>
   )

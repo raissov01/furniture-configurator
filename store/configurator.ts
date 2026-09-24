@@ -18,6 +18,8 @@ import {
   canMirror,
   catalogOf,
   cloneMaterial as cloneCatalogMaterial,
+  createPriceList as createShopPriceList,
+  deletePriceList as deleteShopPriceList,
   defaultOpenings,
   fitOpenings,
   findSet,
@@ -28,7 +30,10 @@ import {
   nextFreeOffset,
   parseProject,
   parseShopProfile,
+  renamePriceList as renameShopPriceList,
   setToProject,
+  switchPriceList as switchShopPriceList,
+  syncActivePriceList,
   templateToCabinet,
 } from '@/src/core/index'
 import type { Quality } from '@/lib/appearance'
@@ -252,6 +257,10 @@ type State = Snapshot & {
 
   setShop(shop: ShopProfile): void
   editShop(patch: Partial<ShopProfile>): void
+  createPriceList(name: string, mode: 'blank' | 'copy'): void
+  selectPriceList(id: string): void
+  renamePriceList(id: string, name: string): void
+  deletePriceList(id: string): void
   addMaterial(material: Material): void
   cloneMaterial(id: string): void
   removeMaterial(id: string): void
@@ -689,10 +698,11 @@ export const useConfigurator = create<State>((set, get) => ({
   },
 
   setShop(shop) {
-    set({ shop, catalog: catalogOf(shop) })
+    const synced = syncActivePriceList(shop)
+    set({ shop: synced, catalog: catalogOf(synced) })
     // Сақтау сәтсіз болса (жабық режим, толған қойма) — жұмыс тоқтамауы керек.
     try {
-      window.localStorage.setItem(SHOP_KEY, JSON.stringify(shop))
+      window.localStorage.setItem(SHOP_KEY, JSON.stringify(synced))
     } catch {
       // қоймаға жазылмады: профиль осы сеанста ғана тұрады
     }
@@ -700,6 +710,22 @@ export const useConfigurator = create<State>((set, get) => ({
 
   editShop(patch) {
     get().setShop({ ...get().shop, ...patch })
+  },
+
+  createPriceList(name, mode) {
+    get().setShop(createShopPriceList(get().shop, name, mode))
+  },
+
+  selectPriceList(id) {
+    get().setShop(switchShopPriceList(get().shop, id))
+  },
+
+  renamePriceList(id, name) {
+    get().setShop(renameShopPriceList(get().shop, id, name))
+  },
+
+  deletePriceList(id) {
+    get().setShop(deleteShopPriceList(get().shop, id))
   },
 
   addMaterial(material) {
