@@ -473,10 +473,28 @@ export function nestedSheetToDxf(sheet: NestedSheet, materialName: string): stri
 /** Әр параққа бір файл: аты → мазмұны. */
 export function nestingToDxfFiles(nesting: NestingResult): Map<string, string> {
   const files = new Map<string, string>()
+  const windowsName = (name: string): string => name.toLowerCase()
+  const usedNames = new Set<string>()
+  // Транслитерация екі бөлек материал id-ін бір атқа айналдыруы мүмкін
+  // ("a" және кирилл "а"); Windows-та "a" мен "A" да бір файл.
+  // Барлық бастапқы аттарды алдын ала сақтап, collision suffix кәдімгі
+  // басқа парақтың атын басып кетпеуін қадағалаймыз.
+  const ordinaryNames = new Set(nesting.byMaterial.flatMap((group) =>
+    group.sheets.map((sheet) => windowsName(`${transliterate(group.materialId)}-list-${sheet.index}.dxf`))))
   for (const group of nesting.byMaterial) {
     for (const sheet of group.sheets) {
-      const name = `${transliterate(group.materialId)}-list-${sheet.index}.dxf`
+      const ordinaryName = `${transliterate(group.materialId)}-list-${sheet.index}.dxf`
+      let name = ordinaryName
+      if (usedNames.has(windowsName(name))) {
+        const stem = ordinaryName.slice(0, -'.dxf'.length)
+        let suffix = 2
+        do {
+          name = `${stem}--${suffix}.dxf`
+          suffix += 1
+        } while (ordinaryNames.has(windowsName(name)) || usedNames.has(windowsName(name)))
+      }
       files.set(name, nestedSheetToDxf(sheet, group.materialName))
+      usedNames.add(windowsName(name))
     }
   }
   return files
