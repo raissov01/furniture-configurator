@@ -20,6 +20,26 @@
 
 **Бұтақ:** `feat/tree-core`
 
+## 2026-09-24 тексеру
+
+Task 1–5 коды мен тесттері бұрынғы `feat/tree-core` коммиттерінде болған;
+Task 6-ның `SEED_SETS` бөлігі де дайын еді. Осы күнгі тексеріс барлық
+міндетті нәтижені іске қосып растады, Task 6-ға `SEED_TEMPLATES`-тің барлық
+35 үлгісі қосылды. Төмендегі `[x]` код пен тесттің бүгін расталған күйін
+көрсетеді; ол бұрынғы автордың TDD сынағы қай уақытта қызарғаны туралы
+тарихи мәлімдеме емес. Бүгін sin таңбасы, settings таралуы, placement сүзгісі,
+hidden және v4 schema қатаңдығы `cp` арқылы қайтарылған мутациямен жеке
+тексерілді. v4-тің типтелген `root` форматы `src/core/projectV4.ts` ішінде
+бар; қолданыстағы UI әлі v3 адаптерін пайдаланады (2-фаза).
+
+Task 7-нің build қадамы әзірге белгіленбейді: Next build бұрыннан бар
+`app/api/ar/route.ts`-тегі `arDir` экспортында TS2344 қатесіне тоқтады.
+3091 портындағы dev-сервермен e2e 19/22 өтті; жоба reload-та сақталуы,
+3D drag/undo және аккаунттан жоба қалпына келуі құлады. Бұл үш UI/store жолын
+1-фаза өзгертпеді, бірақ базалық e2e салыстыруы жоқ болғандықтан себепті
+кесімді түрде белгілемейміз. Интеграцияда build түзетуі қосылған соң осы
+екі қақпаны қайта тексеру керек.
+
 ## Global Constraints
 
 Бәрі `CLAUDE.md`-ден, сөзбе-сөз:
@@ -96,7 +116,7 @@ FlatNode = { nodeId, name, panels /* локал */, hardware, pose }
 - Consumes: `Vec3`, `CabinetConfig`, `PanelEdges`, `PanelRole`, `Orientation`, `Drill`, `Cutout`, `PanelCorners`, `MillingPath` — `./types`-тен; `ConfigValidationError` — `./errors`-тен
 - Produces: `Transform`, `Pose`, `SceneNode`, `GroupNode`, `CabinetNode`, `BoardNode`, `SolidNode`, `BoardSpec`, `SolidSpec`, `IDENTITY_TRANSFORM`, `ORIGIN_POSE`, `composePose(parent: Pose, child: Transform): Pose`, `walkTree(root: GroupNode, visit: (node: SceneNode, pose: Pose) => void): void`, `findNode(root: GroupNode, id: string): SceneNode | undefined`
 
-- [ ] **Step 1: Тестті жаз (құлауы керек)**
+- [x] **Step 1: Тестті жаз (құлауы керек)**
 
 `tests/tree.test.ts`:
 
@@ -187,12 +207,12 @@ describe('findNode', () => {
 })
 ```
 
-- [ ] **Step 2: Тестті жүгіртіп, құлағанын көр**
+- [x] **Step 2: Тестті жүгіртіп, құлағанын көр**
 
 Run: `npx vitest run tests/tree.test.ts`
 Expected: FAIL — `composePose` экспортталмаған («No "composePose" export is defined»).
 
-- [ ] **Step 3: `src/core/tree.ts`-ті жаз**
+- [x] **Step 3: `src/core/tree.ts`-ті жаз**
 
 ```ts
 /**
@@ -344,7 +364,7 @@ export function findNode(root: GroupNode, id: string): SceneNode | undefined {
 }
 ```
 
-- [ ] **Step 4: `index.ts`-ке экспорт қос**
+- [x] **Step 4: `index.ts`-ке экспорт қос**
 
 `src/core/index.ts`, `export * from './geometry'` жолынан кейін:
 
@@ -352,17 +372,17 @@ export function findNode(root: GroupNode, id: string): SceneNode | undefined {
 export * from './tree'
 ```
 
-- [ ] **Step 5: Тестті жүгірт**
+- [x] **Step 5: Тестті жүгірт**
 
 Run: `npx vitest run tests/tree.test.ts`
 Expected: PASS — 9 тест.
 
-- [ ] **Step 6: Барлық тест пен типті тексер**
+- [x] **Step 6: Барлық тест пен типті тексер**
 
 Run: `npm test && npm run typecheck`
 Expected: 1092 тест өтеді, `tsc` үнсіз.
 
-- [ ] **Step 7: Коммит**
+- [x] **Step 7: Коммит**
 
 ```bash
 git add src/core/tree.ts src/core/index.ts tests/tree.test.ts
@@ -388,7 +408,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 1-ден `GroupNode`, `SceneNode`, `Pose`, `walkTree`; `generateCabinet`, `generateHardware`, `Catalog`, `SettingsOverride`, `Panel`, `HardwarePlacement`
 - Produces: `FlatNode`, `PlacedSolid`, `FlatScene`, `flattenTree(root: GroupNode, catalog: Catalog, settings?: SettingsOverride): FlatScene`, `scenePanels(scene: FlatScene): Panel[]`
 
-- [ ] **Step 1: Тестті жаз**
+- [x] **Step 1: Тестті жаз**
 
 `tests/flatten.test.ts`:
 
@@ -467,12 +487,12 @@ describe('scenePanels', () => {
 })
 ```
 
-- [ ] **Step 2: Тестті жүгіртіп, құлағанын көр**
+- [x] **Step 2: Тестті жүгіртіп, құлағанын көр**
 
 Run: `npx vitest run tests/flatten.test.ts`
 Expected: FAIL — `flattenTree` экспортталмаған.
 
-- [ ] **Step 3: `src/core/flatten.ts`-ті жаз**
+- [x] **Step 3: `src/core/flatten.ts`-ті жаз**
 
 ```ts
 /**
@@ -551,7 +571,7 @@ export function scenePanels(scene: FlatScene): Panel[] {
 }
 ```
 
-- [ ] **Step 4: `index.ts`-ке экспорт қос**
+- [x] **Step 4: `index.ts`-ке экспорт қос**
 
 `src/core/index.ts`, `export * from './tree'` жолынан кейін:
 
@@ -559,17 +579,17 @@ export function scenePanels(scene: FlatScene): Panel[] {
 export * from './flatten'
 ```
 
-- [ ] **Step 5: Тестті жүгірт**
+- [x] **Step 5: Тестті жүгірт**
 
 Run: `npx vitest run tests/flatten.test.ts`
 Expected: PASS — 6 тест.
 
-- [ ] **Step 6: Барлық тест пен типті тексер**
+- [x] **Step 6: Барлық тест пен типті тексер**
 
 Run: `npm test && npm run typecheck`
 Expected: бәрі өтеді.
 
-- [ ] **Step 7: Коммит**
+- [x] **Step 7: Коммит**
 
 ```bash
 git add src/core/flatten.ts src/core/index.ts tests/flatten.test.ts
@@ -594,7 +614,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 1-ден `BoardNode`, `BoardSpec`; `calculateCutDimensions` (`./edges`), `rotationFor` (`./geometry`), `mergeSettings` (`./constants`), `ConfigValidationError` (`./errors`)
 - Produces: `flattenTree` енді `board` түйінін де өңдейді — әр `BoardNode` өз `FlatNode`-ын береді, ішінде дәл бір `Panel`
 
-- [ ] **Step 1: Тестті жаз**
+- [x] **Step 1: Тестті жаз**
 
 `tests/flatten.test.ts` соңына қосылады:
 
@@ -664,12 +684,12 @@ describe('flattenTree — еркін тақта', () => {
 
 Тест файлының жоғарғы импортына `ConfigValidationError` қосылады.
 
-- [ ] **Step 2: Тестті жүгіртіп, құлағанын көр**
+- [x] **Step 2: Тестті жүгіртіп, құлағанын көр**
 
 Run: `npx vitest run tests/flatten.test.ts`
 Expected: FAIL — `scene.nodes` бос (`board` тармағы әлі бос), «expected length 1, received 0».
 
-- [ ] **Step 3: `flatten.ts`-ке `boardPanel` қос**
+- [x] **Step 3: `flatten.ts`-ке `boardPanel` қос**
 
 `src/core/flatten.ts` жоғарғы импорттарына:
 
@@ -754,17 +774,17 @@ function boardPanel(
         return
 ```
 
-- [ ] **Step 4: Тестті жүгірт**
+- [x] **Step 4: Тестті жүгірт**
 
 Run: `npx vitest run tests/flatten.test.ts`
 Expected: PASS — 12 тест.
 
-- [ ] **Step 5: Барлық тест пен типті тексер**
+- [x] **Step 5: Барлық тест пен типті тексер**
 
 Run: `npm test && npm run typecheck`
 Expected: бәрі өтеді.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add src/core/flatten.ts tests/flatten.test.ts
@@ -788,7 +808,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 2, Task 3-тің бәрі
 - Produces: мінез өзгереді — `hidden: true` түйін мен оның БАРЛЫҚ баласы `nodes`-қа да, `solids`-қа да түспейді. `solid` түйіні `panels`-ке ешқашан қосылмайды.
 
-- [ ] **Step 1: Тестті жаз**
+- [x] **Step 1: Тестті жаз**
 
 `tests/flatten.test.ts` соңына:
 
@@ -842,13 +862,13 @@ describe('flattenTree — hidden', () => {
 })
 ```
 
-- [ ] **Step 2: Тестті жүгіртіп, құлағанын көр**
+- [x] **Step 2: Тестті жүгіртіп, құлағанын көр**
 
 Run: `npx vitest run tests/flatten.test.ts`
 Expected: FAIL — «жасырылған корпус деталировкаға түспейді» құлайды
 (`walkTree` `hidden`-ды білмейді, `scene.nodes` бір элемент береді).
 
-- [ ] **Step 3: `flatten.ts`-те `hidden`-ды өңде**
+- [x] **Step 3: `flatten.ts`-те `hidden`-ды өңде**
 
 `walkTree` бүкіл ағашты аралайды да, `hidden` туралы ештеңе білмейді — ол
 дұрыс: аралау құралы саясат ұстамауы керек. Сондықтан сүзгі жайылтуда
@@ -900,19 +920,19 @@ import { ORIGIN_POSE, composePose } from './tree'
 import type { BoardNode, GroupNode, Pose, SceneNode, SolidSpec } from './tree'
 ```
 
-- [ ] **Step 4: Тестті жүгірт**
+- [x] **Step 4: Тестті жүгірт**
 
 Run: `npx vitest run tests/flatten.test.ts`
 Expected: PASS — 18 тест.
 
-- [ ] **Step 5: Барлық тест пен типті тексер**
+- [x] **Step 5: Барлық тест пен типті тексер**
 
 Run: `npm test && npm run typecheck`
 Expected: бәрі өтеді. ⚠ `tree.test.ts`-тегі `walkTree` тесттері әлі өтуі
 керек — `walkTree` жойылмайды, ол ағаш бойынша іздеуге (`findNode`) және
 кейінгі фазадағы UI-ға керек.
 
-- [ ] **Step 6: Коммит**
+- [x] **Step 6: Коммит**
 
 ```bash
 git add src/core/flatten.ts tests/flatten.test.ts
@@ -938,7 +958,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: `ProjectFile`, `Placement`, `Room`, `CabinetConfig` (`./types`); `placementPose` (`./room`); Task 1-ден `GroupNode`, `CabinetNode`, `Transform`
 - Produces: `treeFromProject(project: ProjectFile): GroupNode`
 
-- [ ] **Step 1: Тестті жаз**
+- [x] **Step 1: Тестті жаз**
 
 `tests/treeFromProject.test.ts`:
 
@@ -1007,12 +1027,12 @@ describe('treeFromProject', () => {
 })
 ```
 
-- [ ] **Step 2: Тестті жүгіртіп, құлағанын көр**
+- [x] **Step 2: Тестті жүгіртіп, құлағанын көр**
 
 Run: `npx vitest run tests/treeFromProject.test.ts`
 Expected: FAIL — `treeFromProject` экспортталмаған.
 
-- [ ] **Step 3: `src/core/treeFromProject.ts`-ті жаз**
+- [x] **Step 3: `src/core/treeFromProject.ts`-ті жаз**
 
 ```ts
 /**
@@ -1061,7 +1081,7 @@ export function treeFromProject(project: ProjectFile): GroupNode {
 }
 ```
 
-- [ ] **Step 4: `index.ts`-ке экспорт қос**
+- [x] **Step 4: `index.ts`-ке экспорт қос**
 
 `src/core/index.ts`, `export * from './flatten'` жолынан кейін:
 
@@ -1069,17 +1089,17 @@ export function treeFromProject(project: ProjectFile): GroupNode {
 export * from './treeFromProject'
 ```
 
-- [ ] **Step 5: Тестті жүгірт**
+- [x] **Step 5: Тестті жүгірт**
 
 Run: `npx vitest run tests/treeFromProject.test.ts`
 Expected: PASS — 5 тест.
 
-- [ ] **Step 6: Барлық тест пен типті тексер**
+- [x] **Step 6: Барлық тест пен типті тексер**
 
 Run: `npm test && npm run typecheck`
 Expected: бәрі өтеді.
 
-- [ ] **Step 7: Коммит**
+- [x] **Step 7: Коммит**
 
 ```bash
 git add src/core/treeFromProject.ts src/core/index.ts tests/treeFromProject.test.ts
@@ -1106,7 +1126,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 нәтиже береді.** Бұл дәлелденсе, 2-фазада стор ағашқа көшкенде раскрой,
 смета, присадка, DXF-тің бұзылмайтынына кепілдік бар.
 
-- [ ] **Step 1: Тестті жаз**
+- [x] **Step 1: Тестті жаз**
 
 `tests/flattenEquivalence.test.ts`:
 
@@ -1203,7 +1223,7 @@ describe('ағаш жолы = ескі жол', () => {
 })
 ```
 
-- [ ] **Step 2: Тестті жүгірт**
+- [x] **Step 2: Тестті жүгірт**
 
 Run: `npx vitest run tests/flattenEquivalence.test.ts`
 Expected: PASS. **Құласа — 1-фазада қате бар, әрі қарай жүрме.**
@@ -1216,17 +1236,17 @@ Expected: PASS. **Құласа — 1-фазада қате бар, әрі қар
   `flattenTree(root, catalog, project.settings)` екенін тексер.
 - *«түйін саны» құлады* → `treeFromProject` орны жоқ шкафты сүзбей тұр.
 
-- [ ] **Step 3: `SEED_SETS` қамтуын тексер**
+- [x] **Step 3: `SEED_SETS` қамтуын тексер**
 
 Run: `npx vitest run tests/flattenEquivalence.test.ts --reporter=verbose`
 Expected: әр жиын өз атымен көрінеді, барлығында 5 тест өтеді.
 
-- [ ] **Step 4: Барлық тест пен типті тексер**
+- [x] **Step 4: Барлық тест пен типті тексер**
 
 Run: `npm test && npm run typecheck`
 Expected: бәрі өтеді.
 
-- [ ] **Step 5: Коммит**
+- [x] **Step 5: Коммит**
 
 ```bash
 git add tests/flattenEquivalence.test.ts
@@ -1250,7 +1270,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 1–6-ның бәрі
 - Produces: код жоқ. Репода қарама-қайшылық қалмайды.
 
-- [ ] **Step 1: `CLAUDE.md` §1-дегі Non-goals блогын алмастыр**
+- [x] **Step 1: `CLAUDE.md` §1-дегі Non-goals блогын алмастыр**
 
 Қазіргі мәтін:
 
@@ -1300,7 +1320,7 @@ Expected: 21/21 өтеді.
 > ⚠ Дев-сервер қосулы тұрмаса 12 тест ЖАЛҒАН құлайды. Бұл жобаның белгілі
 > гочасы, сервер жүрмей тұрып e2e нәтижесін оқуға болмайды.
 
-- [ ] **Step 4: Коммит**
+- [x] **Step 4: Коммит**
 
 ```bash
 git add CLAUDE.md
@@ -1314,7 +1334,7 @@ Non-goals-та қалды. «Full room design» жолы алынды — бөл
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
-- [ ] **Step 5: Фазаның қорытындысын шығар**
+- [x] **Step 5: Фазаның қорытындысын шығар**
 
 Run: `git log --oneline master..feat/tree-core`
 Expected: 7 коммит (спек + 6 тапсырма).
