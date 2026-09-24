@@ -245,7 +245,7 @@ export function CutPage() {
                   import('fflate'),
                 ])
                 const entries: Record<string, Uint8Array> = {}
-                for (const [name, content] of cncFiles(panels, catalog, { projectName })) {
+                for (const [name, content] of cncFiles(panels, catalog, { projectName, outerFlipAxis: mergeSettings(shop.settings).outerFlipAxis })) {
                   entries[name] = strToU8(content)
                 }
                 download(

@@ -30,8 +30,11 @@ import type {
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { ShopDrillingSettings } from './ShopDrillingSettings'
 
-type Tab = 'profile' | 'materials' | 'bands' | 'hardware' | 'hinges' | 'rules'
+type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
+
+type Tab = 'profile' | 'materials' | 'bands' | 'hardware' | 'hinges' | 'rules' | 'drilling'
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'profile', label: tr('Цех') },
@@ -40,6 +43,7 @@ const TABS: { value: Tab; label: string }[] = [
   { value: 'hardware', label: tr('Фурнитура') },
   { value: 'hinges', label: tr('Петли') },
   { value: 'rules', label: tr('Правила цеха') },
+  { value: 'drilling', label: tr('Присадка') },
 ]
 
 /** Баға ішінде ТИЫНМЕН сақталады, экранда теңгемен көрсетіледі. */
@@ -130,7 +134,7 @@ export function ShopSettings() {
     editShop({ handles: shop.handles.filter((h) => h.id !== id) })
   }
 
-  const setRule = (key: keyof ConstructionSettings, value: number) =>
+  const setRule = (key: NumberSettingKey, value: number) =>
     editShop({
       settings: {
         ...shop.settings,
@@ -291,6 +295,8 @@ export function ShopSettings() {
           </div>
         ) : null}
 
+        {tab === 'drilling' ? <ShopDrillingSettings shop={shop} editShop={editShop} /> : null}
+
         {tab === 'rules' ? (
           <div className="space-y-3">
             <SectionTitle>{tr('Как собирает ваш цех, мм')}</SectionTitle>
@@ -312,7 +318,7 @@ export function ShopSettings() {
                 shop={shop}
                 onChange={setRule}
               />
-              <Rule label={tr('Первое отверстие полкодержателя')} k="shelfPinDatum" shop={shop} onChange={setRule} />
+
             </div>
 
             <SectionTitle>{tr('Услуги цеха')}</SectionTitle>
@@ -745,9 +751,9 @@ function Rule({
 }: {
   label: string
   hint?: string
-  k: keyof ConstructionSettings
+  k: NumberSettingKey
   shop: ShopProfile
-  onChange: (k: keyof ConstructionSettings, v: number) => void
+  onChange: (k: NumberSettingKey, v: number) => void
 }) {
   const raw = shop.settings[k] ?? DEFAULT_SETTINGS[k]
   const overridden = shop.settings[k] !== undefined

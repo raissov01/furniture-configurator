@@ -18,8 +18,14 @@
  *     файлына БӨЛМЕЙМІЗ: `cnc.ts`/`labels.ts` бір деталь = бір DXF деген
  *     келісімге сүйенеді (файл аты — панельдің идентификаторы), ол осылай
  *     сақталады.
+ *   - `OUTLINE`/`CUTOUT` — бір рет кесілетін inner кадр. `outer` операциясы
+ *     болса, `OUTLINE_OUTER_REFERENCE`/`CUTOUT_OUTER_REFERENCE` сол пішіннің
+ *     аударылған тірек көшірмесі; оны CAM cut операциясына қоспау керек.
+ *     Тек `face: 'outer'` сұралса, негізгі OUTLINE/CUTOUT та outer кадрға
+ *     аударылады. Асимметриялық bevel, corners (ARC), cutout бірге аударылады.
  */
 
+import { pointOnMachinedFace } from '../faceCoordinates'
 import type { NestedSheet, NestingResult } from '../nesting'
 import { cutoutBounds } from '../cutouts'
 import { subtractedThickness } from '../edges'
@@ -27,7 +33,11 @@ import { isWidthBevel } from '../types'
 import type { Catalog, ConstructionSettings, Drill, EdgeBand, Groove, Panel } from '../types'
 
 export const LAYER_OUTLINE = 'OUTLINE'
+/** Сыртқы бет кадры: reference, CUT операциясына жіберуге болмайды. */
+export const LAYER_OUTLINE_OUTER = 'OUTLINE_OUTER_REFERENCE'
+export const LAYER_CUTOUT_OUTER = 'CUTOUT_OUTER_REFERENCE'
 export const LAYER_GROOVE = 'GROOVE'
+export const LAYER_GROOVE_OUTER = 'GROOVE_OUTER'
 /** Фасадтың беттік өрнегі — БӨЛЕК қабат: ол контур емес, кесуге жатпайды. */
 export const LAYER_MILLING = 'MILLING'
 export const LAYER_TEXT = 'TEXT'
@@ -121,6 +131,12 @@ function arc(
   ]
 }
 
+/** Айна доғаның бағытын терістейді, сондықтан start/end орын ауыстырады. */
+function reflectedArcAngle(angle: number, axis: 'length' | 'width'): number {
+  const raw = axis === 'length' ? -angle : 180 - angle
+  return ((raw % 360) + 360) % 360
+}
+
 function text(layer: string, x: number, y: number, height: number, value: string): Group[] {
   return [g(0, 'TEXT'), g(8, layer), g(10, x), g(20, y), g(30, 0), g(40, height), g(1, value)]
 }
@@ -135,6 +151,7 @@ export type DxfOptions = {
    * мүлде түспей тұрды. Нақты бір бетті керек қылатын шақырушы (мыс. екі
    * бөлек операциямен жұмыс істейтін станок) `'inner'`/`'outer'` беріп,
    * ескі мінезді сақтай алады.
+   * `'outer'` жеке файлында OUTLINE/CUTOUT сыртқы бет кадрында болады.
    */
   face?: 'inner' | 'outer' | 'both'
   /** Мәтін биіктігі, мм */
@@ -173,6 +190,21 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
   // фрезерлеудің мағынасы жоқ. `outer` сұралмаса (мыс. тек `face: 'inner'`),
   // шығармаймыз — сол жағдайда бұл файл inner бет үшін ғана.
   const milling = faces.includes('outer') ? panel.milling : []
+  // Негізгі OUTLINE/CUTOUT — нақты бір рет кесілетін inner кадр. OUTER
+  // операциясына бөлек айна reference қабаты керек; әйтпесе трапецияда
+  // тесіктер бір кадрда, контур басқа кадрда қалып кетеді.
+  const outerOperation = faces.includes('outer') && (
+    drills.some((d) => d.face === 'outer') ||
+    grooves.some((groove) => groove.face === 'outer') || milling.length > 0
+  )
+  const outerOnly = requestedFace === 'outer'
+  const outerFrame = outerOnly || (requestedFace === 'both' && outerOperation)
+  const flipAxis = options.settings?.outerFlipAxis ?? 'length'
+  const framePoint = (x: number, y: number, outer: boolean): [number, number] => {
+    if (!outer) return [x, y]
+    const point = pointOnMachinedFace(panel, { face: 'outer', x, y }, flipAxis)
+    return [point.x, point.y]
+  }
 
   // §O6 аудит: присадка cutOrigin арқылы готовый→рез аударуды ТЕК W1/L1
   // кромкасынан шегереді (симметриялы емес — drilling.ts:455-463 қара).
@@ -194,16 +226,26 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
 
   const layers = [
     LAYER_OUTLINE,
+    ...(outerFrame && !outerOnly ? [LAYER_OUTLINE_OUTER] : []),
     ...[...new Set(drills.map((d) => drillLayerName(d.diameter, d.depth, isEdgeFace(d.face) ? undefined : d.face)))]
       .sort(),
-    ...(grooves.length > 0 ? [LAYER_GROOVE] : []),
+    ...(grooves.some((groove) => groove.face === 'inner') ? [LAYER_GROOVE] : []),
+    ...(grooves.some((groove) => groove.face === 'outer') ? [LAYER_GROOVE_OUTER] : []),
     ...(milling.length > 0 ? [LAYER_MILLING] : []),
     ...(panel.cutouts.length > 0 ? [LAYER_CUTOUT] : []),
+    ...(panel.cutouts.length > 0 && outerFrame && !outerOnly ? [LAYER_CUTOUT_OUTER] : []),
     LAYER_TEXT,
   ]
 
   const entities: Group[] = [g(0, 'SECTION'), g(2, 'ENTITIES')]
 
+  // Негізгі кадр нақты кесуге арналған. Екінші кадр — outer операцияны
+  // орналастыруға арналған reference, CAM-да кесу қабатына қосылмайды.
+  const outlineFrames: { layer: string; outer: boolean }[] = outerOnly
+    ? [{ layer: LAYER_OUTLINE, outer: true }]
+    : [{ layer: LAYER_OUTLINE, outer: false },
+      ...(outerFrame ? [{ layer: LAYER_OUTLINE_OUTER, outer: true }] : [])]
+  for (const { layer: outlineLayer, outer } of outlineFrames) {
   // Қиғаш деталь: контур ТРАПЕЦИЯ болып шығады. Өлшемі (L × Wd) —
   // ЗАГОТОВКАНЫҢ габариті, ал станок осы контур бойынша кеседі.
   if (panel.bevel && isWidthBevel(panel.bevel)) {
@@ -215,14 +257,15 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
     const points: [number, number][] = panel.bevel.alignWidth === 'end'
       ? [[0, Wd - w0], [L, Wd - w1], [L, Wd], [0, Wd]]
       : [[0, 0], [L, 0], [L, w1], [0, w0]]
-    entities.push(...lwpolyline(LAYER_OUTLINE, points, true))
+    entities.push(...lwpolyline(outlineLayer, points.map(([x, y]) => framePoint(x, y, outer)), true))
   } else if (panel.bevel) {
     // Кромка рез өлшемін қысқартады — қиғаштың екі ұшы да сонша қысқарады.
     const shrink = panel.finishedLength - L
     const startX = Math.max(0, panel.bevel.lengthAtStart - shrink)
     const endX = Math.max(0, panel.bevel.lengthAtEnd - shrink)
     entities.push(
-      ...lwpolyline(LAYER_OUTLINE, [[0, 0], [startX, 0], [endX, Wd], [0, Wd]], true),
+      ...lwpolyline(outlineLayer, [[0, 0], [startX, 0], [endX, Wd], [0, Wd]]
+        .map(([x, y]) => framePoint(x!, y!, outer)), true),
     )
   } else if (panel.corners && Object.values(panel.corners).some((r) => r > 0)) {
     /*
@@ -247,7 +290,8 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
     ]
     for (const [from, to] of segments) {
       if (from![0] !== to![0] || from![1] !== to![1]) {
-        entities.push(...lwpolyline(LAYER_OUTLINE, [from!, to!], false))
+        entities.push(...lwpolyline(outlineLayer,
+          [from!, to!].map(([x, y]) => framePoint(x, y, outer)), false))
       }
     }
     const arcs: [number, number, number, number, number][] = [
@@ -257,23 +301,34 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
       [r.tl, Wd - r.tl, r.tl, 90, 180],
     ]
     for (const [cx, cy, radius, start, end] of arcs) {
-      if (radius > 0) entities.push(...arc(LAYER_OUTLINE, cx, cy, radius, start, end))
+      if (radius > 0) {
+        const [ax, ay] = framePoint(cx, cy, outer)
+        const startAngle = outer ? reflectedArcAngle(end, flipAxis) : start
+        const endAngle = outer ? reflectedArcAngle(start, flipAxis) : end
+        entities.push(...arc(outlineLayer, ax, ay, radius, startAngle, endAngle))
+      }
     }
   } else {
-    entities.push(...lwpolyline(LAYER_OUTLINE, [[0, 0], [L, 0], [L, Wd], [0, Wd]], true))
+    entities.push(...lwpolyline(outlineLayer, [[0, 0], [L, 0], [L, Wd], [0, Wd]]
+      .map(([x, y]) => framePoint(x!, y!, outer)), true))
+  }
   }
 
   for (const d of drills) {
     if (isEdgeFace(d.face)) continue // торц тесіктері бөлек операция, контурда салынбайды
-    entities.push(...circle(drillLayerName(d.diameter, d.depth, d.face), d.x, d.y, d.diameter / 2))
+    const point = pointOnMachinedFace(panel, d, options.settings?.outerFlipAxis ?? 'length')
+    entities.push(...circle(drillLayerName(d.diameter, d.depth, d.face), point.x, point.y, d.diameter / 2))
   }
 
   for (const gr of grooves) {
-    entities.push(...lwpolyline(LAYER_GROOVE, [[gr.x1, gr.y1], [gr.x2, gr.y2]], false))
+    const grooveLayer = gr.face === 'outer' ? LAYER_GROOVE_OUTER : LAYER_GROOVE
+    const p1 = pointOnMachinedFace(panel, { face: gr.face, x: gr.x1, y: gr.y1 }, options.settings?.outerFlipAxis ?? 'length')
+    const p2 = pointOnMachinedFace(panel, { face: gr.face, x: gr.x2, y: gr.y2 }, options.settings?.outerFlipAxis ?? 'length')
+    entities.push(...lwpolyline(grooveLayer, [[p1.x, p1.y], [p2.x, p2.y]], false))
     // Ені мен тереңдігі сызықтың жанында мәтінмен жүреді: DXF-те паздың
     // параметрін тасымалдайтын стандарт өріс жоқ, ал цехқа ол керек.
     entities.push(
-      ...text(LAYER_GROOVE, gr.x1 + 10, gr.y1 + 3, textHeight * 0.6,
+      ...text(grooveLayer, p1.x + 10, p1.y + 3, textHeight * 0.6,
         `PAZ ${gr.width}x${gr.depth}`),
     )
   }
@@ -291,18 +346,28 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
     const bounds = cutoutBounds(cutout, panel.finishedLength, panel.finishedWidth)
     const x = bounds.x - cutOrigin.x
     const y = bounds.y - cutOrigin.y
-    if (cutout.shape === 'circle') {
-      entities.push(...circle(LAYER_CUTOUT, x + bounds.width / 2, y + bounds.height / 2, cutout.diameter / 2))
-    } else {
-      entities.push(...lwpolyline(LAYER_CUTOUT, [
-        [x, y], [x + bounds.width, y], [x + bounds.width, y + bounds.height], [x, y + bounds.height],
-      ], true))
+    const cutoutFrames: { layer: string; outer: boolean }[] = outerOnly
+      ? [{ layer: LAYER_CUTOUT, outer: true }]
+      : [{ layer: LAYER_CUTOUT, outer: false },
+        ...(outerFrame ? [{ layer: LAYER_CUTOUT_OUTER, outer: true }] : [])]
+    for (const { layer, outer } of cutoutFrames) {
+      if (cutout.shape === 'circle') {
+        const [cx, cy] = framePoint(x + bounds.width / 2, y + bounds.height / 2, outer)
+        entities.push(...circle(layer, cx, cy, cutout.diameter / 2))
+      } else {
+        entities.push(...lwpolyline(layer, [
+          [x, y], [x + bounds.width, y], [x + bounds.width, y + bounds.height], [x, y + bounds.height],
+        ].map(([px, py]) => framePoint(px!, py!, outer)), true))
+      }
     }
   }
 
   for (const path of milling) {
     entities.push(
-      ...lwpolyline(LAYER_MILLING, path.points.map((pt) => [pt.x, pt.y] as [number, number]), path.closed),
+      ...lwpolyline(LAYER_MILLING, path.points.map((pt) => {
+        const point = pointOnMachinedFace(panel, { face: 'outer', x: pt.x, y: pt.y }, options.settings?.outerFlipAxis ?? 'length')
+        return [point.x, point.y] as [number, number]
+      }), path.closed),
     )
   }
 

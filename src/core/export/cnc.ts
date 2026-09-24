@@ -20,6 +20,7 @@
  * алар еді, сондықтан `index.csv`-де әр детальге «ойма/паз бар ма» деген
  * баған тұр да, README оны қайдан алуды айтады.
  */
+import { pointOnMachinedFace } from '../faceCoordinates'
 
 import { transliterate } from './dxf'
 import type { Catalog, Drill, Panel } from '../types'
@@ -112,6 +113,8 @@ export type CncOptions = {
   projectName: string
   /** Тапсырыс нөмірі. Берілмесе — жобаның аты. */
   orderId?: string
+  /** Сыртқы бетті станокқа қарату үшін айналдыру осі. */
+  outerFlipAxis?: 'length' | 'width'
 }
 
 /**
@@ -133,7 +136,9 @@ export function cncPanelCsv(panel: Panel, catalog: Catalog, options: CncOptions)
   const holes = [...panel.drilling].sort((a, b) =>
     FACE_ORDER.indexOf(a.face) - FACE_ORDER.indexOf(b.face) || a.x - b.x || a.y - b.y)
 
-  const rows = holes.map((d) => line([
+  const rows = holes.map((d) => {
+    const point = pointOnMachinedFace(panel, d, options.outerFlipAxis ?? 'length')
+    return line([
     options.orderId ?? options.projectName,
     panel.id,
     panel.label,
@@ -142,11 +147,12 @@ export function cncPanelCsv(panel: Panel, catalog: Catalog, options: CncOptions)
     panel.cutLength,
     panel.cutWidth,
     DRILL_FACE_RU[d.face],
-    d.x, d.y,
+    point.x, point.y,
     d.diameter, d.depth,
     isThrough(d, material.thickness) ? 'да' : 'нет',
     DRILL_PURPOSE_RU[d.purpose],
-  ]))
+    ])
+  })
 
   return BOM + [line(header), ...rows].join('\r\n') + '\r\n'
 }
@@ -203,11 +209,12 @@ export function cncFiles(panels: Panel[], catalog: Catalog, options: CncOptions)
   panels.forEach((panel, i) => {
     files.set(cncFileName(panel, i), cncPanelCsv(panel, catalog, options))
   })
-  files.set('README.txt', README)
+  files.set('README.txt', cncReadme(options.outerFlipAxis ?? 'length'))
   return files
 }
 
-const README = [
+function cncReadme(axis: 'length' | 'width'): string {
+  return [
   'Присадка для ЧПУ — по одной детали на файл',
   '',
   'index.csv     — какой файл какой детали, сколько отверстий, нужен ли переворот.',
@@ -219,6 +226,9 @@ const README = [
   '',
   'Координаты — на РЕЗАНОЙ детали (без кромки), от левого нижнего угла',
   'указанной стороны. Станок видит именно такую деталь.',
+  axis === 'length'
+    ? 'Наружная сторона: переверните деталь вокруг оси ДЛИНЫ (X); Y отражён.'
+    : 'Наружная сторона: переверните деталь вокруг оси ШИРИНЫ (Y); X отражён.',
   '',
   'Столбец «Сквозное» = да — отверстие проходит деталь насквозь: кладите',
   'подкладку, иначе выход рвёт пласть.',
@@ -231,3 +241,4 @@ const README = [
   'CRLF. Точка с запятой выбрана намеренно: дробные размеры пишутся через',
   'точку, и запятая-разделитель спорила бы с ними в Excel.',
 ].join('\r\n') + '\r\n'
+}

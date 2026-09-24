@@ -136,7 +136,7 @@ export function generateHardware(
     const legDepth = carcassDepthAt(config, settings)
     const plate: LegPlate = config.base.legPlate ?? 'round'
     const step = config.base.legStep ?? LEG_STEP
-    for (const centre of legCentres(config.width, legDepth, legPairsFor(config.width, step))) {
+    for (const centre of legCentres(config.width, legDepth, legPairsFor(config.width, step), settings.legCentreFromFront)) {
       out.push({
         kind: 'leg',
         priced: true,
