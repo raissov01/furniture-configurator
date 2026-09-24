@@ -388,6 +388,14 @@ function legacyEdit(s: State, cabinets: CabinetConfig[], placements = s.placemen
   return { root, ...cabinetsFromTree(root, room, s.layers) }
 }
 
+/**
+ * Жобаны алмастыратын генератор (жиынтық, ас үй, жиһаз) id-лері тұрақты:
+ * `kitchen-a-1` қайта генерацияда да сол id. Оларды «жылжыған» деп белгілемесек,
+ * reconcile ескі transform-ды қалдырады да, жаңа ені бар модуль ескі орында тұрады.
+ */
+const placedIds = (placements: Placement[]): ReadonlySet<string> =>
+  new Set(placements.map((placement) => placement.cabinetId))
+
 /** Project's physical geometry wins; current shop provides prices for matching IDs. */
 function projectCatalog(shop: ShopProfile, materials?: Material[], edgeBands?: EdgeBand[]): Catalog {
   const base = catalogOf(shop)
@@ -657,7 +665,7 @@ export const useConfigurator = create<State>((set, get) => ({
       ...legacyEdit(s, cabinets, placements, {
         width: Math.max(s.room.width, preset.room.width), depth: Math.max(s.room.depth, preset.room.depth),
         height: Math.max(s.room.height, preset.room.height),
-      }),
+      }, placedIds(placements)),
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
@@ -679,7 +687,7 @@ export const useConfigurator = create<State>((set, get) => ({
     if (cabinets.length === 0) return
     set({
       room: withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) }),
-      ...legacyEdit(s, cabinets, placements, room),
+      ...legacyEdit(s, cabinets, placements, room, placedIds(placements)),
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
@@ -699,7 +707,7 @@ export const useConfigurator = create<State>((set, get) => ({
     if (cabinets.length === 0) return
     set({
       room: withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) }),
-      ...legacyEdit(s, cabinets, placements, room),
+      ...legacyEdit(s, cabinets, placements, room, placedIds(placements)),
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
