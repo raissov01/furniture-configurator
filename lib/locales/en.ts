@@ -388,8 +388,8 @@ export const en: Record<string, string> = {
   'Свободный текст понимает лучше, но нужен ключ и сеть':
     'Understands free text better, but needs a key and a connection',
   'Базис': 'Bazis',
-  'Список деталей и присадки для Базиса: CSV в Windows-1251 плюс DXF деталей':
-    'Part list and drilling for Bazis: CSV in Windows-1251 plus part DXFs',
+  'Для Базиса: список деталей для Раскроя (CSV, XLSX), скрипт для Мебельщика — детали и присадка как крепёж, DXF деталей':
+    'For Bazis: parts list for Raskroy (CSV, XLSX), a Mebelshchik script with parts and drilling as fasteners, part DXFs',
   'Базис читает Windows-1251, в ней нет казахских букв':
     'Bazis reads Windows-1251, which has no Kazakh letters',
   'Переименуйте детали латиницей или по-русски.': 'Rename the parts in Latin or in Russian.',

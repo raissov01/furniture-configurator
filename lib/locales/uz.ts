@@ -392,8 +392,8 @@ export const uz: Record<string, string> = {
   'Свободный текст понимает лучше, но нужен ключ и сеть':
     'Erkin matnni yaxshiroq tushunadi, lekin kalit va tarmoq kerak',
   'Базис': 'Bazis',
-  'Список деталей и присадки для Базиса: CSV в Windows-1251 плюс DXF деталей':
-    'Bazis uchun detallar va prisadka ro\'yxati: Windows-1251 dagi CSV va detal DXF\'lari',
+  'Для Базиса: список деталей для Раскроя (CSV, XLSX), скрипт для Мебельщика — детали и присадка как крепёж, DXF деталей':
+    "Bazis uchun: Raskroy uchun detallar ro'yxati (CSV, XLSX), Mebelshik uchun skript — detallar va prisadka mahkamlagich sifatida, detal DXF'lari",
   'Базис читает Windows-1251, в ней нет казахских букв':
     'Bazis Windows-1251 ni o\'qiydi, unda qozoq harflari yo\'q',
   'Переименуйте детали латиницей или по-русски.': 'Detallarni lotin yoki rus tilida qayta nomlang.',

@@ -19,7 +19,10 @@
  */
 
 import { groupPanels } from '../cutList'
-import type { Catalog, Drill, EdgeSpec, Panel } from '../types'
+import type { Catalog, Drill, EdgeSpec, Panel, SettingsOverride } from '../types'
+import { basisScriptBytes } from './basisScript'
+import type { BasisScriptScene } from './basisScript'
+import { simpleTableXlsx } from './xlsx'
 
 /**
  * Windows-1251 кодтауы.
@@ -88,6 +91,74 @@ export type BasisExportOptions = {
   projectName: string
   /** Тапсырыс нөмірі — Базисте жоба солай аталады. Берілмесе, жоба аты. */
   orderId?: string
+  /**
+   * Берілсе, бумаға Базис-Мебельщиктің СКРИПТІ қосылады (`basisScript.ts`):
+   * панельдер ӘЛЕМДЕГІ орнымен + присадка крепеж ретінде. Сахна керек, себебі
+   * скриптке панельдің позасы (`flattenTree`) қажет, ал деталь тізіміне — жоқ.
+   */
+  script?: { scene: BasisScriptScene; settings?: SettingsOverride | undefined } | undefined
+}
+
+/** Бумадағы скрипттің аты: ASCII — Базистің «Скрипты» мәзірінде солай көрінеді. */
+export const BASIS_SCRIPT_FILE = 'bazis-import.js'
+
+/**
+ * Детальдер тізімі.
+ *
+ * Өлшем — ГОТОВЫЙ (жоғарыдағы ережені қара). Кромка миллиметрмен беріледі:
+ * Базисте кромка материал ретінде тағайындалады, ал қалыңдығы оның қайсысы
+ * екенін бірмәнді көрсетеді (0.4 / 1 / 2 мм).
+ */
+const PART_HEADER = [
+  '№', 'Заказ', 'Наименование', 'Материал', 'Толщина',
+  'Длина готовая', 'Ширина готовая', 'Количество',
+  'Кромка L1', 'Кромка L2', 'Кромка W1', 'Кромка W2',
+  'Текстура', 'Примечание',
+]
+
+type PartRow = {
+  no: number
+  order: string
+  name: string
+  material: string
+  thickness: number
+  length: number
+  width: number
+  qty: number
+  /** Кромка қалыңдығы, мм; жоқ болса 0 */
+  bands: [number, number, number, number]
+  grain: string
+  note: string
+}
+
+/** Детальдер тізімінің жолдары — CSV мен XLSX бір көзден алады. */
+function basisPartRows(panels: Panel[], catalog: Catalog, options: BasisExportOptions): PartRow[] {
+  const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
+  const materials = new Map(catalog.materials.map((m) => [m.id, m]))
+  const band = (e: EdgeSpec): number => {
+    if (!e) return 0
+    const found = bands.get(e.bandId)
+    if (!found) throw new Error(`Кромка табылмады: ${e.bandId}`)
+    return found.thickness
+  }
+  return groupPanels(panels, catalog).map((group, i) => {
+    const panel = panels.find((p) => p.id === group.panelIds[0])!
+    const material = materials.get(panel.materialId)!
+    return {
+      no: i + 1,
+      order: options.orderId ?? options.projectName,
+      name: group.row.name,
+      material: material.name,
+      thickness: material.thickness,
+      // ⚠ ГОТОВЫЙ өлшем. Рез өлшемін берсек, Базис кромканы ЕКІНШІ РЕТ шегереді.
+      length: group.row.finishedLength,
+      width: group.row.finishedWidth,
+      qty: group.row.qty,
+      bands: [band(panel.edges.L1), band(panel.edges.L2), band(panel.edges.W1), band(panel.edges.W2)],
+      grain: material.hasGrain ? (panel.grainAlongLength ? 'вдоль' : 'поперёк') : 'нет',
+      note: group.row.note,
+    }
+  })
 }
 
 /**
@@ -102,43 +173,24 @@ export function basisPartsCsv(
   catalog: Catalog,
   options: BasisExportOptions,
 ): string {
-  const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
-  const materials = new Map(catalog.materials.map((m) => [m.id, m]))
-  const band = (e: EdgeSpec): string => {
-    if (!e) return '0'
-    const found = bands.get(e.bandId)
-    if (!found) throw new Error(`Кромка табылмады: ${e.bandId}`)
-    return found.thickness.toFixed(1)
-  }
+  const rows = basisPartRows(panels, catalog, options).map((r) => line([
+    r.no, r.order, r.name, r.material, r.thickness, r.length, r.width, r.qty,
+    ...r.bands.map((t) => (t === 0 ? '0' : t.toFixed(1))),
+    r.grain, r.note,
+  ]))
+  return [line(PART_HEADER), ...rows].join('\r\n')
+}
 
-  const header = [
-    '№', 'Заказ', 'Наименование', 'Материал', 'Толщина',
-    'Длина готовая', 'Ширина готовая', 'Количество',
-    'Кромка L1', 'Кромка L2', 'Кромка W1', 'Кромка W2',
-    'Текстура', 'Примечание',
-  ]
-
-  const rows = groupPanels(panels, catalog).map((group, i) => {
-    const panel = panels.find((p) => p.id === group.panelIds[0])!
-    const material = materials.get(panel.materialId)!
-    return line([
-      i + 1,
-      options.orderId ?? options.projectName,
-      group.row.name,
-      material.name,
-      material.thickness,
-      // ⚠ ГОТОВЫЙ өлшем. Рез өлшемін берсек, Базис кромканы ЕКІНШІ РЕТ шегереді.
-      group.row.finishedLength,
-      group.row.finishedWidth,
-      group.row.qty,
-      band(panel.edges.L1), band(panel.edges.L2),
-      band(panel.edges.W1), band(panel.edges.W2),
-      material.hasGrain ? (panel.grainAlongLength ? 'вдоль' : 'поперёк') : 'нет',
-      group.row.note,
-    ])
-  })
-
-  return [line(header), ...rows].join('\r\n')
+/**
+ * Сол тізім XLSX-те — Базис-Раскройдың «Импорт из MS Excel» жолы үшін
+ * (Раскрой тек xls/xlsx оқиды; импортта «Длину и ширину считывать как
+ * готовую» опциясы қосылады). XLSX UTF-8: қазақ әріптері де бұзылмайды.
+ */
+export function basisPartsXlsx(panels: Panel[], catalog: Catalog, options: BasisExportOptions): Uint8Array {
+  const rows = basisPartRows(panels, catalog, options).map((r) => [
+    r.no, r.order, r.name, r.material, r.thickness, r.length, r.width, r.qty, ...r.bands, r.grain, r.note,
+  ])
+  return simpleTableXlsx('Детали', PART_HEADER, rows)
 }
 
 const DRILL_PURPOSE_RU: Record<Drill['purpose'], string> = {
@@ -186,35 +238,67 @@ export function basisDrillingCsv(panels: Panel[], options: BasisExportOptions): 
 }
 
 /**
- * Базиске арналған буманың құрамы. Файлдардың бәрі CP1251-де, жол соңы CRLF —
- * Windows бағдарламасы дәл солай күтеді.
+ * Базиске арналған буманың құрамы.
  *
- * DXF-тер мұнда ҚОСЫЛМАЙДЫ: оларды шақырушы жағы қосады (`cabinetToDxfFiles`),
- * себебі ядро zip жасамайды.
+ *   detali.csv / detali.xlsx — Базис-Раскройға детальдер тізімі (ГОТОВЫЙ өлшем);
+ *   bazis-import.js          — Базис-Мебельщикке скрипт: панель + присадка
+ *                              (`options.script` берілсе);
+ *   README.txt               — түсіндірме.
+ *
+ * ⚠ `prisadka.csv` ЕНДІ БУМАДА ЖОҚ: Базистің ЕШБІР модулі присадканы CSV-ден
+ * оқымайды (`.codex-runs/basis-drilling-import-route.md`). Ол «Базиске» деп
+ * тұрса, цех оны импорттауға әуре болатын. Присадка Базиске — скрипт арқылы;
+ * станокқа — «ЧПУ по деталям» экспорты арқылы. `basisDrillingCsv` функциясы
+ * адам оқитын тізім ретінде қалды.
+ *
+ * CSV мен README — CP1251, CRLF (Windows бағдарламасы солай күтеді). Скрипт —
+ * UTF-8 + BOM (ресми мысал солай). DXF-тер мұнда ҚОСЫЛМАЙДЫ: оларды шақырушы
+ * жағы қосады (`cabinetToDxfFiles`), себебі ядро zip жасамайды.
  */
 export function basisFiles(
   panels: Panel[],
   catalog: Catalog,
   options: BasisExportOptions,
 ): Map<string, Uint8Array> {
-  return new Map([
+  const files = new Map<string, Uint8Array>([
     ['detali.csv', toCp1251(basisPartsCsv(panels, catalog, options))],
-    ['prisadka.csv', toCp1251(basisDrillingCsv(panels, options))],
+    ['detali.xlsx', basisPartsXlsx(panels, catalog, options)],
     ['README.txt', toCp1251(README)],
   ])
+  if (options.script) {
+    files.set(BASIS_SCRIPT_FILE, basisScriptBytes(options.script.scene, catalog, options.script.settings, {
+      projectName: options.projectName,
+      orderId: options.orderId,
+    }))
+  }
+  return files
 }
 
 const README = [
   'Экспорт для Базиса',
   '',
-  'detali.csv    — список деталей: ГОТОВЫЙ размер + кромка по сторонам.',
-  'prisadka.csv  — отверстия: координаты на РЕЗАНОЙ детали.',
+  'detali.csv, detali.xlsx - список деталей для Базис-Раскроя: ГОТОВЫЙ размер',
+  '                          + кромка по сторонам. Раскрой читает Excel (xlsx);',
+  '                          при импорте включите "Длину и ширину считывать',
+  '                          как готовую".',
+  'bazis-import.js         - скрипт для Базис-Мебельщика: строит детали на своих',
+  '                          местах и ставит присадку как крепёж Базиса.',
+  '                          Положите в папку Scripts Базиса и запустите.',
+  '                          При первом запуске выберите крепёж Базиса для',
+  '                          каждого нашего типа (выбор сохранится). В конце',
+  '                          скрипт пишет файл сверки ...-bazis-audit.json -',
+  '                          отправьте его нам.',
   '',
-  'ВАЖНО. Размеры деталей — готовые, с учётом кромки. Базис вычитает кромку',
+  'ПРИСАДКА. Отдельного файла присадки для Базиса нет: ни Базис-Мебельщик,',
+  'ни Базис-Раскрой не импортируют отверстия из CSV. Присадка попадает в',
+  'Базис только через скрипт. Для станка ЧПУ используйте экспорт',
+  '"ЧПУ по деталям".',
+  '',
+  'ВАЖНО. Размеры деталей - готовые, с учётом кромки. Базис вычитает кромку',
   'сам, когда вы назначаете кромочный материал. Не включайте вычитание',
   'дважды: иначе детали выйдут меньше на толщину кромки.',
   '',
-  'Кодировка файлов — Windows-1251, разделитель — точка с запятой,',
-  'конец строки — CRLF. При импорте в Базис-Раскрой сопоставьте колонки',
+  'Кодировка CSV - Windows-1251, разделитель - точка с запятой,',
+  'конец строки - CRLF. При импорте в Базис-Раскрой сопоставьте колонки',
   'один раз, дальше шаблон импорта сохранится.',
 ].join('\r\n')

@@ -6,6 +6,7 @@
  * цех детальді 2–4 мм кіші кесіп қояды — ол сызбадан да, экраннан да
  * көрінбейді, тек құрастыру кезінде білінеді.
  */
+import { strFromU8, unzipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import {
   SEED_CATALOG,
@@ -125,22 +126,42 @@ describe('Windows-1251 кодтауы', () => {
 describe('бума', () => {
   const files = basisFiles(panels, SEED_CATALOG, options)
 
-  it('үш файл: детальдер, присадка, түсіндірме', () => {
-    expect([...files.keys()].sort()).toEqual(['README.txt', 'detali.csv', 'prisadka.csv'])
+  it('детальдер (CSV + XLSX) мен түсіндірме; prisadka.csv ЖОҚ — Базис присадканы CSV-ден оқымайды', () => {
+    expect([...files.keys()].sort()).toEqual(['README.txt', 'detali.csv', 'detali.xlsx'])
   })
 
-  it('бәрі CP1251 байттарында', () => {
-    for (const [name, bytes] of files) {
+  it('CSV мен README — CP1251 байттарында', () => {
+    for (const name of ['detali.csv', 'README.txt']) {
+      const bytes = files.get(name)!
       expect(bytes.length, name).toBeGreaterThan(0)
       // UTF-8 болса кириллица екі байтқа шығар еді; CP1251-де әр таңба бір байт.
       expect(bytes.every((b) => b <= 0xff), name).toBe(true)
     }
   })
 
-  it('түсіндірмеде екі рет шегеру туралы ЕСКЕРТУ бар', () => {
+  it('түсіндірмеде екі рет шегеру туралы ЕСКЕРТУ мен присадканың жолы бар', () => {
     const readme = Buffer.from(files.get('README.txt')!).toString('latin1')
     // CP1251-ді latin1 деп оқысақ да, ASCII сөздер орнында қалады.
     expect(readme).toContain('detali.csv')
-    expect(readme).toContain('prisadka.csv')
+    expect(readme).toContain('bazis-import.js')
+    expect(readme).not.toContain('prisadka.csv')
+  })
+
+  it('detali.xlsx: сол жолдар, ГОТОВЫЙ өлшем САН болып', () => {
+    const zip = unzipSync(files.get('detali.xlsx')!)
+    const sheet = strFromU8(zip['xl/worksheets/sheet1.xml']!)
+    expect(sheet).toContain('Длина готовая')
+    const front = formatCutList(panels, SEED_CATALOG).find((r) => r.name === 'Фасад')!
+    expect(sheet).toContain(`<v>${front.finishedLength}</v>`)
+    expect(sheet).not.toContain(`<v>${front.cutLength}</v>`)
+    expect((sheet.match(/<row /g) ?? []).length).toBe(rows.length)
+  })
+
+  it('сахна берілсе — Базис скрипті де бумада (UTF-8 + BOM)', () => {
+    const scene = { nodes: [{ nodeId: 'c', name: 'Шкаф', panels, pose: { position: { x: 0, y: 0, z: 0 }, rotationY: 0 } }] }
+    const withScript = basisFiles(panels, SEED_CATALOG, { ...options, script: { scene } })
+    const js = withScript.get('bazis-import.js')!
+    expect([...js.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    expect(strFromU8(js.slice(3))).toContain('var DATA = ')
   })
 })

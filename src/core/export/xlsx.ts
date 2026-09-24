@@ -132,6 +132,20 @@ function safeSheetName(name: string, used: Set<string>): string {
 }
 
 /**
+ * Бір парақты қарапайым кесте: бірінші жол — қалың тақырып. Сандар САН болып
+ * жазылады (Базис-Раскройдың Excel импорты бағанды санмен оқиды).
+ */
+export function simpleTableXlsx(sheetName: string, header: string[], rows: (string | number)[][]): Uint8Array {
+  return buildWorkbook([{
+    name: safeSheetName(sheetName, new Set()),
+    rows: [
+      header.map((value) => ({ value, style: STYLE_HEADER })),
+      ...rows.map((r) => r.map((value) => ({ value }))),
+    ],
+  }])
+}
+
+/**
  * Деталировка: ӘР МАТЕРИАЛҒА БІР ПАРАҚ, соңында қорытынды жол.
  * Тақырыпта ГОТОВЫЙ (клиент) мен РЕЗ (цех) бағандары бөлек түспен.
  */
