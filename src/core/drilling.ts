@@ -26,6 +26,7 @@ import {
   SHELF_PIN_GROUP, SHELF_PIN_PITCH,
 } from './constants'
 import { handleBorePoints } from './fittings'
+import { ConfigValidationError } from './errors'
 import type { MillingPath } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import { subtractedThickness } from './edges'
@@ -166,6 +167,20 @@ function edgeXShiftFor(edgePanel: Panel, screwAxis: Axis, ctx: Ctx): number {
   )
 }
 
+function requirePressFitDepth(depth: number | null): number {
+  if (depth === null) throw new ConfigValidationError(
+    'settings.hingePressFitDepth', 'нақты INSERTA тереңдігін енгізіңіз', '> 0 мм',
+  )
+  return depth
+}
+
+function requireSleeveDepth(depth: number | null): number {
+  if (depth === null) throw new ConfigValidationError(
+    'settings.minifixSleeveDepth', 'нақты Ø8 футорканың тереңдігін енгізіңіз', '> 0 мм',
+  )
+  return depth
+}
+
 // ── Конфирмат буыны ──────────────────────────────────────────────────────────
 
 /**
@@ -176,6 +191,11 @@ function edgeXShiftFor(edgePanel: Panel, screwAxis: Axis, ctx: Ctx): number {
  * `constants.ts`/код бұрыннан дұрыс).
  */
 export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): void {
+  if (ctx.settings.confirmatCountersinkDiameter > 0) {
+    throw new ConfigValidationError('settings.confirmatCountersinkDiameter',
+      'конус тереңдігі мен бұрышы берілмеген; автоматты зенковка әзірге қолдау таппайды',
+      '0 мм немесе қолмен операция')
+  }
   const faceT = ctx.thickness(facePanel)
   const edgeT = ctx.thickness(edgePanel)
 
@@ -227,7 +247,7 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
     const fy = facePanel.orientation.width === jointAxis
       ? localY(facePanel, alongWorld)
       : localY(facePanel, jointLineWorld)
-    pushFace(facePanel, 'outer', fx, fy, CONFIRMAT_FACE_DIAMETER, faceT, 'confirmat', ctx)
+    pushFace(facePanel, 'outer', fx, fy, ctx.settings.confirmatFaceDiameter, faceT, 'confirmat', ctx)
 
     // Edge панель: Ø5×35 торцке, қалыңдықтың дәл ортасына. Edge панельдің
     // ӨЗ локал координатасы `alongWorld − edgeStart` — `offset` буынның
@@ -239,7 +259,7 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
       x: roundCoord(alongWorld - edgeStart - edgeXShift),
       y: roundCoord(edgeT / 2),
       diameter: CONFIRMAT_EDGE_DIAMETER,
-      depth: CONFIRMAT_EDGE_DEPTH,
+      depth: ctx.settings.confirmatEdgeDepth,
       purpose: 'confirmat',
     })
   }
@@ -279,8 +299,8 @@ export function shelfPinHoles(
     verticalPanel, verticalPanel.orientation.width, verticalT,
   )
   const columns = [
-    panelFrontWorldZ + SHELF_PIN_FRONT_OFFSET,
-    panelBackWorldZ - SHELF_PIN_BACK_OFFSET,
+    panelFrontWorldZ + ctx.settings.shelfPinFrontOffset,
+    panelBackWorldZ - ctx.settings.shelfPinBackOffset,
   ]
 
   for (let k = -half; k <= half; k += 1) {
@@ -330,6 +350,19 @@ export function hingeHoles(
 
   for (const x of positions) {
     pushFace(front, 'inner', x, cupY, cupDiameter, cupDepth, 'hinge', ctx, system?.hardwareId)
+    if (ctx.settings.hingeCupMount !== 'cup-only') {
+      const { hingeFixingSpacing: spacing, hingeFixingOffset: offset } = ctx.settings
+      const diameter = ctx.settings.hingeCupMount === 'screw'
+        ? ctx.settings.hingeScrewPilotDiameter : ctx.settings.hingePressFitDiameter
+      const depth = ctx.settings.hingeCupMount === 'screw'
+        ? ctx.settings.hingeScrewPilotDepth : requirePressFitDepth(ctx.settings.hingePressFitDepth)
+      // Blum сызбасындағы 45 мм — фасад биіктігі бойымен, 9.5 мм — чашка
+      // ортасынан бүйірге. Координата 0.1 мм дәлдікпен сақталады.
+      const fixingY = hingeSide === 'left' ? cupY + offset : cupY - offset
+      for (const dx of [-spacing / 2, spacing / 2]) {
+        pushFace(front, 'inner', x + dx, fixingY, diameter, depth, 'hinge', ctx, system?.hardwareId)
+      }
+    }
   }
 
   if (!carcassPanel) return
@@ -442,7 +475,13 @@ export function runnerHoles(
    * Қораптан ұзын тесік бұрғыланбайды: қысқа ящикте соңғы нүктелер қорапта
    * жоқ, ал жоқ жерге бұрғылау — панельдің сыртына шығу.
    */
-  const offsets = system ? system.holeOffsets : RUNNER_TANDEM_OFFSETS
+  const runnerKind = system?.id ?? 'tandem'
+  const offsets = runnerKind === 'roller' ? ctx.settings.runnerRollerHoleOffsets
+    : runnerKind === 'ball' ? ctx.settings.runnerBallHoleOffsets
+      : ctx.settings.runnerTandemHoleOffsets
+  const verticalOffset = runnerKind === 'roller' ? ctx.settings.runnerRollerVerticalOffset
+    : runnerKind === 'ball' ? ctx.settings.runnerBallVerticalOffset
+      : ctx.settings.runnerTandemVerticalOffset
   const columns = offsets
     .filter((offset) => offset <= boxDepth)
     .map((offset) => boxFrontWorldZ + offset)
@@ -464,7 +503,7 @@ export function runnerHoles(
   for (const worldZ of points) {
     pushFace(
       verticalPanel, 'inner',
-      localX(verticalPanel, boxBottomWorldY),
+      localX(verticalPanel, boxBottomWorldY + verticalOffset),
       localY(verticalPanel, worldZ),
       // Артикул тесікте жүреді: смета осыдан ҚАЙ направляющая екенін біледі
       // (ілгек пен тұтқада да дәл солай).
@@ -536,7 +575,7 @@ export function drawerFacadeScrews(wall: Panel, facade: Panel, ctx: Ctx): void {
 
   // Тар ящикте 80 мм сыймайды: сонда шегініс ЕНнің төрттен біріне дейін
   // қысылады — тесік әрқашан қабырғаның ішінде қалуы керек.
-  const offset = Math.min(DRAWER_FACADE_SCREW_END_OFFSET, Math.floor(wallWidth / 4))
+  const offset = Math.min(ctx.settings.drawerFacadeScrewEndOffset, Math.floor(wallWidth / 4))
   const columns = [offset, wallWidth - offset]
   const rows = DRAWER_FACADE_SCREW_ROW_FRACTIONS.map((f) => Math.round(wallHeight * f))
 
@@ -598,6 +637,7 @@ export function legCentres(
   width: number,
   depth: number,
   legPairs: number,
+  frontOffset: number = LEG_CENTRE_FROM_FRONT,
 ): { x: number; z: number }[] {
   const first = LEG_CENTRE_FROM_SIDE
   const last = width - LEG_CENTRE_FROM_SIDE
@@ -606,7 +646,7 @@ export function legCentres(
     ? [(first + last) / 2]
     : Array.from({ length: legPairs }, (_, i) => first + ((last - first) * i) / (legPairs - 1))
 
-  const zs = [LEG_CENTRE_FROM_FRONT, depth - LEG_CENTRE_FROM_FRONT]
+  const zs = [frontOffset, depth - frontOffset]
   if (zs[1]! <= zs[0]!) return []
 
   return xs.flatMap((x) => zs.map((z) => ({ x, z })))
@@ -631,7 +671,7 @@ export function legScrewHoles(
   const width = bottom.finishedWidth
   const half = holeSpacing / 2
 
-  const centres = legCentres(length + offset.x * 2, width + offset.z * 2, legPairs)
+  const centres = legCentres(length + offset.x * 2, width + offset.z * 2, legPairs, ctx.settings.legCentreFromFront)
 
   for (const centre of centres) {
     const cx = centre.x - offset.x
@@ -686,9 +726,15 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
   if (!jointAxis) throw new Error(`Буын осі табылмады: ${wall.id} ↔ ${side.id}`)
 
   const [jointStart, jointEnd] = worldRange(wall, jointAxis, wallT)
-  if (jointEnd - jointStart <= MINIFIX_PAIR_SPACING) return
+  const jointLength = jointEnd - jointStart
+  const pairSpacing = ctx.settings.minifixPairSpacing
+  const endOffset = ctx.settings.minifixPairEndOffset
+  if (ctx.settings.minifixPairPlacement === 'center' && jointLength <= pairSpacing) return
+  if (ctx.settings.minifixPairPlacement === 'ends' && jointLength <= 2 * endOffset) return
   const jointCentre = (jointStart + jointEnd) / 2
-  const rowsWorld = [jointCentre - MINIFIX_PAIR_SPACING / 2, jointCentre + MINIFIX_PAIR_SPACING / 2]
+  const rowsWorld = ctx.settings.minifixPairPlacement === 'center'
+    ? [jointCentre - pairSpacing / 2, jointCentre + pairSpacing / 2]
+    : [jointStart + endOffset, jointEnd - endOffset]
 
   // wall-дың қай ұшы осы бүйірге тіреледі: жақынырағы (screwAxis бойымен).
   const [wallMin, wallMax] = worldRange(wall, screwAxis, wallT)
@@ -736,7 +782,10 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
       ? localX(side, rowWorld) : localX(side, thicknessLineWorld)
     const sy = side.orientation.width === jointAxis
       ? localY(side, rowWorld) : localY(side, thicknessLineWorld)
-    pushFace(side, 'inner', sx, sy, MINIFIX_SCREW_DIAMETER, MINIFIX_SCREW_DEPTH, 'minifix', ctx)
+    pushFace(side, 'inner', sx, sy,
+      ctx.settings.minifixBoltMount === 'sleeve-8' ? 8 : MINIFIX_SCREW_DIAMETER,
+      ctx.settings.minifixBoltMount === 'sleeve-8' ? requireSleeveDepth(ctx.settings.minifixSleeveDepth) : MINIFIX_SCREW_DEPTH,
+      'minifix', ctx)
   }
 }
 
@@ -758,7 +807,7 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
   const depth = bottom.finishedWidth
 
   // Тереңдік бойынша екі стяжка: жиектен MINIFIX_FROM_END шегініп.
-  const positions = spreadAlongJoint(depth, 2, MINIFIX_FROM_END)
+  const positions = spreadAlongJoint(depth, 2, ctx.settings.minifixPairEndOffset)
 
   for (const side of sides) {
     const sideT = ctx.thickness(side)
@@ -792,7 +841,9 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
       pushFace(
         side, 'inner',
         localX(side, worldY), localY(side, worldZ),
-        MINIFIX_SCREW_DIAMETER, MINIFIX_SCREW_DEPTH, 'minifix', ctx,
+        ctx.settings.minifixBoltMount === 'sleeve-8' ? 8 : MINIFIX_SCREW_DIAMETER,
+        ctx.settings.minifixBoltMount === 'sleeve-8' ? requireSleeveDepth(ctx.settings.minifixSleeveDepth) : MINIFIX_SCREW_DEPTH,
+        'minifix', ctx,
       )
     }
   }

@@ -280,7 +280,7 @@ describe('габарит шектері', () => {
     delete (old as { limits?: unknown }).limits
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(7)
+    expect(migrated.schemaVersion).toBe(8)
     expect(migrated.limits).toEqual(defaultLimits())
     expect(migrated.markupPercent).toBe(25)
   })

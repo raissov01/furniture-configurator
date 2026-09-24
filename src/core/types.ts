@@ -443,6 +443,43 @@ export type ConstructionSettings = {
    */
   confirmatSpanForThird: number | null
   shelfPinDatum: number
+  /** System 32: сөре бағандарының алдыңғы/артқы жиектен қашықтығы, мм. */
+  shelfPinFrontOffset: number
+  shelfPinBackOffset: number
+  /** Конфирматтың нақты артикула тәуелді бет/торц бұрғылауы. */
+  confirmatFaceDiameter: number
+  confirmatEdgeDepth: number
+  confirmatScrewLength: number
+  /** 0 — зенковка жоқ; бас ұясының диаметрі, мм. */
+  confirmatCountersinkDiameter: number
+  /** Минификс штифтінің корпусқа бекітілу түрі. */
+  minifixBoltMount: 'screw-5' | 'sleeve-8'
+  /** Ø8 футорканың нақты артикулындағы pilot тереңдігі; null болса таңдауға болмайды. */
+  minifixSleeveDepth: number | null
+  /** Cup-only — бұрынғы шығсы; бұранда/Inserta тек нақты артикулға сай. */
+  hingeCupMount: 'cup-only' | 'screw' | 'press-fit'
+  hingeFixingSpacing: number
+  hingeFixingOffset: number
+  hingeScrewPilotDiameter: number
+  hingeScrewPilotDepth: number
+  hingePressFitDiameter: number
+  hingePressFitDepth: number | null
+  /** Направляющая бұрандасы: артикул бойынша ұзындықтағы және тік орындары. */
+  runnerRollerHoleOffsets: number[]
+  runnerBallHoleOffsets: number[]
+  runnerTandemHoleOffsets: number[]
+  runnerRollerVerticalOffset: number
+  runnerBallVerticalOffset: number
+  runnerTandemVerticalOffset: number
+  /** Цехтағы аяқ пен ящик фасады бекітпесінің шегіністері. */
+  legCentreFromFront: number
+  drawerFacadeScrewEndOffset: number
+  /** Екі минификс буын ортасында не екі ұшынан бірдей шегініспен. */
+  minifixPairPlacement: 'center' | 'ends'
+  minifixPairSpacing: number
+  minifixPairEndOffset: number
+  /** Оператор сыртқы бетті ұзындық не ен өсінің бойымен аударады. */
+  outerFlipAxis: 'length' | 'width'
 
   // ── Купе (әр профиль жүйесінде басқаша). ЦЕХТЫҢ ТАҢДАУЫ. ────────────────
   /** Көрші есіктердің бір-бірін жабуы (профильдің қабаттасуы) */
