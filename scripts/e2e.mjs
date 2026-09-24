@@ -13,6 +13,7 @@
  */
 
 import { spawn } from 'node:child_process'
+import { makeHelpers } from './e2eHelpers.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:3000'
 const PORT = 9333
@@ -129,133 +130,12 @@ function check(ok, message) {
 
 // ── Көмекшілер ───────────────────────────────────────────────────────────────
 
-function makeHelpers({ send }) {
-  const evaluate = async (expression) => {
-    const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
-    return r?.result?.value
-  }
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
-
-  const goto = async (path, settleMs = 9000) => {
-    await send('Page.navigate', { url: `${BASE}${path}` })
-    await wait(settleMs)
-  }
-
-  const text = () => evaluate('document.body.innerText')
-
-  const clickText = async (label, settleMs = 900) => {
-    const done = await evaluate(`(() => {
-      const b = [...document.querySelectorAll('button, a')]
-        .find((x) => x.textContent.trim() === ${JSON.stringify(label)})
-      if (!b) return false
-      b.click()
-      return true
-    })()`)
-    await wait(settleMs)
-    return done
-  }
-
-  const clickContains = async (label, settleMs = 900) => {
-    const done = await evaluate(`(() => {
-      const b = [...document.querySelectorAll('button, a')]
-        .find((x) => x.textContent.includes(${JSON.stringify(label)}))
-      if (!b) return false
-      b.click()
-      return true
-    })()`)
-    await wait(settleMs)
-    return done
-  }
-
-  /**
-   * Ашылмалы мәзірдегі элемент. 09-06-дан бері тақта топталған: «Смета»,
-   * «Шаблоны» т.б. енді «Проект ▾», «Создать ▾» мәзірлерінің ішінде, әрі
-   * мәзір жабық тұрғанда элементтері DOM-да ЖОҚ. Мәзір батырмасының мәтіні
-   * «Проект ▾» болғандықтан `clickText('Проект')` оны таппайды.
-   */
-  const menu = async (menuLabel, itemLabel, settleMs = 900) => {
-    const opened = await evaluate(`(() => {
-      const b = [...document.querySelectorAll('button')]
-        .find((x) => x.textContent.trim() === ${JSON.stringify(`${menuLabel} ▾`)})
-      if (!b) return false
-      b.click()
-      return true
-    })()`)
-    if (!opened) return false
-    await wait(300)
-    return clickText(itemLabel, settleMs)
-  }
-
-  /** Деталировка кестесіндегі жолдар. */
-  const cutListRows = () => evaluate(`(() => {
-    const table = [...document.querySelectorAll('table')]
-      .find((t) => t.textContent.includes('Наименование'))
-    if (!table) return []
-    return [...table.querySelectorAll('tbody tr')].map((r) =>
-      [...r.children].map((c) => c.textContent.trim()))
-  })()`)
-
-  const setNumberByLabel = async (label, value, settleMs = 700) => {
-    const done = await evaluate(`(() => {
-      const l = [...document.querySelectorAll('label')]
-        .find((x) => x.textContent.includes(${JSON.stringify(label)}))
-      if (!l) return false
-      const i = l.querySelector('input[type=number]')
-      if (!i) return false
-      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
-      setter.call(i, ${JSON.stringify(String(value))})
-      i.dispatchEvent(new Event('input', { bubbles: true }))
-      return true
-    })()`)
-    await wait(settleMs)
-    return done
-  }
-
-  /**
-   * Ашық қалған терезені жабу. Бір тест құласа, келесілері оның
-   * терезесіне тіреліп қалмауы керек — тестер бір-бірінен тәуелсіз.
-   */
-  const closeModals = async () => {
-    for (let i = 0; i < 3; i += 1) {
-      const closed = await evaluate(`(() => {
-        const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Закрыть')
-        if (!b) return false
-        b.click()
-        return true
-      })()`)
-      if (!closed) return
-      await wait(500)
-    }
-  }
-
-  /**
-   * Шарт орындалғанша күту.
-   *
-   * Тіркелген `wait(5000)` жарамайды: бұлтқа сақтау жергілікті машинада
-   * 300 мс, ал алыс серверде секундтарға созылады — сол себепті аккаунт
-   * тесті кейде жалған құлайтын. Енді күту НӘТИЖЕ бойынша.
-   */
-  const until = async (expression, timeoutMs = 20000, stepMs = 400) => {
-    const deadline = Date.now() + timeoutMs
-    for (;;) {
-      if (await evaluate(expression)) return true
-      if (Date.now() > deadline) return false
-      await wait(stepMs)
-    }
-  }
-
-  return {
-    evaluate, wait, until, goto, text, clickText, clickContains, menu, cutListRows,
-    setNumberByLabel, closeModals,
-  }
-}
-
 // ── Тестер ───────────────────────────────────────────────────────────────────
 
 async function run() {
   await ensureChrome()
   const session = await connect()
-  const h = makeHelpers(session)
+  const h = makeHelpers(session, BASE)
   const { mkdirSync, writeFileSync } = await import('node:fs')
   snapshot = async (n) => {
     const shot = await session.send('Page.captureScreenshot', { format: 'png' })
@@ -637,7 +517,7 @@ async function run() {
   })
 
   await test('Жоба бетті жаңартқанда жоғалмайды', async () => {
-    await h.setNumberByLabel('Ширина (W)', 1234, 300)
+    check(await h.setNumberByLabel('Ширина (W)', 1234, 300), 'ені өзгертілді')
     // Автосақтау кейінге қалдырылады, ал ауыр сахнада (планка, фартук, AO)
     // тіркелген 1,2 с жетпей қалатын — күту НӘТИЖЕ бойынша.
     const before = await h.until(`(() => {
@@ -647,11 +527,9 @@ async function run() {
     check(before, 'жоба автосақталды')
 
     await h.goto('/configurator', 11000)
-    const width = await h.evaluate(`(() => {
-      const l = [...document.querySelectorAll('label')].find((x) => x.textContent.includes('Ширина (W)'))
-      return l ? l.querySelector('input').value : null
-    })()`)
-    check(width === '1234', `жаңартудан кейін ені сақталды (${width})`)
+    const restored = await h.waitForNumber('Ширина (W)', '1234')
+    const width = await h.numberValue('Ширина (W)')
+    check(restored && width === '1234', `жаңартудан кейін ені сақталды (${width})`)
   })
 
   await test('3D: таңдалған модульді сүйреп жылжыту, бір undo', async () => {
@@ -660,10 +538,7 @@ async function run() {
       const l = [...document.querySelectorAll('label')].find((x) => x.textContent.includes('Смещение'))
       return l?.querySelector('input[type=number]')?.value ?? null
     })()`)
-    const box = JSON.parse(await h.evaluate(`(() => {
-      const r = document.querySelector('#scene-3d canvas').getBoundingClientRect()
-      return JSON.stringify({ x: r.x + r.width / 2, y: r.y + r.height / 2 })
-    })()`))
+    const box = await h.sceneCenter()
     const mouse = (type, x, y, buttons) => session.send('Input.dispatchMouseEvent', {
       type, x, y, button: 'left', buttons, clickCount: type === 'mouseMoved' ? 0 : 1,
     })
@@ -714,6 +589,12 @@ async function run() {
   await test('Аккаунт: тіркелу, бұлтқа сақтау, қайта кіру', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
+    const projectName = await h.evaluate(`JSON.parse(localStorage.getItem('furniture-configurator:project')).name`)
+    const cloudProjects = () => h.evaluate(`(async () => {
+      const res = await fetch('/api/projects')
+      if (!res.ok) throw new Error('GET /api/projects: ' + res.status)
+      return (await res.json()).projects
+    })()`)
     check(await h.clickText('Аккаунт', 1200), 'аккаунт терезесі ашылды')
     check(await h.clickText('Регистрация', 700), 'тіркелу табы')
 
@@ -756,9 +637,13 @@ async function run() {
     )
     check(await h.clickText('Сохранить текущий', 800), 'жоба сақталды')
     check(
-      await h.until(`!document.body.innerText.includes('Пока пусто')`),
+      await h.waitForCloudProject(projectName),
       'жоба тізімде пайда болды',
     )
+
+    const savedProjects = await cloudProjects()
+    const savedId = savedProjects.find((p) => p.name === projectName)?.id
+    check(savedProjects.length === 1 && typeof savedId === 'string', 'серверде нақты бір жоба сақталған')
 
     check(await h.clickText('Выйти', 300), 'шығу')
     // Шығу — сервер сұранысы, содан кейін ғана терезе «Вход/Регистрация»
@@ -774,9 +659,12 @@ async function run() {
     check(await h.clickText('Войти', 800), 'қайта кірді')
     check(await h.until(`document.body.innerText.includes('Цех E2E')`), 'аккаунт қалпына келді')
     check(
-      await h.until(`!document.body.innerText.includes('Пока пусто')`),
+      await h.waitForCloudProject(projectName),
       'сақталған жоба орнында',
     )
+    const reopenedProjects = await cloudProjects()
+    check(typeof savedId === 'string' && reopenedProjects.some((p) => p.id === savedId && p.name === projectName),
+      'қайта кіргенде сервердегі жоба ID-і сақталды')
     await h.clickText('Закрыть', 700)
   })
 
