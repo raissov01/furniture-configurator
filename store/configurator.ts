@@ -647,6 +647,11 @@ export const useConfigurator = create<State>((set, get) => ({
     const template = findTemplate(id)
     if (!template) return
     const s = get()
+    if (!s.cabinets.some((cabinet) => cabinet.id === s.activeId)) {
+      get().appendCabinet({ ...templateToCabinet(template, s.catalog), id: `cabinet-${crypto.randomUUID()}` })
+      set({ templateId: id, galleryOpen: false })
+      return
+    }
     const next = { ...templateToCabinet(template, s.catalog), id: s.activeId }
     set({
       ...legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c))),
@@ -733,6 +738,11 @@ export const useConfigurator = create<State>((set, get) => ({
   /** Дайын конфигті жүктеу — чат-боттың варианты осы жолмен түседі. */
   loadCabinet(cabinet) {
     const s = get()
+    if (!s.cabinets.some((item) => item.id === s.activeId)) {
+      get().appendCabinet({ ...cabinet, id: `cabinet-${crypto.randomUUID()}` })
+      set({ aiOpen: false })
+      return
+    }
     const next = { ...cabinet, id: s.activeId }
     set({
       ...legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c))),
@@ -1158,8 +1168,10 @@ export const useConfigurator = create<State>((set, get) => ({
       const placement = s.placements.find((p) => p.cabinetId === c.id)
       return placement ? [{ cabinet: c, placement }] : []
     })
-    const id = `cabinet-${Date.now().toString(36)}`
-    const cabinet = { ...activeCabinet(s), id }
+    const id = `cabinet-${crypto.randomUUID()}`
+    const source = s.cabinets.find((item) => item.id === s.activeId)
+      ?? templateToCabinet(findTemplate(defaultTemplateId)!, s.catalog)
+    const cabinet = { ...source, id }
     set({
       ...legacyEdit(s, [...s.cabinets, cabinet], [
         ...s.placements,

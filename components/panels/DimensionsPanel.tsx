@@ -17,14 +17,20 @@
  */
 import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
-import { activeCabinet, useConfigurator } from '@/store/configurator'
+import { useConfigurator } from '@/store/configurator'
 import { dimensionRows } from './dimensionsInfo'
 
 export function DimensionsPanel() {
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
-  const cabinet = useConfigurator(activeCabinet)
+  const cabinet = useConfigurator((s) => s.cabinets.find((entry) => entry.id === s.activeId))
   const cabinetsCount = useConfigurator((s) => s.cabinets.length)
+
+  if (!cabinet) {
+    return <div data-panel="dimensions" className="text-[11px] text-neutral-500">
+      {tr('Выберите корпус в структуре проекта')}
+    </div>
+  }
 
   const rows = dimensionRows(cabinet)
 

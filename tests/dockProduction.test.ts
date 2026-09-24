@@ -6,6 +6,7 @@ import { useConfigurator } from '../store/configurator'
 import { PricePanel } from '../components/panels/PricePanel'
 import { InfoPanel } from '../components/panels/InfoPanel'
 import { FindPanel } from '../components/panels/FindPanel'
+import { DimensionsPanel } from '../components/panels/DimensionsPanel'
 import { PVC2, referenceProject } from './fixtures'
 
 // Read the loaded fixture during SSR; all store actions and domain code are real.
@@ -38,6 +39,26 @@ const render = (component: typeof PricePanel | typeof InfoPanel | typeof FindPan
   renderToStaticMarkup(createElement(component))
 
 describe('dock panels use the canonical manufacturing tree', () => {
+  it('renders an empty project dimension panel without inventing a cabinet', () => {
+    const file = parseProjectV4(referenceProject)
+    file.root.children = []
+    useConfigurator.getState().loadProject(file)
+    const html = renderToStaticMarkup(createElement(DimensionsPanel))
+    expect(html).toContain('Выберите корпус в структуре проекта')
+    expect(html).not.toContain('2000')
+  })
+
+  it('does not show another cabinet dimensions when a board is active', () => {
+    loadBoard()
+    const file = useConfigurator.getState().exportProject()
+    file.root.children.push(parseProjectV4(referenceProject).root.children[0]!)
+    useConfigurator.getState().loadProject(file)
+    useConfigurator.getState().setActive('board')
+    const html = renderToStaticMarkup(createElement(DimensionsPanel))
+    expect(html).toContain('Выберите корпус в структуре проекта')
+    expect(html).not.toContain('2000')
+  })
+
   it('includes free boards in the quote and selected part information', () => {
     loadBoard()
     expect(render(PricePanel)).toContain('Листов всего')
