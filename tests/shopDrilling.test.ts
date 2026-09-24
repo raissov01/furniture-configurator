@@ -414,12 +414,57 @@ describe('shop-drill мутацияларын ұстайтын тексерул�
   })
 
   it('sleeve-8 болса бірде-бір минификс штифті Ø5 болып қалмайды', () => {
+    // Кең беттің екеуі де: оң бүйірдің штифт тесігі outer-де (faceToward).
     const drills = (settings: object) => panelsFor('kitchen-base-drawers-600', settings)
-      .flatMap((p) => p.drilling).filter((d) => d.purpose === 'minifix' && d.face === 'inner')
+      .flatMap((p) => p.drilling).filter((d) => d.purpose === 'minifix' && (d.face === 'inner' || d.face === 'outer'))
     const screws = drills({}).filter((d) => d.diameter === 5)
     const sleeves = drills({ minifixBoltMount: 'sleeve-8', minifixSleeveDepth: 12 })
     expect(screws.length).toBeGreaterThan(0)
     expect(sleeves.filter((d) => d.diameter === 5)).toHaveLength(0)
     expect(sleeves.filter((d) => d.diameter === 8)).toHaveLength(screws.length)
+  })
+})
+
+// Ревью 2: follow-up §7 — әлі ұсталмайтын төрт мутация.
+describe('shop-drill мутациялары, 2-топ', () => {
+  const sideLeft = () => panelsFor('wardrobe-penal-600').find((p) => p.id === 'side-left')!
+
+  it('DXF outer пазының екі ұшы да аудару өсімен айналады', async () => {
+    const { panelToDxf } = await import('../src/core/export/dxf')
+    const panel = sideLeft()
+    const groove = { face: 'outer' as const, x1: 30, y1: 20, x2: 300, y2: 60, width: 3, depth: 4 }
+    const dxf = (axis: 'length' | 'width') => panelToDxf({ ...panel, drilling: [], grooves: [groove] },
+      { settings: { ...DEFAULT_SETTINGS, outerFlipAxis: axis } })
+    expect(dxf('length')).toContain(`8\nGROOVE_OUTER\n90\n2.0\n70\n0.0\n10\n30.0\n20\n${panel.cutWidth - 20}.0\n10\n300.0\n20\n${panel.cutWidth - 60}.0`)
+    expect(dxf('width')).toContain(`8\nGROOVE_OUTER\n90\n2.0\n70\n0.0\n10\n${panel.cutLength - 30}.0\n20\n20.0\n10\n${panel.cutLength - 300}.0\n20\n60.0`)
+  })
+
+  it('ен өсімен аударғанда ARC бұрыштары 180° − α болып айналады', async () => {
+    const { panelToDxf } = await import('../src/core/export/dxf')
+    const panel = sideLeft()
+    const custom = { ...panel,
+      corners: { bottomLeft: 10, bottomRight: 0, topRight: 0, topLeft: 0 },
+      drilling: [{ face: 'outer' as const, x: 123, y: 47, diameter: 5, depth: 8, purpose: 'handle' as const }],
+    }
+    const dxf = panelToDxf(custom, { settings: { ...DEFAULT_SETTINGS, outerFlipAxis: 'width' } })
+    // bl доғасы 180…270 → айнада (L − 10, 10) центрлі 270…360(0).
+    expect(dxf).toContain(`0\nARC\n8\nOUTLINE_OUTER_REFERENCE\n10\n${panel.cutLength - 10}.0\n20\n10.0\n30\n0.0\n40\n10.0\n50\n270.0\n51\n0.0`)
+  })
+
+  it('press-fit бекіткішінің Ø-і hingePressFitDiameter-ден алынады', () => {
+    const holes = panelsFor('wardrobe-penal-600', { hingeCupMount: 'press-fit', hingePressFitDepth: 12, hingePressFitDiameter: 10 })
+      .filter((p) => p.role === 'front')
+      .flatMap((p) => p.drilling).filter((d) => d.purpose === 'hinge' && d.depth === 12)
+    expect(holes.length).toBeGreaterThan(0)
+    expect(new Set(holes.map((d) => d.diameter))).toEqual(new Set([10]))
+  })
+
+  it('CNC README таңдалған өсті және айналатын координатаны дұрыс атайды', async () => {
+    const { cncFiles } = await import('../src/core/export/cnc')
+    const panels = panelsFor('wardrobe-penal-600')
+    const readme = (axis: 'length' | 'width') => cncFiles(panels, catalog, { projectName: 'test', outerFlipAxis: axis }).get('README.txt')!
+    expect(readme('length')).toContain('вокруг оси ДЛИНЫ (X); Y отражён')
+    expect(readme('width')).toContain('вокруг оси ШИРИНЫ (Y); X отражён')
+    expect(cncFiles(panels, catalog, { projectName: 'test' }).get('README.txt')).toContain('оси ДЛИНЫ (X)')
   })
 })
