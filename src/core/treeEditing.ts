@@ -95,6 +95,7 @@ export function setTreeNodeFlag(root: GroupNode, id: string, flag: 'hidden' | 'l
     let cursor: SceneNode | undefined = parentOf(root, id)
     while (cursor) { assertChainNodeEditable(root, cursor, layers); cursor = parentOf(root, cursor.id) }
   } else assertTreeNodeEditable(root, id, layers)
+  if (Boolean(findNode(root, id)?.[flag]) === value) return root
   const parent = parentOf(root, id)!
   return mapGroup(root, parent.id, (group) => ({ ...group, children: group.children.map((node) =>
     node.id === id ? { ...node, [flag]: value } : node) }))

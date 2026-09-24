@@ -11,7 +11,7 @@ import {
   MaterialSchema, PriceOverridesSchema, ProjectInfoSchema, ProjectLayersSchema,
   RoomSchema, parseProjectWithLayers,
 } from './schema'
-import { isNodeHiddenByLayer } from './layers'
+import { createDefaultLayer, isNodeHiddenByLayer } from './layers'
 import { IDENTITY_TRANSFORM } from './tree'
 import { treeFromProject } from './treeFromProject'
 import type { BoardSpec, GroupNode, SceneNode } from './tree'
@@ -144,7 +144,7 @@ export function migrateV3ToV4(project: ProjectFile & { layers?: Layer[] }): Proj
     transform: IDENTITY_TRANSFORM, config: cabinet,
   })
   const { cabinets: _cabinets, placements: _placements, schemaVersion: _version, ...rest } = project
-  return { ...rest, schemaVersion: 4, root }
+  return { ...rest, layers: rest.layers?.length ? rest.layers : [createDefaultLayer()], schemaVersion: 4, root }
 }
 
 /** v1–v3 оқығанда бұрынғы миграция тізбегі қолданылады; v4 тура тексеріледі. */

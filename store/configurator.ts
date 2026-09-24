@@ -483,6 +483,7 @@ function projectSettingsAfterShopEdit(
 }
 
 function treeEdit(s: State, root: GroupNode, layers = s.layers) {
+  if (root === s.root && layers === s.layers) return {}
   return { root, layers, ...cabinetsFromTree(root, s.room, layers),
     past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null }
 }
@@ -1141,11 +1142,12 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   reparent(id, parentId) {
     const s = get()
-    set(treeEdit(s, reparentNode(s.root, id, parentId, s.layers)))
+    const next = reparentNode(s.root, id, parentId, s.layers)
+    if (next !== s.root) set(treeEdit(s, next))
   },
   createLayer(name) {
     const s = get()
-    set(treeEdit(s, s.root, createTreeLayer(s.layers, `layer-${Date.now().toString(36)}`, name)))
+    set(treeEdit(s, s.root, createTreeLayer(s.layers, `layer-${crypto.randomUUID()}`, name)))
   },
   renameLayer(id, name) {
     const s = get()
@@ -1228,7 +1230,7 @@ export const useConfigurator = create<State>((set, get) => ({
       const placement = s.placements.find((p) => p.cabinetId === c.id)
       return placement ? [{ cabinet: c, placement }] : []
     })
-    const newId = `cabinet-${Date.now().toString(36)}`
+    const newId = `cabinet-${crypto.randomUUID()}`
     set({
       ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: `${source.name} (копия)` }], [
         ...s.placements,
@@ -1254,7 +1256,7 @@ export const useConfigurator = create<State>((set, get) => ({
       const placement = s.placements.find((p) => p.cabinetId === c.id)
       return placement ? [{ cabinet: c, placement }] : []
     })
-    const newId = `cabinet-${Date.now().toString(36)}`
+    const newId = `cabinet-${crypto.randomUUID()}`
     set({
       ...legacyEdit(s, [...s.cabinets, mirrorCabinetConfig(source, newId)], [
         ...s.placements,
@@ -1324,7 +1326,7 @@ export const useConfigurator = create<State>((set, get) => ({
       ...next,
       ...cabinetsFromTree(next.root, next.room, next.layers),
       catalog: projectCatalog(s.shop, next.projectMaterials, next.projectEdgeBands),
-      past: [...s.past, snapshot(s)],
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: s.future.slice(1),
       lastEditKey: null,
     })
