@@ -1597,8 +1597,11 @@ export function generateCabinet(
     // көтерілген). Сондықтан осында да +baseHeight — shelfPinHoles-тегі
     // `t + baseHeight` үлгісімен бірдей (§1339: "shelfPinHoles(left, shelf,
     // t + baseHeight, ctx)").
-    runnerHoles(left, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
-    runnerHoles(right, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, ctx, drawerSystem)
+    // Ящик секцияның ортасында: сол/оң шектің арасы (перегородкада тесік
+    // көрші секцияның бетіне емес, осы секцияның бетіне түседі).
+    const sectionCentreX = (left.position.x + ctx.thickness(left) + right.position.x) / 2
+    runnerHoles(left, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, sectionCentreX, ctx, drawerSystem)
+    runnerHoles(right, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, sectionCentreX, ctx, drawerSystem)
   }
 
   // Ілгектер: шеткі фасадтар секцияның тік панеліне ілінеді.

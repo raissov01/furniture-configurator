@@ -113,6 +113,25 @@ function requireCutFaceCoordinate(
 }
 
 /**
+ * Тесік `panel`-дің ҚАЙ кең бетіне түседі — тесік қызмет ететін көлемнің
+ * (секция, сөре, ящик қорабы) қай жақта тұрғанына қарай.
+ *
+ * `targetWorld` — сол көлемнің `panel.orientation.thickness` осіндегі әлем
+ * координатасы (мыс. сөренің ортасы). `Drill.face` келісімі бойынша
+ * (types.ts) inner — +қалыңдық жағы (`position + t`), outer — қарсы жақ.
+ *
+ * ⚠ Бұрын `shelfPinHoles`/`runnerHoles` бетті ТҰРАҚТЫ 'inner' деп жазатын,
+ * яғни «inner = корпустың ішіне қарайды» деп жорамалдайтын. Ол тек
+ * `side-left`-те дұрыс: перегородкада көрші екі секция бір бетке, бір
+ * координатаға жазылып қосарланатын (8 seed шаблон), ал `side-right`-та
+ * тесік СЫРТҚЫ бетке түсетін. §R4-тегі ілгек планкасының ақауымен бір түбір.
+ */
+export function faceToward(panel: Panel, targetWorld: number, ctx: Ctx): 'inner' | 'outer' {
+  const farFace = panel.position[panel.orientation.thickness] + ctx.thickness(panel)
+  return targetWorld >= farFace ? 'inner' : 'outer'
+}
+
+/**
  * Буын бойындағы тесік орындары. Шеткілері жиектен CONFIRMAT_FIRST_OFFSET,
  * қалғандары солардың арасына тең таралады. Барлығы бүтін мм.
  *
@@ -329,6 +348,10 @@ export function shelfPinHoles(
   const [panelFrontWorldZ, panelBackWorldZ] = worldRange(
     verticalPanel, verticalPanel.orientation.width, verticalT,
   )
+  // Сөре тік панельдің қай жағында тұр — тесік сол бетке (faceToward).
+  const across = verticalPanel.orientation.thickness
+  const shelfCentre = shelf.position[across] + panelExtents(shelf, ctx.thickness(shelf))[across] / 2
+  const face = faceToward(verticalPanel, shelfCentre, ctx)
   const columns = [
     { worldZ: panelFrontWorldZ + ctx.settings.shelfPinFrontOffset, field: 'shelfPinFrontOffset' },
     { worldZ: panelBackWorldZ - ctx.settings.shelfPinBackOffset, field: 'shelfPinBackOffset' },
@@ -350,7 +373,7 @@ export function shelfPinHoles(
       requireCutFaceCoordinate(verticalPanel, x, y, SHELF_PIN_DIAMETER, 'x', 'shelfPinDatum', ctx)
       requireCutFaceCoordinate(verticalPanel, x, y, SHELF_PIN_DIAMETER, 'y', field, ctx)
       pushFace(
-        verticalPanel, 'inner',
+        verticalPanel, face,
         x, y,
         SHELF_PIN_DIAMETER, SHELF_PIN_DEPTH, 'shelfPin', ctx,
       )
@@ -510,6 +533,8 @@ export function runnerHoles(
   boxBottomWorldY: number,
   boxFrontWorldZ: number,
   boxDepth: number,
+  /** Ящик қай жақта: `verticalPanel.orientation.thickness` осіндегі әлем координатасы (faceToward). */
+  towardWorld: number,
   ctx: Ctx,
   system?: DrawerSystem | null,
 ): void {
@@ -563,7 +588,7 @@ export function runnerHoles(
     requireCutFaceCoordinate(verticalPanel, x, y, diameter, 'x', verticalField, ctx)
     requireCutFaceCoordinate(verticalPanel, x, y, diameter, 'y', offsetField, ctx)
     pushFace(
-      verticalPanel, 'inner',
+      verticalPanel, faceToward(verticalPanel, towardWorld, ctx),
       x, y,
       // Артикул тесікте жүреді: смета осыдан ҚАЙ направляющая екенін біледі
       // (ілгек пен тұтқада да дәл солай).
