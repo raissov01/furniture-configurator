@@ -77,7 +77,7 @@ async function main(): Promise<number> {
     write('drilling.csv', drillingToCsv(panels))
     write('cutlist.xlsx', cutListToXlsx(panels, catalog, project.name))
     write('assembly.pdf', await assemblyDrawingPdf({
-      cabinet, panels, catalog, projectName: project.name, fonts,
+      cabinet, panels, catalog, projectName: project.name, fonts, info: project.info,
     }))
 
     console.log(`\n${cabinet.name}\n  → ${dir}`)
