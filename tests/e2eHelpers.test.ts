@@ -11,6 +11,7 @@ function browser() {
     body: '',
     disabled: false,
     clicked: false,
+    savedProject: null as string | null,
   }
   const button = {
     textContent: 'Сохранить текущий',
@@ -18,6 +19,7 @@ function browser() {
     click() { if (!state.disabled) state.clicked = true },
   }
   const context = createContext({
+    localStorage: { getItem: () => state.savedProject },
     document: {
       body: { get innerText() { return state.body } },
       querySelector(selector: string) {
@@ -50,6 +52,52 @@ function browser() {
 afterEach(() => vi.useRealTimers())
 
 describe('e2e browser readiness and evidence', () => {
+  it('finds the exact saved cabinet width inside nested v4 groups', async () => {
+    const { state, h } = browser()
+    state.savedProject = JSON.stringify({ schemaVersion: 4, root: {
+      kind: 'group', children: [{ kind: 'group', children: [
+        { kind: 'cabinet', config: { width: 1234 } },
+      ] }],
+    } })
+    expect(await h.waitForSavedCabinetWidth(1234, 0)).toBe(true)
+  })
+
+  it('does not accept an unrelated v4 board width or a stale legacy cabinet', async () => {
+    vi.useFakeTimers()
+    const { state, h } = browser()
+    state.savedProject = JSON.stringify({ schemaVersion: 4,
+      cabinets: [{ width: 1234 }],
+      root: { kind: 'group', children: [
+        { kind: 'board', board: { width: 1234 } },
+        { kind: 'cabinet', config: { width: 600 } },
+      ] },
+    })
+    const result = h.waitForSavedCabinetWidth(1234, 800)
+    await vi.advanceTimersByTimeAsync(1200)
+    expect(await result).toBe(false)
+  })
+
+  it('keeps the same persisted-width assertion for a legacy v3 project', async () => {
+    const { state, h } = browser()
+    state.savedProject = JSON.stringify({ schemaVersion: 3, cabinets: [{ width: 1234 }] })
+    expect(await h.waitForSavedCabinetWidth(1234, 0)).toBe(true)
+  })
+
+  it('waits until autosave actually stores the expected v4 width', async () => {
+    vi.useFakeTimers()
+    const { state, h } = browser()
+    let completed = false
+    const result = h.waitForSavedCabinetWidth(1234, 2000)
+      .then((value: boolean) => { completed = true; return { value } }, (error: unknown) => ({ error }))
+    await vi.advanceTimersByTimeAsync(800)
+    expect(completed).toBe(false)
+    state.savedProject = JSON.stringify({ schemaVersion: 4, root: {
+      kind: 'group', children: [{ kind: 'cabinet', config: { width: 1234 } }],
+    } })
+    await vi.advanceTimersByTimeAsync(400)
+    expect(await result).toEqual({ value: true })
+  })
+
   it('reports the browser exception instead of returning undefined to JSON.parse', async () => {
     const { h } = browser()
     await expect(h.evaluate('document.querySelector("#scene-3d canvas").getBoundingClientRect()'))
