@@ -5,6 +5,7 @@ import { listProjects, writeProject } from '@/lib/server/store'
 import { projectExists, readPlan, usageOf } from '@/lib/server/plan'
 import { canAddProject } from '@/lib/plans'
 import { cloudOff } from '@/lib/server/cloud'
+import { can } from '@/lib/permissions'
 
 export async function GET(): Promise<Response> {
   const off = cloudOff()
@@ -12,6 +13,7 @@ export async function GET(): Promise<Response> {
 
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
+  if (!can(account.role, 'readProject')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
   return NextResponse.json({ projects: listProjects(account.shopId) })
 }
 
@@ -21,6 +23,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
+  if (!can(account.role, 'editProject')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
 
   const body = (await request.json().catch(() => null)) as
     | { project?: unknown; id?: unknown }

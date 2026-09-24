@@ -23,9 +23,10 @@ const CODE_RE = /^\d{6}$/
 export type ShareCreated = { code: string; key: string; expiresAt: number }
 
 /** Жаңа код. Мерзімі өткендер осы жерде тазаланады. */
-export function createShare(json: string, now = Date.now()): ShareCreated {
+export function createShare(json: string, now = Date.now(), shopId?: string): ShareCreated {
   const database = db()
-  database.prepare('DELETE FROM shares WHERE expires_at <= ?').run(now)
+  // Пікір жазылған share кейін де дизайнер inbox-ында сақталады.
+  database.prepare('DELETE FROM shares WHERE expires_at <= ? AND NOT EXISTS (SELECT 1 FROM comments WHERE comments.code = shares.code)').run(now)
   const key = randomBytes(24).toString('hex')
   const expiresAt = now + SHARE_TTL_MS
   // 1 000 000 кодтың ішінде бос біреуін табу: қайталанса — қайта таңдау.
@@ -33,8 +34,8 @@ export function createShare(json: string, now = Date.now()): ShareCreated {
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0')
     if (database.prepare('SELECT 1 FROM shares WHERE code = ?').get(code)) continue
     database
-      .prepare('INSERT INTO shares (code, key, json, created_at, updated_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(code, key, json, now, now, expiresAt)
+      .prepare('INSERT INTO shares (code, key, json, created_at, updated_at, expires_at, shop_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(code, key, json, now, now, expiresAt, shopId ?? null)
     return { code, key, expiresAt }
   }
   throw new Error('Не удалось подобрать свободный код — попробуйте ещё раз')
@@ -60,4 +61,10 @@ export function updateShare(code: string, key: string, json: string, now = Date.
     .prepare('UPDATE shares SET json = ?, updated_at = ? WHERE code = ? AND key = ? AND expires_at > ?')
     .run(json, now, code, key, now)
   return Number(result.changes) > 0
+}
+
+/** The creator's update key also authorizes replying in that share thread. */
+export function ownsShareKey(code: string, key: string): boolean {
+  if (!CODE_RE.test(code) || !/^[0-9a-f]{48}$/.test(key)) return false
+  return Boolean(db().prepare('SELECT 1 FROM shares WHERE code = ? AND key = ?').get(code, key))
 }

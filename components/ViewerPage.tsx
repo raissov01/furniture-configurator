@@ -21,6 +21,8 @@ import { Button } from '@/components/ui'
 import { Spinner } from '@/components/BusyOverlay'
 import { TouchJoystick } from '@/components/TouchJoystick'
 import { isTouchDevice } from '@/lib/walkInput'
+import { ClientComments } from '@/components/ClientComments'
+import { formatTenge } from '@/src/core/index'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
 // Жүктелгенше «жүктелуде» шеңбері — клиент бет қатып қалды деп ойламасын.
@@ -121,7 +123,8 @@ export function ViewerPage() {
   }, [loadProject])
 
   return state.kind === 'ready'
-    ? <Viewer project={state.project} preset={cameraPreset} setPreset={setCameraPreset} />
+    ? <Viewer project={state.project} preset={cameraPreset} setPreset={setCameraPreset}
+      code={new URLSearchParams(window.location.search).get('c')} />
     : <Notice state={state} />
 }
 
@@ -144,11 +147,12 @@ function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; messa
 }
 
 function Viewer({
-  project, preset, setPreset,
+  project, preset, setPreset, code,
 }: {
   project: ProjectFile
   preset: CameraPreset
   setPreset: (v: CameraPreset) => void
+  code: string | null
 }) {
   const room = useConfigurator((s) => s.room)
   const cabinets = useConfigurator((s) => s.cabinets)
@@ -216,30 +220,19 @@ function Viewer({
         ) : null}
       </div>
 
-      <section className="max-h-[30vh] overflow-auto border-t border-neutral-800 px-4 py-3">
-        <table className="w-full text-xs">
-          <thead className="text-left text-[11px] uppercase tracking-wide text-neutral-500">
-            <tr>
-              <th className="py-1 font-medium">{tr('Корпус')}</th>
-              <th className="py-1 font-medium">{tr('Размер, H × W × D')}</th>
-              <th className="py-1 font-medium">{tr('Корпус')}</th>
-              <th className="py-1 font-medium">{tr('Фасад')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cabinets.map((c) => (
-              <tr key={c.id} className="border-t border-neutral-900">
-                <td className="py-1">{c.name}</td>
-                <td className="py-1 tabular-nums text-neutral-400">
-                  {c.height} × {c.width} × {c.depth}
-                </td>
-                <td className="py-1 text-neutral-400">{materialName(c.carcassMaterialId)}</td>
-                <td className="py-1 text-neutral-400">{materialName(c.frontMaterialId)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <section className="max-h-[20vh] overflow-auto border-t border-neutral-800 px-4 py-3 text-xs">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {cabinets.map((cabinet) => (
+            <p key={cabinet.id}>
+              <span className="font-medium">{cabinet.name}</span>
+              <span className="ml-2 text-neutral-400">{materialName(cabinet.carcassMaterialId)} · {materialName(cabinet.frontMaterialId)}</span>
+            </p>
+          ))}
+          <p className="ml-auto font-medium">{project.priceOverrides?.salePrice !== undefined
+            ? formatTenge(project.priceOverrides.salePrice) : tr('Цена по запросу')}</p>
+        </div>
       </section>
+      {code ? <ClientComments code={code} objects={cabinets.map((cabinet) => ({ id: cabinet.id, name: cabinet.name }))} /> : null}
     </main>
   )
 }

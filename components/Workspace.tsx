@@ -159,6 +159,7 @@ export function Workspace() {
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const syncShare = useConfigurator((s) => s.syncShare)
   const setShareCodeOpen = useConfigurator((s) => s.setShareCodeOpen)
+  const startShare = useConfigurator((s) => s.startShare)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
   const setRenderOpen = useConfigurator((s) => s.setRenderOpen)
   const assemblyStep = useConfigurator((s) => s.assemblyStep)
@@ -257,6 +258,22 @@ export function Workspace() {
     }
   }, [deferredPanels, catalog, shop, projectHardware, moduleWidths])
   const [shared, setShared] = useState<string | null>(null)
+  const copyClientLink = async () => {
+    let link: string
+    if (cloudEnabled) {
+      const result = await startShare()
+      if (!result.ok) { setShared(result.error); return }
+      link = `${window.location.origin}/view?c=${result.code}`
+    } else {
+      link = shareLink(window.location.origin, exportProject())
+    }
+    void navigator.clipboard.writeText(link).then(
+      () => setShared(link.length > SHARE_LINK_WARN_LENGTH
+        ? tr('Ссылка скопирована, но она длинная: мессенджер может её обрезать. Надёжнее отправить файл проекта.')
+        : tr('Ссылка скопирована')),
+      () => setShared(tr('Не удалось скопировать — разрешите доступ к буферу обмена')),
+    )
+  }
 
   /*
    * Деталировка — 3D-нің астындағы ЖИЫЛАТЫН тақта (09-13, qdesign сияқты
@@ -388,17 +405,7 @@ export function Workspace() {
           </MenuItem>
           <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
           <MenuItem
-            onClick={() => {
-              const link = shareLink(window.location.origin, exportProject())
-              void navigator.clipboard.writeText(link).then(
-                () => setShared(
-                  link.length > SHARE_LINK_WARN_LENGTH
-                    ? 'Ссылка скопирована, но она длинная: мессенджер может её обрезать. Надёжнее отправить файл проекта.'
-                    : 'Ссылка скопирована',
-                ),
-                () => setShared('Не удалось скопировать — разрешите доступ к буферу обмена'),
-              )
-            }}
+            onClick={() => void copyClientLink()}
           >
             {tr('Ссылка клиенту')}
           </MenuItem>
@@ -524,17 +531,7 @@ export function Workspace() {
             <MenuItem onClick={() => setDrillOpen(true)}>{tr('Присадка')}</MenuItem>
             <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
             <MenuItem onClick={() => setHistoryOpen(true)}>{tr('История')}</MenuItem>
-            <MenuItem onClick={() => {
-              const link = shareLink(window.location.origin, exportProject())
-              void navigator.clipboard.writeText(link).then(
-                () => setShared(
-                  link.length > SHARE_LINK_WARN_LENGTH
-                    ? 'Ссылка скопирована, но она длинная: мессенджер может её обрезать. Надёжнее отправить файл проекта.'
-                    : 'Ссылка скопирована',
-                ),
-                () => setShared('Не удалось скопировать — разрешите доступ к буферу обмена'),
-              )
-            }}>{tr('Ссылка клиенту')}</MenuItem>
+            <MenuItem onClick={() => void copyClientLink()}>{tr('Ссылка клиенту')}</MenuItem>
             {/* qdesign «3D-көріністе ашу» сияқты: 6 таңбалы код, 24 сағат, автожаңарту. */}
             <MenuItem onClick={() => setShareCodeOpen(true)}>{tr('Код для клиента')}</MenuItem>
             <MenuItem onClick={reset}>{tr('Сброс')}</MenuItem>

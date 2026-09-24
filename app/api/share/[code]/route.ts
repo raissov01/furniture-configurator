@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cloudOff } from '@/lib/server/cloud'
 import { SHARE_MAX_BYTES, readShare, updateShare } from '@/lib/server/share'
 import { ConfigValidationError, parseProject } from '@/src/core/index'
+import { toPublicProject } from '@/src/core/publicProject'
 
 type Context = { params: Promise<{ code: string }> }
 
@@ -12,8 +13,14 @@ export async function GET(_request: Request, { params }: Context): Promise<Respo
   const { code } = await params
   const row = readShare(code)
   if (!row) return NextResponse.json({ error: 'Код не найден или его срок истёк' }, { status: 404 })
+  let project: unknown
+  try {
+    project = toPublicProject(parseProject(JSON.parse(row.json) as unknown))
+  } catch {
+    return NextResponse.json({ error: 'Проект по коду повреждён' }, { status: 422 })
+  }
   return NextResponse.json(
-    { project: JSON.parse(row.json) as unknown, updatedAt: row.updatedAt, expiresAt: row.expiresAt },
+    { project, updatedAt: row.updatedAt, expiresAt: row.expiresAt },
     { headers: { 'Cache-Control': 'no-store' } },
   )
 }
@@ -28,13 +35,14 @@ export async function PUT(request: Request, { params }: Context): Promise<Respon
   if (text.length === 0 || text.length > SHARE_MAX_BYTES) {
     return NextResponse.json({ error: 'Неверный размер проекта' }, { status: 400 })
   }
+  let publicJson: string
   try {
-    parseProject(JSON.parse(text) as unknown)
+    publicJson = JSON.stringify(toPublicProject(parseProject(JSON.parse(text) as unknown)))
   } catch (error) {
     const message = error instanceof ConfigValidationError ? error.message : 'Проект не прочитался'
     return NextResponse.json({ error: message }, { status: 400 })
   }
-  if (!updateShare(code, key, text)) {
+  if (!updateShare(code, key, publicJson)) {
     return NextResponse.json({ error: 'Код не найден, истёк или ключ неверный' }, { status: 404 })
   }
   return NextResponse.json({ ok: true })
