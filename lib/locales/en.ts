@@ -903,7 +903,7 @@ export const en: Record<string, string> = {
   'Минификс: расстояние пары': 'Minifix pair spacing',
   'мм; используется при размещении от центра': 'mm; used when centred',
   'Минификс: отступ от концов': 'Minifix end offset',
-  'мм; используется при размещении от краёв': 'mm; used when placed from ends',
+  'мм; пара «от концов», а также всегда — стяжки дна ящика с боковинами': 'mm; pair placed from ends, and always the drawer bottom-to-side joints',
   'Ролик: отверстия от переднего края': 'Roller holes from front edge',
   'мм через запятую; нужен чертёж конкретного артикула': 'comma-separated mm; exact part drawing required',
   'Шарик: отверстия от переднего края': 'Ball holes from front edge',

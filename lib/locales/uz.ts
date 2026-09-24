@@ -907,7 +907,7 @@ export const uz: Record<string, string> = {
   'Минификс: расстояние пары': 'Minifiks jufti oralig‘i',
   'мм; используется при размещении от центра': 'mm; markazdan joylashtirishda',
   'Минификс: отступ от концов': 'Minifiks chet oralig‘i',
-  'мм; используется при размещении от краёв': 'mm; chetlardan joylashtirishda',
+  'мм; пара «от концов», а также всегда — стяжки дна ящика с боковинами': 'mm; chetlardan juftlik, hamda doimo — tortma tubini yon devorlarga biriktiruvchi minifikslar',
   'Ролик: отверстия от переднего края': 'Rolikli rels teshiklari old qirradan',
   'мм через запятую; нужен чертёж конкретного артикула': 'vergul bilan ajratilgan mm; aniq artikul chizmasi kerak',
   'Шарик: отверстия от переднего края': 'Sharli rels teshiklari old qirradan',

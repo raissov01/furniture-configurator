@@ -34,7 +34,7 @@ const NUMBERS: { key: NumericKey; label: string; hint: string; step?: number }[]
   { key: 'legCentreFromFront', label: 'Центр ножки от передней кромки', hint: 'мм; прежний образец qdesign — 104' },
   { key: 'drawerFacadeScrewEndOffset', label: 'Винты фасада ящика от торцов', hint: 'мм; прежний образец qdesign — 80' },
   { key: 'minifixPairSpacing', label: 'Минификс: расстояние пары', hint: 'мм; используется при размещении от центра' },
-  { key: 'minifixPairEndOffset', label: 'Минификс: отступ от концов', hint: 'мм; используется при размещении от краёв' },
+  { key: 'minifixPairEndOffset', label: 'Минификс: отступ от концов', hint: 'мм; пара «от концов», а также всегда — стяжки дна ящика с боковинами' },
 ]
 
 const ARRAYS: { key: ArrayKey; label: string; hint: string }[] = [

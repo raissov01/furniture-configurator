@@ -944,6 +944,9 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
   const depth = bottom.finishedWidth
 
   // Тереңдік бойынша екі стяжка: жиектен MINIFIX_FROM_END шегініп.
+  // ⚠ `minifixPairPlacement` мұнда ҚОЛДАНЫЛМАЙДЫ: буын ұзын (қорап тереңдігі),
+  // ортадан ±16 мағынасыз — сондықтан `minifixPairEndOffset` center режимінде
+  // де осы буынды жылжытады. UI түсіндірмесі соны айтады (ShopDrillingSettings).
   const customEndOffset = ctx.settings.minifixPairEndOffset !== DEFAULT_SETTINGS.minifixPairEndOffset
   const positions = customEndOffset
     ? [ctx.settings.minifixPairEndOffset, depth - ctx.settings.minifixPairEndOffset]
