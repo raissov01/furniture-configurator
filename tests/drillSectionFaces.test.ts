@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   SEED_TEMPLATES, catalogOf, defaultShopProfile, generateCabinet, templateToCabinet,
 } from '../src/core/index'
+import { panelExtents } from '../src/core/geometry'
 import type { Panel } from '../src/core/types'
 
 /*
@@ -67,5 +68,45 @@ describe('перегородканың екі бетіндегі сөре/нап
       expect(new Set(holes(left).map((drill) => drill.face))).toEqual(new Set(['inner']))
       expect(new Set(holes(right).map((drill) => drill.face))).toEqual(new Set(['outer']))
     }
+  })
+})
+
+/*
+ * §8 (айна жұп панельдер). side-left пен side-right — ЕКЕУІ де ORIENT_SIDE,
+ * канондық кадры бірдей (x — биіктік W1→W2, y — тереңдік L1→L2), айналған
+ * емес; сондықтан жаһандық бір `outerFlipAxis` екеуіне де бірдей жүреді.
+ * Бұзылатын жалғыз нәрсе — БЕТ белгісі: соқыр тесік физикалық түрде
+ * қорап/корпус ішіне қарауы тиіс, ал inner = +қалыңдық жағы.
+ */
+describe('соқыр тесік корпус/ящик қорабының ішіне қарайды', () => {
+  const BOX = /^(.*)-(wall-front|wall-back|side-l|side-r|bottom)$/
+  it.each(SEED_TEMPLATES.map((template) => template.id))('%s', (id) => {
+    const panels = generate(id)
+    const th = (panel: Panel) => catalog.materials.find((m) => m.id === panel.materialId)!.thickness
+    const groupOf = (panel: Panel): Panel[] | null => {
+      if (panel.id === 'side-left' || panel.id === 'side-right') {
+        return panels.filter((p) => ['side-left', 'side-right', 'bottom'].includes(p.id))
+      }
+      const match = BOX.exec(panel.id)
+      if (!match || !panels.some((p) => p.id === `${match[1]}-side-l`)) return null
+      return panels.filter((p) => p.id.startsWith(`${match[1]}-`) && BOX.test(p.id))
+    }
+    const wrong: string[] = []
+    for (const panel of panels) {
+      const group = groupOf(panel)
+      if (!group) continue
+      const axis = panel.orientation.thickness
+      const lo = Math.min(...group.map((p) => p.position[axis]))
+      const hi = Math.max(...group.map((p) => p.position[axis] + panelExtents(p, th(p))[axis]))
+      const centre = (lo + hi) / 2
+      for (const drill of panel.drilling) {
+        if (drill.face !== 'inner' && drill.face !== 'outer') continue
+        if (drill.depth >= th(panel)) continue
+        const faceAt = drill.face === 'inner' ? panel.position[axis] + th(panel) : panel.position[axis]
+        const towardCentre = drill.face === 'inner' ? centre > faceAt : centre < faceAt
+        if (!towardCentre) wrong.push(`${panel.id}:${drill.purpose}:${drill.face}`)
+      }
+    }
+    expect([...new Set(wrong)]).toEqual([])
   })
 })

@@ -131,6 +131,12 @@ export function faceToward(panel: Panel, targetWorld: number, ctx: Ctx): 'inner'
   return targetWorld >= farFace ? 'inner' : 'outer'
 }
 
+/** Панельдің `axis` бойындағы әлемдік ортасы. */
+function centreAlong(panel: Panel, axis: Axis, t: number): number {
+  const [min, max] = worldRange(panel, axis, t)
+  return (min + max) / 2
+}
+
 /**
  * Буын бойындағы тесік орындары. Шеткілері жиектен CONFIRMAT_FIRST_OFFSET,
  * қалғандары солардың арасына тең таралады. Барлығы бүтін мм.
@@ -468,14 +474,12 @@ export function hingeHoles(
    * планкасы да бұрын қате 'inner' болатын, тек бүйірде екінші сектор
    * болмағандықтан ешкім қақтығыспайтын, сондықтан байқалмаған).
    */
-  const carcassThickness = ctx.thickness(carcassPanel)
   const thicknessAxis = carcassPanel.orientation.thickness
-  const carcassFarFace = carcassPanel.position[thicknessAxis] + carcassThickness
   // Фасадтың ені де дәл сол осьте жатыр (ORIENT_FACING.width === 'x' ===
   // ORIENT_SIDE.thickness) — жоба бойынша тұрақты, generateCabinet.ts-те
   // ешқашан өзгермейді.
   const frontCentre = front.position[thicknessAxis] + front.finishedWidth / 2
-  const plateFace: 'inner' | 'outer' = frontCentre >= carcassFarFace ? 'inner' : 'outer'
+  const plateFace = faceToward(carcassPanel, frontCentre, ctx)
 
   const frontWorldY = front.position.y
   for (const x of positions) {
@@ -865,6 +869,13 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
 
   const edgeFace = edgeFaceFor(wall, screwAxis, atLeft)
   const edgeXShift = edgeXShiftFor(wall, screwAxis, ctx)
+  /*
+   * Ұя қораптың ІШІНЕ (бүйір тұрған жаққа), бүйірдегі тесік қабырға тұрған
+   * жаққа қарайды (faceToward). Бұрын екеуі де тұрақты 'inner' еді: артқы
+   * қабырғаның ұясы мен оң бүйірдің тесігі қораптың СЫРТҚЫ бетіне түсетін.
+   */
+  const camFace = faceToward(wall, centreAlong(side, wall.orientation.thickness, sideT), ctx)
+  const boltFace = faceToward(side, (wallMin + wallMax) / 2, ctx)
 
   for (const rowWorld of rowsWorld) {
     // wall-дың локал координатасы: jointAxis бойынша — буын сызығындағы орны,
@@ -880,7 +891,7 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
       requireCutFaceCoordinate(wall, wx, wy, MINIFIX_CAM_DIAMETER, 'x', field, ctx)
       requireCutFaceCoordinate(wall, wx, wy, MINIFIX_CAM_DIAMETER, 'y', field, ctx)
     }
-    pushFace(wall, 'inner', wx, wy, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
+    pushFace(wall, camFace, wx, wy, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
 
     // 2. Штифттің тесігі — сол қабырғаның ТОРЦІНДЕ, қалыңдықтың ортасында.
     // Торц бетінің x-і — jointAxis бойынша РАУ локал координата (alongLocal),
@@ -907,7 +918,7 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
       requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'x', field, ctx)
       requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'y', field, ctx)
     }
-    pushFace(side, 'inner', sx, sy,
+    pushFace(side, boltFace, sx, sy,
       boltDiameter,
       ctx.settings.minifixBoltMount === 'sleeve-8'
         ? requireBlindDepth(ctx.settings.minifixSleeveDepth, sideT, 'minifixSleeveDepth') : MINIFIX_SCREW_DEPTH,
@@ -954,6 +965,8 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
     const camX = atLeft ? MINIFIX_CAM_FROM_EDGE : width - MINIFIX_CAM_FROM_EDGE
     const edgeFace = edgeFaceFor(bottom, screwAxis, atLeft)
     const edgeXShift = edgeXShiftFor(bottom, screwAxis, ctx)
+    // Бүйірдегі тесік түп тұрған жаққа қарайды (minifixJoint-тегідей).
+    const boltFace = faceToward(side, (bottomMin + bottomMax) / 2, ctx)
 
     for (const along of positions) {
       // 1. Эксцентриктің ұясы — түптің ҮСТІҢГІ бетінде.
@@ -984,7 +997,7 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
         requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'y', 'minifixPairEndOffset', ctx)
       }
       pushFace(
-        side, 'inner',
+        side, boltFace,
         sx, sy,
         boltDiameter,
         ctx.settings.minifixBoltMount === 'sleeve-8'
