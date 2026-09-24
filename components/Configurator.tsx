@@ -30,6 +30,7 @@ import {
   roomWalls, wallById,
 } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
+import { wallAttachedPlacements } from '@/store/treeAdapters'
 import type {
   ApplianceKind, CabinetConfig, CabinetFixture, Catalog, FillingKind, HandleSpec, Material, MillingSpec,
   Panel, RailKind, RailPosition, Section, SectionContent, SectionFronts, WallId,
@@ -751,10 +752,13 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
   // идеясы бойынша осында (ProjectPanel.tsx-тегі «Реквизиты» қосымшасы
   // сияқты, дерек көзі — сол бір global store).
   const room = useConfigurator((s) => s.room)
-  const placements = useConfigurator((s) => s.placements)
+  const root = useConfigurator((s) => s.root)
   const activeId = useConfigurator((s) => s.activeId)
   const movePlacement = useConfigurator((s) => s.movePlacement)
-  const activePlacement = placements.find((p) => p.cabinetId === activeId)
+  // Еркін тұрған шкафтың placement-і тек жуықтау: оны өзгертсек, шкаф
+  // қабырғаға секіреді, сондықтан өрістер тек қабырғадағы шкафқа көрсетіледі.
+  const activePlacement = useMemo(() => wallAttachedPlacements(root, room)
+    .find((p) => p.cabinetId === activeId), [root, room, activeId])
 
   // «Производство» қосымшасының батырмалары — присадка мен смета өз
   // терезелерінде қалады (қайта жазылмайды), мұнда тек ашатын жол.

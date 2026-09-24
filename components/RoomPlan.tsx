@@ -23,6 +23,7 @@ import {
 } from '@/src/core/index'
 import type { CabinetConfig, Placement, Room, RoomFinish, WallId } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
+import { wallAttachedPlacements } from '@/store/treeAdapters'
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ConfigValidationError } from '@/src/core/errors'
 import { Button, Field, NumberInput, SectionTitle, Select } from '@/components/ui'
@@ -60,6 +61,10 @@ export function RoomPlan() {
     }
   })), [root, layers, cabinets])
   const roomEditable = editableIds.size === cabinets.length
+  // Қабырға бойымен тек қабырғаға дәл тірелген шкаф жылжиды: еркін шкафтың
+  // placement-і жуықтау, оны өзгерту шкафты қабырғаға секіртеді.
+  const movableIds = useMemo(() => new Set(wallAttachedPlacements(root, room)
+    .map((placement) => placement.cabinetId).filter((id) => editableIds.has(id))), [root, room, editableIds])
 
   const editRoom = useConfigurator((s) => s.editRoom)
   const setSelectedWall = useConfigurator((s) => s.setSelectedWall)
@@ -120,7 +125,7 @@ export function RoomPlan() {
             selectedWall={selectedWall}
             onWall={setSelectedWall}
             onCabinet={setActive}
-            onMove={(id, offset) => { if (editableIds.has(id)) movePlacement(id, { offset }) }}
+            onMove={(id, offset) => { if (movableIds.has(id)) movePlacement(id, { offset }) }}
           />
 
           <div className="space-y-3">
@@ -155,7 +160,7 @@ export function RoomPlan() {
             </div>
 
             {active ? <><SectionTitle>{tr('Текущий корпус')}</SectionTitle>
-            <fieldset disabled={!editableIds.has(active.id)} className="grid grid-cols-2 gap-2">
+            <fieldset disabled={!movableIds.has(active.id)} className="grid grid-cols-2 gap-2">
               <Field label={tr('Стена')}>
                 <select
                   className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"

@@ -1282,6 +1282,13 @@ export const useConfigurator = create<State>((set, get) => ({
 
   movePlacement(cabinetId, patch, opts) {
     const s = get()
+    // Еркін тұрған шкафтың placement-і тек жуықтау (ең жақын қабырғаға
+    // тартылған): оны өзгертсек, шкаф қабырғаға секіреді. 3D-дегі `wallBound`
+    // ережесімен бірдей — тек қабырғаға дәл тірелген шкаф жылжиды.
+    if (!wallAttachedPlacements(s.root, s.room).some((placement) => placement.cabinetId === cabinetId)) {
+      throw new ConfigValidationError('placement', `шкаф қабырғаға тірелмеген: ${cabinetId}`,
+        'қабырғаға тірелген шкаф')
+    }
     const now = Date.now()
     const key = `placement:${cabinetId}`
     const coalesce = opts?.continueGesture === true || (s.lastEditKey === key && now - s.lastEditAt < COALESCE_MS)
