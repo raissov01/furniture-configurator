@@ -420,13 +420,13 @@ export const ProjectInfoSchema = z.object({
  * ал схема тек ПІШІНДІ тексереді.
  */
 const DiscountSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('percent'), value: z.number() }),
-  z.object({ kind: z.literal('amount'), value: z.number() }),
+  z.object({ kind: z.literal('percent'), value: z.number().finite().min(0).max(100) }),
+  z.object({ kind: z.literal('amount'), value: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER) }),
 ])
 
 export const PriceOverridesSchema = z.object({
   coefficient: z.number().positive().optional(),
-  salePrice: z.number().int().min(0).optional(),
+  salePrice: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   lineDiscounts: z.record(z.string(), DiscountSchema).optional(),
   overallDiscount: DiscountSchema.optional(),
 })

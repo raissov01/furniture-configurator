@@ -13,9 +13,9 @@
 import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import {
-  SERVICE_IDS, SERVICE_NAMES, formatTenge, nestPanels, nestingOptionsOf, priceProject,
+  SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
-import type { HardwarePlacement, NestedSheet, Panel, PriceLine } from '@/src/core/index'
+import type { Discount, HardwarePlacement, NestedSheet, Panel, PriceLine, PriceOverrides } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -265,9 +265,22 @@ export function QuoteView({
             {priceError ? (
               <div className="rounded-md border border-red-300 bg-red-50 px-2.5 py-2 text-[11px] text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
                 {priceError}
+                {Object.keys(priceOverrides.lineDiscounts ?? {}).length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {Object.keys(priceOverrides.lineDiscounts ?? {}).map((key) => (
+                      <Button key={key} onClick={() => {
+                        const lineDiscounts = { ...priceOverrides.lineDiscounts }
+                        delete lineDiscounts[key]
+                        editPriceOverrides({ lineDiscounts })
+                      }}>
+                        {key}: {tr('убрать скидку')}
+                      </Button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             ) : price ? (
-              <PriceTable price={price} shopName={shop.name} />
+              <PriceTable price={price} shopName={shop.name} overrides={priceOverrides} onChange={editPriceOverrides} />
             ) : null}
           </div>
         )}
@@ -331,7 +344,7 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
 }
 
 /**
- * Баға түзетулерін (коэффициент/сату бағасы) қолмен енгізу — qdesign
+ * Баға түзетулерін (коэффициент/сату бағасы/жалпы жеңілдік) қолмен енгізу — qdesign
  * паритеті. Тек цехтың өз экранында, клиентке шықпайды.
  *
  * Коэффициент бос қалдырылса — цехтың әдепкісі (`shopCoefficient`)
@@ -341,12 +354,12 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
 function PriceOverridesEditor({
   overrides, onChange, shopCoefficient,
 }: {
-  overrides: { coefficient?: number | undefined; salePrice?: number | undefined }
-  onChange: (patch: { coefficient?: number | undefined; salePrice?: number | undefined }) => void
+  overrides: PriceOverrides
+  onChange: (patch: Partial<PriceOverrides>) => void
   shopCoefficient: number
 }) {
   // Экранда теңгемен көрсетеді, сақтауда тиынмен (§0.2: ақша бүтін минор бірлік).
-  const salePriceTenge = overrides.salePrice !== undefined ? Math.round(overrides.salePrice / 100) : undefined
+  const salePriceTenge = overrides.salePrice !== undefined ? (overrides.salePrice / 100).toFixed(2) : undefined
 
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-md border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-700">
@@ -370,6 +383,7 @@ function PriceOverridesEditor({
         <input
           type="number"
           min="0"
+          step="0.01"
           value={salePriceTenge ?? ''}
           placeholder={tr('из коэффициента')}
           onChange={(e) => {
@@ -384,16 +398,68 @@ function PriceOverridesEditor({
           {tr('Вернуться к коэффициенту')}
         </Button>
       ) : null}
+      <DiscountInput
+        label={tr('Скидка на весь проект')}
+        discount={overrides.overallDiscount}
+        onChange={(overallDiscount) => onChange({ overallDiscount })}
+      />
     </div>
   )
 }
 
-function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject>; shopName: string }) {
-  const groups: { title: string; lines: PriceLine[] }[] = [
-    { title: tr('Материалы'), lines: price.materials },
-    { title: tr('Кромка'), lines: price.edges },
-    { title: tr('Фурнитура'), lines: price.hardware },
-    { title: tr('Услуги цеха'), lines: price.services },
+function DiscountInput({ label, discount, onChange }: {
+  label: string
+  discount: Discount | undefined
+  onChange: (discount: Discount | undefined) => void
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-neutral-500">{label}</span>
+      <span className="flex gap-1">
+        <select
+          aria-label={`${label}: тип`}
+          value={discount?.kind ?? ''}
+          onChange={(e) => {
+            const kind = e.target.value
+            onChange(kind === '' ? undefined : { kind: kind as Discount['kind'], value: 0 })
+          }}
+          className="rounded-md border border-neutral-300 bg-white px-1 py-1 dark:border-neutral-700 dark:bg-neutral-900"
+        >
+          <option value="">—</option>
+          <option value="percent">%</option>
+          <option value="amount">₸</option>
+        </select>
+        {discount ? (
+          <input
+            aria-label={label}
+            type="number"
+            min="0"
+            max={discount.kind === 'percent' ? 100 : undefined}
+            step="0.01"
+            value={discount.kind === 'amount' ? (discount.value / 100).toFixed(2) : discount.value}
+            onChange={(e) => onChange({
+              ...discount,
+              value: discount.kind === 'amount' ? Math.round(Number(e.target.value) * 100) : Number(e.target.value),
+            })}
+            className="w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900"
+          />
+        ) : null}
+      </span>
+    </label>
+  )
+}
+
+function PriceTable({ price, shopName, overrides, onChange }: {
+  price: ReturnType<typeof priceProject>
+  shopName: string
+  overrides: PriceOverrides
+  onChange: (patch: Partial<PriceOverrides>) => void
+}) {
+  const groups: { key: string; title: string; lines: PriceLine[] }[] = [
+    { key: 'materials', title: tr('Материалы'), lines: price.materials },
+    { key: 'edges', title: tr('Кромка'), lines: price.edges },
+    { key: 'hardware', title: tr('Фурнитура'), lines: price.hardware },
+    { key: 'services', title: tr('Услуги цеха'), lines: price.services },
   ]
 
   return (
@@ -446,22 +512,24 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
           <tr>
             <th className="py-1.5 font-medium">{tr('Позиция')}</th>
             <th className="py-1.5 text-right font-medium">{tr('Кол-во')}</th>
-            <th className="py-1.5 text-right font-medium">{tr('Цена')}</th>
-            <th className="py-1.5 text-right font-medium">{tr('Сумма')}</th>
+              <th className="py-1.5 text-right font-medium">{tr('Цена')}</th>
+              <th className="py-1.5 text-right font-medium">{tr('Сумма')}</th>
+              <th className="py-1.5 text-right font-medium">{tr('Скидка')}</th>
           </tr>
         </thead>
         <tbody>
           {groups.map((g) =>
             g.lines.length === 0 ? null : (
               <tr key={g.title} className="align-top">
-                <td colSpan={4} className="pt-2">
+                <td colSpan={5} className="pt-2">
                   <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
                     {g.title}
                   </div>
                   <table className="w-full">
                     <tbody>
-                      {g.lines.map((l) => (
-                        <tr key={l.id} className="border-t border-neutral-100 dark:border-neutral-800">
+                      {g.lines.map((l) => {
+                        const key = `${g.key}:${l.id}`
+                        return <tr key={key} className="border-t border-neutral-100 dark:border-neutral-800">
                           <td className="py-1">{l.name}</td>
                           <td className="w-24 py-1 text-right tabular-nums text-neutral-500">
                             {l.qty} {l.unit}
@@ -469,9 +537,24 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
                           <td className={cn('w-28 py-1 text-right tabular-nums', l.unitPrice <= 0 && 'text-amber-600')}>
                             {formatTenge(l.unitPrice)}
                           </td>
-                          <td className="w-32 py-1 text-right tabular-nums font-medium">{formatTenge(l.cost)}</td>
+                          <td className="w-32 py-1 text-right tabular-nums font-medium">
+                            {formatTenge(l.cost)}
+                            {l.discountAmount ? <span className="block text-[10px] text-green-700">−{formatTengeExact(l.discountAmount)}</span> : null}
+                          </td>
+                          <td className="w-44 py-1 pl-2 text-right">
+                            <DiscountInput
+                              label={`${l.name}: скидка`}
+                              discount={overrides.lineDiscounts?.[key]}
+                              onChange={(discount) => {
+                                const lineDiscounts = { ...overrides.lineDiscounts }
+                                if (discount) lineDiscounts[key] = discount
+                                else delete lineDiscounts[key]
+                                onChange({ lineDiscounts })
+                              }}
+                            />
+                          </td>
                         </tr>
-                      ))}
+                      })}
                     </tbody>
                   </table>
                 </td>
@@ -503,11 +586,13 @@ function PriceTable({ price, shopName }: { price: ReturnType<typeof priceProject
         */}
         <Row label={tr('Алдын ала сату бағасы')} value={formatTenge(price.calculatedTotal)} />
         {price.salePriceOverride !== undefined ? (
-          <Row label={tr('Сату бағасы (қолмен)')} value={formatTenge(price.salePriceOverride)} />
+          <Row label={tr('Сату бағасы (қолмен)')} value={formatTengeExact(price.salePriceOverride)} />
         ) : null}
+        <Row label="ВСЕГО" value={formatTengeExact(price.grossTotal)} />
+        <Row label="СКИДКА" value={`−${formatTengeExact(price.discountTotal)}`} />
         <div className="flex items-baseline justify-between border-t border-neutral-200 pt-1.5 text-sm font-semibold dark:border-neutral-700">
-          <span>{tr('Итого клиенту')}</span>
-          <span className="tabular-nums">{formatTenge(price.total)}</span>
+          <span>К ОПЛАТЕ</span>
+          <span className="tabular-nums">{formatTengeExact(price.total)}</span>
         </div>
         {shopName ? <p className="pt-1 text-[11px] text-neutral-400">{shopName}</p> : null}
       </div>

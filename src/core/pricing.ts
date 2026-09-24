@@ -103,8 +103,7 @@ export type PriceBreakdown = {
   /** СКИДКА ВСЕГО, тиын. */
   discountTotal: number
   /**
-   * Клиентке шығатын СОҢҒЫ сан, тиын: `salePriceOverride` бар болса сол,
-   * жоқ болса `calculatedTotal`.
+   * К ОПЛАТЕ, тиын: `grossTotal`-дан барлық жеңілдіктер шегеріледі.
    */
   total: number
   /**
@@ -496,8 +495,10 @@ export function priceProject(
   //   + монтаж                    — БӨЛЕК қызмет, коэффициентке кірмейді
   //   + үстеме %                  — бәрінің үстінен
   //   → calculatedTotal           — коэффициенттен шыққан СОҢҒЫ сома
-  //   overrides.salePrice бар ма  — болса, СОЛ сан `total` болады,
+  //   overrides.salePrice бар ма  — болса, жеңілдікке дейінгі grossTotal;
   //                                  calculatedTotal бұзылмайды
+  //   жолдық жеңілдіктер          — әр PriceLine.cost бойынша
+  //   жалпы жеңілдік             — grossTotal − жолдық жеңілдік бойынша
   const goods =
     materials.reduce((sum, l) => sum + l.cost, 0)
     + edges.reduce((sum, l) => sum + l.cost, 0)
@@ -525,7 +526,7 @@ export function priceProject(
   const calculatedTotal = subtotal + markup
   /**
    * Қолмен қойылған сату бағасы (qdesign-дегі «Сату бағасы») коэффициенттен
-   * шыққан бағаны БАСЫП ЖАЗАДЫ, бірақ `calculatedTotal` өзгеріссіз қалады —
+   * шыққан жалпы бағаны БАСЫП ЖАЗАДЫ, бірақ `calculatedTotal` өзгеріссіз қалады —
    * шебер override-ты алып тастап, коэффициентке қайта орала алады.
    */
   const grossTotal = overrides?.salePrice ?? calculatedTotal
@@ -596,11 +597,24 @@ export function priceProject(
 export const DISCOUNT_ROUNDING_RULE = 'nearestMinorUnitHalfUp' as const
 
 function discountAmount(discount: Discount, base: number, field: string): number {
+  if (!Number.isSafeInteger(base) || base < 0) {
+    throw new ConfigValidationError(field, `${base} — есептеу негізі жарамсыз`, '0..MAX_SAFE_INTEGER тиын')
+  }
   if (discount.kind === 'percent') {
     if (!Number.isFinite(discount.value) || discount.value < 0 || discount.value > 100) {
       throw new ConfigValidationError(field, `${discount.value} — жарамсыз пайыз`, '0..100 %')
     }
-    return Math.round((base * discount.value) / 100)
+    // Number көбейтуі 28.5-ті 28.499999... қыла алады (5000 × 0.57%).
+    // Коэффициенттің ондық жазбасын дәл бөлшекке айналдырамыз; ақшаға
+    // қатысты аралық есеп те бүтін BigInt күйінде қалады.
+    const [mantissa, exponentText = '0'] = discount.value.toString().split('e')
+    const [whole, fraction = ''] = mantissa!.split('.')
+    const numerator = BigInt(`${whole}${fraction}`)
+    const decimalPlaces = fraction.length - Number(exponentText)
+    const scale = 10n ** BigInt(Math.abs(decimalPlaces))
+    const product = BigInt(base) * numerator * (decimalPlaces < 0 ? scale : 1n)
+    const denominator = 100n * (decimalPlaces > 0 ? scale : 1n)
+    return Number((2n * product + denominator) / (2n * denominator))
   }
   if (!Number.isSafeInteger(discount.value) || discount.value < 0 || discount.value > base) {
     throw new ConfigValidationError(field, `${discount.value} — жарамсыз сома`, `≥ 0, бүтін тиын, ≤ ${base} тиын`)
@@ -629,7 +643,7 @@ function validatePriceOverrides(overrides: PriceOverrides | undefined): void {
   }
   if (overrides.salePrice !== undefined) {
     const { salePrice } = overrides
-    if (!Number.isInteger(salePrice) || salePrice < 0) {
+    if (!Number.isSafeInteger(salePrice) || salePrice < 0) {
       throw new ConfigValidationError(
         'priceOverrides.salePrice', `${salePrice} — теріс немесе бүтін тиын емес`, '≥ 0, бүтін тиын',
       )
@@ -643,7 +657,7 @@ function validatePriceOverrides(overrides: PriceOverrides | undefined): void {
  *
  * `salePriceOverride` берілген жобада өзіндік құн мен коэффициент КЛИЕНТКЕ
  * КӨРІНБЕУІ керек (qdesign-дың «Предложение клиенту» нұсқасында олар жоқ,
- * тек түпкі баға бар) — себестоимость/наценка енді `total`-мен сәйкес
+ * тек келісілген ВСЕГО/СКИДКА/К ОПЛАТЕ бар) — себестоимость/наценка енді `total`-мен сәйкес
  * келмейді (қолмен басып жазылған сан коэффициенттен өзгеше болуы мүмкін),
  * ал цехтың ӨЗ есебінде (`QuoteView.tsx`-тегі «Стоимость» қойындысы) бұл
  * жіктеме әрдайым толық көрінеді — тек КЛИЕНТКЕ шығатын құжатта жасырылады.
@@ -709,4 +723,11 @@ const roundTenge = (minor: number) => Math.round(minor / 100) * 100
 export function formatTenge(minor: number, currency = '₸'): string {
   const tenge = Math.round(minor / 100)
   return `${tenge.toLocaleString('ru-RU')} ${currency}`
+}
+
+/** Жеңілдік тиынмен аяқталғанда құжатта сол тиынды жоғалтпай көрсетеді. */
+export function formatTengeExact(minor: number, currency = '₸'): string {
+  const tenge = Math.floor(minor / 100).toLocaleString('ru-RU')
+  const tiyn = minor % 100
+  return `${tenge}${tiyn ? `,${String(tiyn).padStart(2, '0')}` : ''} ${currency}`
 }

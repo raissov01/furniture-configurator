@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ConfigValidationError, defaultShopProfile, findTemplate, generateCabinet,
+  ConfigValidationError, defaultShopProfile, findTemplate, formatTengeExact, generateCabinet,
   nestPanels, parseProject, priceProject, quoteLineGroups, quoteTotalsView, templateToCabinet,
 } from '../src/core/index'
 import type { ShopProfile } from '../src/core/index'
@@ -20,6 +20,23 @@ const shop: ShopProfile = {
 }
 
 describe('жолдық және жалпы жеңілдік', () => {
+  it('тиын қалдығын смета мен КП-да жоғалтпай көрсетеді', () => {
+    expect(formatTengeExact(12345)).toBe('123,45 ₸')
+    expect(formatTengeExact(100)).toBe('1 ₸')
+    expect(formatTengeExact(0, 'тг')).toBe('0 тг')
+  })
+
+  it('ондық пайыздағы дәл жарты тиынды жоғары дөңгелектейді', () => {
+    const p = priceProject(panels, nesting, shop, [], [], {
+      salePrice: 5000, overallDiscount: { kind: 'percent', value: 0.57 },
+    })
+    expect(p.overallDiscountAmount).toBe(29) // 5000 × 0.57% = 28.5 тиын
+    expect(p.total).toBe(4971)
+    const second = priceProject(panels, nesting, shop, [], [], {
+      salePrice: 5500, overallDiscount: { kind: 'percent', value: 0.7 },
+    })
+    expect(second.overallDiscountAmount).toBe(39) // 38.5 тиын
+  })
   it('жолдық %-ды тиынға бір рет дөңгелектеп, жалпы жеңілдікті қалған сомадан есептейді', () => {
     const plain = priceProject(panels, nesting, shop)
     const line = plain.materials[0]!
@@ -110,5 +127,28 @@ describe('жолдық және жалпы жеңілдік', () => {
       overallDiscount: { kind: 'amount', value: 25000 },
     }
     expect(parseProject({ ...referenceProject, priceOverrides: discounts }).priceOverrides).toEqual(discounts)
+  })
+
+  it('жоба схемасы жарамсыз пайыз бен тиынды қабылдамайды', () => {
+    for (const discount of [
+      { kind: 'percent', value: 101 },
+      { kind: 'percent', value: -1 },
+      { kind: 'amount', value: 1.5 },
+      { kind: 'amount', value: -1 },
+      { kind: 'amount', value: Number.MAX_SAFE_INTEGER + 1 },
+    ]) {
+      expect(() => parseProject({ ...referenceProject, priceOverrides: { overallDiscount: discount } })).toThrow()
+    }
+  })
+
+  it('unsafe manual сату бағасын path/range қатесімен қабылдамайды', () => {
+    try {
+      priceProject(panels, nesting, shop, [], [], { salePrice: Number.MAX_SAFE_INTEGER + 1 })
+      throw new Error('Күтілген ConfigValidationError болмады')
+    } catch (error) {
+      expect(error).toBeInstanceOf(ConfigValidationError)
+      expect((error as ConfigValidationError).field).toBe('priceOverrides.salePrice')
+      expect((error as ConfigValidationError).allowed).toContain('бүтін тиын')
+    }
   })
 })

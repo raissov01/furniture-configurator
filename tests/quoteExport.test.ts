@@ -140,6 +140,7 @@ describe('қаріп жиынтығы', () => {
     const strings = [
       'Коммерческое предложение', 'Позиция', 'Кол-во', 'Цена', 'Сумма',
       'Материалы', 'Кромка', 'Фурнитура', 'Работа', 'Себестоимость', 'Итого',
+      'ВСЕГО', 'СКИДКА', 'К ОПЛАТЕ', 'Скидка',
       `Наценка ${price.markupPercent}%`,
       pricedShop.name, pricedShop.city, pricedShop.phone,
       ...price.materials.map((l) => l.name),
@@ -147,6 +148,7 @@ describe('қаріп жиынтығы', () => {
       ...price.hardware.map((l) => l.name),
       ...price.services.map((l) => `${l.name} ${l.qty} ${l.unit}`),
       ...[...price.materials, ...price.services].map((l) => formatTenge(l.cost, 'тг')),
+      '123,45 тг',
     ]
 
     for (const [name, bytes] of [['regular', fonts.regular], ['bold', fonts.bold]] as const) {
