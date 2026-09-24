@@ -395,6 +395,14 @@ Store the **config**, not the panels. Panels are always regenerated. Version the
 schema (`schemaVersion: 1`) and write a migration path from day one — you will
 change the config shape and you must not break saved projects.
 
+The tree-backed v4 format is defined in `src/core/projectV4.ts`:
+`ProjectFileV4` stores one `root: GroupNode`, with no parallel
+`cabinets`/`placements` fields. `parseProjectV4` migrates v1–v3 files and
+validates v4 files. The current UI still uses the v3 `ProjectFile` adapter and
+`parseProject`; switch its store and serialization to v4 in the editor's
+second phase. An unplaced legacy cabinet is kept as a hidden cabinet node
+through migration, preserving its config without changing the cut list.
+
 ---
 
 ## 8. Testing rules
