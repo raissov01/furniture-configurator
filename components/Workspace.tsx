@@ -36,7 +36,7 @@ import {
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
-import { ModuleList } from '@/components/ModuleList'
+import { TreeDock } from '@/components/panels/TreeDock'
 import { BusyOverlay, Spinner } from '@/components/BusyOverlay'
 import { TouchJoystick } from '@/components/TouchJoystick'
 import { isTouchDevice } from '@/lib/walkInput'
@@ -844,8 +844,8 @@ export function Workspace() {
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} />
           </div>
-          {/* Бірнеше корпусты жобада «қай корпус» тізімнен таңдалады (qdesign сияқты). */}
-          {walk ? null : <ModuleList />}
+          {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
+          {walk ? null : <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:w-72"><TreeDock /></div>}
           {/*
             КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
             §2): PRO100-де олар сахнаның үстінде қалқымайды, тар белгіше
