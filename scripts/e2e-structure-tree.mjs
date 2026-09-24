@@ -1,6 +1,7 @@
 /** Standalone Structure/Layers browser scenario. Root runs this against an integrated dev server. */
 import { spawn } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { makeHelpers } from './e2eHelpers.mjs'
@@ -11,7 +12,7 @@ const profile = mkdtempSync(join(tmpdir(), 'furniture-structure-e2e-'))
 const chrome = spawn(process.env['CHROME'] ?? 'google-chrome', [
   '--headless=new', '--disable-gpu', '--use-gl=swiftshader', '--enable-unsafe-swiftshader',
   `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank',
-], { stdio: 'ignore' })
+], { stdio: 'ignore', detached: true })
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const assert = (value, message) => { if (!value) throw new Error(message) }
 
@@ -88,7 +89,8 @@ try {
   assert(await h.until("Boolean(document.querySelector('[data-panel=structure] input[aria-label=\"Название\"]'))", 5000), 'rename input missing')
   assert(await h.evaluate("(() => { const input=document.querySelector('[data-panel=structure] input[aria-label=\"Название\"]'); if (!input) return false; Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Тақта A жаңа'); input.dispatchEvent(new Event('input',{bubbles:true})); return true })()"), 'rename input failed')
   await h.wait(100)
-  await h.evaluate("document.querySelector('[data-panel=structure] input[aria-label=\"Название\"]')?.blur()")
+  await session.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
+  await session.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
   assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children.some(n=>n.id==='board-a' && n.name==='Тақта A жаңа')", 10000), 'renamed board not persisted')
   await h.evaluate("window.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))")
   assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children.some(n=>n.id==='board-a' && n.name==='Тақта A')", 10000), 'undo did not restore board name')
@@ -164,11 +166,19 @@ try {
   process.exitCode = 1
 } finally {
   session?.ws.close()
-  if (chrome.exitCode === null) {
-    const exited = new Promise((resolve) => chrome.once('exit', resolve))
-    chrome.kill('SIGTERM')
-    await Promise.race([exited, wait(5000)])
-    if (chrome.exitCode === null) { chrome.kill('SIGKILL'); await Promise.race([exited, wait(2000)]) }
+  // Stop the complete owned process group, including late profile writers.
+  const exited = chrome.exitCode === null
+    ? new Promise((resolve) => chrome.once('exit', resolve)) : Promise.resolve()
+  const stop = (signal) => {
+    if (!chrome.pid) return
+    try { process.kill(-chrome.pid, signal) }
+    catch (error) { if (error.code !== 'ESRCH') throw error }
   }
-  rmSync(profile, { recursive: true, force: true })
+  stop('SIGTERM')
+  await Promise.race([exited, wait(5000)])
+  if (chrome.exitCode === null) {
+    stop('SIGKILL')
+    await Promise.race([exited, wait(2000)])
+  }
+  await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 }

@@ -1,6 +1,7 @@
 /** Standalone browser scenario; root runs it after the integrated build/dev server is ready. */
 import { spawn } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { makeHelpers } from './e2eHelpers.mjs'
@@ -11,7 +12,7 @@ const profile = mkdtempSync(join(tmpdir(), 'furniture-roles-e2e-'))
 const chrome = spawn(process.env['CHROME'] ?? 'google-chrome', [
   '--headless=new', '--disable-gpu', '--use-gl=swiftshader', '--enable-unsafe-swiftshader',
   `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank',
-], { stdio: 'ignore' })
+], { stdio: 'ignore', detached: true })
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -62,6 +63,7 @@ try {
   assert(register === 200, `registration: ${register}`)
   assert(await h.until("document.querySelectorAll('[data-dimension-label]').length === 3", 20000), 'editor dimension labels missing')
   assert(await h.menu('Проект', 'Код для клиента', 1500), 'client code menu missing')
+  assert(await h.until("/^[0-9]{6}$/.test(document.querySelector('[data-share-code]')?.textContent?.trim() ?? '')", 20000), 'share code response missing')
   const code = await h.evaluate("document.querySelector('[data-share-code]')?.textContent?.trim()")
   assert(/^\d{6}$/.test(code), 'share code missing')
   await h.goto(`/view?c=${code}`, 8000)
@@ -100,14 +102,19 @@ try {
   process.exitCode = 1
 } finally {
   session?.ws.close()
-  if (chrome.exitCode === null) {
-    const exited = new Promise((resolve) => chrome.once('exit', resolve))
-    chrome.kill('SIGTERM')
-    await Promise.race([exited, wait(5000)])
-    if (chrome.exitCode === null) {
-      chrome.kill('SIGKILL')
-      await Promise.race([exited, wait(2000)])
-    }
+  // Stop the complete owned process group, including late profile writers.
+  const exited = chrome.exitCode === null
+    ? new Promise((resolve) => chrome.once('exit', resolve)) : Promise.resolve()
+  const stop = (signal) => {
+    if (!chrome.pid) return
+    try { process.kill(-chrome.pid, signal) }
+    catch (error) { if (error.code !== 'ESRCH') throw error }
   }
-  rmSync(profile, { recursive: true, force: true })
+  stop('SIGTERM')
+  await Promise.race([exited, wait(5000)])
+  if (chrome.exitCode === null) {
+    stop('SIGKILL')
+    await Promise.race([exited, wait(2000)])
+  }
+  await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
 }
