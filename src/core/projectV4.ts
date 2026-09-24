@@ -135,13 +135,13 @@ export function migrateV3ToV4(project: ProjectFile & { layers?: Layer[] }): Proj
   // v3-те `root` деген кабинет id-і заңды. Жаңа түбір оның id-ін баспасын.
   const cabinetIds = new Set(project.cabinets.map((cabinet) => cabinet.id))
   while (cabinetIds.has(root.id)) root.id = `${root.id}-1`
-  for (const cabinet of project.cabinets) {
-    if (project.placements.some((placement) => placement.cabinetId === cabinet.id)) continue
-    root.children.push({
-      kind: 'cabinet', id: cabinet.id, name: cabinet.name, hidden: true,
-      transform: IDENTITY_TRANSFORM, config: cabinet,
-    })
-  }
+  // Орны жоқ шкаф соңына қосылмайды, өз орнына қойылады: ретке белсенді
+  // модуль (`cabinets[0]`) мен деталировка нөмірлері сүйенеді.
+  const placed = new Map(root.children.map((node) => [node.id, node]))
+  root.children = project.cabinets.map((cabinet) => placed.get(cabinet.id) ?? {
+    kind: 'cabinet', id: cabinet.id, name: cabinet.name, hidden: true,
+    transform: IDENTITY_TRANSFORM, config: cabinet,
+  })
   const { cabinets: _cabinets, placements: _placements, schemaVersion: _version, ...rest } = project
   return { ...rest, schemaVersion: 4, root }
 }
