@@ -28,7 +28,7 @@ import {
   findTemplate,
   mirrorCabinet as mirrorCabinetConfig,
   nextFreeOffset,
-  parseProject,
+  parseProjectV4,
   parseShopProfile,
   renamePriceList as renameShopPriceList,
   setToProject,
@@ -38,9 +38,14 @@ import {
 } from '@/src/core/index'
 import type { Quality } from '@/lib/appearance'
 import type {
-  CabinetConfig, Catalog, Material, Placement, PriceOverrides, ProjectFile, ProjectInfo, Room,
+  CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, Material, Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SettingsOverride,
   Section, SectionContent, ShopProfile, WallId,
 } from '@/src/core/index'
+import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
+  renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
+  setNodeLayer, treeFromProject } from '@/src/core/index'
+import { assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, ungroupNode } from '@/src/core/treeEditing'
+import { cabinetsFromTree, reconcileCabinetsInTree } from './treeAdapters'
 
 /** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
 const SHOP_KEY = 'furniture-configurator:shop'
@@ -69,12 +74,21 @@ export type CameraPreset =
 /** Undo/redo бүкіл жобаны қайтарады: шкафты жылжыту да қайтарылуы керек. */
 type Snapshot = {
   room: Room
-  cabinets: CabinetConfig[]
-  placements: Placement[]
+  projectName: string
+  root: GroupNode
+  layers: Layer[]
+  projectSettings: SettingsOverride | undefined
+  projectMaterials: Material[] | undefined
+  projectEdgeBands: EdgeBand[] | undefined
   activeId: string
 }
 
 type State = Snapshot & {
+  /** Invalid local backup stays untouched until explicit recovery/load/reset. */
+  projectLoadError: string | null
+  /** Тек root-тан туатын ескі кабинет UI адаптері; жобаға сақталмайды. */
+  cabinets: CabinetConfig[]
+  placements: Placement[]
   /**
    * Цех профилі: материалдар, бағалар, зазорлар, фурнитура.
    * `catalog` — содан туындайтын мән; әр set()-те бірге жаңарады, әйтпесе
@@ -242,8 +256,21 @@ type State = Snapshot & {
   loadFurniture(options: import('@/src/core/index').FurnitureOptions): void
   loadCabinet(cabinet: CabinetConfig): void
 
-  exportProject(): ProjectFile
-  loadProject(file: ProjectFile): void
+  exportProject(): ProjectFileV4
+  loadProject(file: unknown): void
+  renameNode(id: string, name: string): void
+  setNodeHidden(id: string, hidden: boolean): void
+  setNodeLocked(id: string, locked: boolean): void
+  groupSelected(ids: string[], groupId: string, name: string): void
+  ungroup(id: string): void
+  reparent(id: string, parentId: string): void
+  createLayer(name: string): void
+  renameLayer(id: string, name: string): void
+  setLayerVisible(id: string, visible: boolean): void
+  setLayerLocked(id: string, locked: boolean): void
+  setLayerColor(id: string, color: string): void
+  deleteLayer(id: string): void
+  assignNodeLayer(id: string, layerId: string): void
   /** Тапсырыс реквизиттерін түзету. Бос жол сақталмайды (`exportProject`-те қиылады). */
   editProjectInfo(patch: Partial<ProjectInfo>): void
   /**
@@ -312,6 +339,8 @@ type State = Snapshot & {
   setAssemblyStep(step: number | null): void
   setActive(id: string): void
   addCabinet(): void
+  appendCabinet(cabinet: CabinetConfig): void
+  replaceCabinets(cabinets: CabinetConfig[]): void
   duplicateCabinet(id: string): void
   mirrorCabinet(id: string): void
   removeCabinet(id: string): void
@@ -339,10 +368,120 @@ type State = Snapshot & {
 
 const snapshot = (s: State): Snapshot => ({
   room: s.room,
-  cabinets: s.cabinets,
-  placements: s.placements,
+  projectName: s.projectName,
+  root: s.root,
+  layers: s.layers,
+  projectSettings: s.projectSettings,
+  projectMaterials: s.projectMaterials,
+  projectEdgeBands: s.projectEdgeBands,
   activeId: s.activeId,
 })
+
+function legacyEdit(s: State, cabinets: CabinetConfig[], placements = s.placements, room = s.room,
+  movedIds: ReadonlySet<string> = new Set()) {
+  const previous = new Map(s.cabinets.map((cabinet) => [cabinet.id, cabinet]))
+  const next = new Map(cabinets.map((cabinet) => [cabinet.id, cabinet]))
+  for (const [id, cabinet] of previous) {
+    if (!next.has(id) || next.get(id) !== cabinet || movedIds.has(id)) {
+      assertTreeNodeEditable(s.root, id, s.layers)
+    }
+  }
+  const root = reconcileCabinetsInTree(s.root, room, cabinets, placements, movedIds)
+  return { root, ...cabinetsFromTree(root, room, s.layers) }
+}
+
+/** A preset replaces scene content, while order metadata and material choices remain. */
+function replaceProjectScene(s: State, cabinets: CabinetConfig[], placements: Placement[], room: Room) {
+  const root = treeFromProject({ schemaVersion: 3, name: s.root.name, room, cabinets, placements,
+    materials: s.catalog.materials, edgeBands: s.catalog.edgeBands })
+  const layers = [createDefaultLayer()]
+  return { root, layers, ...cabinetsFromTree(root, room, layers) }
+}
+
+/** Project's physical geometry wins; current shop provides prices for matching IDs. */
+function projectCatalog(shop: ShopProfile, materials?: Material[], edgeBands?: EdgeBand[]): Catalog {
+  const base = catalogOf(shop)
+  if (!materials && !edgeBands) return base
+  const materialMap = new Map(base.materials.map((material) => [material.id, material]))
+  const bandMap = new Map(base.edgeBands.map((band) => [band.id, band]))
+  for (const material of materials ?? []) {
+    const local = materialMap.get(material.id)
+    materialMap.set(material.id, { ...material,
+      // Legacy files omit template preferences; their physical dimensions
+      // still win, but new templates can use the local material's edge defaults.
+      defaultEdging: material.defaultEdging ?? local?.defaultEdging,
+      pricePerSheet: local?.pricePerSheet ?? 0 })
+  }
+  for (const band of edgeBands ?? []) {
+    bandMap.set(band.id, { ...band,
+      pricePerMeter: bandMap.get(band.id)?.pricePerMeter ?? 0 })
+  }
+  return { ...base, materials: [...materialMap.values()], edgeBands: [...bandMap.values()] }
+}
+
+function projectMaterialsAfterShopEdit(saved: Material[] | undefined, before: Material[], after: Material[]): Material[] | undefined {
+  if (!saved) return undefined
+  const old = new Map(before.map((material) => [material.id, material]))
+  const next = new Map(after.map((material) => [material.id, material]))
+  return saved.map((material) => {
+    const previous = old.get(material.id)
+    const edited = next.get(material.id)
+    if (!previous || !edited) return material
+    return {
+      ...material,
+      ...(previous.name !== edited.name ? { name: edited.name } : {}),
+      ...(previous.thickness !== edited.thickness ? { thickness: edited.thickness } : {}),
+      ...(previous.sheetWidth !== edited.sheetWidth ? { sheetWidth: edited.sheetWidth } : {}),
+      ...(previous.sheetHeight !== edited.sheetHeight ? { sheetHeight: edited.sheetHeight } : {}),
+      ...(previous.hasGrain !== edited.hasGrain ? { hasGrain: edited.hasGrain } : {}),
+      ...(previous.trimEdge !== edited.trimEdge ? { trimEdge: edited.trimEdge } : {}),
+      ...(JSON.stringify(previous.decor) !== JSON.stringify(edited.decor) ? { decor: edited.decor } : {}),
+      ...(JSON.stringify(previous.defaultEdging) !== JSON.stringify(edited.defaultEdging)
+        ? { defaultEdging: edited.defaultEdging } : {}),
+      ...(JSON.stringify(previous.slab?.stockLengths) !== JSON.stringify(edited.slab?.stockLengths)
+        ? { slab: edited.slab } : {}),
+    }
+  })
+}
+
+function projectBandsAfterShopEdit(saved: EdgeBand[] | undefined, before: EdgeBand[], after: EdgeBand[]): EdgeBand[] | undefined {
+  if (!saved) return undefined
+  const old = new Map(before.map((band) => [band.id, band]))
+  const next = new Map(after.map((band) => [band.id, band]))
+  return saved.map((band) => {
+    const previous = old.get(band.id)
+    const edited = next.get(band.id)
+    if (!previous || !edited) return band
+    return { ...band,
+      ...(previous.name !== edited.name ? { name: edited.name } : {}),
+      ...(previous.thickness !== edited.thickness ? { thickness: edited.thickness } : {}) }
+  })
+}
+
+function projectSettingsAfterShopEdit(
+  saved: SettingsOverride | undefined,
+  before: SettingsOverride,
+  after: SettingsOverride,
+): SettingsOverride {
+  const merged: SettingsOverride = { ...(saved ?? before) }
+  const apply = <K extends keyof SettingsOverride>(key: K): void => {
+    const previous = before[key]
+    const edited = after[key]
+    const unchanged = Array.isArray(previous) && Array.isArray(edited)
+      ? previous.length === edited.length && previous.every((value, index) => value === edited[index])
+      : previous === edited
+    if (unchanged) return
+    if (edited === undefined) delete merged[key]
+    else merged[key] = edited
+  }
+  for (const key of new Set([...Object.keys(before), ...Object.keys(after)] as (keyof SettingsOverride)[])) apply(key)
+  return merged
+}
+
+function treeEdit(s: State, root: GroupNode, layers = s.layers) {
+  return { root, layers, ...cabinetsFromTree(root, s.room, layers),
+    past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null }
+}
 
 /**
  * Жаңа өлшемді бөлме. Терезе мен есік бар болса — жаңа қабырғаға қысылады,
@@ -389,8 +528,15 @@ const withOpenings = (room: Room): Room =>
 
 const initial: Snapshot = {
   room: withOpenings(DEFAULT_ROOM),
-  cabinets: [defaultCabinet],
-  placements: [{ cabinetId: defaultCabinet.id, wall: 'south', offset: 0 }],
+  projectName: defaultCabinet.name,
+  root: treeFromProject({ schemaVersion: 3, name: defaultCabinet.name,
+    room: withOpenings(DEFAULT_ROOM), materials: defaultShop.materials,
+    edgeBands: defaultShop.edgeBands, cabinets: [defaultCabinet],
+    placements: [{ cabinetId: defaultCabinet.id, wall: 'south', offset: 0 }] }),
+  layers: [createDefaultLayer()],
+  projectSettings: undefined,
+  projectMaterials: undefined,
+  projectEdgeBands: undefined,
   activeId: defaultCabinet.id,
 }
 
@@ -400,6 +546,8 @@ export const activeCabinet = (s: State): CabinetConfig =>
 
 export const useConfigurator = create<State>((set, get) => ({
   ...initial,
+  ...cabinetsFromTree(initial.root, initial.room, initial.layers),
+  projectLoadError: null,
   shop: defaultShop,
   catalog: catalogOf(defaultShop),
   projectInfo: {},
@@ -457,7 +605,7 @@ export const useConfigurator = create<State>((set, get) => ({
     // Слайдер сүйрегенде әр миллиметр бөлек undo қадамы болмауы керек.
     const coalesce = s.lastEditKey === key && now - s.lastEditAt < COALESCE_MS
     set({
-      cabinets: s.cabinets.map((c) => (c.id === s.activeId ? { ...c, ...patch } : c)),
+      ...legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? { ...c, ...patch } : c))),
       past: coalesce ? s.past : [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: key,
@@ -501,7 +649,7 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const next = { ...templateToCabinet(template, s.catalog), id: s.activeId }
     set({
-      cabinets: s.cabinets.map((c) => (c.id === s.activeId ? next : c)),
+      ...legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c))),
       templateId: id,
       galleryOpen: false,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
@@ -521,14 +669,14 @@ export const useConfigurator = create<State>((set, get) => ({
     if (!preset) return
     const s = get()
     const { cabinets, placements } = setToProject(preset, s.catalog)
+    const room = {
+      width: Math.max(s.room.width, preset.room.width),
+      depth: Math.max(s.room.depth, preset.room.depth),
+      height: Math.max(s.room.height, preset.room.height),
+    }
     set({
-      room: {
-        width: Math.max(s.room.width, preset.room.width),
-        depth: Math.max(s.room.depth, preset.room.depth),
-        height: Math.max(s.room.height, preset.room.height),
-      },
-      cabinets,
-      placements,
+      room,
+      ...replaceProjectScene(s, cabinets, placements, room),
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
@@ -548,10 +696,10 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const { cabinets, placements, room } = generateKitchen(options, s.catalog)
     if (cabinets.length === 0) return
+    const nextRoom = withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) })
     set({
-      room: withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) }),
-      cabinets,
-      placements,
+      room: nextRoom,
+      ...replaceProjectScene(s, cabinets, placements, nextRoom),
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
@@ -569,10 +717,10 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const { cabinets, placements, room } = generateFurniture(options, s.catalog)
     if (cabinets.length === 0) return
+    const nextRoom = withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) })
     set({
-      room: withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) }),
-      cabinets,
-      placements,
+      room: nextRoom,
+      ...replaceProjectScene(s, cabinets, placements, nextRoom),
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
@@ -587,7 +735,7 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const next = { ...cabinet, id: s.activeId }
     set({
-      cabinets: s.cabinets.map((c) => (c.id === s.activeId ? next : c)),
+      ...legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c))),
       templateId: '',
       aiOpen: false,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
@@ -600,14 +748,14 @@ export const useConfigurator = create<State>((set, get) => ({
   exportProject() {
     const s = get()
     return {
-      schemaVersion: 3 as const,
-      name: s.cabinets.length === 1 ? s.cabinets[0]!.name : 'Проект',
-      materials: s.shop.materials,
-      edgeBands: s.shop.edgeBands,
-      settings: s.shop.settings,
-      cabinets: s.cabinets,
+      schemaVersion: 4 as const,
+      name: s.projectName,
+      materials: s.catalog.materials,
+      edgeBands: s.catalog.edgeBands,
+      settings: s.projectSettings ?? s.shop.settings,
+      root: s.root,
+      layers: s.layers,
       room: s.room,
-      placements: s.placements,
       info: cleanProjectInfo(s.projectInfo),
       priceOverrides: cleanPriceOverrides(s.priceOverrides),
     }
@@ -620,10 +768,11 @@ export const useConfigurator = create<State>((set, get) => ({
    */
   loadProject(file) {
     const s = get()
+    const project = parseProjectV4(file)
     const known = new Set(s.shop.materials.map((m) => m.id))
-    const missing = file.materials.filter((m) => !known.has(m.id)).map((m) => ({ ...m, pricePerSheet: 0 }))
+    const missing = project.materials.filter((m) => !known.has(m.id)).map((m) => ({ ...m, pricePerSheet: 0 }))
     const knownBands = new Set(s.shop.edgeBands.map((b) => b.id))
-    const missingBands = file.edgeBands.filter((b) => !knownBands.has(b.id)).map((b) => ({ ...b, pricePerMeter: 0 }))
+    const missingBands = project.edgeBands.filter((b) => !knownBands.has(b.id)).map((b) => ({ ...b, pricePerMeter: 0 }))
 
     const shop: ShopProfile = missing.length > 0 || missingBands.length > 0
       ? {
@@ -635,14 +784,20 @@ export const useConfigurator = create<State>((set, get) => ({
 
     set({
       shop,
-      catalog: catalogOf(shop),
-      room: file.room,
-      cabinets: file.cabinets,
-      placements: file.placements,
-      activeId: file.cabinets[0]!.id,
+      catalog: projectCatalog(shop, project.materials, project.edgeBands),
+      room: project.room,
+      projectName: project.name,
+      root: project.root,
+      layers: project.layers ?? [createDefaultLayer()],
+      projectSettings: project.settings,
+      projectMaterials: project.materials,
+      projectEdgeBands: project.edgeBands,
+      ...cabinetsFromTree(project.root, project.room, project.layers),
+      activeId: cabinetsFromTree(project.root, project.room, project.layers).cabinets[0]?.id ?? '',
       templateId: '',
-      projectInfo: file.info ?? {},
-      priceOverrides: file.priceOverrides ?? {},
+      projectInfo: project.info ?? {},
+      priceOverrides: project.priceOverrides ?? {},
+      projectLoadError: null,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
@@ -666,6 +821,7 @@ export const useConfigurator = create<State>((set, get) => ({
   },
 
   saveProjectLocally() {
+    if (get().projectLoadError) return
     try {
       window.localStorage.setItem(PROJECT_KEY, JSON.stringify(get().exportProject()))
     } catch {
@@ -678,30 +834,40 @@ export const useConfigurator = create<State>((set, get) => ({
     let raw: string | null = null
     try {
       raw = window.localStorage.getItem(PROJECT_KEY)
-    } catch {
+    } catch (error) {
+      set({ projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}` })
       return
     }
     if (!raw) return
     try {
-      const file = parseProject(JSON.parse(raw))
+      const file = parseProjectV4(JSON.parse(raw))
       set({
         room: file.room,
-        cabinets: file.cabinets,
-        placements: file.placements,
-        activeId: file.cabinets[0]!.id,
+        projectName: file.name,
+        root: file.root,
+        layers: file.layers ?? [createDefaultLayer()],
+        projectSettings: file.settings,
+        projectMaterials: file.materials,
+        projectEdgeBands: file.edgeBands,
+        catalog: projectCatalog(get().shop, file.materials, file.edgeBands),
+        ...cabinetsFromTree(file.root, file.room, file.layers),
+        activeId: cabinetsFromTree(file.root, file.room, file.layers).cabinets[0]?.id ?? '',
         projectInfo: file.info ?? {},
         priceOverrides: file.priceOverrides ?? {},
         // Жұмыс табылды — бастау экранын көрсетудің қажеті жоқ.
         firstRun: false,
+        projectLoadError: null,
       })
-    } catch {
-      // Ескі не бүлінген жазба: үнсіз ЖОЙМАЙМЫЗ, әдепкі жобамен ашылады.
+    } catch (error) {
+      // Қате файлды автосақтау басып кетпеуі керек: пайдаланушы басқа жобаны
+      // анық ашқанша немесе Reset басқанша түпнұсқа localStorage-та қалады.
+      set({ projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}` })
     }
   },
 
   setShop(shop) {
     const synced = syncActivePriceList(shop)
-    set({ shop: synced, catalog: catalogOf(synced) })
+    set((s) => ({ shop: synced, catalog: projectCatalog(synced, s.projectMaterials, s.projectEdgeBands) }))
     // Сақтау сәтсіз болса (жабық режим, толған қойма) — жұмыс тоқтамауы керек.
     try {
       window.localStorage.setItem(SHOP_KEY, JSON.stringify(synced))
@@ -711,7 +877,17 @@ export const useConfigurator = create<State>((set, get) => ({
   },
 
   editShop(patch) {
+    const s = get()
+    set({
+      ...(patch.settings ? { projectSettings: projectSettingsAfterShopEdit(
+        s.projectSettings, s.shop.settings, patch.settings) } : {}),
+      ...(patch.materials ? { projectMaterials: projectMaterialsAfterShopEdit(
+        s.projectMaterials, s.shop.materials, patch.materials) } : {}),
+      ...(patch.edgeBands ? { projectEdgeBands: projectBandsAfterShopEdit(
+        s.projectEdgeBands, s.shop.edgeBands, patch.edgeBands) } : {}),
+    })
     get().setShop({ ...get().shop, ...patch })
+    if (patch.settings || patch.materials || patch.edgeBands) get().saveProjectLocally()
   },
 
   createPriceList(name, mode) {
@@ -779,7 +955,7 @@ export const useConfigurator = create<State>((set, get) => ({
     if (!raw) return
     try {
       const shop = parseShopProfile(JSON.parse(raw))
-      set({ shop, catalog: catalogOf(shop) })
+      set((s) => ({ shop, catalog: projectCatalog(shop, s.projectMaterials, s.projectEdgeBands) }))
     } catch {
       // Ескі не бүлінген жазба: үнсіз ЖОЙМАЙМЫЗ, әдепкімен жұмыс істей береміз.
     }
@@ -888,7 +1064,7 @@ export const useConfigurator = create<State>((set, get) => ({
       const list: { at: number; json: string }[] = JSON.parse(raw)
       const found = list.find((x) => x.at === at)
       if (!found) return
-      get().loadProject(parseProject(JSON.parse(found.json)))
+      get().loadProject(parseProjectV4(JSON.parse(found.json)))
     } catch {
       // бүлінген жазба: үнсіз қалдырамыз, ағымдағы жоба сақталады
     }
@@ -899,8 +1075,11 @@ export const useConfigurator = create<State>((set, get) => ({
 
   editRoom(patch) {
     const s = get()
+    const room = { ...s.room, ...patch }
     set({
-      room: { ...s.room, ...patch },
+      room,
+      ...legacyEdit(s, s.cabinets, s.placements, room,
+        new Set(s.placements.map((placement) => placement.cabinetId))),
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
@@ -917,26 +1096,98 @@ export const useConfigurator = create<State>((set, get) => ({
     set({ activeId, templateId: '', selected: null })
   },
 
+  renameNode(id, name) {
+    const s = get()
+    set(treeEdit(s, renameTreeNode(s.root, id, name, s.layers)))
+  },
+  setNodeHidden(id, hidden) {
+    const s = get()
+    set(treeEdit(s, setTreeNodeFlag(s.root, id, 'hidden', hidden, s.layers)))
+  },
+  setNodeLocked(id, locked) {
+    const s = get()
+    set(treeEdit(s, setTreeNodeFlag(s.root, id, 'locked', locked, s.layers)))
+  },
+  groupSelected(ids, groupId, name) {
+    const s = get()
+    set(treeEdit(s, groupNodes(s.root, ids, groupId, name, s.layers)))
+  },
+  ungroup(id) {
+    const s = get()
+    set(treeEdit(s, ungroupNode(s.root, id, s.layers)))
+  },
+  reparent(id, parentId) {
+    const s = get()
+    set(treeEdit(s, reparentNode(s.root, id, parentId, s.layers)))
+  },
+  createLayer(name) {
+    const s = get()
+    set(treeEdit(s, s.root, createTreeLayer(s.layers, `layer-${Date.now().toString(36)}`, name)))
+  },
+  renameLayer(id, name) {
+    const s = get()
+    set(treeEdit(s, s.root, renameTreeLayer(s.layers, id, name)))
+  },
+  setLayerVisible(id, visible) {
+    const s = get()
+    set(treeEdit(s, s.root, setLayerVisible(s.layers, id, visible)))
+  },
+  setLayerLocked(id, locked) {
+    const s = get()
+    set(treeEdit(s, s.root, setLayerLocked(s.layers, id, locked)))
+  },
+  setLayerColor(id, color) {
+    const s = get()
+    set(treeEdit(s, s.root, setLayerColor(s.layers, id, color)))
+  },
+  deleteLayer(id) {
+    const s = get()
+    const result = deleteTreeLayer(s.root, s.layers, id)
+    set(treeEdit(s, result.root, result.layers))
+  },
+  assignNodeLayer(id, layerId) {
+    const s = get()
+    assertTreeNodeEditable(s.root, id, s.layers)
+    set(treeEdit(s, setNodeLayer(s.root, id, layerId, s.layers)))
+  },
+
   /** Жаңа шкаф таңдалған қабырғаның бос жеріне қойылады. */
   addCabinet() {
     const s = get()
-    const entries = s.cabinets.map((c) => ({
-      cabinet: c,
-      placement: s.placements.find((p) => p.cabinetId === c.id)!,
-    }))
+    const entries = s.cabinets.flatMap((c) => {
+      const placement = s.placements.find((p) => p.cabinetId === c.id)
+      return placement ? [{ cabinet: c, placement }] : []
+    })
     const id = `cabinet-${Date.now().toString(36)}`
     const cabinet = { ...activeCabinet(s), id }
     set({
-      cabinets: [...s.cabinets, cabinet],
-      placements: [
+      ...legacyEdit(s, [...s.cabinets, cabinet], [
         ...s.placements,
         { cabinetId: id, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
-      ],
+      ]),
       activeId: id,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
     })
+  },
+
+  appendCabinet(cabinet) {
+    const s = get()
+    const entries = s.cabinets.flatMap((item) => {
+      const placement = s.placements.find((p) => p.cabinetId === item.id)
+      return placement ? [{ cabinet: item, placement }] : []
+    })
+    const placement = { cabinetId: cabinet.id, wall: s.selectedWall,
+      offset: nextFreeOffset(s.room, s.selectedWall, entries) }
+    set({ ...legacyEdit(s, [...s.cabinets, cabinet], [...s.placements, placement]),
+      activeId: cabinet.id, templateId: '', past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [], lastEditKey: null })
+  },
+  replaceCabinets(cabinets) {
+    const s = get()
+    set({ ...legacyEdit(s, cabinets), past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [], lastEditKey: null })
   },
 
   /**
@@ -948,17 +1199,16 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const source = s.cabinets.find((c) => c.id === id)
     if (!source) return
-    const entries = s.cabinets.map((c) => ({
-      cabinet: c,
-      placement: s.placements.find((p) => p.cabinetId === c.id)!,
-    }))
+    const entries = s.cabinets.flatMap((c) => {
+      const placement = s.placements.find((p) => p.cabinetId === c.id)
+      return placement ? [{ cabinet: c, placement }] : []
+    })
     const newId = `cabinet-${Date.now().toString(36)}`
     set({
-      cabinets: [...s.cabinets, { ...source, id: newId, name: `${source.name} (копия)` }],
-      placements: [
+      ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: `${source.name} (копия)` }], [
         ...s.placements,
         { cabinetId: newId, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
-      ],
+      ]),
       activeId: newId,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
@@ -975,17 +1225,16 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const source = s.cabinets.find((c) => c.id === id)
     if (!source || !canMirror(source).ok) return
-    const entries = s.cabinets.map((c) => ({
-      cabinet: c,
-      placement: s.placements.find((p) => p.cabinetId === c.id)!,
-    }))
+    const entries = s.cabinets.flatMap((c) => {
+      const placement = s.placements.find((p) => p.cabinetId === c.id)
+      return placement ? [{ cabinet: c, placement }] : []
+    })
     const newId = `cabinet-${Date.now().toString(36)}`
     set({
-      cabinets: [...s.cabinets, mirrorCabinetConfig(source, newId)],
-      placements: [
+      ...legacyEdit(s, [...s.cabinets, mirrorCabinetConfig(source, newId)], [
         ...s.placements,
         { cabinetId: newId, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
-      ],
+      ]),
       activeId: newId,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
@@ -998,8 +1247,7 @@ export const useConfigurator = create<State>((set, get) => ({
     if (s.cabinets.length <= 1) return
     const cabinets = s.cabinets.filter((c) => c.id !== id)
     set({
-      cabinets,
-      placements: s.placements.filter((p) => p.cabinetId !== id),
+      ...legacyEdit(s, cabinets, s.placements.filter((p) => p.cabinetId !== id)),
       activeId: s.activeId === id ? cabinets[0]!.id : s.activeId,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
@@ -1013,7 +1261,8 @@ export const useConfigurator = create<State>((set, get) => ({
     const key = `placement:${cabinetId}`
     const coalesce = opts?.continueGesture === true || (s.lastEditKey === key && now - s.lastEditAt < COALESCE_MS)
     set({
-      placements: s.placements.map((p) => (p.cabinetId === cabinetId ? { ...p, ...patch } : p)),
+      ...legacyEdit(s, s.cabinets, s.placements.map((p) => (p.cabinetId === cabinetId ? { ...p, ...patch } : p)),
+        s.room, new Set([cabinetId])),
       past: coalesce ? s.past : [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: key,
@@ -1027,6 +1276,8 @@ export const useConfigurator = create<State>((set, get) => ({
     if (!previous) return
     set({
       ...previous,
+      ...cabinetsFromTree(previous.root, previous.room, previous.layers),
+      catalog: projectCatalog(s.shop, previous.projectMaterials, previous.projectEdgeBands),
       past: s.past.slice(0, -1),
       future: [snapshot(s), ...s.future],
       lastEditKey: null,
@@ -1039,6 +1290,8 @@ export const useConfigurator = create<State>((set, get) => ({
     if (!next) return
     set({
       ...next,
+      ...cabinetsFromTree(next.root, next.room, next.layers),
+      catalog: projectCatalog(s.shop, next.projectMaterials, next.projectEdgeBands),
       past: [...s.past, snapshot(s)],
       future: s.future.slice(1),
       lastEditKey: null,
@@ -1049,6 +1302,9 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     set({
       ...initial,
+      ...cabinetsFromTree(initial.root, initial.room, initial.layers),
+      catalog: projectCatalog(s.shop),
+      projectLoadError: null,
       templateId: defaultTemplateId,
       past: [...s.past, snapshot(s)],
       future: [],

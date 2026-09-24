@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cloudOff } from '@/lib/server/cloud'
 import { SHARE_MAX_BYTES, createShare } from '@/lib/server/share'
-import { ConfigValidationError, parseProject } from '@/src/core/index'
+import { ConfigValidationError, parseProjectV4 } from '@/src/core/index'
 import { toPublicProject } from '@/src/core/publicProject'
 import { currentAccount } from '@/lib/server/session'
 import { can } from '@/lib/permissions'
@@ -23,7 +23,7 @@ export async function POST(request: Request): Promise<Response> {
   }
   let publicJson: string
   try {
-    publicJson = JSON.stringify(toPublicProject(parseProject(JSON.parse(text) as unknown)))
+    publicJson = JSON.stringify(toPublicProject(parseProjectV4(JSON.parse(text) as unknown)))
   } catch (error) {
     const message = error instanceof ConfigValidationError ? error.message : 'Проект не прочитался'
     return NextResponse.json({ error: message }, { status: 400 })

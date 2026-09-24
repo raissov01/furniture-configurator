@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cloudOff } from '@/lib/server/cloud'
 import { SHARE_MAX_BYTES, readShare, updateShare } from '@/lib/server/share'
-import { ConfigValidationError, parseProject } from '@/src/core/index'
+import { ConfigValidationError, parseProjectV4 } from '@/src/core/index'
 import { toPublicProject } from '@/src/core/publicProject'
 
 type Context = { params: Promise<{ code: string }> }
@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: Context): Promise<Respo
   if (!row) return NextResponse.json({ error: 'Код не найден или его срок истёк' }, { status: 404 })
   let project: unknown
   try {
-    project = toPublicProject(parseProject(JSON.parse(row.json) as unknown))
+    project = toPublicProject(parseProjectV4(JSON.parse(row.json) as unknown))
   } catch {
     return NextResponse.json({ error: 'Проект по коду повреждён' }, { status: 422 })
   }
@@ -37,7 +37,7 @@ export async function PUT(request: Request, { params }: Context): Promise<Respon
   }
   let publicJson: string
   try {
-    publicJson = JSON.stringify(toPublicProject(parseProject(JSON.parse(text) as unknown)))
+    publicJson = JSON.stringify(toPublicProject(parseProjectV4(JSON.parse(text) as unknown)))
   } catch (error) {
     const message = error instanceof ConfigValidationError ? error.message : 'Проект не прочитался'
     return NextResponse.json({ error: message }, { status: 400 })
