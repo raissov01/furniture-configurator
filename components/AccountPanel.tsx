@@ -10,7 +10,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useCallback, useEffect, useState } from 'react'
-import { parseProject, parseShopProfile } from '@/src/core/index'
+import { parseProjectV4, parseShopProfile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 
@@ -267,7 +267,7 @@ export function AccountPanel() {
     if (!res.ok) return
     const data = (await res.json()) as { project?: unknown }
     try {
-      loadProject(parseProject(data.project))
+      loadProject(parseProjectV4(data.project))
       setOpen(false)
     } catch (e) {
       setError(`Проект не открылся: ${e instanceof Error ? e.message : 'неверная форма'}`)

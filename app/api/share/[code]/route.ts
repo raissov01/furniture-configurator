@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cloudOff } from '@/lib/server/cloud'
 import { SHARE_MAX_BYTES, readShare, updateShare } from '@/lib/server/share'
-import { ConfigValidationError, parseProject } from '@/src/core/index'
+import { ConfigValidationError, parseProjectV4 } from '@/src/core/index'
 
 type Context = { params: Promise<{ code: string }> }
 
@@ -29,7 +29,7 @@ export async function PUT(request: Request, { params }: Context): Promise<Respon
     return NextResponse.json({ error: 'Неверный размер проекта' }, { status: 400 })
   }
   try {
-    parseProject(JSON.parse(text) as unknown)
+    parseProjectV4(JSON.parse(text) as unknown)
   } catch (error) {
     const message = error instanceof ConfigValidationError ? error.message : 'Проект не прочитался'
     return NextResponse.json({ error: message }, { status: 400 })

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { parseProject } from '@/src/core/index'
+import { parseProjectV4 } from '@/src/core/index'
 import { currentAccount } from '@/lib/server/session'
 import { listProjects, writeProject } from '@/lib/server/store'
 import { projectExists, readPlan, usageOf } from '@/lib/server/plan'
@@ -26,7 +26,7 @@ export async function POST(request: Request): Promise<Response> {
     | { project?: unknown; id?: unknown }
     | null
   try {
-    const project = parseProject(body?.project)
+    const project = parseProjectV4(body?.project)
     const id = typeof body?.id === 'string' ? body.id : undefined
 
     /*

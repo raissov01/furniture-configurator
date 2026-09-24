@@ -9,7 +9,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useRef } from 'react'
-import { parseProject } from '@/src/core/index'
+import { parseProjectV4 } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 
@@ -33,7 +33,7 @@ export function ProjectMenu() {
     const file = fileList?.[0]
     if (!file) return
     try {
-      loadProject(parseProject(JSON.parse(await file.text())))
+      loadProject(parseProjectV4(JSON.parse(await file.text())))
     } catch (error) {
       // Бүлінген файл ҮНСІЗ жұтылмауы керек: адам не болғанын білуі тиіс.
       window.alert(

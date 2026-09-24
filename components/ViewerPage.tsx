@@ -12,8 +12,8 @@ import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ConfigValidationError, decodeProject, parseProject } from '@/src/core/index'
-import type { ProjectFile } from '@/src/core/index'
+import { ConfigValidationError, decodeProjectV4, parseProjectV4 } from '@/src/core/index'
+import type { ProjectFileV4 } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 import { useSceneItems } from '@/lib/useSceneItems'
@@ -45,7 +45,7 @@ const SHARE_POLL_MS = 5000
 
 export function ViewerPage() {
   const [state, setState] = useState<
-    { kind: 'loading' } | { kind: 'ready'; project: ProjectFile } | { kind: 'error'; message: string }
+    { kind: 'loading' } | { kind: 'ready'; project: ProjectFileV4 } | { kind: 'error'; message: string }
   >({ kind: 'loading' })
 
   const loadProject = useConfigurator((s) => s.loadProject)
@@ -61,7 +61,7 @@ export function ViewerPage() {
       return undefined
     }
     try {
-      const project = decodeProject(hash)
+      const project = decodeProjectV4(hash)
       loadProject(project)
       setState({ kind: 'ready', project })
     } catch (error) {
@@ -103,7 +103,7 @@ export function ViewerPage() {
       if (!alive || data.updatedAt === seen) return
       seen = data.updatedAt
       try {
-        const project = parseProject(data.project)
+        const project = parseProjectV4(data.project)
         loadProject(project)
         setState({ kind: 'ready', project })
       } catch (error) {
@@ -146,7 +146,7 @@ function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; messa
 function Viewer({
   project, preset, setPreset,
 }: {
-  project: ProjectFile
+  project: ProjectFileV4
   preset: CameraPreset
   setPreset: (v: CameraPreset) => void
 }) {

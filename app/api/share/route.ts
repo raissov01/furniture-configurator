@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cloudOff } from '@/lib/server/cloud'
 import { SHARE_MAX_BYTES, createShare } from '@/lib/server/share'
-import { ConfigValidationError, parseProject } from '@/src/core/index'
+import { ConfigValidationError, parseProjectV4 } from '@/src/core/index'
 
 /**
  * Клиентке КОД жасау (qdesign «3D-көріністе ашу» сияқты).
@@ -19,7 +19,7 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Проект слишком большой для кода' }, { status: 413 })
   }
   try {
-    parseProject(JSON.parse(text) as unknown)
+    parseProjectV4(JSON.parse(text) as unknown)
   } catch (error) {
     const message = error instanceof ConfigValidationError ? error.message : 'Проект не прочитался'
     return NextResponse.json({ error: message }, { status: 400 })

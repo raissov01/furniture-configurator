@@ -21,8 +21,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/cn'
 import { useConfigurator } from '@/store/configurator'
-import { findTemplate, nextFreeOffset, templateToCabinet } from '@/src/core/index'
-import type { CabinetConfig, Placement, Room, WallId } from '@/src/core/index'
+import { findTemplate, templateToCabinet } from '@/src/core/index'
 import { BASIS_MATERIALS } from '@/src/core/data/basisCatalog'
 import type { Material } from '@/src/core/types'
 import {
@@ -42,9 +41,6 @@ import type { LibraryTabId } from './libraryCatalogLogic'
 import { CatalogThumb } from './CatalogThumb'
 
 const PAGE_SIZE = 60 // гоча №4: 5094 жолды бірден рендерлемеу — беттеу
-
-/** `store/configurator.ts`-тегі `Snapshot`-пен БІРДЕЙ пішін (ReplacePanel.tsx-пен бірдей тәсіл). */
-type UndoSnapshot = { room: Room; cabinets: CabinetConfig[]; placements: Placement[]; activeId: string }
 
 export function LibraryPanel() {
   const [tab, setTab] = React.useState<LibraryTabId>('mebel')
@@ -92,31 +88,10 @@ export function LibraryPanel() {
     const template = findTemplate(templateId)
     if (!template) return // қорғаныс: SEED_TEMPLATES-тен алынбаса, ешнәрсе істемейміз (silent no-op емес — тексерілген, tests/libraryCatalogLogic.test.ts осы жағдайды жабады)
 
-    useConfigurator.setState((s) => {
-      const cabinet: CabinetConfig = {
-        ...templateToCabinet(template, catalog, size),
-        id: `cabinet-${Date.now().toString(36)}`,
-        // PRO100 атауы сақталады — қай каталог жазбасынан алынғаны цехта көрінеді.
-        name: `${item.name} (PRO100)`,
-      }
-      const entries = s.cabinets.map((c) => ({
-        cabinet: c,
-        placement: s.placements.find((p) => p.cabinetId === c.id)!,
-      }))
-      const snapshot: UndoSnapshot = { room: s.room, cabinets: s.cabinets, placements: s.placements, activeId: s.activeId }
-      const wall: WallId = s.selectedWall
-      return {
-        cabinets: [...s.cabinets, cabinet],
-        placements: [
-          ...s.placements,
-          { cabinetId: cabinet.id, wall, offset: nextFreeOffset(s.room, wall, entries) },
-        ],
-        activeId: cabinet.id,
-        templateId: '',
-        past: [...s.past, snapshot].slice(-100),
-        future: [],
-        lastEditKey: null,
-      }
+    useConfigurator.getState().appendCabinet({
+      ...templateToCabinet(template, catalog, size),
+      id: `cabinet-${Date.now().toString(36)}`,
+      name: `${item.name} (PRO100)`,
     })
     setLastAdded(item.name)
   }

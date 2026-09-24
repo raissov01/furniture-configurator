@@ -32,13 +32,9 @@ import {
   projectMaterialUsage,
   rolesLabel,
 } from '@/src/core/index'
-import type { CabinetConfig, Placement, Room } from '@/src/core/index'
 import { DecorPicker } from '@/components/DecorPicker'
 import { Button, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
-
-/** `store/configurator.ts`-тегі `Snapshot`-пен БІРДЕЙ пішін — undo тарихы соны оқиды. */
-type UndoSnapshot = { room: Room; cabinets: CabinetConfig[]; placements: Placement[]; activeId: string }
 
 const rowBase = 'flex items-center justify-between gap-2 border border-neutral-800 px-2 py-1.5 text-[11px]'
 
@@ -93,15 +89,9 @@ export function ReplacePanel() {
 
   const apply = () => {
     if (!canApply || !oldMaterialId || !newMaterialId) return
-    useConfigurator.setState((s) => {
-      const snapshot: UndoSnapshot = { room: s.room, cabinets: s.cabinets, placements: s.placements, activeId: s.activeId }
-      return {
-        cabinets: applyMaterialReplace(s.cabinets, oldMaterialId, newMaterialId, scope),
-        past: [...s.past, snapshot].slice(-100),
-        future: [],
-        lastEditKey: null,
-      }
-    })
+    useConfigurator.getState().replaceCabinets(
+      applyMaterialReplace(useConfigurator.getState().cabinets, oldMaterialId, newMaterialId, scope),
+    )
     setJustApplied(tr('Заменено.'))
     setOldMaterialId(null)
     setNewMaterialId(null)

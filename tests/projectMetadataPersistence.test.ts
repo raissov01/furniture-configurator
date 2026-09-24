@@ -1,6 +1,6 @@
 /** Реквизит пен жеңілдік өзгерген сәтте жоба файлға автоматты жазылуы керек. */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { parseProject } from '../src/core/index'
+import { parseProjectV4 } from '../src/core/index'
 import { useConfigurator } from '../store/configurator'
 
 const PROJECT_KEY = 'furniture-configurator:project'
@@ -20,7 +20,10 @@ function storage(): Map<string, string> {
 
 afterEach(() => {
   useConfigurator.setState({
-    room: initial.room, cabinets: initial.cabinets, placements: initial.placements,
+    room: initial.room, root: initial.root, layers: initial.layers,
+    projectSettings: initial.projectSettings, projectMaterials: initial.projectMaterials,
+    projectEdgeBands: initial.projectEdgeBands, catalog: initial.catalog,
+    cabinets: initial.cabinets, placements: initial.placements,
     activeId: initial.activeId, projectInfo: {}, priceOverrides: {},
     firstRun: initial.firstRun,
   })
@@ -30,15 +33,17 @@ afterEach(() => {
 describe('жоба реквизиті мен жеңілдігінің автосақталуы', () => {
   it('бес реквизитті edit жасаған сәтте localStorage-ке сақтайды; геометрия өзгермейді', () => {
     const values = storage()
+    const root = useConfigurator.getState().root
     const cabinets = useConfigurator.getState().cabinets
     const info = {
       orderNo: 'ЗАКАЗ-42', date: '2026-09-24', client: 'Айгүл',
       designer: 'Бекназар', note: 'Мәреге жеткізу',
     }
     useConfigurator.getState().editProjectInfo(info)
-    const saved = parseProject(JSON.parse(values.get(PROJECT_KEY)!))
+    const saved = parseProjectV4(JSON.parse(values.get(PROJECT_KEY)!))
     expect(saved.info).toEqual(info)
-    expect(saved.cabinets).toEqual(cabinets)
+    expect(saved.root).toEqual(root)
+    expect(saved.root.children[0]).toMatchObject({ kind: 'cabinet', config: cabinets[0] })
     expect(useConfigurator.getState().cabinets).toBe(cabinets)
   })
 
@@ -50,7 +55,7 @@ describe('жоба реквизиті мен жеңілдігінің автос
       overallDiscount: { kind: 'percent' as const, value: 10 },
     }
     useConfigurator.getState().editPriceOverrides(discounts)
-    expect(parseProject(JSON.parse(values.get(PROJECT_KEY)!)).priceOverrides).toEqual(discounts)
+    expect(parseProjectV4(JSON.parse(values.get(PROJECT_KEY)!)).priceOverrides).toEqual(discounts)
 
     useConfigurator.setState({ projectInfo: {}, priceOverrides: {} })
     useConfigurator.getState().hydrateProject()
@@ -73,8 +78,8 @@ describe('жоба реквизиті мен жеңілдігінің автос
     expect(useConfigurator.getState().priceOverrides.lineDiscounts?.[lineKey]).toEqual({ kind: 'percent', value: 5 })
 
     useConfigurator.getState().editPriceOverrides({ salePrice: undefined, lineDiscounts: {}, overallDiscount: undefined })
-    expect(parseProject(JSON.parse(values.get(PROJECT_KEY)!)).priceOverrides).toBeUndefined()
+    expect(parseProjectV4(JSON.parse(values.get(PROJECT_KEY)!)).priceOverrides).toBeUndefined()
     useConfigurator.getState().editProjectInfo({ orderNo: '', date: '', client: '', designer: '', note: '' })
-    expect(parseProject(JSON.parse(values.get(PROJECT_KEY)!)).info).toBeUndefined()
+    expect(parseProjectV4(JSON.parse(values.get(PROJECT_KEY)!)).info).toBeUndefined()
   })
 })
