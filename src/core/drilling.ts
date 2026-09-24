@@ -336,6 +336,14 @@ export function shelfPinHoles(
 
   for (let k = -half; k <= half; k += 1) {
     const worldY = datum + (nearestIndex + k) * SHELF_PIN_PITCH
+    // Топтың ҚОСЫМША қатары (k ≠ 0) — сөрені жылжыту қоры ғана. Аласа
+    // шкафта ол панельдің үстінен/астынан шығып кетеді: ондай қатар бұл
+    // панельде жоқ, сондықтан бұрғыланбайды (48c6041-де x=912/x=0 болып
+    // панельден тыс түсетін). Сөренің ӨЗ қатары (k = 0) тыс болса — қате.
+    const cutX = toCut(verticalPanel, localX(verticalPanel, worldY), 0, ctx).x
+    if (k !== 0 && (cutX < SHELF_PIN_DIAMETER / 2 || cutX > verticalPanel.cutLength - SHELF_PIN_DIAMETER / 2)) {
+      continue
+    }
     for (const { worldZ, field } of columns) {
       const x = localX(verticalPanel, worldY)
       const y = localY(verticalPanel, worldZ)
