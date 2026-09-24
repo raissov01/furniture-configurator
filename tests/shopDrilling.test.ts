@@ -59,6 +59,25 @@ describe('цех присадка профилі', () => {
     expect(shiftedRows).toEqual([originalRows[0]! + 13, originalRows[1]!])
   })
 
+  it('аласа шкафта әдепкі профиль генерацияны тоқтатпайды, топтың панельден тыс қатары түспейді', () => {
+    // 48c6041-де бұл шкафтар генерацияланатын (тек топтың шеткі қатары
+    // панельден тыс x=912/x=0 болып түсетін). Әдепкі баптауда қате
+    // `settings.shelfPinDatum` деп лақтырылмауы керек.
+    for (const [id, height] of [['wardrobe-drawers-1200', 900], ['bookcase-2sec-1200', 500]] as const) {
+      const template = SEED_TEMPLATES.find((item) => item.id === id)!
+      const config = { ...templateToCabinet(template, catalog), height }
+      const panels = generateCabinet(config, catalog, shop.settings)
+      const pins = panels.flatMap((panel) => panel.drilling
+        .filter((d) => d.purpose === 'shelfPin')
+        .map((d) => ({ panel, d })))
+      expect(pins.length).toBeGreaterThan(0)
+      for (const { panel, d } of pins) {
+        expect(d.x).toBeGreaterThanOrEqual(d.diameter / 2)
+        expect(d.x).toBeLessThanOrEqual(panel.cutLength - d.diameter / 2)
+      }
+    }
+  })
+
   it('полкодержательдің цех офсеті кесілген бүйірден тыс шықса генерация тоқтайды', () => {
     expect(() => panelsFor('wardrobe-penal-600', { shelfPinFrontOffset: 1000 }))
       .toThrow(/shelfPinFrontOffset/)
