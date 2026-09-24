@@ -14,9 +14,8 @@
  */
 import { useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
-import { mergeProjectPanels } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
-import { useSceneItems } from '@/lib/useSceneItems'
+import { useProjectProduction } from '@/lib/useProjectProduction'
 import { edgeSummary, groupDrillingByPurpose, materialName, roleLabel } from './infoFields'
 import type { EdgeFieldName } from './infoFields'
 
@@ -28,19 +27,14 @@ const EDGE_LABEL: Record<EdgeFieldName, string> = {
 }
 
 export function InfoPanel() {
-  const room = useConfigurator((s) => s.room)
-  const cabinets = useConfigurator((s) => s.cabinets)
-  const placements = useConfigurator((s) => s.placements)
-  const catalog = useConfigurator((s) => s.catalog)
-  const shop = useConfigurator((s) => s.shop)
   const selected = useConfigurator((s) => s.selected)
 
-  const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
-  const panels = useMemo(
-    () => mergeProjectPanels(items.map((i) => ({ cabinetId: i.cabinet.id, panels: i.panels }))),
-    [items],
-  )
+  const { panels, catalog, error } = useProjectProduction()
   const part = useMemo(() => panels.find((p) => p.id === selected) ?? null, [panels, selected])
+
+  if (error) {
+    return <div data-panel="info" role="alert" className="border border-red-900 bg-red-950 px-2 py-1 text-xs text-red-300">{error}</div>
+  }
 
   if (!part) {
     return (

@@ -17,8 +17,9 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate'
 import { ConfigValidationError } from './errors'
 import { parseProject } from './schema'
-import { parseProjectV4 } from './projectV4'
 import type { ProjectFile } from './types'
+import { toPublicProject } from './publicProject'
+import { parseProjectV4 } from './projectV4'
 import type { ProjectFileV4 } from './projectV4'
 
 const PREFIX = 'v1.'
@@ -69,7 +70,7 @@ function fromBase64Url(text: string): Uint8Array {
 
 /** Жобаны сілтемеге сыятын жолға айналдыру. */
 export function encodeProject(project: ProjectFile | ProjectFileV4): string {
-  const json = JSON.stringify(project)
+  const json = JSON.stringify(toPublicProject(project))
   // Деңгей 9: сілтеме бір рет жасалады да, ұзақ жүреді — уақыттан гөрі
   // ұзындығы маңызды.
   return PREFIX + toBase64Url(deflateSync(strToU8(json), { level: 9 }))
@@ -103,6 +104,7 @@ function decodeRawProject(token: string): unknown {
   } catch {
     throw new ConfigValidationError('link', 'ссылка повреждена', 'не удалось прочитать проект')
   }
+  // Пішінін ЯДРО тексереді — сілтемемен бүлінген жоба келуі мүмкін.
   return raw
 }
 
@@ -111,7 +113,7 @@ export function decodeProject(token: string): ProjectFile {
   return parseProject(decodeRawProject(token))
 }
 
-/** Ағымдағы редактор мен client view: ескі сілтеме де v4 ағашына көтеріледі. */
+/** Canonical tree project decoder for the v4 editor and its client viewer. */
 export function decodeProjectV4(token: string): ProjectFileV4 {
   return parseProjectV4(decodeRawProject(token))
 }

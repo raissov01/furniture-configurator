@@ -123,6 +123,20 @@ export function makeHelpers({ send }, base) {
   })()`
   const numberValue = (label) => evaluate(numberExpression(label))
 
+  const waitForSavedCabinetWidth = (width, timeoutMs = 8000) => until(`(() => {
+    const raw = localStorage.getItem('furniture-configurator:project')
+    if (!raw) return false
+    const project = JSON.parse(raw)
+    if (project.schemaVersion === 4) {
+      const containsCabinet = (node) => {
+        if (node.kind === 'cabinet') return node.config.width === ${JSON.stringify(width)}
+        return node.kind === 'group' && node.children.some(containsCabinet)
+      }
+      return containsCabinet(project.root)
+    }
+    return project.cabinets.some((c) => c.width === ${JSON.stringify(width)})
+  })()`, timeoutMs)
+
   // SSR initially shows the default width; hydration restores the saved config.
   const waitForNumber = (label, value, timeoutMs = 20000) =>
     until(`${numberExpression(label)} === ${JSON.stringify(String(value))}`, timeoutMs)
@@ -149,6 +163,6 @@ export function makeHelpers({ send }, base) {
 
   return {
     evaluate, wait, until, goto, text, clickText, clickContains, menu, cutListRows,
-    setNumberByLabel, closeModals, numberValue, waitForNumber, sceneCenter, waitForCloudProject,
+    setNumberByLabel, closeModals, numberValue, waitForNumber, sceneCenter, waitForCloudProject, waitForSavedCabinetWidth,
   }
 }

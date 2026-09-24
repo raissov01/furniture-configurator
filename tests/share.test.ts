@@ -10,6 +10,7 @@ import {
   SHARE_LINK_WARN_LENGTH,
   catalogOf,
   decodeProject,
+  decodeProjectV4,
   defaultShopProfile,
   encodeProject,
   findTemplate,
@@ -17,6 +18,7 @@ import {
   templateToCabinet,
 } from '../src/core/index'
 import type { ProjectFile } from '../src/core/index'
+import { toPublicProject } from '../src/core/publicProject'
 
 const shop = defaultShopProfile()
 const catalog = catalogOf(shop)
@@ -35,10 +37,10 @@ const project = (): ProjectFile => ({
 })
 
 describe('айналып өту', () => {
-  it('жоба ДӘЛ сол күйінде қайтады', () => {
+  it('сілтеме тек клиентке ашық жобаны қайтарады', () => {
     const before = project()
     const after = decodeProject(encodeProject(before))
-    expect(after).toEqual(before)
+    expect(after).toEqual(toPublicProject(before))
   })
 
   it('бөлме мен орналастыру да сақталады', () => {
@@ -46,6 +48,13 @@ describe('айналып өту', () => {
     expect(after.room.width).toBe(4000)
     expect(after.placements).toHaveLength(1)
     expect(after.placements[0]!.offset).toBe(300)
+  })
+
+  it('v4 viewer ескі хешті ағашқа көшіреді, бағасы ашылмайды', () => {
+    const tree = decodeProjectV4(encodeProject(project()))
+    expect(tree.schemaVersion).toBe(4)
+    expect(tree.root.kind).toBe('group')
+    expect(tree.materials.every((material) => material.pricePerSheet === 0)).toBe(true)
   })
 
   it('нәтиже URL-ге қауіпсіз таңбалардан ғана тұрады', () => {

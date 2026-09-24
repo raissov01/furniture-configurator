@@ -138,7 +138,7 @@ export function defaultServices(): Services {
 }
 
 export type ShopProfile = {
-  schemaVersion: 7
+  schemaVersion: 8
   id: string
   /** КП-да тұратын атау */
   name: string
@@ -370,7 +370,7 @@ export function defaultHardware(): HardwareItem[] {
  */
 export function defaultShopProfile(id = 'shop-1'): ShopProfile {
   const base = {
-    schemaVersion: 7 as const,
+    schemaVersion: 8 as const,
     id,
     name: '',
     city: '',
@@ -573,6 +573,33 @@ const SettingsOverrideSchema = z.object({
   minBandSubtract: z.number().nonnegative(),
   confirmatSpanForThird: z.number().int().positive().nullable(),
   shelfPinDatum: z.number().int().nonnegative(),
+  shelfPinFrontOffset: z.number().int().nonnegative(),
+  shelfPinBackOffset: z.number().int().nonnegative(),
+  confirmatFaceDiameter: z.number().positive(),
+  confirmatEdgeDepth: z.number().int().positive(),
+  confirmatScrewLength: z.number().int().positive(),
+  confirmatCountersinkDiameter: z.number().nonnegative(),
+  minifixBoltMount: z.enum(['screw-5', 'sleeve-8']),
+  minifixSleeveDepth: z.number().positive().nullable(),
+  hingeCupMount: z.enum(['cup-only', 'screw', 'press-fit']),
+  hingeFixingSpacing: z.number().positive(),
+  hingeFixingOffset: z.number().nonnegative(),
+  hingeScrewPilotDiameter: z.number().positive().nullable(),
+  hingeScrewPilotDepth: z.number().positive().nullable(),
+  hingePressFitDiameter: z.number().positive(),
+  hingePressFitDepth: z.number().positive().nullable(),
+  runnerRollerHoleOffsets: z.array(z.number().int().positive()).min(1),
+  runnerBallHoleOffsets: z.array(z.number().int().positive()).min(1),
+  runnerTandemHoleOffsets: z.array(z.number().int().positive()).min(1),
+  runnerRollerVerticalOffset: z.number().int().nonnegative(),
+  runnerBallVerticalOffset: z.number().int().nonnegative(),
+  runnerTandemVerticalOffset: z.number().int().nonnegative(),
+  legCentreFromFront: z.number().int().nonnegative(),
+  drawerFacadeScrewEndOffset: z.number().int().nonnegative(),
+  minifixPairPlacement: z.enum(['center', 'ends']),
+  minifixPairSpacing: z.number().int().positive(),
+  minifixPairEndOffset: z.number().int().nonnegative(),
+  outerFlipAxis: z.enum(['length', 'width']),
   slidingDoorOverlap: z.number().int().nonnegative(),
   slidingTrackTopSpace: z.number().int().nonnegative(),
   slidingTrackBottomSpace: z.number().int().nonnegative(),
@@ -628,7 +655,7 @@ const PriceListSchema = z.object({
 })
 
 export const ShopProfileSchema = z.object({
-  schemaVersion: z.literal(7),
+  schemaVersion: z.literal(8),
   id: z.string().min(1),
   name: z.string(),
   city: z.string(),
@@ -752,6 +779,13 @@ export function parseShopProfile(raw: unknown): ShopProfile {
       activePriceListId: 'price-default',
       priceLists: [{ id: 'price-default', name: 'Основной', ...capturePriceValues(old) }],
     }
+  }
+
+  // v7 → v8: жаңа присадка мәндері `settings` ішіндегі override ретінде қалады.
+  // Бұрын енгізілген параметрлер, каталог пен бағалар өзгермейді.
+  const v7 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
+  if (v7 === 7) {
+    migrated = { ...(migrated as object), schemaVersion: 8 }
   }
 
   return syncActivePriceList(ShopProfileSchema.parse(migrated) as ShopProfile)

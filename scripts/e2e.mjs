@@ -520,10 +520,7 @@ async function run() {
     check(await h.setNumberByLabel('Ширина (W)', 1234, 300), 'ені өзгертілді')
     // Автосақтау кейінге қалдырылады, ал ауыр сахнада (планка, фартук, AO)
     // тіркелген 1,2 с жетпей қалатын — күту НӘТИЖЕ бойынша.
-    const before = await h.until(`(() => {
-      const raw = localStorage.getItem('furniture-configurator:project')
-      return raw ? JSON.parse(raw).cabinets.some((c) => c.width === 1234) : false
-    })()`, 8000)
+    const before = await h.waitForSavedCabinetWidth(1234, 8000)
     check(before, 'жоба автосақталды')
 
     await h.goto('/configurator', 11000)

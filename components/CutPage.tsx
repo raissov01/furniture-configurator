@@ -17,10 +17,12 @@ import { t as tr } from '@/lib/i18n'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
-import { useSceneItems } from '@/lib/useSceneItems'
+import { projectProduction } from '@/lib/projectProduction'
+import { flatArchiveFiles } from '@/lib/flatArchiveFiles'
 import {
+  ConfigValidationError,
   cutPlan,
-  mergeProjectPanels,
+  flattenTree,
   mergeSettings,
   nestPanels,
   nestingOptionsOf,
@@ -72,9 +74,11 @@ async function loadFonts(): Promise<{ regular: Uint8Array; bold: Uint8Array }> {
 }
 
 export function CutPage() {
-  const room = useConfigurator((s) => s.room)
-  const cabinets = useConfigurator((s) => s.cabinets)
-  const placements = useConfigurator((s) => s.placements)
+  const root = useConfigurator((s) => s.root)
+  const layers = useConfigurator((s) => s.layers)
+  const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
+  const projectName = useConfigurator((s) => s.projectName)
+  const projectLoadError = useConfigurator((s) => s.projectLoadError)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const editShop = useConfigurator((s) => s.editShop)
@@ -95,27 +99,35 @@ export function CutPage() {
   /** Экспорттың ескертуі (мыс. Базис қазақ әріптерін оқымайды). */
   const [notice, setNotice] = useState<string | null>(null)
 
-  const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
-  const panels = useMemo(
-    () => mergeProjectPanels(items.map((i) => ({ cabinetId: i.cabinet.id, panels: i.panels }))),
-    [items],
-  )
-  const projectName = cabinets.length === 1 ? cabinets[0]!.name : `Проект (${cabinets.length} корпуса)`
+  const production = useMemo(() => {
+    if (projectLoadError) return { panels: [], error: projectLoadError }
+    try {
+      const scene = flattenTree(root, catalog, settings, layers)
+      return { panels: projectProduction(root, scene).panels, error: null }
+    } catch (error) {
+      if (!(error instanceof ConfigValidationError)) throw error
+      return { panels: [], error: error.message }
+    }
+  }, [root, catalog, settings, layers, projectLoadError])
+  const panels = production.panels
   // §O6: ойма бар панельдің DXF рез координатасы генерациямен бір
-  // catalog/settings-ке сүйенуі керек (`useSceneItems` осы shop.settings-ті
+  // catalog/settings-ке сүйенуі керек (`flattenTree` осы project settings-ті
   // қолданады). Кабинет деңгейіндегі жеке override мұнда бірнеше корпус
   // араласқандықтан ескерілмейді — nestPanels/unplacedAdvice те солай.
-  const dxfOptions = useMemo(() => ({ catalog, settings: mergeSettings(shop.settings) }), [catalog, shop.settings])
+  const dxfOptions = useMemo(() => ({ catalog, settings: mergeSettings(settings) }), [catalog, settings])
 
   const cutting = shop.cutting
   const options = useMemo(() => nestingOptionsOf(shop), [shop])
-  const nesting = useMemo(() => {
+  const nested = useMemo(() => {
+    if (production.error || panels.length === 0) return { nesting: null, error: production.error }
     try {
-      return nestPanels(panels, catalog, options)
-    } catch {
-      return null
+      return { nesting: nestPanels(panels, catalog, options), error: null }
+    } catch (error) {
+      if (!(error instanceof ConfigValidationError)) throw error
+      return { nesting: null, error: error.message }
     }
-  }, [panels, catalog, options])
+  }, [panels, production.error, catalog, options])
+  const nesting = nested.nesting
   const plan = useMemo(
     () => (nesting ? cutPlan(nesting, { kerf: cutting.kerf }) : null),
     [nesting, cutting.kerf],
@@ -132,14 +144,16 @@ export function CutPage() {
     setBusy(kind)
     try {
       await action()
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : String(error))
     } finally {
       setBusy(null)
     }
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
-      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50/95 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/95">
+    <main data-cut-panel-count={panels.length} className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-2.5">
           <Link
             href="/configurator"
@@ -174,7 +188,7 @@ export function CutPage() {
                   import('fflate'),
                 ])
                 const entries: Record<string, Uint8Array> = {}
-                for (const [name, content] of nestingToDxfFiles(nesting!)) entries[name] = strToU8(content)
+                for (const [name, content] of flatArchiveFiles(nestingToDxfFiles(nesting!))) entries[name] = strToU8(content)
                 download(
                   `${projectName}-раскрой-dxf.zip`,
                   zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
@@ -217,10 +231,10 @@ export function CutPage() {
                 const labels = partLabels(panels, catalog, nesting!)
                 const entries: Record<string, Uint8Array> = {}
                 // Бума ІШІНДЕ бума: цехта раскрой мен присадка әр басқа адамға кетеді.
-                for (const [name, content] of nestingToDxfFiles(nesting!)) {
+                for (const [name, content] of flatArchiveFiles(nestingToDxfFiles(nesting!))) {
                   entries[`raskroy/${name}`] = strToU8(content)
                 }
-                for (const [name, content] of cabinetToDxfFiles(panels, dxfOptions)) {
+                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) {
                   entries[`detali/${name}`] = strToU8(content)
                 }
                 entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(panels, catalog)}`)
@@ -237,7 +251,7 @@ export function CutPage() {
               {busy === 'bundle' ? '…' : tr('Пакет для цеха')}
             </Button>
             <Button
-              disabled={busy !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null}
               title={tr('Присадка для станка: на каждую деталь свой файл, плюс index.csv')}
               onClick={() => void run('cnc', async () => {
                 const [{ cncFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -245,7 +259,7 @@ export function CutPage() {
                   import('fflate'),
                 ])
                 const entries: Record<string, Uint8Array> = {}
-                for (const [name, content] of cncFiles(panels, catalog, { projectName })) {
+                for (const [name, content] of cncFiles(panels, catalog, { projectName, outerFlipAxis: dxfOptions.settings.outerFlipAxis })) {
                   entries[name] = strToU8(content)
                 }
                 download(
@@ -258,7 +272,7 @@ export function CutPage() {
               {busy === 'cnc' ? '…' : tr('ЧПУ по деталям')}
             </Button>
             <Button
-              disabled={busy !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null}
               title={tr('Список деталей и присадки для Базиса: CSV в Windows-1251 плюс DXF деталей')}
               onClick={() => void run('basis', async () => {
                 const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfFiles }, { zipSync, strToU8 }] =
@@ -270,7 +284,7 @@ export function CutPage() {
                 const options = { projectName }
                 const entries: Record<string, Uint8Array> = {}
                 for (const [name, bytes] of basisFiles(panels, catalog, options)) entries[name] = bytes
-                for (const [name, content] of cabinetToDxfFiles(panels, dxfOptions)) {
+                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) {
                   entries[`dxf/${name}`] = strToU8(content)
                 }
                 download(
@@ -295,6 +309,9 @@ export function CutPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-4">
+        {nested.error ? (
+          <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{nested.error}</p>
+        ) : null}
         {notice ? (
           <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
             <span className="flex-1">{notice}</span>

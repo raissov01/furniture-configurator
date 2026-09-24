@@ -7,6 +7,7 @@
  */
 
 import {
+  DEFAULT_SETTINGS,
   DRAWER_FACADE_SCREW_DIAMETER, DRAWER_FACADE_SCREW_END_OFFSET,
   DRAWER_FACADE_SCREW_PILOT_DEPTH, DRAWER_FACADE_SCREW_ROW_FRACTIONS,
   CONFIRMAT_EDGE_DEPTH, CONFIRMAT_EDGE_DIAMETER, CONFIRMAT_FACE_DIAMETER,
@@ -26,6 +27,7 @@ import {
   SHELF_PIN_GROUP, SHELF_PIN_PITCH,
 } from './constants'
 import { handleBorePoints } from './fittings'
+import { ConfigValidationError } from './errors'
 import type { MillingPath } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import { subtractedThickness } from './edges'
@@ -90,6 +92,24 @@ function pushFace(
     face, x: roundCoord(p.x), y: roundCoord(p.y), diameter, depth, purpose,
     ...(hardwareId ? { hardwareId } : {}),
   })
+}
+
+/** Жаңа shop offset нақты РЕЗ панельде толық Ø тесікті сыйдыруы тиіс. */
+function requireCutFaceCoordinate(
+  panel: Panel, x: number, y: number, diameter: number, axis: 'x' | 'y',
+  field: string, ctx: Ctx,
+): void {
+  const point = toCut(panel, x, y, ctx)
+  const extent = axis === 'x' ? panel.cutLength : panel.cutWidth
+  const centre = point[axis]
+  const radius = diameter / 2
+  if (centre < radius || centre > extent - radius) {
+    throw new ConfigValidationError(
+      `settings.${field}`,
+      `${panel.id}: Ø${diameter} тесігінің ${axis} центрі ${roundCoord(centre)} мм — рез панельден тыс`,
+      `${axis}: ${radius}…${extent - radius} мм`,
+    )
+  }
 }
 
 /**
@@ -166,6 +186,26 @@ function edgeXShiftFor(edgePanel: Panel, screwAxis: Axis, ctx: Ctx): number {
   )
 }
 
+function requireBlindDepth(depth: number | null, thickness: number, field: string): number {
+  if (depth === null) throw new ConfigValidationError(
+    `settings.${field}`, 'нақты артикулдағы соқыр тесік тереңдігін енгізіңіз', `0 < depth < ${thickness} мм`,
+  )
+  if (!Number.isFinite(depth) || depth <= 0 || depth >= thickness) {
+    throw new ConfigValidationError(
+      `settings.${field}`, `соқыр тесік тереңдігі ${depth} мм, панель қалыңдығы ${thickness} мм`,
+      `0 < depth < ${thickness} мм`,
+    )
+  }
+  return depth
+}
+
+function requireScrewPilotDiameter(diameter: number | null): number {
+  if (diameter === null) throw new ConfigValidationError(
+    'settings.hingeScrewPilotDiameter', 'нақты бұрандалы ілгек пилотының диаметрін енгізіңіз', '> 0 мм',
+  )
+  return diameter
+}
+
 // ── Конфирмат буыны ──────────────────────────────────────────────────────────
 
 /**
@@ -176,6 +216,11 @@ function edgeXShiftFor(edgePanel: Panel, screwAxis: Axis, ctx: Ctx): number {
  * `constants.ts`/код бұрыннан дұрыс).
  */
 export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): void {
+  if (ctx.settings.confirmatCountersinkDiameter > 0) {
+    throw new ConfigValidationError('settings.confirmatCountersinkDiameter',
+      'конус тереңдігі мен бұрышы берілмеген; автоматты зенковка әзірге қолдау таппайды',
+      '0 мм немесе қолмен операция')
+  }
   const faceT = ctx.thickness(facePanel)
   const edgeT = ctx.thickness(edgePanel)
 
@@ -227,7 +272,13 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
     const fy = facePanel.orientation.width === jointAxis
       ? localY(facePanel, alongWorld)
       : localY(facePanel, jointLineWorld)
-    pushFace(facePanel, 'outer', fx, fy, CONFIRMAT_FACE_DIAMETER, faceT, 'confirmat', ctx)
+    // Бұрынғы mount/bevel үлгілерінің кейбір face нүктелері бөлек аудит
+    // тақырыбы; бұл guard жаңа диаметр override-ының қауіпсіздігін тексереді.
+    if (ctx.settings.confirmatFaceDiameter !== DEFAULT_SETTINGS.confirmatFaceDiameter) {
+      requireCutFaceCoordinate(facePanel, fx, fy, ctx.settings.confirmatFaceDiameter, 'x', 'confirmatFaceDiameter', ctx)
+      requireCutFaceCoordinate(facePanel, fx, fy, ctx.settings.confirmatFaceDiameter, 'y', 'confirmatFaceDiameter', ctx)
+    }
+    pushFace(facePanel, 'outer', fx, fy, ctx.settings.confirmatFaceDiameter, faceT, 'confirmat', ctx)
 
     // Edge панель: Ø5×35 торцке, қалыңдықтың дәл ортасына. Edge панельдің
     // ӨЗ локал координатасы `alongWorld − edgeStart` — `offset` буынның
@@ -239,7 +290,7 @@ export function confirmatJoint(facePanel: Panel, edgePanel: Panel, ctx: Ctx): vo
       x: roundCoord(alongWorld - edgeStart - edgeXShift),
       y: roundCoord(edgeT / 2),
       diameter: CONFIRMAT_EDGE_DIAMETER,
-      depth: CONFIRMAT_EDGE_DEPTH,
+      depth: ctx.settings.confirmatEdgeDepth,
       purpose: 'confirmat',
     })
   }
@@ -279,17 +330,28 @@ export function shelfPinHoles(
     verticalPanel, verticalPanel.orientation.width, verticalT,
   )
   const columns = [
-    panelFrontWorldZ + SHELF_PIN_FRONT_OFFSET,
-    panelBackWorldZ - SHELF_PIN_BACK_OFFSET,
+    { worldZ: panelFrontWorldZ + ctx.settings.shelfPinFrontOffset, field: 'shelfPinFrontOffset' },
+    { worldZ: panelBackWorldZ - ctx.settings.shelfPinBackOffset, field: 'shelfPinBackOffset' },
   ]
 
   for (let k = -half; k <= half; k += 1) {
     const worldY = datum + (nearestIndex + k) * SHELF_PIN_PITCH
-    for (const worldZ of columns) {
+    // Топтың ҚОСЫМША қатары (k ≠ 0) — сөрені жылжыту қоры ғана. Аласа
+    // шкафта ол панельдің үстінен/астынан шығып кетеді: ондай қатар бұл
+    // панельде жоқ, сондықтан бұрғыланбайды (48c6041-де x=912/x=0 болып
+    // панельден тыс түсетін). Сөренің ӨЗ қатары (k = 0) тыс болса — қате.
+    const cutX = toCut(verticalPanel, localX(verticalPanel, worldY), 0, ctx).x
+    if (k !== 0 && (cutX < SHELF_PIN_DIAMETER / 2 || cutX > verticalPanel.cutLength - SHELF_PIN_DIAMETER / 2)) {
+      continue
+    }
+    for (const { worldZ, field } of columns) {
+      const x = localX(verticalPanel, worldY)
+      const y = localY(verticalPanel, worldZ)
+      requireCutFaceCoordinate(verticalPanel, x, y, SHELF_PIN_DIAMETER, 'x', 'shelfPinDatum', ctx)
+      requireCutFaceCoordinate(verticalPanel, x, y, SHELF_PIN_DIAMETER, 'y', field, ctx)
       pushFace(
         verticalPanel, 'inner',
-        localX(verticalPanel, worldY),
-        localY(verticalPanel, worldZ),
+        x, y,
         SHELF_PIN_DIAMETER, SHELF_PIN_DEPTH, 'shelfPin', ctx,
       )
     }
@@ -330,6 +392,23 @@ export function hingeHoles(
 
   for (const x of positions) {
     pushFace(front, 'inner', x, cupY, cupDiameter, cupDepth, 'hinge', ctx, system?.hardwareId)
+    if (ctx.settings.hingeCupMount !== 'cup-only') {
+      const { hingeFixingSpacing: spacing, hingeFixingOffset: offset } = ctx.settings
+      const diameter = ctx.settings.hingeCupMount === 'screw'
+        ? requireScrewPilotDiameter(ctx.settings.hingeScrewPilotDiameter)
+        : ctx.settings.hingePressFitDiameter
+      const depth = ctx.settings.hingeCupMount === 'screw'
+        ? requireBlindDepth(ctx.settings.hingeScrewPilotDepth, ctx.thickness(front), 'hingeScrewPilotDepth')
+        : requireBlindDepth(ctx.settings.hingePressFitDepth, ctx.thickness(front), 'hingePressFitDepth')
+      // Blum сызбасындағы 45 мм — фасад биіктігі бойымен, 9.5 мм — чашка
+      // ортасынан бүйірге. Координата 0.1 мм дәлдікпен сақталады.
+      const fixingY = hingeSide === 'left' ? cupY + offset : cupY - offset
+      for (const dx of [-spacing / 2, spacing / 2]) {
+        requireCutFaceCoordinate(front, x + dx, fixingY, diameter, 'x', 'hingeFixingSpacing', ctx)
+        requireCutFaceCoordinate(front, x + dx, fixingY, diameter, 'y', 'hingeFixingOffset', ctx)
+        pushFace(front, 'inner', x + dx, fixingY, diameter, depth, 'hinge', ctx, system?.hardwareId)
+      }
+    }
   }
 
   if (!carcassPanel) return
@@ -442,10 +521,27 @@ export function runnerHoles(
    * Қораптан ұзын тесік бұрғыланбайды: қысқа ящикте соңғы нүктелер қорапта
    * жоқ, ал жоқ жерге бұрғылау — панельдің сыртына шығу.
    */
-  const offsets = system ? system.holeOffsets : RUNNER_TANDEM_OFFSETS
+  const runnerKind = system?.id ?? 'tandem'
+  const offsets = runnerKind === 'roller' ? ctx.settings.runnerRollerHoleOffsets
+    : runnerKind === 'ball' ? ctx.settings.runnerBallHoleOffsets
+      : ctx.settings.runnerTandemHoleOffsets
+  const verticalOffset = runnerKind === 'roller' ? ctx.settings.runnerRollerVerticalOffset
+    : runnerKind === 'ball' ? ctx.settings.runnerBallVerticalOffset
+      : ctx.settings.runnerTandemVerticalOffset
+  const offsetField = runnerKind === 'roller' ? 'runnerRollerHoleOffsets'
+    : runnerKind === 'ball' ? 'runnerBallHoleOffsets' : 'runnerTandemHoleOffsets'
+  const verticalField = runnerKind === 'roller' ? 'runnerRollerVerticalOffset'
+    : runnerKind === 'ball' ? 'runnerBallVerticalOffset' : 'runnerTandemVerticalOffset'
   const columns = offsets
     .filter((offset) => offset <= boxDepth)
     .map((offset) => boxFrontWorldZ + offset)
+  const defaultOffsets = DEFAULT_SETTINGS[offsetField]
+  if (columns.length === 0 && (offsets.length !== defaultOffsets.length
+    || offsets.some((offset, index) => offset !== defaultOffsets[index]))) {
+    throw new ConfigValidationError(`settings.${offsetField}`,
+      'таңдалған артикулдың бірде-бір тесігі ящикке сыймайды',
+      `алдыңғы жиектен 0…${boxDepth} мм`)
+  }
 
   // Бірде-бір нүктесі сыймаса (өте қысқа ящик), екі нүктелі схемамен
   // қаламыз — направляющая бәрібір бір нәрсеге бекітілуі керек.
@@ -462,10 +558,13 @@ export function runnerHoles(
     : [RUNNER_SCREW_DIAMETER, RUNNER_SCREW_DEPTH]
 
   for (const worldZ of points) {
+    const x = localX(verticalPanel, boxBottomWorldY + verticalOffset)
+    const y = localY(verticalPanel, worldZ)
+    requireCutFaceCoordinate(verticalPanel, x, y, diameter, 'x', verticalField, ctx)
+    requireCutFaceCoordinate(verticalPanel, x, y, diameter, 'y', offsetField, ctx)
     pushFace(
       verticalPanel, 'inner',
-      localX(verticalPanel, boxBottomWorldY),
-      localY(verticalPanel, worldZ),
+      x, y,
       // Артикул тесікте жүреді: смета осыдан ҚАЙ направляющая екенін біледі
       // (ілгек пен тұтқада да дәл солай).
       diameter, depth, 'runner', ctx, system?.hardwareId,
@@ -536,7 +635,7 @@ export function drawerFacadeScrews(wall: Panel, facade: Panel, ctx: Ctx): void {
 
   // Тар ящикте 80 мм сыймайды: сонда шегініс ЕНнің төрттен біріне дейін
   // қысылады — тесік әрқашан қабырғаның ішінде қалуы керек.
-  const offset = Math.min(DRAWER_FACADE_SCREW_END_OFFSET, Math.floor(wallWidth / 4))
+  const offset = Math.min(ctx.settings.drawerFacadeScrewEndOffset, Math.floor(wallWidth / 4))
   const columns = [offset, wallWidth - offset]
   const rows = DRAWER_FACADE_SCREW_ROW_FRACTIONS.map((f) => Math.round(wallHeight * f))
 
@@ -598,6 +697,7 @@ export function legCentres(
   width: number,
   depth: number,
   legPairs: number,
+  frontOffset: number = LEG_CENTRE_FROM_FRONT,
 ): { x: number; z: number }[] {
   const first = LEG_CENTRE_FROM_SIDE
   const last = width - LEG_CENTRE_FROM_SIDE
@@ -606,7 +706,7 @@ export function legCentres(
     ? [(first + last) / 2]
     : Array.from({ length: legPairs }, (_, i) => first + ((last - first) * i) / (legPairs - 1))
 
-  const zs = [LEG_CENTRE_FROM_FRONT, depth - LEG_CENTRE_FROM_FRONT]
+  const zs = [frontOffset, depth - frontOffset]
   if (zs[1]! <= zs[0]!) return []
 
   return xs.flatMap((x) => zs.map((z) => ({ x, z })))
@@ -631,7 +731,13 @@ export function legScrewHoles(
   const width = bottom.finishedWidth
   const half = holeSpacing / 2
 
-  const centres = legCentres(length + offset.x * 2, width + offset.z * 2, legPairs)
+  const centres = legCentres(length + offset.x * 2, width + offset.z * 2, legPairs, ctx.settings.legCentreFromFront)
+  if (legPairs > 0 && centres.length === 0
+    && ctx.settings.legCentreFromFront !== DEFAULT_SETTINGS.legCentreFromFront) {
+    throw new ConfigValidationError('settings.legCentreFromFront',
+      `${bottom.id}: берілген шегіністе аяқ жұбы сыймайды`,
+      `0…${(width + offset.z * 2) / 2} мм`)
+  }
 
   for (const centre of centres) {
     const cx = centre.x - offset.x
@@ -640,6 +746,10 @@ export function legScrewHoles(
       for (const dy of [-half, half]) {
         const x = Math.round(cx + dx)
         const y = Math.round(cy + dy)
+        if (ctx.settings.legCentreFromFront !== DEFAULT_SETTINGS.legCentreFromFront) {
+          requireCutFaceCoordinate(bottom, x, y, LEG_SCREW_DIAMETER, 'x', 'legCentreFromFront', ctx)
+          requireCutFaceCoordinate(bottom, x, y, LEG_SCREW_DIAMETER, 'y', 'legCentreFromFront', ctx)
+        }
         if (x < 0 || x > length || y < 0 || y > width) continue
         // Аяқ дноның АСТЫНА бұралады, сондықтан сыртқы бет.
         pushFace(bottom, 'outer', x, y, LEG_SCREW_DIAMETER, LEG_SCREW_DEPTH, 'leg', ctx)
@@ -686,9 +796,34 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
   if (!jointAxis) throw new Error(`Буын осі табылмады: ${wall.id} ↔ ${side.id}`)
 
   const [jointStart, jointEnd] = worldRange(wall, jointAxis, wallT)
-  if (jointEnd - jointStart <= MINIFIX_PAIR_SPACING) return
+  const jointLength = jointEnd - jointStart
+  const pairSpacing = ctx.settings.minifixPairSpacing
+  const endOffset = ctx.settings.minifixPairEndOffset
+  const placement = ctx.settings.minifixPairPlacement
+  const customPair = placement !== DEFAULT_SETTINGS.minifixPairPlacement
+    || pairSpacing !== DEFAULT_SETTINGS.minifixPairSpacing
+    || endOffset !== DEFAULT_SETTINGS.minifixPairEndOffset
+  if (placement === 'center' && pairSpacing < MINIFIX_CAM_DIAMETER) {
+    throw new ConfigValidationError('settings.minifixPairSpacing',
+      `${wall.id}: Ø${MINIFIX_CAM_DIAMETER} ұялар бір-бірін басады`,
+      `spacing ≥ ${MINIFIX_CAM_DIAMETER} мм`)
+  }
+  if (ctx.settings.minifixPairPlacement === 'center' && jointLength <= pairSpacing) {
+    if (pairSpacing !== DEFAULT_SETTINGS.minifixPairSpacing) {
+      throw new ConfigValidationError('settings.minifixPairSpacing',
+        `${wall.id}: екі штифт буын ұзындығына сыймайды`, `0 < spacing < ${jointLength} мм`)
+    }
+    return
+  }
+  if (placement === 'ends' && jointLength - 2 * endOffset < MINIFIX_CAM_DIAMETER) {
+    throw new ConfigValidationError('settings.minifixPairEndOffset',
+      `${wall.id}: Ø${MINIFIX_CAM_DIAMETER} ұялар буынға сыймайды`,
+      `0 ≤ offset ≤ ${(jointLength - MINIFIX_CAM_DIAMETER) / 2} мм`)
+  }
   const jointCentre = (jointStart + jointEnd) / 2
-  const rowsWorld = [jointCentre - MINIFIX_PAIR_SPACING / 2, jointCentre + MINIFIX_PAIR_SPACING / 2]
+  const rowsWorld = ctx.settings.minifixPairPlacement === 'center'
+    ? [jointCentre - pairSpacing / 2, jointCentre + pairSpacing / 2]
+    : [jointStart + endOffset, jointEnd - endOffset]
 
   // wall-дың қай ұшы осы бүйірге тіреледі: жақынырағы (screwAxis бойымен).
   const [wallMin, wallMax] = worldRange(wall, screwAxis, wallT)
@@ -715,6 +850,11 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
     const wy = wall.orientation.width === jointAxis ? alongLocal : camPos
 
     // 1. Эксцентриктің ұясы — қабырғаның ішкі бетінде.
+    if (customPair) {
+      const field = placement === 'ends' ? 'minifixPairEndOffset' : 'minifixPairSpacing'
+      requireCutFaceCoordinate(wall, wx, wy, MINIFIX_CAM_DIAMETER, 'x', field, ctx)
+      requireCutFaceCoordinate(wall, wx, wy, MINIFIX_CAM_DIAMETER, 'y', field, ctx)
+    }
     pushFace(wall, 'inner', wx, wy, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
 
     // 2. Штифттің тесігі — сол қабырғаның ТОРЦІНДЕ, қалыңдықтың ортасында.
@@ -736,7 +876,17 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
       ? localX(side, rowWorld) : localX(side, thicknessLineWorld)
     const sy = side.orientation.width === jointAxis
       ? localY(side, rowWorld) : localY(side, thicknessLineWorld)
-    pushFace(side, 'inner', sx, sy, MINIFIX_SCREW_DIAMETER, MINIFIX_SCREW_DEPTH, 'minifix', ctx)
+    const boltDiameter = ctx.settings.minifixBoltMount === 'sleeve-8' ? 8 : MINIFIX_SCREW_DIAMETER
+    if (customPair) {
+      const field = placement === 'ends' ? 'minifixPairEndOffset' : 'minifixPairSpacing'
+      requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'x', field, ctx)
+      requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'y', field, ctx)
+    }
+    pushFace(side, 'inner', sx, sy,
+      boltDiameter,
+      ctx.settings.minifixBoltMount === 'sleeve-8'
+        ? requireBlindDepth(ctx.settings.minifixSleeveDepth, sideT, 'minifixSleeveDepth') : MINIFIX_SCREW_DEPTH,
+      'minifix', ctx)
   }
 }
 
@@ -758,7 +908,15 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
   const depth = bottom.finishedWidth
 
   // Тереңдік бойынша екі стяжка: жиектен MINIFIX_FROM_END шегініп.
-  const positions = spreadAlongJoint(depth, 2, MINIFIX_FROM_END)
+  const customEndOffset = ctx.settings.minifixPairEndOffset !== DEFAULT_SETTINGS.minifixPairEndOffset
+  const positions = customEndOffset
+    ? [ctx.settings.minifixPairEndOffset, depth - ctx.settings.minifixPairEndOffset]
+    : spreadAlongJoint(depth, 2, ctx.settings.minifixPairEndOffset)
+  if (customEndOffset && positions[1]! - positions[0]! < MINIFIX_CAM_DIAMETER) {
+    throw new ConfigValidationError('settings.minifixPairEndOffset',
+      `${bottom.id}: Ø${MINIFIX_CAM_DIAMETER} ұялар түпке сыймайды`,
+      `0 ≤ offset ≤ ${(depth - MINIFIX_CAM_DIAMETER) / 2} мм`)
+  }
 
   for (const side of sides) {
     const sideT = ctx.thickness(side)
@@ -774,6 +932,10 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
 
     for (const along of positions) {
       // 1. Эксцентриктің ұясы — түптің ҮСТІҢГІ бетінде.
+      if (customEndOffset) {
+        requireCutFaceCoordinate(bottom, camX, along, MINIFIX_CAM_DIAMETER, 'x', 'minifixPairEndOffset', ctx)
+        requireCutFaceCoordinate(bottom, camX, along, MINIFIX_CAM_DIAMETER, 'y', 'minifixPairEndOffset', ctx)
+      }
       pushFace(bottom, 'inner', camX, along, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
 
       // 2. Штифттің тесігі — түптің сол/оң ТОРЦІНДЕ.
@@ -789,10 +951,20 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
       // 3. Бүйірдің ішкі бетінде — штифт бұралатын тесік.
       const worldZ = bottom.position.z + along
       const worldY = bottom.position.y + t / 2
+      const sx = localX(side, worldY)
+      const sy = localY(side, worldZ)
+      const boltDiameter = ctx.settings.minifixBoltMount === 'sleeve-8' ? 8 : MINIFIX_SCREW_DIAMETER
+      if (customEndOffset) {
+        requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'x', 'minifixPairEndOffset', ctx)
+        requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'y', 'minifixPairEndOffset', ctx)
+      }
       pushFace(
         side, 'inner',
-        localX(side, worldY), localY(side, worldZ),
-        MINIFIX_SCREW_DIAMETER, MINIFIX_SCREW_DEPTH, 'minifix', ctx,
+        sx, sy,
+        boltDiameter,
+        ctx.settings.minifixBoltMount === 'sleeve-8'
+          ? requireBlindDepth(ctx.settings.minifixSleeveDepth, sideT, 'minifixSleeveDepth') : MINIFIX_SCREW_DEPTH,
+        'minifix', ctx,
       )
     }
   }

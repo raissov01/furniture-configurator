@@ -136,6 +136,41 @@ function migrate(database: DatabaseSync): void {
 
     CREATE INDEX IF NOT EXISTS shares_expiry ON shares (expires_at);
   `)
+
+  // 5-қадам: бар аккаунттар сақталады. Әр цехтың алғашқы адамы — owner,
+  // қалған бұрынғы мүшелер designer; жаңа шақыру рөлді анық көрсетеді.
+  const userColumns = database.prepare('PRAGMA table_info(users)').all() as { name: string }[]
+  if (!userColumns.some((column) => column.name === 'role')) {
+    database.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'designer'")
+    database.exec(`UPDATE users SET role = 'owner' WHERE id IN
+      (SELECT id FROM users AS first WHERE first.id =
+        (SELECT id FROM users AS member WHERE member.shop_id = first.shop_id
+         ORDER BY member.created_at, member.id LIMIT 1))`)
+  }
+  const inviteColumns = database.prepare('PRAGMA table_info(invites)').all() as { name: string }[]
+  if (!inviteColumns.some((column) => column.name === 'role')) {
+    database.exec("ALTER TABLE invites ADD COLUMN role TEXT NOT NULL DEFAULT 'designer'")
+  }
+
+  // 6-қадам: кодты жасаған цехты ғана дизайнер inbox-ына жібереміз.
+  const shareColumns = database.prepare('PRAGMA table_info(shares)').all() as { name: string }[]
+  if (!shareColumns.some((column) => column.name === 'shop_id')) {
+    database.exec('ALTER TABLE shares ADD COLUMN shop_id TEXT REFERENCES shops(id) ON DELETE CASCADE')
+  }
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS comments (
+      id TEXT PRIMARY KEY,
+      code TEXT NOT NULL REFERENCES shares(code) ON DELETE CASCADE,
+      target_id TEXT,
+      body TEXT NOT NULL,
+      author TEXT NOT NULL,
+      author_role TEXT NOT NULL CHECK (author_role IN ('client', 'designer', 'creator')),
+      reply_to TEXT REFERENCES comments(id) ON DELETE CASCADE,
+      user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS comments_code ON comments (code, created_at);
+  `)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */

@@ -13,10 +13,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { parseProjectV4, parseShopProfile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
+import { CommentsInbox } from '@/components/CommentsInbox'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
-type Account = { userId: string; email: string; shopName: string }
+type Account = { userId: string; email: string; shopName: string; role: 'owner' | 'designer' | 'shop' | 'client' }
 type PlanInfo = {
   id: string
   name: string
@@ -30,8 +31,8 @@ type PlanInfo = {
   expired: boolean
 }
 type ProjectRow = { id: string; name: string; updatedAt: number }
-type Member = { userId: string; email: string; joinedAt: number }
-type Invite = { token: string; createdAt: number; expiresAt: number; usedBy: string | null; revoked: boolean }
+type Member = { userId: string; email: string; joinedAt: number; role: Account['role'] }
+type Invite = { token: string; createdAt: number; expiresAt: number; usedBy: string | null; revoked: boolean; role: 'designer' | 'shop' }
 
 const input =
   'w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none ' +
@@ -46,6 +47,7 @@ export function AccountPanel() {
   const loadProject = useConfigurator((s) => s.loadProject)
 
   const [account, setAccount] = useState<Account | null>(null)
+  const [profileReady, setProfileReady] = useState(false)
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
   const [projects, setProjects] = useState<ProjectRow[]>([])
@@ -55,6 +57,7 @@ export function AccountPanel() {
   const [team, setTeam] = useState<{ members: Member[]; invites: Invite[]; limit: number | null } | null>(null)
   /** Жаңа шақырудың сілтемесі — көшіріп алу үшін бір рет көрсетіледі. */
   const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [inviteRole, setInviteRole] = useState<'designer' | 'shop'>('designer')
   /**
    * Шығарылуы РАСТАЛУЫН күтіп тұрған адам.
    *
@@ -108,12 +111,14 @@ export function AccountPanel() {
         usage?: { projects: number; members: number }
       }
       if (data.account) {
+        setProfileReady(false)
         setAccount(data.account)
         setBilling(data.billing === true)
         setPlan(data.plan ?? null)
         setUsage(data.usage ?? null)
         void refreshProjects()
         void refreshTeam()
+        void syncProfile(data.account.role)
       }
     })()
   }, [refreshProjects, refreshTeam])
@@ -123,37 +128,49 @@ export function AccountPanel() {
    * оны аламыз, жоқ болса — өзіміздікін жібереміз. Осылайша бұрын
    * браузерде толтырылған бағалар жоғалмайды.
    */
-  const syncProfile = useCallback(async () => {
-    const res = await fetch('/api/shop')
-    if (!res.ok) return
-    const data = (await res.json()) as { profile?: unknown }
-    if (data.profile) {
-      try {
-        setShop(parseShopProfile(data.profile))
-        return
-      } catch {
-        // Серверде ескі не бүлінген жазба: өзіміздікімен ауыстырамыз.
+  const syncProfile = useCallback(async (role: Account['role']) => {
+    if (role === 'shop' || role === 'client') return
+    try {
+      const res = await fetch('/api/shop')
+      if (!res.ok) { setError(tr('Профиль не загрузился')); return }
+      const data = (await res.json()) as { profile?: unknown }
+      if (data.profile) {
+        try {
+          setShop(parseShopProfile(data.profile))
+          setProfileReady(true)
+          return
+        } catch {
+          setError(tr('Профиль на сервере повреждён'))
+          return
+        }
       }
+      if (role !== 'owner') return
+      const saved = await fetch('/api/shop', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: shop }),
+      })
+      if (!saved.ok) { setError(tr('Профиль не сохранился')); return }
+      setProfileReady(true)
+    } catch {
+      setError(tr('Нет связи с сервером'))
     }
-    await fetch('/api/shop', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profile: shop }),
-    })
   }, [setShop, shop])
 
   // Кірген кезде профильдің әр өзгерісі серверге де жазылады.
   useEffect(() => {
-    if (!account) return
+    if (account?.role !== 'owner' || !profileReady) return
     const timer = setTimeout(() => {
       void fetch('/api/shop', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile: shop }),
-      })
+      }).then((res) => {
+        if (!res.ok) setError(tr('Профиль не сохранился'))
+      }).catch(() => setError(tr('Нет связи с сервером')))
     }, 800)
     return () => clearTimeout(timer)
-  }, [account, shop])
+  }, [account, shop, profileReady])
 
   const submit = async () => {
     setBusy(true)
@@ -170,6 +187,7 @@ export function AccountPanel() {
         setError(data.error ?? 'Не получилось')
         return
       }
+      setProfileReady(false)
       setAccount(data.account)
       setForm({ email: '', password: '', shopName: '' })
       /*
@@ -178,7 +196,7 @@ export function AccountPanel() {
        * серверде байқалмайды, ал VPS-те адам «Сохранить» батырмасын
        * басқанда тізім әлі жаңармай тұрады.
        */
-      await Promise.all([syncProfile(), refreshProjects(), refreshTeam()])
+      await Promise.all([syncProfile(data.account.role), refreshProjects(), refreshTeam()])
     } finally {
       setBusy(false)
     }
@@ -188,7 +206,8 @@ export function AccountPanel() {
     setBusy(true)
     setError(null)
     try {
-      const res = await fetch('/api/team', { method: 'POST' })
+      const res = await fetch('/api/team', { method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: inviteRole }) })
       const data = (await res.json()) as { invite?: Invite; error?: string }
       if (!res.ok || !data.invite) {
         setError(data.error ?? 'Не получилось')
@@ -335,10 +354,6 @@ export function AccountPanel() {
               </div>
             ) : null}
 
-            {/*
-              Команда. Рөл ЖОҚ: цехтағы бәрі бір жобамен жұмыс істейді
-              (`lib/server/team.ts` қара).
-            */}
             {team ? (
               <div className="rounded-lg border border-neutral-200 px-2.5 py-2 dark:border-neutral-800">
                 <div className="flex items-center justify-between gap-2">
@@ -348,9 +363,19 @@ export function AccountPanel() {
                       {team.members.length}{!billing || team.limit === null ? '' : ` / ${team.limit}`}
                     </span>
                   </span>
-                  <Button onClick={() => void makeInvite()} disabled={busy}>
-                    {tr('Пригласить')}
-                  </Button>
+                  {account.role === 'owner' ? (
+                    <>
+                      <select aria-label={tr('Роль приглашения')} value={inviteRole}
+                        className="rounded border border-neutral-300 bg-white px-1 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                        onChange={(event) => setInviteRole(event.target.value as 'designer' | 'shop')}>
+                        <option value="designer">{tr('Дизайнер')}</option>
+                        <option value="shop">{tr('Цех')}</option>
+                      </select>
+                      <Button onClick={() => void makeInvite()} disabled={busy}>
+                        {tr('Пригласить')}
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
 
                 {/*
@@ -368,14 +393,25 @@ export function AccountPanel() {
                       <li key={m.userId} className="flex items-baseline justify-between gap-2 text-xs">
                         <span className="min-w-0 truncate">
                           {m.email}
-                          {owner ? (
-                            <span className="ml-1 text-[10px] text-neutral-400">{tr('владелец')}</span>
-                          ) : null}
+                          <span className="ml-1 text-[10px] text-neutral-400">{owner ? tr('владелец') : m.role === 'shop' ? tr('Цех') : tr('Дизайнер')}</span>
                         </span>
                         <span className="flex shrink-0 items-baseline gap-2">
                           <span className="text-[10px] tabular-nums text-neutral-400">
                             {new Date(m.joinedAt).toLocaleDateString('ru-RU')}
                           </span>
+                          {account.role === 'owner' && !owner ? <select aria-label={tr('Роль участника')} value={m.role}
+                            className="rounded border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900"
+                            onChange={(event) => void (async () => {
+                              const res = await fetch('/api/team/member', { method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: m.userId, role: event.target.value }),
+                              })
+                              if (res.ok) await refreshTeam()
+                              else setError(tr('Роль не изменена'))
+                            })()}>
+                            <option value="designer">{tr('Дизайнер')}</option>
+                            <option value="shop">{tr('Цех')}</option>
+                          </select> : null}
                           {canRemove ? (
                             <Button
                               disabled={busy}
@@ -403,7 +439,7 @@ export function AccountPanel() {
                   Сілтеме ТЕК ЖАСАЛҒАН СӘТТЕ көрсетіледі: токен — құпия, оны
                   тізімде тұрақты ұстаудың қажеті жоқ.
                 */}
-                {inviteLink ? (
+                {account.role === 'owner' && inviteLink ? (
                   <div className="mt-2 space-y-1">
                     <p className="text-[11px] text-neutral-500">
                       {tr('Ссылка одноразовая и живёт 7 дней. Отправьте её сотруднику.')}
@@ -417,7 +453,7 @@ export function AccountPanel() {
                   </div>
                 ) : null}
 
-                {team.invites.filter((i) => !i.usedBy && !i.revoked && i.expiresAt > Date.now()).length > 0 ? (
+                {account.role === 'owner' && team.invites.filter((i) => !i.usedBy && !i.revoked && i.expiresAt > Date.now()).length > 0 ? (
                   <ul className="mt-2 space-y-1">
                     {team.invites
                       .filter((i) => !i.usedBy && !i.revoked && i.expiresAt > Date.now())
@@ -440,9 +476,9 @@ export function AccountPanel() {
               <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
                 Проекты в облаке
               </span>
-              <Button onClick={() => void saveToCloud()} disabled={busy} active>
+              {account.role !== 'shop' ? <Button onClick={() => void saveToCloud()} disabled={busy} active>
                 Сохранить текущий
-              </Button>
+              </Button> : null}
             </div>
 
             {projects.length === 0 ? (
@@ -462,19 +498,20 @@ export function AccountPanel() {
                         {new Date(p.updatedAt).toLocaleDateString('ru-RU')}
                       </span>
                     </button>
-                    <Button
+                    {account.role !== 'shop' ? <Button
                       onClick={() => void (async () => {
                         await fetch(`/api/projects/${p.id}`, { method: 'DELETE' })
                         await refreshProjects()
                       })()}
                     >
                       ✕
-                    </Button>
+                    </Button> : null}
                   </li>
                 ))}
               </ul>
             )}
 
+            {(account.role === 'owner' || account.role === 'designer') ? <CommentsInbox /> : null}
             <div className="border-t border-neutral-200 pt-3 dark:border-neutral-700">
               <Button
                 onClick={() => void (async () => {
