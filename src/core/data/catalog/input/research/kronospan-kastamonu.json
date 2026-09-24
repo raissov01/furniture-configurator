@@ -1,0 +1,59 @@
+{
+ "sources": [
+  {
+   "id": "kronospan-terms",
+   "manufacturer": "Kronospan",
+   "url": "https://kronospan.com/terms_and_conditions/files/Terms-Conditions-202501.pdf",
+   "what": "Terms & Conditions only (linked from https://kronospan.com/ru_KZ/terms/); no catalog data kept",
+   "termsUrl": "https://kronospan.com/terms_and_conditions/files/Terms-Conditions-202501.pdf",
+   "termsNote": "Explicit 'Prohibition of Data Scraping': 'You are expressly prohibited from: 1. Automated Data Collection: Using bots, crawlers, spiders, or any automated systems or tools to access, extract, scrape, or harvest data or content from this website without our prior written consent.' Also: 'Without our express prior written consent you may not copy (whether by printing off onto paper, storing on disk, downloading or in any other way) ... any material contained on this website' except personal non-commercial use.",
+   "reuse": "forbidden",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "kastamonu-terms",
+   "manufacturer": "Kastamonu Entegre",
+   "url": "https://www.kastamonuentegre.com/en/page/terms-of-use",
+   "what": "Terms of Use only (RU version: https://www.kastamonuentegre.com/ru_ru/stranitsa/usloviya-ekspluatatsii); no catalog data kept",
+   "termsUrl": "https://www.kastamonuentegre.com/en/page/terms-of-use",
+   "termsNote": "'No materials on this website may be copied, altered, reproduced, republished, uploaded to another computer, distributed or translated into another language without the written permission of KEAS.' RU: 'Материалы веб-сайта не могут быть скопированы, изменены, воспроизведены, переизданы, загружены на иных носителях ... без предварительного письменного разрешения компании KEAS.'",
+   "reuse": "forbidden",
+   "dateSeen": "2026-09-25"
+  }
+ ],
+ "skipped": [
+  {
+   "manufacturer": "Kronospan",
+   "url": "https://kronospan.com/ru_KZ/decors/",
+   "reason": "Terms & Conditions (Jan 2025) explicitly prohibit automated extraction/scraping of data and copying/downloading website material without written consent (quote in sources.kronospan-terms). Catalog data NOT collected. Note: the data exists in a structured form — decor list via POST /<locale>/ajax/decors/init_decores and per-decor pages /<locale>/decors/view/kronodesign/<collection>/<code> which publish, per product (ЛДСП, ЛМДФ), a thickness x format availability matrix (e.g. K001 PW ЛДСП: 8,10,12,16,18,19,22,25,28,38 mm, format 2800x2070, 18 mm in stock, others on request) and 'Тип декора' (e.g. Дуб/Камень/Цвет). Kazakhstan locale is ru_KZ (mirrors RU). Usable only with Kronospan's written permission (info@kronospan.com)."
+  },
+  {
+   "manufacturer": "Kronospan",
+   "url": "https://kronospan.com/terms_and_conditions/files/Terms-Conditions-202501.pdf",
+   "reason": "Same terms cover PDFs in Digital Library (downloading/storing material without consent prohibited)."
+  },
+  {
+   "manufacturer": "Kronospan",
+   "url": "https://kronospan.ru ; https://www.kronospan.by ; https://kronospan-express.ru ; https://kronospan.kz",
+   "reason": "Domains do not resolve (2026-09-25); kronospan-express.com redirects to kronospan.com (404 page). No separate CIS catalog site exists."
+  },
+  {
+   "manufacturer": "Kastamonu Entegre",
+   "url": "https://www.kastamonuentegre.com/ru_ru/tovary/mdf-dsp",
+   "reason": "Terms of Use explicitly forbid copying/reproducing/republishing any website materials (incl. text and documents) without written permission of KEAS (quote in sources.kastamonu-terms). kastamonu.ru redirects to kastamonuentegre.com/ru_ru, same terms. Decor catalog, Evogloss, catalogues PDFs (/ru_ru/katalogi) not collected. Permission contact: via /ru_ru/svyazatsya-s-nami."
+  },
+  {
+   "manufacturer": "Kronospan (dealers)",
+   "url": "https://plit-centr.ru/catalog/ldsp_kronospan/ ; https://torgplit.ru/page/O-kompanii-istoriya-uspeha ; https://business.td-komandor.ru/katalog/plitnye-materialy/kronospan/ldsp",
+   "reason": "Russian resellers that self-describe as 'официальный дилер завода Кроношпан' (plit-centr lists e.g. 'ЛДСП K001 PW Дуб Крафт Белый', 2800х2070 мм). Not collected: dealer status not verified against a manufacturer dealer list, they are price/stock shops rather than manufacturer catalogs, and harvesting them would effectively bypass Kronospan's own anti-scraping terms. Left as a decision for the coordinator."
+  },
+  {
+   "manufacturer": "Kastamonu (dealers)",
+   "url": "https://www.laminate.kz/ ; https://12.kz/manufacturers/kastamonu",
+   "reason": "Found in search; laminate.kz is a flooring (laminate) distributor, 12.kz a retailer — not chipboard decor catalogs. Not collected."
+  }
+ ],
+ "materials": [],
+ "edges": [],
+ "notes": "Both manufacturers in scope have terms that explicitly forbid copying/extracting site content without written permission, so per the brief no decor data was recorded. Kronospan: ru_KZ/ru_RU decor range ~236 Kronodesign decors across 26 collections (from a discovery request made before the terms were read; the response was deleted, nothing kept). Per-decor pages publish thickness/format matrices per product (ЛДСП format 2800x2070 seen for K001) and a 'Тип декора' classification usable for grain — worth requesting permission from info@kronospan.com. Kastamonu: decor/Evogloss data under /ru_ru/tovary/mdf-dsp and /ru_ru/tovary/evogloss plus PDF catalogues at /ru_ru/katalogi; not examined beyond the terms. Raw downloads of catalog data were deleted; only terms/home pages kept under research/raw/kronospan-kastamonu/."
+}

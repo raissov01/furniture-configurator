@@ -1,0 +1,9227 @@
+{
+ "sources": [
+  {
+   "id": "uvadrev-ldsp-decors",
+   "manufacturer": "Увадрев",
+   "url": "https://www.uvadrev.ru/products/ldsp/",
+   "what": "LDSP decor list (184): name, Артикул (decor code), Эксклюзив, Кромка flag; colour-group filter (Древесные/Фоновые/Металлик/Фантазийные) → grain; collection filter (Ведута/Шале/Хюгге/Иллюзия); detail pages /products/ldsp/<slug>/ for «Рекомендуемое тиснение» codes",
+   "termsUrl": "https://www.uvadrev.ru/privacy/",
+   "termsNote": "No terms-of-use page found; only a personal-data policy (/privacy/) which states the site 'может содержать ... файлы, информацию ... которые являются объектами авторского права ... ООО «Увадрев-Холдинг»', plus footer 'Все права защищены. WWW.UVADREV.RU © 2008-2026'. No explicit prohibition on copying/extracting catalog data. Only factual data (codes, names, categories, sizes) taken; no images/descriptions.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "uvadrev-reference-info",
+   "manufacturer": "Увадрев",
+   "url": "https://www.uvadrev.ru/products/reference-information/",
+   "what": "Range-wide LDSP size (ГОСТ 32289-2013 table: длина 2750, ширина 1830, толщина от 8 до 40 мм) and loading-norms table «ЛДСП формат 2750*1830» listing thicknesses 8,10,12,16,18,22,25,32,38; embossing code legend (PR, PE, TS, WE, WS, LF, EW, SM1, FR, MP)",
+   "termsUrl": "https://www.uvadrev.ru/privacy/",
+   "termsNote": "No terms-of-use page found; only a personal-data policy (/privacy/) which states the site 'может содержать ... файлы, информацию ... которые являются объектами авторского права ... ООО «Увадрев-Холдинг»', plus footer 'Все права защищены. WWW.UVADREV.RU © 2008-2026'. No explicit prohibition on copying/extracting catalog data. Only factual data (codes, names, categories, sizes) taken; no images/descriptions.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "uvadrev-edges",
+   "manufacturer": "Увадрев",
+   "url": "https://www.uvadrev.ru/products/kromki/",
+   "what": "Edge band list (99 items, 5 pages) and detail pages with sizes (0,4/0,9/1,8 x 19 mm)",
+   "termsUrl": "https://www.uvadrev.ru/privacy/",
+   "termsNote": "No terms-of-use page found; only a personal-data policy (/privacy/) which states the site 'может содержать ... файлы, информацию ... которые являются объектами авторского права ... ООО «Увадрев-Холдинг»', plus footer 'Все права защищены. WWW.UVADREV.RU © 2008-2026'. No explicit prohibition on copying/extracting catalog data. Only factual data (codes, names, categories, sizes) taken; no images/descriptions.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "uvadrev-tisneniya",
+   "manufacturer": "Увадрев",
+   "url": "https://www.uvadrev.ru/products/tisneniya/",
+   "what": "List of embossing (структура) names; used only to confirm structure-code names",
+   "termsUrl": "https://www.uvadrev.ru/privacy/",
+   "termsNote": "No terms-of-use page found; only a personal-data policy (/privacy/) which states the site 'может содержать ... файлы, информацию ... которые являются объектами авторского права ... ООО «Увадрев-Холдинг»', plus footer 'Все права защищены. WWW.UVADREV.RU © 2008-2026'. No explicit prohibition on copying/extracting catalog data. Only factual data (codes, names, categories, sizes) taken; no images/descriptions.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  }
+ ],
+ "skipped": [
+  {
+   "manufacturer": "Увадрев-Холдинг",
+   "url": "https://www.uvadrev.ru//upload/docs/АКЦИОННЫЙ ПРАЙС.pdf",
+   "reason": "Clearance-sale price list of third-party PVC edges (Kronoplast, GP-пласт, Брамек) and prices; not the manufacturer catalogue, no LDSP rows; not used for edges"
+  },
+  {
+   "manufacturer": "Увадрев-Холдинг",
+   "url": "https://uvadrev.mag1c.ru",
+   "reason": "Retail web-shop (separate domain); not crawled — the main catalogue already covers the decor range; could be checked for per-decor thickness availability"
+  }
+ ],
+ "materials": [
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9118",
+   "structureCode": null,
+   "structureCodes": [
+    "EW",
+    "TS",
+    "PR"
+   ],
+   "name": "Авелано",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/avelano-u9118/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "15-651070-111",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "PE"
+   ],
+   "name": "Айвори",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/ayvori-15-651070-111/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9712",
+   "structureCode": null,
+   "structureCodes": [
+    "LF",
+    "SM1"
+   ],
+   "name": "Айрон Рок",
+   "collection": "Шале",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/ayron-rok-u9712/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U11110",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Андреа",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/andrea-u11110/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1311",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Арабеска",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/arabeska-u1311/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1178",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS",
+    "MP"
+   ],
+   "name": "Ардо",
+   "collection": "Иллюзия",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/ardo-u1178/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1143",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Аризона",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/arizona-u1143/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1107",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "EW",
+    "TS"
+   ],
+   "name": "Аруба Венге",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/aruba-venge-u1107/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1137",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Батл Рок",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/batl-rok-u1137/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2264/М",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Беж Камео",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/bezh-kameo-u2264-m/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2149",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Белая Лиственница",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/belaya-listvennitsa-u2149/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "15-651070-110+U1655/М",
+   "structureCode": "SM1",
+   "structureCodes": [
+    "SM1"
+   ],
+   "name": "Белая+Белый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/belaya-belyy-15-651070-110-u1655-m/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U7211",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LF",
+    "FR",
+    "SM1",
+    "TS"
+   ],
+   "name": "Белое Сияние",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/beloe-siyanie-u7211/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1655/М",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "PR",
+    "SM1",
+    "TS",
+    "EW",
+    "LF",
+    "WE"
+   ],
+   "name": "Белый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/belyy-u1655-m/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1605/P/M",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "PR",
+    "TS",
+    "LF"
+   ],
+   "name": "Белый Экспо",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/belyy-ekspo-u1605-p-m/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1605+U1607",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Белый Экспо+Серый Темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/belyy-ekspo-seryy-temnyy-u1605-u1607/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1655/М+U1703",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Белый+Статуарио",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/belyy-statuario-u1655-m-u1703/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31148",
+   "structureCode": null,
+   "structureCodes": [
+    "LF",
+    "TS",
+    "PR",
+    "EW"
+   ],
+   "name": "Бетон Пайн Светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/beton-payn-svetlyy-u31148/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1127",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Боб Пайн",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/bob-payn-u1127/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3180",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Бодега Белый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/bodega-belyy-u3180/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1609",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LTX"
+   ],
+   "name": "Бруно",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/bruno-u1609/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9510",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Бук Натур",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/buk-natur-u9510/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3144",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Валенсия",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/valensiya-u3144/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1149",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Веллингтон",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/vellington-u1149/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U7508/IP",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Велюр",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/velyur-u7508-ip/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2108",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS",
+    "EW"
+   ],
+   "name": "Венге Цаво",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/venge-tsavo-u2108/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2136",
+   "structureCode": null,
+   "structureCodes": [],
+   "name": "Венге Цаво",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/venge-tsavo-u2136/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1702",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "LF"
+   ],
+   "name": "Венециано",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/venetsiano-u1702/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3797",
+   "structureCode": null,
+   "structureCodes": [
+    "SM1",
+    "LF"
+   ],
+   "name": "Венис",
+   "collection": "Хюгге",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/venis-u3797/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1146",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Винтерберг",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/vinterberg-u1146/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2189",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Вишня Теннеси",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/vishnya-tennesi-u2189/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1114",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS",
+    "PE"
+   ],
+   "name": "Вяз Швейцарский",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/vyaz-shveytsarskiy-u1114/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1504",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1"
+   ],
+   "name": "Галатея",
+   "collection": "Хюгге",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/galateya-u1504/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2199",
+   "structureCode": null,
+   "structureCodes": [
+    "DPR",
+    "WS"
+   ],
+   "name": "Гарден",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/garden-u2199/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31171",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Гаскон Пайн",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/gaskon-payn-u31171/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31172",
+   "structureCode": null,
+   "structureCodes": [
+    "TS",
+    "PR"
+   ],
+   "name": "Гаскон Пайн Светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/gaskon-payn-svetlyy-u31172/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2164",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Гикори Джексон",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/gikori-dzhekson-u2164/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3612",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LF",
+    "FR",
+    "DPR"
+   ],
+   "name": "Графит",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/grafit-u3612/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1134",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS",
+    "MP"
+   ],
+   "name": "Грей Фокс",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/grey-foks-u1134/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2505",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Грязный Беж",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/gryaznyy-bezh-u2505/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3513",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Дасти Грин",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dasti-grin-u3513/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3186",
+   "structureCode": null,
+   "structureCodes": [],
+   "name": "Дезира",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dezira-u3186/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1173",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Делиос",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/delios-u1173/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1158",
+   "structureCode": null,
+   "structureCodes": [
+    "MP",
+    "EW"
+   ],
+   "name": "Дуб Альпийский",
+   "collection": "Шале",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-alpiyskiy-u1158/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U5113",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Антик",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-antik-u5113/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31185",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "EW",
+    "TS"
+   ],
+   "name": "Дуб Апрель темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-aprel-temnyy-u31185/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9125",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Аррива",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-arriva-u9125/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2105",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Атланта",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-atlanta-u2105/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3175",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Баррик Светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-barrik-svetlyy-u3175/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31175",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Дуб Беллуно",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-belluno-u31175/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2181",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Дуб Беловежский",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-belovezhskiy-u2181/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2182",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Бонифацио",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-bonifatsio-u2182/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31155",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "EW",
+    "TS"
+   ],
+   "name": "Дуб Бунратти",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-bunratti-u31155/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2130",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Верцаска",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-vertsaska-u2130/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1212",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Винтаж",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-vintazh-u1212/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2167",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Вотан",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-votan-u2167/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1148",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS",
+    "MP"
+   ],
+   "name": "Дуб Золотистый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-zolotistyy-u1148/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31156",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "EW",
+    "TS",
+    "MP"
+   ],
+   "name": "Дуб Ирландский",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-irlandskiy-u31156/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3136",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Дуб Кантори",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-kantori-u3136/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2157",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "EW",
+    "TS"
+   ],
+   "name": "Дуб Каньон",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-kanon-u2157/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1155",
+   "structureCode": "EW",
+   "structureCodes": [
+    "EW"
+   ],
+   "name": "Дуб Мария",
+   "collection": "Ведута",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-mariya-u1155/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31194",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Дуб Маувелла",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-mauvella-u31194/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1095",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Дуб Млечный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-mlechnyy-u1095/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1150",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Модер",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-moder-u1150/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1152",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Модер песочный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-moder-pesochnyy-u1152/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1156",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Дуб Модер темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-moder-temnyy-u1156/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1211",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Риббек",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-ribbek-u1211/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2166",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Ривьева",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-riveva-u2166/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2171",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Ривьера",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-rivera-u2171/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9126",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Роше",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-roshe-u9126/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3153",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Дуб Рустикальный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-rustikalnyy-u3153/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3194",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Сакраменто темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-sakramento-temnyy-u3194/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31186",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Самдал",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-samdal-u31186/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3129",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Сантана светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-santana-svetlyy-u3129/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2169",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS",
+    "MP"
+   ],
+   "name": "Дуб Серый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-seryy-u2169/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2121",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Сонома",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-sonoma-u2121/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2123",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Сонома Светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-sonoma-svetlyy-u2123/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1147",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS",
+    "MP"
+   ],
+   "name": "Дуб Табачный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-tabachnyy-u1147/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31199",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Шавиниган",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-shavinigan-u31199/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2156",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Дуб Шамони светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-shamoni-svetlyy-u2156/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9107",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS",
+    "EW",
+    "MP"
+   ],
+   "name": "Дуб Эльза",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-elza-u9107/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9127",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Дуб Эльзас",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dub-elzas-u9127/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3509",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LTX",
+    "FR"
+   ],
+   "name": "Дымчато-Серый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dymchato-seryy-u3509/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1179",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "STX"
+   ],
+   "name": "Дюна",
+   "collection": "Иллюзия",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/dyuna-u1179/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2718",
+   "structureCode": "MP",
+   "structureCodes": [
+    "MP"
+   ],
+   "name": "Елочка Арктическая",
+   "collection": "Шале",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/elochka-arkticheskaya-u2718/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1505",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "DPR"
+   ],
+   "name": "Зефир",
+   "collection": "Хюгге",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/zefir-u1505/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1719",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Кадена Вуд",
+   "collection": "Хюгге",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/kadena-vud-u1719/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1718",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Кадена Лайт",
+   "collection": "Хюгге",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/kadena-layt-u1718/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9713",
+   "structureCode": null,
+   "structureCodes": [
+    "SM1",
+    "LF"
+   ],
+   "name": "Кайлас",
+   "collection": "Шале",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/kaylas-u9713/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3706",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LF"
+   ],
+   "name": "Камень Светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/kamen-svetlyy-u3706/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3705",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LF"
+   ],
+   "name": "Камень Темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/kamen-temnyy-u3705/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1129",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS",
+    "PE"
+   ],
+   "name": "Катхал",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/katkhal-u1129/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9520",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Клен Танзау",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/klen-tanzau-u9520/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31188",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Комано",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/komano-u31188/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9708",
+   "structureCode": "SM1",
+   "structureCodes": [
+    "SM1"
+   ],
+   "name": "Креатель",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/kreatel-u9708/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2236/М",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "LF"
+   ],
+   "name": "Крем Вайсс",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/krem-vayss-u2236-m/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1139",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "EW",
+    "PE"
+   ],
+   "name": "Кронберг",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/kronberg-u1139/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1104",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Линум Венге",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/linum-venge-u1104/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9124",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Лиственница темная",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/listvennitsa-temnaya-u9124/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1172",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Марибо",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/maribo-u1172/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9705",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LF",
+    "SM1"
+   ],
+   "name": "Метрополитан Грей",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/metropolitan-grey-u9705/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1720",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1"
+   ],
+   "name": "Мистик",
+   "collection": "Хюгге",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/mistik-u1720/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2502",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "LF",
+    "FR"
+   ],
+   "name": "Мокко",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/mokko-u2502/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9111",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Молокай",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/molokay-u9111/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9528",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1"
+   ],
+   "name": "Монстера",
+   "collection": "Иллюзия",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/monstera-u9528/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31133",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Моринга",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/moringa-u31133/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3700",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "STX"
+   ],
+   "name": "Мунлайт",
+   "collection": "Иллюзия",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/munlayt-u3700/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1600/С",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LF",
+    "FR"
+   ],
+   "name": "Нави",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Да",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/navi-u1600-s/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9134",
+   "structureCode": "MP",
+   "structureCodes": [
+    "MP"
+   ],
+   "name": "Норфолк",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/norfolk-u9134/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1549",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Ноче Гварнери",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/noche-gvarneri-u1549/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2183",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Ноче Милано М",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/noche-milano-m-u2183/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1969",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Ноче Пегасо",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/noche-pegaso-u1969/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2172",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Ноче Сондрио",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/noche-sondrio-u2172/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1555",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "SM1"
+   ],
+   "name": "Ноче Экко",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/noche-ekko-u1555/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31257",
+   "structureCode": "WS",
+   "structureCodes": [
+    "WS"
+   ],
+   "name": "Нуар",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/nuar-u31257/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9716",
+   "structureCode": "SM1",
+   "structureCodes": [
+    "SM1"
+   ],
+   "name": "Океано",
+   "collection": "Иллюзия",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/okeano-u9716/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1608",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Оливия",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Да",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/oliviya-u1608/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2154",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Ольха Горная",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/olkha-gornaya-u2154/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1548",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Ольха Натуральная",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/olkha-naturalnaya-u1548/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9612",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Орех Гепланкт",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/orekh-geplankt-u9612/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U11116",
+   "structureCode": "MP",
+   "structureCodes": [
+    "MP"
+   ],
+   "name": "Орех Элеганс",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/orekh-elegans-u11116/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U7507",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LF"
+   ],
+   "name": "Охра",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/okhra-u7507/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1140",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Палдао",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/paldao-u1140/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1709",
+   "structureCode": "MP",
+   "structureCodes": [
+    "MP"
+   ],
+   "name": "Палермо",
+   "collection": "Ведута",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/palermo-u1709/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1401",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Пепельная Роза",
+   "collection": "Ведута",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/pepelnaya-roza-u1401/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1306/S",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "FR"
+   ],
+   "name": "Перламутр",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/perlamutr-u1306-s/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1125",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Пикар",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/pikar-u1125/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9717",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1"
+   ],
+   "name": "Плуто",
+   "collection": "Иллюзия",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/pluto-u9717/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9718",
+   "structureCode": null,
+   "structureCodes": [
+    "SM1",
+    "LF",
+    "STX"
+   ],
+   "name": "Раверо",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/ravero-u9718/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U11120",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Райя",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/rayya-u11120/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1120",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Рамух Белый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/ramukh-belyy-u1120/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9711",
+   "structureCode": "FR",
+   "structureCodes": [
+    "FR"
+   ],
+   "name": "Рейн Бронза",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Металлик'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/reyn-bronza-u9711/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9710",
+   "structureCode": "FR",
+   "structureCodes": [
+    "FR"
+   ],
+   "name": "Рейн Изумруд",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Металлик'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/reyn-izumrud-u9710/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9625",
+   "structureCode": "FR",
+   "structureCodes": [
+    "FR"
+   ],
+   "name": "Рейн Морион",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Металлик'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/reyn-morion-u9625/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9128",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Ровере Фишт",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/rovere-fisht-u9128/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U11109",
+   "structureCode": null,
+   "structureCodes": [
+    "MP",
+    "WS"
+   ],
+   "name": "Роквуд",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/rokvud-u11109/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2710",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Рустика",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/rustika-u2710/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1135",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Рэд Фокс",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/red-foks-u1135/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9709",
+   "structureCode": null,
+   "structureCodes": [
+    "SM1",
+    "LF"
+   ],
+   "name": "Сабия",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/sabiya-u9709/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9626",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Сан-Леон",
+   "collection": "Ведута",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/san-leon-u9626/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3301/lP",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "FR"
+   ],
+   "name": "Серебро",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Металлик'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/serebro-u3301-lp/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2506/S",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "FR"
+   ],
+   "name": "Серо-Голубой",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/sero-goluboy-u2506-s/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9201/M",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "LF",
+    "FR"
+   ],
+   "name": "Серый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/seryy-u9201-m/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9203/М",
+   "structureCode": null,
+   "structureCodes": [
+    "FR",
+    "PE",
+    "LF"
+   ],
+   "name": "Серый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/seryy-u9203-m/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1607",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Серый Темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/seryy-temnyy-u1607/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2184",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Сосна Ведуга",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/sosna-veduga-u2184/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2144",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Сосна Карелия",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/sosna-kareliya-u2144/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1153",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Сосна Прованс",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/sosna-provans-u1153/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2713",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1"
+   ],
+   "name": "Спринт",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/sprint-u2713/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2143",
+   "structureCode": null,
+   "structureCodes": [],
+   "name": "Старое Дерево",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/staroe-derevo-u2143/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1145",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Сэлви",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/selvi-u1145/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31120",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Таксония",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/taksoniya-u31120/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2722",
+   "structureCode": "WE",
+   "structureCodes": [
+    "WE"
+   ],
+   "name": "Твист Серый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/tvist-seryy-u2722/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2715",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Твист Темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/tvist-temnyy-u2715/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2601",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LF",
+    "FR",
+    "PR",
+    "EW"
+   ],
+   "name": "Темно-серый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/temno-seryy-u2601/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1606",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Терракота",
+   "collection": "Ведута",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/terrakota-u1606/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1503",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LTX",
+    "MF"
+   ],
+   "name": "Тефия",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/tefiya-u1503/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1171",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "MP",
+    "TS"
+   ],
+   "name": "Тира",
+   "collection": "Хюгге",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/tira-u1171/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3351",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "FR"
+   ],
+   "name": "Титан",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Металлик'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/titan-u3351/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1507",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "DPR"
+   ],
+   "name": "Трюфель",
+   "collection": "Иллюзия",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/tryufel-u1507/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1118",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Туя",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/tuya-u1118/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1117",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Туя Светлая",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/tuya-svetlaya-u1117/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1302",
+   "structureCode": "PE",
+   "structureCodes": [
+    "PE"
+   ],
+   "name": "Уни Металлик",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Металлик'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/uni-metallik-u1302/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9129",
+   "structureCode": "MP",
+   "structureCodes": [
+    "MP"
+   ],
+   "name": "Флориан",
+   "collection": "Ведута",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/florian-u9129/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1144",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Хэдфилд",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/khedfild-u1144/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3719",
+   "structureCode": null,
+   "structureCodes": [
+    "LF",
+    "PE"
+   ],
+   "name": "Цемент светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/tsement-svetlyy-u3719/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3720",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "LF"
+   ],
+   "name": "Цемент темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/tsement-temnyy-u3720/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U0080/К",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1",
+    "PR",
+    "LF"
+   ],
+   "name": "Черный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/chernyy-u0080-k/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31136",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "EW",
+    "TS"
+   ],
+   "name": "Черный Ясень",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/chernyy-yasen-u31136/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1508",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "SM1"
+   ],
+   "name": "Шалфей",
+   "collection": "Иллюзия",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/shalfey-u1508/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31195",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "LF"
+   ],
+   "name": "Шанико светлый",
+   "collection": "Шале",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/shaniko-svetlyy-u31195/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1159",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "MP"
+   ],
+   "name": "Штейн Светлый",
+   "collection": "Шале",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/shteyn-svetlyy-u1159/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1160",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "MP"
+   ],
+   "name": "Штейн Темный",
+   "collection": "Шале",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/shteyn-temnyy-u1160/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2500",
+   "structureCode": null,
+   "structureCodes": [
+    "PE",
+    "MF"
+   ],
+   "name": "Эвкалипт",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "none",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фоновые'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/evkalipt-u2500/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9135",
+   "structureCode": "MP",
+   "structureCodes": [
+    "MP"
+   ],
+   "name": "Эмили Блаш",
+   "collection": "Иллюзия",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/emili-blash-u9135/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U1710",
+   "structureCode": "SM1",
+   "structureCodes": [
+    "SM1"
+   ],
+   "name": "Этерно",
+   "collection": "Ведута",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/eterno-u1710/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9714",
+   "structureCode": null,
+   "structureCodes": [
+    "LF",
+    "SM1"
+   ],
+   "name": "Этна",
+   "collection": "Шале",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Фантазийные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/etna-u9714/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31106",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Ясень Анкор",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/yasen-ankor-u31106/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31104",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Ясень Анкор Светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/yasen-ankor-svetlyy-u31104/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U31105",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Ясень Анкор Темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/yasen-ankor-temnyy-u31105/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U9130",
+   "structureCode": "MP",
+   "structureCodes": [
+    "MP"
+   ],
+   "name": "Ясень Камелия",
+   "collection": "Ведута",
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Да",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/yasen-kameliya-u9130/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U2174",
+   "structureCode": "TS",
+   "structureCodes": [
+    "TS"
+   ],
+   "name": "Ясень Рибейра",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Нет",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/yasen-ribeyra-u2174/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3127",
+   "structureCode": null,
+   "structureCodes": [
+    "PR",
+    "TS"
+   ],
+   "name": "Ясень Шимо Светлый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/yasen-shimo-svetlyy-u3127/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Увадрев",
+   "kind": "ldsp",
+   "decorCode": "U3128",
+   "structureCode": "PR",
+   "structureCodes": [
+    "PR"
+   ],
+   "name": "Ясень Шимо Темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    12,
+    16,
+    18,
+    22,
+    25,
+    32,
+    38
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.uvadrev.ru/products/reference-information/",
+   "grain": "wood",
+   "grainBasis": "manufacturer filter 'Цветовая группа: Древесные'",
+   "exclusive": "Нет",
+   "edgeAvailable": "Да",
+   "sourceUrl": "https://www.uvadrev.ru/products/ldsp/yasen-shimo-temnyy-u3128/",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  }
+ ],
+ "edges": [
+  {
+   "manufacturer": "Увадрев",
+   "code": "Ардо 1178(П)",
+   "name": "Ардо 1178(П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1178",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-ardo-1178-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Аруба Венге 1107 (П)",
+   "name": "Аруба Венге 1107 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1107",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-aruba-venge-1107-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Авелано 9118 (П)",
+   "name": "Авелано 9118 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9118",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-avelano-9118-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Айрон Рок 3705 (Гл)",
+   "name": "Айрон Рок 3705 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-ayron-rok-3705-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Белая 2 1655 (Гл)",
+   "name": "Белая 2 1655 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-belaya-2-1655-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Белая 2 1655 (П)",
+   "name": "Белая 2 1655 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-belaya-2-1655-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Белая 2 1655 (Ш)",
+   "name": "Белая 2 1655 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-belaya-2-1655-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Белая Экспо 1605 (Гл)",
+   "name": "Белая Экспо 1605 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-belaya-ekspo-1605-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Белая Экспо 1605 (П)",
+   "name": "Белая Экспо 1605 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-belaya-ekspo-1605-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Белая Экспо 1605 (Ш)",
+   "name": "Белая Экспо 1605 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-belaya-ekspo-1605-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Белая Лиственница 2149 (П)",
+   "name": "Белая Лиственница 2149 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2149",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-belaya-listvennitsa-2149-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Бетон Пайн Светлый 31148 (Лф)",
+   "name": "Бетон Пайн Светлый 31148 (Лф)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31148",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-beton-payn-svetlyy-31148-lf/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Беж Камео 2264 (Ш)",
+   "name": "Беж Камео 2264 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2264/М",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-bezh-kameo-2264-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Боб Пайн 1127 (П)",
+   "name": "Боб Пайн 1127 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1127",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-bob-payn-1127-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Бодега Белый 3180 (П)",
+   "name": "Бодега Белый 3180 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3180",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-bodega-belyy-3180-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Бруно 1609 (Ш)",
+   "name": "Бруно 1609 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1609",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-bruno-1609-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Черный 0080 (Ш)",
+   "name": "Черный 0080 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U0080/К",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-chernyy-0080-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Черный Ясень 31136 (П)",
+   "name": "Черный Ясень 31136 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31136",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-chernyy-yasen-31136-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дасти Грин 3513 (Ш)",
+   "name": "Дасти Грин 3513 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3513",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dasti-grin-3513-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Альпийский 1158 (П)",
+   "name": "Дуб Альпийский 1158 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1158",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-alpiyskiy-1158-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Баррик Светлый 3175 (П)",
+   "name": "Дуб Баррик Светлый 3175 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3175",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-barrik-svetlyy-3175-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Эльза 9107 (П)",
+   "name": "Дуб Эльза 9107 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9107",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-elza-9107-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Ирландский 31156 (П)",
+   "name": "Дуб Ирландский 31156 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31156",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-irlandskiy-31156-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Каньон 2157 (П)",
+   "name": "Дуб Каньон 2157 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2157",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-kanon-2157-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Мария 1155 (П)",
+   "name": "Дуб Мария 1155 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1155",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-mariya-1155-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Млечный 1095 (П)",
+   "name": "Дуб Млечный 1095 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1095",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-mlechnyy-1095-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Сантана Светлый 3129 (П)",
+   "name": "Дуб Сантана Светлый 3129 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3129",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-santana-svetlyy-3129-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Шамони Светлый 2156 (П)",
+   "name": "Дуб Шамони Светлый 2156 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2156",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-shamoni-svetlyy-2156-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Шавиниган 31199 (П)",
+   "name": "Дуб Шавиниган 31199 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31199",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-shavinigan-31199-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Сонома 2121 (П)",
+   "name": "Дуб Сонома 2121 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2121",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-sonoma-2121-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Сонома Светлый 2123 (П)",
+   "name": "Дуб Сонома Светлый 2123 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2123",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-sonoma-svetlyy-2123-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Табачный 1147 (П)",
+   "name": "Дуб Табачный 1147 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1147",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-tabachnyy-1147-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Вотан 2167 (П)",
+   "name": "Дуб Вотан 2167 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2167",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-votan-2167-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дуб Золотистый 1148 (П)",
+   "name": "Дуб Золотистый 1148 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1148",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dub-zolotistyy-1148-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дымчато-серый 3509 (Ш)",
+   "name": "Дымчато-серый 3509 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3509",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dymchato-seryy-3509-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Дюна 1179 (Ш)",
+   "name": "Дюна 1179 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1179",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-dyuna-1179-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Эмили Блаш 9135 (П)",
+   "name": "Эмили Блаш 9135 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9135",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-emili-blash-9135-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Этна 9714 (Лф)",
+   "name": "Этна 9714 (Лф)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9714",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-etna-9714-lf/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Эвкалипт 2500 (Ш)",
+   "name": "Эвкалипт 2500 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2500",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-evkalipt-2500-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Галатея 1504 (Ш)",
+   "name": "Галатея 1504 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1504",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-galateya-1504-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Гаскон Пайн Светлый 31172 (П)",
+   "name": "Гаскон Пайн Светлый 31172 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31172",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-gaskon-payn-svetlyy-31172-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Графит 3612 (Ш)",
+   "name": "Графит 3612 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3612",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-grafit-3612-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Грей Фокс 1134 (П)",
+   "name": "Грей Фокс 1134 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1134",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-grey-foks-1134-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Кадена Лайт 1718 (П)",
+   "name": "Кадена Лайт 1718 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1718",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-kadena-layt-1718-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Кадена Вуд 1719 (П)",
+   "name": "Кадена Вуд 1719 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1719",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-kadena-vud-1719-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Камень Светлый 3706 (Лф)",
+   "name": "Камень Светлый 3706 (Лф)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3706",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-kamen-svetlyy-3706-lf/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Камень Темный 3705 (Лф)",
+   "name": "Камень Темный 3705 (Лф)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3705",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-kamen-temnyy-3705-lf/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Кайлас 9713 (Гл)",
+   "name": "Кайлас 9713 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9713",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-kaylas-9713-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Клен Танзау 9520 (П)",
+   "name": "Клен Танзау 9520 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9520",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-klen-tanzau-9520-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Креатель 9708 (Гл)",
+   "name": "Креатель 9708 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9708",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-kreatel-9708-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Метрополитен Грей 9705 (Лф)",
+   "name": "Метрополитен Грей 9705 (Лф)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-metropoliten-grey-9705-lf/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Мокко 2502 (Ш)",
+   "name": "Мокко 2502 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2502",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-mokko-2502-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Монстера 9528 (Ш)",
+   "name": "Монстера 9528 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9528",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-monstera-9528-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Мунлайт 3700 (Гл)",
+   "name": "Мунлайт 3700 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3700",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-munlayt-3700-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Нави 1600 (Ш)",
+   "name": "Нави 1600 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1600/С",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-navi-1600-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Ноче Экко 1555 (П)",
+   "name": "Ноче Экко 1555 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1555",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-noche-ekko-1555-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Нуар 31257 (Шпон)",
+   "name": "Нуар 31257 (Шпон)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31257",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-nuar-31257-shpon/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Океано 9716 (Гл)",
+   "name": "Океано 9716 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9716",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-okeano-9716-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Оливия 1609 (Ш)",
+   "name": "Оливия 1609 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-oliviya-1609-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Орех Элеганс 11116 (П)",
+   "name": "Орех Элеганс 11116 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U11116",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-orekh-elegans-11116-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Палермо 1709 (П)",
+   "name": "Палермо 1709 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1709",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-palermo-1709-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Перламутр 1306 (Ш)",
+   "name": "Перламутр 1306 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1306/S",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-perlamutr-1306-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Пикар 1125 (П)",
+   "name": "Пикар 1125 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1125",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-pikar-1125-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Плуто 9717 (Гл)",
+   "name": "Плуто 9717 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9717",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-pluto-9717-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Рамух Белый 1120 (П)",
+   "name": "Рамух Белый 1120 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1120",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-ramukh-belyy-1120-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Раверо 9718 (Лф)",
+   "name": "Раверо 9718 (Лф)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9718",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-ravero-9718-lf/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Рэд Фокс 1135 (П)",
+   "name": "Рэд Фокс 1135 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1135",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-red-foks-1135-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Рейн Морион 9625 (Фр)",
+   "name": "Рейн Морион 9625 (Фр)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9625",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-reyn-morion-9625-fr/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Роквуд 11109 (Шпон)",
+   "name": "Роквуд 11109 (Шпон)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U11109",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-rokvud-11109-shpon/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Сабия 9709 (Гл)",
+   "name": "Сабия 9709 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U9709",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-sabiya-9709-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Серая 9201 (Ш)",
+   "name": "Серая 9201 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-seraya-9201-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Серая 9203 (Ш)",
+   "name": "Серая 9203 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-seraya-9203-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Серебро 3301 (Ш)",
+   "name": "Серебро 3301 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3301/lP",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-serebro-3301-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Серо-Голубой 2506 (Ш)",
+   "name": "Серо-Голубой 2506 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2506/S",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-sero-goluboy-2506-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Шалфей 1508 (Гл)",
+   "name": "Шалфей 1508 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1508",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-shalfey-1508-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Шанико Светлый 31195 (П)",
+   "name": "Шанико Светлый 31195 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31195",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-shaniko-svetlyy-31195-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Штейн Светлый 1159 (П)",
+   "name": "Штейн Светлый 1159 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1159",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-shteyn-svetlyy-1159-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Штейн Темный 1160 (П)",
+   "name": "Штейн Темный 1160 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1160",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-shteyn-temnyy-1160-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Таксония 31120 (П)",
+   "name": "Таксония 31120 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31120",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-taksoniya-31120-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Тефия 1503 (Ш)",
+   "name": "Тефия 1503 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1503",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-tefiya-1503-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Темно-серый 2601 (Ш)",
+   "name": "Темно-серый 2601 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2601",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-temno-seryy-2601-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Терракота 1606 (Ш)",
+   "name": "Терракота 1606 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1606",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-terrakota-1606-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Тира 1171 (П)",
+   "name": "Тира 1171 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1171",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-tira-1171-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Титан 3351 (Ш)",
+   "name": "Титан 3351 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3351",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-titan-3351-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Трюфель 1507 (Гл)",
+   "name": "Трюфель 1507 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1507",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-tryufel-1507-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Цемент Светлый 3719 (Лф)",
+   "name": "Цемент Светлый 3719 (Лф)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3719",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-tsement-svetlyy-3719-lf/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Цемент Темный 3720 (Лф)",
+   "name": "Цемент Темный 3720 (Лф)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3720",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-tsement-temnyy-3720-lf/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Туя 1118 (П)",
+   "name": "Туя 1118 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1118",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-tuya-1118-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Твист Серый 2722 (Ш)",
+   "name": "Твист Серый 2722 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U2722",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-tvist-seryy-2722-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Ватервуд 31170 (П)",
+   "name": "Ватервуд 31170 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-vatervud-31170-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Велюр 7508 (Ш)",
+   "name": "Велюр 7508 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U7508/IP",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-velyur-7508-sh/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Венециано 1702 (Гл)",
+   "name": "Венециано 1702 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1702",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-venetsiano-1702-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Венис 3797 (Гл)",
+   "name": "Венис 3797 (Гл)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3797",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-venis-3797-gl/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Винтерберг 1146 (П)",
+   "name": "Винтерберг 1146 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1146",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-vinterberg-1146-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Ясень Анкор Светлый 31104 (П)",
+   "name": "Ясень Анкор Светлый 31104 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31104",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-yasen-ankor-svetlyy-31104-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Ясень Анкор Темный 31105 (П)",
+   "name": "Ясень Анкор Темный 31105 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U31105",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-yasen-ankor-temnyy-31105-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Ясень Шимо Светлый 3127 (П)",
+   "name": "Ясень Шимо Светлый 3127 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3127",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-yasen-shimo-svetlyy-3127-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Ясень Шимо Темный 3128 (П)",
+   "name": "Ясень Шимо Темный 3128 (П)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U3128",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-yasen-shimo-temnyy-3128-p/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Увадрев",
+   "code": "Зефир 1505 (Ш)",
+   "name": "Зефир 1505 (Ш)",
+   "material": "unknown",
+   "thicknessesMm": [
+    0.4,
+    0.9,
+    1.8
+   ],
+   "widthsMm": [
+    19
+   ],
+   "matches": [
+    {
+     "manufacturer": "Увадрев",
+     "decorCode": "U1505",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.uvadrev.ru/products/kromki/kromka-zefir-1505-sh/",
+   "dateSeen": "2026-09-25"
+  }
+ ],
+ "notes": "Captured all 184 decors listed on /products/ldsp/ (Sept 2026; 113 Древесные, 34 Фоновые, 6 Металлик, 31 Фантазийные; collections Ведута 8, Шале 8, Хюгге 7, Иллюзия 9, rest 'Без коллекции' or unassigned=null). decorCode kept exactly as published (site writes 'U9118' without space; some have suffixes like 'U2264/М', 'U1605/P/M', 'U7508/IP'; a few are non-U codes '15-651070-111' or two-sided combos like 'U1605+U1607', '15-651070-110+U1655/М'). Structure: the site gives per-decor «Рекомендуемое тиснение» (recommended embossing, often several). EXTRA FIELD structureCodes lists them all; structureCode is set only when exactly one is listed, else null. Legend (reference page): PR поры дерева, PE шагрень, TS натуральный шпон, WE офисная шагрень, WS шпон, LF лофт, EW эдель вуд, SM1 гладкий шелк, FR ферро, MP матовые поры. Extra fields exclusive / edgeAvailable = the site's «Эксклюзив» / «Кромка» flags. Sizes: no per-decor thickness/format anywhere on the site; filled range-wide from reference page (2750x1830; thickness list taken from the 'Нормы загрузки ЛДСП формат 2750*1830' table: 8,10,12,16,18,22,25,32,38 — GOST table says 'от 8 до 40'). Actual per-decor availability of thicknesses is NOT published. Grain: Древесные→wood, Фоновые→none; Металлик and Фантазийные→unknown (grainBasis names the category). Edges: 99 edge items from /products/kromki/; material not stated on catalogue pages (unknown). Suffix in parentheses (П, Гл, Ш, Лф, Фр, Шпон) is the site's own finish marker, not decoded. Matches set ONLY where edge name and number equal an LDSP decor name and U-number on the same site (87 of 99); others (e.g. 'Айрон Рок 3705' vs LDSP Айрон Рок U9712, 'Белая 2 1655' vs 'Белый U1655/М', 'Серая 9201' vs 'Серый U9201/M') left [] because name or number differs. No MDF/HDF on this site (only ДСП/ЛДСП)."
+}
