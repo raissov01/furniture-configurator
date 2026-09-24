@@ -32,7 +32,11 @@ export function cabinetsFromTree(root: GroupNode, room: Room, layers?: Layer[]):
     const pose = composePose(parent, node.transform)
     const concealed = hidden || node.hidden === true || (layers !== undefined && isNodeHiddenByLayer(node, layers))
     if (node.kind === 'cabinet') {
-      const config = node.config.id === node.id ? node.config : { ...node.config, id: node.id }
+      // Node labels are canonical, including imported files whose embedded
+      // legacy config still carries another name. Keep unchanged references
+      // stable so editing another cabinet does not manufacture a false edit.
+      const config = node.config.id === node.id && node.config.name === node.name
+        ? node.config : { ...node.config, id: node.id, name: node.name }
       cabinets.push(config)
       if (!concealed) placements.push(placementFromPose(room, config, pose))
     } else if (node.kind === 'group') {
