@@ -791,6 +791,15 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
   const jointLength = jointEnd - jointStart
   const pairSpacing = ctx.settings.minifixPairSpacing
   const endOffset = ctx.settings.minifixPairEndOffset
+  const placement = ctx.settings.minifixPairPlacement
+  const customPair = placement !== DEFAULT_SETTINGS.minifixPairPlacement
+    || pairSpacing !== DEFAULT_SETTINGS.minifixPairSpacing
+    || endOffset !== DEFAULT_SETTINGS.minifixPairEndOffset
+  if (placement === 'center' && pairSpacing < MINIFIX_CAM_DIAMETER) {
+    throw new ConfigValidationError('settings.minifixPairSpacing',
+      `${wall.id}: Ø${MINIFIX_CAM_DIAMETER} ұялар бір-бірін басады`,
+      `spacing ≥ ${MINIFIX_CAM_DIAMETER} мм`)
+  }
   if (ctx.settings.minifixPairPlacement === 'center' && jointLength <= pairSpacing) {
     if (pairSpacing !== DEFAULT_SETTINGS.minifixPairSpacing) {
       throw new ConfigValidationError('settings.minifixPairSpacing',
@@ -798,9 +807,10 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
     }
     return
   }
-  if (ctx.settings.minifixPairPlacement === 'ends' && jointLength <= 2 * endOffset) {
+  if (placement === 'ends' && jointLength - 2 * endOffset < MINIFIX_CAM_DIAMETER) {
     throw new ConfigValidationError('settings.minifixPairEndOffset',
-      `${wall.id}: шеткі шегініс екі штифтті сыйғызбайды`, `0 ≤ offset < ${jointLength / 2} мм`)
+      `${wall.id}: Ø${MINIFIX_CAM_DIAMETER} ұялар буынға сыймайды`,
+      `0 ≤ offset ≤ ${(jointLength - MINIFIX_CAM_DIAMETER) / 2} мм`)
   }
   const jointCentre = (jointStart + jointEnd) / 2
   const rowsWorld = ctx.settings.minifixPairPlacement === 'center'
@@ -832,6 +842,11 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
     const wy = wall.orientation.width === jointAxis ? alongLocal : camPos
 
     // 1. Эксцентриктің ұясы — қабырғаның ішкі бетінде.
+    if (customPair) {
+      const field = placement === 'ends' ? 'minifixPairEndOffset' : 'minifixPairSpacing'
+      requireCutFaceCoordinate(wall, wx, wy, MINIFIX_CAM_DIAMETER, 'x', field, ctx)
+      requireCutFaceCoordinate(wall, wx, wy, MINIFIX_CAM_DIAMETER, 'y', field, ctx)
+    }
     pushFace(wall, 'inner', wx, wy, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
 
     // 2. Штифттің тесігі — сол қабырғаның ТОРЦІНДЕ, қалыңдықтың ортасында.
@@ -853,8 +868,14 @@ export function minifixJoint(wall: Panel, side: Panel, ctx: Ctx): void {
       ? localX(side, rowWorld) : localX(side, thicknessLineWorld)
     const sy = side.orientation.width === jointAxis
       ? localY(side, rowWorld) : localY(side, thicknessLineWorld)
+    const boltDiameter = ctx.settings.minifixBoltMount === 'sleeve-8' ? 8 : MINIFIX_SCREW_DIAMETER
+    if (customPair) {
+      const field = placement === 'ends' ? 'minifixPairEndOffset' : 'minifixPairSpacing'
+      requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'x', field, ctx)
+      requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'y', field, ctx)
+    }
     pushFace(side, 'inner', sx, sy,
-      ctx.settings.minifixBoltMount === 'sleeve-8' ? 8 : MINIFIX_SCREW_DIAMETER,
+      boltDiameter,
       ctx.settings.minifixBoltMount === 'sleeve-8'
         ? requireBlindDepth(ctx.settings.minifixSleeveDepth, sideT, 'minifixSleeveDepth') : MINIFIX_SCREW_DEPTH,
       'minifix', ctx)
@@ -879,7 +900,15 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
   const depth = bottom.finishedWidth
 
   // Тереңдік бойынша екі стяжка: жиектен MINIFIX_FROM_END шегініп.
-  const positions = spreadAlongJoint(depth, 2, ctx.settings.minifixPairEndOffset)
+  const customEndOffset = ctx.settings.minifixPairEndOffset !== DEFAULT_SETTINGS.minifixPairEndOffset
+  const positions = customEndOffset
+    ? [ctx.settings.minifixPairEndOffset, depth - ctx.settings.minifixPairEndOffset]
+    : spreadAlongJoint(depth, 2, ctx.settings.minifixPairEndOffset)
+  if (customEndOffset && positions[1]! - positions[0]! < MINIFIX_CAM_DIAMETER) {
+    throw new ConfigValidationError('settings.minifixPairEndOffset',
+      `${bottom.id}: Ø${MINIFIX_CAM_DIAMETER} ұялар түпке сыймайды`,
+      `0 ≤ offset ≤ ${(depth - MINIFIX_CAM_DIAMETER) / 2} мм`)
+  }
 
   for (const side of sides) {
     const sideT = ctx.thickness(side)
@@ -895,6 +924,10 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
 
     for (const along of positions) {
       // 1. Эксцентриктің ұясы — түптің ҮСТІҢГІ бетінде.
+      if (customEndOffset) {
+        requireCutFaceCoordinate(bottom, camX, along, MINIFIX_CAM_DIAMETER, 'x', 'minifixPairEndOffset', ctx)
+        requireCutFaceCoordinate(bottom, camX, along, MINIFIX_CAM_DIAMETER, 'y', 'minifixPairEndOffset', ctx)
+      }
       pushFace(bottom, 'inner', camX, along, MINIFIX_CAM_DIAMETER, MINIFIX_CAM_DEPTH, 'minifix', ctx)
 
       // 2. Штифттің тесігі — түптің сол/оң ТОРЦІНДЕ.
@@ -910,10 +943,17 @@ export function drawerBottomJoints(bottom: Panel, sides: Panel[], ctx: Ctx): voi
       // 3. Бүйірдің ішкі бетінде — штифт бұралатын тесік.
       const worldZ = bottom.position.z + along
       const worldY = bottom.position.y + t / 2
+      const sx = localX(side, worldY)
+      const sy = localY(side, worldZ)
+      const boltDiameter = ctx.settings.minifixBoltMount === 'sleeve-8' ? 8 : MINIFIX_SCREW_DIAMETER
+      if (customEndOffset) {
+        requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'x', 'minifixPairEndOffset', ctx)
+        requireCutFaceCoordinate(side, sx, sy, boltDiameter, 'y', 'minifixPairEndOffset', ctx)
+      }
       pushFace(
         side, 'inner',
-        localX(side, worldY), localY(side, worldZ),
-        ctx.settings.minifixBoltMount === 'sleeve-8' ? 8 : MINIFIX_SCREW_DIAMETER,
+        sx, sy,
+        boltDiameter,
         ctx.settings.minifixBoltMount === 'sleeve-8'
           ? requireBlindDepth(ctx.settings.minifixSleeveDepth, sideT, 'minifixSleeveDepth') : MINIFIX_SCREW_DEPTH,
         'minifix', ctx,

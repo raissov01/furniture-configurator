@@ -237,6 +237,50 @@ describe('артикулға тәуелді drill орындары', () => {
     expect(() => panelsFor('kitchen-base-drawers-600', { minifixPairPlacement: 'ends', minifixPairEndOffset: 4000 }))
       .toThrow(/minifixPairEndOffset/)
   })
+
+  it('жаңа минификс жұбы толық Ø-мен рез панельде қалады', () => {
+    const checkFaceBounds = (panels: ReturnType<typeof panelsFor>) => {
+      const outside = panels.flatMap((panel) => panel.drilling
+        .filter((drill) => drill.purpose === 'minifix' && (drill.face === 'inner' || drill.face === 'outer'))
+        .filter((drill) => drill.x - drill.diameter / 2 < 0
+          || drill.x + drill.diameter / 2 > panel.cutLength
+          || drill.y - drill.diameter / 2 < 0
+          || drill.y + drill.diameter / 2 > panel.cutWidth)
+        .map((drill) => `${panel.id}:${drill.face}:${drill.x},${drill.y}:Ø${drill.diameter}`))
+      expect(outside).toEqual([])
+    }
+
+    for (const offset of [0, 1, 7]) {
+      expect(() => panelsFor('kitchen-base-drawers-600', {
+        minifixPairPlacement: 'ends', minifixPairEndOffset: offset,
+      })).toThrow(/minifixPairEndOffset/)
+    }
+    for (const offset of [8, 50]) {
+      checkFaceBounds(panelsFor('kitchen-base-drawers-600', {
+        minifixPairPlacement: 'ends', minifixPairEndOffset: offset,
+      }))
+    }
+    expect(() => panelsFor('kitchen-base-drawers-600', {
+      minifixPairEndOffset: 0,
+    })).toThrow(/minifixPairEndOffset/)
+
+    for (const spacing of [0, 1, 7, 8]) {
+      expect(() => panelsFor('kitchen-base-drawers-600', {
+        minifixPairSpacing: spacing,
+      })).toThrow(/minifixPairSpacing/)
+    }
+    for (const spacing of [15, 50]) {
+      checkFaceBounds(panelsFor('kitchen-base-drawers-600', {
+        minifixPairSpacing: spacing,
+      }))
+    }
+    expect(() => panelsFor('kitchen-base-drawers-600', {
+      minifixPairPlacement: 'ends', minifixPairEndOffset: 88,
+    })).toThrow(/minifixPairEndOffset/)
+    expect(() => panelsFor('kitchen-base-drawers-600', {
+      minifixPairSpacing: 4000,
+    })).toThrow(/minifixPairSpacing/)
+  })
 })
 
 describe('DXF-де күрделі контурдың outer қауіпсіздігі', () => {
