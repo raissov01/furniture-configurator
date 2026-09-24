@@ -1230,6 +1230,11 @@ export type ProjectInfo = {
  * коэффициентімен (`ShopProfile.coefficient`) есептейді, дәл бұрынғыдай
  * (`schemaVersion` көтерілмейді, CLAUDE.md §7).
  */
+/** Жеңілдік: пайыз немесе дәл бүтін тиынмен бекітілген сома. */
+export type Discount =
+  | { kind: 'percent'; value: number }
+  | { kind: 'amount'; value: number }
+
 export type PriceOverrides = {
   /**
    * Осы жобаға арналған коэффициент — `ShopProfile.coefficient`-ті
@@ -1249,6 +1254,10 @@ export type PriceOverrides = {
    * сан коэффициентті ЖОЙМАЙДЫ, тек үстінен басады.
    */
   salePrice?: number | undefined
+  /** Кілт: `materials:<id>` / `edges:<id>` / `hardware:<id>` / `services:<id>`. */
+  lineDiscounts?: Record<string, Discount> | undefined
+  /** Жолдық жеңілдіктерден кейін қалған сомаға қолданылатын жеңілдік. */
+  overallDiscount?: Discount | undefined
 }
 
 export type ProjectFile = {

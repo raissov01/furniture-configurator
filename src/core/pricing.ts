@@ -16,7 +16,7 @@ import { ConfigValidationError } from './errors'
 import type { HardwarePlacement } from './hardware'
 import type { NestingResult } from './nesting'
 import { isWidthBevel } from './types'
-import type { Panel, PriceOverrides } from './types'
+import type { Discount, Panel, PriceOverrides } from './types'
 import { SERVICE_IDS, SERVICE_NAMES } from './shop'
 import type { ServiceId, ServiceRate, ShopProfile } from './shop'
 
@@ -30,6 +30,8 @@ export type PriceLine = {
   unitPrice: number
   /** Жол сомасы, тиын */
   cost: number
+  /** Осы позицияға берілген жеңілдік, тиын; жоқ болса 0. */
+  discountAmount?: number | undefined
 }
 
 /**
@@ -92,6 +94,14 @@ export type PriceBreakdown = {
    * дөңгелектеусіз, тура сол сома). Берілмесе — undefined.
    */
   salePriceOverride?: number | undefined
+  /** Жеңілдікке дейінгі ВСЕГО: қолмен сату бағасы болса сол, болмаса есептелген баға. */
+  grossTotal: number
+  /** Барлық жеке позиция жеңілдігінің қосындысы, тиын. */
+  lineDiscountTotal: number
+  /** Жалпы жеңілдік, жеке позициялар шегерілгеннен кейін есептеледі. */
+  overallDiscountAmount: number
+  /** СКИДКА ВСЕГО, тиын. */
+  discountTotal: number
   /**
    * Клиентке шығатын СОҢҒЫ сан, тиын: `salePriceOverride` бар болса сол,
    * жоқ болса `calculatedTotal`.
@@ -518,13 +528,41 @@ export function priceProject(
    * шыққан бағаны БАСЫП ЖАЗАДЫ, бірақ `calculatedTotal` өзгеріссіз қалады —
    * шебер override-ты алып тастап, коэффициентке қайта орала алады.
    */
-  const total = overrides?.salePrice ?? calculatedTotal
+  const grossTotal = overrides?.salePrice ?? calculatedTotal
+  const groups = { materials, edges, hardware, services }
+  const lineLookup = new Map<string, PriceLine>()
+  for (const [group, lines] of Object.entries(groups)) {
+    for (const line of lines) lineLookup.set(`${group}:${line.id}`, line)
+  }
+  const lineDiscountAmounts = new Map<string, number>()
+  for (const [key, discount] of Object.entries(overrides?.lineDiscounts ?? {})) {
+    const line = lineLookup.get(key)
+    const field = `priceOverrides.lineDiscounts.${key}`
+    if (!line) throw new ConfigValidationError(field, 'позиция табылмады', 'бар позиция кілті')
+    lineDiscountAmounts.set(key, discountAmount(discount, line.cost, field))
+  }
+  const withDiscounts = (group: keyof typeof groups): PriceLine[] => groups[group].map((line) => ({
+    ...line,
+    discountAmount: lineDiscountAmounts.get(`${group}:${line.id}`) ?? 0,
+  }))
+  const lineDiscountTotal = [...lineDiscountAmounts.values()].reduce((sum, amount) => sum + amount, 0)
+  const remaining = grossTotal - lineDiscountTotal
+  if (remaining < 0) {
+    throw new ConfigValidationError(
+      'priceOverrides.lineDiscounts', 'жиынтық жеңілдік сату бағасынан көп', `0..${grossTotal} тиын`,
+    )
+  }
+  const overallDiscountAmount = overrides?.overallDiscount
+    ? discountAmount(overrides.overallDiscount, remaining, 'priceOverrides.overallDiscount')
+    : 0
+  const discountTotal = lineDiscountTotal + overallDiscountAmount
+  const total = grossTotal - discountTotal
 
   return {
-    materials,
-    edges,
-    hardware,
-    services,
+    materials: withDiscounts('materials'),
+    edges: withDiscounts('edges'),
+    hardware: withDiscounts('hardware'),
+    services: withDiscounts('services'),
     byMaterial: materialRows,
     goods,
     servicesTotal,
@@ -540,9 +578,34 @@ export function priceProject(
     markup,
     calculatedTotal,
     salePriceOverride: overrides?.salePrice,
+    grossTotal,
+    lineDiscountTotal,
+    overallDiscountAmount,
+    discountTotal,
     total,
     missingPrices,
   }
+}
+
+/**
+ * DISCOUNT_ROUNDING_RULE: әр пайыздық жеңілдікті оның өз позициясында ең жақын
+ * БҮТІН ТИЫНҒА дөңгелектейміз; дәл жарты тиын жоғары дөңгелектенеді.
+ * Жалпы пайыз жолдық жеңілдіктерден кейін қалған сомаға бір рет қолданылады.
+ * Сомалық жеңілдік ешқашан дөңгелектелмейді.
+ */
+export const DISCOUNT_ROUNDING_RULE = 'nearestMinorUnitHalfUp' as const
+
+function discountAmount(discount: Discount, base: number, field: string): number {
+  if (discount.kind === 'percent') {
+    if (!Number.isFinite(discount.value) || discount.value < 0 || discount.value > 100) {
+      throw new ConfigValidationError(field, `${discount.value} — жарамсыз пайыз`, '0..100 %')
+    }
+    return Math.round((base * discount.value) / 100)
+  }
+  if (!Number.isSafeInteger(discount.value) || discount.value < 0 || discount.value > base) {
+    throw new ConfigValidationError(field, `${discount.value} — жарамсыз сома`, `≥ 0, бүтін тиын, ≤ ${base} тиын`)
+  }
+  return discount.value
 }
 
 /**
@@ -586,16 +649,35 @@ function validatePriceOverrides(overrides: PriceOverrides | undefined): void {
  * жіктеме әрдайым толық көрінеді — тек КЛИЕНТКЕ шығатын құжатта жасырылады.
  */
 export function quoteTotalsView(price: PriceBreakdown):
-  | { kind: 'breakdown'; subtotal: number; markupPercent: number; markup: number; total: number }
-  | { kind: 'finalOnly'; total: number } {
-  if (price.salePriceOverride !== undefined) return { kind: 'finalOnly', total: price.total }
+  | { kind: 'breakdown'; subtotal: number; markupPercent: number; markup: number; grossTotal: number; discount: number; total: number }
+  | { kind: 'finalOnly'; grossTotal: number; discount: number; total: number } {
+  if (price.salePriceOverride !== undefined) return {
+    kind: 'finalOnly', grossTotal: price.grossTotal, discount: price.discountTotal, total: price.total,
+  }
   return {
     kind: 'breakdown',
     subtotal: price.subtotal,
     markupPercent: price.markupPercent,
     markup: price.markup,
+    grossTotal: price.grossTotal,
+    discount: price.discountTotal,
     total: price.total,
   }
+}
+
+/**
+ * Клиент КП-сының позициялары. Қолмен сату бағасы қойылса, жолдардағы
+ * материал/қызмет сомалары цехтың шығынын ашады және түпкі бағамен
+ * келіспейді; сондықтан клиентке тек келісілген қорытынды шығады.
+ */
+export function quoteLineGroups(price: PriceBreakdown): { title: string; lines: PriceLine[] }[] {
+  if (price.salePriceOverride !== undefined) return []
+  return [
+    { title: 'Материалы', lines: price.materials },
+    { title: 'Кромка', lines: price.edges },
+    { title: 'Фурнитура', lines: price.hardware },
+    { title: 'Услуги цеха', lines: price.services },
+  ]
 }
 
 /** Қызметтің негізіне сай өлшем бірлігі. */

@@ -419,9 +419,16 @@ export const ProjectInfoSchema = z.object({
  * жүреді — `ConfigValidationError` жол атымен әрі аралығымен лақтырады,
  * ал схема тек ПІШІНДІ тексереді.
  */
+const DiscountSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('percent'), value: z.number() }),
+  z.object({ kind: z.literal('amount'), value: z.number() }),
+])
+
 export const PriceOverridesSchema = z.object({
   coefficient: z.number().positive().optional(),
   salePrice: z.number().int().min(0).optional(),
+  lineDiscounts: z.record(z.string(), DiscountSchema).optional(),
+  overallDiscount: DiscountSchema.optional(),
 })
 
 export const ProjectFileSchema = ProjectFileV2Schema.extend({

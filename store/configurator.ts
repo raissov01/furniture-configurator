@@ -363,6 +363,10 @@ const cleanPriceOverrides = (overrides: PriceOverrides): PriceOverrides | undefi
   // сақталған файлда `coefficient: undefined` секілді бос кілт қалады.
   if (overrides.coefficient !== undefined) cleaned.coefficient = overrides.coefficient
   if (overrides.salePrice !== undefined) cleaned.salePrice = overrides.salePrice
+  if (overrides.lineDiscounts && Object.keys(overrides.lineDiscounts).length > 0) {
+    cleaned.lineDiscounts = overrides.lineDiscounts
+  }
+  if (overrides.overallDiscount !== undefined) cleaned.overallDiscount = overrides.overallDiscount
   return Object.keys(cleaned).length > 0 ? cleaned : undefined
 }
 
