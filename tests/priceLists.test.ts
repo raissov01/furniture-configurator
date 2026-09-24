@@ -1,5 +1,6 @@
 /** Бір цехтағы бірнеше прайс: тек ақша ауысады, өндіріс геометриясы өзгермейді. */
 import { describe, expect, it } from 'vitest'
+import { ZodError } from 'zod'
 import {
   createPriceList, defaultShopProfile, deletePriceList, parseShopProfile,
   renamePriceList, switchPriceList,
@@ -31,6 +32,18 @@ function pricedShop(): ShopProfile {
 }
 
 describe('цех прайс-парақтары', () => {
+  it('бүлінген v6 профиль миграцияда raw TypeError емес, өріс жолы бар Zod қатесін береді', () => {
+    try {
+      parseShopProfile({ schemaVersion: 6, id: 'invalid' })
+      throw new Error('Күтілген ZodError болмады')
+    } catch (error) {
+      expect(error).toBeInstanceOf(ZodError)
+      const issues = (error as ZodError).issues
+      expect(issues.some((issue) => issue.path.join('.') === 'materials')).toBe(true)
+      expect(issues.some((issue) => issue.path.join('.') === 'services')).toBe(true)
+    }
+  })
+
   it('ескі v6 профиль ағымдағы НАҚТЫ бағалардан бір негізгі прайсқа көшеді', () => {
     const current = pricedShop()
     const legacy = { ...current, schemaVersion: 6 }
