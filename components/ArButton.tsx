@@ -15,13 +15,12 @@ import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 import { cloudEnabled } from '@/lib/cloud'
 import { useConfigurator } from '@/store/configurator'
-import { activeCabinet } from '@/store/configurator'
 
 export function ArButton() {
   const ar = useConfigurator((s) => s.ar)
   const setAr = useConfigurator((s) => s.setAr)
   const scene = useConfigurator((s) => s.liveScene)
-  const title = useConfigurator((s) => activeCabinet(s).name)
+  const title = useConfigurator((s) => s.root.name)
 
   const run = async () => {
     if (!scene) {

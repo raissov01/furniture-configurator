@@ -31,8 +31,9 @@ import { RenderPanel } from '@/components/RenderPanel'
 import { cloudEnabled } from '@/lib/cloud'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
-  formatTenge, nestPanels, nestingOptionsOf, priceProject,
+  ConfigValidationError, formatTenge, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
+import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { ModuleList } from '@/components/ModuleList'
@@ -40,11 +41,12 @@ import { BusyOverlay, Spinner } from '@/components/BusyOverlay'
 import { TouchJoystick } from '@/components/TouchJoystick'
 import { isTouchDevice } from '@/lib/walkInput'
 import { usePanels } from '@/lib/usePanels'
-import { useSceneItems } from '@/lib/useSceneItems'
+import { useTreeSceneItems } from '@/lib/useTreeSceneItems'
+import { useProjectProduction } from '@/lib/useProjectProduction'
 import {
-  DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, mergeProjectPanels, shelfSpanWarnings,
+  DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, shelfSpanWarnings,
 } from '@/src/core/index'
-import { activeCabinet, useConfigurator } from '@/store/configurator'
+import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 
 // R3F тек браузерде жүреді — сервер жағында рендерленбейді.
@@ -101,7 +103,7 @@ const BUDGET_MS = 100
 const CUT_OPEN_KEY = 'furniture-configurator:cutlist-open'
 
 export function Workspace() {
-  const cabinet = useConfigurator(activeCabinet)
+  const cabinet = useConfigurator((s) => s.cabinets.find((entry) => entry.id === s.activeId))
   const undo = useConfigurator((s) => s.undo)
   const redo = useConfigurator((s) => s.redo)
   const reset = useConfigurator((s) => s.reset)
@@ -116,6 +118,10 @@ export function Workspace() {
   const setAiOpen = useConfigurator((s) => s.setAiOpen)
   const setRoomOpen = useConfigurator((s) => s.setRoomOpen)
   const room = useConfigurator((s) => s.room)
+  const root = useConfigurator((s) => s.root)
+  const layers = useConfigurator((s) => s.layers)
+  const projectSettings = useConfigurator((s) => s.projectSettings)
+  const projectLoadError = useConfigurator((s) => s.projectLoadError)
   const cabinets = useConfigurator((s) => s.cabinets)
   const placements = useConfigurator((s) => s.placements)
   const activeId = useConfigurator((s) => s.activeId)
@@ -171,8 +177,22 @@ export function Workspace() {
   // Телефон/планшет: прогулкада джойстик пен саусақпен қарау.
   const touch = useMemo(isTouchDevice, [])
 
-  const { panels, error, ms, stale } = usePanels(cabinet, catalog, shop.settings)
-  const items = useSceneItems(room, cabinets, placements, catalog, shop.settings)
+  const settings = projectSettings ?? shop.settings
+  const { panels, error, ms, stale } = usePanels(cabinet, catalog, settings)
+  const { scene, items, error: sceneError } = useTreeSceneItems(root, room, catalog, settings, layers)
+  const production = useProjectProduction()
+  const hasActiveCabinet = Boolean(cabinet)
+  const activePanels = hasActiveCabinet ? panels : []
+  const activeEditable = useMemo(() => {
+    if (!hasActiveCabinet) return false
+    try {
+      assertTreeNodeEditable(root, activeId, layers)
+      return true
+    } catch (error) {
+      if (!(error instanceof ConfigValidationError)) throw error
+      return false
+    }
+  }, [root, activeId, layers, hasActiveCabinet])
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
@@ -201,7 +221,7 @@ export function Workspace() {
       syncShare()
     }, 500)
     return () => clearTimeout(timer)
-  }, [room, cabinets, placements, saveProjectLocally, pushHistory, syncShare])
+  }, [room, root, layers, settings, catalog, cabinets, placements, saveProjectLocally, pushHistory, syncShare])
 
   /*
    * Кідірістегі сақтау бет ЖАБЫЛҒАНДА/АУЫСҚАНДА жоғалмауы керек.
@@ -219,23 +239,20 @@ export function Workspace() {
   }, [saveProjectLocally])
 
   // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
-  const spanWarnings = useMemo(() => shelfSpanWarnings(panels, shop), [panels, shop])
+  const spanWarnings = useMemo(() => shelfSpanWarnings(production.panels, shop), [production.panels, shop])
 
   // Габарит шектері де солай: цех қоймаса, ескерту мүлде шықпайды. Тексеру
   // БҮКІЛ жоба бойынша — жобадағы екінші корпус шектен шықса да көрінуі керек.
-  const sizeWarnings = useMemo(() => dimensionWarnings(cabinets, shop), [cabinets, shop])
+  const sizeWarnings = useMemo(() => dimensionWarnings(items.map((item) => item.cabinet), shop), [items, shop])
 
   // Смета БҮКІЛ жоба бойынша: цех парақты бір тапсырысқа бірге сатып алады.
   // id-лер корпустың атауымен префиксталады: бір жобадағы екі шкафта да
   // `side-left` бар, ал экспортта олар бөлек файл болуы керек.
-  const projectPanels = useMemo(
-    () => mergeProjectPanels(items.map((i) => ({ cabinetId: i.cabinet.id, panels: i.panels }))),
-    [items],
-  )
-  const projectHardware = useMemo(() => items.flatMap((i) => i.hardware), [items])
-  const projectName = cabinets.length === 1 ? cabinets[0]!.name : `Проект (${cabinets.length} корпуса)`
+  const projectPanels = production.panels
+  const projectHardware = production.hardware
+  const projectName = exportProject().name
   // Монтаж корпустардың ЕНІНІҢ қосындысымен саналады.
-  const moduleWidths = useMemo(() => cabinets.map((c) => c.width), [cabinets])
+  const moduleWidths = production.moduleWidths
 
   /*
    * БАҒА ТАҚТАДА (qdesign сияқты — жоғарыда үнемі «763 490 ₸»). Бұрын баға
@@ -246,6 +263,7 @@ export function Workspace() {
    */
   const deferredPanels = useDeferredValue(projectPanels)
   const liveTotal = useMemo((): { total: number } | { missing: true } | null => {
+    if (production.error) return null
     try {
       const nesting = nestPanels(deferredPanels, catalog, nestingOptionsOf(shop))
       const price = priceProject(deferredPanels, nesting, shop, projectHardware, moduleWidths)
@@ -256,7 +274,7 @@ export function Workspace() {
       console.debug('Цена в тулбаре не посчитана', error)
       return null
     }
-  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths])
+  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths, production.error])
   const [shared, setShared] = useState<string | null>(null)
   const copyClientLink = async () => {
     let link: string
@@ -341,20 +359,20 @@ export function Workspace() {
       <AiPanel />
       <RoomPlan />
       <ShopSettings />
-      <SketchEditor />
-      <DrillEditor panels={panels} catalog={catalog} />
-      <CustomParts catalog={catalog} />
+      {activeEditable ? <SketchEditor /> : null}
+      {activeEditable ? <DrillEditor panels={activePanels} catalog={catalog} /> : null}
+      {activeEditable ? <CustomParts catalog={catalog} /> : null}
       <ProjectPanel panels={projectPanels} catalog={catalog} />
       <HelpPanel />
       <HistoryPanel />
       <ShareCodeDialog />
       {cloudEnabled && <AccountPanel />}
-      <QuoteView
+      {!production.error ? <QuoteView
         panels={projectPanels}
         hardware={projectHardware}
         projectName={projectName}
         moduleWidths={moduleWidths}
-      />
+      /> : null}
       {/*
         PRO100-ДЕГІ МӘЗІР ЖОЛАҒЫ (docs/pro100/ui-design.md, §1: «Файл · Правка ·
         Вид · Элемент · Инструменты · Справка»). Мұнда ЖАҢА ӘРЕКЕТ жоқ — әр
@@ -372,8 +390,8 @@ export function Workspace() {
         <Menu label={tr('Файл')} size="sm">
           <MenuItem onClick={() => setGalleryOpen(true)}>{tr('Готовые шаблоны')}</MenuItem>
           <MenuItem onClick={() => setAiOpen(true)}>{tr('Техзадание (словами)')}</MenuItem>
-          <MenuItem onClick={() => setSketchOpen(true)}>{tr('Нарисовать мышью')}</MenuItem>
-          <MenuItem onClick={() => setPartsOpen(true)}>{tr('Своя деталь')}</MenuItem>
+          <MenuItem onClick={() => setSketchOpen(true)} disabled={!activeEditable}>{tr('Нарисовать мышью')}</MenuItem>
+          <MenuItem onClick={() => setPartsOpen(true)} disabled={!activeEditable}>{tr('Своя деталь')}</MenuItem>
           <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
           <MenuItem
             onClick={() => {
@@ -463,11 +481,11 @@ export function Workspace() {
 
         <Menu label={tr('Элемент')} size="sm">
           <MenuItem onClick={addCabinet}>{tr('Новый корпус')}</MenuItem>
-          <MenuItem onClick={() => duplicateCabinet(activeId)}>{tr('Дублировать')}</MenuItem>
-          <MenuItem onClick={() => mirrorCabinet(activeId)}>{tr('Зеркальная копия')}</MenuItem>
+          <MenuItem onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable}>{tr('Дублировать')}</MenuItem>
+          <MenuItem onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable}>{tr('Зеркальная копия')}</MenuItem>
           <MenuItem
             onClick={() => { removeCabinet(activeId); setSelected(null) }}
-            disabled={cabinets.length < 2}
+            disabled={cabinets.length < 2 || !activeEditable}
           >
             {tr('Удалить корпус')}
           </MenuItem>
@@ -483,8 +501,8 @@ export function Workspace() {
         <Menu label={tr('Инструменты')} size="sm">
           <MenuItem onClick={() => setShopOpen(true)}>{tr('Цех: материалы и цены')}</MenuItem>
           <MenuItem onClick={() => setProjectOpen(true)}>{tr('Материалы и сборка')}</MenuItem>
-          <MenuItem onClick={() => setQuoteOpen(true)}>{tr('Смета и раскрой')}</MenuItem>
-          <MenuItem onClick={() => setDrillOpen(true)}>{tr('Присадка')}</MenuItem>
+          <MenuItem onClick={() => setQuoteOpen(true)} disabled={Boolean(production.error)}>{tr('Смета и раскрой')}</MenuItem>
+          <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable}>{tr('Присадка')}</MenuItem>
           <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
           <MenuItem onClick={() => { window.location.href = '/cut' }}>{tr('Раскрой (отдельный экран)')}</MenuItem>
         </Menu>
@@ -522,13 +540,13 @@ export function Workspace() {
           <Menu label={tr('Создать')} title={tr('С чего начать корпус')}>
             <MenuItem onClick={() => setGalleryOpen(true)}>{tr('Готовые шаблоны')}</MenuItem>
             <MenuItem onClick={() => setAiOpen(true)}>{tr('Техзадание (словами)')}</MenuItem>
-            <MenuItem onClick={() => setSketchOpen(true)}>{tr('Нарисовать мышью')}</MenuItem>
-            <MenuItem onClick={() => setPartsOpen(true)}>{tr('Своя деталь')}</MenuItem>
+            <MenuItem onClick={() => setSketchOpen(true)} disabled={!activeEditable}>{tr('Нарисовать мышью')}</MenuItem>
+            <MenuItem onClick={() => setPartsOpen(true)} disabled={!activeEditable}>{tr('Своя деталь')}</MenuItem>
           </Menu>
           <Menu label={tr('Проект')} title={tr('Материалы, раскрой, присадка, смета')}>
             <MenuItem onClick={() => setProjectOpen(true)}>{tr('Материалы и сборка')}</MenuItem>
-            <MenuItem onClick={() => setQuoteOpen(true)}>{tr('Смета и раскрой')}</MenuItem>
-            <MenuItem onClick={() => setDrillOpen(true)}>{tr('Присадка')}</MenuItem>
+            <MenuItem onClick={() => setQuoteOpen(true)} disabled={Boolean(production.error)}>{tr('Смета и раскрой')}</MenuItem>
+            <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable}>{tr('Присадка')}</MenuItem>
             <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
             <MenuItem onClick={() => setHistoryOpen(true)}>{tr('История')}</MenuItem>
             <MenuItem onClick={() => void copyClientLink()}>{tr('Ссылка клиенту')}</MenuItem>
@@ -565,7 +583,7 @@ export function Workspace() {
               </Button>
             )
           ) : null}
-          <ExportMenu cabinet={cabinet} panels={panels} />
+          {cabinet && !production.error ? <ExportMenu cabinet={cabinet} panels={activePanels} /> : null}
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}
@@ -581,7 +599,7 @@ export function Workspace() {
           }
           title={`Бюджет: ${BUDGET_MS} мс`}
         >
-          {panels.length} панелей{cabinets.length > 1 ? ` · корпусов: ${cabinets.length}` : ''}{mounted ? ` · ${ms.toFixed(1)} мс` : ''}
+          {projectPanels.length} панелей{cabinets.length > 1 ? ` · корпусов: ${cabinets.length}` : ''}{mounted ? ` · ${ms.toFixed(1)} мс` : ''}
         </span>
       </header>
 
@@ -595,12 +613,12 @@ export function Workspace() {
       */}
       <div className="flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
         <Button size="sm" onClick={addCabinet} title={tr('Новый корпус')}>+</Button>
-        <Button size="sm" onClick={() => duplicateCabinet(activeId)} title={tr('Дублировать корпус')}>⧉</Button>
-        <Button size="sm" onClick={() => mirrorCabinet(activeId)} title={tr('Зеркальная копия')}>⇋</Button>
+        <Button size="sm" onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>⧉</Button>
+        <Button size="sm" onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable} title={tr('Зеркальная копия')}>⇋</Button>
         <Button
           size="sm"
           onClick={() => { removeCabinet(activeId); setSelected(null) }}
-          disabled={cabinets.length < 2}
+          disabled={cabinets.length < 2 || !activeEditable}
           title={tr('Удалить корпус')}
         >
           ✕
@@ -628,7 +646,7 @@ export function Workspace() {
         >
           {tr('Прогулка')}
         </Button>
-        <ArButton />
+        {hasActiveCabinet && !sceneError && !projectLoadError ? <ArButton /> : null}
         <VrButton />
         <Button
           size="sm"
@@ -709,7 +727,13 @@ export function Workspace() {
         <Button size="sm" onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
       </div>
 
-      {error ? (
+      {production.error ? (
+        <div role="alert" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+          {production.error}
+        </div>
+      ) : null}
+
+      {hasActiveCabinet && error ? (
         <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <b className="font-mono">{error.field}</b> — {error.message.replace(`${error.field}: `, '')}
           {stale ? <span className="ml-2 opacity-70">{tr('Показана последняя корректная модель.')}</span> : null}
@@ -818,7 +842,7 @@ export function Workspace() {
         <main className="relative min-h-[55vh] flex-1 lg:min-h-64" data-tour="scene">
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
-            <Scene items={items} room={room} activeId={activeId} catalog={catalog} />
+            <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} />
           </div>
           {/* Бірнеше корпусты жобада «қай корпус» тізімнен таңдалады (qdesign сияқты). */}
           {walk ? null : <ModuleList />}
@@ -883,7 +907,7 @@ export function Workspace() {
           className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72')}
           data-tour="cutlist"
         >
-          <CutListTable panels={panels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
+          <CutListTable panels={projectPanels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
         </section>
         </div>
         <aside className="flex min-h-0 flex-col border-l border-neutral-200 dark:border-neutral-800">
@@ -895,10 +919,12 @@ export function Workspace() {
                 ? ` ${String(cabinets.findIndex((c) => c.id === activeId) + 1).padStart(2, '0')} / ${cabinets.length}`
                 : ''}
             </div>
-            <div className="truncate text-sm font-semibold" title={cabinet.name}>{cabinet.name}</div>
-            <div className="text-[11px] tabular-nums text-neutral-500">
-              {cabinet.height} (H) × {cabinet.width} (W) × {cabinet.depth} (D)
-            </div>
+            {cabinet ? <>
+              <div className="truncate text-sm font-semibold" title={cabinet.name}>{cabinet.name}</div>
+              <div className="text-[11px] tabular-nums text-neutral-500">
+                {cabinet.height} (H) × {cabinet.width} (W) × {cabinet.depth} (D)
+              </div>
+            </> : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-3">
             <Dense>
@@ -908,17 +934,21 @@ export function Workspace() {
                 «бәрі бір терезеде» идеясы бойынша (docs/pro100/ui-design.md).
                 Бұрын осында бөлек Collapsible еді.
               */}
-              <Configurator invalidField={error?.field ?? null} panels={panels} />
+              {hasActiveCabinet ? (
+                <fieldset disabled={!activeEditable}>
+                  <Configurator invalidField={error?.field ?? null} panels={activePanels} />
+                </fieldset>
+              ) : null}
             </Dense>
           </div>
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
           <div className="flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800">
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
-            <Button onClick={() => duplicateCabinet(activeId)} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
-            <Button onClick={() => mirrorCabinet(activeId)} title={tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
+            <Button onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
+            <Button onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable} title={tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
             <Button
               onClick={() => { removeCabinet(activeId); setSelected(null) }}
-              disabled={cabinets.length < 2}
+              disabled={cabinets.length < 2 || !activeEditable}
               title={tr('Удалить корпус')}
             >
               {tr('Удалить')}

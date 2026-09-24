@@ -16,7 +16,7 @@ import { ConfigValidationError, decodeProjectV4, parseProjectV4 } from '@/src/co
 import type { ProjectFileV4 } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
-import { useSceneItems } from '@/lib/useSceneItems'
+import { useTreeSceneItems } from '@/lib/useTreeSceneItems'
 import { Button } from '@/components/ui'
 import { Spinner } from '@/components/BusyOverlay'
 import { TouchJoystick } from '@/components/TouchJoystick'
@@ -155,8 +155,10 @@ function Viewer({
   code: string | null
 }) {
   const room = useConfigurator((s) => s.room)
-  const cabinets = useConfigurator((s) => s.cabinets)
-  const placements = useConfigurator((s) => s.placements)
+  const root = useConfigurator((s) => s.root)
+  const layers = useConfigurator((s) => s.layers)
+  const projectSettings = useConfigurator((s) => s.projectSettings)
+  const shopSettings = useConfigurator((s) => s.shop.settings)
   const catalog = useConfigurator((s) => s.catalog)
   const activeId = useConfigurator((s) => s.activeId)
   const openness = useConfigurator((s) => s.openness)
@@ -166,7 +168,8 @@ function Viewer({
   const setWalk = useConfigurator((s) => s.setWalk)
   const touch = useMemo(isTouchDevice, [])
 
-  const items = useSceneItems(room, cabinets, placements, catalog)
+  const { scene, items, error } = useTreeSceneItems(root, room, catalog, projectSettings ?? shopSettings, layers)
+  const cabinets = items.map((item) => item.cabinet)
 
   const materialName = useMemo(() => {
     const byId = new Map(catalog.materials.map((m) => [m.id, m.name]))
@@ -196,9 +199,13 @@ function Viewer({
       </header>
 
       <div className="relative min-h-0 flex-1">
-        <div className="absolute inset-0">
-          <Scene items={items} room={room} activeId={activeId} catalog={catalog} allowDimensionLabels={false} />
-        </div>
+        {error ? <div role="alert" className="absolute inset-x-0 top-0 z-10 bg-red-950 px-4 py-2 text-sm text-red-100">
+          {error.message}
+        </div> : null}
+          <div className="absolute inset-0">
+          <Scene items={items} room={room} activeId={activeId} catalog={catalog}
+            flatScene={scene} allowDimensionLabels={false} />
+          </div>
         {walk ? (
           <>
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-3">

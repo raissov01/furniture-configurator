@@ -21,13 +21,19 @@ export type PanelsResult = {
 
 /** `settings` — цехтың константалары: зазорлар, паз тереңдігі, присадка қадамы. */
 export function usePanels(
-  cabinet: CabinetConfig,
+  cabinet: CabinetConfig | undefined,
   catalog: Catalog,
   settings?: SettingsOverride,
 ): PanelsResult {
   const lastValid = useRef<Panel[]>([])
 
   return useMemo(() => {
+    // A valid v4 root can contain only boards/solids, or be empty. Do not
+    // synthesize a cabinet or retain another project's panel preview.
+    if (!cabinet) {
+      lastValid.current = []
+      return { panels: [], error: null, ms: 0, stale: false }
+    }
     const started = performance.now()
     try {
       const panels = generateCabinet(cabinet, catalog, settings)
