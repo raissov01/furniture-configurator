@@ -25,8 +25,11 @@ export function buildCanonicalRows(root: GroupNode, scene: FlatScene, layers: La
   const rows: CanonicalTreeRow[] = []
   const visit = (node: SceneNode, parentId: string | null, depth: number, parentHidden: boolean, parentLocked: boolean): void => {
     const layer = resolveLayer(node.layerId, layers)
-    const hidden = parentHidden || node.hidden === true || !layer.visible
-    const locked = parentLocked || node.locked === true || layer.locked
+    // Түбір қабатқа жатпайды: әдепкі қабат жасырылса/құлыпталса, бүкіл ағаш емес,
+    // тек сол қабаттың түйіндері жасырылады/құлыпталады.
+    const layered = node !== root
+    const hidden = parentHidden || node.hidden === true || (layered && !layer.visible)
+    const locked = parentLocked || node.locked === true || (layered && layer.locked)
     const flat = flatNodes.get(node.id)
     rows.push({
       id: node.id, nodeId: node.id, parentId, depth, kind: node.kind,

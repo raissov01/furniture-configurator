@@ -130,7 +130,9 @@ export function flattenTree(
     // `hidden` жолымен өтеді, тек шарт кеңейді: түйіннің өз `hidden`
     // белгісі НЕМЕСЕ оның қабаты жасырын болса, рекурсия осында тоқтайды.
     if (node.hidden === true) return
-    if (layers !== undefined && isNodeHiddenByLayer(node, layers)) return
+    // Түбір — жоба контейнері, қабатқа жатпайды: әйтпесе «Әдепкі қабатты»
+    // жасыру басқа қабаттардың түйіндерін де жасырып жібереді.
+    if (layers !== undefined && node !== root && isNodeHiddenByLayer(node, layers)) return
     const pose = composePose(parent, node.transform)
     switch (node.kind) {
       case 'group':

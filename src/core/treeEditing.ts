@@ -1,6 +1,6 @@
 /** Immutable editor operations for the canonical scene tree. */
 import { ConfigValidationError } from './errors'
-import { assertNodeEditable, isNodeHiddenByLayer } from './layers'
+import { assertNodeEditable, DEFAULT_LAYER_ID, isNodeHiddenByLayer, resolveLayer } from './layers'
 import { findNode, walkTree } from './tree'
 import type { Layer } from './layers'
 import type { GroupNode, Pose, SceneNode, Transform } from './tree'
@@ -27,10 +27,21 @@ export function assertTreeNodeEditable(root: GroupNode, id: string, layers: Laye
   // A locked parent also locks every descendant, regardless of the child's flag.
   let cursor: SceneNode | undefined = node
   while (cursor) {
-    assertNodeEditable(cursor, layers)
+    assertChainNodeEditable(root, cursor, layers)
     cursor = parentOf(root, cursor.id)
   }
   return node
+}
+
+/**
+ * Түбір — жоба контейнері, қабатқа жатпайды: оның тек өз `locked` белгісі
+ * есептеледі. Әйтпесе «Әдепкі қабатты» құлыптау бүкіл жобаны құлыптайды.
+ */
+function assertChainNodeEditable(root: GroupNode, node: SceneNode, layers: Layer[]): void {
+  if (node !== root) return assertNodeEditable(node, layers)
+  if (node.locked === true) {
+    throw new ConfigValidationError('node.locked', `түйін құлыпталған: "${node.name}"`, 'locked = false')
+  }
 }
 
 function mapGroup(root: GroupNode, id: string, update: (group: GroupNode) => GroupNode): GroupNode {
@@ -82,7 +93,7 @@ export function setTreeNodeFlag(root: GroupNode, id: string, flag: 'hidden' | 'l
     // Unlocking oneself is allowed, but a locked ancestor/layer still blocks it.
     assertNodeEditable({ ...node, locked: false }, layers)
     let cursor: SceneNode | undefined = parentOf(root, id)
-    while (cursor) { assertNodeEditable(cursor, layers); cursor = parentOf(root, cursor.id) }
+    while (cursor) { assertChainNodeEditable(root, cursor, layers); cursor = parentOf(root, cursor.id) }
   } else assertTreeNodeEditable(root, id, layers)
   const parent = parentOf(root, id)!
   return mapGroup(root, parent.id, (group) => ({ ...group, children: group.children.map((node) =>
@@ -105,6 +116,24 @@ export function reparentNode(root: GroupNode, id: string, targetGroupId: string,
   return mapGroup(removed, targetGroupId, (group) => ({ ...group, children: [...group.children, { ...node, transform }] }))
 }
 
+/**
+ * Жаңа топтың қабаты. Топтың қабаты жасырын/құлыпты болса, балаларын да
+ * жасырады/құлыптайды — сондықтан топтау ешбір түйіннің көрінуі мен құлпын
+ * өзгертпеуі үшін: бәрі бір қабатта болса — сол қабат; әйтпесе әдепкі қабат,
+ * бірақ ол ашық әрі құлыпсыз болғанда ғана.
+ */
+function groupLayerId(members: SceneNode[], layers: Layer[]): string {
+  const ids = new Set(members.map((member) => resolveLayer(member.layerId, layers).id))
+  if (ids.size === 1) return [...ids][0]!
+  const fallback = resolveLayer(undefined, layers)
+  if (!fallback.visible || fallback.locked) {
+    throw new ConfigValidationError('nodeIds',
+      `түйіндер әр қабатта, ал "${fallback.name}" қабаты жасырын не құлыпты`,
+      'бір қабаттағы түйіндер не ашық әдепкі қабат')
+  }
+  return fallback.id
+}
+
 export function groupNodes(root: GroupNode, ids: string[], groupId: string, name: string, layers: Layer[]): GroupNode {
   if (ids.length < 2 || new Set(ids).size !== ids.length) throw new ConfigValidationError('nodeIds', 'кемінде екі бөлек түйін керек')
   if (findNode(root, groupId)) throw new ConfigValidationError('groupId', 'id қайталанды')
@@ -112,10 +141,12 @@ export function groupNodes(root: GroupNode, ids: string[], groupId: string, name
   const parent = parentOf(root, ids[0]!)!
   if (ids.some((id) => parentOf(root, id)?.id !== parent.id)) throw new ConfigValidationError('nodeIds', 'түйіндер бір атада болуы керек')
   const selected = new Set(ids)
+  const layerId = groupLayerId(parent.children.filter((child) => selected.has(child.id)), layers)
   const first = parent.children.findIndex((child) => selected.has(child.id))
   return mapGroup(root, parent.id, (group) => {
     const children = group.children.filter((child) => !selected.has(child.id))
     children.splice(first, 0, { kind: 'group', id: groupId, name: name.trim() || 'Топ',
+      ...(layerId === DEFAULT_LAYER_ID ? {} : { layerId }),
       transform: { pos: { x: 0, y: 0, z: 0 }, rot: { x: 0, y: 0, z: 0 } },
       children: group.children.filter((child) => selected.has(child.id)) })
     return { ...group, children }

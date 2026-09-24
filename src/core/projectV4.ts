@@ -165,7 +165,8 @@ export function productionCabinets(project: ProjectFileV4): CabinetConfig[] {
   const result: CabinetConfig[] = []
   const layers = project.layers ?? []
   const step = (node: SceneNode): void => {
-    if (node.hidden === true || isNodeHiddenByLayer(node, layers)) return
+    // Түбір қабатқа жатпайды (`flattenTree`-мен бірдей ереже).
+    if (node.hidden === true || (node !== project.root && isNodeHiddenByLayer(node, layers))) return
     if (node.kind === 'cabinet') {
       result.push(node.config.id === node.id ? node.config : { ...node.config, id: node.id })
     } else if (node.kind === 'group') {

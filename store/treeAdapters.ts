@@ -75,7 +75,9 @@ export function cabinetsFromTree(root: GroupNode, room: Room, layers?: Layer[]):
   const placements: Placement[] = []
   const step = (node: SceneNode, parent: Pose, hidden: boolean): void => {
     const pose = composePose(parent, node.transform)
-    const concealed = hidden || node.hidden === true || (layers !== undefined && isNodeHiddenByLayer(node, layers))
+    // Түбір қабатқа жатпайды (`flattenTree`-мен бірдей ереже).
+    const concealed = hidden || node.hidden === true
+      || (layers !== undefined && node !== root && isNodeHiddenByLayer(node, layers))
     if (node.kind === 'cabinet') {
       // Node labels are canonical, including imported files whose embedded
       // legacy config still carries another name. Keep unchanged references
