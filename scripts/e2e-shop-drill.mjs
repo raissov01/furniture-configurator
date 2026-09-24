@@ -106,7 +106,62 @@ try {
     const raw = localStorage.getItem('furniture-configurator:shop');
     return raw && JSON.parse(raw).settings.shelfPinFrontOffset === undefined;
   })()`), 'default restored')
-  process.stdout.write('Shop drilling E2E: өріс сақтау және әдепкіге қайтару PASS\n')
+  const selectScrew = `(() => {
+    const label = [...document.querySelectorAll('label')].find((item) => item.textContent?.includes('Крепление чашки петли'));
+    const select = label?.querySelector('select');
+    if (!select) return false;
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(select, 'screw');
+    select.dispatchEvent(new Event('change', { bubbles: true })); return true;
+  })()`
+  if (!await evaluate(selectScrew)) throw new Error('Ілгек mount таңдауы табылмады')
+  if (!await evaluate(`(() => {
+    const raw = localStorage.getItem('furniture-configurator:shop');
+    return raw && JSON.parse(raw).settings.hingeCupMount === undefined;
+  })()`)) throw new Error('Тереңдіксіз screw режимі сақталып кетті')
+  const depthChanged = await evaluate(`(() => {
+    const label = [...document.querySelectorAll('label')].find((item) => item.textContent?.includes('Чашка: глубина пилота'));
+    const input = label?.querySelector('input');
+    if (!input) return false;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '8');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true })); return true;
+  })()`)
+  if (!depthChanged) throw new Error('Ілгек пилоты тереңдігі табылмады')
+  await waitFor(() => evaluate(`(() => {
+    const raw = localStorage.getItem('furniture-configurator:shop');
+    return raw && JSON.parse(raw).settings.hingeScrewPilotDepth === 8;
+  })()`), 'pilot depth persisted')
+  const diameterChanged = await evaluate(`(() => {
+    const label = [...document.querySelectorAll('label')].find((item) => item.textContent?.includes('Чашка: пилот под винт'));
+    const input = label?.querySelector('input');
+    if (!input) return false;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '2.8');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true })); return true;
+  })()`)
+  if (!diameterChanged) throw new Error('Ілгек пилоты диаметрі табылмады')
+  await waitFor(() => evaluate(`(() => {
+    const raw = localStorage.getItem('furniture-configurator:shop');
+    return raw && JSON.parse(raw).settings.hingeScrewPilotDiameter === 2.8;
+  })()`), 'pilot diameter persisted')
+  if (!await evaluate(selectScrew)) throw new Error('Ілгек screw режимі таңдалмады')
+  await waitFor(() => evaluate(`(() => {
+    const raw = localStorage.getItem('furniture-configurator:shop');
+    return raw && JSON.parse(raw).settings.hingeCupMount === 'screw';
+  })()`), 'screw mount persisted')
+  const depthReset = await evaluate(`(() => {
+    const label = [...document.querySelectorAll('label')].find((item) => item.textContent?.includes('Чашка: глубина пилота'));
+    const button = [...(label?.querySelectorAll('button') ?? [])].find((item) => item.textContent?.trim() === 'Сброс');
+    if (!button) return false; button.click(); return true;
+  })()`)
+  if (!depthReset) throw new Error('Ілгек пилоты Reset табылмады')
+  await waitFor(() => evaluate(`(() => {
+    const raw = localStorage.getItem('furniture-configurator:shop');
+    if (!raw) return false;
+    const settings = JSON.parse(raw).settings;
+    return settings.hingeScrewPilotDepth === undefined && settings.hingeCupMount === undefined;
+  })()`), 'pilot depth and mount reset together')
+  process.stdout.write('Shop drilling E2E: сақтау, reload, screw depth guard және Reset PASS\n')
 } finally {
   ws?.close()
   if (chrome.pid) {

@@ -27,6 +27,8 @@ describe('цех присадка профилі', () => {
     expect(loaded.materials[0]?.pricePerSheet).toBe(123456)
     expect(mergeSettings(loaded.settings).shelfPinFrontOffset).toBe(37)
     expect(mergeSettings(loaded.settings).outerFlipAxis).toBe('length')
+    expect(mergeSettings(loaded.settings).hingeScrewPilotDepth).toBeNull()
+    expect(mergeSettings(loaded.settings).hingeScrewPilotDiameter).toBeNull()
   })
 
   it('v8-де бұрғылау мәндерінің шегін тексереді', () => {
@@ -57,17 +59,40 @@ describe('цех присадка профилі', () => {
     expect(shiftedRows).toEqual([originalRows[0]! + 13, originalRows[1]!])
   })
 
+  it('полкодержательдің цех офсеті кесілген бүйірден тыс шықса генерация тоқтайды', () => {
+    expect(() => panelsFor('wardrobe-penal-600', { shelfPinFrontOffset: 1000 }))
+      .toThrow(/shelfPinFrontOffset/)
+    expect(() => panelsFor('wardrobe-penal-600', { shelfPinBackOffset: 1000 }))
+      .toThrow(/shelfPinBackOffset/)
+  })
+
   it('конфирматтың бет диаметрі мен торц пилоты профильден шығады', () => {
     const custom = panelsFor('wardrobe-penal-600', {
       confirmatFaceDiameter: 7, confirmatEdgeDepth: 30,
     }).flatMap((panel) => panel.drilling)
     expect(custom.some((d) => d.purpose === 'confirmat' && d.face === 'outer' && d.diameter === 7)).toBe(true)
     expect(custom.some((d) => d.purpose === 'confirmat' && d.face.startsWith('edge') && d.depth === 30)).toBe(true)
+    expect(() => panelsFor('wardrobe-penal-600', { confirmatFaceDiameter: 4000 }))
+      .toThrow(/confirmatFaceDiameter/)
   })
 
   it('screw чашкасы бекіту пилотын қосады, cup-only қоспайды', () => {
     const base = panelsFor('wardrobe-penal-600').filter((p) => p.role === 'front')
-    const screw = panelsFor('wardrobe-penal-600', { hingeCupMount: 'screw' }).filter((p) => p.role === 'front')
+    expect(() => panelsFor('wardrobe-penal-600', { hingeCupMount: 'screw', hingeScrewPilotDepth: 8 }))
+      .toThrow(/hingeScrewPilotDiameter/)
+    expect(() => panelsFor('wardrobe-penal-600', { hingeCupMount: 'screw', hingeScrewPilotDiameter: 2.8 }))
+      .toThrow(/hingeScrewPilotDepth/)
+    expect(() => panelsFor('wardrobe-penal-600', { hingeCupMount: 'screw', hingeScrewPilotDiameter: 2.8, hingeScrewPilotDepth: 100 }))
+      .toThrow(/hingeScrewPilotDepth/)
+    expect(() => panelsFor('wardrobe-penal-600', {
+      hingeCupMount: 'screw', hingeScrewPilotDiameter: 2.8, hingeScrewPilotDepth: 8, hingeFixingSpacing: 4000,
+    })).toThrow(/hingeFixingSpacing/)
+    expect(() => panelsFor('wardrobe-penal-600', {
+      hingeCupMount: 'screw', hingeScrewPilotDiameter: 2.8, hingeScrewPilotDepth: 8, hingeFixingOffset: 4000,
+    })).toThrow(/hingeFixingOffset/)
+    // Ø2.8 — осы тестке цех өзі енгізген мысал; Blum cup стандарты емес.
+    const screw = panelsFor('wardrobe-penal-600', { hingeCupMount: 'screw', hingeScrewPilotDiameter: 2.8, hingeScrewPilotDepth: 8 })
+      .filter((p) => p.role === 'front')
     expect(screw[0]!.drilling.filter((d) => d.purpose === 'hinge').length)
       .toBe(base[0]!.drilling.filter((d) => d.purpose === 'hinge').length * 3)
     const pilots = screw[0]!.drilling.filter((d) => d.purpose === 'hinge' && d.diameter === 2.8)
@@ -82,12 +107,16 @@ describe('цех присадка профилі', () => {
 
   it('press-fit чашкасының нақты тереңдігі берілмесе генерация тоқтайды', () => {
     expect(() => panelsFor('wardrobe-penal-600', { hingeCupMount: 'press-fit' })).toThrow(/hingePressFitDepth/)
+    expect(() => panelsFor('wardrobe-penal-600', { hingeCupMount: 'press-fit', hingePressFitDepth: 100 }))
+      .toThrow(/hingePressFitDepth/)
     const panels = panelsFor('wardrobe-penal-600', { hingeCupMount: 'press-fit', hingePressFitDepth: 12 })
     expect(panels.flatMap((p) => p.drilling).some((d) => d.purpose === 'hinge' && d.diameter === 8 && d.depth === 12)).toBe(true)
   })
 
   it('минификс штифті sleeve-8 болса бетіндегі диаметр Ø8', () => {
     expect(() => panelsFor('kitchen-base-drawers-600', { minifixBoltMount: 'sleeve-8' })).toThrow()
+    expect(() => panelsFor('kitchen-base-drawers-600', { minifixBoltMount: 'sleeve-8', minifixSleeveDepth: 100 }))
+      .toThrow(/minifixSleeveDepth/)
     const panels = panelsFor('kitchen-base-drawers-600', { minifixBoltMount: 'sleeve-8', minifixSleeveDepth: 12 })
     expect(panels.flatMap((p) => p.drilling).some((d) =>
       d.purpose === 'minifix' && d.face === 'inner' && d.diameter === 8)).toBe(true)
@@ -98,6 +127,8 @@ describe('цех присадка профилі', () => {
     expect(DEFAULT_SETTINGS.drawerFacadeScrewEndOffset).toBe(80)
     expect(DEFAULT_SETTINGS.minifixPairSpacing).toBe(32)
     expect(DEFAULT_SETTINGS.runnerRollerVerticalOffset).toBe(0)
+    expect(DEFAULT_SETTINGS.hingeScrewPilotDepth).toBeNull()
+    expect(DEFAULT_SETTINGS.hingeScrewPilotDiameter).toBeNull()
   })
 })
 
@@ -148,6 +179,10 @@ describe('аяқтың присадкасы мен 3D орны', () => {
     const oldDrills = generateCabinet(config, catalog, shop.settings).flatMap((p) => p.drilling).filter((d) => d.purpose === 'leg')
     const nextDrills = generateCabinet(config, catalog, { legCentreFromFront: 120 }).flatMap((p) => p.drilling).filter((d) => d.purpose === 'leg')
     expect(nextDrills[0]!.y - oldDrills[0]!.y).toBe(16)
+    expect(() => generateCabinet(config, catalog, { legCentreFromFront: 1000 }))
+      .toThrow(/legCentreFromFront/)
+    expect(() => generateCabinet(config, catalog, { legCentreFromFront: 0 }))
+      .toThrow(/legCentreFromFront/)
   })
 })
 
@@ -170,6 +205,10 @@ describe('артикулға тәуелді drill орындары', () => {
     expect(modified[0]!.x - original[0]!.x).toBe(20)
     expect(modified[0]!.y - original[0]!.y).toBe(3)
     expect(modified[1]!.y - modified[0]!.y).toBe(80)
+    expect(() => generateCabinet(config, catalog, { runnerRollerVerticalOffset: 4000 }))
+      .toThrow(/runnerRollerVerticalOffset/)
+    expect(() => generateCabinet(config, catalog, { runnerRollerHoleOffsets: [1000] }))
+      .toThrow(/runnerRollerHoleOffsets/)
   })
 
   it('ящик фасадының бұрандасы 80-нен 90 мм-ге жылжиды', () => {
@@ -193,6 +232,10 @@ describe('артикулға тәуелді drill орындары', () => {
     expect(new Set(b.map((d) => d.x)).size).toBe(2)
     expect(b[0]!.x).toBe(20)
     expect(b[1]!.x).toBe(first.finishedLength - 20)
+    expect(() => panelsFor('kitchen-base-drawers-600', { minifixPairSpacing: 4000 }))
+      .toThrow(/minifixPairSpacing/)
+    expect(() => panelsFor('kitchen-base-drawers-600', { minifixPairPlacement: 'ends', minifixPairEndOffset: 4000 }))
+      .toThrow(/minifixPairEndOffset/)
   })
 })
 

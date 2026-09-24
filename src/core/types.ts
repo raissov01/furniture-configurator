@@ -460,8 +460,10 @@ export type ConstructionSettings = {
   hingeCupMount: 'cup-only' | 'screw' | 'press-fit'
   hingeFixingSpacing: number
   hingeFixingOffset: number
-  hingeScrewPilotDiameter: number
-  hingeScrewPilotDepth: number
+  /** Нақты screw-on артикулының pilot диаметрі; әмбебап Blum мәні жоқ. */
+  hingeScrewPilotDiameter: number | null
+  /** Артикул сызбасындағы нақты бұрғы тереңдігі; null болса screw режимі ашылмайды. */
+  hingeScrewPilotDepth: number | null
   hingePressFitDiameter: number
   hingePressFitDepth: number | null
   /** Направляющая бұрандасы: артикул бойынша ұзындықтағы және тік орындары. */

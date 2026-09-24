@@ -24,8 +24,8 @@ const NUMBERS: { key: NumericKey; label: string; hint: string; step?: number }[]
   { key: 'minifixSleeveDepth', label: 'Футорка Ø8: глубина', hint: 'мм; 0 — не задана, при выборе футорки генерация остановится' },
   { key: 'hingeFixingSpacing', label: 'Чашка: расстояние креплений', hint: 'мм; Blum INSERTA — 45' },
   { key: 'hingeFixingOffset', label: 'Чашка: боковое смещение креплений', hint: 'мм от центра чашки; Blum INSERTA — 9.5', step: 0.1 },
-  { key: 'hingeScrewPilotDiameter', label: 'Чашка: пилот под винт', hint: 'Ø мм; проверьте конкретную петлю', step: 0.1 },
-  { key: 'hingeScrewPilotDepth', label: 'Чашка: глубина пилота', hint: 'мм; проверьте толщину фасада' },
+  { key: 'hingeScrewPilotDiameter', label: 'Чашка: пилот под винт', hint: 'Ø мм; 0 — не задан, нужен чертёж артикула', step: 0.1 },
+  { key: 'hingeScrewPilotDepth', label: 'Чашка: глубина пилота', hint: 'мм; 0 — не задана, нужен чертёж артикула' },
   { key: 'hingePressFitDiameter', label: 'Чашка: отверстие INSERTA', hint: 'Ø мм; только для подходящего артикула' },
   { key: 'hingePressFitDepth', label: 'Чашка: глубина INSERTA', hint: 'мм; 0 — не задана, нужен чертёж артикула', step: 0.1 },
   { key: 'runnerRollerVerticalOffset', label: 'Ролик: подъём отверстий', hint: 'мм от низа ящика; 0 — прежний шаблон' },
@@ -61,7 +61,7 @@ const CHOICES: { key: ChoiceKey; label: string; hint: string; options: { value: 
 
 const POSITIVE_NUMBERS = new Set<NumericKey>([
   'confirmatFaceDiameter', 'confirmatEdgeDepth', 'confirmatScrewLength',
-  'hingeFixingSpacing', 'hingeScrewPilotDiameter', 'hingeScrewPilotDepth',
+  'hingeFixingSpacing',
   'hingePressFitDiameter', 'minifixPairSpacing',
 ])
 
@@ -80,7 +80,8 @@ export function ShopDrillingSettings({ shop, editShop }: {
       setChoiceError(tr('Зенковка требует ручной операции: глубина и угол не заданы'))
       return
     }
-    const nullable = key === 'minifixSleeveDepth' || key === 'hingePressFitDepth'
+    const nullable = key === 'minifixSleeveDepth' || key === 'hingeScrewPilotDiameter'
+      || key === 'hingeScrewPilotDepth' || key === 'hingePressFitDepth'
     if (nullable && value === 0) {
       if (key === 'minifixSleeveDepth' && shop.settings.minifixBoltMount === 'sleeve-8') {
         setChoiceError(tr('Сначала укажите глубину футорки Ø8 по чертежу артикула'))
@@ -88,6 +89,14 @@ export function ShopDrillingSettings({ shop, editShop }: {
       }
       if (key === 'hingePressFitDepth' && shop.settings.hingeCupMount === 'press-fit') {
         setChoiceError(tr('Сначала укажите глубину INSERTA по чертежу артикула'))
+        return
+      }
+      if (key === 'hingeScrewPilotDepth' && shop.settings.hingeCupMount === 'screw') {
+        setChoiceError(tr('Сначала укажите глубину пилота петли по чертежу артикула'))
+        return
+      }
+      if (key === 'hingeScrewPilotDiameter' && shop.settings.hingeCupMount === 'screw') {
+        setChoiceError(tr('Сначала укажите диаметр пилота петли по чертежу артикула'))
         return
       }
       setChoiceError(null)
@@ -106,6 +115,8 @@ export function ShopDrillingSettings({ shop, editShop }: {
     const settings: SettingsOverride = { ...shop.settings }
     delete settings[key]
     if (key === 'minifixSleeveDepth') delete settings.minifixBoltMount
+    if (key === 'hingeScrewPilotDiameter') delete settings.hingeCupMount
+    if (key === 'hingeScrewPilotDepth') delete settings.hingeCupMount
     if (key === 'hingePressFitDepth') delete settings.hingeCupMount
     editShop({ settings })
   }
@@ -147,6 +158,16 @@ export function ShopDrillingSettings({ shop, editShop }: {
                   if (key === 'hingeCupMount' && value === 'press-fit'
                     && !shop.settings.hingePressFitDepth) {
                     setChoiceError(tr('Сначала укажите глубину INSERTA по чертежу артикула'))
+                    return
+                  }
+                  if (key === 'hingeCupMount' && value === 'screw'
+                    && !shop.settings.hingeScrewPilotDepth) {
+                    setChoiceError(tr('Сначала укажите глубину пилота петли по чертежу артикула'))
+                    return
+                  }
+                  if (key === 'hingeCupMount' && value === 'screw'
+                    && !shop.settings.hingeScrewPilotDiameter) {
+                    setChoiceError(tr('Сначала укажите диаметр пилота петли по чертежу артикула'))
                     return
                   }
                   setChoiceError(null)

@@ -286,8 +286,8 @@ export const DEFAULT_SETTINGS: ConstructionSettings = {
   hingeCupMount: 'cup-only', // ескі seed тек чашканы бұрғылайды
   hingeFixingSpacing: 45, // Blum INSERTA монтаж сызбасы, 4-бет
   hingeFixingOffset: 9.5, // Blum INSERTA: чашка центрінен жанама ығысу
-  hingeScrewPilotDiameter: 2.8, // Blum 2024 каталогы, 160-бет
-  hingeScrewPilotDepth: 8,
+  hingeScrewPilotDiameter: null, // Blum p160 Ø2.8 — aluminium frame bracket, cup емес
+  hingeScrewPilotDepth: null, // Ø2.8 диаметрдің өзі drill depth-ті анықтамайды
   hingePressFitDiameter: 8, // Blum INSERTA, 4-бет
   hingePressFitDepth: null, // Blum minimum — нақты бұрғылау тереңдігі емес; цех енгізеді
   runnerRollerHoleOffsets: [37],
