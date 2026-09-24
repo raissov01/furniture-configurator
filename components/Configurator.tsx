@@ -23,6 +23,7 @@ import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle }
 import { DecorPicker } from '@/components/DecorPicker'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
+import { enableCornerCabinet } from '@/lib/cornerTransition'
 import {
   APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
   defaultHandleSpec, defaultMillingSpec, findTemplate, formatCutList, handlePositionName, millingPattern,
@@ -1144,13 +1145,7 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
               value={cabinet.corner ? 'yes' : 'no'}
               onChange={(v) =>
                 edit('corner', v === 'yes'
-                  ? {
-                    corner: { depthAtRight: Math.round(cabinet.depth / 2) },
-                    // Шектеулерді UI-дың өзінде орындаймыз: әйтпесе қосқан бойда
-                    // қате шығып, пайдаланушы себебін іздеп отырар еді.
-                    back: { mode: 'none' as const },
-                    sections: [{ ...cabinet.sections[0]!, fronts: null }],
-                  }
+                  ? enableCornerCabinet(cabinet)
                   : { corner: undefined })
               }
               options={[{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]}
