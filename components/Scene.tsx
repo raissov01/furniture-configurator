@@ -27,16 +27,17 @@ import { PanelMesh } from '@/components/PanelMesh'
 import { useConfigurator } from '@/store/configurator'
 import { canvasSettings } from '@/lib/appearance'
 import { floorTexture } from '@/lib/floorTexture'
+import { poseFootprint, treeSceneBounds, treeSceneLayoutKey, visibleBoardPanels, wallBoundItems } from '@/lib/treeSceneItems'
 import type { FloorPattern } from '@/lib/floorTexture'
 import { grainTexture } from '@/lib/grainTexture'
 import type { CameraPreset } from '@/store/configurator'
 import {
-  DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, placementFootprint,
+  DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, panelExtents,
   placementSpan, projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, snapOffset,
   visibleOpenings, wallById, wallPieces,
 } from '@/src/core/index'
 import type {
-  CabinetConfig, Catalog, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
+  CabinetConfig, Catalog, FlatScene, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
   Vec3, Wall, WallId,
 } from '@/src/core/index'
 
@@ -86,6 +87,10 @@ export type SceneItem = {
   hardware: HardwarePlacement[]
   placement: Placement
   pose: { position: Vec3; rotationY: number }
+  /** Free-position cabinets retain their pose; wall-only drag is disabled for them. */
+  wallBound?: boolean
+  /** Store lock and ancestor/layer lock both disable scene mutations. */
+  editable?: boolean
 }
 
 /**
@@ -552,7 +557,8 @@ function CabinetGroup({
     () => new Set(item.panels.map((p) => projectPanelId(item.cabinet.id, p.id, cabinetCount))),
     [item.panels, item.cabinet.id, cabinetCount],
   )
-  const canDrag = active && !walk && !vr && selected !== null && pids.has(selected)
+  const canDrag = item.wallBound !== false && item.editable !== false
+    && active && !walk && !vr && selected !== null && pids.has(selected)
   const drag = useRef<{ pointerId: number; plane: Plane; grab: number; moved: boolean } | null>(null)
 
   // Қолмен ұстауға болатынын курсор айтады.
@@ -1064,12 +1070,13 @@ function Silhouette({ height, x, z }: { height: number; x: number; z: number }) 
 }
 
 export default function Scene({
-  items, room, activeId, catalog,
+  items, room, activeId, catalog, flatScene,
 }: {
   items: SceneItem[]
   room: Room
   activeId: string
   catalog: Catalog
+  flatScene?: FlatScene
 }) {
   const active = items.find((i) => i.cabinet.id === activeId) ?? items[0]
   const preset = useConfigurator((s) => s.cameraPreset)
@@ -1081,6 +1088,13 @@ export default function Scene({
   const vr = useConfigurator((s) => s.vr)
   const setVr = useConfigurator((s) => s.setVr)
   const viewMode = useConfigurator((s) => s.viewMode)
+  const assemblyStep = useConfigurator((s) => s.assemblyStep)
+  const selected = useConfigurator((s) => s.selected)
+  const setActive = useConfigurator((s) => s.setActive)
+  const setSelected = useConfigurator((s) => s.setSelected)
+  const projectSettings = useConfigurator((s) => s.projectSettings)
+  const shopSettings = useConfigurator((s) => s.shop.settings)
+  const settings = projectSettings ?? shopSettings
   const canvas = canvasSettings(quality)
   const xrStore = useMemo(() => getXrStore(), [])
   // Сессия басталды/бітті → стордағы `vr`: бөлме тұтас болады, камера
@@ -1098,10 +1112,15 @@ export default function Scene({
    */
   const stepOf = useMemo(
     () => assemblyStepIndex(mergeProjectPanels(
-      items.map((i) => ({ cabinetId: i.cabinet.id, panels: i.panels })),
+      (flatScene?.nodes ?? items.map((i) => ({ nodeId: i.cabinet.id, panels: i.panels })))
+        .map((node) => ({ cabinetId: node.nodeId, panels: node.panels })),
     )),
-    [items],
+    [items, flatScene],
   )
+  const panelNodeCount = flatScene?.nodes.length ?? items.length
+  const cabinetIds = new Set(items.map((item) => item.cabinet.id))
+  const freeBoards = flatScene?.nodes.filter((node) => !cabinetIds.has(node.nodeId)) ?? []
+  const geometryBounds = treeSceneBounds({ items, boards: freeBoards, solids: flatScene?.solids ?? [] }, catalog)
 
   /*
    * КАМЕРА НЕГЕ ҚАРАЙДЫ.
@@ -1133,35 +1152,28 @@ export default function Scene({
         wallCtx: { room, wallId },
       }
     }
-    if (preset === 'room' || !active) {
+    if (preset === 'room' || !geometryBounds) {
       return {
         target: { x: room.width / 2, y: room.height / 3, z: room.depth / 2 },
         box: { W: room.width, H: room.height, D: room.depth },
         facingY: 0,
       }
     }
-    if (items.length > 1 && preset !== 'inside') {
-      let x0 = Infinity
-      let x1 = -Infinity
-      let z0 = Infinity
-      let z1 = -Infinity
-      let top = 0
-      for (const item of items) {
-        const f = placementFootprint(room, item.cabinet, item.placement)
-        x0 = Math.min(x0, f.x)
-        x1 = Math.max(x1, f.x + f.width)
-        z0 = Math.min(z0, f.z)
-        z1 = Math.max(z1, f.z + f.depth)
-        top = Math.max(top, item.pose.position.y + item.cabinet.height)
-      }
+    if ((!active || items.length > 1 || freeBoards.length > 0 || (flatScene?.solids.length ?? 0) > 0)
+      && preset !== 'inside') {
+      const { x0, x1, y0, y1, z0, z1 } = geometryBounds
       return {
-        target: { x: (x0 + x1) / 2, y: top / 2, z: (z0 + z1) / 2 },
-        box: { W: x1 - x0, H: top, D: z1 - z0 },
+        target: { x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: (z0 + z1) / 2 },
+        box: { W: Math.max(1, x1 - x0), H: Math.max(1, y1 - y0), D: Math.max(1, z1 - z0) },
         // Көзқарас бірінші корпустың алдынан: генератор оны негізгі қабырғаға қояды.
-        facingY: items[0]!.pose.rotationY,
+        facingY: items[0]?.pose.rotationY ?? 0,
       }
     }
-    const fp = placementFootprint(room, active.cabinet, active.placement)
+    if (!active) {
+      return { target: { x: room.width / 2, y: room.height / 3, z: room.depth / 2 },
+        box: { W: room.width, H: room.height, D: room.depth }, facingY: 0 }
+    }
+    const fp = poseFootprint(active)
     return {
       target: {
         x: fp.x + fp.width / 2,
@@ -1172,7 +1184,7 @@ export default function Scene({
       box: { W: active.cabinet.width, H: active.cabinet.height, D: active.cabinet.depth },
       facingY: active.pose.rotationY,
     }
-  }, [active, room, preset, items])
+  }, [active, room, preset, items, geometryBounds, freeBoards.length, flatScene?.solids.length])
 
   /*
    * Силуэт қайда тұрады.
@@ -1387,7 +1399,7 @@ export default function Scene({
         */}
         <directionalLight position={rimLightPosition} target={mainLightTarget} intensity={0.45} color="#eef2ff" castShadow={false} />
         <group scale={MM}>
-          <RoomShell room={room} walk={walk || vr} entries={items} />
+          <RoomShell room={room} walk={walk || vr} entries={wallBoundItems(items)} />
         </group>
         {/*
           ⚠ ЖИҺАЗ БӨЛЕК, АТАУЛЫ топта (`ar-furniture`), әрі өз масштабымен (MM).
@@ -1403,9 +1415,40 @@ export default function Scene({
               item={item}
               catalog={catalog}
               active={item.cabinet.id === activeId}
-              cabinetCount={items.length}
+              cabinetCount={panelNodeCount}
               stepOf={stepOf}
             />
+          ))}
+          {freeBoards.map((node) => (
+            <group key={node.nodeId} position={[node.pose.position.x, node.pose.position.y, node.pose.position.z]}
+              rotation={[0, node.pose.rotationY * Math.PI / 180, 0]}>
+              {visibleBoardPanels(node, stepOf, assemblyStep, panelNodeCount).map((panel) => {
+                const material = catalog.materials.find((entry) => entry.id === panel.materialId)
+                const thickness = material?.thickness ?? 16
+                const extents = panelExtents(panel, thickness)
+                return <PanelMesh key={panel.id} panel={panel} thickness={thickness} catalog={catalog}
+                  settings={settings} cabinetId={node.nodeId}
+                  pid={projectPanelId(node.nodeId, panel.id, panelNodeCount)}
+                  centre={{ x: extents.x / 2, y: extents.y / 2, z: extents.z / 2 }}
+                  decorColor={material?.decor?.color} />
+              })}
+            </group>
+          ))}
+          {flatScene?.solids.map((solid) => (
+            <group key={solid.nodeId} position={[solid.pose.position.x, solid.pose.position.y, solid.pose.position.z]}
+              rotation={[0, solid.pose.rotationY * Math.PI / 180, 0]}>
+              <mesh position={[solid.spec.size.x / 2, solid.spec.size.y / 2, solid.spec.size.z / 2]}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setActive(solid.nodeId)
+                  setSelected(selected === solid.nodeId ? null : solid.nodeId)
+                }} castShadow>
+                <boxGeometry args={[solid.spec.size.x, solid.spec.size.y, solid.spec.size.z]} />
+                <meshStandardMaterial color={solid.spec.color ?? '#a3a3a3'}
+                  emissive={selected === solid.nodeId ? '#22d3ee' : '#000000'}
+                  emissiveIntensity={selected === solid.nodeId ? 0.35 : 0} />
+              </mesh>
+            </group>
           ))}
         </group>
         {/* Силуэт белсенді шкафтың СОЛ ЖАҒЫНА, еденге қойылады. */}
@@ -1442,10 +1485,8 @@ export default function Scene({
             facingY={view.facingY}
             wallCtx={view.wallCtx}
             // Орын (offset, «От пола») ӘДЕЙІ жоқ — CameraRig-тің эффектісін қара.
-            layoutKey={[
-              room.width, room.depth, room.height, active?.cabinet.id ?? '',
-              ...items.map((i) => `${i.cabinet.id}:${i.cabinet.width}x${i.cabinet.height}x${i.cabinet.depth}:${i.placement.wall}:${i.placement.rotate ?? 0}`),
-            ].join('|')}
+            layoutKey={treeSceneLayoutKey(room, active?.cabinet.id ?? '',
+              { items, boards: freeBoards, solids: flatScene?.solids ?? [] }, catalog)}
           />
         )}
         {/*
