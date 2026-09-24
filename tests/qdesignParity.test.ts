@@ -117,9 +117,12 @@ describe('ящиктің қорабы: минификс', () => {
       // Екі бүйір × екі стяжка.
       expect(cams).toHaveLength(4)
       expect(dowels).toHaveLength(4)
+      // Ұя қораптың ІШІНДЕ: алдыңғы қабырғада +z (inner), артқыда −z (outer)
+      // — Drill.face келісімі, drilling.ts `faceToward`.
+      const inward = wall.id.endsWith('-wall-back') ? 'outer' : 'inner'
       for (const cam of cams) {
         expect(cam.depth).toBe(12.7)
-        expect(cam.face).toBe('inner')
+        expect(cam.face).toBe(inward)
       }
       for (const dowel of dowels) {
         expect(dowel.depth).toBe(34)
@@ -136,9 +139,11 @@ describe('ящиктің қорабы: минификс', () => {
     for (const side of sides) {
       const screws = of(side).filter((d) => d.diameter === 5)
       expect(screws).toHaveLength(6)
+      // Қораптың ішкі беті: сол бүйірде +x (inner), оң бүйірде −x (outer).
+      const inward = side.id.endsWith('-side-r') ? 'outer' : 'inner'
       for (const d of screws) {
         expect(d.depth).toBe(13)
-        expect(d.face).toBe('inner')
+        expect(d.face).toBe(inward)
       }
     }
   })
