@@ -3,19 +3,33 @@ import { composePose, isNodeHiddenByLayer, ORIGIN_POSE, placementPose, roomWalls
 import { relativeTransform } from '../src/core/treeEditing'
 import type { CabinetConfig, GroupNode, Layer, Placement, Pose, Room, SceneNode, WallId } from '../src/core/index'
 
-function closestWall(room: Room, rotationY: number): WallId {
-  const walls = roomWalls(room)
-  let winner = walls[0]!
-  let error = Infinity
-  for (const wall of walls) {
-    const delta = ((rotationY - wall.rotationY + 180) % 360 + 360) % 360 - 180
-    if (Math.abs(delta) < error) { winner = wall; error = Math.abs(delta) }
+/**
+ * Шкаф қай қабырғаға тіреліп тұр — ОРНЫНАН анықталады, бұрышынан ЕМЕС.
+ *
+ * `placementPose` орынды `origin + direction·offset + inward·depth` деп
+ * есептейді, ал `rotate` тек бұрышқа қосылады. Сондықтан 90°-қа бұрылған
+ * оңтүстік шкафтың бұрышы шығыс қабырғаныкімен бірдей, бірақ орны әлі де
+ * оңтүстік қабырғада. Бұрыш бойынша таңдау оны басқа қабырғаға секіртеді.
+ * Шын қабырға үшін `inward` бойынша қалдық нөлге тең; тең болса ғана бұрыш шешеді.
+ */
+function closestWall(room: Room, cabinet: CabinetConfig, pose: Pose): WallId {
+  let winner = roomWalls(room)[0]!
+  let best = Infinity
+  let bestAngle = Infinity
+  for (const wall of roomWalls(room)) {
+    const x = pose.position.x - wall.origin.x - wall.inward.x * cabinet.depth
+    const z = pose.position.z - wall.origin.z - wall.inward.z * cabinet.depth
+    const residual = Math.abs(x * wall.inward.x + z * wall.inward.z)
+    const angle = Math.abs(((pose.rotationY - wall.rotationY + 180) % 360 + 360) % 360 - 180)
+    if (residual < best - 0.5 || (Math.abs(residual - best) <= 0.5 && angle < bestAngle)) {
+      winner = wall; best = residual; bestAngle = angle
+    }
   }
   return winner.id
 }
 
 function placementFromPose(room: Room, cabinet: CabinetConfig, pose: Pose): Placement {
-  const wall = roomWalls(room).find((entry) => entry.id === closestWall(room, pose.rotationY))!
+  const wall = roomWalls(room).find((entry) => entry.id === closestWall(room, cabinet, pose))!
   const x = pose.position.x - wall.origin.x - wall.inward.x * cabinet.depth
   const z = pose.position.z - wall.origin.z - wall.inward.z * cabinet.depth
   const offset = Math.round(x * wall.direction.x + z * wall.direction.z)
