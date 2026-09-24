@@ -175,10 +175,14 @@ def compare_parts(scenario: str, expected: list[dict[str, Any]], actual: list[Pa
 
 
 def compare_hardware(scenario: str, expected: list[dict[str, Any]], actual: list[ElementRow]) -> list[Result]:
+    """Фурнитура ТҮРІ бойынша салыстырылады. Түр екі жақта да АТАУДАН
+    анықталады (біздің `kind` тек атау танылмағанда): аксессуар (заглушка,
+    ответная планка) негізгі бұйымға қосылып кетпеуі үшін."""
     want: dict[str, tuple[str, float]] = {}
     for e in expected:
-        name, qty = want.get(e["kind"], (e["name"], 0.0))
-        want[e["kind"]] = (name, qty + float(e["qty"]))
+        kind = hardware_kind(e["name"]) or e["kind"]
+        name, qty = want.get(kind, (e["name"], 0.0))
+        want[kind] = (name, qty + float(e["qty"]))
     got: dict[str, tuple[str, float]] = {}
     unknown: list[ElementRow] = []
     for a in actual:

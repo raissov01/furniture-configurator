@@ -18,7 +18,8 @@
     "icons": "node scripts/icons.mjs",
     "import:basis": "node scripts/importBasis.mjs",
     "import:pro100": "node scripts/importPro100.mjs",
-    "pro100:kit": "tsx src/cli/pro100Kit.ts"
+    "pro100:kit": "tsx src/cli/pro100Kit.ts",
+    "pro100:audit": "tsx src/cli/pro100Audit.ts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

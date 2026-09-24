@@ -18,6 +18,7 @@ PART_SYNONYMS: list[tuple[str, tuple[str, ...]]] = [
     ("дно ящика", ("drawerBottom",)),
     ("задняя ящика", ("drawerBack",)),
     ("задняя стенка ящика", ("drawerBack",)),
+    ("передняя стенка ящика", ("drawerBack",)),
     ("боковина ящика", ("drawerSide",)),
     ("фасад ящика", ("front",)),
     ("задняя стенка", ("back",)),
@@ -41,7 +42,11 @@ PART_SYNONYMS: list[tuple[str, tuple[str, ...]]] = [
     ("ящик", ("drawerSide", "drawerBack")),
 ]
 
+# Аксессуарлар бірінші: «Заглушка на конфирмат» конфирмат ЕМЕС,
+# «Планка ответная под петлю» петля ЕМЕС — әйтпесе саны екі есе шығады.
 HARDWARE_SYNONYMS: list[tuple[str, str]] = [
+    ("заглушк", "cap"),
+    ("ответн", "hingePlate"),
     ("полкодерж", "shelfPin"),
     ("петл", "hinge"),
     ("направляющ", "runner"),

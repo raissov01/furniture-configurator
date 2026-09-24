@@ -190,3 +190,21 @@ def test_costs_compare_to_pay_in_tenge():
 
 def test_costs_missing_without_report():
     assert compare_costs("s1", {"total": 1, "currency": "₸"}, None)[0]["status"] == "MISSING"
+
+
+def test_hardware_accessories_are_not_merged_into_main_item():
+    expected = [{"name": "Петля Blum с доводчиком", "kind": "hinge", "qty": 4, "unit": "шт"},
+                {"name": "Планка ответная под петлю", "kind": "hinge", "qty": 4, "unit": "шт"},
+                {"name": "Конфирмат (евровинт) 7×50", "kind": "confirmat", "qty": 12, "unit": "шт"},
+                {"name": "Заглушка на конфирмат", "kind": "confirmat", "qty": 12, "unit": "шт"}]
+    actual = [ElementRow("петля 110 накладная", 4), ElementRow("конфирмат", 12)]
+    res = compare_hardware("s1", expected, actual)
+    assert sorted((r["field"], r["status"]) for r in res) == [
+        ("cap", "MISSING"), ("confirmat", "OK"), ("hinge", "OK"), ("hingePlate", "MISSING"),
+    ]
+
+
+def test_parts_boundary_half_mm_for_unrecognized_name():
+    """Шек (0.5 мм қоса) тек өлшем бойынша жұптауда да қолданылады."""
+    res = compare_parts("s1", [EXPECTED[0]], [act("щит", 720.5, 557, 16, 2)], TOL)
+    assert [(r["status"], r.get("field")) for r in res] == [("MISMATCH", "name")]
