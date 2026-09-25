@@ -25,7 +25,7 @@ export const KITCHEN_EXPANSION_TEMPLATES: CabinetTemplate[] = [
     construction: 'sidesOverlay', back: 'overlay', ...material,
     sections: [{ id: 's1', widthMode: 'flex', contents: [{ kind: 'shelves', count: 2, shelfKind: 'adjustable' }], fronts: { count: 2, mount: 'overlay' } }],
   },
-  // Базис: ШН 720 (H) × 550 (D), 600 (W) қатары; 2БГ және 4ящ токендері.
+  // Базис: ШН 720 (H) × 600 (W) × 550 (D) қатары; 2БГ және 4ящ токендері.
   ...([2, 4] as const).map((count): CabinetTemplate => ({
     id: `kitchen-base-drawers-${count}-600`,
     name: `Кухня: нижний с ${count} ящиками`,
@@ -47,7 +47,7 @@ export const KITCHEN_EXPANSION_TEMPLATES: CabinetTemplate[] = [
     construction: 'sidesOverlay', back: 'overlay', ...material,
     sections: [{ id: 's1', widthMode: 'flex', contents: [{ kind: 'shelves', count: 2, shelfKind: 'adjustable' }], fronts: null }],
   },
-  // Базис: ШП 2180 (H) × 550 (D), 600 (W); жай Шкаф, техника ұясы жоқ.
+  // Базис: ШП 2180 (H) × 600 (W) × 550 (D); жай Шкаф, техника ұясы жоқ.
   {
     id: 'kitchen-tall-pantry-2180',
     name: 'Кухня: пенал для хранения 2180',
