@@ -16,7 +16,7 @@
  * қайта жазылмайды.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { t as tr } from '@/lib/i18n'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
@@ -24,10 +24,11 @@ import { DecorPicker } from '@/components/DecorPicker'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
+import { commitPropertiesName } from '@/lib/propertiesSession'
 import {
   APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
   defaultHandleSpec, defaultMillingSpec, findTemplate, formatCutList, handlePositionName, millingPattern,
-  roomWalls, wallById,
+  roomWalls, wallById, walkTree,
 } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import { wallAttachedPlacements } from '@/store/treeAdapters'
@@ -734,6 +735,9 @@ const tabButtonCls = 'flex-1 min-w-[5.5rem]'
 export function Configurator({ invalidField, panels }: { invalidField: string | null; panels: Panel[] }) {
   const cabinet: CabinetConfig = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
+  const [nameError, setNameError] = useState<string | null>(null)
+  const [name, setName] = useState(cabinet.name)
+  useEffect(() => setName(cabinet.name), [cabinet.id, cabinet.name])
   const addSection = useConfigurator((s) => s.addSection)
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
@@ -754,10 +758,16 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
   const root = useConfigurator((s) => s.root)
   const activeId = useConfigurator((s) => s.activeId)
   const movePlacement = useConfigurator((s) => s.movePlacement)
+  const translateNodes = useConfigurator((s) => s.translateNodes)
   // Еркін тұрған шкафтың placement-і тек жуықтау: оны өзгертсек, шкаф
   // қабырғаға секіреді, сондықтан өрістер тек қабырғадағы шкафқа көрсетіледі.
   const activePlacement = useMemo(() => wallAttachedPlacements(root, room)
     .find((p) => p.cabinetId === activeId), [root, room, activeId])
+  const freePosition = useMemo(() => {
+    let position: { x: number; y: number; z: number } | null = null
+    walkTree(root, (node, pose) => { if (node.id === activeId) position = pose.position })
+    return position
+  }, [root, activeId])
 
   // «Производство» қосымшасының батырмалары — присадка мен смета өз
   // терезелерінде қалады (қайта жазылмайды), мұнда тек ашатын жол.
@@ -816,6 +826,13 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
 
       {/* ═══ ОБЩЕЕ: аты, шаблон, орны бөлмеде, есік/фасад түрі ═══ */}
       <div className={cn('flex-col gap-3', tab === 'general' ? 'flex' : 'hidden')}>
+        <Field label={tr('Название')}>
+          <input data-properties-name className="w-full border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900" value={name}
+            onChange={(event) => { setName(event.target.value); setNameError(null) }}
+            onBlur={() => { if (name !== cabinet.name) setNameError(commitPropertiesName(activeId, name)) }}
+            onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} />
+        </Field>
+        {nameError && <p role="alert" className="text-red-700">{tr(nameError)}</p>}
         <div className="flex items-center justify-between gap-2">
           <SectionTitle>{tr('Шаблон')}</SectionTitle>
           <Button onClick={() => setGalleryOpen(true)}>{tr('Выбрать')}</Button>
@@ -827,6 +844,15 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
           ) : null}
         </div>
 
+        {!activePlacement && freePosition ? (
+          <Collapsible id="free-position" title={tr('Положение')} defaultOpen>
+            <div className="grid grid-cols-3 gap-2">
+              {(['x', 'y', 'z'] as const).map((axis) => <Field key={axis} label={`${axis.toUpperCase()}, мм`}>
+                <NumberInput value={freePosition![axis]} onChange={(value) => translateNodes([{ id: activeId, delta: { x: 0, y: 0, z: 0, [axis]: value - freePosition![axis] } }])} />
+              </Field>)}
+            </div>
+          </Collapsible>
+        ) : null}
         {activePlacement ? (
           <Collapsible id="placement" title={tr('Положение в комнате')} defaultOpen>
             <div className="grid grid-cols-2 gap-2">
