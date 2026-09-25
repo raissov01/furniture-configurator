@@ -1,0 +1,7856 @@
+{
+ "sources": [
+  {
+   "id": "lamarty-decors",
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/decors/",
+   "what": "119 декоров ЛДСП: название, категория (светлые/тёмные древесные, фантазийные, базовые однотонные), рекомендуемые тиснения (буквенные коды), наличие кромки Lamarty, код подходящей кромки Rehau, цвет по RAL, признак «Новинка», URL страницы декора",
+   "termsUrl": null,
+   "termsNote": "Сайт lamarty.ru не содержит пользовательского соглашения / условий использования контента; в подвале только «Все права защищены, 2026.», политика ПДн и cookie (PDF) и фраза «Информация, опубликованная на сайте, носит информационный характер и не является публичной офертой.» Явного запрета на копирование/извлечение каталожных данных нет. robots.txt запрещает URL с query-строкой (/*?*) и /netcat_files/ (кроме png/jpg) — пагинацию каталога дилеров (?curPos=) не обходили.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "lamarty-collections",
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/decors/gamma/",
+   "what": "состав коллекций FORMA (/lamarty/decors/FORMA/), GAMMA, REFLEX (/reflex/), BALANCE (/balance/), TIME (/time/)",
+   "termsUrl": null,
+   "termsNote": "Сайт lamarty.ru не содержит пользовательского соглашения / условий использования контента; в подвале только «Все права защищены, 2026.», политика ПДн и cookie (PDF) и фраза «Информация, опубликованная на сайте, носит информационный характер и не является публичной офертой.» Явного запрета на копирование/извлечение каталожных данных нет. robots.txt запрещает URL с query-строкой (/*?*) и /netcat_files/ (кроме png/jpg) — пагинацию каталога дилеров (?curPos=) не обходили.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "lamarty-specification",
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/specification/",
+   "what": "диапазонная спецификация ЛДСП: формат 2750 х 1830 мм, толщины 8, 10, 16, 18, 22, 25, 26 мм, ТУ 5534-004-44769167-12, Е0,5, допуск ±0.3",
+   "termsUrl": null,
+   "termsNote": "Сайт lamarty.ru не содержит пользовательского соглашения / условий использования контента; в подвале только «Все права защищены, 2026.», политика ПДн и cookie (PDF) и фраза «Информация, опубликованная на сайте, носит информационный характер и не является публичной офертой.» Явного запрета на копирование/извлечение каталожных данных нет. robots.txt запрещает URL с query-строкой (/*?*) и /netcat_files/ (кроме png/jpg) — пагинацию каталога дилеров (?curPos=) не обходили.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "lamarty-moisture",
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/moisture-resistant_MFC/",
+   "what": "влагостойкая ЛДСП (Р5): «толщиной 16 и 18 мм в любом декоре и тиснении из коллекции Lamarty»",
+   "termsUrl": null,
+   "termsNote": "Сайт lamarty.ru не содержит пользовательского соглашения / условий использования контента; в подвале только «Все права защищены, 2026.», политика ПДн и cookie (PDF) и фраза «Информация, опубликованная на сайте, носит информационный характер и не является публичной офертой.» Явного запрета на копирование/извлечение каталожных данных нет. robots.txt запрещает URL с query-строкой (/*?*) и /netcat_files/ (кроме png/jpg) — пагинацию каталога дилеров (?curPos=) не обходили.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "lamarty-stamping",
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/stamping/",
+   "what": "таблица рекомендуемых тиснений к декорам (сверка) ; названия тиснений по коду взяты из фильтра каталога /lamarty/catalog/",
+   "termsUrl": null,
+   "termsNote": "Сайт lamarty.ru не содержит пользовательского соглашения / условий использования контента; в подвале только «Все права защищены, 2026.», политика ПДн и cookie (PDF) и фраза «Информация, опубликованная на сайте, носит информационный характер и не является публичной офертой.» Явного запрета на копирование/извлечение каталожных данных нет. robots.txt запрещает URL с query-строкой (/*?*) и /netcat_files/ (кроме png/jpg) — пагинацию каталога дилеров (?curPos=) не обходили.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "lamarty-edge",
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/edge/",
+   "what": "кромка ПВХ Lamarty: 92 названия в «Ассортимент декоров кромки», одноимённые декорам ЛДСП («включает 80 одноименных к декорам ЛДСП Lamarty наименований»)",
+   "termsUrl": null,
+   "termsNote": "Сайт lamarty.ru не содержит пользовательского соглашения / условий использования контента; в подвале только «Все права защищены, 2026.», политика ПДн и cookie (PDF) и фраза «Информация, опубликованная на сайте, носит информационный характер и не является публичной офертой.» Явного запрета на копирование/извлечение каталожных данных нет. robots.txt запрещает URL с query-строкой (/*?*) и /netcat_files/ (кроме png/jpg) — пагинацию каталога дилеров (?curPos=) не обходили.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "lamarty-catalogue-2025-2026",
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/netcat_files/multifile/3114/1607/katalog2025CMYKtext_compressed.pdf",
+   "what": "PDF «Каталог ЛДСП Lamarty 2025-2026» (стр. 46, спецификация): формат 2750 x 1830, толщины 8,10,16,18,22,25,26; влагостойкая 16 и 18 мм; кромка под декоры Lamarty ширины 19/30/35 мм, толщины 0,4/0,8/2 мм. PDF текстового слоя не имеет (кривые) — прочитано визуально. Кодов декоров в каталоге нет, только названия.",
+   "termsUrl": null,
+   "termsNote": "Сайт lamarty.ru не содержит пользовательского соглашения / условий использования контента; в подвале только «Все права защищены, 2026.», политика ПДн и cookie (PDF) и фраза «Информация, опубликованная на сайте, носит информационный характер и не является публичной офертой.» Явного запрета на копирование/извлечение каталожных данных нет. robots.txt запрещает URL с query-строкой (/*?*) и /netcat_files/ (кроме png/jpg) — пагинацию каталога дилеров (?curPos=) не обходили. Файл лежит в /netcat_files/ (disallow в robots.txt), но это прямая публичная ссылка «Загрузить PDF» со страницы /lamarty/promo/; скачан однократно.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "id": "lamarty-catalog-shop",
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/catalog/",
+   "what": "только первая страница витрины дилеров: список названий тиснений по кодам в фильтре (Next (N), Артекс (A), Венето (V), Глянец (G), Глянец упакованный (U), Глянец односторонний упакованный (US), Древесные поры (T), Дуб (D), Классическое матовое (K), Легкий шелк (L), Мелкая шагрень (P), Офис (O), Рейвуд (W), Рустикальное (R)); фильтр толщин в наличии у дилеров 10/16/18/22/26",
+   "termsUrl": null,
+   "termsNote": "Сайт lamarty.ru не содержит пользовательского соглашения / условий использования контента; в подвале только «Все права защищены, 2026.», политика ПДн и cookie (PDF) и фраза «Информация, опубликованная на сайте, носит информационный характер и не является публичной офертой.» Явного запрета на копирование/извлечение каталожных данных нет. robots.txt запрещает URL с query-строкой (/*?*) и /netcat_files/ (кроме png/jpg) — пагинацию каталога дилеров (?curPos=) не обходили.",
+   "reuse": "facts-ok",
+   "dateSeen": "2026-09-25"
+  }
+ ],
+ "skipped": [
+  {
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/catalog/?curPos=20",
+   "reason": "Витрина дилеров (4274 предложения: декор × тиснение × толщина × дилер) даёт фактические сочетания толщин по декорам, но пагинация только через query-строку, запрещённую robots.txt (Disallow: /*?*); к тому же это складские остатки дилеров, а не производственная программа. Не собирали."
+  },
+  {
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/promo/biblioteka-dekorov-lamarty-dlya-bazis-mebelschik.html",
+   "reason": "Библиотека для Базис-Мебельщик — BAZIS-данные запрещены брифом."
+  },
+  {
+   "manufacturer": "Lamarty",
+   "url": "https://www.lamarty.ru/lamarty/promo/сorrespondence_table_decors_to_restoration_materials_MASTER_CITY_01_12_2024.html",
+   "reason": "Таблица соответствия реставрационным материалам (воск/маркеры Мастер Сити), не кромка — вне scope."
+  }
+ ],
+ "materials": [
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Черный",
+   "structureCode": null,
+   "name": "Черный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/black.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Малави",
+   "structureCode": null,
+   "name": "Малави",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/malawi.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Орион",
+   "structureCode": null,
+   "name": "Орион",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/orion.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Терраццо",
+   "structureCode": null,
+   "name": "Терраццо",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/terrazzo.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Графика",
+   "structureCode": null,
+   "name": "Графика",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/grafika.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Рускеала",
+   "structureCode": null,
+   "name": "Рускеала",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/ruskeala.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Нейро",
+   "structureCode": null,
+   "name": "Нейро",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/neiro.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуо",
+   "structureCode": null,
+   "name": "Дуо",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/duo.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Рамбла",
+   "structureCode": null,
+   "name": "Рамбла",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/rambla.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Терра",
+   "structureCode": null,
+   "name": "Терра",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/terra.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Графит",
+   "structureCode": null,
+   "name": "Графит",
+   "collection": "Lamarty BALANCE / Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/graphite.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Оникс",
+   "structureCode": null,
+   "name": "Оникс",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/onyx.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Скала",
+   "structureCode": null,
+   "name": "Скала",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/rock.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Клауд",
+   "structureCode": null,
+   "name": "Клауд",
+   "collection": "Lamarty BALANCE",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/cloud.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Фантом",
+   "structureCode": null,
+   "name": "Фантом",
+   "collection": "Lamarty BALANCE",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/phantom.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Серый камень",
+   "structureCode": null,
+   "name": "Серый камень",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/grey_stone.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Тэффи",
+   "structureCode": null,
+   "name": "Тэффи",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/teffy.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Марципан",
+   "structureCode": null,
+   "name": "Марципан",
+   "collection": "Lamarty FORMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/marzipan.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Сандал",
+   "structureCode": null,
+   "name": "Сандал",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/sandal.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Тауп",
+   "structureCode": null,
+   "name": "Тауп",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/taupe.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Луно",
+   "structureCode": null,
+   "name": "Луно",
+   "collection": "Lamarty FORMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/luno.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Айвори",
+   "structureCode": null,
+   "name": "Айвори",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/ivory.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Альба",
+   "structureCode": null,
+   "name": "Альба",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/alba.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Вулканический серый",
+   "structureCode": null,
+   "name": "Вулканический серый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/volcanic_grey.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Рейн",
+   "structureCode": null,
+   "name": "Рейн",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/rain.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Серый 7810",
+   "structureCode": null,
+   "name": "Серый 7810",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/grey7810.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Цемент",
+   "structureCode": null,
+   "name": "Цемент",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/cement.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Слэйт",
+   "structureCode": null,
+   "name": "Слэйт",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/Mood.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Хюгге",
+   "structureCode": null,
+   "name": "Хюгге",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/hugge.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Софт",
+   "structureCode": null,
+   "name": "Софт",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/soft.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Этно",
+   "structureCode": null,
+   "name": "Этно",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/ethno.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Ирис",
+   "structureCode": null,
+   "name": "Ирис",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/fleur_de_lis.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Лило",
+   "structureCode": null,
+   "name": "Лило",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/lilo.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Флекс",
+   "structureCode": null,
+   "name": "Флекс",
+   "collection": "Lamarty BALANCE",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/flex.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Муза",
+   "structureCode": null,
+   "name": "Муза",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/musa.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Бохо",
+   "structureCode": null,
+   "name": "Бохо",
+   "collection": "Lamarty BALANCE",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/boho.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Аура",
+   "structureCode": null,
+   "name": "Аура",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/aura.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Розовый кварц",
+   "structureCode": null,
+   "name": "Розовый кварц",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/rose_quartz.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Сиена",
+   "structureCode": null,
+   "name": "Сиена",
+   "collection": "Lamarty FORMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/siena.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Имбирь",
+   "structureCode": null,
+   "name": "Имбирь",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/ginger.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Кремовый",
+   "structureCode": null,
+   "name": "Кремовый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/cream.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Солнечный",
+   "structureCode": null,
+   "name": "Солнечный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/sunny.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Гринери",
+   "structureCode": null,
+   "name": "Гринери",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/grenery.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Тайга",
+   "structureCode": null,
+   "name": "Тайга",
+   "collection": "Lamarty FORMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/taiga.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Хаки",
+   "structureCode": null,
+   "name": "Хаки",
+   "collection": "Lamarty BALANCE",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/khaki.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Орегано",
+   "structureCode": null,
+   "name": "Орегано",
+   "collection": "Lamarty GAMMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/oregano.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Муссон",
+   "structureCode": null,
+   "name": "Муссон",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/monsoon.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Кэнди",
+   "structureCode": null,
+   "name": "Кэнди",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/candy.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Фрост",
+   "structureCode": null,
+   "name": "Фрост",
+   "collection": "Lamarty BALANCE / Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/frost.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Флай",
+   "structureCode": null,
+   "name": "Флай",
+   "collection": "Lamarty BALANCE",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/fly.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Маренго",
+   "structureCode": null,
+   "name": "Маренго",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/marengo.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Серенити",
+   "structureCode": null,
+   "name": "Серенити",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/serenity.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Розовый жемчуг",
+   "structureCode": null,
+   "name": "Розовый жемчуг",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/pink_pearl.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Алюминий",
+   "structureCode": null,
+   "name": "Алюминий",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/aluminum.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Титан",
+   "structureCode": null,
+   "name": "Титан",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/titan.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Белоснежный",
+   "structureCode": null,
+   "name": "Белоснежный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/snow_white.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Белый кристалл",
+   "structureCode": null,
+   "name": "Белый кристалл",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/white_crystal.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Белый",
+   "structureCode": null,
+   "name": "Белый",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "none",
+   "grainBasis": "manufacturer category 'Базовые однотонные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/white.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Выбеленное дерево",
+   "structureCode": null,
+   "name": "Выбеленное дерево",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/white_washed_wood.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Сканди",
+   "structureCode": null,
+   "name": "Сканди",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/scandi.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Бетон Пайн белый",
+   "structureCode": null,
+   "name": "Бетон Пайн белый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/beton_pine_white.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Пальмира",
+   "structureCode": null,
+   "name": "Пальмира",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/palmira.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Соната",
+   "structureCode": null,
+   "name": "Соната",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/sonata.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Винтаж",
+   "structureCode": null,
+   "name": "Винтаж",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/vintage.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Каньон ледяной",
+   "structureCode": null,
+   "name": "Каньон ледяной",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/canyon_ice.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Каньон песчаный",
+   "structureCode": null,
+   "name": "Каньон песчаный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/sandy_canyon.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Ориноко",
+   "structureCode": null,
+   "name": "Ориноко",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/orinoco.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Руанда",
+   "structureCode": null,
+   "name": "Руанда",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/ruanda.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Бетон Пайн экзотик",
+   "structureCode": null,
+   "name": "Бетон Пайн экзотик",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/beton_pine_exotic.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Феникс",
+   "structureCode": null,
+   "name": "Феникс",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/phoenix.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Фламинго",
+   "structureCode": null,
+   "name": "Фламинго",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/flamingo.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб дымчатый",
+   "structureCode": null,
+   "name": "Дуб дымчатый",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/smoky_oak.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Ясень",
+   "structureCode": null,
+   "name": "Ясень",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/ash-tree.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Калипсо",
+   "structureCode": null,
+   "name": "Калипсо",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/calypso.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Аликанте",
+   "structureCode": null,
+   "name": "Аликанте",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/alikante.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Орех Неаполь",
+   "structureCode": null,
+   "name": "Орех Неаполь",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/noce_neapol.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб Сонома",
+   "structureCode": null,
+   "name": "Дуб Сонома",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/sonoma_eiche.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Береза Нордик",
+   "structureCode": null,
+   "name": "Береза Нордик",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/nordic_birch.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Парма",
+   "structureCode": null,
+   "name": "Парма",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/parma.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Вишня Гамильтон",
+   "structureCode": null,
+   "name": "Вишня Гамильтон",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/cherry_hamilton.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Береза мраморная",
+   "structureCode": null,
+   "name": "Береза мраморная",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/birch_marble.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Айконик",
+   "structureCode": null,
+   "name": "Айконик",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/iconic.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Трансильвания",
+   "structureCode": null,
+   "name": "Трансильвания",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/transsilvania.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Карум",
+   "structureCode": null,
+   "name": "Карум",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/karum.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Крафт",
+   "structureCode": null,
+   "name": "Крафт",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/craft.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Аврора",
+   "structureCode": null,
+   "name": "Аврора",
+   "collection": "Lamarty GAMMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/aurora.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Плэйн",
+   "structureCode": null,
+   "name": "Плэйн",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/plain.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб Сэнди",
+   "structureCode": null,
+   "name": "Дуб Сэнди",
+   "collection": "Lamarty GAMMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/sandy_oak.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Либерти",
+   "structureCode": null,
+   "name": "Либерти",
+   "collection": "Lamarty BALANCE",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/liberty.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Орех Флория",
+   "structureCode": null,
+   "name": "Орех Флория",
+   "collection": "Lamarty FORMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/floria_walnut.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Небула",
+   "structureCode": null,
+   "name": "Небула",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/nebula.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Соул",
+   "structureCode": null,
+   "name": "Соул",
+   "collection": "Lamarty REFLEX",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/soul.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб Нейво",
+   "structureCode": null,
+   "name": "Дуб Нейво",
+   "collection": "Lamarty FORMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/neivo_oak.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Альберо",
+   "structureCode": null,
+   "name": "Альберо",
+   "collection": "Lamarty BALANCE",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/albero.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Эра",
+   "structureCode": null,
+   "name": "Эра",
+   "collection": "Lamarty GAMMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/era.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Медея",
+   "structureCode": null,
+   "name": "Медея",
+   "collection": "Lamarty GAMMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/medea.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Калима",
+   "structureCode": null,
+   "name": "Калима",
+   "collection": "Lamarty GAMMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "unknown",
+   "grainBasis": "manufacturer category 'Фантазийные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/kalima.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб Вотан",
+   "structureCode": null,
+   "name": "Дуб Вотан",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Светлые древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/wotan_oak.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб Солсбери",
+   "structureCode": null,
+   "name": "Дуб Солсбери",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/solsberry_oak.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Бамбук",
+   "structureCode": null,
+   "name": "Бамбук",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/bamboo.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб Кальяри",
+   "structureCode": null,
+   "name": "Дуб Кальяри",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/cagliari_oak.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Вяз Швейцарский",
+   "structureCode": null,
+   "name": "Вяз Швейцарский",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/swiss_elm.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Хронос",
+   "structureCode": null,
+   "name": "Хронос",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/chronos.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Сосна Санторини",
+   "structureCode": null,
+   "name": "Сосна Санторини",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/santorini_pine.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Афелия",
+   "structureCode": null,
+   "name": "Афелия",
+   "collection": "Lamarty FORMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/aphelia.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Орех Кария",
+   "structureCode": null,
+   "name": "Орех Кария",
+   "collection": "Lamarty GAMMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/karia_walnut.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Орех Бруно",
+   "structureCode": null,
+   "name": "Орех Бруно",
+   "collection": "Lamarty FORMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/bruno_walnut.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Кейптаун",
+   "structureCode": null,
+   "name": "Кейптаун",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/keiptaun.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Намибия",
+   "structureCode": null,
+   "name": "Намибия",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/namibia.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Айронвуд",
+   "structureCode": null,
+   "name": "Айронвуд",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/ironwood.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Капучино",
+   "structureCode": null,
+   "name": "Капучино",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/cappuccino.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Элит баттл рок",
+   "structureCode": null,
+   "name": "Элит баттл рок",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/elit_battle_rock.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб Дарго",
+   "structureCode": null,
+   "name": "Дуб Дарго",
+   "collection": "Lamarty GAMMA",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/dargo_oak.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб Марсала",
+   "structureCode": null,
+   "name": "Дуб Марсала",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/marsala_oak.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Дуб Галиано",
+   "structureCode": null,
+   "name": "Дуб Галиано",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/galiano_oak.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Интра",
+   "structureCode": null,
+   "name": "Интра",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/intra.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Блэквуд",
+   "structureCode": null,
+   "name": "Блэквуд",
+   "collection": "Lamarty TIME",
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/blackwood.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Одиссея",
+   "structureCode": null,
+   "name": "Одиссея",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/odyssey.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  },
+  {
+   "manufacturer": "Lamarty",
+   "kind": "ldsp",
+   "decorCode": "Венге темный",
+   "structureCode": null,
+   "name": "Венге темный",
+   "collection": null,
+   "thicknessesMm": [
+    8,
+    10,
+    16,
+    18,
+    22,
+    25,
+    26
+   ],
+   "sheetSizesMm": [
+    [
+     2750,
+     1830
+    ]
+   ],
+   "sizeBasis": "range-wide",
+   "sizeSourceUrl": "https://www.lamarty.ru/lamarty/specification/",
+   "grain": "wood",
+   "grainBasis": "manufacturer category 'Тёмные древесные декоры'",
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/wenge_dark.html",
+   "dateSeen": "2026-09-25",
+   "productLine": null
+  }
+ ],
+ "edges": [
+  {
+   "manufacturer": "Lamarty",
+   "code": "Черный",
+   "name": "Черный",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Черный",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Малави",
+   "name": "Малави",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Малави",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Орион",
+   "name": "Орион",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Орион",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Терраццо",
+   "name": "Терраццо",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Терраццо",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Графика",
+   "name": "Графика",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Графика",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Рускеала",
+   "name": "Рускеала",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Рускеала",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Нейро",
+   "name": "Нейро",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Нейро",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Дуо",
+   "name": "Дуо",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуо",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Рамбла",
+   "name": "Рамбла",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Рамбла",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Терра",
+   "name": "Терра",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Терра",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Графит",
+   "name": "Графит",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Графит",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Скала",
+   "name": "Скала",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Скала",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Клауд",
+   "name": "Клауд",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Клауд",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Фантом",
+   "name": "Фантом",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Фантом",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Серый камень",
+   "name": "Серый камень",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Серый камень",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Тэффи",
+   "name": "Тэффи",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Тэффи",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Вулканический серый",
+   "name": "Вулканический серый",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Вулканический серый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Рейн",
+   "name": "Рейн",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Рейн",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Серый 7810",
+   "name": "Серый 7810",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Серый 7810",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Цемент",
+   "name": "Цемент",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Цемент",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Слэйт",
+   "name": "Слэйт",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Слэйт",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Хюгге",
+   "name": "Хюгге",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Хюгге",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Софт",
+   "name": "Софт",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Софт",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Лило",
+   "name": "Лило",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Лило",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Флекс",
+   "name": "Флекс",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Флекс",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Муза",
+   "name": "Муза",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Муза",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Бохо",
+   "name": "Бохо",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Бохо",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Аура",
+   "name": "Аура",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Аура",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Розовый кварц",
+   "name": "Розовый кварц",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Розовый кварц",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Имбирь",
+   "name": "Имбирь",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Имбирь",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Кремовый",
+   "name": "Кремовый",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Кремовый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Гринери",
+   "name": "Гринери",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Гринери",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Хаки",
+   "name": "Хаки",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Хаки",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Орегано",
+   "name": "Орегано",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Орегано",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Муссон",
+   "name": "Муссон",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Муссон",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Кэнди",
+   "name": "Кэнди",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Кэнди",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Фрост",
+   "name": "Фрост",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Фрост",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Флай",
+   "name": "Флай",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Флай",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Маренго",
+   "name": "Маренго",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Маренго",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Серенити",
+   "name": "Серенити",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Серенити",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Розовый жемчуг",
+   "name": "Розовый жемчуг",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Розовый жемчуг",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Алюминий",
+   "name": "Алюминий",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Алюминий",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Белоснежный",
+   "name": "Белоснежный",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Белоснежный",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Белый",
+   "name": "Белый",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Белый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Выбеленное дерево",
+   "name": "Выбеленное дерево",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Выбеленное дерево",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Сканди",
+   "name": "Сканди",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Сканди",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Бетон Пайн белый",
+   "name": "Бетон Пайн белый",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Бетон Пайн белый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Пальмира",
+   "name": "Пальмира",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Пальмира",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Соната",
+   "name": "Соната",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Соната",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Винтаж",
+   "name": "Винтаж",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Винтаж",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Каньон ледяной",
+   "name": "Каньон ледяной",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Каньон ледяной",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Каньон песчаный",
+   "name": "Каньон песчаный",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Каньон песчаный",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Ориноко",
+   "name": "Ориноко",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Ориноко",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Руанда",
+   "name": "Руанда",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Руанда",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Бетон Пайн экзотик",
+   "name": "Бетон Пайн экзотик",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Бетон Пайн экзотик",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Фламинго",
+   "name": "Фламинго",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Фламинго",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Дуб дымчатый",
+   "name": "Дуб дымчатый",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб дымчатый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Ясень",
+   "name": "Ясень",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Ясень",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Калипсо",
+   "name": "Калипсо",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Калипсо",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Аликанте",
+   "name": "Аликанте",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Аликанте",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Орех Неаполь",
+   "name": "Орех Неаполь",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Орех Неаполь",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Дуб Сонома",
+   "name": "Дуб Сонома",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Сонома",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Береза Нордик",
+   "name": "Береза Нордик",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Береза Нордик",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Парма",
+   "name": "Парма",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Парма",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Береза мраморная",
+   "name": "Береза мраморная",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Береза мраморная",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Трансильвания",
+   "name": "Трансильвания",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Трансильвания",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Крафт",
+   "name": "Крафт",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Крафт",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Аврора",
+   "name": "Аврора",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Аврора",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Плэйн",
+   "name": "Плэйн",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Плэйн",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Дуб Сэнди",
+   "name": "Дуб Сэнди",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Сэнди",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Либерти",
+   "name": "Либерти",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Либерти",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Небула",
+   "name": "Небула",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Небула",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Соул",
+   "name": "Соул",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Соул",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Эра",
+   "name": "Эра",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Эра",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Медея",
+   "name": "Медея",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Медея",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Калима",
+   "name": "Калима",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Калима",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Дуб Вотан",
+   "name": "Дуб Вотан",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Вотан",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Дуб Солсбери",
+   "name": "Дуб Солсбери",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Солсбери",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Вяз Швейцарский",
+   "name": "Вяз Швейцарский",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Вяз Швейцарский",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Хронос",
+   "name": "Хронос",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Хронос",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Сосна Санторини",
+   "name": "Сосна Санторини",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Сосна Санторини",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Орех Кария",
+   "name": "Орех Кария",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Орех Кария",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Кейптаун",
+   "name": "Кейптаун",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Кейптаун",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Намибия",
+   "name": "Намибия",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Намибия",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Айронвуд",
+   "name": "Айронвуд",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Айронвуд",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Капучино",
+   "name": "Капучино",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Капучино",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Элит баттл рок",
+   "name": "Элит баттл рок",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Элит баттл рок",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Дуб Дарго",
+   "name": "Дуб Дарго",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Дарго",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Дуб Марсала",
+   "name": "Дуб Марсала",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Марсала",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Интра",
+   "name": "Интра",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Интра",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Блэквуд",
+   "name": "Блэквуд",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Блэквуд",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Lamarty",
+   "code": "Одиссея",
+   "name": "Одиссея",
+   "material": "pvc",
+   "thicknessesMm": [
+    0.4,
+    0.8,
+    2
+   ],
+   "widthsMm": [
+    19,
+    30,
+    35
+   ],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Одиссея",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/edge/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101121U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Черный",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101070S",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Малави",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101087F",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Орион",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101110S",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Терраццо",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101035F",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Графика",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101096S",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Рускеала",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101148S",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Нейро",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101151S",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуо",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101094U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Рамбла",
+     "structureCode": null
+    },
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Розовый кварц",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101109S",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Терра",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101036U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Графит",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "100520U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Оникс",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101102U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Скала",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101131U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Клауд",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101135U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Фантом",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101099U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Серый камень",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101111U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Тэффи",
+     "structureCode": null
+    },
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Сандал",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "500065U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Сандал",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "500128U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Тауп",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "100410U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Айвори",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "500002U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Альба",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101031U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Вулканический серый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101159U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Рейн",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101100U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Серый 7810",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101119S",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Цемент",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101104S",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Слэйт",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101144F",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Хюгге",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101108F",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Софт",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101126F",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Этно",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101057U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Ирис",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101141U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Лило",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101134U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Флекс",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "10158U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Муза",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101132U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Бохо",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101149F",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Аура",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101050U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Имбирь",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101064U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Кремовый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101105U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Солнечный",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101037U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Гринери",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101133U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Хаки",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101165U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Орегано",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101073U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Муссон",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101143F",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Кэнди",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101161U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Фрост",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101136U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Флай",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101072U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Маренго",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101098U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Серенити",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101093U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Розовый жемчуг",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101006M",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Алюминий",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101112M",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Титан",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101010U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Белоснежный",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101012U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Белый кристалл",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101013U",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Белый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101032W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Выбеленное дерево",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101103W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Сканди",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101018W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Бетон Пайн белый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101088W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Пальмира",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101106W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Соната",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101027W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Винтаж",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101057W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Каньон ледяной",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101058W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Каньон песчаный",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101086W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Ориноко",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101095W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Руанда",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101019W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Бетон Пайн экзотик",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101115W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Феникс",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101125W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Фламинго",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101041W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб дымчатый",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101129W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Ясень",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101056W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Калипсо",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101003W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Аликанте",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101085W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Орех Неаполь",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101047W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Сонома",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101017W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Береза Нордик",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101089W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Парма",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101029W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Вишня Гамильтон",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101016W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Береза мраморная",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101000W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Айконик",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101114W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Трансильвания",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101060W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Карум",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101146W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Крафт",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101168W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Аврора",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101147W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Плэйн",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101167W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Сэнди",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101130W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Либерти",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101075W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Небула",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101145W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Соул",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101004W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Альберо",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101169W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Эра",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101164W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Медея",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101162W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Калима",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101039W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Вотан",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101046W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Солсбери",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101009W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Бамбук",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101042W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Кальяри",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101033W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Вяз Швейцарский",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101118W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Хронос",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101107W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Сосна Санторини",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101163W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Орех Кария",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101061W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Кейптаун",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101074W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Намибия",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101001W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Айронвуд",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101059W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Капучино",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101124W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Элит баттл рок",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101166W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Дарго",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101043W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Марсала",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101040W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Дуб Галиано",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101053W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Интра",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101020W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Блэквуд",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101080W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Одиссея",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  },
+  {
+   "manufacturer": "Rehau",
+   "code": "101026W",
+   "name": null,
+   "material": "unknown",
+   "thicknessesMm": [],
+   "widthsMm": [],
+   "matches": [
+    {
+     "manufacturer": "Lamarty",
+     "decorCode": "Венге темный",
+     "structureCode": null
+    }
+   ],
+   "sourceUrl": "https://www.lamarty.ru/lamarty/decors/",
+   "dateSeen": "2026-09-25"
+  }
+ ],
+ "notes": "Lamarty (ООО «Сыктывкарский фанерный завод», группа Сегежа) НЕ публикует ни числовых кодов декоров, ни артикулов: декоры везде идентифицируются только названием (сайт, PDF-каталог 2025-26, витрина дилеров, где позиция называется «ЛДСП Lamarty 16 мм в декоре «X» в тиснении «Дуб (D)» 2750*1830» без артикула). Поэтому decorCode = название декора ровно как на сайте (напр. «Малави»); уникальный slug виден в sourceUrl (/lamarty/decors/malawi.html). structureCode = буквенные коды РЕКОМЕНДУЕМЫХ тиснений с lamarty.ru/lamarty/decors/ через запятую (напр. «V, L»); это рекомендация, не ограничение — страница влагостойкой ЛДСП говорит «в любом декоре и тиснении». Расшифровка: A Артекс, D Дуб, G Глянец, K Классическое матовое, L Легкий шелк, N Next, O Офис, P Мелкая шагрень, R Рустикальное, T Древесные поры, U/US Глянец (односторонний) упакованный, V Венето, W Рейвуд. Охват: 119 из 119 декоров на странице «Декоры ЛДСП» (59 светлых/тёмных древесных = wood; 22 фантазийных = grain unknown; 38 базовых однотонных = none). В фильтре витрины есть ещё «Супер белый», которого нет на странице декоров — не включён; «Карум» и «Этно» есть на странице декоров, но нет в фильтре витрины. 8 новинок (FORMA) без кромки Rehau/Lamarty на момент просмотра. Коллекции: указаны только для декоров со страниц коллекций FORMA/GAMMA/REFLEX/BALANCE/TIME (Фрост в REFLEX и BALANCE, Графит в BALANCE и TIME — через « / »); у остальных null (базовый ассортимент). Толщины/формат per-decor не публикуются производителем — везде range-wide: 2750x1830, 8/10/16/18/22/25/26 мм (спецификация); влагостойкая Р5 только 16 и 18 мм в любом декоре. Кромки: 92 кромки ПВХ Lamarty (текст страницы говорит «80 наименований», в списке 92), каждая одноимённа декору (match по названию опубликован как «одноименных к декорам»); ширины 19/30/35, толщины 0,4/0,8/2 мм — диапазонно из каталога 2025-26, не по каждой кромке. Также Lamarty публикует для каждого декора код подходящей кромки REHAU (напр. Малави → 101070S): записаны как edges manufacturer=Rehau с matches; материал/размеры Rehau на lamarty.ru не указаны. Код «10158U» (Муза) записан как на сайте (возможно опечатка, 5 цифр). У «Сандал» две кромки Rehau: 101111U, 500065U. Цвет по RAL (для однотонных) опубликован, но в схеме нет поля — не записан."
+}
