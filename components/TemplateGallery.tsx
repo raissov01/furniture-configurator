@@ -336,6 +336,11 @@ export function TemplateGallery() {
               <div className="tabular-nums text-[11px] text-neutral-500">
                 {t.height} (H) × {t.width} (W) × {t.depth} (D)
               </div>
+              {t.recommendedWidths ? (
+                <div className="text-[11px] text-neutral-500">
+                  {tr('Ширины (W), мм')}: {t.recommendedWidths.join(', ')}
+                </div>
+              ) : null}
               <div className="text-[11px] leading-snug text-neutral-400">{tr(t.description)}</div>
             </button>
           ))}

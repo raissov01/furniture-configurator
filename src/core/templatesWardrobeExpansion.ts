@@ -77,7 +77,7 @@ export const WARDROBE_EXPANSION_TEMPLATES: CabinetTemplate[] = [
   {
     id: 'hallway-open-1000',
     name: 'Прихожая: открытая секция',
-    category: 'wardrobe',
+    category: 'entry',
     // PRO100 «Прихожая» және «вешалка» түрлері; нақты өлшем берілмейді.
     // Өңделетін бастапқы өлшем wardrobe-rod-1000 seed-інен алынды.
     description: 'Открытая прихожая: штанга для одежды и отдельные полки для обуви.',

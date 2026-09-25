@@ -18,6 +18,8 @@
  */
 
 import { ConfigValidationError } from './errors'
+import { KITCHEN_EXPANSION_TEMPLATES } from './templatesKitchenExpansion'
+import { WARDROBE_EXPANSION_TEMPLATES } from './templatesWardrobeExpansion'
 import type {
   BackMode,
   CabinetConfig,
@@ -40,6 +42,8 @@ export type CabinetTemplate = {
   category: TemplateCategory
   /** Галереядағы ішкі санат; өндірістік конфигурацияға әсер етпейді. */
   subcategory?: string | undefined
+  /** Дереккөзден расталған дискрет ендер; range үздіксіз редакциялауды шектемейді. */
+  recommendedWidths?: number[] | undefined
   /** Бір жолдық сипаттама — галереяда карточка астында тұрады */
   description: string
 
@@ -83,11 +87,11 @@ export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string }[] =
 function defaultSubcategory(template: CabinetTemplate): string {
   const { id, category } = template
   if (category === 'kitchen') return id.includes('-wall-') ? 'Верхние' : id.includes('-tall-') ? 'Пеналы' : 'Нижние'
-  if (category === 'wardrobe') return id.includes('sliding') ? 'Купе' : id.includes('rod') ? 'Со штангой' : 'Распашные'
+  if (category === 'wardrobe') return id.includes('sliding') ? 'Купе' : id.includes('pantograph') ? 'Гардеробные' : id.includes('antresol') ? 'Антресоли' : id.includes('rod') ? 'Со штангой' : 'Распашные'
   if (category === 'living') return id.includes('tv-') ? 'ТВ-тумбы' : 'Стеллажи'
   if (category === 'desk') return 'Письменные столы'
   if (category === 'bed') return id.includes('bench') ? 'Банкетки' : 'Кровати'
-  if (category === 'entry') return id.includes('shoe') ? 'Обувницы' : 'Банкетки'
+  if (category === 'entry') return id.includes('shoe') ? 'Обувницы' : id.includes('hallway') ? 'Открытые' : 'Банкетки'
   if (category === 'bathroom') return 'Шкафы для ванной'
   return id.includes('shelving') ? 'Стеллажи' : id.includes('antresol') ? 'Антресоли' : 'Тумбы'
 }
@@ -637,7 +641,11 @@ const EXISTING_TEMPLATES: CabinetTemplate[] = [
   },
 ]
 
-export const SEED_TEMPLATES: CabinetTemplate[] = EXISTING_TEMPLATES.map((template) => ({
+export const SEED_TEMPLATES: CabinetTemplate[] = [
+  ...EXISTING_TEMPLATES,
+  ...KITCHEN_EXPANSION_TEMPLATES,
+  ...WARDROBE_EXPANSION_TEMPLATES,
+].map((template) => ({
   ...template,
   subcategory: template.subcategory ?? defaultSubcategory(template),
 }))
