@@ -7,7 +7,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
-import { SEED_SETS, SEED_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
+import { SEED_SETS, SEED_TEMPLATES, STANDARD_NOMENCLATURE_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
 import { filterTemplateCatalog } from '@/src/core/templateCatalog'
 import type { Material, TemplateCategory } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -17,7 +17,7 @@ import { DecorPicker } from '@/components/DecorPicker'
 import { cn } from '@/lib/cn'
 import { KitchenWizard } from '@/components/KitchenWizard'
 
-type Filter = TemplateCategory | 'all' | 'sets'
+type Filter = TemplateCategory | 'all' | 'sets' | 'standard'
 
 /** Корпус материалы — цоколь/арт қабырғадан ажырату үшін бірдей шарт
  * `Configurator.tsx`-тегі `isCarcass`-пен бірдей: 10 мм-ден жуан плита. */
@@ -80,11 +80,12 @@ export function TemplateGallery() {
   }, [])
 
   const subcategories = useMemo(() => {
-    if (filter === 'all' || filter === 'sets') return []
+    if (filter === 'all' || filter === 'sets' || filter === 'standard') return []
     return [...new Set(SEED_TEMPLATES.filter((item) => item.category === filter).map((item) => item.subcategory).filter((value): value is string => Boolean(value)))]
   }, [filter])
-  const shown = useMemo(() => filterTemplateCatalog(SEED_TEMPLATES, {
-    category: filter === 'all' || filter === 'sets' ? undefined : filter,
+  const shown = useMemo(() => filterTemplateCatalog(
+    filter === 'standard' ? STANDARD_NOMENCLATURE_TEMPLATES : SEED_TEMPLATES, {
+    category: filter === 'all' || filter === 'sets' || filter === 'standard' ? undefined : filter,
     subcategory,
     search,
   }, tr), [filter, subcategory, search])
@@ -110,6 +111,9 @@ export function TemplateGallery() {
               {tr(c.label)}
             </Button>
           ))}
+          <Button active={filter === 'standard'} onClick={() => { setFilter('standard'); setSubcategory(undefined); setSearch('') }}>
+            {tr('Стандарт номенклатура')}
+          </Button>
           <Button active={filter === 'sets'} onClick={() => { setFilter('sets'); setSubcategory(undefined) }}>{tr('Наборы')}</Button>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>

@@ -18,6 +18,9 @@
  */
 
 import { ConfigValidationError } from './errors'
+import { makeNomenclatureTemplates } from './nomenclature'
+import nomenclatureRaw from './data/generated/standardNomenclature.json'
+import type { NomenclatureMatch } from './nomenclature'
 import { KITCHEN_EXPANSION_TEMPLATES } from './templatesKitchenExpansion'
 import { WARDROBE_EXPANSION_TEMPLATES } from './templatesWardrobeExpansion'
 import type {
@@ -44,6 +47,8 @@ export type CabinetTemplate = {
   subcategory?: string | undefined
   /** Дереккөзден расталған дискрет ендер; range үздіксіз редакциялауды шектемейді. */
   recommendedWidths?: number[] | undefined
+  /** PRO100 атаулары — іздеу мен дәлел үшін; өндірістік геометрия емес. */
+  sourceNames?: string[] | undefined
   /** Бір жолдық сипаттама — галереяда карточка астында тұрады */
   description: string
 
@@ -641,7 +646,7 @@ const EXISTING_TEMPLATES: CabinetTemplate[] = [
   },
 ]
 
-export const SEED_TEMPLATES: CabinetTemplate[] = [
+const BASE_TEMPLATES: CabinetTemplate[] = [
   ...EXISTING_TEMPLATES,
   ...KITCHEN_EXPANSION_TEMPLATES,
   ...WARDROBE_EXPANSION_TEMPLATES,
@@ -650,8 +655,15 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
   subcategory: template.subcategory ?? defaultSubcategory(template),
 }))
 
+export const SEED_TEMPLATES: CabinetTemplate[] = BASE_TEMPLATES
+
+/** Бөлек сөре: қолданыстағы seed эталоны мен присадка snapshot-тарын қозғамайды. */
+export const STANDARD_NOMENCLATURE_TEMPLATES: CabinetTemplate[] =
+  makeNomenclatureTemplates(BASE_TEMPLATES, nomenclatureRaw as NomenclatureMatch[])
+
 export function findTemplate(id: string): CabinetTemplate | undefined {
   return SEED_TEMPLATES.find((t) => t.id === id)
+    ?? STANDARD_NOMENCLATURE_TEMPLATES.find((t) => t.id === id)
 }
 
 /** Шаблонда өзгертуге рұқсат етілген габарит. Барлығы міндетті емес. */

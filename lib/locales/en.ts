@@ -1084,4 +1084,6 @@ export const en: Record<string, string> = {
   'Азимут, °': 'Azimuth, °',
   'Высота солнца, °': 'Sun elevation, °',
   'Не удалось изменить свет': 'Could not change lights',
+  'Стандарт номенклатура': 'Standard nomenclature',
+  'Размерная серия PRO100; высота и глубина взяты из базового шаблона.': 'PRO100 width series; height and depth come from the base template.',
 }

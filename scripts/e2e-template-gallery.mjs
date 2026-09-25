@@ -66,6 +66,12 @@ try {
   assert(await h.evaluate("(() => { const input=document.querySelector('[aria-label=\"Поиск модуля\"]'); const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; setter.call(input,'Обувница'); input.dispatchEvent(new Event('input',{bubbles:true})); return true })()"), 'search input missing')
   assert(await h.until("document.querySelectorAll('[data-template-id]').length === 1", 5000), 'search did not narrow results')
   assert(await h.evaluate("document.querySelector('[data-template-id]')?.getAttribute('data-template-id') === 'shoe-rack-800'"), 'search returned wrong module')
+  assert(await h.clickText('Стандарт номенклатура'), 'standard nomenclature category missing')
+  assert(await h.until("document.querySelectorAll('[data-template-id^=standard-]').length > 0", 5000), 'imported standard sizes missing')
+  assert(await h.evaluate("(() => { const cards=[...document.querySelectorAll('[data-template-id]')]; return cards.length > 0 && cards.every(c=>c.getAttribute('data-template-id').startsWith('standard-')) && Boolean(document.querySelector('[data-template-id=standard-wall-2-600]')) })()"), 'standard category contains wrong templates')
+  assert(await h.evaluate("(() => { const input=document.querySelector('[aria-label=\"Поиск модуля\"]'); const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; setter.call(input,'Н В3 500'); input.dispatchEvent(new Event('input',{bubbles:true})); return true })()"), 'standard search input missing')
+  assert(await h.until("document.querySelectorAll('[data-template-id]').length === 1", 5000), 'source name search did not narrow results')
+  assert(await h.evaluate("document.querySelector('[data-template-id]')?.getAttribute('data-template-id') === 'standard-base-drawers-3-500'"), 'source name returned wrong template')
   console.log('template gallery e2e: PASS')
 } catch (error) {
   console.error('template gallery e2e: FAIL', error)

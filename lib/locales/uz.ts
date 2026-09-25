@@ -1088,4 +1088,6 @@ export const uz: Record<string, string> = {
   'Азимут, °': 'Azimut, °',
   'Высота солнца, °': 'Quyosh balandligi, °',
   'Не удалось изменить свет': 'Yorug‘likni o‘zgartirib bo‘lmadi',
+  'Стандарт номенклатура': 'Standart nomenklatura',
+  'Размерная серия PRO100; высота и глубина взяты из базового шаблона.': 'PRO100 o‘lcham qatori; balandlik va chuqurlik asosiy shablondan olingan.',
 }

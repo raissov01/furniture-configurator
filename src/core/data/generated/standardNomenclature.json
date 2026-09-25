@@ -1,0 +1,396 @@
+[
+  {
+    "id": "standard-base-drawers-2-400",
+    "baseId": "kitchen-base-drawers-2-600",
+    "width": 400,
+    "frontCount": 0,
+    "drawerCount": 2,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В2 400"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-2-500",
+    "baseId": "kitchen-base-drawers-2-600",
+    "width": 500,
+    "frontCount": 0,
+    "drawerCount": 2,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В2 500"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-2-600",
+    "baseId": "kitchen-base-drawers-2-600",
+    "width": 600,
+    "frontCount": 0,
+    "drawerCount": 2,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В2 600"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-2-700",
+    "baseId": "kitchen-base-drawers-2-600",
+    "width": 700,
+    "frontCount": 0,
+    "drawerCount": 2,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В2 700"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-2-800",
+    "baseId": "kitchen-base-drawers-2-600",
+    "width": 800,
+    "frontCount": 0,
+    "drawerCount": 2,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В2 800"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-2-900",
+    "baseId": "kitchen-base-drawers-2-600",
+    "width": 900,
+    "frontCount": 0,
+    "drawerCount": 2,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В2 900"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-3-300",
+    "baseId": "kitchen-base-drawers-600",
+    "width": 300,
+    "frontCount": 0,
+    "drawerCount": 3,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В3 300"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-3-400",
+    "baseId": "kitchen-base-drawers-600",
+    "width": 400,
+    "frontCount": 0,
+    "drawerCount": 3,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В3 400"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-3-500",
+    "baseId": "kitchen-base-drawers-600",
+    "width": 500,
+    "frontCount": 0,
+    "drawerCount": 3,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В3 500"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-3-600",
+    "baseId": "kitchen-base-drawers-600",
+    "width": 600,
+    "frontCount": 0,
+    "drawerCount": 3,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В3 600"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-3-700",
+    "baseId": "kitchen-base-drawers-600",
+    "width": 700,
+    "frontCount": 0,
+    "drawerCount": 3,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В3 700"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-3-800",
+    "baseId": "kitchen-base-drawers-600",
+    "width": 800,
+    "frontCount": 0,
+    "drawerCount": 3,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В3 800"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-3-900",
+    "baseId": "kitchen-base-drawers-600",
+    "width": 900,
+    "frontCount": 0,
+    "drawerCount": 3,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В3 900"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-4-300",
+    "baseId": "kitchen-base-drawers-4-600",
+    "width": 300,
+    "frontCount": 0,
+    "drawerCount": 4,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В4 300"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-4-400",
+    "baseId": "kitchen-base-drawers-4-600",
+    "width": 400,
+    "frontCount": 0,
+    "drawerCount": 4,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В4 400"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-4-500",
+    "baseId": "kitchen-base-drawers-4-600",
+    "width": 500,
+    "frontCount": 0,
+    "drawerCount": 4,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В4 500"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-4-600",
+    "baseId": "kitchen-base-drawers-4-600",
+    "width": 600,
+    "frontCount": 0,
+    "drawerCount": 4,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В4 600"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-4-700",
+    "baseId": "kitchen-base-drawers-4-600",
+    "width": 700,
+    "frontCount": 0,
+    "drawerCount": 4,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В4 700"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-4-800",
+    "baseId": "kitchen-base-drawers-4-600",
+    "width": 800,
+    "frontCount": 0,
+    "drawerCount": 4,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В4 800"
+    ]
+  },
+  {
+    "id": "standard-base-drawers-4-900",
+    "baseId": "kitchen-base-drawers-4-600",
+    "width": 900,
+    "frontCount": 0,
+    "drawerCount": 4,
+    "sourceCount": 24,
+    "sourceNames": [
+      "Н В4 900"
+    ]
+  },
+  {
+    "id": "standard-sink-2-600",
+    "baseId": "kitchen-sink-800",
+    "width": 600,
+    "frontCount": 2,
+    "drawerCount": null,
+    "sourceCount": 8,
+    "sourceNames": [
+      "Н 2дв Мойка 600"
+    ]
+  },
+  {
+    "id": "standard-sink-2-700",
+    "baseId": "kitchen-sink-800",
+    "width": 700,
+    "frontCount": 2,
+    "drawerCount": null,
+    "sourceCount": 8,
+    "sourceNames": [
+      "Н 2дв Мойка 700"
+    ]
+  },
+  {
+    "id": "standard-sink-2-800",
+    "baseId": "kitchen-sink-800",
+    "width": 800,
+    "frontCount": 2,
+    "drawerCount": null,
+    "sourceCount": 8,
+    "sourceNames": [
+      "Н 2дв Мойка 800"
+    ]
+  },
+  {
+    "id": "standard-sink-2-900",
+    "baseId": "kitchen-sink-800",
+    "width": 900,
+    "frontCount": 2,
+    "drawerCount": null,
+    "sourceCount": 8,
+    "sourceNames": [
+      "Н 2дв Мойка 900.",
+      "Н 2дв Мойка 900"
+    ]
+  },
+  {
+    "id": "standard-wall-1-300",
+    "baseId": "kitchen-wall-600",
+    "width": 300,
+    "frontCount": 1,
+    "drawerCount": null,
+    "sourceCount": 24,
+    "sourceNames": [
+      "В - 300 1дв",
+      "В 1дв 300"
+    ]
+  },
+  {
+    "id": "standard-wall-1-350",
+    "baseId": "kitchen-wall-600",
+    "width": 350,
+    "frontCount": 1,
+    "drawerCount": null,
+    "sourceCount": 24,
+    "sourceNames": [
+      "В - 350 1дв",
+      "В 1дв 350"
+    ]
+  },
+  {
+    "id": "standard-wall-1-400",
+    "baseId": "kitchen-wall-600",
+    "width": 400,
+    "frontCount": 1,
+    "drawerCount": null,
+    "sourceCount": 24,
+    "sourceNames": [
+      "В - 400 1дв",
+      "В 1дв 400"
+    ]
+  },
+  {
+    "id": "standard-wall-1-450",
+    "baseId": "kitchen-wall-600",
+    "width": 450,
+    "frontCount": 1,
+    "drawerCount": null,
+    "sourceCount": 24,
+    "sourceNames": [
+      "В - 450 1дв",
+      "В 1дв 450"
+    ]
+  },
+  {
+    "id": "standard-wall-1-500",
+    "baseId": "kitchen-wall-600",
+    "width": 500,
+    "frontCount": 1,
+    "drawerCount": null,
+    "sourceCount": 16,
+    "sourceNames": [
+      "В 1дв 500"
+    ]
+  },
+  {
+    "id": "standard-wall-1-550",
+    "baseId": "kitchen-wall-600",
+    "width": 550,
+    "frontCount": 1,
+    "drawerCount": null,
+    "sourceCount": 16,
+    "sourceNames": [
+      "В 1дв 550"
+    ]
+  },
+  {
+    "id": "standard-wall-1-600",
+    "baseId": "kitchen-wall-600",
+    "width": 600,
+    "frontCount": 1,
+    "drawerCount": null,
+    "sourceCount": 16,
+    "sourceNames": [
+      "В 1дв 600"
+    ]
+  },
+  {
+    "id": "standard-wall-2-600",
+    "baseId": "kitchen-wall-600",
+    "width": 600,
+    "frontCount": 2,
+    "drawerCount": null,
+    "sourceCount": 24,
+    "sourceNames": [
+      "В - 600 2Дв",
+      "В 2дв 600"
+    ]
+  },
+  {
+    "id": "standard-wall-2-700",
+    "baseId": "kitchen-wall-600",
+    "width": 700,
+    "frontCount": 2,
+    "drawerCount": null,
+    "sourceCount": 24,
+    "sourceNames": [
+      "В - 700 2Дв",
+      "В 2дв 700"
+    ]
+  },
+  {
+    "id": "standard-wall-2-800",
+    "baseId": "kitchen-wall-600",
+    "width": 800,
+    "frontCount": 2,
+    "drawerCount": null,
+    "sourceCount": 24,
+    "sourceNames": [
+      "В - 800 2Дв",
+      "В 2дв 800"
+    ]
+  },
+  {
+    "id": "standard-wall-2-900",
+    "baseId": "kitchen-wall-600",
+    "width": 900,
+    "frontCount": 2,
+    "drawerCount": null,
+    "sourceCount": 24,
+    "sourceNames": [
+      "В - 900 2Дв",
+      "В 2дв 900"
+    ]
+  }
+]
