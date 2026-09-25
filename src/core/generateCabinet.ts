@@ -1488,6 +1488,11 @@ export function generateCabinet(
     settings,
   }
 
+  const carcassJoint = (face: Panel, edge: Panel): void => {
+    if (config.carcassJoint === 'minifix') minifixJoint(edge, face, ctx)
+    else confirmatJoint(face, edge, ctx)
+  }
+
   // Конфирмат: корпус буындары
   // ⚠ ЖОҚ детальға тесік бұрғыланбайды: үсті ашық корпуста бүйірдің торцінде
   // «крышканың» саңылаулары қалып қойса, цех оны құрастыру кезінде ғана
@@ -1495,23 +1500,23 @@ export function generateCabinet(
   if (sidesOverlay) {
     // Бұранда бүйірдің СЫРТЫНАН кіріп, крышка/дноның торціне барады
     for (const face of [sideLeft, sideRight]) {
-      for (const edge of [bottom, ...topParts]) confirmatJoint(face, edge, ctx)
+      for (const edge of [bottom, ...topParts]) carcassJoint(face, edge)
     }
   } else {
     // Бұранда крышка/дноның СЫРТЫНАН кіріп, бүйірдің торціне барады
     for (const face of [bottom, ...topParts]) {
-      for (const edge of [sideLeft, sideRight]) confirmatJoint(face, edge, ctx)
+      for (const edge of [sideLeft, sideRight]) carcassJoint(face, edge)
     }
   }
   // Перегородка екі құрастыруда да крышка мен дноның арасында
   for (const divider of dividers) {
-    confirmatJoint(bottom, divider, ctx)
-    for (const part of topParts) confirmatJoint(part, divider, ctx)
+    carcassJoint(bottom, divider)
+    for (const part of topParts) carcassJoint(part, divider)
   }
   // K6: фронтальдық панельдің стойкасы — перегородкамен БІРДЕЙ буын
   if (frontPanelStand) {
-    confirmatJoint(bottom, frontPanelStand, ctx)
-    for (const part of topParts) confirmatJoint(part, frontPanelStand, ctx)
+    carcassJoint(bottom, frontPanelStand)
+    for (const part of topParts) carcassJoint(part, frontPanelStand)
   }
 
   /*
@@ -1565,8 +1570,8 @@ export function generateCabinet(
     if (frontPanelStand && frontPanel?.side === 'left' && sectionIndex === 0) left = frontPanelStand
     if (frontPanelStand && frontPanel?.side === 'right' && sectionIndex === layouts.length - 1) right = frontPanelStand
     if (kind === 'fixed') {
-      confirmatJoint(left, shelf, ctx)
-      confirmatJoint(right, shelf, ctx)
+      carcassJoint(left, shelf)
+      carcassJoint(right, shelf)
     } else {
       shelfPinHoles(left, shelf, t + baseHeight, ctx)
       shelfPinHoles(right, shelf, t + baseHeight, ctx)
