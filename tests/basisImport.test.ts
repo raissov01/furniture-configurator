@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   BASIS_CATALOG, BASIS_EDGE_BANDS, BASIS_MATERIALS, BASIS_PRICE_META,
-  defaultShopProfile, generateCabinet, nestPanels, priceProject,
+  defaultShopProfile, generateCabinet, nestPanels, parseBasisEdgeWidth, priceProject,
 } from '../src/core/index'
 import type { CabinetConfig } from '../src/core/index'
 
@@ -44,6 +44,13 @@ describe('Базис импорты — Material/EdgeBand пішіні', () => {
   it('кромка қалыңдығы 0.4/1/2 мм (жобаның конвенциясы)', () => {
     const thicknesses = new Set(BASIS_EDGE_BANDS.map((b) => b.thickness))
     expect([...thicknesses].sort((a, b) => a - b)).toEqual([0.4, 1, 2])
+  })
+
+  it('кромка ені атаудан сақталады (19/22 мм)', () => {
+    expect(parseBasisEdgeWidth('Кромка ПВХ 0,4x19, Ақ')).toBe(19)
+    expect(parseBasisEdgeWidth('Кромка ПВХ 2×22, Ақ')).toBe(22)
+    expect(parseBasisEdgeWidth('Кромка атаусыз')).toBeNull()
+    expect(new Set(BASIS_EDGE_BANDS.map((b) => b.widthMm))).toEqual(new Set([19, 22]))
   })
 
   it('баға шешімі: барлығы 0, тек Egger 2800×2070-де ҚР анықтамалық бағасы бар', () => {

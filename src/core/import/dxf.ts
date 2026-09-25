@@ -30,7 +30,7 @@ import { ConfigValidationError } from '../errors'
 
 // ── Төменгі деңгей: топтық код / мән жұптары ────────────────────────────────
 
-type RawGroup = { code: number; value: string }
+export type RawGroup = { code: number; value: string }
 
 /** Бинарлы DXF-тің стандартты сигнатурасы (AutoCAD-тың өз спецификациясы). */
 const BINARY_SENTINEL = 'AutoCAD Binary DXF'
@@ -80,20 +80,20 @@ function tokenize(text: string): RawGroup[] {
 
 // ── Секциялар мен нысандарға бөлу ───────────────────────────────────────────
 
-type DxfEntity = {
+export type DxfEntity = {
   type: string
   groups: RawGroup[]
   /** Тек POLYLINE үшін: әр VERTEX-тің өз тобы (SEQEND-ке дейін). */
   vertices?: RawGroup[][]
 }
 
-type Parsed = {
+export type Parsed = {
   /** $INSUNITS мәні — код (4 = мм, 5 = см, ...). Жоқ болса `undefined`. */
   insunits: number | undefined
   entities: DxfEntity[]
 }
 
-function findValue(groups: RawGroup[], code: number): string | undefined {
+export function findValue(groups: RawGroup[], code: number): string | undefined {
   return groups.find((g) => g.code === code)?.value
 }
 
@@ -194,7 +194,7 @@ const UNIT_MM_FACTOR: Record<number, number> = {
   6: 1000, // м
 }
 
-function unitFactor(insunits: number | undefined): { factor: number; converted: boolean; source: number } {
+export function unitFactor(insunits: number | undefined): { factor: number; converted: boolean; source: number } {
   const code = insunits ?? 0
   const factor = UNIT_MM_FACTOR[code]
   if (factor === undefined) {
@@ -244,6 +244,12 @@ export type DxfImportResult = {
   sourceUnits: number
   /** Мм-ге қайта санау болды ма (яғни бастапқы бірлік мм емес еді). */
   unitsConverted: boolean
+}
+
+/** Бір ASCII DXF оқығышы бөлме жоспары мен өндірістік контурға ортақ. */
+export function readDxfDocument(text: string): Parsed {
+  assertNotBinary(text)
+  return parseSections(tokenize(text))
 }
 
 const SUPPORTED_TYPES = new Set(['LINE', 'LWPOLYLINE', 'POLYLINE', 'CIRCLE', 'ARC'])
@@ -303,9 +309,7 @@ function segmentsFromVertices(verts: DxfPoint[], closed: boolean, layer: string)
  * бөлек спек, кездессе `skipped`-те есептеледі.
  */
 export function importDxfRoomPlan(text: string, options: DxfImportOptions = {}): DxfImportResult {
-  assertNotBinary(text)
-  const groups = tokenize(text)
-  const parsed = parseSections(groups)
+  const parsed = readDxfDocument(text)
   const { factor, converted, source } = unitFactor(parsed.insunits)
 
   const layerSet = new Set<string>()

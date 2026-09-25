@@ -20,6 +20,14 @@ import basisMaterialsData from './generated/basisMaterials.json'
 export const BASIS_MATERIALS: Material[] = basisMaterialsData as Material[]
 export const BASIS_EDGE_BANDS: EdgeBand[] = basisEdgeBandsData as EdgeBand[]
 
+const BASIS_EDGE_WIDTH_RE = /\d+(?:[,.]\d+)?\s*[xх×]\s*(\d{2,3})\b/u
+
+/** Базис атауындағы `0,4x19`/`2×22` жұбынан кромканың жайылған енін алады. */
+export function parseBasisEdgeWidth(name: string): number | null {
+  const match = BASIS_EDGE_WIDTH_RE.exec(name)
+  return match === null ? null : Number(match[1])
+}
+
 export const BASIS_CATALOG: Catalog = {
   materials: BASIS_MATERIALS,
   edgeBands: BASIS_EDGE_BANDS,

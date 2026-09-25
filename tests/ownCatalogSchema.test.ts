@@ -51,6 +51,18 @@ describe('validateOwnCatalogInput — қате өріс атымен', () => {
     expect(issues[0]?.message).toContain('3–40')
   })
 
+  it('бір декордағы қалыңдық қайталанса — қайталанған элементті көрсетеді', () => {
+    const issues = validateOwnCatalogInput(input({ decors: [decor({ thicknessesMm: [16, 16, 18] })] }))
+    expect(issues.map((i) => i.path)).toContain('decors[0].thicknessesMm[1]')
+  })
+
+  it('product line регистрі ғана өзгеше болса — бір декор деп санайды', () => {
+    const issues = validateOwnCatalogInput(input({
+      decors: [decor({ productLine: 'P2' }), decor({ productLine: 'p2' })],
+    }))
+    expect(issues.map((i) => i.path)).toContain('decors[1].decorCode')
+  })
+
   it('парақ өлшемі бүтін әрі 1000–5700 мм', () => {
     const issues = validateOwnCatalogInput(input({ decors: [decor({ sheetSizesMm: [[2800, 999], [2800.5, 2070]] })] }))
     expect(issues.map((i) => i.path)).toEqual(['decors[0].sheetSizesMm[0][1]', 'decors[0].sheetSizesMm[1][0]'])
@@ -92,6 +104,7 @@ describe('buildOwnCatalog — Material/EdgeBand-қа жаю', () => {
       'own-edge-egger-h1145-abs-04x19', 'own-edge-egger-h1145-abs-04x22',
       'own-edge-egger-h1145-abs-2x19', 'own-edge-egger-h1145-abs-2x22',
     ])
+    expect(b.edgeBands.map((e) => e.widthMm)).toEqual([19, 22, 19, 22])
   })
 
   it('үнсіз кромка: ені ≥ қалыңдық + 3 мм (16 → 19, 18 → 22), 2 мм алдыңғы, 0.4 мм екінші', () => {
@@ -112,8 +125,19 @@ describe('buildOwnCatalog — Material/EdgeBand-қа жаю', () => {
 
   it('каталогқа тек CATALOG_THICKNESSES_MM жайылады, жарияланғанның бәрі мета-да', () => {
     const b = buildOwnCatalog(input({ decors: [decor({ thicknessesMm: [8, 16, 38] })], edges: [] }))
-    expect(b.materials.map((m) => m.thickness)).toEqual([16])
+    expect(b.materials.map((m) => m.thickness)).toEqual([8, 16])
     expect(b.materialMeta[b.materials[0]?.id ?? '']?.publishedThicknessesMm).toEqual([8, 16, 38])
+  })
+
+  it('кеңейтілген ЛДСП/МДФ қалыңдықтары жарияланған шекте жайылады', () => {
+    const b = buildOwnCatalog(input({
+      decors: [
+        decor({ kind: 'ldsp', thicknessesMm: [8, 10, 12, 16, 18, 22, 25, 26, 28, 32, 38] }),
+        decor({ kind: 'mdf', decorCode: 'MDF-1', thicknessesMm: [8, 10, 12, 16, 18, 19, 22, 25, 28, 38] }),
+      ], edges: [],
+    }))
+    expect(b.materials.filter((m) => m.id.includes('ldsp')).map((m) => m.thickness)).toEqual([8, 10, 12, 16, 18, 22, 25, 26, 28, 32])
+    expect(b.materials.filter((m) => m.id.includes('mdf')).map((m) => m.thickness)).toEqual([8, 10, 12, 16, 18, 19, 22, 25, 28])
   })
 
   it('бір декордың екі өнім желісі — екі бөлек материал, желісіз қайталау — қате', () => {

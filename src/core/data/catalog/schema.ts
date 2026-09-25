@@ -128,8 +128,12 @@ export const DEFAULT_TRIM_EDGE_MM = 10
  * қабырға 3/4. Қалғаны мета-дағы `publishedThicknessesMm`-де сақталады.
  */
 export const CATALOG_THICKNESSES_MM: Record<BoardKind, readonly number[]> = {
-  ldsp: [10, 16, 18, 22, 25],
-  mdf: [16, 18, 19, 22],
+  // Ашық зерттеу дерегінде жарияланған 8–32 мм қатары. 38 мм ЛДСП
+  // анықтамалықта бар болса да, осы кезеңнің «8–32 мм» кеңейтуіне кірмейді.
+  ldsp: [8, 10, 12, 16, 18, 22, 25, 26, 28, 32],
+  // Egger/Ultradecor МДФ-тың өлшемі бар жарияланған фасад қатары; өлшемі
+  // белгісіз Базис МДФ жолдары әдейі материалға жайылмайды.
+  mdf: [8, 10, 12, 16, 18, 19, 22, 25, 28],
   hdf: [3, 4],
 }
 
@@ -184,10 +188,13 @@ export function validateOwnCatalogInput(input: OwnCatalogInput): CatalogIssue[] 
     if (d.sizeBasis !== 'per-decor' && d.sizeBasis !== 'range-wide') add(`${p}.sizeBasis`, "рұқсат: 'per-decor' | 'range-wide'")
     if (!isHttpUrl(d.sizeSourceUrl)) add(`${p}.sizeSourceUrl`, 'http(s) URL болуы керек')
     if (d.thicknessesMm.length === 0) add(`${p}.thicknessesMm`, 'кемінде бір қалыңдық керек')
+    const thicknesses = new Set<number>()
     d.thicknessesMm.forEach((t, j) => {
       if (!Number.isInteger(t) || t < BOARD_THICKNESS_RANGE_MM.min || t > BOARD_THICKNESS_RANGE_MM.max) {
         add(`${p}.thicknessesMm[${j}]`, `бүтін сан ${BOARD_THICKNESS_RANGE_MM.min}–${BOARD_THICKNESS_RANGE_MM.max} мм болуы керек, берілгені ${t}`)
       }
+      if (thicknesses.has(t)) add(`${p}.thicknessesMm[${j}]`, `қайталанған қалыңдық: ${t} мм`)
+      else thicknesses.add(t)
     })
     if (d.sheetSizesMm.length === 0) add(`${p}.sheetSizesMm`, 'кемінде бір парақ форматы керек')
     d.sheetSizesMm.forEach((size, j) => {
@@ -199,7 +206,7 @@ export function validateOwnCatalogInput(input: OwnCatalogInput): CatalogIssue[] 
     })
     checkProvenance(p, d)
     if (isNonEmpty(d.manufacturer) && isNonEmpty(d.decorCode)) {
-      const key = `${d.kind}|${d.productLine ?? ''}|${decorKey(d.manufacturer, d.decorCode, d.structureCode)}`
+      const key = `${d.kind}|${norm(d.productLine ?? '')}|${decorKey(d.manufacturer, d.decorCode, d.structureCode)}`
       if (decorKeys.has(key)) add(`${p}.decorCode`, `қайталанған декор: ${d.manufacturer} ${d.decorCode} ${d.structureCode ?? ''} ${d.productLine ?? ''}`.trim())
       else decorKeys.add(key)
     }
@@ -357,6 +364,7 @@ export function buildOwnCatalog(input: OwnCatalogInput, opts: { validate?: boole
           id,
           name: `Кромка ${mat ? `${mat} ` : ''}${t}×${w} ${e.manufacturer} ${e.code}${e.name === e.code ? '' : ` ${e.name}`}`.replace(/\s+/g, ' ').trim(),
           thickness: t,
+          widthMm: w,
           pricePerMeter: 0,
         })
         edgeMeta[id] = {
