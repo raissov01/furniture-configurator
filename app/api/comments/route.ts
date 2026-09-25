@@ -34,12 +34,12 @@ export async function POST(request: Request): Promise<Response> {
   const input = Reply.safeParse(raw)
   if (!input.success) return NextResponse.json({ error: 'Нужны code, replyTo и текст' }, { status: 400 })
   const key = request.headers.get('x-share-key') ?? ''
-  if (account && !can(account.role, 'reply')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
-  const keyAccess = !account && ownsShareKey(input.data.code, key)
+  const keyAccess = ownsShareKey(input.data.code, key)
+  if (account && !can(account.role, 'reply') && !keyAccess) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
   if (!account && !keyAccess) return NextResponse.json({ error: 'Нужен вход или ключ автора' }, { status: 401 })
-  const comment = account
-    ? addDesignerReply(input.data.code, input.data.replyTo, input.data.body, account.shopId, account.userId)
-    : addCreatorReply(input.data.code, input.data.replyTo, input.data.body)
+  const comment = keyAccess
+    ? addCreatorReply(input.data.code, input.data.replyTo, input.data.body)
+    : account ? addDesignerReply(input.data.code, input.data.replyTo, input.data.body, account.shopId, account.userId) : null
   if (!comment) return NextResponse.json({ error: 'Комментарий не найден' }, { status: 404 })
   return NextResponse.json({ comment }, { status: 201 })
 }

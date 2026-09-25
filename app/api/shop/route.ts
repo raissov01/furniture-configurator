@@ -4,6 +4,7 @@ import { currentAccount } from '@/lib/server/session'
 import { readShopProfile, writeShopProfile } from '@/lib/server/store'
 import { cloudOff } from '@/lib/server/cloud'
 import { can } from '@/lib/permissions'
+import { toProductionShopProfile } from '@/src/core/publicShop'
 
 export async function GET(): Promise<Response> {
   const off = cloudOff()
@@ -11,8 +12,11 @@ export async function GET(): Promise<Response> {
 
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
-  if (!can(account.role, 'readInternalPrice')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
-  return NextResponse.json({ profile: readShopProfile(account.shopId) })
+  if (!can(account.role, 'readProduction')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
+  const stored = readShopProfile(account.shopId)
+  if (!stored) return NextResponse.json({ profile: null })
+  const profile = parseShopProfile(stored)
+  return NextResponse.json({ profile: can(account.role, 'readInternalPrice') ? profile : toProductionShopProfile(profile) })
 }
 
 export async function PUT(request: Request): Promise<Response> {

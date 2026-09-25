@@ -596,7 +596,7 @@ export function priceProject(
  */
 export const DISCOUNT_ROUNDING_RULE = 'nearestMinorUnitHalfUp' as const
 
-function discountAmount(discount: Discount, base: number, field: string): number {
+export function discountAmount(discount: Discount, base: number, field: string): number {
   if (!Number.isSafeInteger(base) || base < 0) {
     throw new ConfigValidationError(field, `${base} — есептеу негізі жарамсыз`, '0..MAX_SAFE_INTEGER тиын')
   }

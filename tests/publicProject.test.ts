@@ -24,4 +24,18 @@ describe('клиент payload-ы', () => {
     expect(raw).not.toContain('info')
     expect(toProductionProject(project()).priceOverrides).toBeUndefined()
   })
+
+  it('көрерменге жалпы жеңілдіктен кейінгі соңғы баға шығады', () => {
+    const discounted = toPublicProject({ ...project(), priceOverrides: {
+      salePrice: 10_000, overallDiscount: { kind: 'percent', value: 10 },
+    } })
+    expect(discounted.priceOverrides).toEqual({ salePrice: 9_000 })
+  })
+
+  it('жолдық жеңілдіктің нақты сомасы жоқ болса, бастапқы сату бағасын жарияламайды', () => {
+    const discounted = toPublicProject({ ...project(), priceOverrides: {
+      salePrice: 10_000, lineDiscounts: { 'materials:m': { kind: 'amount', value: 100 } },
+    } })
+    expect(discounted.priceOverrides).toBeUndefined()
+  })
 })

@@ -129,7 +129,7 @@ export function AccountPanel() {
    * браузерде толтырылған бағалар жоғалмайды.
    */
   const syncProfile = useCallback(async (role: Account['role']) => {
-    if (role === 'shop' || role === 'client') return
+    if (role === 'client') return
     try {
       const res = await fetch('/api/shop')
       if (!res.ok) { setError(tr('Профиль не загрузился')); return }
