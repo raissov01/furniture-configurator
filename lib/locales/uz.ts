@@ -11,6 +11,15 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Крепёж для присадки': 'Teshik uchun mahkamlagich',
+  'Выберите крепёж': 'Mahkamlagichni tanlang',
+  'Конфирмат': 'Konfirmat',
+  'Минификс': 'Minifiks',
+  'Шкант': 'Shkant',
+  'Шкант — вручную': 'Shkant — qo‘lda',
+  'Для шканта нужны настройки артикула в цехе': 'Shkant uchun sexda aniq artikul sozlanishi kerak',
+  'Допуск касания, мм': 'Tegish chegarasi, mm',
+  'Автоматическая присадка': 'Teshiklarni avtomatik qo‘shish',
   '+/- мм': '+/- mm',
   'Абсолютно: 600 или =-100; относительно: +20 или -10': 'Mutlaq: 600 yoki =-100; nisbiy: +20 yoki -10',
   'Точный ввод': 'Aniq kiritish',

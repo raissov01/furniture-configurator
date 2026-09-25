@@ -18,12 +18,14 @@ import {
   ORIENT_FACING,
   DEFAULT_SILHOUETTE_HEIGHT,
   ConfigValidationError,
+  autoJoint,
   canMirror,
   catalogOf,
   cloneMaterial as cloneCatalogMaterial,
   createPriceList as createShopPriceList,
   deletePriceList as deleteShopPriceList,
   defaultOpenings,
+  drillKey,
   fitOpenings,
   findSet,
   findNode,
@@ -59,6 +61,7 @@ import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as crea
   setNodeLayer, treeFromProject } from '@/src/core/index'
 import { appendNodeArray, assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, translateTreeNodes, ungroupNode } from '@/src/core/treeEditing'
 import type { ArrayOptions } from '@/src/core/array'
+import type { AutoJointKind } from '@/src/core/autoJoint'
 import type { SnapOptions } from '@/src/core/snap'
 import type { Axis } from '@/src/core/types'
 import type { BoxAlignment } from '@/src/core/align'
@@ -279,6 +282,7 @@ type State = Snapshot & {
   addBoard(): string
   removeBoard(id: string): void
   editBoard(id: string, patch: Partial<BoardSpec>): void
+  autoJointBoards(ids: [string, string], kind: AutoJointKind, tolerance: number): void
   setBoardPosition(id: string, position: Vec3): void
   editSection(index: number, patch: Partial<Section>, key: string): void
   addSection(): void
@@ -760,6 +764,52 @@ export const useConfigurator = create<State>((set, get) => ({
     const root = mapBoard(s.root, id, () => board)
     flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
     set(treeEdit(s, root))
+  },
+
+  autoJointBoards(ids, kind, tolerance) {
+    const s = get()
+    for (const id of ids) {
+      const node = assertTreeNodeEditable(s.root, id, s.layers)
+      if (node.kind !== 'board') throw new ConfigValidationError('boardIds', `${id}: тақта емес`, 'екі board түйіні')
+    }
+    const settings = s.projectSettings ?? s.shop.settings
+    const scene = flattenTree(s.root, s.catalog, settings, s.layers)
+    const changes = autoJoint(scene, ids, kind, s.catalog, settings, tolerance)
+    const hasOldKind = changes.some((change) => {
+      const node = findNode(s.root, change.boardId)
+      return node?.kind === 'board' && (node.board.drilling ?? []).some((hole) => hole.purpose === kind)
+    })
+    const proposalComplete = changes.every((change) => {
+      const node = findNode(s.root, change.boardId)
+      if (node?.kind !== 'board') return false
+      const oldKeys = new Set((node.board.drilling ?? []).map(drillKey))
+      return change.drilling.every((hole) => oldKeys.has(drillKey(hole)))
+    })
+    // Тесік редакторында координата өзгерген болуы мүмкін. Оның қасына ескі
+    // автомат координатаны қайта қоспаймыз; артикул бойынша ескі тесікті
+    // өшіру/алмастыруды provenance жоқ кезде қауіпсіз болжау мүмкін емес.
+    if (hasOldKind && !proposalComplete) throw new ConfigValidationError('board.drilling',
+      'бұл бекіткіштің тесіктері бұрын бар; қолмен түзетілген не тақта жылжыған — ескі тесіктерді тексеріңіз',
+      'DrillEditor-де ескі тесіктерді қолмен тексеру')
+    if (proposalComplete) return
+    let root = s.root
+    let changed = false
+    for (const change of changes) {
+      root = mapBoard(root, change.boardId, (board) => {
+        const current = board.drilling ?? []
+        const keys = new Set(current.map(drillKey))
+        const additional = change.drilling.filter((hole) => {
+          const key = drillKey(hole)
+          if (keys.has(key)) return false
+          keys.add(key)
+          return true
+        })
+        if (additional.length === 0) return board
+        changed = true
+        return { ...board, drilling: [...current, ...additional] }
+      })
+    }
+    if (changed) set(treeEdit(s, root))
   },
 
   setBoardPosition(id, position) {

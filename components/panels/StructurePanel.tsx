@@ -5,7 +5,7 @@ import type { DragEvent, KeyboardEvent, MouseEvent } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
 import { ConfigValidationError, flattenTree } from '@/src/core/index'
-import type { Axis, FlatScene, GroupNode } from '@/src/core/index'
+import type { AutoJointKind, Axis, FlatScene, GroupNode } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { buildCanonicalRows, canDropInto, externalSelectionNodeIds, selectTreeRows } from './canonicalTreeRows'
 import type { CanonicalTreeRow } from './canonicalTreeRows'
@@ -25,11 +25,12 @@ type Props = {
   onReparent: (id: string, parentId: string) => void
   onArray: (id: string, opts: { axis: Axis; count: number; step: number }) => void
   onArrange: (ids: string[], axis: Axis, mode: 'min' | 'center' | 'max' | 'distribute') => void
+  onAutoJoint: (ids: [string, string], kind: AutoJointKind, tolerance: number) => void
 }
 
 /** One canonical project tree. The persisted node tree, not a second UI tree, drives its rows. */
 export function StructureTreeView({ root, rows, activeId, selected, onSelectNode, onSelectPart,
-  onRename, onHidden, onLocked, onGroup, onUngroup, onReparent, onArray, onArrange }: Props) {
+  onRename, onHidden, onLocked, onGroup, onUngroup, onReparent, onArray, onArrange, onAutoJoint }: Props) {
   const [tab, setTab] = useState<'project' | 'selection'>('project')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [selectedNodes, setSelectedNodes] = useState<string[]>([])
@@ -43,11 +44,16 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
   const [arrayCount, setArrayCount] = useState(2)
   const [arrayStep, setArrayStep] = useState(100)
   const [arrangeAxis, setArrangeAxis] = useState<Axis>('x')
+  const [jointKind, setJointKind] = useState<AutoJointKind | ''>('')
+  const [jointTolerance, setJointTolerance] = useState(0)
   const snapOptions = useConfigurator((s) => s.snapOptions)
   const setSnapOptions = useConfigurator((s) => s.setSnapOptions)
   const byId = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows])
   const selectable = useMemo(() => rows.filter((row) => row.kind !== 'part' && row.id !== root.id && !row.locked).map((row) => row.id), [rows, root.id])
   const lastExternal = useRef<string | null>(null)
+
+  // Әр жаңа жұпқа бекіткішті қайта ашық таңдайды; алдыңғы жұптың таңдауы өтпейді.
+  useEffect(() => { setJointKind('') }, [selectedNodes.join('|')])
 
   useEffect(() => {
     const next = externalSelectionNodeIds(lastExternal.current, selected, rows, activeId)
@@ -101,6 +107,9 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
     const id = selectedNodes.length === 1 ? selectedNodes[0] : null
     if (id && run(() => onArray(id, { axis: arrayAxis, count: arrayCount, step: arrayStep }))) setArrayOpen(false)
   }
+  const selectedBoards = selectedNodes.length === 2
+    && selectedNodes.every((id) => byId.get(id)?.kind === 'board')
+    ? selectedNodes as [string, string] : null
   const collapsedAncestor = (row: CanonicalTreeRow): boolean => {
     let parent = row.parentId
     while (parent) { if (collapsed[parent]) return true; parent = byId.get(parent)?.parentId ?? null }
@@ -185,6 +194,27 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
         onChange={(event) => run(() => setSnapOptions({ ...snapOptions, tolerance: Number(event.target.value) }))}
         className="ml-1 w-14 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900" /></label>
     </div>
+    {selectedBoards && <div className="flex flex-wrap items-end gap-1 border-b border-neutral-300 pb-1 dark:border-neutral-700" data-testid="auto-joint-tools">
+      <label>{tr('Крепёж для присадки')}
+        <select value={jointKind} onChange={(event) => setJointKind(event.target.value as AutoJointKind | '')}
+          className="block border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900">
+          <option value="">{tr('Выберите крепёж')}</option>
+          <option value="confirmat">{tr('Конфирмат')}</option>
+          <option value="minifix">{tr('Минификс')}</option>
+        </select>
+      </label>
+      <span className="text-neutral-500" title={tr('Для шканта нужны настройки артикула в цехе')}>{tr('Шкант — вручную')}</span>
+      <label>{tr('Допуск касания, мм')}
+        <input type="number" min={0} step={1} value={jointTolerance}
+          onChange={(event) => setJointTolerance(Number(event.target.value))}
+          className="block w-20 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900" />
+      </label>
+      <button type="button" disabled={!jointKind} data-testid="auto-joint-apply"
+        onClick={() => { if (jointKind && run(() => onAutoJoint(selectedBoards, jointKind, jointTolerance))) setJointKind('') }}
+        className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">
+        {tr('Автоматическая присадка')}
+      </button>
+    </div>}
     {error && <p role="alert" className="border border-red-600 p-1 text-red-700">{error}</p>}
     <div role="tree" aria-label={tr('Структура проекта')} onKeyDown={onKeyDown} className="min-h-0 overflow-auto">
       {rows.map((row) => {
@@ -242,6 +272,7 @@ export function StructurePanel() {
   const groupSelected = useConfigurator((s) => s.groupSelected)
   const arrayNode = useConfigurator((s) => s.arrayNode)
   const arrangeNodes = useConfigurator((s) => s.arrangeNodes)
+  const autoJointBoards = useConfigurator((s) => s.autoJointBoards)
   const ungroup = useConfigurator((s) => s.ungroup)
   const reparent = useConfigurator((s) => s.reparent)
   const { scene, error } = useMemo((): { scene: FlatScene; error: string | null } => {
@@ -263,6 +294,7 @@ export function StructurePanel() {
       onGroup={groupSelected}
       onArray={arrayNode}
       onArrange={arrangeNodes}
+      onAutoJoint={autoJointBoards}
       onUngroup={(id) => { ungroup(id); setSelected(null) }}
       onReparent={(id, parentId) => { reparent(id, parentId); setSelected(null) }} />
   </>

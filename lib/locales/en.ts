@@ -10,6 +10,15 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Крепёж для присадки': 'Joint fastener',
+  'Выберите крепёж': 'Choose a fastener',
+  'Конфирмат': 'Confirmat',
+  'Минификс': 'Minifix',
+  'Шкант': 'Dowel',
+  'Шкант — вручную': 'Dowel — manual',
+  'Для шканта нужны настройки артикула в цехе': 'The shop must configure a specific dowel article',
+  'Допуск касания, мм': 'Contact tolerance, mm',
+  'Автоматическая присадка': 'Add drilling automatically',
   '+/- мм': '+/- mm',
   'Абсолютно: 600 или =-100; относительно: +20 или -10': 'Absolute: 600 or =-100; relative: +20 or -10',
   'Точный ввод': 'Exact entry',
