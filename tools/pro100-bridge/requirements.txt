@@ -1,0 +1,5 @@
+# Windows-та іске қосуға (GUI). Linux-та тесттерге тек requirements-dev.txt жеткілікті.
+pywinauto>=0.6.8
+pywin32>=306
+comtypes>=1.2
+mss>=9.0

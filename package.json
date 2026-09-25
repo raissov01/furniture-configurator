@@ -21,7 +21,9 @@
     "import:basis": "node scripts/importBasis.mjs",
     "import:pro100": "node scripts/importPro100.mjs",
     "import:nomenclature": "tsx scripts/importNomenclature.ts",
-    "catalog:build": "tsx scripts/buildOwnCatalog.ts"
+    "catalog:build": "tsx scripts/buildOwnCatalog.ts",
+    "pro100:kit": "tsx src/cli/pro100Kit.ts",
+    "pro100:audit": "tsx src/cli/pro100Audit.ts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
