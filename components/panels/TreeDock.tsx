@@ -7,6 +7,8 @@ import type { SceneNode } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { StructurePanel } from './StructurePanel'
 import { LayersPanel } from './LayersPanel'
+import { PersonalLibraryPanel } from './PersonalLibraryPanel'
+import { ReplacePanel } from './ReplacePanel'
 import type { LayersPanelNode } from './LayersPanel'
 
 function layerNodes(root: SceneNode): LayersPanelNode[] {
@@ -21,7 +23,7 @@ function layerNodes(root: SceneNode): LayersPanelNode[] {
 
 /** Existing Structure and Layers panels share one dock; Workspace mounts this once. */
 export function TreeDock() {
-  const [tab, setTab] = useState<'structure' | 'layers'>('structure')
+  const [tab, setTab] = useState<'structure' | 'layers' | 'library' | 'replace'>('structure')
   const [collapsed, setCollapsed] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const root = useConfigurator((s) => s.root)
@@ -54,10 +56,10 @@ export function TreeDock() {
       {collapsed ? '+ ' : '− '}{tr('Структура проекта')}
     </button>
     <div className={cn(collapsed ? 'hidden' : 'block', 'min-h-0 overflow-auto')}>
-    <div role="tablist" aria-label={tr('Дерево и слои')} className="flex border-b border-neutral-300 dark:border-neutral-700">
-      {(['structure', 'layers'] as const).map((value) => <button key={value} type="button" role="tab" aria-selected={tab === value}
-        onClick={() => setTab(value)} className={cn('border-b-2 px-3 py-1.5 text-xs', tab === value ? 'border-blue-600 text-blue-700 dark:text-blue-300' : 'border-transparent text-neutral-500')}
-      >{value === 'structure' ? tr('Структура проекта') : tr('Слои')}</button>)}
+    <div role="tablist" aria-label={tr('Дерево, слои и библиотека')} className="flex border-b border-neutral-300 dark:border-neutral-700">
+      {(['structure', 'layers', 'library', 'replace'] as const).map((value) => <button key={value} type="button" role="tab" aria-selected={tab === value}
+        onClick={() => setTab(value)} className={cn('border-b-2 px-1.5 py-1.5 text-[10px]', tab === value ? 'border-blue-600 text-blue-700 dark:text-blue-300' : 'border-transparent text-neutral-500')}
+      >{value === 'structure' ? tr('Структура') : value === 'layers' ? tr('Слои') : value === 'library' ? tr('Библиотека') : tr('Замена')}</button>)}
     </div>
     {error && <p role="alert" className="m-2 border border-red-600 p-1 text-xs text-red-700">{error}</p>}
     <div className={cn(tab === 'structure' ? 'block' : 'hidden', 'min-h-0 overflow-auto p-2')}><StructurePanel /></div>
@@ -71,6 +73,8 @@ export function TreeDock() {
         onDeleteLayer={(id) => run(() => { deleteLayer(id); setSelected(null) })}
         onAssignNode={(id, layerId) => run(() => { assignNodeLayer(id, layerId); setSelected(null) })} />
     </div>
+    <div className={cn(tab === 'library' ? 'block' : 'hidden', 'min-h-0 overflow-auto')}><PersonalLibraryPanel /></div>
+    <div className={cn(tab === 'replace' ? 'block' : 'hidden', 'min-h-0 overflow-auto p-2')}><ReplacePanel /></div>
     </div>
   </section>
 }

@@ -27,6 +27,10 @@ import {
   generateFurniture,
   findTemplate,
   mirrorCabinet as mirrorCabinetConfig,
+  insertLibraryItem,
+  mergeLibraryCatalog,
+  replaceTreeBoardMaterial,
+  replaceTreeMaterial,
   nextFreeOffset,
   parseProjectV4,
   parseShopProfile,
@@ -38,7 +42,7 @@ import {
 } from '@/src/core/index'
 import type { Quality } from '@/lib/appearance'
 import type {
-  CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, Material, Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SettingsOverride,
+  CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SettingsOverride,
   Section, SectionContent, ShopProfile, WallId,
 } from '@/src/core/index'
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
@@ -264,6 +268,9 @@ type State = Snapshot & {
   groupSelected(ids: string[], groupId: string, name: string): void
   ungroup(id: string): void
   reparent(id: string, parentId: string): void
+  placeLibraryItem(item: LibraryItem, parentId?: string): void
+  replaceFreeBoardMaterial(oldId: string, newId: string): void
+  replaceProjectMaterial(oldId: string, newId: string): void
   createLayer(name: string): void
   renameLayer(id: string, name: string): void
   setLayerVisible(id: string, visible: boolean): void
@@ -1142,6 +1149,32 @@ export const useConfigurator = create<State>((set, get) => ({
   reparent(id, parentId) {
     const s = get()
     set(treeEdit(s, reparentNode(s.root, id, parentId, s.layers)))
+  },
+  placeLibraryItem(item, parentId) {
+    const s = get()
+    const catalog = mergeLibraryCatalog(s.catalog, item)
+    const root = insertLibraryItem(s.root, item, catalog, parentId ?? s.root.id, () => `node-${crypto.randomUUID()}`)
+    set({ root, catalog, projectMaterials: catalog.materials, projectEdgeBands: catalog.edgeBands,
+      ...cabinetsFromTree(root, s.room, s.layers),
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null })
+  },
+  replaceFreeBoardMaterial(oldId, newId) {
+    const s = get()
+    if (oldId === newId) return
+    if (!s.catalog.materials.some((material) => material.id === newId)) {
+      throw new ConfigValidationError('newMaterialId', `материал табылмады: ${newId}`)
+    }
+    const root = replaceTreeBoardMaterial(s.root, oldId, newId, s.layers)
+    if (root !== s.root) set(treeEdit(s, root))
+  },
+  replaceProjectMaterial(oldId, newId) {
+    const s = get()
+    if (oldId === newId) return
+    if (!s.catalog.materials.some((material) => material.id === newId)) {
+      throw new ConfigValidationError('newMaterialId', `материал табылмады: ${newId}`)
+    }
+    const root = replaceTreeMaterial(s.root, oldId, newId, s.layers)
+    if (root !== s.root) set(treeEdit(s, root))
   },
   createLayer(name) {
     const s = get()

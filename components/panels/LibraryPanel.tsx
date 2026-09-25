@@ -19,6 +19,7 @@
  * Ол файл қазір бірнеше агенттің қолында (тапсырмадағы ескерту).
  */
 import * as React from 'react'
+import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
 import { useConfigurator } from '@/store/configurator'
 import { findTemplate, templateToCabinet } from '@/src/core/index'
@@ -39,11 +40,12 @@ import {
 } from './libraryCatalogLogic'
 import type { LibraryTabId } from './libraryCatalogLogic'
 import { CatalogThumb } from './CatalogThumb'
+import { PersonalLibraryPanel } from './PersonalLibraryPanel'
 
 const PAGE_SIZE = 60 // гоча №4: 5094 жолды бірден рендерлемеу — беттеу
 
 export function LibraryPanel() {
-  const [tab, setTab] = React.useState<LibraryTabId>('mebel')
+  const [tab, setTab] = React.useState<LibraryTabId | 'mine'>('mebel')
   const [search, setSearch] = React.useState('')
   const [categoryPath, setCategoryPath] = React.useState<string | null>(null)
   const [page, setPage] = React.useState(0)
@@ -53,7 +55,7 @@ export function LibraryPanel() {
 
   // Таб ауысқанда іздеу/санат/бет тазаланады — әйтпесе «Мебель»-де тапқан
   // сөз «Материалы»-да бос тор көрсетер еді, бос екені түсініксіз болар еді.
-  const changeTab = (next: LibraryTabId) => {
+  const changeTab = (next: LibraryTabId | 'mine') => {
     setTab(next)
     setSearch('')
     setCategoryPath(null)
@@ -90,7 +92,7 @@ export function LibraryPanel() {
 
     useConfigurator.getState().appendCabinet({
       ...templateToCabinet(template, catalog, size),
-      id: `cabinet-${Date.now().toString(36)}`,
+      id: `cabinet-${crypto.randomUUID()}`,
       name: `${item.name} (PRO100)`,
     })
     setLastAdded(item.name)
@@ -100,7 +102,7 @@ export function LibraryPanel() {
     <div className="flex h-full flex-col bg-neutral-950 text-neutral-100">
       {/* 4 таб — PRO100 эталонымен бірдей ретте. */}
       <div className="flex shrink-0 border-b border-neutral-800">
-        {LIBRARY_TABS.map((t) => (
+        {[...LIBRARY_TABS, { id: 'mine' as const, label: tr('Моя библиотека') }].map((t) => (
           <button
             key={t.id}
             type="button"
@@ -114,6 +116,8 @@ export function LibraryPanel() {
           </button>
         ))}
       </div>
+
+      {tab === 'mine' ? <PersonalLibraryPanel /> : <>
 
       {/* Жол жолағы — эталондағы «Mobilier BUCATARIE\Corpuri...» ашылмалысы. */}
       {tab === 'mebel' || tab === 'elementy' ? (
@@ -205,6 +209,7 @@ export function LibraryPanel() {
           Қосылды: <span className="text-neutral-200">{lastAdded}</span>
         </div>
       ) : null}
+      </>}
     </div>
   )
 }
