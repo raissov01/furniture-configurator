@@ -17,7 +17,7 @@
 ## Тексеру
 
 - TDD: жаңа тест әуелі импорт қатесімен, кейін `drilling.ts` байланыстырмай тұрған кезде екі жағдаймен құлады.
-- `NODE_OPTIONS=--max-old-space-size=2048 npx vitest run tests/fittingsCatalog.test.ts tests/drilling.test.ts tests/drillGeometry.test.ts tests/veneerPricing.test.ts --maxWorkers=2`: 44 тест өтті.
+- `NODE_OPTIONS=--max-old-space-size=2048 npx vitest run tests/fittingsCatalog.test.ts tests/drilling.test.ts tests/drillGeometry.test.ts tests/veneerPricing.test.ts --maxWorkers=2`: 45 тест өтті.
 - `npm run -s typecheck`: өтті. Бұрыннан бар `tests/veneerPricing.test.ts:39` optional chaining тип қатесі бір жолмен түзетілді.
 - Мутация: Hettich press-in Ø8 мәні уақытша Ø9 етіп өзгертілді; эталон кесте мен интеграция тесттері құлады (3 test failed). `cp` арқылы JSON қалпына келтірілді.
 - Dev-сервер, Next build, браузер, e2e жүргізілген жоқ.

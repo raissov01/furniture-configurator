@@ -22,7 +22,7 @@ import type { PanelHandle } from './types'
 
 // ── Ілгек ────────────────────────────────────────────────────────────────────
 
-export type HingeBrand = 'blum' | 'hettich' | 'hafele' | 'gtv' | 'dtc' | 'boyard'
+export type HingeBrand = 'blum' | 'hettich' | 'hafele' | 'gtv' | 'dtc' | 'boyard' | 'aks'
 
 /** Жабылу түрі: доводчикпен (интегрированный) немесе серіппесіз. */
 export type HingeClosing = 'soft' | 'none'
@@ -72,6 +72,7 @@ const HINGE_BRAND_NAMES: Record<HingeBrand, string> = {
   gtv: 'GTV',
   dtc: 'DTC',
   boyard: 'Boyard',
+  aks: 'AKS',
 }
 
 export function hingeBrandName(brand: HingeBrand): string {
@@ -472,7 +473,7 @@ export function handleShape(
 export const HingeSystemSchema = z.object({
   id: z.string().min(1),
   fittingProductId: z.string().min(1).optional(),
-  brand: z.enum(['blum', 'hettich', 'hafele', 'gtv', 'dtc', 'boyard']),
+  brand: z.enum(['blum', 'hettich', 'hafele', 'gtv', 'dtc', 'boyard', 'aks']),
   name: z.string(),
   closing: z.enum(['soft', 'none']),
   arm: z.enum(['cross', 'linear']),

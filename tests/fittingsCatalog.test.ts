@@ -4,7 +4,7 @@ import {
   requireRunnerPattern,
 } from '../src/core/data/fittings'
 import { hingeHoles, runnerHoles } from '../src/core/drilling'
-import { defaultHingeSystems, HingeSystemSchema } from '../src/core/fittings'
+import { defaultHingeSystems, hingeBrandName, HingeSystemSchema } from '../src/core/fittings'
 import { DRAWER_SYSTEMS } from '../src/core/drawerSystems'
 import { mergeSettings } from '../src/core/constants'
 import { catalog, referenceWardrobe } from './fixtures'
@@ -71,6 +71,24 @@ describe('өндіруші фурнитурасының присадка кат�
   it('K диапазонынан тыс чашка орнын қабылдамайды', () => {
     expect(() => resolveHingeFrontPattern('blum-clip-top-110-overlay-screw-on', 30, 16, 'cup-only'))
       .toThrow(/K = 12.5/)
+  })
+
+  it('әр топса мақаласының жарияланған фасад тесігін немесе жетіспейтін мәнін көрсетеді', () => {
+    const cupCases: Array<[string, number, number]> = [
+      ['blum-clip-top-110-overlay-inserta', 35, 13],
+      ['blum-clip-top-110-overlay-screw-on', 35, 13],
+      ['hettich-sensys-8645i-overlay-screw', 35, 12.8],
+      ['hettich-sensys-8645i-overlay-press-in', 35, 12.8],
+      ['boyard-h301-35mm-hinge', 35, 12],
+      ['aks-prime-hinge-112595', 35, 12],
+    ]
+    for (const [id, diameter, depth] of cupCases) {
+      expect(resolveHingeFrontPattern(id, 22, 16, 'cup-only'))
+        .toEqual([{ along: 0, across: 0, diameter, depth }])
+    }
+    expect(() => resolveHingeFrontPattern('gtv-zp-kt90h2ze-px', 22, 16, 'cup-only'))
+      .toThrow(/blindCup.depthMm/)
+    expect(hingeBrandName('aks')).toBe('AKS')
   })
 
   it('drilling.ts таңдалған Hettich мақаласының Ø8 ұяларын қолданады', () => {
