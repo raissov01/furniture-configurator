@@ -136,4 +136,27 @@ describe('v4 редактор тәуекелдері', () => {
     s().saveProjectLocally()
     expect(JSON.parse(values.get(key)!).root.children[0].name).toBe('Жаңа атау')
   })
+
+  it('PROJECT_KEY жазу сәтсіз болса, тарихтан қайтару мен reset қате күйінде қалады', () => {
+    const values = new Map<string, string>()
+    const key = 'furniture-configurator:project'
+    values.set(key, '{invalid JSON')
+    vi.stubGlobal('window', { localStorage: {
+      getItem: (name: string) => values.get(name) ?? null,
+      setItem: (name: string, value: string) => {
+        if (name === key) throw new Error('quota')
+        values.set(name, value)
+      },
+    } })
+    s().hydrateProject()
+    values.set('furniture-configurator:history', JSON.stringify([
+      { at: 10, name: 'Жарамды', json: JSON.stringify(parseProjectV4(referenceProject)) },
+    ]))
+    s().restoreHistory(10)
+    expect(s().projectLoadError).toMatch(/quota|жазылмады/)
+    expect(values.get(key)).toBe('{invalid JSON')
+    s().reset()
+    expect(s().projectLoadError).toMatch(/quota|жазылмады/)
+    expect(values.get(key)).toBe('{invalid JSON')
+  })
 })

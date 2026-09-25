@@ -284,7 +284,8 @@ type State = Snapshot & {
    * тастап, коэффициентке қайта оралады).
    */
   editPriceOverrides(patch: Partial<PriceOverrides>): void
-  saveProjectLocally(): void
+  /** `null` on success, otherwise a visible storage error for recovery actions. */
+  saveProjectLocally(): string | null
   hydrateProject(): void
 
   setShop(shop: ShopProfile): void
@@ -844,11 +845,12 @@ export const useConfigurator = create<State>((set, get) => ({
   },
 
   saveProjectLocally() {
-    if (get().projectLoadError) return
+    if (get().projectLoadError) return get().projectLoadError
     try {
       window.localStorage.setItem(PROJECT_KEY, JSON.stringify(get().exportProject()))
-    } catch {
-      // қоймаға жазылмады: жұмыс тоқтамауы керек
+      return null
+    } catch (error) {
+      return `Жоба браузер қоймасына жазылмады: ${error instanceof Error ? error.message : String(error)}`
     }
   },
 
@@ -1091,13 +1093,19 @@ export const useConfigurator = create<State>((set, get) => ({
 
   restoreHistory(at) {
     try {
+      const recoveringDamagedProject = get().projectLoadError !== null
       const raw = window.localStorage.getItem(HISTORY_KEY)
       if (!raw) throw new Error('тарих бос')
       const list: { at: number; json: string }[] = JSON.parse(raw)
       const found = list.find((x) => x.at === at)
       if (!found) throw new Error(`жазба табылмады: ${at}`)
       get().loadProject(parseProjectV4(JSON.parse(found.json)))
-      get().saveProjectLocally()
+      const saveError = get().saveProjectLocally()
+      if (saveError) {
+        if (recoveringDamagedProject) set({ projectLoadError: saveError })
+        else set({ historyRestoreError: saveError })
+        return
+      }
       set({ historyRestoreError: null })
     } catch (error) {
       set({ historyRestoreError: `Тарихтан қалпына келтіру мүмкін болмады: ${error instanceof Error ? error.message : String(error)}` })
@@ -1365,7 +1373,10 @@ export const useConfigurator = create<State>((set, get) => ({
       lastEditKey: null,
     })
     // Explicit reset replaces the unreadable source; its raw backup remains.
-    if (s.projectLoadError) get().saveProjectLocally()
+    if (s.projectLoadError) {
+      const saveError = get().saveProjectLocally()
+      if (saveError) set({ projectLoadError: saveError })
+    }
   },
 
   setExploded: (exploded) => set({ exploded }),
