@@ -36,7 +36,7 @@ describe('нақты парақ шығыны', () => {
     // 9 × 400 × 300 мм = 1.08 м², яғни ауданы бойынша екі парақ жететіндей.
     // Гильотин раскройда 1000 × 700 мм параққа төртеуі ғана сыйып, үшеуі кетеді.
     expect(nesting.sheetCount).toBe(3)
-    expect(plan.byMaterial[0]?.sheets).toHaveLength(nesting.byMaterial[0]?.sheets.length)
+    expect(plan.byMaterial[0]?.sheets).toHaveLength(nesting.byMaterial[0]!.sheets.length)
     expect(price.byMaterial[0]?.sheets).toBe(nesting.byMaterial[0]?.sheets.length)
     expect(price.materials[0]?.qty).toBe(nesting.byMaterial[0]?.sheets.length)
     expect(price.materials[0]?.cost).toBe(price.materials[0]!.qty * material.pricePerSheet)
