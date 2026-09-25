@@ -900,6 +900,12 @@ export function generateCabinet(
          * (сөренің ережесімен бір: қалдық миллиметр СОЛ жақтан таратылады).
          */
         const explicit = content.at
+        // Соқыр панельдің артындағы ілгек стойкасы да осы секцияның ішінде.
+        // Автоматты стойкалар сол тіректен кейінгі сөре аралығына ғана сыяды.
+        const standSpan = frontPanel && (
+          (frontPanel.side === 'left' && sectionIndex === 0)
+          || (frontPanel.side === 'right' && sectionIndex === layouts.length - 1)
+        ) ? shelfSpan(sectionIndex) : { x: layout.x, length: layout.width }
         if (explicit) {
           let previous = -Infinity
           for (const value of explicit) {
@@ -911,6 +917,13 @@ export function generateCabinet(
                 `${field}.at`, `${value} мм`, `0..${layout.width - t} мм (ұяның ені ${layout.width})`,
               )
             }
+            const worldX = layout.x + value
+            if (worldX < standSpan.x || worldX + t > standSpan.x + standSpan.length) {
+              throw new ConfigValidationError(
+                `${field}.at`, `${value} мм`,
+                `стойка frontPanel тірегінен бос аралықта: ${standSpan.x - layout.x}..${standSpan.x + standSpan.length - layout.x - t} мм`,
+              )
+            }
             if (value < previous + t) {
               throw new ConfigValidationError(
                 `${field}.at`, `${value} мм`, `алдыңғы стойкадан кемінде ${t} мм оңға`,
@@ -920,9 +933,13 @@ export function generateCabinet(
           }
         }
 
-        const openings = distributeMillimetres(layout.width - content.count * t, content.count + 1)
+        if (!explicit && content.count * t > standSpan.length) {
+          throw new ConfigValidationError(`${field}.count`, `${content.count}`,
+            `стойкаларға ${Math.floor(standSpan.length / t)} данадан артық орын жоқ`)
+        }
+        const openings = explicit ? [] : distributeMillimetres(standSpan.length - content.count * t, content.count + 1)
         const standCount = explicit ? explicit.length : content.count
-        let x = layout.x
+        let x = standSpan.x
         for (let i = 0; i < standCount; i += 1) {
           x = explicit ? layout.x + explicit[i]! : x + (openings[i] ?? 0)
           /*

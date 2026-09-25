@@ -34,6 +34,41 @@ const hingePlatePanels = (panels: Panel[]): Panel[] =>
   panels.filter((p) => p.role !== 'front' && p.drilling.some((d) => d.purpose === 'hinge'))
 
 describe('соқыр панельдің ілгек планкасы (K6 / audit C4)', () => {
+  it.each(['left', 'right'] as const)('%s жақта автоматты ішкі стойка ілгек тірегімен қиылыспайды', (side) => {
+    const panels = gen({
+      frontPanel: { width: 392, side },
+      sections: [{
+        id: 's1', widthMode: 'flex', contents: [{ kind: 'stand', count: 1 }],
+        fronts: { count: 1, mount: 'overlay' },
+      }],
+    })
+    const hingeStand = panels.find((p) => p.id === 'front-panel-stand')!
+    const innerStand = panels.find((p) => p.id === 's1-stand-1')!
+    const t = catalog.materials.find((m) => m.id === hingeStand.materialId)!.thickness
+    expect(Math.min(innerStand.position.y + innerStand.finishedLength,
+      hingeStand.position.y + hingeStand.finishedLength)
+      - Math.max(innerStand.position.y, hingeStand.position.y)).toBeGreaterThan(0)
+    expect(Math.min(innerStand.position.z + innerStand.finishedWidth,
+      hingeStand.position.z + hingeStand.finishedWidth)
+      - Math.max(innerStand.position.z, hingeStand.position.z)).toBeGreaterThan(0)
+    expect(
+      innerStand.position.x + t <= hingeStand.position.x
+      || hingeStand.position.x + t <= innerStand.position.x,
+    ).toBe(true)
+  })
+
+  it.each([['left', 104], ['right', 648]] as const)(
+    '%s жақта ілгек тірегінің орнына сұралған ішкі стойка айқын қате береді', (side, at) => {
+      expect(() => gen({
+        frontPanel: { width: 120, side },
+        sections: [{
+          id: 's1', widthMode: 'flex', contents: [{ kind: 'stand', count: 1, at: [at] }],
+          fronts: { count: 1, mount: 'overlay' },
+        }],
+      })).toThrow(/frontPanel|стойка/)
+    },
+  )
+
   it.each([
     ['left', 'adjustable'], ['right', 'adjustable'],
     ['left', 'fixed'], ['right', 'fixed'],
