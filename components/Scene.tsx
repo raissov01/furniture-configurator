@@ -34,14 +34,14 @@ import { grainTexture } from '@/lib/grainTexture'
 import { dragPlaneAxis } from '@/lib/dragPlane'
 import type { CameraPreset } from '@/store/configurator'
 import {
-  DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, panelExtents,
+  DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, mergeSettings, panelExtents,
   placementSpan, projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, snapOffset,
   snapPosition, selectionBoxes, visibleOpenings, wallById, wallPieces,
   sunDirection,
 } from '@/src/core/index'
 import type {
   CabinetConfig, Catalog, FlatNode, FlatScene, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
-  SceneLight, Vec3, Wall, WallId,
+  SceneLight, SettingsOverride, Vec3, Wall, WallId,
 } from '@/src/core/index'
 
 type Controls = ComponentRef<typeof OrbitControls>
@@ -537,7 +537,7 @@ function CameraRig({
 }
 
 function CabinetGroup({
-  item, catalog, active, cabinetCount, stepOf, allowDimensionLabels,
+  item, catalog, active, cabinetCount, stepOf, allowDimensionLabels, settings,
 }: {
   item: SceneItem
   catalog: Catalog
@@ -547,6 +547,7 @@ function CabinetGroup({
   /** Жоба бойынша жинау қадамы: кілт → нөмір. */
   stepOf: Map<string, number>
   allowDimensionLabels: boolean
+  settings: SettingsOverride
 }) {
   const showDimensions = useConfigurator((s) => s.showDimensions)
   // Фасадты жасыру — корпустың ішін көрудің ең тура жолы (мөлдірлікпен қатар).
@@ -563,6 +564,9 @@ function CabinetGroup({
     const map = new Map(catalog.materials.map((m) => [m.id, m]))
     return (id: string) => map.get(id)
   }, [catalog])
+  const fittingSettings = useMemo(
+    () => mergeSettings(settings, item.cabinet.settings), [settings, item.cabinet.settings],
+  )
 
   const centre = useMemo(
     () => ({ x: item.cabinet.width / 2, y: item.cabinet.height / 2, z: item.cabinet.depth / 2 }),
@@ -701,7 +705,9 @@ function CabinetGroup({
             pid={projectPanelId(item.cabinet.id, p.id, cabinetCount)}
             cabinetId={item.cabinet.id}
             panel={p}
+            assemblyPanels={item.panels}
             thickness={material?.thickness ?? 16}
+            settings={fittingSettings}
             centre={centre}
             decorColor={material?.decor?.color}
           />
@@ -1564,6 +1570,7 @@ export default function Scene({
               cabinetCount={panelNodeCount}
               stepOf={stepOf}
               allowDimensionLabels={allowDimensionLabels}
+              settings={settings}
             />
           ))}
           {freeBoards.map((node) => (
