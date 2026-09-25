@@ -53,6 +53,8 @@ export * from './silhouette'
 export * from './decors'
 export * from './data/basisCatalog'
 export * from './data/basisPriceMeta'
+export * from './data/basisModules'
+export * from './data/basisFittings'
 export * from './data/pro100Catalog'
 
 export * from './snap'
