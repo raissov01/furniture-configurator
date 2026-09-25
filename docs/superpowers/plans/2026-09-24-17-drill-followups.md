@@ -35,3 +35,9 @@
 - [x] `scripts/e2e-basis-export.mjs` ZIP құрамының сценарийі жазылды, `node --check` өтті; браузерді оркестр іске қосады.
 - [x] Diff review, `npm test -- --maxWorkers=2`, `npm run typecheck`, e2e сценарийінің syntax check.
 - [x] `.codex-runs/0924-17-drill-followups-report.md` есеп, қалған жұмыс және шағын қазақша conventional коммиттер.
+
+## Peer review follow-up
+
+- [x] Chrome spawn қатесі try/finally cleanup-тан тыс қалатынын RED тестпен көрсету; процесс басталуын try ішінде күтіп, екі temp буманы жабу; GREEN және `cp` мутациясы.
+- [x] `holes:null` және `holes.available:false` кезінде CLI exit 0 екенін RED тестпен көрсету; environment мәселесіне exit 3 және анық хабарлама; GREEN және `cp` мутациясы.
+- [x] Толық `npm test -- --maxWorkers=2`, typecheck, diff review, есеп және шағын коммит.

@@ -11,10 +11,6 @@ const base = process.argv[2] ?? 'http://localhost:3000'
 const port = Number(process.env['BASIS_E2E_CDP_PORT'] ?? 9448)
 const profile = mkdtempSync(join(tmpdir(), 'furniture-basis-e2e-'))
 const downloads = mkdtempSync(join(tmpdir(), 'furniture-basis-downloads-'))
-const chrome = spawn(process.env['CHROME'] ?? 'google-chrome', [
-  '--headless=new', '--disable-gpu', '--use-gl=swiftshader', '--enable-unsafe-swiftshader',
-  `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank',
-], { stdio: 'ignore', detached: true })
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const assert = (value, message) => { if (!value) throw new Error(message) }
 
@@ -52,7 +48,16 @@ async function connect() {
 }
 
 let session
+let chrome
 try {
+  chrome = spawn(process.env['CHROME'] ?? 'google-chrome', [
+    '--headless=new', '--disable-gpu', '--use-gl=swiftshader', '--enable-unsafe-swiftshader',
+    `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, 'about:blank',
+  ], { stdio: 'ignore', detached: true })
+  await new Promise((resolve, reject) => {
+    chrome.once('spawn', resolve)
+    chrome.once('error', reject)
+  })
   session = await connect()
   const h = makeHelpers(session, base)
   await session.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: downloads })
@@ -77,17 +82,18 @@ try {
   process.exitCode = 1
 } finally {
   session?.ws.close()
-  const exited = chrome.exitCode === null ? new Promise((resolve) => chrome.once('exit', resolve)) : Promise.resolve()
-  const stop = (signal) => {
-    if (!chrome.pid) return
-    try { process.kill(-chrome.pid, signal) }
-    catch (error) { if (error.code !== 'ESRCH') throw error }
-  }
-  stop('SIGTERM')
-  await Promise.race([exited, wait(5000)])
-  if (chrome.exitCode === null) {
-    stop('SIGKILL')
-    await Promise.race([exited, wait(2000)])
+  if (chrome?.pid) {
+    const exited = chrome.exitCode === null ? new Promise((resolve) => chrome.once('exit', resolve)) : Promise.resolve()
+    const stop = (signal) => {
+      try { process.kill(-chrome.pid, signal) }
+      catch (error) { if (error.code !== 'ESRCH') throw error }
+    }
+    stop('SIGTERM')
+    await Promise.race([exited, wait(5000)])
+    if (chrome.exitCode === null) {
+      stop('SIGKILL')
+      await Promise.race([exited, wait(2000)])
+    }
   }
   await Promise.all([profile, downloads].map((dir) => rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })))
 }

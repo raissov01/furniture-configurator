@@ -48,8 +48,10 @@ function main(): number {
   writeFileSync(out, md)
   const c = report.counts
   console.log(`${report.project}: сәйкес ${c.ok}, айырма ${c.mismatch}, жоқ ${c.missing}, артық ${c.extra}, жіберілмеген ${c.notSent}`)
+  const environmentProblem = report.problems.some((problem) => problem.category === 'environment')
+  if (environmentProblem) console.log('Тесік/API ортасы тексерілмеді — audit толық емес; есептегі себептерді қараңыз.')
   console.log(`Есеп: ${out}`)
-  return c.mismatch + c.missing + c.extra > 0 ? 3 : 0
+  return c.mismatch + c.missing + c.extra > 0 || environmentProblem ? 3 : 0
 }
 
 process.exitCode = main()

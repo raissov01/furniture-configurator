@@ -10,6 +10,8 @@
 - ✅ Branch ревьюінде `/cut` экспортындағы жоқ `items` айнымалысы табылып, сол production қолданатын `flattenTree(root, catalog, settings, layers)` сахнасымен алмастырылды. Ескі disabled guard та сақталды.
 - ✅ 3 286 жолдық сыртқы `index.d.ts.txt` және оның fixture LICENSE файлы merge құрамынан шығарылды. API тексеруі үшін өзіміз жазған қысқа `tests/bazisApiStub.ts` қолданылды; ресми MIT дереккөзі мәтінде көрсетілді.
 - ✅ `scripts/e2e-basis-export.mjs` браузер сценарийі ZIP-тегі `.js`, CSV, XLSX, README және `prisadka.csv` жоқтығын тексереді. `node --check` өтті; браузерді тек оркестр жүргізеді.
+- ✅ Peer review: Chrome табылмағандағы `spawn` қатесі енді try/finally арқылы ұсталады; процесс басталмаса да profile/download уақытша бумалары тазаланады. `tests/e2eBasisCleanup.test.ts` оқшау `TMPDIR`-де CLI іске қосу қатесін тексереді, браузер ашпайды.
+- ✅ Peer review: audit ішінде `holes:null` немесе `available:false` болса CLI енді «толық емес» деп exit 3 қайтарады. `tests/basisAudit.test.ts` екі нұсқаны да тексереді.
 - ✅ 2: `src/core/constants.ts`-те outer координатасының түсінігі түзетілген; бұрынғы экспорт айналдырмағаны дұрыс сипатталған.
 - ✅ 3: `components/ShopDrillingSettings.tsx`-тегі `minifixPairEndOffset` мәтіні оның «от концов» жұбына да, ящик түбінің бекіткішіне де әсерін айтады; `src/core/drilling.ts` екеуін бөлек қолданады.
 - ✅ 4: `src/core/drilling.ts` Ø35 чашка мен бекіткіш тесік қиылысын өріс атымен тексереді; `tests/shopDrilling.test.ts`-тегі overlap тесті ұстайды.
@@ -26,7 +28,10 @@
 - Мутация 1: `node.settings` еленбесе 2 мм `ClipPanel` тесті құлады; `cp` арқылы қайтарылды.
 - Мутация 2: `canonicalDrill` түйін баптауының орнына глобал баптауды қолданса әлем координатасында 2 мм ауытқу ұсталды; `cp` қайтарылды.
 - Мутация 3: audit панелін қайта `z.unknown()` етсе `[null]` тесті құлады; `cp` қайтарылды.
+- Мутация 4: Chrome `error` event-ін қайта unhandled ету cleanup тестін құлатты; `cp` қайтарылды.
+- Мутация 5: environment мәселесін CLI exit шартынан алып тастау `holes:null` тестін құлатты; `cp` қайтарылды.
 - Толық `npm test -- --maxWorkers=2`: 197 файл/2 110 тест PASS. `npm run typecheck`: біріншіде `exactOptionalPropertyTypes` үйлеспеуін тапты; `BasisScriptNode.settings` типі `FlatNode`-пен үйлестірілген соң PASS.
+- Peer review түзетулерінен кейін: толық 198 файл/2 113 тест PASS, `npm run typecheck` PASS, `node --check scripts/e2e-basis-export.mjs` PASS. Екі жаңа тест мақсатты түрде алдымен RED, кейін GREEN болды.
 
 ## Шек және келесі қадам
 

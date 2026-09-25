@@ -81,6 +81,27 @@ describe('таза audit', () => {
       rmSync(dir, { recursive: true, force: true })
     }
   })
+
+  it.each([
+    { label: 'holes=null', holes: null },
+    { label: 'holes.available=false', holes: { available: false } },
+  ])('тесіктер оқылмаса CLI табысты аяқталмайды: $label', ({ holes }) => {
+    const dir = mkdtempSync(join(tmpdir(), 'bazis-audit-no-holes-'))
+    try {
+      const json = cleanAudit()
+      Object.assign(json, { holes })
+      const file = join(dir, 'no-holes.json')
+      const out = join(dir, 'report.md')
+      writeFileSync(file, JSON.stringify(json))
+      const result = spawnSync('node_modules/.bin/tsx', ['src/cli/bazisAudit.ts', file, '--out', out], {
+        cwd: process.cwd(), encoding: 'utf8',
+      })
+      expect(result.status).toBe(3)
+      expect(result.stdout).toContain('Тесік/API ортасы тексерілмеді')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
 })
 
 describe('енгізілген айырмалар — әрқайсысы өз түрімен және себебімен', () => {
