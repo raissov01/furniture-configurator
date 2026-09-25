@@ -56,7 +56,24 @@ describe('соқыр панельдің ілгек планкасы (K6 / audit 
 
     if (side === 'left') expect(shelfLeft).toBeGreaterThanOrEqual(standRight)
     else expect(shelfRight).toBeLessThanOrEqual(standLeft)
-    expect(stand.drilling.some((d) => d.purpose === (shelfKind === 'fixed' ? 'confirmat' : 'shelfPin'))).toBe(true)
+    if (shelfKind === 'adjustable') {
+      expect(stand.drilling.some((d) => d.purpose === 'shelfPin')).toBe(true)
+    } else {
+      // Дно/крышка буындары да стойкаға конфирмат салады. Дәл СӨРЕНІҢ
+      // биіктігіндегі бет тесіктерін оның торц тесіктерімен жұптаймыз.
+      const shelfMidY = shelf.position.y + t / 2
+      const faceHoles = stand.drilling.filter((d) => d.purpose === 'confirmat'
+        && (d.face === 'inner' || d.face === 'outer')
+        && Math.abs(stand.position.y + d.x - shelfMidY) < 0.1)
+      const edgeFace = side === 'left' ? 'edgeW1' : 'edgeW2'
+      const edgeHoles = shelf.drilling.filter((d) => d.purpose === 'confirmat' && d.face === edgeFace)
+      expect(faceHoles.length).toBeGreaterThanOrEqual(2)
+      expect(edgeHoles).toHaveLength(faceHoles.length)
+      for (const faceHole of faceHoles) {
+        const worldZ = stand.position.z + faceHole.y
+        expect(edgeHoles.some((edgeHole) => Math.abs(shelf.position.z + edgeHole.x - worldZ) < 0.1)).toBe(true)
+      }
+    }
   })
 
   it('side-left ЕНДІ жоқ ілгекке планка алмайды (538 мм қашық жалған координата)', () => {
