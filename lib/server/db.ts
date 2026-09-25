@@ -197,6 +197,36 @@ function migrate(database: DatabaseSync): void {
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS shop_catalog_imports_shop ON shop_catalog_imports (shop_id, created_at DESC)`)
+
+  // Монтаж актісі бөлек сақталады: офлайн әрекеттің ID-і қайта жіберілсе,
+  // revision де, төлем оқиғасы да екінші рет пайда болмауы керек.
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS installation_tasks (
+      id TEXT PRIMARY KEY,
+      shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      json TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS installation_tasks_shop ON installation_tasks (shop_id, updated_at DESC);
+    CREATE TABLE IF NOT EXISTS installation_actions (
+      id TEXT PRIMARY KEY,
+      shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      task_id TEXT NOT NULL REFERENCES installation_tasks(id) ON DELETE CASCADE,
+      request_json TEXT NOT NULL,
+      revision_version INTEGER NOT NULL,
+      revision_updated_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS installation_events (
+      id TEXT PRIMARY KEY,
+      shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      task_id TEXT NOT NULL UNIQUE REFERENCES installation_tasks(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      processed_at INTEGER
+    );
+  `)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */
