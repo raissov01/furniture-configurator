@@ -7,7 +7,7 @@
  *
  * Шығыс (JSON, `src/core/data/generated/`):
  *   - basisMaterials.json  — Material[] пішінімен
- *   - basisEdgeBands.json  — EdgeBand[] пішінімен
+ *   - basisEdgeBands.json  — EdgeBand[] пішінімен (`widthMm` атаудан алынады)
  *   - basisPriceMeta.json  — id -> { priceSource, note } (баға сенімділігі,
  *     Material/EdgeBand типінде жоқ өріс, сондықтан бөлек файл)
  *
@@ -217,10 +217,13 @@ function buildEdgeBands(raw) {
   const priceMeta = {}
   for (const row of raw.edgeBands) {
     const id = `basis-edge-${slug(row.articul)}`
+    const widthMatch = /\d+(?:[,.]\d+)?\s*[xх×]\s*(\d{2,3})\b/u.exec(row.name)
+    if (!widthMatch) throw new Error(`Кромка енін оқу мүмкін емес: ${row.name}`)
     edgeBands.push({
       id,
       name: row.name,
       thickness: row.thickness,
+      widthMm: Number(widthMatch[1]),
       pricePerMeter: 0,
     })
     priceMeta[id] = {

@@ -70,6 +70,7 @@ export const EdgeBandSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   thickness: z.number().positive(),
+  widthMm: z.number().int().positive().optional(),
   pricePerMeter: minorUnits,
 })
 

@@ -128,8 +128,12 @@ export const DEFAULT_TRIM_EDGE_MM = 10
  * қабырға 3/4. Қалғаны мета-дағы `publishedThicknessesMm`-де сақталады.
  */
 export const CATALOG_THICKNESSES_MM: Record<BoardKind, readonly number[]> = {
-  ldsp: [10, 16, 18, 22, 25],
-  mdf: [16, 18, 19, 22],
+  // Ашық зерттеу дерегінде жарияланған 8–32 мм қатары. 38 мм ЛДСП
+  // анықтамалықта бар болса да, осы кезеңнің «8–32 мм» кеңейтуіне кірмейді.
+  ldsp: [8, 10, 12, 16, 18, 22, 25, 26, 28, 32],
+  // Egger/Ultradecor МДФ-тың өлшемі бар жарияланған фасад қатары; өлшемі
+  // белгісіз Базис МДФ жолдары әдейі материалға жайылмайды.
+  mdf: [8, 10, 12, 16, 18, 19, 22, 25, 28],
   hdf: [3, 4],
 }
 
@@ -360,6 +364,7 @@ export function buildOwnCatalog(input: OwnCatalogInput, opts: { validate?: boole
           id,
           name: `Кромка ${mat ? `${mat} ` : ''}${t}×${w} ${e.manufacturer} ${e.code}${e.name === e.code ? '' : ` ${e.name}`}`.replace(/\s+/g, ' ').trim(),
           thickness: t,
+          widthMm: w,
           pricePerMeter: 0,
         })
         edgeMeta[id] = {
