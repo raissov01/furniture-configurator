@@ -824,6 +824,8 @@ export type CabinetConfig = {
    *   topBottomOverlay → екеуі де `overlay`
    */
   construction: ConstructionMethod
+  /** Корпус пен тұрақты сөрелердің бет–торц буыны; ескі жобаға конфирмат. */
+  carcassJoint?: 'confirmat' | 'minifix' | undefined
   /** Крышка мен дноның бекітілуі. Берілмеген панель `construction`-нан алынады. */
   mounts?: { top?: PanelMount | undefined; bottom?: PanelMount | undefined } | undefined
   /**

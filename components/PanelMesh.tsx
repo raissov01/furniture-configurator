@@ -18,6 +18,8 @@ import type { Axis, Catalog, EdgeBand, Panel, PanelHandle, SettingsOverride } fr
 import { useConfigurator } from '@/store/configurator'
 import { drillToLocalMarker } from '@/lib/drillGeometry'
 import { DrillMarkers } from '@/components/DrillMarkers'
+import { FittingMeshes } from '@/components/FittingMeshes'
+import { fittingsForPanel } from '@/lib/fittingGeometry'
 import type { RenderedDrillMarker } from '@/components/DrillMarkers'
 
 /**
@@ -309,7 +311,7 @@ function cutoutHoles(panel: Panel): Path[] {
 }
 
 export function PanelMesh({
-  panel, thickness, centre, decorColor, catalog, settings, pid, cabinetId,
+  panel, thickness, centre, decorColor, catalog, settings, pid, cabinetId, assemblyPanels,
 }: {
   panel: Panel
   thickness: number
@@ -323,6 +325,8 @@ export function PanelMesh({
   cabinetId?: string | undefined
   /** Өрнекті салу үшін керек: кромка қалыңдығы РЕЗ ығысуын береді. */
   catalog: Catalog
+  /** Бір шкафтың панельдері: бірнеше Drill операциясынан бір нақты бекіткішті таңдау үшін. */
+  assemblyPanels?: Panel[] | undefined
   settings?: SettingsOverride | undefined
   centre: { x: number; y: number; z: number }
   /** Панель материалының декор түсі. Болмаса — бейтарап сұр. */
@@ -342,6 +346,7 @@ export function PanelMesh({
   // Присадка белгісі — әдепкіде ӨШІРУЛІ (store/configurator.ts), клиентке
   // көрсеткенде керек емес.
   const showDrilling = useConfigurator((s) => s.showDrilling)
+  const showFittings = useConfigurator((s) => s.showFittings)
   const key = pid ?? panel.id
   const material = useMemo(
     () => catalog.materials.find((m) => m.id === panel.materialId),
@@ -381,6 +386,9 @@ export function PanelMesh({
     [catalog],
   )
   const drillSettings = useMemo(() => mergeSettings(settings), [settings])
+  const fittings = useMemo(() => showFittings
+    ? fittingsForPanel(panel, thickness, bandsMap, drillSettings, assemblyPanels) : [],
+  [showFittings, panel, thickness, bandsMap, drillSettings, assemblyPanels])
   const canonicalDrillMarkers = useMemo((): RenderedDrillMarker[] => {
     if (!showDrilling || panel.drilling.length === 0) return []
     return panel.drilling.map((d) => ({
@@ -393,7 +401,7 @@ export function PanelMesh({
    * бірақ R3F ЖАҢА КАДР САЛМАЙДЫ — камера қозғалмайынша экран өзгермейді.
    * Пайдаланушыға бұл «қосқыш жұмыс істемейді» болып көрінеді.
    */
-  useEffect(() => { invalidate() }, [showDrilling, invalidate])
+  useEffect(() => { invalidate() }, [showDrilling, showFittings, invalidate])
   /** Бокс тармағы: канондық нүкте боксттың ОРТАСЫНАН саналған ығысуға көшеді. */
   const boxDrillMarkers = useMemo((): RenderedDrillMarker[] => {
     if (canonicalDrillMarkers.length === 0) return []
@@ -409,6 +417,17 @@ export function PanelMesh({
       return { ...m, point, direction }
     })
   }, [canonicalDrillMarkers, panel.orientation, panel.finishedLength, panel.finishedWidth, thickness])
+  const boxFittings = useMemo(() => fittings.map((item) => {
+    const point = { x: 0, y: 0, z: 0 }
+    point[panel.orientation.length] = item.point.x - panel.finishedLength / 2
+    point[panel.orientation.width] = item.point.y - panel.finishedWidth / 2
+    point[panel.orientation.thickness] = item.point.z - thickness / 2
+    const normal = { x: 0, y: 0, z: 0 }
+    normal[panel.orientation.length] = item.normal.x
+    normal[panel.orientation.width] = item.normal.y
+    normal[panel.orientation.thickness] = item.normal.z
+    return { ...item, point, normal }
+  }), [fittings, panel.orientation, panel.finishedLength, panel.finishedWidth, thickness])
 
   const position = useMemo(() => {
     const base = {
@@ -433,7 +452,8 @@ export function PanelMesh({
    * әрең көрінетін сұлба. Тінтуір астындағы панель ӘРҚАШАН тұтас қалады:
    * әйтпесе мөлдір режимде нені меңзеп тұрғаның білінбейді.
    */
-  const opacity = (viewMode === 'solid' || isHovered || isSelected ? 1 : viewMode === 'ghost' ? 0.28 : 0.06) * look.opacity
+  const opacity = ((showFittings && exploded > 0 && panel.role === 'front') ? 0.3
+    : viewMode === 'solid' || isHovered || isSelected ? 1 : viewMode === 'ghost' ? 0.28 : 0.06) * look.opacity
 
   /**
    * Қиғаш деталь мен көлбеу крышка — жалғыз екі жағдай, онда панель әлем
@@ -656,6 +676,7 @@ export function PanelMesh({
         {/* Канондық кеңістік (ұзындық/ен/қалыңдық, бұрылусыз) — дәл осы
             топтың ӨЗ жергілікті кеңістігі, сондықтан ешбір ауыстырусыз. */}
         <DrillMarkers markers={canonicalDrillMarkers} />
+        <FittingMeshes fittings={fittings} />
       </group>
     )
   }
@@ -740,6 +761,7 @@ export function PanelMesh({
           (`boxDrillMarkers`, жоғарыда) — бұл мештің өз жергілікті кеңістігі
           дәл сол орталықтан саналады. */}
       <DrillMarkers markers={boxDrillMarkers} />
+      <FittingMeshes fittings={boxFittings} />
       {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>
           <div className="pointer-events-none whitespace-nowrap rounded bg-neutral-900/90 px-2 py-1 text-[11px] text-white shadow">

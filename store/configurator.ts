@@ -169,6 +169,8 @@ type State = Snapshot & {
    * клиентке көрсеткенде керек емес, тек цех/тексеру үшін.
    */
   showDrilling: boolean
+  /** Бекіткіштің процедуралық пішіндері; тесік режимімен өзара бөлек. */
+  showFittings: boolean
   /**
    * Есік пен ящиктің АШЫЛУЫ: 0 — жабық, 1 — толық ашық.
    *
@@ -353,6 +355,7 @@ type State = Snapshot & {
   setAr(patch: Partial<{ busy: boolean; link: string | null; error: string | null }>): void
   setShowFronts(v: boolean): void
   setShowDrilling(v: boolean): void
+  setShowFittings(v: boolean): void
   setOpenness(v: number): void
   /** Бірінші жақтан жүру режимі (Прогулка). */
   walk: boolean
@@ -671,6 +674,7 @@ export const useConfigurator = create<State>((set, get) => ({
   viewMode: 'solid',
   showFronts: true,
   showDrilling: false,
+  showFittings: false,
   openness: 0,
   busy: null,
   shareCodeOpen: false,
@@ -1214,7 +1218,8 @@ export const useConfigurator = create<State>((set, get) => ({
   setLiveRenderContext: (liveRenderContext) => set({ liveRenderContext }),
   setAr: (patch) => set((s) => ({ ar: { ...s.ar, ...patch } })),
   setShowFronts: (showFronts) => set({ showFronts }),
-  setShowDrilling: (showDrilling) => set({ showDrilling }),
+  setShowDrilling: (showDrilling) => set({ showDrilling, ...(showDrilling ? { showFittings: false } : {}) }),
+  setShowFittings: (showFittings) => set({ showFittings, ...(showFittings ? { showDrilling: false } : {}) }),
   // «Закрыть створки» / E — БӘРІН жабады: қолмен бір-бірлеп ашылғандарын да.
   setOpenness: (openness) => set(openness <= 0
     ? { openness: 0, openPanels: {}, openCabinets: {} }
