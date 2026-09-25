@@ -8,6 +8,7 @@
  */
 
 import { isWidthBevel } from './types'
+import { edgeMetresByBand } from './pricing'
 import type { Audience, Catalog, CutListRow, EdgeSpec, Panel } from './types'
 
 /**
@@ -127,16 +128,7 @@ export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
 
 /** Барлық кромканың жалпы ұзындығы, лента бойынша — метрмен (§6 үшін). */
 export function edgeBandTotals(panels: Panel[]): Map<string, number> {
-  const totals = new Map<string, number>()
-  const add = (e: EdgeSpec, mm: number) => {
-    if (!e) return
-    totals.set(e.bandId, (totals.get(e.bandId) ?? 0) + mm * 0.001)
-  }
-  for (const p of panels) {
-    add(p.edges.L1, p.finishedLength * p.qty)
-    add(p.edges.L2, p.finishedLength * p.qty)
-    add(p.edges.W1, p.finishedWidth * p.qty)
-    add(p.edges.W2, p.finishedWidth * p.qty)
-  }
-  return totals
+  // CLI деталировкасы мен смета бір физикалық жиекті өлшеуі керек:
+  // трапецияның алдыңғы кромкасы finishedLength емес, диагональ.
+  return edgeMetresByBand(panels)
 }

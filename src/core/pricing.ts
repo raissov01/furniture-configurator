@@ -153,7 +153,7 @@ export function edgeMetresByBand(panels: Panel[]): Map<string, number> {
     for (const [side, length] of sides) {
       const spec = p.edges[side]
       if (!spec) continue
-      mm.set(spec.bandId, (mm.get(spec.bandId) ?? 0) + length)
+      mm.set(spec.bandId, (mm.get(spec.bandId) ?? 0) + length * p.qty)
     }
   }
   const metres = new Map<string, number>()
