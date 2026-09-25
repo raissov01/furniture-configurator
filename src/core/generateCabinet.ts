@@ -655,9 +655,8 @@ export function generateCabinet(
    * Алдыңғы жиектің бір бөлігін ТІК панель жабады да, фасад қалған ұяға
    * қойылады (бұрыштық орында көрші модульдің тұтқасына соғылмау үшін).
    *
-   * Корпус ТІКБҰРЫШ күйінде қалады — сондықтан мұнда тарылатыны тек ҰЯ:
-   * ішкі геометрия да, сөре де, перегородка да тиылмайды. Ящик те тарылады,
-   * әйтпесе ол шығарылғанда панельге соғылар еді.
+   * Корпус ТІКБҰРЫШ күйінде қалады. Фасад ұясы тарылады; сөре де төменде
+   * ілгек стойкасының ішкі бетіне дейін қысқарады, әйтпесе оны кесіп өтеді.
    */
   const frontPanel = config.frontPanel
   if (frontPanel) {
@@ -677,6 +676,24 @@ export function generateCabinet(
     // Ұя тарылады: сол жақта бастауы жылжиды, оң жақта тек ені кемиді.
     if (frontPanel.side === 'left') slot.x += frontPanel.width
     slot.width -= frontPanel.width
+  }
+
+  /** Сөренің соқыр жақтағы шегі: ілгек стойкасының дәл ішкі беті. */
+  const shelfSpan = (sectionIndex: number): { x: number; length: number } => {
+    const layout = layouts[sectionIndex]!
+    let start = layout.x + Math.floor(settings.shelfGap / 2)
+    let end = start + layout.width - settings.shelfGap
+    if (frontPanel?.side === 'left' && sectionIndex === 0) {
+      start = Math.max(start, frontPanel.width + t + Math.floor(settings.shelfGap / 2))
+    }
+    if (frontPanel?.side === 'right' && sectionIndex === layouts.length - 1) {
+      end = Math.min(end, W - frontPanel.width - t - Math.ceil(settings.shelfGap / 2))
+    }
+    if (end - start < MIN_RAIL_WIDTH) {
+      throw new ConfigValidationError('frontPanel.width', `${frontPanel?.width} мм`,
+        `сөреге кемінде ${MIN_RAIL_WIDTH} мм орын қалуы керек`)
+    }
+    return { x: start, length: end - start }
   }
 
   // ── Секция ішіндегі толтырылым: тік жолақтар (D1) ──────────────────────────
@@ -713,10 +730,11 @@ export function generateCabinet(
     // Жолақтардың арасындағы бекітілген сөре (разделитель).
     for (let i = 0; i < bands.length - 1; i += 1) {
       const band = bands[i]!
+      const span = shelfSpan(sectionIndex)
       const divider = make(
         `${section.id}-band-${i + 1}-divider`, 'shelf', 'Полка', carcass,
-        layout.width - settings.shelfGap, shelfDepth,
-        { x: layout.x + Math.floor(settings.shelfGap / 2), y: band.y + band.height, z: settings.shelfSetback },
+        span.length, shelfDepth,
+        { x: span.x, y: band.y + band.height, z: settings.shelfSetback },
         ORIENT_HORIZONTAL, 'Разделитель, фиксированная',
       )
       const dividerBevel = widthBevel(shelfDepth, shelfDepthRight)
@@ -814,7 +832,8 @@ export function generateCabinet(
               'уменьшите число полок или поднимите низкую сторону',
             )
           }
-          const shelfWidth = layout.width - settings.shelfGap - insetLeft - insetRight
+          const span = shelfSpan(sectionIndex)
+          const shelfWidth = span.length - insetLeft - insetRight
           const shelfDepthHere = space.depth - insetFront - insetBack
           if (shelfWidth < MIN_RAIL_WIDTH || shelfDepthHere < MIN_RAIL_WIDTH) {
             throw new ConfigValidationError(
@@ -831,7 +850,7 @@ export function generateCabinet(
             `${section.id}${bandTag(bandIndex)}-shelf-${i + 1}`, 'shelf', 'Полка', carcass,
             shelfWidth, shelfDepthHere,
             {
-              x: layout.x + Math.floor(settings.shelfGap / 2) + insetLeft,
+              x: span.x + insetLeft,
               y,
               z: space.z + insetFront,
             },
@@ -1525,7 +1544,9 @@ export function generateCabinet(
 
   // Сөрелер: фиксированная — конфирмат, жылжымалы — полкодержатель
   for (const { shelf, sectionIndex, kind } of shelves) {
-    const [left, right] = boundsOf(sectionIndex)
+    let [left, right] = boundsOf(sectionIndex)
+    if (frontPanelStand && frontPanel?.side === 'left' && sectionIndex === 0) left = frontPanelStand
+    if (frontPanelStand && frontPanel?.side === 'right' && sectionIndex === layouts.length - 1) right = frontPanelStand
     if (kind === 'fixed') {
       confirmatJoint(left, shelf, ctx)
       confirmatJoint(right, shelf, ctx)

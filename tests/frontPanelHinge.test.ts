@@ -34,6 +34,31 @@ const hingePlatePanels = (panels: Panel[]): Panel[] =>
   panels.filter((p) => p.role !== 'front' && p.drilling.some((d) => d.purpose === 'hinge'))
 
 describe('соқыр панельдің ілгек планкасы (K6 / audit C4)', () => {
+  it.each([
+    ['left', 'adjustable'], ['right', 'adjustable'],
+    ['left', 'fixed'], ['right', 'fixed'],
+  ] as const)('%s жақтағы %s сөре тірекпен қиылыспайды және оған бұрғыланады', (side, shelfKind) => {
+    const panels = gen({
+      frontPanel: { width: 120, side },
+      sections: [{
+        id: 's1', widthMode: 'flex',
+        contents: [{ kind: 'shelves', count: 1, shelfKind }],
+        fronts: { count: 1, mount: 'overlay' },
+      }],
+    })
+    const stand = panels.find((p) => p.id === 'front-panel-stand')!
+    const shelf = panels.find((p) => p.role === 'shelf')!
+    const t = catalog.materials.find((m) => m.id === stand.materialId)!.thickness
+    const shelfLeft = shelf.position.x
+    const shelfRight = shelfLeft + shelf.finishedLength
+    const standLeft = stand.position.x
+    const standRight = standLeft + t
+
+    if (side === 'left') expect(shelfLeft).toBeGreaterThanOrEqual(standRight)
+    else expect(shelfRight).toBeLessThanOrEqual(standLeft)
+    expect(stand.drilling.some((d) => d.purpose === (shelfKind === 'fixed' ? 'confirmat' : 'shelfPin'))).toBe(true)
+  })
+
   it('side-left ЕНДІ жоқ ілгекке планка алмайды (538 мм қашық жалған координата)', () => {
     const panels = gen({ frontPanel: { width: 120, side: 'left' } })
     const side = panels.find((p) => p.id === 'side-left')!
