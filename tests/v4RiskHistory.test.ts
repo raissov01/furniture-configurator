@@ -115,10 +115,25 @@ describe('v4 редактор тәуекелдері', () => {
       { at: 8, name: 'Бүлінген', json: '{bad' },
     ]))
     s().restoreHistory(8)
-    expect(s().projectLoadError).toMatch(/тарих|Тарих/)
+    expect(s().historyRestoreError).toMatch(/тарих|Тарих/)
     expect(values.get(key)).toBe('{invalid JSON')
     s().restoreHistory(7)
     expect(s().projectLoadError).toBeNull()
+    expect(s().historyRestoreError).toBeNull()
     expect(JSON.parse(values.get(key)!).schemaVersion).toBe(4)
+  })
+
+  it('жарамды жобада бүлінген тарих автосақтауды бөгемейді', () => {
+    const values = localStore()
+    const key = 'furniture-configurator:project'
+    values.set(key, JSON.stringify(parseProjectV4(referenceProject)))
+    s().hydrateProject()
+    values.set('furniture-configurator:history', JSON.stringify([{ at: 9, json: '{bad' }]))
+    s().restoreHistory(9)
+    expect(s().historyRestoreError).toMatch(/Тарих/)
+    expect(s().projectLoadError).toBeNull()
+    s().renameNode(s().cabinets[0]!.id, 'Жаңа атау')
+    s().saveProjectLocally()
+    expect(JSON.parse(values.get(key)!).root.children[0].name).toBe('Жаңа атау')
   })
 })

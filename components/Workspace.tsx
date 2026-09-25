@@ -122,6 +122,8 @@ export function Workspace() {
   const layers = useConfigurator((s) => s.layers)
   const projectSettings = useConfigurator((s) => s.projectSettings)
   const projectLoadError = useConfigurator((s) => s.projectLoadError)
+  const historyRestoreError = useConfigurator((s) => s.historyRestoreError)
+  const dismissHistoryRestoreError = useConfigurator((s) => s.dismissHistoryRestoreError)
   const cabinets = useConfigurator((s) => s.cabinets)
   const placements = useConfigurator((s) => s.placements)
   const activeId = useConfigurator((s) => s.activeId)
@@ -612,6 +614,12 @@ export function Workspace() {
           </span>
           <Button size="sm" onClick={() => setHistoryOpen(true)}>{tr('Восстановить из истории')}</Button>
           <Button size="sm" onClick={reset}>{tr('Начать новый проект')}</Button>
+        </div>
+      )}
+      {historyRestoreError && (
+        <div role="alert" className="flex items-center gap-2 border-b border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
+          <span className="flex-1">{historyRestoreError}</span>
+          <Button size="sm" onClick={dismissHistoryRestoreError}>{tr('Закрыть')}</Button>
         </div>
       )}
 

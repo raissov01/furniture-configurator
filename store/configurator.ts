@@ -88,6 +88,9 @@ type Snapshot = {
 type State = Snapshot & {
   /** Invalid local backup stays untouched until explicit recovery/load/reset. */
   projectLoadError: string | null
+  /** A failed history entry does not invalidate the currently loaded project. */
+  historyRestoreError: string | null
+  dismissHistoryRestoreError(): void
   /** Тек root-тан туатын ескі кабинет UI адаптері; жобаға сақталмайды. */
   cabinets: CabinetConfig[]
   placements: Placement[]
@@ -555,6 +558,8 @@ export const useConfigurator = create<State>((set, get) => ({
   ...initial,
   ...cabinetsFromTree(initial.root, initial.room, initial.layers),
   projectLoadError: null,
+  historyRestoreError: null,
+  dismissHistoryRestoreError: () => set({ historyRestoreError: null }),
   shop: defaultShop,
   catalog: catalogOf(defaultShop),
   projectInfo: {},
@@ -815,6 +820,7 @@ export const useConfigurator = create<State>((set, get) => ({
       projectInfo: project.info ?? {},
       priceOverrides: project.priceOverrides ?? {},
       projectLoadError: null,
+      historyRestoreError: null,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
@@ -875,6 +881,7 @@ export const useConfigurator = create<State>((set, get) => ({
         // Жұмыс табылды — бастау экранын көрсетудің қажеті жоқ.
         firstRun: false,
         projectLoadError: null,
+        historyRestoreError: null,
       })
     } catch (error) {
       // Қате файлды автосақтау басып кетпеуі керек: пайдаланушы басқа жобаны
@@ -1091,8 +1098,9 @@ export const useConfigurator = create<State>((set, get) => ({
       if (!found) throw new Error(`жазба табылмады: ${at}`)
       get().loadProject(parseProjectV4(JSON.parse(found.json)))
       get().saveProjectLocally()
+      set({ historyRestoreError: null })
     } catch (error) {
-      set({ projectLoadError: `Тарихтан қалпына келтіру мүмкін болмады: ${error instanceof Error ? error.message : String(error)}` })
+      set({ historyRestoreError: `Тарихтан қалпына келтіру мүмкін болмады: ${error instanceof Error ? error.message : String(error)}` })
     }
   },
   setFirstRun: (firstRun) => set({ firstRun }),
@@ -1350,6 +1358,7 @@ export const useConfigurator = create<State>((set, get) => ({
       ...cabinetsFromTree(initial.root, initial.room, initial.layers),
       catalog: projectCatalog(s.shop),
       projectLoadError: null,
+      historyRestoreError: null,
       templateId: defaultTemplateId,
       past: [...s.past, snapshot(s)],
       future: [],
