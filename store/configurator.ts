@@ -51,6 +51,8 @@ import { cabinetsFromTree, reconcileCabinetsInTree, wallAttachedPlacements } fro
 const SHOP_KEY = 'furniture-configurator:shop'
 /** Ағымдағы жоба — бетті жаңартқанда жұмыс жоғалмауы үшін. */
 const PROJECT_KEY = 'furniture-configurator:project'
+/** Parsing failed: preserve the exact raw bytes before a deliberate replacement. */
+const CORRUPT_PROJECT_BACKUP_KEY = 'furniture-configurator:project-corrupt-backup'
 /** Локал сақтаулар тарихы: соңғы бірнеше нұсқа. */
 const HISTORY_KEY = 'furniture-configurator:history'
 /** Тарихта неше жазба тұрады. Көбейтсе, қойма толады (жоба ~6 КБ). */
@@ -86,6 +88,9 @@ type Snapshot = {
 type State = Snapshot & {
   /** Invalid local backup stays untouched until explicit recovery/load/reset. */
   projectLoadError: string | null
+  /** A failed history entry does not invalidate the currently loaded project. */
+  historyRestoreError: string | null
+  dismissHistoryRestoreError(): void
   /** Тек root-тан туатын ескі кабинет UI адаптері; жобаға сақталмайды. */
   cabinets: CabinetConfig[]
   placements: Placement[]
@@ -279,7 +284,8 @@ type State = Snapshot & {
    * тастап, коэффициентке қайта оралады).
    */
   editPriceOverrides(patch: Partial<PriceOverrides>): void
-  saveProjectLocally(): void
+  /** `null` on success, otherwise a visible storage error for recovery actions. */
+  saveProjectLocally(): string | null
   hydrateProject(): void
 
   setShop(shop: ShopProfile): void
@@ -483,6 +489,7 @@ function projectSettingsAfterShopEdit(
 }
 
 function treeEdit(s: State, root: GroupNode, layers = s.layers) {
+  if (root === s.root && layers === s.layers) return {}
   return { root, layers, ...cabinetsFromTree(root, s.room, layers),
     past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null }
 }
@@ -552,6 +559,8 @@ export const useConfigurator = create<State>((set, get) => ({
   ...initial,
   ...cabinetsFromTree(initial.root, initial.room, initial.layers),
   projectLoadError: null,
+  historyRestoreError: null,
+  dismissHistoryRestoreError: () => set({ historyRestoreError: null }),
   shop: defaultShop,
   catalog: catalogOf(defaultShop),
   projectInfo: {},
@@ -812,6 +821,7 @@ export const useConfigurator = create<State>((set, get) => ({
       projectInfo: project.info ?? {},
       priceOverrides: project.priceOverrides ?? {},
       projectLoadError: null,
+      historyRestoreError: null,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
@@ -835,11 +845,12 @@ export const useConfigurator = create<State>((set, get) => ({
   },
 
   saveProjectLocally() {
-    if (get().projectLoadError) return
+    if (get().projectLoadError) return get().projectLoadError
     try {
       window.localStorage.setItem(PROJECT_KEY, JSON.stringify(get().exportProject()))
-    } catch {
-      // қоймаға жазылмады: жұмыс тоқтамауы керек
+      return null
+    } catch (error) {
+      return `Жоба браузер қоймасына жазылмады: ${error instanceof Error ? error.message : String(error)}`
     }
   },
 
@@ -849,7 +860,8 @@ export const useConfigurator = create<State>((set, get) => ({
     try {
       raw = window.localStorage.getItem(PROJECT_KEY)
     } catch (error) {
-      set({ projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}` })
+      set({ firstRun: false,
+        projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}; сақтық көшірме жазылмады: бастапқы файл оқылмады` })
       return
     }
     if (!raw) return
@@ -871,11 +883,19 @@ export const useConfigurator = create<State>((set, get) => ({
         // Жұмыс табылды — бастау экранын көрсетудің қажеті жоқ.
         firstRun: false,
         projectLoadError: null,
+        historyRestoreError: null,
       })
     } catch (error) {
       // Қате файлды автосақтау басып кетпеуі керек: пайдаланушы басқа жобаны
       // анық ашқанша немесе Reset басқанша түпнұсқа localStorage-та қалады.
-      set({ projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}` })
+      let backupError = ''
+      try {
+        window.localStorage.setItem(CORRUPT_PROJECT_BACKUP_KEY, raw)
+      } catch (cause) {
+        backupError = `; сақтық көшірме жазылмады: ${cause instanceof Error ? cause.message : String(cause)}`
+      }
+      set({ firstRun: false,
+        projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}${backupError}` })
     }
   },
 
@@ -1073,14 +1093,22 @@ export const useConfigurator = create<State>((set, get) => ({
 
   restoreHistory(at) {
     try {
+      const recoveringDamagedProject = get().projectLoadError !== null
       const raw = window.localStorage.getItem(HISTORY_KEY)
-      if (!raw) return
+      if (!raw) throw new Error('тарих бос')
       const list: { at: number; json: string }[] = JSON.parse(raw)
       const found = list.find((x) => x.at === at)
-      if (!found) return
+      if (!found) throw new Error(`жазба табылмады: ${at}`)
       get().loadProject(parseProjectV4(JSON.parse(found.json)))
-    } catch {
-      // бүлінген жазба: үнсіз қалдырамыз, ағымдағы жоба сақталады
+      const saveError = get().saveProjectLocally()
+      if (saveError) {
+        if (recoveringDamagedProject) set({ projectLoadError: saveError })
+        else set({ historyRestoreError: saveError })
+        return
+      }
+      set({ historyRestoreError: null })
+    } catch (error) {
+      set({ historyRestoreError: `Тарихтан қалпына келтіру мүмкін болмады: ${error instanceof Error ? error.message : String(error)}` })
     }
   },
   setFirstRun: (firstRun) => set({ firstRun }),
@@ -1141,11 +1169,12 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   reparent(id, parentId) {
     const s = get()
-    set(treeEdit(s, reparentNode(s.root, id, parentId, s.layers)))
+    const next = reparentNode(s.root, id, parentId, s.layers)
+    if (next !== s.root) set(treeEdit(s, next))
   },
   createLayer(name) {
     const s = get()
-    set(treeEdit(s, s.root, createTreeLayer(s.layers, `layer-${Date.now().toString(36)}`, name)))
+    set(treeEdit(s, s.root, createTreeLayer(s.layers, `layer-${crypto.randomUUID()}`, name)))
   },
   renameLayer(id, name) {
     const s = get()
@@ -1228,7 +1257,7 @@ export const useConfigurator = create<State>((set, get) => ({
       const placement = s.placements.find((p) => p.cabinetId === c.id)
       return placement ? [{ cabinet: c, placement }] : []
     })
-    const newId = `cabinet-${Date.now().toString(36)}`
+    const newId = `cabinet-${crypto.randomUUID()}`
     set({
       ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: `${source.name} (копия)` }], [
         ...s.placements,
@@ -1254,7 +1283,7 @@ export const useConfigurator = create<State>((set, get) => ({
       const placement = s.placements.find((p) => p.cabinetId === c.id)
       return placement ? [{ cabinet: c, placement }] : []
     })
-    const newId = `cabinet-${Date.now().toString(36)}`
+    const newId = `cabinet-${crypto.randomUUID()}`
     set({
       ...legacyEdit(s, [...s.cabinets, mirrorCabinetConfig(source, newId)], [
         ...s.placements,
@@ -1324,7 +1353,7 @@ export const useConfigurator = create<State>((set, get) => ({
       ...next,
       ...cabinetsFromTree(next.root, next.room, next.layers),
       catalog: projectCatalog(s.shop, next.projectMaterials, next.projectEdgeBands),
-      past: [...s.past, snapshot(s)],
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: s.future.slice(1),
       lastEditKey: null,
     })
@@ -1337,11 +1366,17 @@ export const useConfigurator = create<State>((set, get) => ({
       ...cabinetsFromTree(initial.root, initial.room, initial.layers),
       catalog: projectCatalog(s.shop),
       projectLoadError: null,
+      historyRestoreError: null,
       templateId: defaultTemplateId,
       past: [...s.past, snapshot(s)],
       future: [],
       lastEditKey: null,
     })
+    // Explicit reset replaces the unreadable source; its raw backup remains.
+    if (s.projectLoadError) {
+      const saveError = get().saveProjectLocally()
+      if (saveError) set({ projectLoadError: saveError })
+    }
   },
 
   setExploded: (exploded) => set({ exploded }),

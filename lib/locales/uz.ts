@@ -955,4 +955,8 @@ export const uz: Record<string, string> = {
   'Слои': 'Qatlamlar',
   'Выберите корпус в структуре проекта': 'Loyiha tuzilishidan shkafni tanlang',
   'Название слоя': 'Qatlam nomi',
+  'Сохранённый проект не открылся. Исходный файл сохранён отдельно.': 'Saqlangan loyiha ochilmadi. Asl faylning alohida nusxasi saqlandi.',
+  'Сохранённый проект не открылся. Исходный файл пока остаётся в браузере.': 'Saqlangan loyiha ochilmadi. Asl fayl hozircha brauzerda saqlanmoqda.',
+  'Восстановить из истории': 'Tarixdan tiklash',
+  'Начать новый проект': 'Yangi loyihani boshlash',
 }

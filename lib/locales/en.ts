@@ -951,4 +951,8 @@ export const en: Record<string, string> = {
   'Слои': 'Layers',
   'Выберите корпус в структуре проекта': 'Select a cabinet in the project structure',
   'Название слоя': 'Layer name',
+  'Сохранённый проект не открылся. Исходный файл сохранён отдельно.': 'The saved project could not be opened. A separate copy of the source file was kept.',
+  'Сохранённый проект не открылся. Исходный файл пока остаётся в браузере.': 'The saved project could not be opened. The source file is still in this browser.',
+  'Восстановить из истории': 'Restore from history',
+  'Начать новый проект': 'Start a new project',
 }
