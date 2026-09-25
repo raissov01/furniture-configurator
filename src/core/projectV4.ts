@@ -12,17 +12,20 @@ import {
   RoomSchema, parseProjectWithLayers,
 } from './schema'
 import { createDefaultLayer, isNodeHiddenByLayer } from './layers'
+import { SceneLightsSchema } from './visual'
 import { IDENTITY_TRANSFORM } from './tree'
 import { treeFromProject } from './treeFromProject'
 import type { BoardSpec, GroupNode, SceneNode } from './tree'
 import type { Layer } from './layers'
 import type { CabinetConfig, ProjectFile } from './types'
+import type { SceneLight } from './visual'
 
 /** v4-те корпус конфигінің жалғыз орны — root ішіндегі CabinetNode. */
 export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'placements'> & {
   schemaVersion: 4
   root: GroupNode
   layers?: Layer[] | undefined
+  lights: SceneLight[]
 }
 
 const mm = z.number().int()
@@ -107,6 +110,7 @@ export const ProjectFileV4Schema: z.ZodType<ProjectFileV4> = z.strictObject({
   info: ProjectInfoSchema.optional(),
   priceOverrides: PriceOverridesSchema.optional(),
   layers: ProjectLayersSchema.optional(),
+  lights: SceneLightsSchema.default([]),
   root: SceneNodeSchema.refine((node): node is GroupNode => node.kind === 'group', {
     message: 'root түйіні group болуы керек',
   }),
@@ -144,7 +148,7 @@ export function migrateV3ToV4(project: ProjectFile & { layers?: Layer[] }): Proj
     transform: IDENTITY_TRANSFORM, config: cabinet,
   })
   const { cabinets: _cabinets, placements: _placements, schemaVersion: _version, ...rest } = project
-  return { ...rest, layers: rest.layers?.length ? rest.layers : [createDefaultLayer()], schemaVersion: 4, root }
+  return { ...rest, layers: rest.layers?.length ? rest.layers : [createDefaultLayer()], lights: [], schemaVersion: 4, root }
 }
 
 /** v1–v3 оқығанда бұрынғы миграция тізбегі қолданылады; v4 тура тексеріледі. */

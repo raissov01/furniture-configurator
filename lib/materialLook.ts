@@ -11,7 +11,7 @@
  * ал `src/core` — тек панель геометриясы мен өндіріс есебі (CLAUDE.md §3).
  */
 
-import type { DecorFinish } from '@/src/core/index'
+import type { DecorFinish, MaterialPbr } from '@/src/core/types'
 
 export type MaterialLook = {
   roughness: number
@@ -53,4 +53,21 @@ export function finishToMaterial(finish: DecorFinish | undefined): MaterialLook 
  */
 export function needsClearcoat(finish: DecorFinish | undefined): boolean {
   return finishToMaterial(finish).clearcoat > 0
+}
+
+/** Material.pbr тек көріністі басқарады; preset пен өндірістік материал дерегін өзгертпейді. */
+export function resolveMaterialLook(finish: DecorFinish | undefined, pbr?: MaterialPbr): MaterialLook & { opacity: number } {
+  const preset = finishToMaterial(finish)
+  return {
+    ...preset,
+    roughness: pbr?.roughness ?? preset.roughness,
+    metalness: pbr?.metalness ?? preset.metalness,
+    envMapIntensity: pbr?.reflection ?? preset.envMapIntensity,
+    opacity: pbr?.opacity ?? 1,
+  }
+}
+
+/** Shader define өзгерсе Three материалды қайта жинауы керек (map/normalMap toggle). */
+export function materialRenderKey(physical: boolean, map: boolean, normalMap: boolean): string {
+  return `${physical ? 'physical' : 'standard'}:${map ? 'map' : 'plain'}:${normalMap ? 'normal' : 'flat'}`
 }

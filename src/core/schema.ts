@@ -48,6 +48,17 @@ export const MaterialSchema = z.object({
   trimEdge: z.number().int().nonnegative(),
   defaultEdging: EdgePolicySchema.optional(),
   decor: DecorSchema.optional(),
+  pbr: z.strictObject({
+    roughness: z.number().min(0).max(1).optional(),
+    metalness: z.number().min(0).max(1).optional(),
+    reflection: z.number().min(0).max(2).optional(),
+    opacity: z.number().min(0).max(1).optional(),
+    normal: z.strictObject({
+      url: z.url().refine((value) => /^https?:\/\//i.test(value), 'normal URL must use http(s)'),
+      sizeMm: z.strictObject({ x: mm, y: mm }),
+      strength: z.number().min(0).max(2),
+    }).optional(),
+  }).optional(),
   /** Тақта (постформинг): раскройға кірмейді, сметаға метрмен. */
   slab: z.object({
     stockLengths: z.array(mm).min(1),

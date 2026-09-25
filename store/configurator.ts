@@ -34,10 +34,12 @@ import {
   mirrorCabinet as mirrorCabinetConfig,
   insertLibraryItem,
   mergeLibraryCatalog,
+  MaterialSchema,
   replaceTreeBoardMaterial,
   replaceTreeMaterial,
   nextFreeOffset,
   parseProjectV4,
+  SceneLightsSchema,
   parseShopProfile,
   renamePriceList as renameShopPriceList,
   setToProject,
@@ -46,10 +48,11 @@ import {
   templateToCabinet,
 } from '@/src/core/index'
 import type { Quality } from '@/lib/appearance'
+import type { PanoramaContext } from '@/lib/panorama'
 import type {
-  BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SettingsOverride,
-  Section, SectionContent, ShopProfile, WallId,
-  Vec3,
+  BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
+  Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
+  SectionContent, SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
@@ -92,10 +95,13 @@ type Snapshot = {
   projectSettings: SettingsOverride | undefined
   projectMaterials: Material[] | undefined
   projectEdgeBands: EdgeBand[] | undefined
+  lights: SceneLight[]
   activeId: string
 }
 
 type State = Snapshot & {
+  setProjectLights(lights: SceneLight[]): void
+  setMaterialPbr(materialId: string, pbr: MaterialPbr | undefined): void
   /** Invalid local backup stays untouched until explicit recovery/load/reset. */
   projectLoadError: string | null
   /** A failed history entry does not invalidate the currently loaded project. */
@@ -213,6 +219,7 @@ type State = Snapshot & {
    * деңгейіндегі сілтеме чанктар арасында жүрмейді (09-04-те тексерілді).
    */
   liveScene: unknown
+  liveRenderContext: PanoramaContext | null
   /**
    * «Кадрға сыйдыру» батырмасын басқан сайын өседі. Камера пресеті
    * өзгермесе де қайта бағыттау керек, ал ол үшін тәуелділік керек.
@@ -327,6 +334,7 @@ type State = Snapshot & {
   setQuality(q: Quality): void
   setSilhouette(patch: Partial<{ on: boolean; height: number }>): void
   setLiveScene(scene: unknown): void
+  setLiveRenderContext(context: PanoramaContext | null): void
   setAr(patch: Partial<{ busy: boolean; link: string | null; error: string | null }>): void
   setShowFronts(v: boolean): void
   setShowDrilling(v: boolean): void
@@ -397,6 +405,7 @@ const snapshot = (s: State): Snapshot => ({
   projectSettings: s.projectSettings,
   projectMaterials: s.projectMaterials,
   projectEdgeBands: s.projectEdgeBands,
+  lights: s.lights,
   activeId: s.activeId,
 })
 
@@ -463,6 +472,7 @@ function projectMaterialsAfterShopEdit(saved: Material[] | undefined, before: Ma
       ...(previous.hasGrain !== edited.hasGrain ? { hasGrain: edited.hasGrain } : {}),
       ...(previous.trimEdge !== edited.trimEdge ? { trimEdge: edited.trimEdge } : {}),
       ...(JSON.stringify(previous.decor) !== JSON.stringify(edited.decor) ? { decor: edited.decor } : {}),
+      ...(JSON.stringify(previous.pbr) !== JSON.stringify(edited.pbr) ? { pbr: edited.pbr } : {}),
       ...(JSON.stringify(previous.defaultEdging) !== JSON.stringify(edited.defaultEdging)
         ? { defaultEdging: edited.defaultEdging } : {}),
       ...(JSON.stringify(previous.slab?.stockLengths) !== JSON.stringify(edited.slab?.stockLengths)
@@ -598,6 +608,7 @@ const initial: Snapshot = {
   projectSettings: undefined,
   projectMaterials: undefined,
   projectEdgeBands: undefined,
+  lights: [],
   activeId: defaultCabinet.id,
 }
 
@@ -607,6 +618,25 @@ export const activeCabinet = (s: State): CabinetConfig =>
 
 export const useConfigurator = create<State>((set, get) => ({
   ...initial,
+  setProjectLights(lights) {
+    const parsed = SceneLightsSchema.parse(lights)
+    const state = get()
+    if (JSON.stringify(parsed) === JSON.stringify(state.lights)) return
+    set({ lights: parsed, past: [...state.past, snapshot(state)].slice(-HISTORY_LIMIT),
+      future: [], lastEditKey: null })
+    get().saveProjectLocally()
+  },
+  setMaterialPbr(materialId, pbr) {
+    const state = get()
+    const material = state.catalog.materials.find((entry) => entry.id === materialId)
+    if (!material) throw new ConfigValidationError('materialId', `материал табылмады: ${materialId}`)
+    if (JSON.stringify(material.pbr) === JSON.stringify(pbr)) return
+    const changed = MaterialSchema.parse({ ...material, pbr })
+    const projectMaterials = state.catalog.materials.map((entry) => entry.id === materialId ? changed : entry)
+    set({ projectMaterials, catalog: { ...state.catalog, materials: projectMaterials },
+      past: [...state.past, snapshot(state)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null })
+    get().saveProjectLocally()
+  },
   ...cabinetsFromTree(initial.root, initial.room, initial.layers),
   projectLoadError: null,
   historyRestoreError: null,
@@ -639,6 +669,7 @@ export const useConfigurator = create<State>((set, get) => ({
   silhouette: { on: false, height: DEFAULT_SILHOUETTE_HEIGHT },
   ar: { requestedAt: 0, busy: false, link: null, error: null },
   liveScene: null,
+  liveRenderContext: null,
   fitNonce: 0,
   firstRun: true,
   accountOpen: false,
@@ -877,6 +908,7 @@ export const useConfigurator = create<State>((set, get) => ({
       room: s.room,
       info: cleanProjectInfo(s.projectInfo),
       priceOverrides: cleanPriceOverrides(s.priceOverrides),
+      lights: s.lights,
     }
   },
 
@@ -911,6 +943,7 @@ export const useConfigurator = create<State>((set, get) => ({
       projectSettings: project.settings,
       projectMaterials: project.materials,
       projectEdgeBands: project.edgeBands,
+      lights: project.lights,
       ...cabinetsFromTree(project.root, project.room, project.layers),
       activeId: cabinetsFromTree(project.root, project.room, project.layers).cabinets[0]?.id ?? firstBoardId(project.root) ?? '',
       templateId: '',
@@ -971,6 +1004,7 @@ export const useConfigurator = create<State>((set, get) => ({
         projectSettings: file.settings,
         projectMaterials: file.materials,
         projectEdgeBands: file.edgeBands,
+        lights: file.lights,
         catalog: projectCatalog(get().shop, file.materials, file.edgeBands),
         ...cabinetsFromTree(file.root, file.room, file.layers),
         activeId: cabinetsFromTree(file.root, file.room, file.layers).cabinets[0]?.id ?? firstBoardId(file.root) ?? '',
@@ -1107,6 +1141,7 @@ export const useConfigurator = create<State>((set, get) => ({
   toggleCabinetOpen: (id) => set((s) => ({ openCabinets: { ...s.openCabinets, [id]: !s.openCabinets[id] } })),
   togglePanelOpen: (pid) => set((s) => ({ openPanels: { ...s.openPanels, [pid]: !s.openPanels[pid] } })),
   setLiveScene: (liveScene) => set({ liveScene }),
+  setLiveRenderContext: (liveRenderContext) => set({ liveRenderContext }),
   setAr: (patch) => set((s) => ({ ar: { ...s.ar, ...patch } })),
   setShowFronts: (showFronts) => set({ showFronts }),
   setShowDrilling: (showDrilling) => set({ showDrilling }),

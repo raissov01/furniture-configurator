@@ -10,8 +10,8 @@ import { t as tr } from '@/lib/i18n'
 import { Edges, Html } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { grainTexture } from '@/lib/grainTexture'
-import { boxGrainUAxis, decorTexture, grainRotation, type GrainUVAxis } from '@/lib/decorTexture'
-import { finishToMaterial } from '@/lib/materialLook'
+import { boxGrainUAxis, decorTexture, grainRotation, normalTexture, type GrainUVAxis } from '@/lib/decorTexture'
+import { materialRenderKey, resolveMaterialLook } from '@/lib/materialLook'
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import type { Axis, Catalog, EdgeBand, Panel, PanelHandle, SettingsOverride } from '@/src/core/index'
@@ -343,10 +343,12 @@ export function PanelMesh({
   // көрсеткенде керек емес.
   const showDrilling = useConfigurator((s) => s.showDrilling)
   const key = pid ?? panel.id
-  const decor = useMemo(
-    () => catalog.materials.find((m) => m.id === panel.materialId)?.decor,
+  const material = useMemo(
+    () => catalog.materials.find((m) => m.id === panel.materialId),
     [catalog, panel.materialId],
   )
+  const decor = material?.decor
+  const pbr = material?.pbr
   /*
    * Тақта түйіршігі ТЕК АҒАШ декорға. Бұрын ол бәріне жабыстырылатын да,
    * ақ ЛДСП ашық ағаш болып көрінетін (qdesign-мен салыстыруда байқалды):
@@ -356,8 +358,8 @@ export function PanelMesh({
   // Әлсіз құрылғыда (quality==='low') `finish` әрдайым 'matte'-ке құлайды:
   // `meshPhysicalMaterial`/`clearcoat` тек GPU-ы жеткілікті құрылғыда қосылады.
   const look = useMemo(
-    () => finishToMaterial(quality === 'low' ? undefined : decor?.finish),
-    [decor?.finish, quality],
+    () => resolveMaterialLook(quality === 'low' ? undefined : decor?.finish, pbr),
+    [decor?.finish, pbr, quality],
   )
   // Тек екеуі ғана лак қабатын алады (§docs/visual/material.md §3) —
   // қалғаны арзанырақ `meshStandardMaterial`-де қалады.
@@ -431,7 +433,7 @@ export function PanelMesh({
    * әрең көрінетін сұлба. Тінтуір астындағы панель ӘРҚАШАН тұтас қалады:
    * әйтпесе мөлдір режимде нені меңзеп тұрғаның білінбейді.
    */
-  const opacity = viewMode === 'solid' || isHovered || isSelected ? 1 : viewMode === 'ghost' ? 0.28 : 0.06
+  const opacity = (viewMode === 'solid' || isHovered || isSelected ? 1 : viewMode === 'ghost' ? 0.28 : 0.06) * look.opacity
 
   /**
    * Қиғаш деталь мен көлбеу крышка — жалғыз екі жағдай, онда панель әлем
@@ -557,6 +559,21 @@ export function PanelMesh({
     return tex
   }, [decor, woodDecor, panel.finishedLength, panel.finishedWidth, panel.grainAlongLength, panel.orientation, shape, tilted, invalidate])
 
+  const normalMap = useMemo(() => {
+    if (!pbr?.normal) return null
+    const normal = pbr.normal
+    const tex = normalTexture(normal.url, panel.finishedLength, panel.finishedWidth, normal.sizeMm,
+      () => invalidate())
+    if (tex) {
+      const uAxis: GrainUVAxis = shape || tilted ? 'length' : boxGrainUAxis(panel.orientation)
+      tex.center.set(0.5, 0.5)
+      tex.rotation = grainRotation(uAxis, panel.grainAlongLength)
+    }
+    return tex
+  }, [pbr?.normal, panel.finishedLength, panel.finishedWidth, panel.grainAlongLength, panel.orientation, shape, tilted, invalidate])
+  useEffect(() => () => { normalMap?.dispose() }, [normalMap])
+  const shaderKey = materialRenderKey(usesPhysical, Boolean(texture), Boolean(normalMap))
+
   const color = isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
   /*
    * Таңдалғанын ТҮСПЕН көрсетуге болмайды: декордың өзі сары (дуб, бук) —
@@ -618,7 +635,8 @@ export function PanelMesh({
           )}
           {usesPhysical ? (
             <meshPhysicalMaterial
-              color={color} map={texture}
+              key={shaderKey} color={color} map={texture} normalMap={normalMap}
+              normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
               roughness={look.roughness} metalness={look.metalness}
               clearcoat={look.clearcoat} clearcoatRoughness={look.clearcoatRoughness}
               envMapIntensity={look.envMapIntensity}
@@ -626,7 +644,8 @@ export function PanelMesh({
             />
           ) : (
             <meshStandardMaterial
-              color={color} map={texture}
+              key={shaderKey} color={color} map={texture} normalMap={normalMap}
+              normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
               roughness={look.roughness} metalness={look.metalness}
               envMapIntensity={look.envMapIntensity}
               transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
@@ -677,8 +696,10 @@ export function PanelMesh({
         />
       ) : usesPhysical ? (
         <meshPhysicalMaterial
-          color={color}
+          key={shaderKey} color={color}
           map={texture}
+          normalMap={normalMap}
+          normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
           roughness={look.roughness}
           metalness={look.metalness}
           clearcoat={look.clearcoat}
@@ -691,8 +712,10 @@ export function PanelMesh({
         />
       ) : (
         <meshStandardMaterial
-          color={color}
+          key={shaderKey} color={color}
           map={texture}
+          normalMap={normalMap}
+          normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
           roughness={look.roughness}
           metalness={look.metalness}
           envMapIntensity={look.envMapIntensity}

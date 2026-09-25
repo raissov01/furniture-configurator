@@ -896,6 +896,72 @@ async function run() {
     check(persisted === 1, 'қайта ашқанда жеке кітапхана сақталды')
   })
 
+  await test('Визуал: PBR, жарық және 360° панорама', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+    check(await h.clickText('Рендер', 500), 'рендер терезесі ашылды')
+    const materialTab = await h.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[role="tab"]')]
+        .find((entry) => entry.textContent.trim() === 'Материал')
+      tab?.click(); return Boolean(tab)
+    })()`)
+    check(materialTab, 'PBR материалының табы ашылды')
+    const materialId = await h.evaluate(`document.querySelector('select[aria-label="Материал для PBR"]')?.value ?? ''`)
+    const changed = await h.evaluate(`(() => {
+      const label = [...document.querySelectorAll('label')]
+        .find((entry) => entry.textContent.includes('Шероховатость'))
+      const field = label?.querySelector('input')
+      if (!field) return false
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+      setter.call(field, '0.34')
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    })()`)
+    check(changed, 'roughness енгізілді')
+    await h.wait(150)
+    check(await h.clickText('Сохранить вид материала', 400), 'PBR сақталды')
+    const lightsTab = await h.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[role="tab"]')]
+        .find((entry) => entry.textContent.trim() === 'Свет')
+      tab?.click(); return Boolean(tab)
+    })()`)
+    check(lightsTab, 'жарық табы ашылды')
+    check(await h.clickText('Добавить Точечный', 300), 'нүктелік жарық қосылды')
+    await h.wait(700)
+    const savedVisual = await h.evaluate(`(() => {
+      const project = JSON.parse(localStorage.getItem('furniture-configurator:project'))
+      return { roughness: project.materials.find((entry) => entry.id === ${JSON.stringify(materialId)})?.pbr?.roughness,
+        lights: project.lights }
+    })()`)
+    check(savedVisual.roughness === 0.34, 'PBR v4 жобаға сақталды')
+    check(savedVisual.lights?.length === 1 && savedVisual.lights[0].kind === 'point', 'жарық v4 жобаға сақталды')
+    const renderTab = await h.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[role="tab"]')]
+        .find((entry) => entry.textContent.trim() === 'Рендер')
+      tab?.click(); return Boolean(tab)
+    })()`)
+    check(renderTab, 'рендер табы ашылды')
+    check(await h.clickText('Панорама 360°', 100), 'панорама сұралды')
+    check(await h.until(`Boolean(document.querySelector('a[download="panorama-360.png"]'))`, 30000), 'PNG дайын болды')
+    const png = await h.evaluate(`(async () => {
+      const link = document.querySelector('a[download="panorama-360.png"]')
+      if (!link || !link.href.startsWith('data:image/png;base64,')) return null
+      const image = new Image()
+      image.src = link.href
+      await image.decode()
+      return { width: image.naturalWidth, height: image.naturalHeight }
+    })()`)
+    check(png?.width === 2048 && png?.height === 1024, `нақты 2:1 PNG (${png?.width} × ${png?.height})`)
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+    const reloaded = await h.evaluate(`(() => {
+      const project = JSON.parse(localStorage.getItem('furniture-configurator:project'))
+      return { roughness: project.materials.find((entry) => entry.id === ${JSON.stringify(materialId)})?.pbr?.roughness,
+        lightCount: project.lights?.length }
+    })()`)
+    check(reloaded.roughness === 0.34 && reloaded.lightCount === 1, 'қайта ашқанда PBR мен жарық сақталды')
+  })
+
   await test('Консольде қате жоқ', async () => {
     const real = session.consoleErrors.filter((e) => !/DevTools|favicon|THREE.Clock/.test(e))
     check(real.length === 0, `қате жоқ (${real.slice(0, 2).join(' | ') || 'таза'})`)

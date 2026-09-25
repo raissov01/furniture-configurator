@@ -64,7 +64,7 @@ Structure/Layers докы Workspace-ке жалғанған: топтау, та�
 | PRO100 функциясы | Бізде | Файл/компонент | Ескерту |
 |---|---|---|---|
 | Материал/декор кітапханасы, таңдау терезесі (№99 «Выбрать материал») | ✅ бар | `src/core/decors.ts` `DECOR_LIBRARY`, `searchDecors`; `components/DecorPicker.tsx` `DecorPicker` | Декор таңдау қолданыста. |
-| Материал қасиеттері: жылтыр/шағылыс/бедер/жарқыл/AO (`TMATERIALLIGHTPROPFRAME`, №131-136 «свечение, отражение, рельеф, венец, блики, AO») | ⚠ ішінара | `src/core/types.ts` `DecorFinish`; `lib/materialLook.ts` `finishToMaterial` | Жылтыр/мат/сатин/тас/металл PBR көрінісі бар; толық жарық/бедер/AO қасиет редакторы жоқ. |
+| Материал қасиеттері: жылтыр/шағылыс/бедер/жарқыл/AO (`TMATERIALLIGHTPROPFRAME`, №131-136 «свечение, отражение, рельеф, венец, блики, AO») | ⚠ ішінара | `src/core/types.ts` `Material.pbr`; `components/VisualSettingsPanel.tsx` | Roughness, metalness, reflection, normal map және opacity бапталады; жарқыл мен AO жоқ. |
 | Текстура бағыты, бұрылмау ережесі | ✅ бар | `src/core/types.ts` `Material.hasGrain`; `src/core/nesting.ts` `nestPanels` | Текстурасы бар панель 90° бұрылмайды. |
 | Материалды жобада жаппай ауыстыру (`TTEXTURESUBSTITUTEFORM`) | ⚠ демода | `src/core/replaceMaterial.ts` `applyMaterialReplace`; `components/panels/ReplacePanel.tsx` `ReplacePanel` | Жаппай ауыстыру логикасы мен демо панель бар; Workspace-те жоқ. |
 | Шпон/тегіс кескінді сәйкестендіру раскройда (Novy Raskroy `veneer.ini`, `pro100_list.txt: Novy Raskroy v7.45x32/veneer.ini`) | ❌ жоқ | — | Көрші панельдердің текстура суретін жұптау алгоритмі жоқ. |
@@ -131,9 +131,9 @@ Structure/Layers докы Workspace-ке жалғанған: топтау, та�
 |---|---|---|---|
 | Негізгі 3D көрініс, зум/бұру | ✅ бар | `components/Scene.tsx` `Scene`, `OrbitControls` | Негізгі 3D сахна жұмыс істейді. |
 | Камера preset-тері (№244-250: Перспектива/Аксонометрия/Вид сверху/спереди/справа/сзади/слева — 7 бағыт, соның ішінде ШЫН ортографиялық) | ✅ бар | `components/Workspace.tsx` `VIEW_TABS`; `components/Scene.tsx` `OrthographicCamera` | Перспектива, аксонометрия, жоспар және төрт қабырға көрінісі бар. |
-| Жарық көзін қолмен қою/баптау (`TLIGHTSFORM`, `TSPOTLIGHTFRAME`, `TSUNLIGHTFRAME`, №149-156) | ❌ жоқ | — | Жарықты пайдаланушы қоятын/баптайтын UI жоқ. |
+| Жарық көзін қолмен қою/баптау (`TLIGHTSFORM`, `TSPOTLIGHTFRAME`, `TSUNLIGHTFRAME`, №149-156) | ✅ бар | `src/core/visual.ts`; `components/VisualSettingsPanel.tsx`; `components/Scene.tsx` | Point/spot/sun жобаға сақталады; RenderPanel-де қарқын, түс, орын/бағыт өзгертіледі. |
 | Фотореалистік рендер (Kray raytracer + `OpenImageDenoise`, `pro100_list.txt: plugins/export.kray/kray/*`) | ⚠ ішінара | `components/RenderPanel.tsx` `RenderPanel` | ИИ-сурет рендері бар; физикалық Kray ray tracing баламасы емес. |
-| Панорама/360° рендер (№51 «Панорама...») | ❌ жоқ | — | 360° панорама шығаруы табылмады. |
+| Панорама/360° рендер (№51 «Панорама...») | ⚠ браузер тексерісі күтілуде | `lib/panorama.ts`; `components/RenderPanel.tsx` | Алты бөлек 90° WebGL көріністен 2:1 equirectangular PNG жасалады; Chrome e2e оркестрде. |
 | Көрсету режимдері: набросок/контур/жартылай мөлдір/фотореализм/сглаживание (№401-407) | ⚠ ішінара | `store/configurator.ts` `viewMode`; `components/Workspace.tsx` `setViewMode` | Тұтас, жартылай мөлдір, контур бар; sketch/фотореал режимі толық жоқ. |
 | Жарылған көрініс (№437 «Взрыв») | ✅ бар | `store/configurator.ts` `exploded`; `components/PanelMesh.tsx` `exploded` | Жарылған көрініс слайдері бар. |
 | AR, телефон камерасымен бөлмеге қою | ✅ бар | `components/ArButton.tsx` `ArButton`; `lib/ar.ts` `sceneToGlb` | Телефондағы AR үшін GLB жасалады. |
@@ -208,11 +208,9 @@ Structure/Layers докы Workspace-ке жалғанған: топтау, та�
 4. **Материалды жаппай ауыстыру және іздеу демо беттермен шектеледі**
    (§2.1–2.2): `app/replace-find-demo/page.tsx` негізгі редакторға
    жалғанбаған; қабаттар енді негізгі TreeDock ішінде бар.
-5. **Материал жарығы мен бедерін толық баптау жоқ** (§2.2):
-   `lib/materialLook.ts` дайын PBR көріністерін береді, бірақ жарық, бедер,
-   AO қасиеттерінің толық редакторы жоқ.
-6. **Жарық көзін пайдаланушы қоятын құрал жоқ** (§2.7): негізгі сахнадағы
-   жарықты бөлек орналастыру/баптау UI-ы жоқ.
+5. **Материал жарығы мен бедерінің кей қасиеті жоқ** (§2.2):
+   PBR редакторы roughness, metalness, reflection, normal map, opacity береді;
+   жарқыл мен AO басқаруы әлі жоқ.
 7. **DXF панель контурын, OBJ/3DS моделін импорттау жоқ** (§2.6):
    `src/core/import/dxf.ts` бөлменің 2D жоспарын оқиды, панельді емес.
 8. **Шпон өрнегін көрші детальдар арасында сәйкестендіру жоқ** (§2.2, §2.4):
