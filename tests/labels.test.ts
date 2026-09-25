@@ -14,6 +14,8 @@ import {
   generateCabinet,
   labelsPdf,
   labelsToCsv,
+  encodePartQr,
+  decodePartQr,
   nestPanels,
   partLabels,
   partNumbers,
@@ -111,6 +113,20 @@ describe('бирка деректері', () => {
 })
 
 describe('биркалар PDF', () => {
+  it('QR жоба, деталь, нұсқаны офлайн қалпына келтіреді', () => {
+    const value = encodePartQr({ projectId: 'жоба/25', panelId: labels[0]!.panelId, version: 2 })
+    expect(value).toMatch(/^F1\./)
+    expect(decodePartQr(value)).toEqual({ projectId: 'жоба/25', panelId: labels[0]!.panelId, version: 2 })
+    expect(() => decodePartQr(value.replace(/.$/, '!'))).toThrow()
+    expect(() => encodePartQr({ projectId: '', panelId: 'x', version: 1 })).toThrow()
+  })
+
+  it('QR бар PDF ішіне QR модульдері салынады', async () => {
+    const plain = await labelsPdf({ labels: labels.slice(0, 1), projectName: 'Шкаф', fonts })
+    const qr = await labelsPdf({ labels: labels.slice(0, 1), projectName: 'Шкаф', projectId: 'project-1', version: 1, fonts })
+    expect((await PDFDocument.load(qr)).getPageCount()).toBe(1)
+    expect(qr.length).toBeGreaterThan(plain.length)
+  })
   it('24 биркаға бір бет', async () => {
     const bytes = await labelsPdf({ labels, projectName: 'Шкаф', fonts })
     const doc = await PDFDocument.load(bytes)
