@@ -102,6 +102,25 @@ try {
   assert(await h.evaluate("(() => { const row=document.querySelector('[data-tree-node=board-a]')?.parentElement; const b=row?.querySelector('[aria-label=\"Разблокировать\"]'); if (!b) return false; b.click(); return true })()"), 'unlock control missing')
   assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children.some(n=>n.id==='board-a' && n.locked===false)", 10000), 'node unlock not persisted')
 
+  // Phase 4: array and align controls operate on the canonical saved tree.
+  assert(await h.evaluate("(() => { const a=document.querySelector('[data-tree-node=board-a]'); if (!a) return false; a.click(); return true })()"), 'array source missing')
+  assert(await h.until("[...document.querySelectorAll('[data-panel=structure] button')].some(x=>x.textContent.trim()==='Массив' && !x.disabled)", 5000), 'array button disabled')
+  assert(await h.evaluate("(() => { const b=[...document.querySelectorAll('[data-panel=structure] button')].find(x=>x.textContent.trim()==='Массив'); if (!b) return false; b.click(); return true })()"), 'array controls missing')
+  assert(await h.until("Boolean(document.querySelector('[data-testid=array-tools]'))", 5000), 'array form did not open')
+  assert(await h.evaluate("(() => { const tools=document.querySelector('[data-testid=array-tools]'); const inputs=tools?.querySelectorAll('input'); if (!inputs) return false; const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; setter.call(inputs[0],'2'); inputs[0].dispatchEvent(new Event('input',{bubbles:true})); setter.call(inputs[1],'250'); inputs[1].dispatchEvent(new Event('input',{bubbles:true})); return true })()"), 'array creation failed')
+  await h.wait(100)
+  assert(await h.evaluate("(() => { const button=[...document.querySelectorAll('[data-testid=array-tools] button')].find(x=>x.textContent.trim()==='Создать'); if (!button) return false; button.click(); return true })()"), 'array submit missing')
+  assert(await h.until("(() => { const children=JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children; return children.some(n=>n.id==='board-a-array-1' && n.transform.pos.x===650) && children.some(n=>n.id==='board-a-array-2' && n.transform.pos.x===900) })()", 10000), 'array positions not persisted')
+  await h.evaluate("window.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))")
+  assert(await h.until("!JSON.stringify(JSON.parse(localStorage.getItem('furniture-configurator:project')).root).includes('board-a-array-1')", 10000), 'array undo did not remove copies')
+  assert(await h.evaluate("(() => { const a=document.querySelector('[data-tree-node=board-a]'); if (!a) return false; a.click(); return true })()"), 'align source missing')
+  assert(await h.evaluate("(() => { const b=document.querySelector('[data-tree-node=board-b]'); if (!b) return false; b.dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true})); return true })()"), 'align second source missing')
+  assert(await h.until("document.querySelector('[data-testid=arrange-max]')?.disabled === false", 5000), 'align control disabled after Ctrl selection')
+  assert(await h.evaluate("(() => { const b=document.querySelector('[data-testid=arrange-max]'); if (!b) return false; b.click(); return true })()"), 'align click failed')
+  assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children.find(n=>n.id==='board-a')?.transform.pos.x===1200", 10000), 'align result not persisted')
+  await h.evaluate("window.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))")
+  assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children.find(n=>n.id==='board-a')?.transform.pos.x===400", 10000), 'align undo did not restore position')
+
   // Select two free boards with Ctrl; grouping is a single persisted tree edit.
   assert(await h.evaluate("(() => { const a=document.querySelector('[data-tree-node=board-a]'); if (!a) return false; a.click(); return true })()"), 'board A cannot be selected')
   assert(await h.evaluate("document.querySelector('[data-tree-node=board-a]')?.parentElement?.getAttribute('aria-selected') === 'true'"), 'tree board selection missing')

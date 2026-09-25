@@ -6,6 +6,7 @@ import { t as tr } from '@/lib/i18n'
 import { Button, Field, NumberInput, Select, Toggle } from '@/components/ui'
 import { ExportMenu } from '@/components/ExportMenu'
 import { boardDimensions, resizeBoard } from '@/src/core/boardProperties'
+import { parseExactMm } from '@/src/core/exactMm'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT } from '@/src/core/index'
 import type { BoardNode, BoardSpec, Catalog, Orientation, Panel, PanelEdges } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -18,6 +19,22 @@ const orientations: { value: string; label: string; orientation: Orientation }[]
   { value: 'upright', label: 'Вертикальная плоскость (D = толщина)', orientation: ORIENT_UPRIGHT },
 ]
 const edges: (keyof PanelEdges)[] = ['L1', 'L2', 'W1', 'W2']
+
+function RelativeMmInput({ current, label, onChange, onError }: {
+  current: number; label: string; onChange: (value: number) => void; onError: (message: string) => void
+}) {
+  const [draft, setDraft] = useState('')
+  return <input type="text" inputMode="numeric" value={draft} placeholder={tr('+/- мм')}
+    title={tr('Абсолютно: 600 или =-100; относительно: +20 или -10')}
+    aria-label={`${label}: ${tr('Точный ввод')}`} className="mt-1 w-full border border-neutral-300 bg-white px-1 py-0.5 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+    onChange={(event) => setDraft(event.target.value)} onBlur={() => setDraft('')}
+    onKeyDown={(event) => {
+      if (event.key !== 'Enter') return
+      event.preventDefault()
+      try { onChange(parseExactMm(draft, current)); setDraft(''); onError('') }
+      catch (cause) { onError(cause instanceof Error ? cause.message : tr('Неверное значение')) }
+    }} />
+}
 
 export function BoardProperties({ node, panel, catalog }: { node: BoardNode; panel: Panel | undefined; catalog: Catalog }) {
   const [tab, setTab] = useState<Tab>('general')
@@ -61,13 +78,17 @@ export function BoardProperties({ node, panel, catalog }: { node: BoardNode; pan
           return <Field key={dimension} label={`${dimension === 'height' ? 'H' : dimension === 'width' ? 'W' : 'D'}, мм`}
             hint={fixed ? tr('толщина материала') : undefined}>
             {fixed ? <input type="number" readOnly value={size[dimension]} className="w-full border border-neutral-300 bg-neutral-100 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-800" />
-              : <NumberInput value={size[dimension]} min={1} onChange={(value) => run(() => editBoard(node.id, resizeBoard(node.board, material, dimension, value)))} />}
+              : <><NumberInput value={size[dimension]} min={1} onChange={(value) => run(() => editBoard(node.id, resizeBoard(node.board, material, dimension, value)))} />
+                <RelativeMmInput current={size[dimension]} label={dimension.toUpperCase()} onError={setError}
+                  onChange={(value) => editBoard(node.id, resizeBoard(node.board, material, dimension, value))} /></>}
           </Field>
         })}
       </div>
       <div className="grid grid-cols-3 gap-2" data-testid="board-position">
         {(['x', 'y', 'z'] as const).map((axis) => <Field key={axis} label={`${axis.toUpperCase()}, мм`}>
           <NumberInput value={node.transform.pos[axis]} onChange={(value) => run(() => setBoardPosition(node.id, { ...node.transform.pos, [axis]: value }))} />
+          <RelativeMmInput current={node.transform.pos[axis]} label={axis.toUpperCase()} onError={setError}
+            onChange={(value) => setBoardPosition(node.id, { ...node.transform.pos, [axis]: value })} />
         </Field>)}
       </div>
     </div>

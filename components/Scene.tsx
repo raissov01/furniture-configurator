@@ -31,15 +31,16 @@ import { floorTexture } from '@/lib/floorTexture'
 import { poseFootprint, treeSceneBounds, treeSceneLayoutKey, visibleBoardPanels, wallBoundItems } from '@/lib/treeSceneItems'
 import type { FloorPattern } from '@/lib/floorTexture'
 import { grainTexture } from '@/lib/grainTexture'
+import { dragPlaneAxis } from '@/lib/dragPlane'
 import type { CameraPreset } from '@/store/configurator'
 import {
   DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, panelExtents,
   placementSpan, projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, snapOffset,
-  visibleOpenings, wallById, wallPieces,
+  snapPosition, selectionBoxes, visibleOpenings, wallById, wallPieces,
   sunDirection,
 } from '@/src/core/index'
 import type {
-  CabinetConfig, Catalog, FlatScene, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
+  CabinetConfig, Catalog, FlatNode, FlatScene, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
   SceneLight, Vec3, Wall, WallId,
 } from '@/src/core/index'
 
@@ -1116,6 +1117,100 @@ function Silhouette({ height, x, z }: { height: number; x: number; z: number }) 
   )
 }
 
+/** Еркін тақтаны камераға ыңғайлы жазықтықта сүйреу; Panel[] өлшеміне қол тимейді. */
+function FreeBoardGroup({ node, scene, catalog, room, settings, stepOf, assemblyStep, panelNodeCount }: {
+  node: FlatNode; scene: FlatScene; catalog: Catalog; room: Room
+  settings: import('@/src/core/index').SettingsOverride; stepOf: Map<string, number>
+  assemblyStep: number | null; panelNodeCount: number
+}) {
+  const selected = useConfigurator((s) => s.selected)
+  const activeId = useConfigurator((s) => s.activeId)
+  const walk = useConfigurator((s) => s.walk)
+  const vr = useConfigurator((s) => s.vr)
+  const translateNodes = useConfigurator((s) => s.translateNodes)
+  const controls = useThree((s) => s.controls) as unknown as { enabled: boolean } | null
+  const gl = useThree((s) => s.gl)
+  const canDrag = !walk && !vr && activeId === node.nodeId && (
+    selected === node.nodeId || node.panels.some((panel) => selected === projectPanelId(node.nodeId, panel.id, panelNodeCount))
+  )
+  const drag = useRef<{ pointerId: number; plane: Plane; startHit: Vector3; startMin: Vec3; size: Vec3;
+    others: { id: string; pos: Vec3; size: Vec3 }[]; applied: Vec3; moved: boolean } | null>(null)
+  const endDrag = () => {
+    if (!drag.current) return
+    drag.current = null
+    if (controls) controls.enabled = true
+    gl.domElement.style.cursor = ''
+  }
+  useEffect(() => endDrag, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return <group position={[node.pose.position.x, node.pose.position.y, node.pose.position.z]}
+    rotation={[0, node.pose.rotationY * Math.PI / 180, 0]}
+    onPointerDown={(event) => {
+      if (!canDrag || event.button !== 0 || node.pose.rotationY % 90 !== 0) return
+      const state = useConfigurator.getState()
+      const eligible = [...scene.nodes.map((entry) => ({ id: entry.nodeId, pose: entry.pose })),
+        ...scene.solids.map((entry) => ({ id: entry.nodeId, pose: entry.pose }))]
+        .filter((entry) => entry.pose.rotationY % 90 === 0 &&
+          Object.values(entry.pose.position).every(Number.isSafeInteger))
+      const boxes = selectionBoxes(state.root, eligible.map((entry) => entry.id), catalog, state.layers, settings)
+      const moving = boxes.find((entry) => entry.id === node.nodeId)
+      if (!moving) return
+      event.stopPropagation()
+      // Еденге қараған камерада XZ, тік камерада оған ең тура қарайтын XY/YZ
+      // жазықтығы: тайыз сәуле шкафты метрлерге лақтырмайды.
+      const axis = dragPlaneAxis(event.ray.direction)
+      const normal = new Vector3(axis === 'x' ? 1 : 0, axis === 'y' ? 1 : 0, axis === 'z' ? 1 : 0)
+      const plane = new Plane().setFromNormalAndCoplanarPoint(normal, event.point)
+      drag.current = { pointerId: event.pointerId, plane, startHit: event.point.clone(),
+        startMin: moving.bounds.min,
+        size: { x: moving.bounds.max.x - moving.bounds.min.x,
+          y: moving.bounds.max.y - moving.bounds.min.y, z: moving.bounds.max.z - moving.bounds.min.z },
+        others: boxes.filter((entry) => entry.id !== node.nodeId).map((entry) => ({
+          id: entry.id, pos: entry.bounds.min,
+          size: { x: entry.bounds.max.x - entry.bounds.min.x,
+            y: entry.bounds.max.y - entry.bounds.min.y, z: entry.bounds.max.z - entry.bounds.min.z },
+        })), applied: { x: 0, y: 0, z: 0 }, moved: false }
+      if (controls) controls.enabled = false
+      gl.domElement.style.cursor = 'grabbing'
+      ;(event.target as unknown as Element).setPointerCapture(event.pointerId)
+    }}
+    onPointerMove={(event) => {
+      const current = drag.current
+      if (!current || event.pointerId !== current.pointerId) return
+      event.stopPropagation()
+      const hit = event.ray.intersectPlane(current.plane, new Vector3())
+      if (!hit) return
+      const raw = { x: current.startMin.x + Math.round((hit.x - current.startHit.x) / MM),
+        y: current.startMin.y + Math.round((hit.y - current.startHit.y) / MM),
+        z: current.startMin.z + Math.round((hit.z - current.startHit.z) / MM) }
+      const snapped = snapPosition({ pos: raw, size: current.size }, current.others, room,
+        useConfigurator.getState().snapOptions).pos
+      const absolute = { x: snapped.x - current.startMin.x, y: snapped.y - current.startMin.y,
+        z: snapped.z - current.startMin.z }
+      const delta = { x: absolute.x - current.applied.x, y: absolute.y - current.applied.y,
+        z: absolute.z - current.applied.z }
+      if (delta.x === 0 && delta.y === 0 && delta.z === 0) return
+      translateNodes([{ id: node.nodeId, delta }], { continueGesture: current.moved })
+      current.applied = absolute
+      current.moved = true
+    }}
+    onPointerUp={(event) => {
+      if (drag.current?.pointerId !== event.pointerId) return
+      ;(event.target as unknown as Element).releasePointerCapture(event.pointerId)
+      endDrag()
+    }} onLostPointerCapture={endDrag}>
+    {visibleBoardPanels(node, stepOf, assemblyStep, panelNodeCount).map((panel) => {
+      const material = catalog.materials.find((entry) => entry.id === panel.materialId)
+      const thickness = material?.thickness ?? 16
+      const extents = panelExtents(panel, thickness)
+      return <PanelMesh key={panel.id} panel={panel} thickness={thickness} catalog={catalog}
+        settings={settings} cabinetId={node.nodeId}
+        pid={projectPanelId(node.nodeId, panel.id, panelNodeCount)}
+        centre={{ x: extents.x / 2, y: extents.y / 2, z: extents.z / 2 }}
+        decorColor={material?.decor?.color} />
+    })}
+  </group>
+}
+
 export default function Scene({
   items, room, activeId, catalog, flatScene, allowDimensionLabels = true,
 }: {
@@ -1472,19 +1567,9 @@ export default function Scene({
             />
           ))}
           {freeBoards.map((node) => (
-            <group key={node.nodeId} position={[node.pose.position.x, node.pose.position.y, node.pose.position.z]}
-              rotation={[0, node.pose.rotationY * Math.PI / 180, 0]}>
-              {visibleBoardPanels(node, stepOf, assemblyStep, panelNodeCount).map((panel) => {
-                const material = catalog.materials.find((entry) => entry.id === panel.materialId)
-                const thickness = material?.thickness ?? 16
-                const extents = panelExtents(panel, thickness)
-                return <PanelMesh key={panel.id} panel={panel} thickness={thickness} catalog={catalog}
-                  settings={settings} cabinetId={node.nodeId}
-                  pid={projectPanelId(node.nodeId, panel.id, panelNodeCount)}
-                  centre={{ x: extents.x / 2, y: extents.y / 2, z: extents.z / 2 }}
-                  decorColor={material?.decor?.color} />
-              })}
-            </group>
+            <FreeBoardGroup key={node.nodeId} node={node} scene={flatScene!} catalog={catalog}
+              room={room} settings={settings} stepOf={stepOf} assemblyStep={assemblyStep}
+              panelNodeCount={panelNodeCount} />
           ))}
           {flatScene?.solids.map((solid) => (
             <group key={solid.nodeId} position={[solid.pose.position.x, solid.pose.position.y, solid.pose.position.z]}

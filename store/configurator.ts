@@ -57,7 +57,12 @@ import type {
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
   setNodeLayer, treeFromProject } from '@/src/core/index'
-import { assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, ungroupNode } from '@/src/core/treeEditing'
+import { appendNodeArray, assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, translateTreeNodes, ungroupNode } from '@/src/core/treeEditing'
+import type { ArrayOptions } from '@/src/core/array'
+import type { SnapOptions } from '@/src/core/snap'
+import type { Axis } from '@/src/core/types'
+import type { BoxAlignment } from '@/src/core/align'
+import { arrangeTreeSelection } from '@/src/core/treeArrange'
 import { cabinetsFromTree, reconcileCabinetsInTree, wallAttachedPlacements } from './treeAdapters'
 
 /** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
@@ -193,6 +198,9 @@ type State = Snapshot & {
    * (`lib/appearance.ts`), сондықтан браузерде сақталады.
    */
   quality: Quality
+  /** Жеке редактор баптауы; өндіріс конфигіне және undo тарихына кірмейді. */
+  snapOptions: SnapOptions
+  setSnapOptions(options: SnapOptions): void
   /**
    * Масштаб үшін тұратын адамның силуэті (`src/core/silhouette.ts`).
    * Жобаға ЖАЗЫЛМАЙДЫ: ол — көрініс, жиһаздың қасиеті емес.
@@ -290,6 +298,9 @@ type State = Snapshot & {
   groupSelected(ids: string[], groupId: string, name: string): void
   ungroup(id: string): void
   reparent(id: string, parentId: string): void
+  arrayNode(id: string, opts: ArrayOptions): void
+  translateNodes(moves: readonly { id: string; delta: Vec3 }[], opts?: { continueGesture?: boolean }): void
+  arrangeNodes(ids: readonly string[], axis: Axis, mode: BoxAlignment | 'distribute'): void
   placeLibraryItem(item: LibraryItem, parentId?: string): void
   replaceFreeBoardMaterial(oldId: string, newId: string): void
   replaceProjectMaterial(oldId: string, newId: string): void
@@ -666,6 +677,15 @@ export const useConfigurator = create<State>((set, get) => ({
   openPanels: {},
   projection: 'perspective',
   quality: 'high',
+  snapOptions: { grid: 10, tolerance: 8 },
+  setSnapOptions(options) {
+    for (const [field, value] of Object.entries(options)) {
+      if (!Number.isSafeInteger(value) || value < 0) {
+        throw new ConfigValidationError(field, 'привязка мәні теріс емес бүтін мм болуы керек', '≥ 0 бүтін мм')
+      }
+    }
+    set({ snapOptions: options })
+  },
   silhouette: { on: false, height: DEFAULT_SILHOUETTE_HEIGHT },
   ar: { requestedAt: 0, busy: false, link: null, error: null },
   liveScene: null,
@@ -1302,6 +1322,24 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const next = reparentNode(s.root, id, parentId, s.layers)
     if (next !== s.root) set(treeEdit(s, next))
+  },
+  arrayNode(id, opts) {
+    const s = get()
+    const root = appendNodeArray(s.root, id, opts, s.layers)
+    flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
+    set(treeEdit(s, root))
+  },
+  translateNodes(moves, opts) {
+    const s = get()
+    const root = translateTreeNodes(s.root, moves, s.layers)
+    if (root !== s.root) {
+      set({ ...treeEdit(s, root), past: opts?.continueGesture ? s.past : [...s.past, snapshot(s)].slice(-HISTORY_LIMIT) })
+    }
+  },
+  arrangeNodes(ids, axis, mode) {
+    const s = get()
+    const root = arrangeTreeSelection(s.root, ids, s.catalog, s.layers, axis, mode, s.projectSettings ?? s.shop.settings)
+    if (root !== s.root) set(treeEdit(s, root))
   },
   placeLibraryItem(item, parentId) {
     const s = get()

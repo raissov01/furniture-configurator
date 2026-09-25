@@ -5,7 +5,7 @@ import type { DragEvent, KeyboardEvent, MouseEvent } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
 import { ConfigValidationError, flattenTree } from '@/src/core/index'
-import type { FlatScene, GroupNode } from '@/src/core/index'
+import type { Axis, FlatScene, GroupNode } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { buildCanonicalRows, canDropInto, externalSelectionNodeIds, selectTreeRows } from './canonicalTreeRows'
 import type { CanonicalTreeRow } from './canonicalTreeRows'
@@ -23,11 +23,13 @@ type Props = {
   onGroup: (ids: string[], groupId: string, name: string) => void
   onUngroup: (id: string) => void
   onReparent: (id: string, parentId: string) => void
+  onArray: (id: string, opts: { axis: Axis; count: number; step: number }) => void
+  onArrange: (ids: string[], axis: Axis, mode: 'min' | 'center' | 'max' | 'distribute') => void
 }
 
 /** One canonical project tree. The persisted node tree, not a second UI tree, drives its rows. */
 export function StructureTreeView({ root, rows, activeId, selected, onSelectNode, onSelectPart,
-  onRename, onHidden, onLocked, onGroup, onUngroup, onReparent }: Props) {
+  onRename, onHidden, onLocked, onGroup, onUngroup, onReparent, onArray, onArrange }: Props) {
   const [tab, setTab] = useState<'project' | 'selection'>('project')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [selectedNodes, setSelectedNodes] = useState<string[]>([])
@@ -36,6 +38,13 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [arrayOpen, setArrayOpen] = useState(false)
+  const [arrayAxis, setArrayAxis] = useState<Axis>('x')
+  const [arrayCount, setArrayCount] = useState(2)
+  const [arrayStep, setArrayStep] = useState(100)
+  const [arrangeAxis, setArrangeAxis] = useState<Axis>('x')
+  const snapOptions = useConfigurator((s) => s.snapOptions)
+  const setSnapOptions = useConfigurator((s) => s.setSnapOptions)
   const byId = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows])
   const selectable = useMemo(() => rows.filter((row) => row.kind !== 'part' && row.id !== root.id && !row.locked).map((row) => row.id), [rows, root.id])
   const lastExternal = useRef<string | null>(null)
@@ -84,15 +93,25 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
     const row = id ? byId.get(id) : undefined
     if (id && row?.kind === 'group' && !row.locked && id !== root.id && run(() => onUngroup(id))) setSelectedNodes([])
   }
+  const arrange = (mode: 'min' | 'center' | 'max' | 'distribute') => {
+    if (selectedNodes.length < (mode === 'distribute' ? 3 : 2)) return
+    run(() => onArrange(selectedNodes, arrangeAxis, mode))
+  }
+  const makeArray = () => {
+    const id = selectedNodes.length === 1 ? selectedNodes[0] : null
+    if (id && run(() => onArray(id, { axis: arrayAxis, count: arrayCount, step: arrayStep }))) setArrayOpen(false)
+  }
   const collapsedAncestor = (row: CanonicalTreeRow): boolean => {
     let parent = row.parentId
     while (parent) { if (collapsed[parent]) return true; parent = byId.get(parent)?.parentId ?? null }
     return false
   }
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.target instanceof HTMLInputElement) return
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return
     const key = event.key.toLowerCase()
-    if ((event.ctrlKey || event.metaKey) && key === 'g') {
+    if ((event.ctrlKey || event.metaKey) && event.altKey && ['1', '2', '3', '4'].includes(key)) {
+      event.preventDefault(); arrange(({ '1': 'min', '2': 'center', '3': 'max', '4': 'distribute' } as const)[key as '1' | '2' | '3' | '4'])
+    } else if ((event.ctrlKey || event.metaKey) && key === 'g') {
       event.preventDefault(); if (event.shiftKey) ungroup(); else group()
     } else if (key === 'f2') {
       const row = focusId ? byId.get(focusId) : undefined
@@ -130,6 +149,41 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
       <button type="button" disabled={selectedNodes.length !== 1 || byId.get(selectedNodes[0] ?? '')?.kind !== 'group'} onClick={ungroup}
         title={tr('Разгруппировать (Ctrl+Shift+G)')} className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">{tr('Разгруппировать')}</button>
       <span className="ml-auto text-neutral-500">{selectedNodes.length}</span>
+    </div>
+    <div className="flex flex-wrap items-center gap-1 border-b border-neutral-300 pb-1 dark:border-neutral-700" data-testid="arrange-tools">
+      <select aria-label={tr('Ось выравнивания')} value={arrangeAxis} onChange={(event) => setArrangeAxis(event.target.value as Axis)}
+        className="border border-neutral-300 bg-white px-1 py-0.5 dark:border-neutral-700 dark:bg-neutral-900">
+        {(['x', 'y', 'z'] as const).map((axis) => <option key={axis} value={axis}>{axis.toUpperCase()}</option>)}
+      </select>
+      {(['min', 'center', 'max', 'distribute'] as const).map((mode, index) => <button key={mode} type="button"
+        disabled={selectedNodes.length < (mode === 'distribute' ? 3 : 2)} onClick={() => arrange(mode)}
+        title={`${tr(({ min: 'По началу', center: 'По центру', max: 'По концу', distribute: 'Распределить' })[mode])} (Ctrl+Alt+${index + 1})`}
+        data-testid={`arrange-${mode}`}
+        className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">
+        {tr(({ min: 'Начало', center: 'Центр', max: 'Конец', distribute: 'Равномерно' })[mode])}
+      </button>)}
+      <button type="button" disabled={selectedNodes.length !== 1} onClick={() => setArrayOpen((open) => !open)}
+        className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">{tr('Массив')}</button>
+    </div>
+    {arrayOpen && <div className="flex flex-wrap items-end gap-1 border-b border-neutral-300 pb-1 dark:border-neutral-700" data-testid="array-tools">
+      <label>{tr('Ось')}<select value={arrayAxis} onChange={(event) => setArrayAxis(event.target.value as Axis)}
+        className="block border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900">
+        {(['x', 'y', 'z'] as const).map((axis) => <option key={axis} value={axis}>{axis.toUpperCase()}</option>)}
+      </select></label>
+      <label>{tr('Копий')}<input type="number" min={1} max={1000} value={arrayCount} onChange={(event) => setArrayCount(Number(event.target.value))}
+        className="block w-16 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900" /></label>
+      <label>{tr('Шаг, мм')}<input type="number" step={1} value={arrayStep} onChange={(event) => setArrayStep(Number(event.target.value))}
+        className="block w-20 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900" /></label>
+      <button type="button" onClick={makeArray} disabled={selectedNodes.length !== 1}
+        className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">{tr('Создать')}</button>
+    </div>}
+    <div className="flex gap-2 border-b border-neutral-300 pb-1 dark:border-neutral-700" data-testid="snap-tools">
+      <label>{tr('Сетка, мм')}<input type="number" min={0} step={1} value={snapOptions.grid}
+        onChange={(event) => run(() => setSnapOptions({ ...snapOptions, grid: Number(event.target.value) }))}
+        className="ml-1 w-14 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900" /></label>
+      <label>{tr('Порог, мм')}<input type="number" min={0} step={1} value={snapOptions.tolerance}
+        onChange={(event) => run(() => setSnapOptions({ ...snapOptions, tolerance: Number(event.target.value) }))}
+        className="ml-1 w-14 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900" /></label>
     </div>
     {error && <p role="alert" className="border border-red-600 p-1 text-red-700">{error}</p>}
     <div role="tree" aria-label={tr('Структура проекта')} onKeyDown={onKeyDown} className="min-h-0 overflow-auto">
@@ -186,6 +240,8 @@ export function StructurePanel() {
   const setNodeHidden = useConfigurator((s) => s.setNodeHidden)
   const setNodeLocked = useConfigurator((s) => s.setNodeLocked)
   const groupSelected = useConfigurator((s) => s.groupSelected)
+  const arrayNode = useConfigurator((s) => s.arrayNode)
+  const arrangeNodes = useConfigurator((s) => s.arrangeNodes)
   const ungroup = useConfigurator((s) => s.ungroup)
   const reparent = useConfigurator((s) => s.reparent)
   const { scene, error } = useMemo((): { scene: FlatScene; error: string | null } => {
@@ -205,6 +261,8 @@ export function StructurePanel() {
       onHidden={(id, hidden) => { setNodeHidden(id, hidden); setSelected(null) }}
       onLocked={setNodeLocked}
       onGroup={groupSelected}
+      onArray={arrayNode}
+      onArrange={arrangeNodes}
       onUngroup={(id) => { ungroup(id); setSelected(null) }}
       onReparent={(id, parentId) => { reparent(id, parentId); setSelected(null) }} />
   </>

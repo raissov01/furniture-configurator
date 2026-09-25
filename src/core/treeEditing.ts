@@ -1,5 +1,7 @@
 /** Immutable editor operations for the canonical scene tree. */
 import { ConfigValidationError } from './errors'
+import { arrayNodes } from './array'
+import type { Vec3 } from './types'
 import { assertNodeEditable, DEFAULT_LAYER_ID, isNodeHiddenByLayer, resolveLayer } from './layers'
 import { findNode, walkTree } from './tree'
 import type { Layer } from './layers'
@@ -166,4 +168,75 @@ export function ungroupNode(root: GroupNode, id: string, layers: Layer[]): Group
     transform: relativeTransform(worldPose(root, child.id), parentPose) }))
   return mapGroup(root, parent.id, (group) => ({ ...group,
     children: group.children.flatMap((child) => child.id === id ? children : [child]) }))
+}
+
+/** Бастапқы түйіннің қасына сызықтық массивті қосады; бұрынғы массивпен id қиылыспайды. */
+export function appendNodeArray(root: GroupNode, id: string, opts: import('./array').ArrayOptions, layers: Layer[]): GroupNode {
+  const node = assertTreeNodeEditable(root, id, layers)
+  const existing = new Set<string>()
+  walkTree(root, (entry) => existing.add(entry.id))
+  let startIndex = 1
+  let copies = arrayNodes(node, { ...opts, startIndex })
+  const collides = (items: SceneNode[]): boolean => {
+    const ids: string[] = []
+    for (const entry of items) {
+      const visit = (candidate: SceneNode): void => {
+        ids.push(candidate.id)
+        if (candidate.kind === 'group') candidate.children.forEach(visit)
+      }
+      visit(entry)
+    }
+    return new Set(ids).size !== ids.length || ids.some((item) => existing.has(item))
+  }
+  while (collides(copies)) {
+    startIndex += opts.count
+    if (startIndex > 100000) throw new ConfigValidationError('nodeId', 'массив id орны таусылды', 'бірегей id')
+    copies = arrayNodes(node, { ...opts, startIndex })
+  }
+  const parent = parentOf(root, id)!
+  return mapGroup(root, parent.id, (group) => {
+    const children = [...group.children]
+    children.splice(children.findIndex((child) => child.id === id) + 1, 0, ...copies)
+    return { ...group, children }
+  })
+}
+
+/** Әлем кеңістігіндегі бүтін мм дельталарды ата түйіннің жергілікті орнына аударады. */
+export function translateTreeNodes(root: GroupNode, moves: readonly { id: string; delta: Vec3 }[], layers: Layer[]): GroupNode {
+  if (moves.length === 0) return root
+  const ids = new Set<string>()
+  const updated = new Map<string, Transform>()
+  for (const { id, delta } of moves) {
+    if (ids.has(id)) throw new ConfigValidationError('nodeIds', 'id қайталанды', 'бірегей id')
+    ids.add(id)
+    assertTreeNodeEditable(root, id, layers)
+    for (const axis of ['x', 'y', 'z'] as const) {
+      if (!Number.isSafeInteger(delta[axis])) throw new ConfigValidationError(`delta.${axis}`, 'бүтін мм керек', 'бүтін мм')
+    }
+    if (delta.x === 0 && delta.y === 0 && delta.z === 0) continue
+    const current = worldPose(root, id)
+    const parent = parentOf(root, id)!
+    const nextPos = {
+      x: current.position.x + delta.x,
+      y: current.position.y + delta.y,
+      z: current.position.z + delta.z,
+    }
+    for (const axis of ['x', 'y', 'z'] as const) {
+      if (!Number.isSafeInteger(nextPos[axis])) throw new ConfigValidationError(`transform.pos.${axis}`, 'орын шектен асты', 'қауіпсіз бүтін мм')
+    }
+    updated.set(id, relativeTransform({ position: nextPos, rotationY: current.rotationY }, worldPose(root, parent.id)))
+  }
+  for (const id of ids) {
+    let ancestor = parentOf(root, id)
+    while (ancestor) {
+      if (ids.has(ancestor.id)) throw new ConfigValidationError('nodeIds', 'топ пен оның баласын бірге жылжытуға болмайды', 'қиылыспайтын түйіндер')
+      ancestor = parentOf(root, ancestor.id)
+    }
+  }
+  if (updated.size === 0) return root
+  const step = (group: GroupNode): GroupNode => ({ ...group, children: group.children.map((node) => {
+    const transform = updated.get(node.id) ?? node.transform
+    return node.kind === 'group' ? { ...step(node), transform } : { ...node, transform }
+  }) })
+  return step(root)
 }
