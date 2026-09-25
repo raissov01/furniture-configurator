@@ -18,6 +18,8 @@
  */
 
 import { ConfigValidationError } from './errors'
+import { KITCHEN_EXPANSION_TEMPLATES } from './templatesKitchenExpansion'
+import { WARDROBE_EXPANSION_TEMPLATES } from './templatesWardrobeExpansion'
 import type {
   BackMode,
   CabinetConfig,
@@ -29,7 +31,7 @@ import type {
   ShelfKind,
 } from './types'
 
-export type TemplateCategory = 'kitchen' | 'wardrobe' | 'living' | 'desk' | 'bed' | 'storage'
+export type TemplateCategory = 'kitchen' | 'wardrobe' | 'living' | 'desk' | 'bed' | 'storage' | 'entry' | 'bathroom'
 
 /** UI-да көрсетілетін ұсынылған аралық. Қатты шектеу емес. */
 export type SizeRange = { min: number; max: number }
@@ -38,6 +40,10 @@ export type CabinetTemplate = {
   id: string
   name: string
   category: TemplateCategory
+  /** Галереядағы ішкі санат; өндірістік конфигурацияға әсер етпейді. */
+  subcategory?: string | undefined
+  /** Дереккөзден расталған дискрет ендер; range үздіксіз редакциялауды шектемейді. */
+  recommendedWidths?: number[] | undefined
   /** Бір жолдық сипаттама — галереяда карточка астында тұрады */
   description: string
 
@@ -74,7 +80,21 @@ export const TEMPLATE_CATEGORIES: { value: TemplateCategory; label: string }[] =
   { value: 'desk', label: 'Столы' },
   { value: 'bed', label: 'Кровати' },
   { value: 'storage', label: 'Хранение' },
+  { value: 'entry', label: 'Прихожая' },
+  { value: 'bathroom', label: 'Ванная' },
 ]
+
+function defaultSubcategory(template: CabinetTemplate): string {
+  const { id, category } = template
+  if (category === 'kitchen') return id.includes('-wall-') ? 'Верхние' : id.includes('-tall-') ? 'Пеналы' : 'Нижние'
+  if (category === 'wardrobe') return id.includes('sliding') ? 'Купе' : id.includes('pantograph') ? 'Гардеробные' : id.includes('antresol') ? 'Антресоли' : id.includes('rod') ? 'Со штангой' : 'Распашные'
+  if (category === 'living') return id.includes('tv-') ? 'ТВ-тумбы' : 'Стеллажи'
+  if (category === 'desk') return 'Письменные столы'
+  if (category === 'bed') return id.includes('bench') ? 'Банкетки' : 'Кровати'
+  if (category === 'entry') return id.includes('shoe') ? 'Обувницы' : id.includes('hallway') ? 'Открытые' : 'Банкетки'
+  if (category === 'bathroom') return 'Шкафы для ванной'
+  return id.includes('shelving') ? 'Стеллажи' : id.includes('antresol') ? 'Антресоли' : 'Тумбы'
+}
 
 const shelves = (count: number, kind: ShelfKind = 'adjustable'): SectionContent[] =>
   count > 0 ? [{ kind: 'shelves', count, shelfKind: kind }] : [{ kind: 'empty' }]
@@ -121,7 +141,7 @@ const LDSP_WHITE = 'ldsp16-w980'
 const LDSP_OAK = 'ldsp16-h1145'
 const HDF_WHITE = 'hdf3-white'
 
-export const SEED_TEMPLATES: CabinetTemplate[] = [
+const EXISTING_TEMPLATES: CabinetTemplate[] = [
   // ── Кухня ────────────────────────────────────────────────────────────────
   // Кухня корпусының биіктігі 720 мм — үстіне 100 мм цоколь мен 38 мм
   // столешница қосылғанда стандарт 858 мм жұмыс биіктігі шығады. Цоколь әлі
@@ -562,7 +582,7 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
   {
     id: 'bathroom-600',
     name: 'Шкаф в ванную 600',
-    category: 'storage',
+    category: 'bathroom',
     description: 'Неглубокий белый корпус, 2 полки, 2 фасада.',
     height: 800, width: 600, depth: 250,
     range: { height: { min: 400, max: 1600 }, width: { min: 300, max: 900 }, depth: { min: 200, max: 400 } },
@@ -598,7 +618,7 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
   {
     id: 'shoe-rack-800',
     name: 'Обувница 800',
-    category: 'storage',
+    category: 'entry',
     description: '3 полки, 2 фасада, глубина 300 мм.',
     height: 900, width: 800, depth: 300,
     range: { height: { min: 500, max: 1400 }, width: { min: 400, max: 1200 }, depth: { min: 250, max: 450 } },
@@ -620,6 +640,15 @@ export const SEED_TEMPLATES: CabinetTemplate[] = [
     sections: [section(1, 0, 2)],
   },
 ]
+
+export const SEED_TEMPLATES: CabinetTemplate[] = [
+  ...EXISTING_TEMPLATES,
+  ...KITCHEN_EXPANSION_TEMPLATES,
+  ...WARDROBE_EXPANSION_TEMPLATES,
+].map((template) => ({
+  ...template,
+  subcategory: template.subcategory ?? defaultSubcategory(template),
+}))
 
 export function findTemplate(id: string): CabinetTemplate | undefined {
   return SEED_TEMPLATES.find((t) => t.id === id)
