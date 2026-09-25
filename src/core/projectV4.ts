@@ -58,6 +58,9 @@ const board: z.ZodType<BoardSpec> = z.strictObject({
   }),
   edges: z.strictObject({ L1: edge, L2: edge, W1: edge, W2: edge }),
   grainAlongLength: z.boolean(),
+  veneerGroup: z.string().min(1).refine((value) => value.trim() === value && value.length > 0, {
+    message: 'veneerGroup бос емес, шеттерінде бос орынсыз болуы керек',
+  }).optional(),
   role: z.enum([
     'side', 'top', 'bottom', 'shelf', 'divider', 'back', 'front',
     'drawerSide', 'drawerBack', 'drawerBottom', 'plinth', 'rail', 'custom',

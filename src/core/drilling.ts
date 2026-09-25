@@ -27,6 +27,7 @@ import {
   SHELF_PIN_GROUP, SHELF_PIN_PITCH,
 } from './constants'
 import { handleBorePoints } from './fittings'
+import { fittingById, fittingDrillingTable, requireRunnerPattern, resolveHingeFrontPattern } from './data/fittings'
 import { ConfigValidationError } from './errors'
 import type { MillingPath } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
@@ -404,6 +405,52 @@ export function hingeHoles(
   ctx: Ctx,
   system?: HingeSystem,
 ): void {
+  if (system?.fittingProductId) {
+    const id = system.fittingProductId
+    if (fittingById(id)?.brand.toLowerCase() !== system.brand) {
+      throw new ConfigValidationError('fittingProductId',
+        `${id}: артикул өндірушісі ${system.brand} жүйесіне сәйкес емес`)
+    }
+    const pattern = resolveHingeFrontPattern(
+      id, system.cupFromEdge, ctx.thickness(front), ctx.settings.hingeCupMount)
+    // Фасадтағы толық ресми схема табылса да, жауап планканы жалпы цех
+    // Ø5×12 схемасымен алмастыруға болмайды. Алдымен толықтығын тексереміз:
+    // сәтсіз жағдайда ешбір панельге жартылай тесік жазылмайды.
+    const plate = carcassPanel
+      ? fittingDrillingTable(id).find((row) => row.operation === 'plateFixingReference') : undefined
+    if (carcassPanel && (!plate || plate.diameterMm === null
+      || typeof plate.depthMm !== 'number' || plate.pitchMm === null
+      || plate.edgeDistanceMm?.fromCabinetFrontEdge === undefined)) {
+      throw new ConfigValidationError('fittingProductId',
+        `${id}: plateFixingReference толық ресми тесік схемасы жоқ`,
+        'планканың диаметрі, тереңдігі, аралығы және алдыңғы шегінісі')
+    }
+    const positions = spreadAlongJoint(front.finishedLength, hingeCount(front.finishedLength), system.endOffset)
+    const cupY = hingeSide === 'left' ? system.cupFromEdge : front.finishedWidth - system.cupFromEdge
+    for (const x of positions) {
+      for (const hole of pattern) {
+        const hx = x + hole.along
+        const hy = cupY + (hingeSide === 'left' ? hole.across : -hole.across)
+        requireCutFaceCoordinate(front, hx, hy, hole.diameter, 'x', 'fittingProductId', ctx)
+        requireCutFaceCoordinate(front, hx, hy, hole.diameter, 'y', 'fittingProductId', ctx)
+        pushFace(front, 'inner', hx, hy, hole.diameter, hole.depth, 'hinge', ctx, id)
+      }
+    }
+    if (carcassPanel && plate && plate.diameterMm !== null && typeof plate.depthMm === 'number'
+      && plate.pitchMm !== null && plate.edgeDistanceMm?.fromCabinetFrontEdge !== undefined) {
+      const frontCentre = front.position[carcassPanel.orientation.thickness] + front.finishedWidth / 2
+      const plateFace = faceToward(carcassPanel, frontCentre, ctx)
+      for (const x of positions) {
+        for (const d of [-plate.pitchMm / 2, plate.pitchMm / 2]) {
+          pushFace(carcassPanel, plateFace,
+            localX(carcassPanel, front.position.y + x + d),
+            localY(carcassPanel, plate.edgeDistanceMm.fromCabinetFrontEdge),
+            plate.diameterMm, plate.depthMm, 'hinge', ctx, system.plateHardwareId)
+        }
+      }
+    }
+    return
+  }
   // Жүйе берілмесе — §4.9-дағы константалар (ескі шақырулар осылай жүреді).
   const cupDiameter = system?.cupDiameter ?? HINGE_CUP_DIAMETER
   const cupDepth = system?.cupDepth ?? HINGE_CUP_DEPTH
@@ -555,6 +602,11 @@ export function runnerHoles(
   ctx: Ctx,
   system?: DrawerSystem | null,
 ): void {
+  if (system?.fittingProductId) {
+    // Номинал мен бекіту саңылауларының толық артикулдық қатары қажет.
+    // Жарияланбаған ұяшықтарды жалпы roller/ball/tandem сандарымен толтырмаймыз.
+    requireRunnerPattern(system.fittingProductId)
+  }
   /*
    * Тесіктің схемасы направляющаның ЖҮЙЕСІНЕН алынады (`drawerSystems.ts`).
    * Жүйе таңдалмаса — Blum Tandem-нің схемасы, ол qdesign-нің CNC экспортынан

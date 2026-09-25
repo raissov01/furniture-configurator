@@ -280,6 +280,13 @@ export function priceProject(
    */
   overrides?: PriceOverrides,
 ): PriceBreakdown {
+  if (nesting.unplaced.length > 0) {
+    throw new ConfigValidationError(
+      'nesting.unplaced',
+      `раскройға сыймаған деталь: ${nesting.unplaced.map((part) => part.panelId).join(', ')}`,
+      'барлық деталь параққа сыйсын',
+    )
+  }
   const missingPrices: string[] = []
 
   const materialById = new Map(shop.materials.map((m) => [m.id, m]))

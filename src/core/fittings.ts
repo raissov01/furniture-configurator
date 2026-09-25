@@ -22,7 +22,7 @@ import type { PanelHandle } from './types'
 
 // ── Ілгек ────────────────────────────────────────────────────────────────────
 
-export type HingeBrand = 'blum' | 'hettich' | 'hafele' | 'gtv' | 'dtc' | 'boyard'
+export type HingeBrand = 'blum' | 'hettich' | 'hafele' | 'gtv' | 'dtc' | 'boyard' | 'aks'
 
 /** Жабылу түрі: доводчикпен (интегрированный) немесе серіппесіз. */
 export type HingeClosing = 'soft' | 'none'
@@ -35,6 +35,8 @@ export type HingeMount = 'overlay' | 'half' | 'inset'
 
 export type HingeSystem = {
   id: string
+  /** Ресми артикулдық присадка. Берілсе, drilling.ts цехтық жалпы схеманы қолданбайды. */
+  fittingProductId?: string
   brand: HingeBrand
   name: string
   closing: HingeClosing
@@ -70,6 +72,7 @@ const HINGE_BRAND_NAMES: Record<HingeBrand, string> = {
   gtv: 'GTV',
   dtc: 'DTC',
   boyard: 'Boyard',
+  aks: 'AKS',
 }
 
 export function hingeBrandName(brand: HingeBrand): string {
@@ -469,7 +472,8 @@ export function handleShape(
 
 export const HingeSystemSchema = z.object({
   id: z.string().min(1),
-  brand: z.enum(['blum', 'hettich', 'hafele', 'gtv', 'dtc', 'boyard']),
+  fittingProductId: z.string().min(1).optional(),
+  brand: z.enum(['blum', 'hettich', 'hafele', 'gtv', 'dtc', 'boyard', 'aks']),
   name: z.string(),
   closing: z.enum(['soft', 'none']),
   arm: z.enum(['cross', 'linear']),

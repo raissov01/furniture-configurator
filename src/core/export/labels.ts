@@ -15,6 +15,7 @@
  */
 
 import fontkit from '@pdf-lib/fontkit'
+import qrcode from 'qrcode-generator'
 import { PDFDocument, rgb } from 'pdf-lib'
 import type { PDFFont, PDFPage } from 'pdf-lib'
 import { partNumbers } from '../cutList'
@@ -54,6 +55,34 @@ export type PartLabel = {
   /** Қай парақтан кесіледі. Раскрой берілмесе — `null`. */
   sheet: number | null
   note: string
+}
+
+export type PartQr = { projectId: string; panelId: string; version: number }
+
+/** Қысқа офлайн payload; мекенжай да, сервер сұранысы да қажет емес. */
+export function encodePartQr(part: PartQr): string {
+  if (!part.projectId || part.projectId.length > 80 || !part.panelId || part.panelId.length > 120 ||
+    !Number.isSafeInteger(part.version) || part.version < 1) {
+    throw new Error('QR: projectId, panelId және оң бүтін version қажет')
+  }
+  const bytes = new TextEncoder().encode(JSON.stringify([part.projectId, part.panelId, part.version]))
+  return `F1.${btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`
+}
+
+export function decodePartQr(value: string): PartQr {
+  if (!/^F1\.[A-Za-z0-9_-]{4,400}$/.test(value)) throw new Error('QR: белгісіз пішім')
+  let parsed: unknown
+  try {
+    const bytes = Uint8Array.from(atob(value.slice(3).replace(/-/g, '+').replace(/_/g, '/')), (ch) => ch.charCodeAt(0))
+    parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as unknown
+  } catch {
+    throw new Error('QR: бүлінген дерек')
+  }
+  if (!Array.isArray(parsed) || parsed.length !== 3 || typeof parsed[0] !== 'string' ||
+    typeof parsed[1] !== 'string' || typeof parsed[2] !== 'number') throw new Error('QR: бүлінген дерек')
+  const part = { projectId: parsed[0], panelId: parsed[1], version: parsed[2] }
+  if (encodePartQr(part) !== value) throw new Error('QR: бүлінген дерек')
+  return part
 }
 
 /**
@@ -208,7 +237,25 @@ function edgeDiagram(ctx: Ctx, x: number, y: number, label: PartLabel): void {
   mark(label.edges.W2, x + w + 7, y + h / 2 - 2)
 }
 
-function drawLabel(ctx: Ctx, x: number, y: number, w: number, h: number, label: PartLabel, projectName: string): void {
+function drawPartQr(ctx: Ctx, x: number, y: number, payload: string): void {
+  // QR генераторы тек деректі кодтайды; PDF-ке тор ұяшықтары вектор ретінде түседі.
+  const qr = qrcode(0, 'M')
+  qr.addData(payload)
+  qr.make()
+  const count = qr.getModuleCount()
+  const size = 38 / (count + 8) // 4 ұяшықтық тыныш жиек, сканерге қажет.
+  ctx.page.drawRectangle({ x, y, width: 38, height: 38, color: rgb(1, 1, 1) })
+  for (let row = 0; row < count; row += 1) {
+    for (let col = 0; col < count; col += 1) {
+      if (qr.isDark(row, col)) ctx.page.drawRectangle({
+        x: x + (col + 4) * size, y: y + (count - row + 3) * size,
+        width: size, height: size, color: INK,
+      })
+    }
+  }
+}
+
+function drawLabel(ctx: Ctx, x: number, y: number, w: number, h: number, label: PartLabel, projectName: string, qrPayload?: string): void {
   // Қиятын сызық: жай қағазға басқанда цех осы бойымен қияды.
   ctx.page.drawRectangle({ x, y, width: w, height: h, borderColor: RULE, borderWidth: 0.5 })
 
@@ -241,24 +288,32 @@ function drawLabel(ctx: Ctx, x: number, y: number, w: number, h: number, label: 
 
   // Сұлба материал жолынан ЖОҒАРЫ тұруы керек: астындағы кромка белгісі
   // (L1) мәтінмен беттесіп, «16 мм 2.0» болып оқылмай қалатын.
-  edgeDiagram(ctx, right - 66, y + padding + 24, label)
+  edgeDiagram(ctx, right - 66, y + padding + (qrPayload ? 46 : 24), label)
+  if (qrPayload) drawPartQr(ctx, right - 38, y + 5, qrPayload)
 
   const grain = label.grain === null ? '' : label.grain === 'along' ? ' · текстура вдоль' : ' · текстура поперёк'
+  const bottomTextWidth = w - padding * 2 - (qrPayload ? 44 : 4)
   draw(ctx, left, y + padding + 8, `${label.materialName}, ${label.thickness} мм`, 6, {
-    color: MUTED, maxWidth: w - padding * 2 - 4,
+    color: MUTED, maxWidth: bottomTextWidth,
   })
   const bottom = [label.cabinetId, projectName].filter(Boolean).join(' · ') + grain
-  draw(ctx, left, y + padding, bottom, 5.5, { color: MUTED, maxWidth: w - padding * 2 })
+  draw(ctx, left, y + padding, bottom, 5.5, { color: MUTED, maxWidth: bottomTextWidth })
 }
 
 export type LabelsPdfInput = {
   labels: PartLabel[]
   projectName: string
   fonts: PdfFonts
+  /** Екеуі бірге берілсе, әр детальға офлайн QR салынады. */
+  projectId?: string
+  version?: number
 }
 
 /** Биркалар парағы: A4-ке 24 дана, детальдер ретімен. */
 export async function labelsPdf(input: LabelsPdfInput): Promise<Uint8Array> {
+  if ((input.projectId === undefined) !== (input.version === undefined)) {
+    throw new Error('QR: projectId және version бірге берілуі керек')
+  }
   const doc = await PDFDocument.create()
   doc.registerFontkit(fontkit)
   const regular = await doc.embedFont(input.fonts.regular, { subset: true })
@@ -280,7 +335,10 @@ export async function labelsPdf(input: LabelsPdfInput): Promise<Uint8Array> {
       const x = MARGIN + col * cellW
       // Жоғарыдан төмен толтырамыз: адам биркаларды солай оқиды.
       const y = PAGE.h - MARGIN - (row + 1) * cellH
-      drawLabel(ctx, x, y, cellW, cellH, label, input.projectName)
+      const qrPayload = input.projectId === undefined ? undefined : encodePartQr({
+        projectId: input.projectId, panelId: label.panelId, version: input.version!,
+      })
+      drawLabel(ctx, x, y, cellW, cellH, label, input.projectName, qrPayload)
     })
   }
 

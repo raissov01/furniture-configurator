@@ -75,7 +75,7 @@ describe('v3 → v4 root миграциясы', () => {
         length: 600, width: 300,
         orientation: { length: 'x', width: 'z', thickness: 'y' },
         edges: { L1: null, L2: null, W1: { bandId: SEED_CATALOG.edgeBands.find((b) => b.thickness === 2)!.id }, W2: { bandId: SEED_CATALOG.edgeBands.find((b) => b.thickness === 2)!.id } },
-        grainAlongLength: true, role: 'custom',
+        grainAlongLength: true, veneerGroup: 'facade-pair', role: 'custom',
         drilling: [{ face: 'inner', x: 10, y: 20, diameter: 5, depth: 8, purpose: 'shelfPin' }],
         cutouts: [{ shape: 'circle', id: 'hole', corner: 'bottomLeft', x: 50, y: 50, diameter: 20 }],
         corners: { bottomLeft: 0, bottomRight: 0, topRight: 0, topLeft: 0 },
@@ -85,6 +85,7 @@ describe('v3 → v4 root миграциясы', () => {
     const round = parseProjectV4(JSON.parse(JSON.stringify(migrated)))
     expect(round).toEqual(migrated)
     expect(flattenTree(round.root, SEED_CATALOG).nodes.at(-1)!.panels[0]!.cutLength).toBe(596)
+    expect(flattenTree(round.root, SEED_CATALOG).nodes.at(-1)!.panels[0]!.veneerGroup).toBe('facade-pair')
   })
 
   it('жарамсыз түйін мен қолмен жазылған cutLength өтпейді', () => {
@@ -99,6 +100,10 @@ describe('v3 → v4 root миграциясы', () => {
         grainAlongLength: true, role: 'custom', cutLength: 600 },
     }
     expect(() => parseProjectV4({ ...migrated, root: { ...migrated.root, children: [boardNode] } })).toThrow()
+    const validBoard = plainBoardNode()
+    expect(() => parseProjectV4({ ...migrated, root: { ...migrated.root, children: [
+      { ...validBoard, board: { ...validBoard.board, veneerGroup: '  ' } },
+    ] } })).toThrow()
     expect(() => parseProjectV4({ ...migrated, cabinets: legacy.cabinets })).toThrow()
   })
 

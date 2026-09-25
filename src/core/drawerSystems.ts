@@ -103,6 +103,8 @@ export function isMetalBoxSystem(id: string): id is MetalBoxSystemId {
 
 export type DrawerSystem = {
   id: DrawerSystemId
+  /** Ресми артикулдық присадка. Толық кесте болмаса CNC есептеуі тоқтайды. */
+  fittingProductId?: string
   /** Экранда да, сметада да көрінетін атау. */
   name: string
   /**
