@@ -19,6 +19,7 @@ export function arrayNodes(node: SceneNode, opts: ArrayOptions): SceneNode[] {
     const clone: SceneNode = { ...structuredClone(source), id: `${source.id}-array-${suffix}`, name: `${source.name} ${suffix}`,
       transform: { pos: { ...source.transform.pos }, rot: { ...source.transform.rot } },
       ...(source.kind === 'group' ? { children: source.children.map((child) => copy(child, suffix, offset, false)) } : {}) } as SceneNode
+    if (clone.kind === 'cabinet') clone.config = { ...clone.config, id: clone.id, name: clone.name }
     if (top) {
       const value = source.transform.pos[opts.axis] + opts.step * offset
       if (!Number.isSafeInteger(value)) throw new ConfigValidationError(`transform.pos.${opts.axis}`, 'орын шектен асты', 'қауіпсіз бүтін мм')

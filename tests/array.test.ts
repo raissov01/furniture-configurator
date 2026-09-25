@@ -27,6 +27,11 @@ describe('сызықтық массив', () => {
     if (result[0]?.kind === 'solid') result[0].solid.size.x = 999
     expect(node.solid.size.x).toBe(10)
   })
+  it('параметрлік шкафтың ішкі config.id-і көшірме id-іне тең болады', () => {
+    const cabinet = { kind: 'cabinet' as const, id: 'cab', name: 'Шкаф', transform: structuredClone(IDENTITY_TRANSFORM), config: { id: 'cab', name: 'Шкаф' } }
+    const result = arrayNodes(cabinet as Parameters<typeof arrayNodes>[0], { axis: 'x', count: 1, step: 100 })
+    expect(result[0]?.kind === 'cabinet' && result[0].config.id).toBe('cab-array-1')
+  })
   it('count, step және орын қауіпсіз бүтін мм', () => {
     expect(() => arrayNodes(node, { axis: 'x', count: 0, step: 5 })).toThrow(/count/)
     expect(() => arrayNodes(node, { axis: 'x', count: 2, step: 0.5 })).toThrow(/step/)
