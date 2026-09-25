@@ -67,15 +67,15 @@ const attr = (tag: string, name: string) => new RegExp(`(?:^|\\s)${name}="([^"]*
 const xmlText = (body: string) => [...body.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map((m) => xmlUnescape(m[1]!)).join('')
 const zipEntry = (files: Record<string, Uint8Array>, path: string) => files[path] ? textDecoder.decode(files[path]) : undefined
 
-function xlsxTable(bytes: Uint8Array): PriceTable {
-  if (bytes.length > 5_000_000) return fail('file', 'XLSX 5 МБ шегінен асады')
+function xlsxTable(bytes: Uint8Array, maxBytes: number, maxRows: number): PriceTable {
+  if (bytes.length > maxBytes) return fail('file', `XLSX ${maxBytes} байт шегінен асады`)
   let files: Record<string, Uint8Array>
   let inflated = 0
   try {
     files = unzipSync(bytes, { filter: (file) => {
       if (!/^(xl\/workbook\.xml|xl\/_rels\/workbook\.xml\.rels|xl\/sharedStrings\.xml|xl\/worksheets\/[^/]+\.xml)$/.test(file.name)) return false
       inflated += file.originalSize
-      if (inflated > 20_000_000) return fail('file', 'XLSX ішіндегі дерек 20 МБ шегінен асады')
+      if (inflated > maxBytes * 6) return fail('file', 'XLSX ішіндегі дерек шегінен асады')
       return true
     } })
   } catch (error) {
@@ -112,7 +112,7 @@ function xlsxTable(bytes: Uint8Array): PriceTable {
       cells[index - 1] = type === 's' ? strings[Number(value)] ?? '' : type === 'inlineStr' ? xmlText(body) : xmlUnescape(value)
     }
     if (cells.some((c) => c?.trim())) rows.push(Array.from({ length: cells.length }, (_, i) => cells[i] ?? ''))
-    if (rows.length > 20_001) return fail('file', 'XLSX жол саны 20 000-нан асады')
+    if (rows.length > maxRows + 1) return fail('file', `XLSX жол саны ${maxRows}-нан асады`)
   }
   if (rows.length < 2) return fail('file', 'XLSX ішінде тақырып пен дерек жолы жоқ')
   return { headers: rows[0]!.map((v) => v.trim()), rows: rows.slice(1) }
@@ -120,13 +120,16 @@ function xlsxTable(bytes: Uint8Array): PriceTable {
 
 export function parsePriceFile(
   data: string | Uint8Array, format: 'csv' | 'xlsx',
-  options: { csvEncoding?: 'utf-8' | 'windows-1251' } = {},
+  options: { csvEncoding?: 'utf-8' | 'windows-1251'; maxBytes?: number; maxRows?: number } = {},
 ): PriceTable {
   try {
-    if (data.length > 5_000_000) return fail('file', `${format.toUpperCase()} 5 МБ шегінен асады`)
+    const maxBytes = options.maxBytes ?? 5_000_000
+    const maxRows = options.maxRows ?? 20_000
+    if (data.length > maxBytes) return fail('file', maxBytes === 5_000_000
+      ? `${format.toUpperCase()} 5 МБ шегінен асады` : `${format.toUpperCase()} ${maxBytes} байт шегінен асады`)
     if (format === 'xlsx') {
       if (typeof data === 'string') return fail('file', 'XLSX байт ретінде берілуі керек')
-      return xlsxTable(data)
+      return xlsxTable(data, maxBytes, maxRows)
     }
     const decoder = options.csvEncoding === 'windows-1251' ? new TextDecoder('windows-1251') : textDecoder
     return csvTable(typeof data === 'string' ? data : decoder.decode(data))
