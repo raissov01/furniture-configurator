@@ -10,6 +10,18 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Название не может быть пустым': 'Name cannot be empty',
+  'Рабочее место': 'Workspace',
+  'Стиль рабочего места': 'Workspace style',
+  'Наш': 'Ours',
+  'Свойства': 'Properties',
+  'Показывать размеры': 'Show dimensions',
+  'Выбран элемент': 'Selected element',
+  'Элемент не выбран': 'No element selected',
+  'Камера': 'Camera',
+  'Камера 1': 'Camera 1',
+  'Применить': 'Apply',
+  'OK': 'OK',
   'Крепёж для присадки': 'Joint fastener',
   'Выберите крепёж': 'Choose a fastener',
   'Конфирмат': 'Confirmat',

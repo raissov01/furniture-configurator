@@ -66,7 +66,7 @@ export function BoardProperties({ node, panel, catalog }: { node: BoardNode; pan
     </div>
     {error && <p role="alert" className="border border-red-500 p-2 text-red-700">{error}</p>}
     <div className={tab === 'general' ? 'space-y-3' : 'hidden'}>
-      <Field label={tr('Название')}><input className="w-full border border-neutral-300 bg-white px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900"
+      <Field label={tr('Название')}><input data-properties-name className="w-full border border-neutral-300 bg-white px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900"
         value={name} onChange={(event) => setName(event.target.value)} onBlur={() => {
           if (name !== node.name) run(() => renameNode(node.id, name))
         }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} /></Field>

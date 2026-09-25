@@ -8,6 +8,7 @@ import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
+import { PropertiesDialog } from '@/components/PropertiesDialog'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
 import { RoomPlan } from '@/components/RoomPlan'
@@ -103,6 +104,7 @@ const BUDGET_MS = 100
 
 /** Деталировка тақтасы ашық па — браузерде сақталады (адамның өз ыңғайы). */
 const CUT_OPEN_KEY = 'furniture-configurator:cutlist-open'
+const WORKSPACE_STYLE_KEY = 'furniture-configurator:workspace-style'
 
 export function Workspace() {
   const cabinet = useConfigurator((s) => s.cabinets.find((entry) => entry.id === s.activeId))
@@ -212,6 +214,25 @@ export function Workspace() {
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
+  const [classic, setClassic] = useState(true)
+  const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
+  useEffect(() => {
+    try { setClassic(window.localStorage.getItem(WORKSPACE_STYLE_KEY) !== 'ours') }
+    catch (cause) { console.debug('Workspace style storage unavailable', cause) }
+  }, [])
+  const changeStyle = (next: boolean) => {
+    setClassic(next)
+    try { window.localStorage.setItem(WORKSPACE_STYLE_KEY, next ? 'classic' : 'ours') }
+    catch (cause) { console.debug('Workspace style storage unavailable', cause) }
+  }
+  useEffect(() => {
+    const open = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail
+      if (id) setPropertiesNodeId(id)
+    }
+    window.addEventListener('furniture:open-properties', open)
+    return () => window.removeEventListener('furniture:open-properties', open)
+  }, [])
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -228,6 +249,7 @@ export function Workspace() {
   // Автосақтау: бетті жаңартқанда жұмыс жоғалмауы керек. Кідіріс — өріске
   // сан теріп жатқанда әр таңбаға жазбау үшін.
   useEffect(() => {
+    if (propertiesNodeId) return
     const timer = setTimeout(() => {
       saveProjectLocally()
       // Тарихқа да жазамыз: автосақтау бір ғана кілтті қайта жазады да,
@@ -237,7 +259,7 @@ export function Workspace() {
       syncShare()
     }, 500)
     return () => clearTimeout(timer)
-  }, [room, root, layers, settings, catalog, cabinets, placements, saveProjectLocally, pushHistory, syncShare])
+  }, [room, root, layers, settings, catalog, cabinets, placements, propertiesNodeId, saveProjectLocally, pushHistory, syncShare])
 
   /*
    * Кідірістегі сақтау бет ЖАБЫЛҒАНДА/АУЫСҚАНДА жоғалмауы керек.
@@ -249,10 +271,10 @@ export function Workspace() {
    * жапса, соңғы өзгеріс кететін. `pagehide` — жабылудың сенімді оқиғасы.
    */
   useEffect(() => {
-    const flush = () => saveProjectLocally()
+    const flush = () => { if (!propertiesNodeId) saveProjectLocally() }
     window.addEventListener('pagehide', flush)
     return () => window.removeEventListener('pagehide', flush)
-  }, [saveProjectLocally])
+  }, [saveProjectLocally, propertiesNodeId])
 
   // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
   const spanWarnings = useMemo(() => shelfSpanWarnings(production.panels, shop), [production.panels, shop])
@@ -370,7 +392,8 @@ export function Workspace() {
   })
 
   return (
-    <div className="flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <div className={cn("flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100", classic && "p100-workspace")} data-workspace-style={classic ? "classic" : "ours"}>
+      {propertiesNodeId && <PropertiesDialog nodeId={propertiesNodeId} catalog={catalog} panels={activePanels} boardPanel={boardPanel} error={error?.field ?? null} onClose={() => setPropertiesNodeId(null)} />}
       <TemplateGallery />
       <AiPanel />
       <RoomPlan />
@@ -607,6 +630,13 @@ export function Workspace() {
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}
+          <label className="hidden items-center gap-1 text-xs lg:flex">
+            <span>{tr('Рабочее место')}</span>
+            <select aria-label={tr('Стиль рабочего места')} value={classic ? 'classic' : 'ours'} onChange={(event) => changeStyle(event.target.value === 'classic')} className="border border-neutral-300 bg-white px-1 py-1 text-xs">
+              <option value="classic">{tr('Классический')}</option>
+              <option value="ours">{tr('Наш')}</option>
+            </select>
+          </label>
           <AppearanceSwitch />
           <LangSwitch />
         </div>
@@ -882,7 +912,7 @@ export function Workspace() {
         <main className="relative min-h-[55vh] flex-1 lg:min-h-64" data-tour="scene">
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
-            <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} />
+            <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
           </div>
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
           {walk ? null : <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:w-72"><TreeDock /></div>}
@@ -952,7 +982,7 @@ export function Workspace() {
         </div>
         <aside className="flex min-h-0 flex-col border-l border-neutral-200 dark:border-neutral-800">
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
-          <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
+          <div className={cn("border-b border-neutral-200 px-3 py-2 dark:border-neutral-800", classic && "lg:hidden")}>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
               {tr('Модуль')}
               {cabinet && cabinets.length > 1
@@ -971,8 +1001,9 @@ export function Workspace() {
                 return <div className="text-[11px] tabular-nums text-neutral-500">{size.height} (H) × {size.width} (W) × {size.depth} (D)</div>
               })()}
             </> : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
+            {classic && (activeBoard || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
-          <div className="min-h-0 flex-1 overflow-auto p-3">
+          <div className={cn("min-h-0 flex-1 overflow-auto p-3", classic && "lg:hidden")}>
             <Dense>
               {/*
                 МОДУЛЬДІҢ ОРНЫ (qdesign «Модуль орны, мм»: X/Y/Z, Бұрылыс) енді
@@ -980,7 +1011,7 @@ export function Workspace() {
                 «бәрі бір терезеде» идеясы бойынша (docs/pro100/ui-design.md).
                 Бұрын осында бөлек Collapsible еді.
               */}
-              {hasActiveCabinet ? (
+              {propertiesNodeId ? null : hasActiveCabinet ? (
                 <fieldset disabled={!activeEditable}>
                   <Configurator invalidField={error?.field ?? null} panels={activePanels} />
                 </fieldset>
@@ -991,8 +1022,19 @@ export function Workspace() {
               ) : null}
             </Dense>
           </div>
+          {classic && <section className="p100-camera-pane hidden lg:block" aria-label={tr('Камера')}>
+            <div className="p100-camera-title">{tr('Камера 1')}</div>
+            <div className="p100-camera-controls">
+              <Button size="sm" onClick={() => { setCameraPreset('three-quarter'); setProjection('perspective') }}>{tr('Перспектива')}</Button>
+              <Button size="sm" onClick={() => { setCameraPreset('front'); setProjection('ortho') }}>{tr('Фас')}</Button>
+              <Button size="sm" onClick={() => setCameraPreset('plan')}>{tr('План')}</Button>
+              <Button size="sm" onClick={fitCamera}>{tr('Вписать в кадр')}</Button>
+              {(activeBoard || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+              <Button size="sm" onClick={addBoard}>{tr('+ доска')}</Button>
+            </div>
+          </section>}
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
-          <div className="flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800">
+          <div className={cn("flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800", classic && "lg:hidden")}>
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
             {activeBoard && <Button onClick={() => removeBoard(activeId)} disabled={!editableBoard}>{tr('Удалить доску')}</Button>}
@@ -1008,6 +1050,17 @@ export function Workspace() {
           </div>
         </aside>
       </div>
+      {classic && <footer className="p100-status hidden lg:flex" role="status" data-testid="p100-status">
+        <span>{selected ? `${tr('Выбран элемент')}: ${activeNode?.name ?? selected}` : tr('Элемент не выбран')}</span>
+        {selected && activeNode && <span className="ml-auto tabular-nums">
+          {tr('Положение')}: X {activeNode.transform.pos.x} · Y {activeNode.transform.pos.y} · Z {activeNode.transform.pos.z} мм
+          {' · '}{tr('Размеры')}: {activeNode.kind === 'cabinet'
+            ? `${activeNode.config.height} (H) × ${activeNode.config.width} (W) × ${activeNode.config.depth} (D)`
+            : activeNode.kind === 'board' && catalog.materials.find((material) => material.id === activeNode.board.materialId)
+              ? (() => { const size = boardDimensions(activeNode.board, catalog.materials.find((material) => material.id === activeNode.board.materialId)!); return `${size.height} (H) × ${size.width} (W) × ${size.depth} (D)` })()
+              : '—'} мм
+        </span>}
+      </footer>}
     </div>
   )
 }
