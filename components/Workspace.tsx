@@ -168,6 +168,8 @@ export function Workspace() {
   // тесіктер керек емес, ал цехта — керек.
   const showDrilling = useConfigurator((s) => s.showDrilling)
   const setShowDrilling = useConfigurator((s) => s.setShowDrilling)
+  const showFittings = useConfigurator((s) => s.showFittings)
+  const setShowFittings = useConfigurator((s) => s.setShowFittings)
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const syncShare = useConfigurator((s) => s.syncShare)
   const setShareCodeOpen = useConfigurator((s) => s.setShareCodeOpen)
@@ -484,9 +486,11 @@ export function Workspace() {
           <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
             {tr('Размеры на сцене')}
           </MenuItem>
-          <MenuItem active={showDrilling} onClick={() => setShowDrilling(!showDrilling)}>
-            {tr('Присадка на сцене')}
+          <MenuItem active={!showDrilling && !showFittings} onClick={() => { setShowDrilling(false); setShowFittings(false) }}>
+            {tr('Фурнитура: скрыть')}
           </MenuItem>
+          <MenuItem active={showDrilling} onClick={() => setShowDrilling(true)}>{tr('Фурнитура: отверстия')}</MenuItem>
+          <MenuItem active={showFittings} onClick={() => setShowFittings(true)}>{tr('Фурнитура: крепёж')}</MenuItem>
           <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
           <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
             {tr('Человек для масштаба')}
@@ -735,9 +739,11 @@ export function Workspace() {
           <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
             {tr('Размеры на сцене')}
           </MenuItem>
-          <MenuItem active={showDrilling} onClick={() => setShowDrilling(!showDrilling)}>
-            {tr('Присадка на сцене')}
+          <MenuItem active={!showDrilling && !showFittings} onClick={() => { setShowDrilling(false); setShowFittings(false) }}>
+            {tr('Фурнитура: скрыть')}
           </MenuItem>
+          <MenuItem active={showDrilling} onClick={() => setShowDrilling(true)}>{tr('Фурнитура: отверстия')}</MenuItem>
+          <MenuItem active={showFittings} onClick={() => setShowFittings(true)}>{tr('Фурнитура: крепёж')}</MenuItem>
           <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
           <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
             {tr('Человек для масштаба')}

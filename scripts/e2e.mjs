@@ -104,6 +104,8 @@ const SHOT_DIR = process.env['E2E_SHOTS'] ?? '/tmp/e2e-shots'
 let snapshot = null
 
 async function test(name, fn) {
+  const only = process.env['E2E_ONLY']
+  if (only && !name.includes(only)) return
   current = { name, checks: [] }
   try {
     await fn()
@@ -182,6 +184,67 @@ async function run() {
     const rows = await h.cutListRows()
     check(rows.length === 6, `кестеде 6 жол (${rows.length})`)
     check(rows.some((r) => r[0] === 'Боковина'), 'боковина бар')
+  })
+
+  await test('3D: фурнитура көрінісі, тесік пен бекіткіш режимі', async () => {
+    await h.goto('/configurator', 11000)
+    await h.clickText('Пропустить', 100)
+    check(await h.menu('Вид', 'Фурнитура: отверстия', 400), 'тесік режимі қосылды')
+    check(await h.menu('Вид', 'Фурнитура: крепёж', 500), 'бекіткіш режимі қосылды')
+    const explode = async (value) => {
+      const opened = await h.evaluate(`(() => {
+        const menu = [...document.querySelectorAll('button')].find((button) => button.textContent.trim() === 'Вид ▾')
+        if (!menu) return false
+        menu.click()
+        return true
+      })()`)
+      if (!opened) return false
+      await h.wait(150)
+      const changed = await h.evaluate(`(() => {
+      const label = [...document.querySelectorAll('label')].find((entry) => entry.textContent.includes('Разнести'))
+      const input = label?.querySelector('input[type="range"]')
+      if (!input) return false
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+      setter.call(input, ${JSON.stringify(String(value))})
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    })()`)
+      await h.wait(150)
+      await h.evaluate(`(() => {
+        const menu = [...document.querySelectorAll('button')].find((button) => button.textContent.trim() === 'Вид ▾')
+        menu?.click()
+      })()`)
+      return changed
+    }
+    check(await explode(0.65), 'жарылған көрініс қосылды')
+    await h.wait(400)
+    const image = await snapshot('fittings')
+    check(Boolean(image), `бекіткіштер скриншоты сақталды (${image ?? 'жоқ'})`)
+    check(await h.menu('Вид', 'Фурнитура: скрыть', 300), 'фурнитура жасырылды')
+    const hiddenImage = await snapshot('fittings-hidden')
+    check(Boolean(hiddenImage), 'жасырылған режимнің салыстыру скриншоты сақталды')
+    check(await explode(0), 'жарылған көрініс өшірілді')
+  })
+
+  await test('Properties: конфирмат пен минификсті ауыстыру', async () => {
+    check(await h.clickText('Производство', 150), 'өндіріс қосымшасы ашылды')
+    const chooseJoint = async (value) => h.evaluate(`(() => {
+      const label = [...document.querySelectorAll('label')]
+        .find((entry) => entry.textContent.includes('Крепёж корпуса'))
+      const select = label?.querySelector('select')
+      if (!select) return false
+      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set
+      setter.call(select, ${JSON.stringify(value)})
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    })()`)
+    check(await chooseJoint('minifix'), 'минификс таңдалды')
+    check(await h.until(`document.body.innerText.includes('Источник: этот корпус')`, 3000), 'шкаф override-ы көрінеді')
+    check(await h.clickText('Открыть присадку', 400), 'жаңа присадка ашылды')
+    check((await h.text()).includes('Минификс'), 'жаңа типтің тесіктері көрсетіледі')
+    await h.closeModals()
+    check(await chooseJoint('confirmat'), 'конфирматқа қайта ауысты')
   })
 
   await test('Габаритті өзгерту деталировканы қайта санайды', async () => {

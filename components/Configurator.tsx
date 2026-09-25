@@ -1613,6 +1613,19 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
         <p className="text-[11px] text-neutral-500">
           {tr('Присадка, раскрой и экспорт для станка — то, чего нет в PRO100 (там эту работу отдают Базису).')}
         </p>
+        <Field label={tr('Крепёж корпуса')}>
+          <Select
+            value={cabinet.carcassJoint ?? 'confirmat'}
+            onChange={(carcassJoint) => edit('carcassJoint', { carcassJoint })}
+            options={[
+              { value: 'confirmat', label: tr('Конфирмат') },
+              { value: 'minifix', label: tr('Минификс') },
+            ]}
+          />
+        </Field>
+        <p className="text-[10px] text-neutral-500">
+          {cabinet.carcassJoint ? tr('Источник: этот корпус') : tr('Источник: по умолчанию')}
+        </p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setDrillOpen(true)}>{tr('Открыть присадку')}</Button>
           <Link
