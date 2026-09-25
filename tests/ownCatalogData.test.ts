@@ -6,9 +6,9 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   OWN_CATALOG, OWN_CATALOG_INPUT, OWN_CATALOG_SOURCES, OWN_REFERENCE_PRICES, BASIS_CATALOG, SEED_CATALOG,
-  decorKey, generateCabinet, normalizeResearch, ownCatalogBuild, parseResearchFile, validateOwnCatalogInput,
+  decorKey, generateCabinet, linkReferencePrices, normalizeResearch, ownCatalogBuild, parseResearchFile, validateOwnCatalogInput,
 } from '../src/core/index'
-import type { CabinetConfig } from '../src/core/index'
+import type { CabinetConfig, SupplierPriceRow } from '../src/core/index'
 
 const {
   materials: OWN_MATERIALS, edgeBands: OWN_EDGE_BANDS, materialMeta: OWN_MATERIAL_META, edgeMeta: OWN_EDGE_META,
@@ -151,6 +151,12 @@ describe('өз каталогы — анықтамалық баға', () => {
   it('баға материалдың өзіне жазылмайды', () => {
     expect(OWN_MATERIALS.every((m) => m.pricePerSheet === 0)).toBe(true)
     expect(OWN_EDGE_BANDS.every((b) => b.pricePerMeter === 0)).toBe(true)
+  })
+
+  it('generated reference prices supplier input-тан детерминистік қайта құрылады', () => {
+    const rows = JSON.parse(readFileSync(new URL('input/supplierPrices.json', DIR), 'utf8')) as SupplierPriceRow[]
+    expect(linkReferencePrices(rows, OWN_MATERIALS, OWN_MATERIAL_META, OWN_EDGE_BANDS, OWN_EDGE_META))
+      .toEqual(OWN_REFERENCE_PRICES)
   })
 })
 
