@@ -35,6 +35,8 @@ export type HingeMount = 'overlay' | 'half' | 'inset'
 
 export type HingeSystem = {
   id: string
+  /** Ресми артикулдық присадка. Берілсе, drilling.ts цехтық жалпы схеманы қолданбайды. */
+  fittingProductId?: string
   brand: HingeBrand
   name: string
   closing: HingeClosing
@@ -469,6 +471,7 @@ export function handleShape(
 
 export const HingeSystemSchema = z.object({
   id: z.string().min(1),
+  fittingProductId: z.string().min(1).optional(),
   brand: z.enum(['blum', 'hettich', 'hafele', 'gtv', 'dtc', 'boyard']),
   name: z.string(),
   closing: z.enum(['soft', 'none']),
