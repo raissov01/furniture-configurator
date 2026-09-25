@@ -8,6 +8,7 @@
  */
 
 import { isWidthBevel } from './types'
+import { edgeMetresByBand } from './pricing'
 import type { Audience, Catalog, CutListRow, EdgeSpec, Panel } from './types'
 
 /**
@@ -18,7 +19,10 @@ import type { Audience, Catalog, CutListRow, EdgeSpec, Panel } from './types'
  */
 const bevelNote = (p: Panel): string => {
   const b = p.bevel
-  if (b && isWidthBevel(b)) return `Трапеция: ${b.widthAtStart}→${b.widthAtEnd}`
+  if (b && isWidthBevel(b)) {
+    const straight = b.alignWidth === 'end' ? 'L2' : 'L1'
+    return `Трапеция: ${b.widthAtStart}→${b.widthAtEnd}, прямая сторона ${straight}`
+  }
   return ''
 }
 
@@ -103,7 +107,7 @@ export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
       edgeW1: bandLabel(p.edges.W1),
       edgeW2: bandLabel(p.edges.W2),
       grain: material.hasGrain ? (p.grainAlongLength ? 'вдоль длины' : 'поперёк длины') : 'нет',
-      note: p.note || bevelNote(p),
+      note: [p.note, bevelNote(p)].filter(Boolean).join('; '),
     }
 
     // Бірдей деталь — бір жол. Кілтке орналасу КІРМЕЙДІ: цехқа детальдің
@@ -111,6 +115,7 @@ export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
     const key = [
       row.name, row.cutLength, row.cutWidth, row.thickness, row.material,
       row.edgeL1, row.edgeL2, row.edgeW1, row.edgeW2, row.grain, row.note,
+      JSON.stringify(p.bevel ?? null),
     ].join('|')
 
     const existing = groups.get(key)
@@ -127,16 +132,7 @@ export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
 
 /** Барлық кромканың жалпы ұзындығы, лента бойынша — метрмен (§6 үшін). */
 export function edgeBandTotals(panels: Panel[]): Map<string, number> {
-  const totals = new Map<string, number>()
-  const add = (e: EdgeSpec, mm: number) => {
-    if (!e) return
-    totals.set(e.bandId, (totals.get(e.bandId) ?? 0) + mm * 0.001)
-  }
-  for (const p of panels) {
-    add(p.edges.L1, p.finishedLength * p.qty)
-    add(p.edges.L2, p.finishedLength * p.qty)
-    add(p.edges.W1, p.finishedWidth * p.qty)
-    add(p.edges.W2, p.finishedWidth * p.qty)
-  }
-  return totals
+  // CLI деталировкасы мен смета бір физикалық жиекті өлшеуі керек:
+  // трапецияның алдыңғы кромкасы finishedLength емес, диагональ.
+  return edgeMetresByBand(panels)
 }

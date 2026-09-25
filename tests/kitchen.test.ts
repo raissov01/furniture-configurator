@@ -76,6 +76,28 @@ const entriesOf = (r: ReturnType<typeof generateKitchen>) =>
   }))
 
 describe('generateKitchen', () => {
+  it('бұрыштағы төменгі және үстіңгі шығыс қатарлар соқыр панель қалыңдығынан кейін басталады', () => {
+    const r = generateKitchen({ layout: 'corner', lengthA: 3200, lengthB: 2400, sink: true, upper: true }, SEED_CATALOG)
+    const byId = new Map(r.cabinets.map((cab) => [cab.id, cab]))
+    const first = (wall: 'north' | 'east', upper: boolean) => r.placements
+      .filter((p) => p.wall === wall && ((p.elevation ?? 0) > 0) === upper)
+      .map((p) => ({ placement: p, cabinet: byId.get(p.cabinetId)! }))
+      .find(({ placement, cabinet }) => wall === 'north' ? placement.offset === 0
+        : !r.placements.some((other) => other.wall === 'east'
+          && ((other.elevation ?? 0) > 0) === upper
+          && other.offset + byId.get(other.cabinetId)!.width > placement.offset + cabinet.width))!
+
+    for (const upper of [false, true]) {
+      const north = first('north', upper)
+      const east = first('east', upper)
+      const panel = north.cabinet.frontPanel!
+      const materialId = panel.materialId ?? north.cabinet.frontMaterialId
+      const thickness = SEED_CATALOG.materials.find((m) => m.id === materialId)!.thickness
+      const eastStartFromCorner = r.room.depth - east.placement.offset - east.cabinet.width
+      expect(eastStartFromCorner).toBe(north.cabinet.depth + thickness)
+    }
+  })
+
   it('түзу гарнитур: корпустар жиналады әрі сыяды', () => {
     const r = generateKitchen({ layout: 'straight', lengthA: 3000, sink: true, upper: true }, SEED_CATALOG)
     expect(r.cabinets.length).toBeGreaterThan(1)
