@@ -16,7 +16,7 @@ export function filterTemplateCatalog<T extends CabinetTemplate>(
   return templates.filter((template) => {
     if (filter.category && template.category !== filter.category) return false
     if (filter.subcategory && template.subcategory !== filter.subcategory) return false
-    const fields = [template.name, template.description, template.subcategory ?? '']
+    const fields = [template.name, template.description, template.subcategory ?? '', ...(template.sourceNames ?? [])]
     const haystack = fields.flatMap((value) => [value, translate(value)]).join(' ').toLocaleLowerCase()
     return words.every((word) => haystack.includes(word))
   })
