@@ -13,6 +13,8 @@ import { create } from 'zustand'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import {
   DEFAULT_ROOM,
+  IDENTITY_TRANSFORM,
+  ORIENT_FACING,
   DEFAULT_SILHOUETTE_HEIGHT,
   ConfigValidationError,
   canMirror,
@@ -23,6 +25,8 @@ import {
   defaultOpenings,
   fitOpenings,
   findSet,
+  findNode,
+  flattenTree,
   generateKitchen,
   generateFurniture,
   findTemplate,
@@ -38,8 +42,9 @@ import {
 } from '@/src/core/index'
 import type { Quality } from '@/lib/appearance'
 import type {
-  CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, Material, Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SettingsOverride,
+  BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, Material, Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SettingsOverride,
   Section, SectionContent, ShopProfile, WallId,
+  Vec3,
 } from '@/src/core/index'
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
@@ -251,6 +256,9 @@ type State = Snapshot & {
   assemblyStep: number | null
 
   edit(key: string, patch: Partial<CabinetConfig>): void
+  addBoard(): string
+  editBoard(id: string, patch: Partial<BoardSpec>): void
+  setBoardPosition(id: string, position: Vec3): void
   editSection(index: number, patch: Partial<Section>, key: string): void
   addSection(): void
   removeSection(index: number): void
@@ -494,6 +502,21 @@ function treeEdit(s: State, root: GroupNode, layers = s.layers) {
     past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null }
 }
 
+function mapBoard(root: GroupNode, id: string, update: (board: BoardSpec) => BoardSpec): GroupNode {
+  return { ...root, children: root.children.map((child) => {
+    if (child.kind === 'board' && child.id === id) return { ...child, board: update(child.board) }
+    return child.kind === 'group' ? mapBoard(child, id, update) : child
+  }) }
+}
+
+function mapBoardPosition(root: GroupNode, id: string, position: Vec3): GroupNode {
+  return { ...root, children: root.children.map((child) => {
+    if (child.kind === 'board' && child.id === id) return { ...child,
+      transform: { ...child.transform, pos: position } }
+    return child.kind === 'group' ? mapBoardPosition(child, id, position) : child
+  }) }
+}
+
 /**
  * Жаңа өлшемді бөлме. Терезе мен есік бар болса — жаңа қабырғаға қысылады,
  * жоқ болса — әдепкісі қойылады: прогулкада бөлме бос қорап болмасын.
@@ -624,6 +647,43 @@ export const useConfigurator = create<State>((set, get) => ({
       lastEditKey: key,
       lastEditAt: now,
     })
+  },
+
+  addBoard() {
+    const s = get()
+    const material = s.catalog.materials.find((item) => item.thickness >= 10) ?? s.catalog.materials[0]
+    if (!material) throw new ConfigValidationError('materialId', 'материал жоқ', 'каталогтағы материал')
+    const id = `board-${crypto.randomUUID()}`
+    const board: BoardSpec = { materialId: material.id, length: 100, width: 100,
+      orientation: ORIENT_FACING, role: 'custom', grainAlongLength: material.hasGrain,
+      edges: { L1: null, L2: null, W1: null, W2: null } }
+    const root: GroupNode = { ...s.root, children: [...s.root.children, {
+      kind: 'board', id, name: 'Еркін тақта', transform: structuredClone(IDENTITY_TRANSFORM), board,
+    }] }
+    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
+    return id
+  },
+
+  editBoard(id, patch) {
+    const s = get()
+    const node = assertTreeNodeEditable(s.root, id, s.layers)
+    if (node.kind !== 'board') throw new ConfigValidationError('nodeId', `тақта емес: ${id}`, 'board id')
+    const board = { ...node.board, ...patch }
+    if (JSON.stringify(board) === JSON.stringify(node.board)) return
+    const root = mapBoard(s.root, id, () => board)
+    flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
+    set(treeEdit(s, root))
+  },
+
+  setBoardPosition(id, position) {
+    const s = get()
+    const node = assertTreeNodeEditable(s.root, id, s.layers)
+    if (node.kind !== 'board') throw new ConfigValidationError('nodeId', `тақта емес: ${id}`, 'board id')
+    for (const [axis, value] of Object.entries(position)) {
+      if (!Number.isSafeInteger(value)) throw new ConfigValidationError(`transform.pos.${axis}`, 'орын бүтін мм болуы керек', 'бүтін мм')
+    }
+    if (Object.keys(position).every((axis) => position[axis as keyof Vec3] === node.transform.pos[axis as keyof Vec3])) return
+    set(treeEdit(s, mapBoardPosition(s.root, id, position)))
   },
 
   editSection(index, patch, key) {
