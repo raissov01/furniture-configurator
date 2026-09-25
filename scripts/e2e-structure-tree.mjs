@@ -148,7 +148,7 @@ try {
   assert(await h.evaluate(openLayers), 'Layers tab missing for unlock')
   assert(await h.evaluate(layerToggle(1)), 'layer could not be unlocked')
   assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).layers?.some(l=>l.name==='Tech' && l.locked===false)", 10000), 'layer unlock was not persisted')
-  assert(await h.evaluate("(() => { const tab=[...document.querySelectorAll('[data-testid=tree-dock] [role=tab]')].find(x=>x.textContent.trim()==='Структура проекта'); if (!tab) return false; tab.click(); return true })()"), 'Structure tab missing after layer edit')
+  assert(await h.evaluate("(() => { const tab=[...document.querySelectorAll('[data-testid=tree-dock] [role=tab]')].find(x=>x.textContent.trim()==='Структура'); if (!tab) return false; tab.click(); return true })()"), 'Structure tab missing after layer edit')
 
   // Hidden board remains in the tree, but production contains only the visible board.
   assert(await h.evaluate("(() => { const b=document.querySelector('[data-tree-node=board-b]'); const hide=b?.parentElement?.querySelector('[aria-label=\"Скрыть\"]'); if (!hide) return false; hide.click(); return true })()"), 'board B hide control missing')

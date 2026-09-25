@@ -67,6 +67,7 @@ try {
   const code = await h.evaluate("document.querySelector('[data-share-code]')?.textContent?.trim()")
   assert(/^\d{6}$/.test(code), 'share code missing')
   await h.goto(`/view?c=${code}`, 8000)
+  assert(await h.until("location.pathname === '/view' && Boolean(document.body)", 20000), 'client page did not load')
   assert(!(await h.text()).includes('Размер, H × W × D'), 'client dimensions visible')
   assert(await h.until("Boolean(document.querySelector('#scene-3d canvas'))", 20000), 'client 3D scene missing')
   await h.wait(1000)
@@ -95,7 +96,7 @@ try {
   assert(filled, 'designer reply field missing')
   assert(await h.clickText('Отправить ответ', 1000), 'designer reply submit missing')
   await h.goto(`/view?c=${code}`, 8000)
-  assert((await h.text()).includes('Иә, болады'), 'client does not see reply')
+  assert(await h.until("document.body?.innerText.includes('Иә, болады') ?? false", 20000), 'client does not see reply')
   console.log('roles/comments e2e: PASS')
 } catch (error) {
   console.error('roles/comments e2e: FAIL', error)
