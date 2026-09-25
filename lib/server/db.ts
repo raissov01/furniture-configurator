@@ -184,6 +184,19 @@ function migrate(database: DatabaseSync): void {
     id TEXT NOT NULL, json TEXT NOT NULL, updated_at INTEGER NOT NULL,
     PRIMARY KEY (user_id, id)
   )`)
+
+  // 9-қадам: импортталған каталог тек иесінің цехына тиесілі. Шикі файл сақталмайды.
+  database.exec(`CREATE TABLE IF NOT EXISTS shop_catalog_imports (
+    id TEXT PRIMARY KEY,
+    shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    uploaded_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    format TEXT NOT NULL,
+    json TEXT NOT NULL,
+    byte_size INTEGER NOT NULL,
+    rights_confirmed_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS shop_catalog_imports_shop ON shop_catalog_imports (shop_id, created_at DESC)`)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */
