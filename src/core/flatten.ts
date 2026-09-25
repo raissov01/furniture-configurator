@@ -30,6 +30,8 @@ export type FlatNode = {
   panels: Panel[]
   hardware: HardwarePlacement[]
   pose: Pose
+  /** Осы түйіннің панельдері есептелген нақты өндірістік баптау. */
+  settings?: ConstructionSettings | undefined
 }
 
 export type PlacedSolid = {
@@ -146,6 +148,7 @@ export function flattenTree(
           panels: generateCabinet(node.config, catalog, settings),
           hardware: generateHardware(node.config, catalog, settings),
           pose,
+          settings: mergeSettings(settings, node.config.settings),
         })
         return
       case 'board':
@@ -155,6 +158,7 @@ export function flattenTree(
           panels: [boardPanel(node, catalog, bands, merged)],
           hardware: [],
           pose,
+          settings: merged,
         })
         return
       case 'solid':
