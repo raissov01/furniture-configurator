@@ -73,7 +73,7 @@
 - [x] Root worktree-де барлық қабылданған өзгерісті біріктіріп, `npm test -- --maxWorkers=3` және typecheck.
 - [x] `NODE_OPTIONS=--max-old-space-size=2048 npm run build -- --webpack` және e2e; осы айналымдағы база 24/24, жаңа бұтақ қайта жүгірісте 24/24.
 - [x] Есепке ✅/⚠/❌, тест саны, мутация, build/e2e, қалған жұмыс пен өндірістік шешім сұрақтарын жазу.
-- [ ] Соңғы diff, test/typecheck; `codex/0924`-ке `git merge --no-ff`; интеграцияда толық тест; worktree-ді remove ету.
+- [x] Соңғы diff, test/typecheck; `codex/0924`-ке `git merge --no-ff`; интеграцияда толық тест; worktree-ді remove ету.
 
 ## Scope ruling
 
