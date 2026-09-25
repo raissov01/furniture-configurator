@@ -852,7 +852,8 @@ export const useConfigurator = create<State>((set, get) => ({
     try {
       raw = window.localStorage.getItem(PROJECT_KEY)
     } catch (error) {
-      set({ firstRun: false, projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}` })
+      set({ firstRun: false,
+        projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}; сақтық көшірме жазылмады: бастапқы файл оқылмады` })
       return
     }
     if (!raw) return
@@ -1084,13 +1085,14 @@ export const useConfigurator = create<State>((set, get) => ({
   restoreHistory(at) {
     try {
       const raw = window.localStorage.getItem(HISTORY_KEY)
-      if (!raw) return
+      if (!raw) throw new Error('тарих бос')
       const list: { at: number; json: string }[] = JSON.parse(raw)
       const found = list.find((x) => x.at === at)
-      if (!found) return
+      if (!found) throw new Error(`жазба табылмады: ${at}`)
       get().loadProject(parseProjectV4(JSON.parse(found.json)))
-    } catch {
-      // бүлінген жазба: үнсіз қалдырамыз, ағымдағы жоба сақталады
+      get().saveProjectLocally()
+    } catch (error) {
+      set({ projectLoadError: `Тарихтан қалпына келтіру мүмкін болмады: ${error instanceof Error ? error.message : String(error)}` })
     }
   },
   setFirstRun: (firstRun) => set({ firstRun }),

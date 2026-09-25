@@ -5,7 +5,7 @@ import { referenceProject } from './fixtures'
 
 const baseline = useConfigurator.getState()
 const s = () => useConfigurator.getState()
-afterEach(() => { useConfigurator.setState(baseline, true); vi.restoreAllMocks() })
+afterEach(() => { useConfigurator.setState(baseline, true); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 const localStore = () => {
   const values = new Map<string, string>()
@@ -96,5 +96,29 @@ describe('v4 редактор тәуекелдері', () => {
     expect(s().projectLoadError).toBeNull()
     expect(JSON.parse(values.get(key)!).schemaVersion).toBe(4)
     expect(values.get(backup)).toBe('{invalid JSON')
+  })
+
+  it('localStorage оқылмаса, сақтық көшірме жасалды деп мәлімдемейді', () => {
+    vi.stubGlobal('window', { localStorage: { getItem: () => { throw new Error('blocked') } } })
+    s().hydrateProject()
+    expect(s().projectLoadError).toMatch(/сақтық көшірме жазылмады/)
+    expect(s().firstRun).toBe(false)
+  })
+
+  it('тарихтан қайтару PROJECT_KEY-ге дереу жазылады; бүлінген тарих қатесі көрінеді', () => {
+    const values = localStore()
+    const key = 'furniture-configurator:project'
+    values.set(key, '{invalid JSON')
+    s().hydrateProject()
+    values.set('furniture-configurator:history', JSON.stringify([
+      { at: 7, name: 'Жарамды', json: JSON.stringify(parseProjectV4(referenceProject)) },
+      { at: 8, name: 'Бүлінген', json: '{bad' },
+    ]))
+    s().restoreHistory(8)
+    expect(s().projectLoadError).toMatch(/тарих|Тарих/)
+    expect(values.get(key)).toBe('{invalid JSON')
+    s().restoreHistory(7)
+    expect(s().projectLoadError).toBeNull()
+    expect(JSON.parse(values.get(key)!).schemaVersion).toBe(4)
   })
 })
