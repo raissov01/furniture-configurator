@@ -54,3 +54,6 @@ export * from './decors'
 export * from './data/basisCatalog'
 export * from './data/basisPriceMeta'
 export * from './data/pro100Catalog'
+
+export * from './snap'
+export * from './array'
