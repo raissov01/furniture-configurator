@@ -11,6 +11,18 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Название не может быть пустым': 'Nom bo‘sh bo‘lishi mumkin emas',
+  'Рабочее место': 'Ish joyi',
+  'Стиль рабочего места': 'Ish joyi uslubi',
+  'Наш': 'Bizniki',
+  'Свойства': 'Xususiyatlar',
+  'Показывать размеры': 'O‘lchamlarni ko‘rsatish',
+  'Выбран элемент': 'Tanlangan element',
+  'Элемент не выбран': 'Element tanlanmagan',
+  'Камера': 'Kamera',
+  'Камера 1': 'Kamera 1',
+  'Применить': 'Qo‘llash',
+  'OK': 'OK',
   'Крепёж для присадки': 'Teshik uchun mahkamlagich',
   'Выберите крепёж': 'Mahkamlagichni tanlang',
   'Конфирмат': 'Konfirmat',

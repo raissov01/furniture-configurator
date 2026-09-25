@@ -1218,7 +1218,7 @@ function FreeBoardGroup({ node, scene, catalog, room, settings, stepOf, assembly
 }
 
 export default function Scene({
-  items, room, activeId, catalog, flatScene, allowDimensionLabels = true,
+  items, room, activeId, catalog, flatScene, allowDimensionLabels = true, classic = false,
 }: {
   items: SceneItem[]
   room: Room
@@ -1226,6 +1226,7 @@ export default function Scene({
   catalog: Catalog
   flatScene?: FlatScene
   allowDimensionLabels?: boolean
+  classic?: boolean
 }) {
   const active = items.find((i) => i.cabinet.id === activeId) ?? items[0]
   const preset = useConfigurator((s) => s.cameraPreset)
@@ -1245,6 +1246,9 @@ export default function Scene({
   const projectSettings = useConfigurator((s) => s.projectSettings)
   const shopSettings = useConfigurator((s) => s.shop.settings)
   const settings = projectSettings ?? shopSettings
+  const p100Color = (token: string, fallback: string) => classic && typeof document !== 'undefined'
+    ? getComputedStyle(document.documentElement).getPropertyValue(token).trim() || fallback
+    : fallback
   const canvas = canvasSettings(quality)
   const xrStore = useMemo(() => getXrStore(), [])
   // Сессия басталды/бітті → стордағы `vr`: бөлме тұтас болады, камера
@@ -1492,7 +1496,7 @@ export default function Scene({
           корпус «әзірлеушінің құралы» сияқты көрінетін, ал ашықта — каталогтағы
           сурет сияқты.
         */}
-        <color attach="background" args={['#eceae6']} />
+        <color attach="background" args={[p100Color('--p100-canvas', '#eceae6')]} />
         {/*
           ҚОРШАҒАН ОРТА: Lightformer-мен ОСЫ ЖЕРДЕ жасалады — желіден HDR
           жүктелмейді (PWA офлайн жұмыс істейді). Онсыз болат, шыны, плита мен
@@ -1612,9 +1616,9 @@ export default function Scene({
           args={[10, 10]}
           position={[0, -0.005, 0]}
           cellSize={0.1}
-          cellColor="#d6d2ca"
+          cellColor={p100Color('--p100-room-grid', '#d6d2ca')}
           sectionSize={1}
-          sectionColor="#bcb7ad"
+          sectionColor={p100Color('--p100-room-grid', '#bcb7ad')}
           infiniteGrid
           fadeDistance={14}
         />

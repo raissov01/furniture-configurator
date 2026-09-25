@@ -340,6 +340,18 @@ export function PanelMesh({
   const setSelected = useConfigurator((s) => s.setSelected)
   const setActive = useConfigurator((s) => s.setActive)
   const togglePanelOpen = useConfigurator((s) => s.togglePanelOpen)
+  const onPanelDoubleClick = () => {
+    const classicWorkspace = document.querySelector('[data-workspace-style="classic"]')
+      && window.matchMedia('(min-width: 1024px)').matches
+    if (!classicWorkspace) { if (panel.opening) togglePanelOpen(key); return }
+    openProperties()
+  }
+  const openProperties = () => {
+    if (!cabinetId || typeof window === 'undefined') return
+    setActive(cabinetId)
+    setSelected(cabinetId)
+    window.dispatchEvent(new CustomEvent('furniture:open-properties', { detail: cabinetId }))
+  }
   const vr = useConfigurator((s) => s.vr)
   // Жиек сызығы «үнемді» сапада өшеді: әлсіз ноутбукке ол мыңдаған сызық.
   const quality = useConfigurator((s) => s.quality)
@@ -628,11 +640,11 @@ export function PanelMesh({
           onPointerOut={() => setHovered(null)}
           // Прогулканың сәулесі осы кілтпен ЖЕКЕ есікті табады.
           userData={panel.opening ? { doorPid: key } : {}}
-          // ЕКІ РЕТ БАСУ — тек осы есік/ящик ашылады-жабылады (қолмен, бір-бірлеп).
+          // Классикалық десктопта Properties; өзге көріністе есік/ящик ашылады.
           onDoubleClick={(e) => {
-            if (vr || !panel.opening) return
+            if (vr) return
             e.stopPropagation()
-            togglePanelOpen(key)
+            onPanelDoubleClick()
           }}
           onClick={(e) => {
             // VR-да оқиға корпустың тобына көтеріледі — ол есікті ашады.
@@ -693,9 +705,9 @@ export function PanelMesh({
       onPointerOut={() => setHovered(null)}
       userData={panel.opening ? { doorPid: key } : {}}
       onDoubleClick={(e) => {
-        if (vr || !panel.opening) return
+        if (vr) return
         e.stopPropagation()
-        togglePanelOpen(key)
+        onPanelDoubleClick()
       }}
       onClick={(e) => {
         if (vr) return
