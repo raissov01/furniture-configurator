@@ -180,6 +180,37 @@ try {
   assert(await h.evaluate("(() => { const a=document.querySelector('[data-tree-node=board-a]'); const hide=a?.parentElement?.querySelector('[aria-label=\"Скрыть\"]'); if (!hide) return false; hide.click(); return true })()"), 'board A hide control missing')
   await h.goto('/cut', 5000)
   assert(await h.until("document.querySelector('main[data-cut-panel-count]')?.getAttribute('data-cut-panel-count') === '0'", 15000), 'hidden group children still counted in production')
+
+  // Two free boards meet at a face and an edge. The fastener is deliberately
+  // unselected until the operator chooses it; both Drill[] lists save together.
+  const joinedBoard = (id, y, orientation) => ({
+    kind: 'board', id, name: id, transform: { ...transform, pos: { x: 0, y, z: 0 } },
+    board: { materialId: source.materials[0].id, length: 500, width: 300,
+      orientation, edges: { L1: null, L2: null, W1: null, W2: null },
+      grainAlongLength: true, role: 'custom', drilling: [] },
+  })
+  const jointFixture = { ...fixture, root: { ...fixture.root, children: [
+    joinedBoard('joint-base', 0, { length: 'x', width: 'z', thickness: 'y' }),
+    joinedBoard('joint-upright', 16, { length: 'y', width: 'z', thickness: 'x' }),
+  ] } }
+  const jointInjection = await session.send('Page.addScriptToEvaluateOnNewDocument', {
+    source: `localStorage.setItem('furniture-configurator:project', ${JSON.stringify(JSON.stringify(jointFixture))})`,
+  })
+  await h.goto('/configurator', 7000)
+  await session.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: jointInjection.identifier })
+  assert(await h.until("Boolean(document.querySelector('[data-tree-node=joint-upright]'))", 10000), 'joint fixture missing')
+  assert(await h.evaluate("(() => { const a=document.querySelector('[data-tree-node=joint-base]'); const b=document.querySelector('[data-tree-node=joint-upright]'); if (!a || !b) return false; a.click(); b.dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true})); return true })()"), 'two boards could not be selected')
+  assert(await h.until("Boolean(document.querySelector('[data-testid=auto-joint-tools]'))", 5000), 'joint controls missing for two boards')
+  assert(await h.evaluate("document.querySelector('[data-testid=auto-joint-apply]')?.disabled === true"), 'fastener was silently preselected')
+  assert(await h.evaluate("(() => { const select=document.querySelector('[data-testid=auto-joint-tools] select'); if (!select) return false; Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'confirmat'); select.dispatchEvent(new Event('change',{bubbles:true})); return true })()"), 'confirmat choice failed')
+  assert(await h.until("document.querySelector('[data-testid=auto-joint-apply]')?.disabled === false", 5000), 'joint action stayed disabled')
+  assert(await h.evaluate("(() => { const button=document.querySelector('[data-testid=auto-joint-apply]'); if (!button) return false; button.click(); return true })()"), 'joint action missing')
+  assert(await h.until("(() => { const children=JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children; return children.every(n=>n.board.drilling.length===2) })()", 10000), 'both board drilling lists were not saved')
+  assert(await h.menu('Инструменты', 'Присадка', 500), 'DrillEditor could not be opened')
+  assert(await h.until("document.body.innerText.includes('Присадка вручную') && [...document.querySelectorAll('span')].some(x=>x.textContent.includes('отверстий') && x.querySelector('b')?.textContent.trim()==='2')", 5000), 'generated holes are missing from DrillEditor')
+  assert(await h.clickText('Закрыть', 300), 'DrillEditor could not be closed')
+  await h.evaluate("window.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))")
+  assert(await h.until("(() => { const children=JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children; return children.every(n=>n.board.drilling.length===0) })()", 10000), 'one undo did not restore both boards')
   console.log('structure tree e2e: PASS')
 } catch (error) {
   console.error('structure tree e2e: FAIL', error)
