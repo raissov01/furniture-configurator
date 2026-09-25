@@ -1,4 +1,12 @@
 /** Shared browser helpers used by the E2E runner and its boundary tests. */
+export async function captureFailureSnapshot(capture) {
+  try {
+    return { file: await capture() }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
 export function makeHelpers({ send }, base) {
   const evaluate = async (expression) => {
     const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
@@ -14,7 +22,12 @@ export function makeHelpers({ send }, base) {
     await wait(settleMs)
   }
 
-  const text = () => evaluate('document.body.innerText')
+  const text = async () => {
+    if (!await until('document.body !== null', 30000)) {
+      throw new Error('Бет body элементі 30000 мс ішінде пайда болмады')
+    }
+    return evaluate('document.body.innerText')
+  }
 
   const clickText = async (label, settleMs = 900) => {
     const done = await evaluate(`(() => {
@@ -111,9 +124,28 @@ export function makeHelpers({ send }, base) {
   const until = async (expression, timeoutMs = 20000, stepMs = 400) => {
     const deadline = Date.now() + timeoutMs
     for (;;) {
-      if (await evaluate(expression)) return true
+      // Суық Next route compile кезінде Page.navigate қайтарады, бірақ жаңа
+      // құжаттың body элементі әлі жоқ. Нақты expression қатесі body бар кезде
+      // бұрынғыдай жоғарыға шығады; тек осы өтпелі күй күтіледі.
+      if (await evaluate(`document.body !== null && (${expression})`)) return true
       if (Date.now() > deadline) return false
       await wait(stepMs)
+    }
+  }
+
+  /** A read-only browser fetch may disconnect while Next dev restarts at its heap limit. */
+  const retryTransientFetch = async (read, timeoutMs = 60000, stepMs = 400) => {
+    const deadline = Date.now() + timeoutMs
+    for (;;) {
+      try {
+        return await read()
+      } catch (error) {
+        if (!(error instanceof Error) || !/Failed to fetch/.test(error.message)) throw error
+        if (Date.now() >= deadline) {
+          throw new Error(`Оқу сұранысы ${timeoutMs} мс ішінде қалпына келмеді`, { cause: error })
+        }
+        await wait(stepMs)
+      }
     }
   }
 
@@ -164,5 +196,6 @@ export function makeHelpers({ send }, base) {
   return {
     evaluate, wait, until, goto, text, clickText, clickContains, menu, cutListRows,
     setNumberByLabel, closeModals, numberValue, waitForNumber, sceneCenter, waitForCloudProject, waitForSavedCabinetWidth,
+    retryTransientFetch,
   }
 }

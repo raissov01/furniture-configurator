@@ -13,7 +13,7 @@
  */
 
 import { spawn } from 'node:child_process'
-import { makeHelpers } from './e2eHelpers.mjs'
+import { captureFailureSnapshot, makeHelpers } from './e2eHelpers.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:3000'
 const PORT = 9333
@@ -115,8 +115,9 @@ async function test(name, fn) {
   const last = results[results.length - 1]
   console.log(`  ${last.ok ? '✓' : '✗'} ${results.length}: ${name}`, last.failed)
   if (!last.ok && snapshot) {
-    const file = await (current.shot ?? snapshot(results.length))
-    if (file) last.failed.push({ message: `скриншот: ${file}` })
+    const captured = await (current.shot ?? captureFailureSnapshot(() => snapshot(results.length)))
+    if (captured.error) last.failed.push({ message: `скриншот алынбады: ${captured.error}` })
+    if (captured.file) last.failed.push({ message: `скриншот: ${captured.file}` })
   }
 }
 
@@ -125,7 +126,9 @@ function check(ok, message) {
   // Бірінші құлаған тексерудің ШАМАСЫНДАҒЫ экран: тесттің соңында терезе
   // жабылып қалады да, «неге таппады» көрінбей кетеді. ⚠ Кадр асинхронды —
   // келесі 1–2 әрекет үлгеріп кетуі мүмкін, дәл сәт емес.
-  if (!ok && snapshot && !current.shot) current.shot = snapshot(results.length + 1)
+  if (!ok && snapshot && !current.shot) {
+    current.shot = captureFailureSnapshot(() => snapshot(results.length + 1))
+  }
 }
 
 // ── Көмекшілер ───────────────────────────────────────────────────────────────
@@ -277,9 +280,14 @@ async function run() {
     const body = await h.text()
     check(!/арт қабырға|ілгек присадкасы|перегородка әзірге/i.test(body), 'валидация қатесі жоқ')
 
-    // Бүйірлер әртүрлі тереңдікте: кестеде екі бөлек боковина болуы керек.
+    // 6-сценарий екі корпусты жиынтықты қойған. Таңдалған бірінші корпус
+    // екі түрлі бүйір береді; екінші корпустың жұп бүйірі үшінші позиция.
+    // Кесте бүкіл жобаның деталировкасы, сондықтан оны бір корпус деп санауға болмайды.
     const sides = rows.filter((r) => /Боковина/i.test(r[0] ?? ''))
-    check(sides.length === 2, `екі түрлі боковина (${sides.length})`)
+    const sideWidths = sides.map((r) => [Number(r[3]), Number(r[1])])
+      .sort((a, b) => a[0] - b[0])
+    check(JSON.stringify(sideWidths) === JSON.stringify([[300, 1], [447, 2], [600, 1]]),
+      `бұрыштық және екінші корпустың бүйірлері (${JSON.stringify(sideWidths)})`)
 
     // Бұрыштық режим фасадты алып тастайды әрі жоба автосақталады, сондықтан
     // күйді КЕЛЕСІ сценарийге қалдыруға болмайды.
@@ -437,12 +445,13 @@ async function run() {
     // «Открываем проект…» деп тұрады.
     await h.goto('/view', 1000)
     check(
-      await h.until(`/Ссылка не открылась|нет проекта/i.test(document.body.innerText)`),
+      await h.until(`/Ссылка не открылась|нет проекта/i.test(document.body.innerText)`, 60000),
       'бос сілтемеде түсінікті қате',
     )
 
     // Келесі сценарийлер конфигуратордың ашық тұрғанына сүйенеді.
     await h.goto('/configurator', 11000)
+    await h.sceneCenter(60000)
   })
 
   await test('Смета: раскрой мен баға', async () => {
@@ -521,7 +530,8 @@ async function run() {
     // Автосақтау кейінге қалдырылады, ал ауыр сахнада (планка, фартук, AO)
     // тіркелген 1,2 с жетпей қалатын — күту НӘТИЖЕ бойынша.
     const before = await h.waitForSavedCabinetWidth(1234, 8000)
-    check(before, 'жоба автосақталды')
+    const inputWidth = await h.numberValue('Ширина (W)')
+    check(before, `жоба автосақталды (өріс: ${inputWidth})`)
 
     await h.goto('/configurator', 11000)
     const restored = await h.waitForNumber('Ширина (W)', '1234')
@@ -587,11 +597,11 @@ async function run() {
     await h.closeModals()
     await h.goto('/configurator', 11000)
     const projectName = await h.evaluate(`JSON.parse(localStorage.getItem('furniture-configurator:project')).name`)
-    const cloudProjects = () => h.evaluate(`(async () => {
+    const cloudProjects = () => h.retryTransientFetch(() => h.evaluate(`(async () => {
       const res = await fetch('/api/projects')
       if (!res.ok) throw new Error('GET /api/projects: ' + res.status)
       return (await res.json()).projects
-    })()`)
+    })()`))
     check(await h.clickText('Аккаунт', 1200), 'аккаунт терезесі ашылды')
     check(await h.clickText('Регистрация', 700), 'тіркелу табы')
 
