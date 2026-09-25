@@ -145,9 +145,9 @@ Structure/Layers докы Workspace-ке жалғанған: топтау, та�
 | PRO100 функциясы | Бізде | Файл/компонент | Ескерту |
 |---|---|---|---|
 | Дайын шкаф/модуль шаблондары | ✅ бар | `src/core/templates.ts` `SEED_TEMPLATES`, `templateToCabinet` | Нақты runtime тізімінде 35 параметрлік үлгі. |
-| Материал кітапханасы қалталы құрылымда (`pro100_list.txt: PRO100v7.08x64/Библиотека/{Мебель,Материалы}`) | ⚠ ішінара | `components/panels/libraryCatalogLogic.ts` `LIBRARY_TABS`; `components/panels/LibraryPanel.tsx` `LibraryPanel` | Мебель/Элементы/Материалы санаты демода бар; Workspace кітапханасы емес. |
-| Сборка/топты кітапханаға сақтау (`.meb`, №15 «элемент библиотеки PRO100») | ❌ жоқ | — | Топты пайдаланушы кітапханасына сақтайтын API/UI жоқ. |
-| Шебердің өз (аккаунт) кітапханасы | ⚠ ішінара | `components/AccountPanel.tsx` `AccountPanel`; `components/panels/LibraryPanel.tsx` `LibraryPanel` | Аккаунт жобаларды сақтайды, бірақ жеке топ/элемент кітапханасы жоқ. |
+| Материал кітапханасы қалталы құрылымда (`pro100_list.txt: PRO100v7.08x64/Библиотека/{Мебель,Материалы}`) | ✅ бар | `components/panels/LibraryPanel.tsx`, `components/panels/PersonalLibraryPanel.tsx` | Демо каталог және жеке санат/іздеу/preview бірге; жеке элемент JSON импорт/экспорты бар. |
+| Сборка/топты кітапханаға сақтау (`.meb`, №15 «элемент библиотеки PRO100») | ✅ балама | `src/core/library.ts` `createLibraryItem`, `insertLibraryItem` | PRO100 `.meb` емес: тексерілетін v1 JSON ағаш бұтағы; қоюда ID жаңарып, Panel[] қайта есептеледі. |
+| Шебердің өз (аккаунт) кітапханасы | ✅ бар | `app/api/library/route.ts`, `lib/server/library.ts`, `lib/libraryLocal.ts` | Жергілікті көшірме мен аккаунтқа байланған SQLite жазбалары. Vercel cloudOff режимінде API 503. |
 | Бірнеше прайс-парақ арасында ауысу (`TPRICESFORM`/`TSELECTPRICESFORM`, №49 «Отчёты PRO100») | ✅ бар | `src/core/priceLists.ts` `switchPriceList`, `createPriceList`; `components/ShopSettings.tsx` `PriceListManager` | ShopProfile v7 бірнеше атаулы прайсты сақтап, ауыстырады. |
 | Дайын жиынтықтар (наборы: бұрыш, ас үй қатары) | ✅ бар | `src/core/sets.ts` `SEED_SETS`, `setToProject` | Жиынтықтар бар. |
 | PRO100 номенклатурасын импорттау құралы | ✅ бар | `scripts/importPro100.mjs` `main`; `src/core/data/pro100Catalog.ts` `PRO100_LIBRARY` | Локал CLI архивтен атау/қалтаны импорттайды; дайын каталог демо панельде көрінеді. |

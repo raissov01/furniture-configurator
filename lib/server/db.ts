@@ -177,6 +177,13 @@ function migrate(database: DatabaseSync): void {
     bucket TEXT NOT NULL, subject TEXT NOT NULL, window_start INTEGER NOT NULL,
     attempts INTEGER NOT NULL, PRIMARY KEY (bucket, subject, window_start)
   )`)
+
+  // 8-қадам: әр пайдаланушының өз ағаш элементтері; цехтың ортақ жобасына қосылмайды.
+  database.exec(`CREATE TABLE IF NOT EXISTS library_items (
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id TEXT NOT NULL, json TEXT NOT NULL, updated_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, id)
+  )`)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */

@@ -8,16 +8,8 @@
  * Логиканың бәрі `src/core/replaceMaterial.ts`-те — бұл файл тек соны
  * шақырады және көрсетеді (CLAUDE.md §3).
  *
- * ⚠ СТОРҒА ТИМЕЙДІ. `store/configurator.ts`-ке жаңа action қоспау үшін
- * (ол жерде бірнеше агент қатар жұмыс істеп жатыр — тапсырмадағы ескерту,
- * әрі ол файл қазір басқа агенттердің де қолында, "M store/configurator.ts"),
- * жобаны жаңарту ZUSTAND-тың ӨЗ статикалық API-імен жүреді:
- * `useConfigurator.setState(...)`. Бұл — `store/configurator.ts`-тегі
- * `loadProject`/`loadKitchen` секілді басқа bulk-жазу әрекеттерімен БІРДЕЙ
- * тәсіл (жаңа `cabinets` + тарихқа снапшот + `future` тазалау), тек сол
- * жерге жаңа код жазбай-ақ. Undo/redo (`store.undo()`/`store.redo()`)
- * осыдан кейін бұрынғыдай жұмыс істейді — олар `past`/`future`
- * массивтерін оқиды ғана, қалай толғанына қарамайды.
+ * Жобалық материал қолдануы канондық ағаштан есептеледі. Ескі баға болжамы
+ * еркін тақтаны есептемейтіндіктен, ондай жобада бағалық айырма көрсетілмейді.
  */
 
 import * as React from 'react'
@@ -29,8 +21,11 @@ import {
   catalogOf,
   formatTenge,
   previewMaterialReplace,
-  projectMaterialUsage,
+  projectUsage,
+  flattenTree,
+  scenePanels,
   rolesLabel,
+  walkTree,
 } from '@/src/core/index'
 import { DecorPicker } from '@/components/DecorPicker'
 import { Button, Toggle } from '@/components/ui'
@@ -40,6 +35,12 @@ const rowBase = 'flex items-center justify-between gap-2 border border-neutral-8
 
 export function ReplacePanel() {
   const cabinets = useConfigurator((s) => s.cabinets)
+  const root = useConfigurator((s) => s.root)
+  const projectCatalog = useConfigurator((s) => s.catalog)
+  const projectSettings = useConfigurator((s) => s.projectSettings)
+  const layers = useConfigurator((s) => s.layers)
+  const replaceFreeBoardMaterial = useConfigurator((s) => s.replaceFreeBoardMaterial)
+  const replaceProjectMaterial = useConfigurator((s) => s.replaceProjectMaterial)
   const shop = useConfigurator((s) => s.shop)
   const catalog = React.useMemo(() => catalogOf(shop), [shop])
 
@@ -48,14 +49,32 @@ export function ReplacePanel() {
   const [scopeAll, setScopeAll] = React.useState(true)
   const [selectedCabinetIds, setSelectedCabinetIds] = React.useState<Set<string>>(new Set())
   const [justApplied, setJustApplied] = React.useState<string | null>(null)
+  const [boardOldId, setBoardOldId] = React.useState('')
+  const [boardNewId, setBoardNewId] = React.useState('')
+  const [boardError, setBoardError] = React.useState<string | null>(null)
+  const [applyError, setApplyError] = React.useState<string | null>(null)
+  const boardMaterials = React.useMemo(() => {
+    const ids = new Set<string>()
+    walkTree(root, (node) => { if (node.kind === 'board') ids.add(node.board.materialId) })
+    return projectCatalog.materials.filter((material) => ids.has(material.id))
+  }, [root, projectCatalog])
 
   const usage = React.useMemo(() => {
     try {
-      return { ok: true as const, value: projectMaterialUsage(cabinets, catalog, shop.settings) }
+      return { ok: true as const, value: projectUsage(scenePanels(flattenTree(root, projectCatalog,
+        projectSettings ?? shop.settings, layers)), projectCatalog) }
     } catch (err) {
       return { ok: false as const, message: err instanceof Error ? err.message : String(err) }
     }
-  }, [cabinets, catalog, shop.settings])
+  }, [root, projectCatalog, projectSettings, shop.settings, layers])
+
+  const affectedFreeBoards = React.useMemo(() => {
+    let count = 0
+    if (scopeAll && oldMaterialId) walkTree(root, (node) => {
+      if (node.kind === 'board' && node.board.materialId === oldMaterialId) count += 1
+    })
+    return count
+  }, [root, scopeAll, oldMaterialId])
 
   const scope = React.useMemo(
     () => (scopeAll
@@ -85,16 +104,18 @@ export function ReplacePanel() {
     })
   }
 
-  const canApply = preview?.ok === true && oldMaterialId && newMaterialId
+  const canApply = Boolean(oldMaterialId && newMaterialId && oldMaterialId !== newMaterialId
+    && (scopeAll ? projectCatalog.materials.some((material) => material.id === newMaterialId) : preview?.ok === true))
 
   const apply = () => {
     if (!canApply || !oldMaterialId || !newMaterialId) return
-    useConfigurator.getState().replaceCabinets(
-      applyMaterialReplace(useConfigurator.getState().cabinets, oldMaterialId, newMaterialId, scope),
-    )
-    setJustApplied(tr('Заменено.'))
-    setOldMaterialId(null)
-    setNewMaterialId(null)
+    try {
+      if (scopeAll) replaceProjectMaterial(oldMaterialId, newMaterialId)
+      else useConfigurator.getState().replaceCabinets(
+        applyMaterialReplace(useConfigurator.getState().cabinets, oldMaterialId, newMaterialId, scope))
+      setApplyError(null); setJustApplied(tr('Заменено.'))
+      setOldMaterialId(null); setNewMaterialId(null)
+    } catch (cause) { setApplyError(cause instanceof Error ? cause.message : tr('Не удалось заменить материал')) }
   }
 
   return (
@@ -138,7 +159,7 @@ export function ReplacePanel() {
           <div className="flex flex-col gap-1">
             <p className="text-[10px] uppercase tracking-wider text-neutral-500">{tr('Новый материал')}</p>
             <DecorPicker
-              materials={shop.materials}
+              materials={projectCatalog.materials}
               value={newMaterialId ?? oldMaterialId}
               onChange={setNewMaterialId}
             />
@@ -165,7 +186,12 @@ export function ReplacePanel() {
           {/* ── 4. Алдын ала көрсету ── */}
           {newMaterialId && oldMaterialId !== newMaterialId ? (
             <div className="flex flex-col gap-1 border border-neutral-800 p-2 text-[11px]">
-              {!preview ? (
+              {affectedFreeBoards > 0 ? (
+                <>
+                  {preview?.ok && <p className="text-neutral-400">{tr('Деталей корпуса изменится')}: {preview.value.changedPanels} / {preview.value.totalPanels}</p>}
+                  <p className="text-neutral-400">{tr('Свободных панелей изменится')}: {affectedFreeBoards}. {tr('Итоговая цена пересчитается после замены.')}</p>
+                </>
+              ) : !preview ? (
                 <p className="text-neutral-600">{tr('Выберите область')}</p>
               ) : !preview.ok ? (
                 <p className="text-amber-500">{preview.message}</p>
@@ -196,10 +222,27 @@ export function ReplacePanel() {
           ) : null}
 
           <Button active disabled={!canApply} onClick={apply}>{tr('Заменить')}</Button>
+          {applyError && <p role="alert" className="text-red-400">{applyError}</p>}
         </>
       ) : null}
 
       {justApplied ? <p className="text-[11px] text-emerald-500">{justApplied}</p> : null}
+      {boardMaterials.length > 0 ? <section className="flex flex-col gap-1 border-t border-neutral-800 pt-2 text-[11px]">
+        <p className="text-neutral-400">{tr('Замена материалов свободных панелей')}</p>
+        <select className="border border-neutral-700 bg-neutral-950 p-1" aria-label={tr('Материал свободной панели')} value={boardOldId} onChange={(event) => setBoardOldId(event.target.value)}>
+          <option value="">{tr('Старый материал')}</option>
+          {boardMaterials.map((material) => <option key={material.id} value={material.id}>{material.name}</option>)}
+        </select>
+        <select className="border border-neutral-700 bg-neutral-950 p-1" aria-label={tr('Новый материал свободной панели')} value={boardNewId} onChange={(event) => setBoardNewId(event.target.value)}>
+          <option value="">{tr('Новый материал')}</option>
+          {projectCatalog.materials.map((material) => <option key={material.id} value={material.id}>{material.name}</option>)}
+        </select>
+        <Button disabled={!boardOldId || !boardNewId || boardOldId === boardNewId} onClick={() => {
+          try { replaceFreeBoardMaterial(boardOldId, boardNewId); setBoardError(null); setJustApplied(tr('Заменено.')) }
+          catch (cause) { setBoardError(cause instanceof Error ? cause.message : tr('Не удалось заменить материал')) }
+        }}>{tr('Заменить свободные панели')}</Button>
+        {boardError && <p role="alert" className="text-red-400">{boardError}</p>}
+      </section> : null}
     </div>
   )
 }

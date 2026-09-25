@@ -821,6 +821,81 @@ async function run() {
     check(off, 'слайдер жоғалды')
   })
 
+  await test('Жеке кітапхана: сақтау, категория, іздеу, қою және қайта ашу', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+    await h.closeModals()
+    const opened = await h.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[data-testid="tree-dock"] [role="tab"]')]
+        .find((node) => node.textContent.trim() === 'Библиотека')
+      tab?.click()
+      return Boolean(tab)
+    })()`)
+    check(opened, 'кітапхана редакторда ашылды')
+    const filled = await h.evaluate(`(() => {
+      const field = document.querySelector('[data-testid="tree-dock"] input[aria-label="Категория"]')
+      if (!field) return false
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+      setter.call(field, 'E2E жиһаз')
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    })()`)
+    check(filled, 'категория енгізілді')
+    await h.wait(200)
+    const saved = await h.evaluate(`(() => {
+      const button = [...document.querySelectorAll('[data-testid="tree-dock"] button')]
+        .find((node) => node.textContent.trim() === 'Сохранить в библиотеку')
+      if (!button || button.disabled) return false
+      button.click()
+      return true
+    })()`)
+    check(saved, 'түйін кітапханаға сақталды')
+    await h.wait(350)
+    const library = await h.evaluate(`(() => {
+      const value = localStorage.getItem('furniture-configurator:library-v1')
+      return value ? JSON.parse(value) : null
+    })()`)
+    check(library?.schemaVersion === 1 && library.items?.length === 1, 'v1 JSON жергілікті сақталды')
+    check(library?.items?.[0]?.category === 'E2E жиһаз', 'категория сақталды')
+    const categoryFound = await h.evaluate(`(() => {
+      const filter = document.querySelector('[data-testid="tree-dock"] select[aria-label="Фильтр категории"]')
+      if (!filter) return false
+      filter.value = 'E2E жиһаз'
+      filter.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    })()`)
+    check(categoryFound, 'категория сүзгісі табылды')
+    const searched = await h.evaluate(`(() => {
+      const field = document.querySelector('[data-testid="tree-dock"] input[aria-label="Поиск в библиотеке"]')
+      if (!field) return false
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+      setter.call(field, 'E2E жиһаз')
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    })()`)
+    check(searched, 'іздеу енгізілді')
+    await h.wait(200)
+    const partsBefore = await h.evaluate(`Number(document.querySelector('header span[title^="Бюджет:"]')
+      ?.textContent.match(/^(\\d+) панелей/)?.[1] ?? 0)`)
+    const placed = await h.evaluate(`(() => {
+      const dock = document.querySelector('[data-testid="tree-dock"]')
+      const preview = dock?.querySelector('svg[aria-label="Предпросмотр элемента"]')
+      const button = [...(dock?.querySelectorAll('button') ?? [])]
+        .find((node) => node.textContent.trim() === 'Поставить')
+      button?.click()
+      return { preview: Boolean(preview), placed: Boolean(button) }
+    })()`)
+    check(placed.preview, 'өлшемнен жасалған нобай көрсетілді')
+    check(placed.placed, 'кітапхана элементі жобаға қойылды')
+    await h.wait(700)
+    const partsAfter = await h.evaluate(`Number(document.querySelector('header span[title^="Бюджет:"]')
+      ?.textContent.match(/^(\\d+) панелей/)?.[1] ?? 0)`)
+    check(partsAfter > partsBefore, `жаңа түйін деталировкаға түсті (${partsBefore} → ${partsAfter} деталь)`)
+    await h.goto('/configurator', 11000)
+    const persisted = await h.evaluate(`JSON.parse(localStorage.getItem('furniture-configurator:library-v1')).items.length`)
+    check(persisted === 1, 'қайта ашқанда жеке кітапхана сақталды')
+  })
+
   await test('Консольде қате жоқ', async () => {
     const real = session.consoleErrors.filter((e) => !/DevTools|favicon|THREE.Clock/.test(e))
     check(real.length === 0, `қате жоқ (${real.slice(0, 2).join(' | ') || 'таза'})`)
