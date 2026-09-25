@@ -34,6 +34,83 @@ const hingePlatePanels = (panels: Panel[]): Panel[] =>
   panels.filter((p) => p.role !== 'front' && p.drilling.some((d) => d.purpose === 'hinge'))
 
 describe('соқыр панельдің ілгек планкасы (K6 / audit C4)', () => {
+  it.each(['left', 'right'] as const)('%s жақта автоматты ішкі стойка ілгек тірегімен қиылыспайды', (side) => {
+    const panels = gen({
+      frontPanel: { width: 392, side },
+      sections: [{
+        id: 's1', widthMode: 'flex', contents: [{ kind: 'stand', count: 1 }],
+        fronts: { count: 1, mount: 'overlay' },
+      }],
+    })
+    const hingeStand = panels.find((p) => p.id === 'front-panel-stand')!
+    const innerStand = panels.find((p) => p.id === 's1-stand-1')!
+    const t = catalog.materials.find((m) => m.id === hingeStand.materialId)!.thickness
+    expect(Math.min(innerStand.position.y + innerStand.finishedLength,
+      hingeStand.position.y + hingeStand.finishedLength)
+      - Math.max(innerStand.position.y, hingeStand.position.y)).toBeGreaterThan(0)
+    expect(Math.min(innerStand.position.z + innerStand.finishedWidth,
+      hingeStand.position.z + hingeStand.finishedWidth)
+      - Math.max(innerStand.position.z, hingeStand.position.z)).toBeGreaterThan(0)
+    expect(
+      innerStand.position.x + t <= hingeStand.position.x
+      || hingeStand.position.x + t <= innerStand.position.x,
+    ).toBe(true)
+  })
+
+  it.each([['left', 104], ['right', 648]] as const)(
+    '%s жақта ілгек тірегінің орнына сұралған ішкі стойка айқын қате береді', (side, at) => {
+      expect(() => gen({
+        frontPanel: { width: 120, side },
+        sections: [{
+          id: 's1', widthMode: 'flex', contents: [{ kind: 'stand', count: 1, at: [at] }],
+          fronts: { count: 1, mount: 'overlay' },
+        }],
+      })).toThrow(/frontPanel|стойка/)
+    },
+  )
+
+  it.each([
+    ['left', 'adjustable'], ['right', 'adjustable'],
+    ['left', 'fixed'], ['right', 'fixed'],
+  ] as const)('%s жақтағы %s сөре тірекпен қиылыспайды және оған бұрғыланады', (side, shelfKind) => {
+    const panels = gen({
+      frontPanel: { width: 120, side },
+      sections: [{
+        id: 's1', widthMode: 'flex',
+        contents: [{ kind: 'shelves', count: 1, shelfKind }],
+        fronts: { count: 1, mount: 'overlay' },
+      }],
+    })
+    const stand = panels.find((p) => p.id === 'front-panel-stand')!
+    const shelf = panels.find((p) => p.role === 'shelf')!
+    const t = catalog.materials.find((m) => m.id === stand.materialId)!.thickness
+    const shelfLeft = shelf.position.x
+    const shelfRight = shelfLeft + shelf.finishedLength
+    const standLeft = stand.position.x
+    const standRight = standLeft + t
+
+    if (side === 'left') expect(shelfLeft).toBeGreaterThanOrEqual(standRight)
+    else expect(shelfRight).toBeLessThanOrEqual(standLeft)
+    if (shelfKind === 'adjustable') {
+      expect(stand.drilling.some((d) => d.purpose === 'shelfPin')).toBe(true)
+    } else {
+      // Дно/крышка буындары да стойкаға конфирмат салады. Дәл СӨРЕНІҢ
+      // биіктігіндегі бет тесіктерін оның торц тесіктерімен жұптаймыз.
+      const shelfMidY = shelf.position.y + t / 2
+      const faceHoles = stand.drilling.filter((d) => d.purpose === 'confirmat'
+        && (d.face === 'inner' || d.face === 'outer')
+        && Math.abs(stand.position.y + d.x - shelfMidY) < 0.1)
+      const edgeFace = side === 'left' ? 'edgeW1' : 'edgeW2'
+      const edgeHoles = shelf.drilling.filter((d) => d.purpose === 'confirmat' && d.face === edgeFace)
+      expect(faceHoles.length).toBeGreaterThanOrEqual(2)
+      expect(edgeHoles).toHaveLength(faceHoles.length)
+      for (const faceHole of faceHoles) {
+        const worldZ = stand.position.z + faceHole.y
+        expect(edgeHoles.some((edgeHole) => Math.abs(shelf.position.z + edgeHole.x - worldZ) < 0.1)).toBe(true)
+      }
+    }
+  })
+
   it('side-left ЕНДІ жоқ ілгекке планка алмайды (538 мм қашық жалған координата)', () => {
     const panels = gen({ frontPanel: { width: 120, side: 'left' } })
     const side = panels.find((p) => p.id === 'side-left')!

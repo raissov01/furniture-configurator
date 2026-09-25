@@ -77,12 +77,12 @@ describe('ұя тарылады', () => {
   })
 })
 
-describe('ІШКІ геометрия тиылмайды', () => {
-  it('сөре бұрынғы енінде қалады — панель корпустың АЛДЫНДА', () => {
+describe('ІШКІ геометрия', () => {
+  it('сөре соқыр панельдің артындағы тіректің ішкі бетіне дейін қысқарады', () => {
     const shelf = (extra = {}) => generateCabinet(cabinet(extra), catalog)
       .find((p: Panel) => p.role === 'shelf')!
     expect(shelf({ frontPanel: { width: 120, side: 'left' } }).finishedLength)
-      .toBe(shelf().finishedLength)
+      .toBe(shelf().finishedLength - 120)
   })
 })
 
@@ -140,4 +140,3 @@ describe('цоколі бар (K5 / audit C3)', () => {
     expect(panel.position.y + panel.finishedLength).toBe(side.position.y + side.finishedLength)
   })
 })
-
