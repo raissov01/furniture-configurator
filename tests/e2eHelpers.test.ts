@@ -1,14 +1,14 @@
 /** CDP boundary fixtures run the real browser expressions, including exceptions. */
 import { createContext, runInContext } from 'node:vm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { makeHelpers } from '../scripts/e2eHelpers.mjs'
+import { captureFailureSnapshot, makeHelpers } from '../scripts/e2eHelpers.mjs'
 
 function browser() {
   const state = {
     width: '600',
     canvas: null as null | { getBoundingClientRect(): { x: number; y: number; width: number; height: number } },
     cloudNames: [] as string[],
-    body: '',
+    body: '' as string | null,
     disabled: false,
     clicked: false,
     savedProject: null as string | null,
@@ -21,7 +21,7 @@ function browser() {
   const context = createContext({
     localStorage: { getItem: () => state.savedProject },
     document: {
-      body: { get innerText() { return state.body } },
+      get body() { return state.body === null ? null : { innerText: state.body } },
       querySelector(selector: string) {
         if (selector === '#scene-3d canvas') return state.canvas
         throw new Error(`Unexpected selector: ${selector}`)
@@ -52,6 +52,57 @@ function browser() {
 afterEach(() => vi.useRealTimers())
 
 describe('e2e browser readiness and evidence', () => {
+  it('keeps the failed check visible when Chrome cannot capture a screenshot', async () => {
+    const result = await captureFailureSnapshot(() => Promise.reject(new Error('CDP Page.captureScreenshot не ответил за 60 с')))
+    expect(result).toEqual({ error: 'CDP Page.captureScreenshot не ответил за 60 с' })
+  })
+  it('retries only a transient browser fetch during a dev server restart', async () => {
+    vi.useFakeTimers()
+    const { h } = browser()
+    let attempts = 0
+    const read = () => {
+      attempts += 1
+      if (attempts < 3) return Promise.reject(new Error('TypeError: Failed to fetch'))
+      return Promise.resolve([{ id: 'saved-project' }])
+    }
+    const result = h.retryTransientFetch(read, 2000, 400)
+      .then((value: unknown) => ({ value }), (error: unknown) => ({ error }))
+    await vi.advanceTimersByTimeAsync(800)
+    expect(await result).toEqual({ value: [{ id: 'saved-project' }] })
+    expect(attempts).toBe(3)
+  })
+
+  it('surfaces a real project API error without retrying it', async () => {
+    const { h } = browser()
+    let attempts = 0
+    await expect(h.retryTransientFetch(() => {
+      attempts += 1
+      return Promise.reject(new Error('GET /api/projects: 403'))
+    }, 2000)).rejects.toThrow(/403/)
+    expect(attempts).toBe(1)
+  })
+
+  it('waits for the document body before evaluating a viewer result', async () => {
+    vi.useFakeTimers()
+    const { state, h } = browser()
+    state.body = null
+    setTimeout(() => { state.body = 'Ссылка не открылась' }, 1200)
+    const result = h.until("document.body.innerText.includes('Ссылка не открылась')", 2000)
+      .then((value: boolean) => ({ value }), (error: unknown) => ({ error }))
+    await vi.advanceTimersByTimeAsync(1600)
+    expect(await result).toEqual({ value: true })
+  })
+
+  it('reads text after a cold page creates its body', async () => {
+    vi.useFakeTimers()
+    const { state, h } = browser()
+    state.body = null
+    setTimeout(() => { state.body = 'Ссылка не открылась' }, 1200)
+    const result = h.text().then((value: string) => ({ value }), (error: unknown) => ({ error }))
+    await vi.advanceTimersByTimeAsync(1600)
+    expect(await result).toEqual({ value: 'Ссылка не открылась' })
+  })
+
   it('finds the exact saved cabinet width inside nested v4 groups', async () => {
     const { state, h } = browser()
     state.savedProject = JSON.stringify({ schemaVersion: 4, root: {
