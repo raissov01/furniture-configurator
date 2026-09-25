@@ -94,6 +94,7 @@ function boardPanel(
     cutWidth,
     edges: spec.edges,
     grainAlongLength: spec.grainAlongLength,
+    ...(spec.veneerGroup ? { veneerGroup: spec.veneerGroup } : {}),
     qty: 1,
     position: { x: 0, y: 0, z: 0 },
     rotation: rotationFor(spec.orientation),

@@ -30,7 +30,7 @@ export type SheetRect = { x: number; y: number; width: number; height: number }
 export type NestedPart = SheetRect & {
   panelId: string
   label: string
-  /** Деталь 90°-қа бұрылып қойылды ма (текстурасыз материалда ғана болады) */
+  /** Детальдың ұзындық осі парақтың ені бойына қойылды ма. */
   rotated: boolean
 }
 
@@ -38,6 +38,8 @@ export type NestedSheet = {
   /** Осы материал бойынша парақтың реті, 1-ден басталады */
   index: number
   materialId: string
+  /** Шпон өрнегін сәйкестендіру тобы; топтар бір параққа араласпайды. */
+  veneerGroup?: string | undefined
   /** Парақтың толық өлшемі */
   sheetWidth: number
   sheetHeight: number
@@ -157,7 +159,7 @@ function usableAreaOf(m: Material, trimOverride: number | undefined): SheetRect 
 function orientationsOf(panel: Panel, material: Material): { w: number; h: number; rotated: boolean }[] {
   const along = { w: panel.cutLength, h: panel.cutWidth, rotated: false }
   const across = { w: panel.cutWidth, h: panel.cutLength, rotated: true }
-  if (!material.hasGrain) return [along, across]
+  if (!material.hasGrain && !panel.veneerGroup) return [along, across]
   return [panel.grainAlongLength ? along : across]
 }
 
@@ -242,6 +244,9 @@ function nestOnce(
   const materials = new Map(catalog.materials.map((m) => [m.id, m]))
   const groups = new Map<string, Panel[]>()
   for (const p of panels) {
+    if (p.veneerGroup !== undefined && (!p.veneerGroup.trim() || p.veneerGroup.trim() !== p.veneerGroup)) {
+      throw new ConfigValidationError('veneerGroup', `жарамсыз топ: "${p.veneerGroup}"`, 'бос емес, шеттерінде бос орынсыз атау')
+    }
     if (!materials.has(p.materialId)) {
       throw new ConfigValidationError(
         'materialId',
@@ -265,7 +270,7 @@ function nestOnce(
 
     const sorted = sortPanels(list, strategy.sort)
 
-    const sheets: { parts: NestedPart[]; frees: FreeRect[] }[] = []
+    const sheets: { parts: NestedPart[]; frees: FreeRect[]; veneerGroup: string | undefined }[] = []
     let partArea = 0
 
     for (const panel of sorted) {
@@ -283,6 +288,7 @@ function nestOnce(
 
       let placed = false
       for (const sheet of sheets) {
+        if (sheet.veneerGroup !== panel.veneerGroup) continue
         const spot = pickFree(sheet.frees, panel, material, strategy.fit)
         if (!spot) continue
         const free = sheet.frees[spot.index]!
@@ -303,7 +309,7 @@ function nestOnce(
       if (placed) continue
 
       // Жаңа парақ ашамыз.
-      const sheet = { parts: [] as NestedPart[], frees: [{ ...usable }] }
+      const sheet = { parts: [] as NestedPart[], frees: [{ ...usable }], veneerGroup: panel.veneerGroup }
       const spot = pickFree(sheet.frees, panel, material, strategy.fit)!
       const free = sheet.frees[spot.index]!
       sheet.parts.push({
@@ -327,6 +333,7 @@ function nestOnce(
       sheets: sheets.map((s, i) => ({
         index: i + 1,
         materialId,
+        ...(s.veneerGroup ? { veneerGroup: s.veneerGroup } : {}),
         sheetWidth: material.sheetWidth,
         sheetHeight: material.sheetHeight,
         usable: { ...usable },

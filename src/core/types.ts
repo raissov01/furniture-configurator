@@ -341,6 +341,8 @@ export type Panel = {
   edges: PanelEdges
   /** Материалда текстура бар болса, ол finishedLength бойымен жүре ме */
   grainAlongLength: boolean
+  /** Бір өрнекке сәйкестендірілетін детальдар раскройда бөлек парақ тобын алады. */
+  veneerGroup?: string | undefined
 
   /** Шыны фасад па: 3D-де мөлдір көрсетіледі (раскрой өзгермейді). */
   glass?: boolean | undefined

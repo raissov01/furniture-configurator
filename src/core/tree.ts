@@ -73,6 +73,8 @@ export type BoardSpec = {
   orientation: Orientation
   edges: PanelEdges
   grainAlongLength: boolean
+  /** Бір шпон өрнегіне жататын детальдардың ортақ идентификаторы. */
+  veneerGroup?: string | undefined
   role: PanelRole
   drilling?: Drill[] | undefined
   cutouts?: Cutout[] | undefined
