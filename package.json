@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit",
     "cutlist": "tsx src/cli/cutlist.ts",
     "export": "tsx src/cli/export.ts",
+    "bazis:audit": "tsx src/cli/bazisAudit.ts",
+    "bazis:kit": "tsx src/cli/bazisKit.ts",
     "test:e2e": "node scripts/e2e.mjs",
     "plan": "node scripts/plan.mjs",
     "deploy": "bash scripts/deploy.sh",

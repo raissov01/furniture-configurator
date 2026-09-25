@@ -273,7 +273,7 @@ export function CutPage() {
             </Button>
             <Button
               disabled={busy !== null || panels.length === 0 || production.error !== null}
-              title={tr('Список деталей и присадки для Базиса: CSV в Windows-1251 плюс DXF деталей')}
+              title={tr('Для Базиса: список деталей для Раскроя (CSV, XLSX), скрипт для Мебельщика — детали и присадка как крепёж, DXF деталей')}
               onClick={() => void run('basis', async () => {
                 const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfFiles }, { zipSync, strToU8 }] =
                   await Promise.all([
@@ -281,7 +281,10 @@ export function CutPage() {
                     import('@/src/core/export/dxf'),
                     import('fflate'),
                   ])
-                const options = { projectName }
+                // Скриптке әр корпустың ӨЗ панельдері мен бөлмедегі позасы керек
+                // (`basisScript.ts`): присадка Базиске әлем координатасымен барады.
+                const scene = flattenTree(root, catalog, settings, layers)
+                const options = { projectName, script: { scene, settings } }
                 const entries: Record<string, Uint8Array> = {}
                 for (const [name, bytes] of basisFiles(panels, catalog, options)) entries[name] = bytes
                 for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) {
