@@ -8,6 +8,7 @@
 import { t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
 import { SEED_SETS, SEED_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
+import { filterTemplateCatalog } from '@/src/core/templateCatalog'
 import type { Material, TemplateCategory } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
@@ -53,6 +54,8 @@ export function TemplateGallery() {
   const runBusy = useConfigurator((s) => s.runBusy)
   const activeId = useConfigurator((s) => s.templateId)
   const [filter, setFilter] = useState<Filter>('all')
+  const [subcategory, setSubcategory] = useState<string | undefined>()
+  const [search, setSearch] = useState('')
   const catalog = useConfigurator((s) => s.catalog)
   // Жылдам генератордың материал таңдағыштары үшін: корпус/фасад бірдей
   // пулдан (қалыңдығы ≥10 мм), столешница — тек slab деп белгіленгендерден
@@ -76,18 +79,21 @@ export function TemplateGallery() {
     return map
   }, [])
 
-  const shown = useMemo(
-    () => (filter === 'all' || filter === 'sets'
-      ? SEED_TEMPLATES
-      : SEED_TEMPLATES.filter((t) => t.category === filter)),
-    [filter],
-  )
+  const subcategories = useMemo(() => {
+    if (filter === 'all' || filter === 'sets') return []
+    return [...new Set(SEED_TEMPLATES.filter((item) => item.category === filter).map((item) => item.subcategory).filter((value): value is string => Boolean(value)))]
+  }, [filter])
+  const shown = useMemo(() => filterTemplateCatalog(SEED_TEMPLATES, {
+    category: filter === 'all' || filter === 'sets' ? undefined : filter,
+    subcategory,
+    search,
+  }, tr), [filter, subcategory, search])
 
   if (!open) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
       onClick={() => setOpen(false)}
     >
       <div
@@ -98,17 +104,41 @@ export function TemplateGallery() {
           <h2 className="mr-2 text-sm font-semibold">
             {firstRun ? tr('С чего начнём?') : tr('Готовые шаблоны')}
           </h2>
-          <Button active={filter === 'all'} onClick={() => setFilter('all')}>{tr('Все')}</Button>
+          <Button active={filter === 'all'} onClick={() => { setFilter('all'); setSubcategory(undefined) }}>{tr('Все')}</Button>
           {TEMPLATE_CATEGORIES.map((c) => (
-            <Button key={c.value} active={filter === c.value} onClick={() => setFilter(c.value)}>
-              {c.label}
+            <Button key={c.value} active={filter === c.value} onClick={() => { setFilter(c.value); setSubcategory(undefined) }}>
+              {tr(c.label)}
             </Button>
           ))}
-          <Button active={filter === 'sets'} onClick={() => setFilter('sets')}>{tr('Наборы')}</Button>
+          <Button active={filter === 'sets'} onClick={() => { setFilter('sets'); setSubcategory(undefined) }}>{tr('Наборы')}</Button>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
+
+        {filter !== 'sets' ? (
+          <div className="mb-3 space-y-2">
+            <label className="block text-xs text-neutral-600 dark:text-neutral-300">
+              {tr('Поиск модуля')}
+              <input
+                aria-label={tr('Поиск модуля')}
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={tr('Название или тип')}
+                className="mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-700 dark:border-neutral-600 dark:bg-neutral-900"
+              />
+            </label>
+            {subcategories.length > 1 ? (
+              <div aria-label={tr('Подкатегории')} className="flex gap-2 overflow-x-auto pb-1">
+                <Button active={!subcategory} onClick={() => setSubcategory(undefined)}>{tr('Все')}</Button>
+                {subcategories.map((value) => (
+                  <Button key={value} active={subcategory === value} onClick={() => setSubcategory(value)}>{tr(value)}</Button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <KitchenWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
 
@@ -118,7 +148,7 @@ export function TemplateGallery() {
               <button
                 key={c.value}
                 type="button"
-                onClick={() => setFilter(c.value)}
+                onClick={() => { setFilter(c.value); setSubcategory(undefined) }}
                 className={cn(
                   'rounded-lg border px-3 py-2 text-left transition hover:border-neutral-500',
                   filter === c.value
@@ -126,7 +156,7 @@ export function TemplateGallery() {
                     : 'border-neutral-200 dark:border-neutral-700',
                 )}
               >
-                <div className="text-xs font-medium">{c.label}</div>
+                <div className="text-xs font-medium">{tr(c.label)}</div>
                 <div className="tabular-nums text-[11px] text-neutral-500">
                   {counts.get(c.value) ?? 0} {tr('шаблонов')}
                 </div>
@@ -281,10 +311,11 @@ export function TemplateGallery() {
           </div>
           </div>
         ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div data-testid="template-results" className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
           {shown.map((t) => (
             <button
               key={t.id}
+              data-template-id={t.id}
               type="button"
               onClick={() => { setFirstRun(false); loadTemplate(t.id) }}
               className={cn(
@@ -301,15 +332,17 @@ export function TemplateGallery() {
               >
                 <CabinetThumb cabinet={templateToCabinet(t, catalog)} catalog={catalog} pxPerMm={thumbScale(t.height)} />
               </div>
-              <div className="text-xs font-medium">{t.name}</div>
+              <div className="text-xs font-medium">{tr(t.name)}</div>
               <div className="tabular-nums text-[11px] text-neutral-500">
-                {t.height} × {t.width} × {t.depth}
+                {t.height} (H) × {t.width} (W) × {t.depth} (D)
               </div>
-              <div className="text-[11px] leading-snug text-neutral-400">{t.description}</div>
+              <div className="text-[11px] leading-snug text-neutral-400">{tr(t.description)}</div>
             </button>
           ))}
         </div>
         )}
+
+        {filter !== 'sets' && shown.length === 0 ? <p className="py-5 text-center text-sm text-neutral-500">{tr('Модули не найдены')}</p> : null}
 
         <p className="mt-3 text-[11px] text-neutral-400">
           {filter === 'sets'
