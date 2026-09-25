@@ -320,7 +320,7 @@ export function priceProject(
     for (const [side, length] of sides) {
       const spec = p.edges[side]
       if (!spec) continue
-      st.edges.set(spec.bandId, (st.edges.get(spec.bandId) ?? 0) + length / 1000)
+      st.edges.set(spec.bandId, (st.edges.get(spec.bandId) ?? 0) + length * p.qty / 1000)
     }
   }
 

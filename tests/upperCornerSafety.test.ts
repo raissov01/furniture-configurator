@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   catalogOf, cncIndexCsv, defaultShopProfile, edgeBandTotals, edgeMetresByBand,
   findTemplate, formatCutList, generateCabinet, panelToDxf, templateToCabinet,
+  nestPanels, priceProject,
 } from '../src/core/index'
 import { materialWidthRangeAt } from '../src/core/bevelBounds'
 import type { CabinetConfig } from '../src/core/index'
@@ -34,21 +35,29 @@ describe('үстіңгі биіктіктегі өтпелі трапециян�
       .toEqual([35, 311])
     for (const hole of right.drilling) {
       if (hole.face !== 'inner' && hole.face !== 'outer') continue
-      expect(hole.x, `${right.id} ${hole.purpose}`).toBeGreaterThanOrEqual(0)
-      expect(hole.x, `${right.id} ${hole.purpose}`).toBeLessThanOrEqual(right.cutLength)
-      expect(hole.y, `${right.id} ${hole.purpose}`).toBeGreaterThanOrEqual(0)
-      expect(hole.y, `${right.id} ${hole.purpose}`).toBeLessThanOrEqual(right.cutWidth)
+      const radius = hole.diameter / 2
+      expect(hole.x - radius, `${right.id} ${hole.purpose}`).toBeGreaterThanOrEqual(0)
+      expect(hole.x + radius, `${right.id} ${hole.purpose}`).toBeLessThanOrEqual(right.cutLength)
+      expect(hole.y - radius, `${right.id} ${hole.purpose}`).toBeGreaterThanOrEqual(0)
+      expect(hole.y + radius, `${right.id} ${hole.purpose}`).toBeLessThanOrEqual(right.cutWidth)
     }
     for (const panel of panels.filter((part) => part.bevel)) {
       for (const hole of panel.drilling) {
         const x = hole.face === 'edgeW1' ? 0 : hole.face === 'edgeW2' ? panel.cutLength : hole.x
         const [start, end] = materialWidthRangeAt(panel, x)
+        const radius = hole.diameter / 2
         if (hole.face === 'inner' || hole.face === 'outer') {
-          expect(hole.y, `${panel.id} ${hole.purpose}`).toBeGreaterThanOrEqual(start)
-          expect(hole.y, `${panel.id} ${hole.purpose}`).toBeLessThanOrEqual(end)
+          const [startBefore, endBefore] = materialWidthRangeAt(panel, x - radius)
+          const [startAfter, endAfter] = materialWidthRangeAt(panel, x + radius)
+          expect(hole.x - radius).toBeGreaterThanOrEqual(0)
+          expect(hole.x + radius).toBeLessThanOrEqual(panel.cutLength)
+          expect(hole.y - radius, `${panel.id} ${hole.purpose}`)
+            .toBeGreaterThanOrEqual(Math.max(startBefore, startAfter))
+          expect(hole.y + radius, `${panel.id} ${hole.purpose}`)
+            .toBeLessThanOrEqual(Math.min(endBefore, endAfter))
         } else if (hole.face === 'edgeW1' || hole.face === 'edgeW2') {
-          expect(hole.x, `${panel.id} ${hole.purpose}`).toBeGreaterThanOrEqual(start)
-          expect(hole.x, `${panel.id} ${hole.purpose}`).toBeLessThanOrEqual(end)
+          expect(hole.x - radius, `${panel.id} ${hole.purpose}`).toBeGreaterThanOrEqual(start)
+          expect(hole.x + radius, `${panel.id} ${hole.purpose}`).toBeLessThanOrEqual(end)
         }
       }
     }
@@ -62,6 +71,21 @@ describe('үстіңгі биіктіктегі өтпелі трапециян�
     expect(dxf).toContain(`10\n${top.cutLength}.0\n20\n${narrowStart}.0`)
     expect(formatCutList([top], catalog)[0]!.note).toContain('Трапеция: 600→350')
     expect(cncIndexCsv([top], catalog, { projectName: 'Бұрыштық' })).toContain('есть — см. DXF')
+    const shelf = panels.find((panel) => panel.role === 'shelf')!
+    expect(shelf.note).not.toBe('')
+    expect(formatCutList([shelf], catalog)[0]!.note).toContain('Трапеция:')
+  })
+
+  it('бірдей заготовка, бірақ бөлек қиғаш контур екі деталировка позициясы', () => {
+    const top = generateCabinet(upperTransition(), catalog).find((panel) => panel.id === 'top')!
+    const second = { ...top, id: 'other', bevel: { ...top.bevel!, widthAtEnd: 400 } }
+    expect(formatCutList([top, second], catalog)).toHaveLength(2)
+    const mirrored = { ...top, id: 'mirrored', bevel: { ...top.bevel!, alignWidth: 'start' as const } }
+    const mirroredRows = formatCutList([top, mirrored], catalog)
+    expect(mirroredRows).toHaveLength(2)
+    expect(mirroredRows.map((row) => row.note)).toEqual([
+      expect.stringContaining('прямая сторона L2'), expect.stringContaining('прямая сторона L1'),
+    ])
   })
 
   it('деталировка лентасының метрі сметадағы физикалық диагональмен бірдей', () => {
@@ -73,5 +97,9 @@ describe('үстіңгі биіктіктегі өтпелі трапециян�
     const one = edgeMetresByBand([top]).get('pvc2-h1145')!
     expect(one).toBe(Math.round(Math.hypot(top.finishedLength, 250)) / 1000)
     expect(edgeBandTotals([{ ...top, qty: 2 }]).get('pvc2-h1145')).toBe(one * 2)
+    const double = { ...top, qty: 2 }
+    const quote = priceProject([double], nestPanels([double], catalog), defaultShopProfile())
+    const row = quote.byMaterial.find((item) => item.materialId === top.materialId)!
+    expect(row.edgeMetres).toBe(Math.round(one * 2 * 100) / 100)
   })
 })

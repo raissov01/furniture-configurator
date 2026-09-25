@@ -19,7 +19,10 @@ import type { Audience, Catalog, CutListRow, EdgeSpec, Panel } from './types'
  */
 const bevelNote = (p: Panel): string => {
   const b = p.bevel
-  if (b && isWidthBevel(b)) return `Трапеция: ${b.widthAtStart}→${b.widthAtEnd}`
+  if (b && isWidthBevel(b)) {
+    const straight = b.alignWidth === 'end' ? 'L2' : 'L1'
+    return `Трапеция: ${b.widthAtStart}→${b.widthAtEnd}, прямая сторона ${straight}`
+  }
   return ''
 }
 
@@ -104,7 +107,7 @@ export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
       edgeW1: bandLabel(p.edges.W1),
       edgeW2: bandLabel(p.edges.W2),
       grain: material.hasGrain ? (p.grainAlongLength ? 'вдоль длины' : 'поперёк длины') : 'нет',
-      note: p.note || bevelNote(p),
+      note: [p.note, bevelNote(p)].filter(Boolean).join('; '),
     }
 
     // Бірдей деталь — бір жол. Кілтке орналасу КІРМЕЙДІ: цехқа детальдің
@@ -112,6 +115,7 @@ export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
     const key = [
       row.name, row.cutLength, row.cutWidth, row.thickness, row.material,
       row.edgeL1, row.edgeL2, row.edgeW1, row.edgeW2, row.grain, row.note,
+      JSON.stringify(p.bevel ?? null),
     ].join('|')
 
     const existing = groups.get(key)
