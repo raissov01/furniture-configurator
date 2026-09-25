@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic'
 import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { Configurator } from '@/components/Configurator'
+import { BoardProperties } from '@/components/BoardProperties'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
 import { RoomPlan } from '@/components/RoomPlan'
@@ -32,6 +33,7 @@ import { cloudEnabled } from '@/lib/cloud'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
   ConfigValidationError, formatTenge, nestPanels, nestingOptionsOf, priceProject,
+  boardDimensions, findNode,
 } from '@/src/core/index'
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -131,6 +133,8 @@ export function Workspace() {
   const mirrorCabinet = useConfigurator((s) => s.mirrorCabinet)
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
   const addCabinet = useConfigurator((s) => s.addCabinet)
+  const addBoard = useConfigurator((s) => s.addBoard)
+  const removeBoard = useConfigurator((s) => s.removeBoard)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
@@ -185,6 +189,14 @@ export function Workspace() {
   const production = useProjectProduction()
   const hasActiveCabinet = Boolean(cabinet)
   const activePanels = hasActiveCabinet ? panels : []
+  const activeNode = findNode(root, activeId)
+  const activeBoard = activeNode?.kind === 'board' ? activeNode : null
+  const boardPanel = activeBoard ? production.scene.nodes.find((node) => node.nodeId === activeId)?.panels[0] : undefined
+  const editableBoard = useMemo(() => {
+    if (!activeBoard) return false
+    try { assertTreeNodeEditable(root, activeId, layers); return true }
+    catch (cause) { if (!(cause instanceof ConfigValidationError)) throw cause; return false }
+  }, [root, activeId, layers, activeBoard])
   const activeEditable = useMemo(() => {
     if (!hasActiveCabinet) return false
     try {
@@ -362,7 +374,7 @@ export function Workspace() {
       <RoomPlan />
       <ShopSettings />
       {activeEditable ? <SketchEditor /> : null}
-      {activeEditable ? <DrillEditor panels={activePanels} catalog={catalog} /> : null}
+      {activeEditable || editableBoard ? <DrillEditor panels={activeBoard ? (boardPanel ? [boardPanel] : []) : activePanels} catalog={catalog} /> : null}
       {activeEditable ? <CustomParts catalog={catalog} /> : null}
       <ProjectPanel panels={projectPanels} catalog={catalog} />
       <HelpPanel />
@@ -483,6 +495,8 @@ export function Workspace() {
 
         <Menu label={tr('Элемент')} size="sm">
           <MenuItem onClick={addCabinet}>{tr('Новый корпус')}</MenuItem>
+          <MenuItem onClick={addBoard}>{tr('Добавить свободную доску')}</MenuItem>
+          <MenuItem onClick={() => removeBoard(activeId)} disabled={!editableBoard}>{tr('Удалить доску')}</MenuItem>
           <MenuItem onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable}>{tr('Дублировать')}</MenuItem>
           <MenuItem onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable}>{tr('Зеркальная копия')}</MenuItem>
           <MenuItem
@@ -504,7 +518,7 @@ export function Workspace() {
           <MenuItem onClick={() => setShopOpen(true)}>{tr('Цех: материалы и цены')}</MenuItem>
           <MenuItem onClick={() => setProjectOpen(true)}>{tr('Материалы и сборка')}</MenuItem>
           <MenuItem onClick={() => setQuoteOpen(true)} disabled={Boolean(production.error)}>{tr('Смета и раскрой')}</MenuItem>
-          <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable}>{tr('Присадка')}</MenuItem>
+          <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable && !editableBoard}>{tr('Присадка')}</MenuItem>
           <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
           <MenuItem onClick={() => { window.location.href = '/cut' }}>{tr('Раскрой (отдельный экран)')}</MenuItem>
         </Menu>
@@ -548,7 +562,7 @@ export function Workspace() {
           <Menu label={tr('Проект')} title={tr('Материалы, раскрой, присадка, смета')}>
             <MenuItem onClick={() => setProjectOpen(true)}>{tr('Материалы и сборка')}</MenuItem>
             <MenuItem onClick={() => setQuoteOpen(true)} disabled={Boolean(production.error)}>{tr('Смета и раскрой')}</MenuItem>
-            <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable}>{tr('Присадка')}</MenuItem>
+            <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable && !editableBoard}>{tr('Присадка')}</MenuItem>
             <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
             <MenuItem onClick={() => setHistoryOpen(true)}>{tr('История')}</MenuItem>
             <MenuItem onClick={() => void copyClientLink()}>{tr('Ссылка клиенту')}</MenuItem>
@@ -935,7 +949,7 @@ export function Workspace() {
           <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
               {tr('Модуль')}
-              {cabinets.length > 1
+              {cabinet && cabinets.length > 1
                 ? ` ${String(cabinets.findIndex((c) => c.id === activeId) + 1).padStart(2, '0')} / ${cabinets.length}`
                 : ''}
             </div>
@@ -944,6 +958,12 @@ export function Workspace() {
               <div className="text-[11px] tabular-nums text-neutral-500">
                 {cabinet.height} (H) × {cabinet.width} (W) × {cabinet.depth} (D)
               </div>
+            </> : activeBoard ? <>
+              <div className="truncate text-sm font-semibold" title={activeBoard.name}>{activeBoard.name}</div>
+              {catalog.materials.find((item) => item.id === activeBoard.board.materialId) && (() => {
+                const size = boardDimensions(activeBoard.board, catalog.materials.find((item) => item.id === activeBoard.board.materialId)!)
+                return <div className="text-[11px] tabular-nums text-neutral-500">{size.height} (H) × {size.width} (W) × {size.depth} (D)</div>
+              })()}
             </> : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-3">
@@ -958,12 +978,18 @@ export function Workspace() {
                 <fieldset disabled={!activeEditable}>
                   <Configurator invalidField={error?.field ?? null} panels={activePanels} />
                 </fieldset>
+              ) : activeBoard ? (
+                <fieldset disabled={!editableBoard}>
+                  <BoardProperties key={activeBoard.id} node={activeBoard} panel={boardPanel} catalog={catalog} />
+                </fieldset>
               ) : null}
             </Dense>
           </div>
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
           <div className="flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800">
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
+            <Button onClick={addBoard}>{tr('+ доска')}</Button>
+            {activeBoard && <Button onClick={() => removeBoard(activeId)} disabled={!editableBoard}>{tr('Удалить доску')}</Button>}
             <Button onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
             <Button onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable} title={tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
             <Button

@@ -9,8 +9,8 @@
  * цехтағы адамның детальді қолына алып қарағанындай көрініс.
  *
  * ҚАЙДА САҚТАЛАДЫ. Тесік панельге жазылмайды — панель әрқашан конфигтен
- * қайта есептеледі (§7). Түзету `cabinet.drillEdits` ішінде, панель id-і
- * бойынша жатады да, генерацияның соңында үстіне жабылады. Сондықтан
+ * қайта есептеледі (§7). Шкаф тесігі `cabinet.drillEdits`, еркін тақта
+ * тесігі `BoardSpec.drilling` ішінде сақталады. Сондықтан
  * қолмен қойылған тесік 3D-де де, DXF-те де, сметада да бірдей көрінеді.
  */
 
@@ -36,7 +36,8 @@ import {
   snapToPitch,
 } from '@/src/core/index'
 import type { Catalog, Cutout, Drill, DrillEdits, Panel, PanelCutouts } from '@/src/core/index'
-import { activeCabinet, useConfigurator } from '@/store/configurator'
+import { useConfigurator } from '@/store/configurator'
+import { findNode } from '@/src/core/index'
 
 type Filter = 'all' | 'auto' | 'manual'
 
@@ -102,8 +103,13 @@ function place(drill: Drill, length: number, width: number): { x: number; y: num
 export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Catalog }) {
   const open = useConfigurator((s) => s.drillOpen)
   const setOpen = useConfigurator((s) => s.setDrillOpen)
-  const cabinet = useConfigurator(activeCabinet)
+  const cabinet = useConfigurator((s) => s.cabinets.find((item) => item.id === s.activeId))
+  const boardNode = useConfigurator((s) => {
+    const node = findNode(s.root, s.activeId)
+    return node?.kind === 'board' ? node : null
+  })
   const edit = useConfigurator((s) => s.edit)
+  const editBoard = useConfigurator((s) => s.editBoard)
 
   const [panelId, setPanelId] = useState<string | null>(null)
   const [presetId, setPresetId] = useState(DRILL_PRESETS[0]!.id)
@@ -113,12 +119,17 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
   const [selected, setSelected] = useState<string | null>(null)
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null)
 
-  const edits: DrillEdits = cabinet.drillEdits ?? {}
-  const allCutouts: PanelCutouts = cabinet.panelCutouts ?? {}
+  const edits: DrillEdits = boardNode ? { [boardNode.id]: { added: boardNode.board.drilling ?? [], removed: [] } }
+    : cabinet?.drillEdits ?? {}
+  const allCutouts: PanelCutouts = boardNode ? { [boardNode.id]: boardNode.board.cutouts ?? [] }
+    : cabinet?.panelCutouts ?? {}
   const panel = panels.find((p) => p.id === panelId) ?? panels[0]
   const preset = findDrillPreset(presetId)!
 
-  const setEdits = (next: DrillEdits, key: string) => edit(`drill:${key}`, { drillEdits: next })
+  const setEdits = (next: DrillEdits, key: string) => {
+    if (boardNode) editBoard(boardNode.id, { drilling: next[boardNode.id]?.added ?? [] })
+    else edit(`drill:${key}`, { drillEdits: next })
+  }
 
   /**
    * Ойманы қосу/өшіру. Присадкамен бір терезеде тұрғаны әдейі: цехтағы адам
@@ -128,7 +139,8 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
     const next: PanelCutouts = { ...allCutouts }
     if (list.length === 0) delete next[panelId]
     else next[panelId] = list
-    edit(`cutout:${key}`, { panelCutouts: next })
+    if (boardNode) editBoard(boardNode.id, { cutouts: list })
+    else edit(`cutout:${key}`, { panelCutouts: next })
   }
 
   // Панель жоғалса (габарит өзгерді, секция өшті) — таңдау бірінші панельге көшеді.
@@ -266,14 +278,14 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
             {tr('CNC CSV')}
           </Button>
           <Button
-            disabled={!panelEdit}
-            title={tr('Вернуть автоматическую присадку этой детали')}
+            disabled={!panelEdit || (boardNode !== null && panelEdit.added.length === 0)}
+            title={boardNode ? tr('Удалить все отверстия') : tr('Вернуть автоматическую присадку этой детали')}
             onClick={() => {
               setEdits(resetPanelDrills(edits, panel.id), `reset:${panel.id}`)
               setSelected(null)
             }}
           >
-            {tr('Вернуть авто')}
+            {boardNode ? tr('Удалить все отверстия') : tr('Вернуть авто')}
           </Button>
           <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
         </div>
@@ -459,10 +471,10 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
             <div className="grid grid-cols-2 gap-2 border-t border-neutral-200 pt-2 dark:border-neutral-800">
               <Field label={tr('Текстура')} hint={tr('раскрой учитывает')}>
                 <Select
-                  value={cabinet.panelGrain?.[panel.id] ?? (panel.grainAlongLength ? 'length' : 'width')}
-                  onChange={(direction) => edit(`grain:${panel.id}`, {
-                    panelGrain: { ...cabinet.panelGrain, [panel.id]: direction },
-                  })}
+                  value={cabinet?.panelGrain?.[panel.id] ?? (panel.grainAlongLength ? 'length' : 'width')}
+                  onChange={(direction) => boardNode
+                    ? editBoard(boardNode.id, { grainAlongLength: direction === 'length' })
+                    : edit(`grain:${panel.id}`, { panelGrain: { ...cabinet?.panelGrain, [panel.id]: direction } })}
                   options={[
                     { value: 'length' as const, label: tr('Вдоль длины') },
                     { value: 'width' as const, label: tr('Поперёк длины') },
@@ -489,13 +501,11 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
                       min={0}
                       max={Math.floor(Math.min(panel.finishedLength, panel.finishedWidth) / 2)}
                       onChange={(r) => {
-                        const current = cabinet.panelCorners?.[panel.id]
+                        const current = (boardNode ? boardNode.board.corners : cabinet?.panelCorners?.[panel.id])
                           ?? { bottomLeft: 0, bottomRight: 0, topRight: 0, topLeft: 0 }
-                        edit(`corners:${panel.id}:${corner}`, {
-                          panelCorners: {
-                            ...cabinet.panelCorners,
-                            [panel.id]: { ...current, [corner]: r },
-                          },
+                        if (boardNode) editBoard(boardNode.id, { corners: { ...current, [corner]: r } })
+                        else edit(`corners:${panel.id}:${corner}`, {
+                          panelCorners: { ...cabinet?.panelCorners, [panel.id]: { ...current, [corner]: r } },
                         })
                       }}
                     />
@@ -631,7 +641,7 @@ function SelectedInfo({ panel, keyOf }: { panel: Panel; keyOf: string }) {
 function Shell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={onClose}
     >
       <div

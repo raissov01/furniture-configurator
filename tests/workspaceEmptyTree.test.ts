@@ -31,19 +31,20 @@ describe('cabinet-free v4 editor shell', () => {
     expect(useConfigurator.getState().cabinets).toEqual([])
     Object.assign(initialSnapshot, useConfigurator.getState())
     const editor = renderToString(createElement(Workspace))
-    expect(editor).toContain('Выберите корпус в структуре проекта')
+    if (kind === 'empty') expect(editor).toContain('Выберите корпус в структуре проекта')
+    else expect(editor.match(/data-testid="board-properties"/g)).toHaveLength(1)
     expect(editor.match(/data-testid="tree-dock"/g)).toHaveLength(1)
     const properties = editor.match(/<aside\b[\s\S]*?<\/aside>/)?.[0]
     expect(properties).toBeDefined()
     expect(properties).not.toContain('2000 (H)')
-    expect(properties).not.toContain('<input')
+    if (kind === 'empty') expect(properties).not.toContain('<input')
     expect(editor.includes('Free-board-target')).toBe(kind === 'board')
     useConfigurator.getState().setRoomOpen(true)
     Object.assign(initialSnapshot, useConfigurator.getState())
     expect(() => renderToString(createElement(RoomPlan))).not.toThrow()
   })
 
-  it('does not expose a different cabinet editor while a board is active', () => {
+  it('shows one board Properties and no cabinet editor while a board is active', () => {
     const project = parseProjectV4(referenceProject)
     project.root.children.push({
       kind: 'board', id: 'selected-board', name: 'Selected board', transform: IDENTITY_TRANSFORM,
@@ -56,10 +57,11 @@ describe('cabinet-free v4 editor shell', () => {
     useConfigurator.getState().setActive('selected-board')
     Object.assign(initialSnapshot, useConfigurator.getState())
     const editor = renderToString(createElement(Workspace))
-    expect(editor).toContain('Выберите корпус в структуре проекта')
+    expect(editor.match(/data-testid="board-properties"/g)).toHaveLength(1)
+    expect(editor).not.toContain('data-tour="size"')
     const properties = editor.match(/<aside\b[\s\S]*?<\/aside>/)?.[0]
     expect(properties).toBeDefined()
     expect(properties).not.toContain('2000 (H)')
-    expect(properties).not.toContain('<input')
+    expect(properties).toContain('<input')
   })
 })

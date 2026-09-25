@@ -5,13 +5,13 @@
  * өзгереді, қалғанын ядро жасайды (CLAUDE.md §3).
  *
  * PRO100-дың Properties идеясы (docs/pro100/ui-design.md): тоғызға жуық
- * жылжымалы «▶» бөлімнің арасынан керегін іздеудің орнына БЕС ҚОСЫМШАҒА
- * топтаймыз — Общее · Размеры · Материал · Расчёт · Производство. Бөлімдердің
+ * жылжымалы «▶» бөлімнің арасынан керегін іздеудің орнына ТӨРТ ҚОСЫМШАҒА
+ * топтаймыз — Общее (өлшем және орын осында) · Материал · Отчёты · Производство. Бөлімдердің
  * ІШІ өзгермейді (бар компоненттер сол күйі), тек орналасуы топталады.
  *
- * Соңғы екеуі («Расчёт», «Производство») — біздің қосымша мүмкіндігіміз
- * (PRO100-да присадка мен ЧПУ экспорты мүлде жоқ, ол жұмысты Базиске
- * тапсырады). Олардың нақты редакторлары (смета, присадка, экспорт) бөлек
+ * PRO100 v7.08-нің нақты табтары — General · Material · Reports. Біздегі
+ * төртінші «Производство» өндірістік құралдарға сілтейді: присадка мен DXF.
+ * Олардың нақты редакторлары (смета, присадка, экспорт) бөлек
  * терезелер болып қала береді — мұнда тек СІЛТЕЙТІН қысқаша үзінді, ешнәрсе
  * қайта жазылмайды.
  */
@@ -725,10 +725,9 @@ const AXIS_MIN = { height: 'minHeight', width: 'minWidth', depth: 'minDepth' } a
 const AXIS_MAX = { height: 'maxHeight', width: 'maxWidth', depth: 'maxDepth' } as const
 
 /**
- * PRO100-дың төрт қосымшасы + бесінші («Производство» — біздің артықшылығымыз,
- * PRO100-да жоқ). Атаулар docs/pro100/ui-design.md-дегі кестемен бірдей.
+ * PRO100 v7.08-дің үш қосымшасы және біздің өндірістік төртінші қосымша.
  */
-type Tab = 'general' | 'dimensions' | 'material' | 'calc' | 'production'
+type Tab = 'general' | 'material' | 'reports' | 'production'
 
 const tabButtonCls = 'flex-1 min-w-[5.5rem]'
 
@@ -765,14 +764,8 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
   const setDrillOpen = useConfigurator((s) => s.setDrillOpen)
 
-  /*
-   * Тарихи әдепкі қосымша — «Размеры»: оқыту көмекшісінің (Tour.tsx) бірінші
-   * екі қадамы («Начните с габарита», «Наполнение — в разделах слева»)
-   * `[data-tour="size"]` мен `[data-tour="sections"]`-қа сілтейді, ал екеуі
-   * де осы қосымшада. «Общее»-ден бастасақ, көмекші жасырын қосымшадағы
-   * нөлдік өлшемді элементті бөлектеп тұрар еді (getBoundingClientRect 0).
-   */
-  const [tab, setTab] = useState<Tab>('dimensions')
+  /* General ашық тұрады: Tour өлшем мен секцияларды осы табта көрсетеді. */
+  const [tab, setTab] = useState<Tab>('general')
 
   // «Расчёт» қосымшасының қысқаша деталировкасы: толық кесте — астыңғы
   // CutListTable-де, толық баға — «Смета и раскрой» терезесінде; мұнда тек
@@ -808,16 +801,16 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
   return (
     <div className="space-y-3">
       {/*
-        PRO100-дың Properties терезесі: бір панель, бес қосымша. Ауысу тек
+        PRO100-дың Properties терезесі: бір панель, үш эталон қосымша және
+        біздің өндіріске арналған төртінші қосымша. Ауысу тек
         КЛАСС арқылы (Collapsible-дегі гочамен бірдей себеп): жасырын
         қосымшаның мазмұны DOM-да қалуы керек, әйтпесе беттен іздеу мен e2e
         оны таппайды (docs/pro100/ui-design.md).
       */}
       <div className="flex flex-wrap gap-1 border-b border-neutral-200 pb-2 dark:border-neutral-800" data-tour="tabs">
         <Button active={tab === 'general'} onClick={() => setTab('general')}><span className={tabButtonCls}>{tr('Общее')}</span></Button>
-        <Button active={tab === 'dimensions'} onClick={() => setTab('dimensions')}><span className={tabButtonCls}>{tr('Размеры')}</span></Button>
         <Button active={tab === 'material'} onClick={() => setTab('material')}><span className={tabButtonCls}>{tr('Материал')}</span></Button>
-        <Button active={tab === 'calc'} onClick={() => setTab('calc')}><span className={tabButtonCls}>{tr('Расчёт')}</span></Button>
+        <Button active={tab === 'reports'} onClick={() => setTab('reports')}><span className={tabButtonCls}>{tr('Отчёты')}</span></Button>
         <Button active={tab === 'production'} onClick={() => setTab('production')}><span className={tabButtonCls}>{tr('Производство')}</span></Button>
       </div>
 
@@ -911,7 +904,7 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
       </div>
 
       {/* ═══ РАЗМЕРЫ: H×W×D, конструкция, скос, угловой, фронт. панель, основание ═══ */}
-      <div className={cn('flex-col gap-3', tab === 'dimensions' ? 'flex' : 'hidden')}>
+      <div className={cn('flex-col gap-3', tab === 'general' ? 'flex' : 'hidden')}>
         <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
         <div className="grid grid-cols-3 gap-2" data-tour="size">
           <Field label={tr('Высота (H)')} hint={hint('height')}>
@@ -1564,13 +1557,13 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
       </div>
 
       {/*
-        ═══ РАСЧЁТ: баға, деталировка үзіндісі, фурнитура ═══
-        PRO100-дың «Calculation» қосымшасына сәйкес, бірақ толық есеп бөлек
+        ═══ ЕСЕПТЕР: баға, деталировка үзіндісі, фурнитура ═══
+        PRO100-дың «Reports» қосымшасына сәйкес, бірақ толық есеп бөлек
         терезеде («Смета и раскрой») қалады — мұнда тек қысқа үзінді әрі
         сол терезеге апаратын батырма. Ядроның `formatCutList`-і қайта
         жазылмайды, дәл CutListTable қолданатын функция осында да шақырылады.
       */}
-      <div className={cn('flex-col gap-3', tab === 'calc' ? 'flex' : 'hidden')}>
+      <div className={cn('flex-col gap-3', tab === 'reports' ? 'flex' : 'hidden')}>
         <div className="flex items-center justify-between gap-2">
           <SectionTitle>{tr('Деталировка — кратко')}</SectionTitle>
           <Button onClick={() => setQuoteOpen(true)}>{tr('Открыть смету')}</Button>
@@ -1614,8 +1607,7 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
       {/*
         ═══ ПРОИЗВОДСТВО: присадка, раскрой, ЧПУ-экспорт ═══
         Бізде бар, PRO100-да ЖОҚ (ол жұмысты Базиске тапсырады). Редакторлар
-        бөлек терезелерде/беттерде қалады — мұнда PRO100-дың «бесінші
-        қосымшасы» ретінде тек ашатын жол.
+        бөлек терезелерде/беттерде қалады — төртінші қосымша тек ашатын жол.
       */}
       <div className={cn('flex-col gap-3', tab === 'production' ? 'flex' : 'hidden')}>
         <p className="text-[11px] text-neutral-500">
@@ -1634,6 +1626,7 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
         <ExportMenu cabinet={cabinet} panels={panels} />
       </div>
 
+      <div className={cn(tab === 'general' ? 'block' : 'hidden')}>
       <div className="flex items-center justify-between pt-1">
         <SectionTitle>{tr('Секции')} ({cabinet.sections.length})</SectionTitle>
         <Button onClick={addSection} disabled={cabinet.sections.length >= 12}>
@@ -1648,6 +1641,7 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
 
       <SectionTitle>{tr('Вид')}</SectionTitle>
       <Toggle checked={showDimensions} onChange={setShowDimensions} label={tr('Показывать габариты')} />
+      </div>
     </div>
   )
 }

@@ -10,6 +10,7 @@
  */
 
 import { create } from 'zustand'
+import { t as tr } from '@/lib/i18n'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import {
   DEFAULT_ROOM,
@@ -257,6 +258,7 @@ type State = Snapshot & {
 
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
+  removeBoard(id: string): void
   editBoard(id: string, patch: Partial<BoardSpec>): void
   setBoardPosition(id: string, position: Vec3): void
   editSection(index: number, patch: Partial<Section>, key: string): void
@@ -509,6 +511,24 @@ function mapBoard(root: GroupNode, id: string, update: (board: BoardSpec) => Boa
   }) }
 }
 
+function withoutBoard(root: GroupNode, id: string): GroupNode {
+  return { ...root, children: root.children
+    .filter((child) => child.id !== id)
+    .map((child) => child.kind === 'group' ? withoutBoard(child, id) : child) }
+}
+
+function firstBoardId(root: GroupNode): string | undefined {
+  for (const child of root.children) {
+    if (child.hidden) continue
+    if (child.kind === 'board') return child.id
+    if (child.kind === 'group') {
+      const nested = firstBoardId(child)
+      if (nested) return nested
+    }
+  }
+  return undefined
+}
+
 function mapBoardPosition(root: GroupNode, id: string, position: Vec3): GroupNode {
   return { ...root, children: root.children.map((child) => {
     if (child.kind === 'board' && child.id === id) return { ...child,
@@ -658,10 +678,19 @@ export const useConfigurator = create<State>((set, get) => ({
       orientation: ORIENT_FACING, role: 'custom', grainAlongLength: material.hasGrain,
       edges: { L1: null, L2: null, W1: null, W2: null } }
     const root: GroupNode = { ...s.root, children: [...s.root.children, {
-      kind: 'board', id, name: 'Еркін тақта', transform: structuredClone(IDENTITY_TRANSFORM), board,
+      kind: 'board', id, name: tr('Свободная доска'), transform: structuredClone(IDENTITY_TRANSFORM), board,
     }] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id
+  },
+
+  removeBoard(id) {
+    const s = get()
+    const node = assertTreeNodeEditable(s.root, id, s.layers)
+    if (node.kind !== 'board') throw new ConfigValidationError('nodeId', `тақта емес: ${id}`, 'board id')
+    set({ ...treeEdit(s, withoutBoard(s.root, id)),
+      activeId: s.activeId === id ? s.cabinets[0]?.id ?? firstBoardId(withoutBoard(s.root, id)) ?? '' : s.activeId,
+      selected: s.selected === id ? null : s.selected })
   },
 
   editBoard(id, patch) {
@@ -876,7 +905,7 @@ export const useConfigurator = create<State>((set, get) => ({
       projectMaterials: project.materials,
       projectEdgeBands: project.edgeBands,
       ...cabinetsFromTree(project.root, project.room, project.layers),
-      activeId: cabinetsFromTree(project.root, project.room, project.layers).cabinets[0]?.id ?? '',
+      activeId: cabinetsFromTree(project.root, project.room, project.layers).cabinets[0]?.id ?? firstBoardId(project.root) ?? '',
       templateId: '',
       projectInfo: project.info ?? {},
       priceOverrides: project.priceOverrides ?? {},
@@ -937,7 +966,7 @@ export const useConfigurator = create<State>((set, get) => ({
         projectEdgeBands: file.edgeBands,
         catalog: projectCatalog(get().shop, file.materials, file.edgeBands),
         ...cabinetsFromTree(file.root, file.room, file.layers),
-        activeId: cabinetsFromTree(file.root, file.room, file.layers).cabinets[0]?.id ?? '',
+        activeId: cabinetsFromTree(file.root, file.room, file.layers).cabinets[0]?.id ?? firstBoardId(file.root) ?? '',
         projectInfo: file.info ?? {},
         priceOverrides: file.priceOverrides ?? {},
         // Жұмыс табылды — бастау экранын көрсетудің қажеті жоқ.

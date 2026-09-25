@@ -26,15 +26,17 @@ function download(filename: string, data: Uint8Array | string, mime: string): vo
   URL.revokeObjectURL(url)
 }
 
-export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels: Panel[] }) {
+export function ExportMenu({ cabinet, panels, exportId, exportName }: {
+  cabinet?: CabinetConfig; panels: Panel[]; exportId?: string; exportName?: string
+}) {
   const catalog = useConfigurator((s) => s.catalog)
   const projectInfo = useConfigurator((s) => s.projectInfo)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const [busy, setBusy] = useState<string | null>(null)
-  const base = cabinet.id || 'cabinet'
+  const base = cabinet?.id ?? exportId ?? 'part'
   // §O6: ойма бар панельдің DXF рез координатасы үшін генерациямен ДӘЛ сол
   // catalog/settings керек (generateCabinet ішінде осылай құрастырылады).
-  const dxfOptions = { catalog, settings: mergeSettings(settings, cabinet.settings) }
+  const dxfOptions = { catalog, settings: mergeSettings(settings, cabinet?.settings) }
 
   const run = async (kind: string, action: () => Promise<void> | void) => {
     setBusy(kind)
@@ -52,7 +54,7 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
           disabled={busy !== null}
           onClick={() => run('xlsx', async () => {
             const { cutListToXlsx } = await import('@/src/core/export/xlsx')
-            download(`${base}-cutlist.xlsx`, cutListToXlsx(panels, catalog, cabinet.name),
+            download(`${base}-cutlist.xlsx`, cutListToXlsx(panels, catalog, cabinet?.name ?? exportName ?? base),
               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
           })}
         >
@@ -83,7 +85,7 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
         >
           DXF — {tr('на станок')}
         </MenuItem>
-        <MenuItem
+        {cabinet && <MenuItem
           disabled={busy !== null}
           title={tr('Проекции, сборка и деталировка')}
           onClick={() => run('pdf', async () => {
@@ -102,7 +104,7 @@ export function ExportMenu({ cabinet, panels }: { cabinet: CabinetConfig; panels
           })}
         >
           PDF — {tr('сборочный чертёж')}
-        </MenuItem>
+        </MenuItem>}
       </Menu>
     </div>
   )

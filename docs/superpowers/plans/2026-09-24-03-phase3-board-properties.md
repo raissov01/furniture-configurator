@@ -8,11 +8,11 @@
 
 ## TDD тапсырмалары
 
-- [ ] `src/core/boardProperties.ts` немесе `treeEditing.ts`: orientation↔H/W/D сәйкестігі және board құру/өзгерту валидациясы. `tests/boardProperties.test.ts` алдымен RED, кейін GREEN; cp мутация.
-- [ ] `store/configurator.ts`: board қосу, өңдеу, жылжыту, өшіру, drilling/cutouts өзгерту; undo/redo және v4 round-trip. `tests/boardStore.test.ts` RED→GREEN; cp мутация.
-- [ ] `components/BoardProperties.tsx`, `Workspace.tsx`, `TreeDock`/`StructurePanel`: таңдалған board-қа бір Properties панелі; H × W × D, материал, төрт кромка, поза, рөл, текстура бағыты. Барлық UI мәтіні i18n.
-- [ ] `components/Configurator.tsx`: cabinet Properties-ті нақты үш PRO100 табына және өзіміздің төртінші өндіріс табына жинау; бұрынғы функциялар сақталсын, өлшемдер General ішінде.
-- [ ] `components/DrillEditor.tsx`: board таңдалғанда `BoardSpec.drilling` және cutouts-ты қолмен жазу; cabinet drillEdits жолын сақтау. `tests/boardDrillEditor.test.tsx` не store-level тест.
-- [ ] Canonical board-тың cut/nesting/quote/DXF-ке жетуін интеграциялық тестпен бекіту; 3D сол Panel[]-дан оқиды.
-- [ ] e2e сценарий script-ын қосу; dev/build/e2e-ні оркестр жүргізеді.
-- [ ] Әр маңызды тестке cp мутация; әр коммит алдында `npm test -- --maxWorkers=2` және `npm run typecheck` жасыл; қазақша есеп пен шағын conventional коммиттер.
+- [x] `src/core/boardProperties.ts`: orientation↔H/W/D сәйкестігі және бүтін өлшем валидациясы. `tests/boardProperties.test.ts` RED→GREEN; cp мутация.
+- [x] `store/configurator.ts`: board қосу, өңдеу, жылжыту, өшіру; drilling/cutouts өзгерту, undo/redo және v4 round-trip. `tests/boardStore.test.ts` RED→GREEN; cp мутация.
+- [x] `components/BoardProperties.tsx`, `Workspace.tsx`: таңдалған board-қа бір Properties панелі; H × W × D, материал, төрт кромка, поза, `custom` рөлі, текстура бағыты. Жаңа UI мәтіні i18n.
+- [x] `components/Configurator.tsx`: cabinet Properties нақты үш PRO100 табына және біздің төртінші Production табына жиналды; өлшемдер General ішінде.
+- [x] `components/DrillEditor.tsx`: board таңдалғанда `BoardSpec.drilling` және cutouts қолмен жазылады; cabinet drillEdits жолы сақталды. Store/production тесті және браузер сценарийі жазылды.
+- [x] Canonical board-тың cut/nesting/quote/DXF-ке жетуі `tests/boardProductionUi.test.ts` арқылы бекітілді; 3D дайын `Panel[]` ағынын оқиды.
+- [x] `scripts/e2e-board-properties.mjs` дайын; `scripts/e2e-structure-tree.mjs` күтілімі жаңартылды. Dev/build/e2e-ні оркестр интеграциядан кейін жүргізеді.
+- [x] Маңызды тесттерге cp мутация жасалды; толық тест/typecheck және қазақша есеп коммит алдында орындалады.
