@@ -57,7 +57,7 @@ try {
   assert(await h.until("document.querySelector('[data-workspace-style]')?.getAttribute('data-workspace-style') === 'classic'", 15000), 'Classic must be default')
   await h.clickText('Пропустить', 100)
   assert(await h.clickText('+ корпус'), 'Cannot add cabinet')
-  assert(await h.until("document.querySelector('#scene-3d canvas') && document.querySelector('[data-testid=p100-status]')", 20000), 'Classic scene missing')
+  assert(await h.until("Boolean(document.querySelector('#scene-3d canvas') && document.querySelector('[data-testid=p100-status]'))", 20000), 'Classic scene missing')
   const { x, y } = await h.sceneCenter()
   for (let clickCount = 1; clickCount <= 2; clickCount += 1) {
     await session.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount })

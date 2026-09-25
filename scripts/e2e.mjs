@@ -155,6 +155,9 @@ async function run() {
   // мен цех профилі жаңа жүгірісте эталон шкафты ауыстырып жіберер еді.
   await h.goto('/configurator', 6000)
   await h.evaluate('localStorage.clear()')
+  // Бұл ескі сценарийлер оң жақтағы тұрақты редакторды тексереді.
+  // Жаңа әдепкі классикалық жұмыс орны бөлек e2e сценарийінде тексеріледі.
+  await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'ours')")
   // Сессия cookie-і де тазаланады: алдыңғы жүгіріс кірген күйде қалдырса,
   // тіркелу тесті «шыққан» экранды таппай қалады.
   await session.send('Network.clearBrowserCookies')
