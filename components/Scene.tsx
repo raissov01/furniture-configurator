@@ -36,10 +36,11 @@ import {
   DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, panelExtents,
   placementSpan, projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, snapOffset,
   visibleOpenings, wallById, wallPieces,
+  sunDirection,
 } from '@/src/core/index'
 import type {
   CabinetConfig, Catalog, FlatScene, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
-  Vec3, Wall, WallId,
+  SceneLight, Vec3, Wall, WallId,
 } from '@/src/core/index'
 
 type Controls = ComponentRef<typeof OrbitControls>
@@ -62,6 +63,49 @@ const FLAP_OPEN_ANGLE = (75 * Math.PI) / 180
 
 
 const MM = 0.001
+
+function ProjectAimLight({ light, centre }: {
+  light: Extract<SceneLight, { kind: 'spot' | 'sun' }>; centre: Vec3
+}) {
+  const target = useMemo(() => new Object3D(), [])
+  if (light.kind === 'spot') return <>
+    <spotLight position={[light.position.x * MM, light.position.y * MM, light.position.z * MM]}
+      target={target} color={light.color} intensity={light.intensity}
+      angle={light.angleDegrees * Math.PI / 180} penumbra={0.4} />
+    <primitive object={target} position={[light.target.x * MM, light.target.y * MM, light.target.z * MM]} />
+  </>
+  const direction = sunDirection(light)
+  return <>
+    <directionalLight position={[centre.x + direction.x * 10, centre.y + direction.y * 10,
+      centre.z + direction.z * 10]} target={target} color={light.color} intensity={light.intensity} />
+    <primitive object={target} position={[centre.x, centre.y, centre.z]} />
+  </>
+}
+
+function ProjectLights({ lights, centre }: { lights: SceneLight[]; centre: Vec3 }) {
+  const invalidate = useThree((state) => state.invalidate)
+  useEffect(() => { invalidate() }, [lights, invalidate])
+  return <>
+    {lights.map((light) => light.kind === 'point'
+      ? <pointLight key={light.id} position={[light.position.x * MM, light.position.y * MM,
+        light.position.z * MM]} color={light.color} intensity={light.intensity} decay={2} />
+      : <ProjectAimLight key={light.id} light={light} centre={centre} />)}
+  </>
+}
+
+/** Қазіргі камераны да ұстайды: ортографиялық ауысқанда onCreated ескі камераны береді. */
+function SceneRenderBridge() {
+  const renderer = useThree((state) => state.gl)
+  const scene = useThree((state) => state.scene)
+  const camera = useThree((state) => state.camera)
+  const invalidate = useThree((state) => state.invalidate)
+  const setLiveRenderContext = useConfigurator((state) => state.setLiveRenderContext)
+  useEffect(() => {
+    setLiveRenderContext({ renderer, scene, camera, invalidate })
+    return () => setLiveRenderContext(null)
+  }, [renderer, scene, camera, invalidate, setLiveRenderContext])
+  return null
+}
 
 /**
  * Негізгі жарықтың бөлме центріне қатысты офсеті, МЕТРМЕН (жоғарыдан,
@@ -1087,6 +1131,7 @@ export default function Scene({
   const projection = useConfigurator((s) => s.projection)
   const quality = useConfigurator((s) => s.quality)
   const silhouette = useConfigurator((s) => s.silhouette)
+  const projectLights = useConfigurator((s) => s.lights)
   const setLiveScene = useConfigurator((s) => s.setLiveScene)
   const walk = useConfigurator((s) => s.walk)
   const vr = useConfigurator((s) => s.vr)
@@ -1332,6 +1377,7 @@ export default function Scene({
        */
       onCreated={(state) => setLiveScene(state.scene)}
     >
+      <SceneRenderBridge />
       <XR store={xrStore}>
         {/*
           * Ортографиялық проекция: параллель сызықтар қиылыспайды, сондықтан
@@ -1402,6 +1448,7 @@ export default function Scene({
           қана, кадр жиілігіне әсері жоқ.
         */}
         <directionalLight position={rimLightPosition} target={mainLightTarget} intensity={0.45} color="#eef2ff" castShadow={false} />
+        <ProjectLights lights={projectLights} centre={roomCenterM} />
         <group scale={MM}>
           <RoomShell room={room} walk={walk || vr} entries={wallBoundItems(items)} />
         </group>

@@ -35,6 +35,8 @@ export type Material = {
    * бейтарап сұр түспен салынады.
    */
   decor?: Decor | undefined
+  /** Тек 3D көрініс. Ескі материалдарда жоқ болса Decor.finish preset қолданылады. */
+  pbr?: MaterialPbr | undefined
   /**
    * ТАҚТА (постформинг столешница) — парақ ЕМЕС.
    *
@@ -50,6 +52,16 @@ export type Material = {
     /** Бір метрдің бағасы, тиын. */
     pricePerMeter: number
   } | undefined
+}
+
+export type MaterialPbr = {
+  roughness?: number | undefined
+  metalness?: number | undefined
+  /** Қоршаған орта шағылысының қарқыны. */
+  reflection?: number | undefined
+  opacity?: number | undefined
+  /** Normal карта сыртқы URL арқылы; сурет репоға көшірілмейді. */
+  normal?: { url: string; sizeMm: { x: number; y: number }; strength: number } | undefined
 }
 
 /**

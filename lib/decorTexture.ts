@@ -16,7 +16,7 @@
  * істемейді — Next.js бұл файлды тек `'use client'` компоненттен шақырады).
  */
 
-import { Cache, RepeatWrapping, SRGBColorSpace, TextureLoader, type Texture } from 'three'
+import { Cache, NoColorSpace, RepeatWrapping, SRGBColorSpace, TextureLoader, type Texture } from 'three'
 import type { Axis, Orientation } from '@/src/core/types'
 
 // Бір URL — бір желі сұранысы. Cache болмаса, бір декорды қолданатын әр
@@ -47,6 +47,23 @@ export function decorTexture(
   tex.colorSpace = SRGBColorSpace
   tex.repeat.set(spanXMm / mapSizeMm.x, spanYMm / mapSizeMm.y)
   return tex
+}
+
+/** Normal карта — түс суреті емес; Three.js normalMap үшін NoColorSpace талап етеді. */
+export function configureNormalTexture(tex: Texture, spanXMm: number, spanYMm: number,
+  sizeMm: { x: number; y: number }): Texture {
+  tex.wrapS = RepeatWrapping
+  tex.wrapT = RepeatWrapping
+  tex.colorSpace = NoColorSpace
+  tex.repeat.set(spanXMm / sizeMm.x, spanYMm / sizeMm.y)
+  return tex
+}
+
+export function normalTexture(url: string, spanXMm: number, spanYMm: number,
+  sizeMm: { x: number; y: number }, onLoad?: () => void): Texture | null {
+  if (typeof document === 'undefined') return null
+  const tex = new TextureLoader().load(url, () => onLoad?.())
+  return configureNormalTexture(tex, spanXMm, spanYMm, sizeMm)
 }
 
 /**
