@@ -36,9 +36,9 @@
 ## Шек және келесі қадам
 
 - ⚠ Нақты Базис runtime-ында JS API-ін іске қосып, қайтқан audit JSON-ды салыстыру цех тестерімен жасалуы тиіс. Fake Bazis тесті API үйлесімін дәлелдемейді. Тестерге нұсқаулық `docs/basis/script-export.md` ішінде.
-- ⚠ Оркестр интеграциядан кейін `scripts/e2e-shop-drill.mjs` және `scripts/e2e-basis-export.mjs` браузер сценарийлерін жүргізеді; субагент build/dev/e2e жасамады.
+- ✅ Оркестр интеграциядан кейін webpack build, `scripts/e2e-shop-drill.mjs` және `scripts/e2e-basis-export.mjs` браузер сценарийлерін жүргізді: бәрі PASS. Субагент build/dev/e2e жасамады.
 - ❌ Түбірлік ақаулардың түзетілмегені жоқ; нақты Базиспен runtime audit — сыртқы ортаға тәуелді ашық дәлел.
 
 ## Коммиттер
 
-- `claude/basis-script` тармағының бес коммиті осы тармаққа merge commit ретінде кіреді; осы тармақтың соңғы SHA-сы оркестрге бөлек хабарланады.
+- `claude/basis-script` тармағының бес коммиті осы тармаққа merge commit ретінде кірді; `5a4caef` — Basis экспортын түзетіп біріктіру, `b1b92ef` — peer review тапқан audit/Chrome түзетуі.
