@@ -105,7 +105,8 @@ try {
   // Select two free boards with Ctrl; grouping is a single persisted tree edit.
   assert(await h.evaluate("(() => { const a=document.querySelector('[data-tree-node=board-a]'); if (!a) return false; a.click(); return true })()"), 'board A cannot be selected')
   assert(await h.evaluate("document.querySelector('[data-tree-node=board-a]')?.parentElement?.getAttribute('aria-selected') === 'true'"), 'tree board selection missing')
-  assert((await h.text()).includes('Выберите корпус в структуре проекта'), 'board selection still exposes cabinet editor')
+  assert(await h.until("document.querySelectorAll('[data-testid=board-properties]').length === 1", 5000), 'selected board Properties missing or duplicated')
+  assert(await h.evaluate("!document.querySelector('[data-tour=size]')"), 'board selection still exposes cabinet editor')
   assert(await h.evaluate("(() => { const b=document.querySelector('[data-tree-node=board-b]'); if (!b) return false; b.dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true})); return true })()"), 'board B Ctrl-select failed')
   assert(await h.evaluate("document.querySelector('[data-tree-node=board-b]')?.parentElement?.getAttribute('aria-selected') === 'true'"), 'Ctrl selection did not retain second board')
   assert(await h.evaluate("(() => { const b=[...document.querySelectorAll('[data-panel=structure] button')].find(x=>x.textContent.trim()==='Группа'); if (!b || b.disabled) return false; b.click(); return true })()"), 'Group control disabled after Ctrl selection')
