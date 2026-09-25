@@ -51,6 +51,18 @@ describe('validateOwnCatalogInput — қате өріс атымен', () => {
     expect(issues[0]?.message).toContain('3–40')
   })
 
+  it('бір декордағы қалыңдық қайталанса — қайталанған элементті көрсетеді', () => {
+    const issues = validateOwnCatalogInput(input({ decors: [decor({ thicknessesMm: [16, 16, 18] })] }))
+    expect(issues.map((i) => i.path)).toContain('decors[0].thicknessesMm[1]')
+  })
+
+  it('product line регистрі ғана өзгеше болса — бір декор деп санайды', () => {
+    const issues = validateOwnCatalogInput(input({
+      decors: [decor({ productLine: 'P2' }), decor({ productLine: 'p2' })],
+    }))
+    expect(issues.map((i) => i.path)).toContain('decors[1].decorCode')
+  })
+
   it('парақ өлшемі бүтін әрі 1000–5700 мм', () => {
     const issues = validateOwnCatalogInput(input({ decors: [decor({ sheetSizesMm: [[2800, 999], [2800.5, 2070]] })] }))
     expect(issues.map((i) => i.path)).toEqual(['decors[0].sheetSizesMm[0][1]', 'decors[0].sheetSizesMm[1][0]'])

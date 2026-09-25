@@ -184,10 +184,13 @@ export function validateOwnCatalogInput(input: OwnCatalogInput): CatalogIssue[] 
     if (d.sizeBasis !== 'per-decor' && d.sizeBasis !== 'range-wide') add(`${p}.sizeBasis`, "рұқсат: 'per-decor' | 'range-wide'")
     if (!isHttpUrl(d.sizeSourceUrl)) add(`${p}.sizeSourceUrl`, 'http(s) URL болуы керек')
     if (d.thicknessesMm.length === 0) add(`${p}.thicknessesMm`, 'кемінде бір қалыңдық керек')
+    const thicknesses = new Set<number>()
     d.thicknessesMm.forEach((t, j) => {
       if (!Number.isInteger(t) || t < BOARD_THICKNESS_RANGE_MM.min || t > BOARD_THICKNESS_RANGE_MM.max) {
         add(`${p}.thicknessesMm[${j}]`, `бүтін сан ${BOARD_THICKNESS_RANGE_MM.min}–${BOARD_THICKNESS_RANGE_MM.max} мм болуы керек, берілгені ${t}`)
       }
+      if (thicknesses.has(t)) add(`${p}.thicknessesMm[${j}]`, `қайталанған қалыңдық: ${t} мм`)
+      else thicknesses.add(t)
     })
     if (d.sheetSizesMm.length === 0) add(`${p}.sheetSizesMm`, 'кемінде бір парақ форматы керек')
     d.sheetSizesMm.forEach((size, j) => {
@@ -199,7 +202,7 @@ export function validateOwnCatalogInput(input: OwnCatalogInput): CatalogIssue[] 
     })
     checkProvenance(p, d)
     if (isNonEmpty(d.manufacturer) && isNonEmpty(d.decorCode)) {
-      const key = `${d.kind}|${d.productLine ?? ''}|${decorKey(d.manufacturer, d.decorCode, d.structureCode)}`
+      const key = `${d.kind}|${norm(d.productLine ?? '')}|${decorKey(d.manufacturer, d.decorCode, d.structureCode)}`
       if (decorKeys.has(key)) add(`${p}.decorCode`, `қайталанған декор: ${d.manufacturer} ${d.decorCode} ${d.structureCode ?? ''} ${d.productLine ?? ''}`.trim())
       else decorKeys.add(key)
     }

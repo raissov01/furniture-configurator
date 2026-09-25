@@ -40,6 +40,13 @@ describe('өз каталогы — пішін мен тұтастық', () => {
     expect(ids.filter((id) => others.has(id))).toEqual([])
   })
 
+  it('тапсырыс берушінің Базис каталогы мен бастапқы seed каталогы сақталған', () => {
+    expect(BASIS_CATALOG.materials.length).toBeGreaterThan(0)
+    expect(BASIS_CATALOG.edgeBands.length).toBeGreaterThan(0)
+    expect(SEED_CATALOG.materials.length).toBeGreaterThan(0)
+    expect(SEED_CATALOG.edgeBands.length).toBeGreaterThan(0)
+  })
+
   it('әр материалда декор коды, дереккөз URL мен күні бар; өлшемдер бүтін', () => {
     for (const m of OWN_MATERIALS) {
       const meta = OWN_MATERIAL_META[m.id]
