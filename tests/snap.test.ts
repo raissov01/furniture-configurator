@@ -20,6 +20,13 @@ describe('еркін нысан привязкасы', () => {
     expect(result.hints[0]?.kind).toBe('edge')
     expect(result.pos.y).toBe(500)
   })
+  it('түрлі енді нысандардың ортасын бүтін мм ығыстырып туралайды', () => {
+    const result = snapPosition({ pos: { x: 118, y: 500, z: 500 }, size: { x: 60, y: 60, z: 60 } },
+      [{ id: 'centre', pos: { x: 100, y: 100, z: 100 }, size: { x: 100, y: 100, z: 100 } }],
+      room, { grid: 0, tolerance: 5 })
+    expect(result.pos.x).toBe(120)
+    expect(result.hints.find((hint) => hint.axis === 'x')).toMatchObject({ kind: 'centre', at: 150 })
+  })
   it('тор мен бөлме қабырғасын қолданады', () => {
     const result = snapPosition({ pos: { x: 12, y: 3, z: 2397 }, size: moving.size }, [], room, { grid: 10, tolerance: 15 })
     expect(result.pos).toEqual({ x: 10, y: 0, z: 2400 })

@@ -17,8 +17,12 @@ describe('StructureTreeView markup', () => {
     const html = renderToStaticMarkup(createElement(StructureTreeView, {
       root, rows, activeId: 'sink', selected: null,
       onSelectNode: vi.fn(), onSelectPart: vi.fn(), onRename: vi.fn(),
-      onHidden: vi.fn(), onLocked: vi.fn(), onGroup: vi.fn(), onUngroup: vi.fn(), onReparent: vi.fn(),
+      onHidden: vi.fn(), onLocked: vi.fn(), onGroup: vi.fn(), onUngroup: vi.fn(), onReparent: vi.fn(), onArray: vi.fn(), onArrange: vi.fn(),
     }))
+    expect(html).toContain('data-testid="arrange-tools"')
+    expect(html).toContain('data-testid="snap-tools"')
+    expect(html).toContain('arrange-distribute')
+    expect(html).toContain('Массив')
     expect(html).toContain('role="tree"')
     expect(html).toContain('data-tree-node="sink"')
     expect(html).toContain('aria-selected="true"')
