@@ -139,8 +139,9 @@ export function mergeLibraryCatalog(catalog: Catalog, item: LibraryItem): Catalo
     }
     return result
   }
+  // Баға мен PBR (тек 3D көрініс) физикалық материалды өзгертпейді: жобадағысы қалады.
   return { materials: merge(catalog.materials, item.materials, 'materials', ({ pricePerSheet: _price,
-    slab, ...material }) => ({ ...material, slab: slab ? { ...slab, pricePerMeter: 0 } : undefined })),
+    pbr: _pbr, slab, ...material }) => ({ ...material, slab: slab ? { ...slab, pricePerMeter: 0 } : undefined })),
   edgeBands: merge(catalog.edgeBands, item.edgeBands, 'edgeBands', ({ pricePerMeter: _price, ...band }) => band) }
 }
 

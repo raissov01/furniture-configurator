@@ -159,4 +159,30 @@ describe('v4 редактор тәуекелдері', () => {
     expect(s().projectLoadError).toMatch(/quota|жазылмады/)
     expect(values.get(key)).toBe('{invalid JSON')
   })
+  it('сақтық көшірме жазылмаса, reset пен тарихтан қайтару бүлінген түпнұсқаны өшірмейді', () => {
+    const values = new Map<string, string>()
+    const key = 'furniture-configurator:project'
+    const backup = 'furniture-configurator:project-corrupt-backup'
+    values.set(key, '{invalid JSON')
+    vi.stubGlobal('window', { localStorage: {
+      getItem: (name: string) => values.get(name) ?? null,
+      setItem: (name: string, value: string) => {
+        if (name === backup) throw new Error('quota')
+        values.set(name, value)
+      },
+    } })
+    s().hydrateProject()
+    expect(s().projectLoadError).toMatch(/сақтық көшірме жазылмады/)
+    s().reset()
+    expect(values.get(key)).toBe('{invalid JSON')
+    expect(s().projectLoadError).toMatch(/quota|жазылмады/)
+    values.set('furniture-configurator:history', JSON.stringify([
+      { at: 11, name: 'Жарамды', json: JSON.stringify(parseProjectV4(referenceProject)) },
+    ]))
+    s().restoreHistory(11)
+    expect(values.get(key)).toBe('{invalid JSON')
+    s().loadProject(parseProjectV4(referenceProject))
+    s().saveProjectLocally()
+    expect(values.get(key)).toBe('{invalid JSON')
+  })
 })

@@ -230,6 +230,19 @@ describe('маршруттарда permission және 4xx', () => {
     expect(other.status).toBe(404)
   })
 
+  it('лимиттегі IP бар кодты да ала алмайды (200/429 арқылы кодты табу жабық), бір кодқа 5 қате', async () => {
+    actor.value = null
+    const code = share.createShare('{}').code
+    const get = (target: string) => sharedRoute.GET(new Request('http://localhost',
+      { headers: { 'x-real-ip': '192.0.2.40' } }), context(target))
+    for (let index = 0; index < 20; index += 1) expect((await get(`gate-${index}`)).status).toBe(404)
+    expect((await get(code)).status).toBe(429)
+    expect((await commentRoute.GET(new Request('http://localhost', { headers: { 'x-real-ip': '192.0.2.40' } }), context(code))).status).toBe(429)
+    const same = () => sharedRoute.GET(new Request('http://localhost', { headers: { 'x-real-ip': '192.0.2.41' } }), context('000000'))
+    for (let index = 0; index < 5; index += 1) expect((await same()).status).toBe(404)
+    expect((await same()).status).toBe(429)
+  })
+
   it('бір IP бір share-ге минутына 5 пікірден артық жаза алмайды', async () => {
     const code = share.createShare('{}').code
     const request = () => new Request('http://localhost', { method: 'POST', headers: { 'x-real-ip': '192.0.2.20' },

@@ -63,7 +63,7 @@ import { appendNodeArray, assertTreeNodeEditable, groupNodes, renameTreeNode, re
 import type { ArrayOptions } from '@/src/core/array'
 import type { AutoJointKind } from '@/src/core/autoJoint'
 import type { SnapOptions } from '@/src/core/snap'
-import type { Axis } from '@/src/core/types'
+import type { Axis, Drill } from '@/src/core/types'
 import type { BoxAlignment } from '@/src/core/align'
 import { arrangeTreeSelection } from '@/src/core/treeArrange'
 import { cabinetsFromTree, reconcileCabinetsInTree, wallAttachedPlacements } from './treeAdapters'
@@ -112,6 +112,11 @@ type State = Snapshot & {
   setMaterialPbr(materialId: string, pbr: MaterialPbr | undefined): void
   /** Invalid local backup stays untouched until explicit recovery/load/reset. */
   projectLoadError: string | null
+  /**
+   * Бүлінген жобаның сақтық көшірмеге ЖАЗЫЛМАҒАН түпнұсқасы. Көшірме жазылмайынша
+   * PROJECT_KEY-ді басқа жобамен басуға болмайды (reset, тарих, файл ашу).
+   */
+  unbackedCorruptProject: string | null
   /** A failed history entry does not invalidate the currently loaded project. */
   historyRestoreError: string | null
   dismissHistoryRestoreError(): void
@@ -292,7 +297,7 @@ type State = Snapshot & {
 
   loadTemplate(id: string): void
   loadSet(id: string): void
-  loadKitchen(options: import('@/src/core/index').KitchenOptions): void
+  loadKitchen(options: import('@/src/core/index').KitchenOptions, measuredRoom?: Room): void
   loadFurniture(options: import('@/src/core/index').FurnitureOptions): void
   loadCabinet(cabinet: CabinetConfig): void
 
@@ -539,6 +544,22 @@ function treeEdit(s: State, root: GroupNode, layers = s.layers) {
     past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null }
 }
 
+/**
+ * Ескі тесік ОСЫ буынға жата ма. Бір тақта бірнеше буынға қатысады (дно сол
+ * және оң боковинамен): басқа буынның тесігі қайшылық емес. Торц тесігі —
+ * сол торц бетінде болса; бет тесігі — сол бетте әрі ұсынылған тесіктердің
+ * тұрақты буын сызығында (x немесе y) жатса.
+ */
+function sameJointHole(hole: Drill, proposed: Drill[], kind: string): boolean {
+  if (hole.purpose !== kind) return false
+  const onFace = proposed.filter((entry) => entry.face === hole.face)
+  if (onFace.length === 0) return false
+  if (hole.face !== 'inner' && hole.face !== 'outer') return true
+  const lineX = onFace.every((entry) => entry.x === onFace[0]!.x)
+  const lineY = onFace.every((entry) => entry.y === onFace[0]!.y)
+  return (lineX && hole.x === onFace[0]!.x) || (lineY && hole.y === onFace[0]!.y)
+}
+
 function mapBoard(root: GroupNode, id: string, update: (board: BoardSpec) => BoardSpec): GroupNode {
   return { ...root, children: root.children.map((child) => {
     if (child.kind === 'board' && child.id === id) return { ...child, board: update(child.board) }
@@ -657,6 +678,7 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   ...cabinetsFromTree(initial.root, initial.room, initial.layers),
   projectLoadError: null,
+  unbackedCorruptProject: null,
   historyRestoreError: null,
   dismissHistoryRestoreError: () => set({ historyRestoreError: null }),
   shop: defaultShop,
@@ -781,7 +803,7 @@ export const useConfigurator = create<State>((set, get) => ({
     const changes = autoJoint(scene, ids, kind, s.catalog, settings, tolerance)
     const hasOldKind = changes.some((change) => {
       const node = findNode(s.root, change.boardId)
-      return node?.kind === 'board' && (node.board.drilling ?? []).some((hole) => hole.purpose === kind)
+      return node?.kind === 'board' && (node.board.drilling ?? []).some((hole) => sameJointHole(hole, change.drilling, kind))
     })
     const proposalComplete = changes.every((change) => {
       const node = findNode(s.root, change.boardId)
@@ -909,13 +931,18 @@ export const useConfigurator = create<State>((set, get) => ({
    * Ас үй ГЕНЕРАТОРЫ: қабырға ұзындығынан толық гарнитур.
    *
    * `loadSet`-пен бір қалыпта — бүкіл жобаны АЛМАСТЫРАДЫ (Ctrl+Z қайтарады).
-   * Бөлме генератор берген өлшемге көшеді: гарнитур сонда ғана дәл сыяды.
+   * Әдетте бөлме генератор берген өлшемге көшеді; өлшеуден келгенде нақты бөлме сақталады.
    */
-  loadKitchen(options) {
+  loadKitchen(options, measuredRoom) {
     const s = get()
     const { cabinets, placements, room } = generateKitchen(options, s.catalog)
-    if (cabinets.length === 0) return
-    const nextRoom = withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) })
+    if (cabinets.length === 0) {
+      if (measuredRoom) throw new Error('Өлшенген қабырғаға ас үй модулі сыймады')
+      return
+    }
+    const nextRoom = measuredRoom
+      ? withOpenings(measuredRoom)
+      : withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) })
     set({
       room: nextRoom,
       ...replaceProjectScene(s, cabinets, placements, nextRoom),
@@ -1049,6 +1076,15 @@ export const useConfigurator = create<State>((set, get) => ({
 
   saveProjectLocally() {
     if (get().projectLoadError) return get().projectLoadError
+    const unbacked = get().unbackedCorruptProject
+    if (unbacked !== null) {
+      try {
+        window.localStorage.setItem(CORRUPT_PROJECT_BACKUP_KEY, unbacked)
+        set({ unbackedCorruptProject: null })
+      } catch (error) {
+        return `Бүлінген жобаның сақтық көшірме жазылмады: ${error instanceof Error ? error.message : String(error)}`
+      }
+    }
     try {
       window.localStorage.setItem(PROJECT_KEY, JSON.stringify(get().exportProject()))
       return null
@@ -1093,12 +1129,14 @@ export const useConfigurator = create<State>((set, get) => ({
       // Қате файлды автосақтау басып кетпеуі керек: пайдаланушы басқа жобаны
       // анық ашқанша немесе Reset басқанша түпнұсқа localStorage-та қалады.
       let backupError = ''
+      let unbackedCorruptProject: string | null = null
       try {
         window.localStorage.setItem(CORRUPT_PROJECT_BACKUP_KEY, raw)
       } catch (cause) {
         backupError = `; сақтық көшірме жазылмады: ${cause instanceof Error ? cause.message : String(cause)}`
+        unbackedCorruptProject = raw
       }
-      set({ firstRun: false,
+      set({ firstRun: false, unbackedCorruptProject,
         projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}${backupError}` })
     }
   },
@@ -1398,7 +1436,10 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   placeLibraryItem(item, parentId) {
     const s = get()
-    const catalog = mergeLibraryCatalog(s.catalog, item)
+    const merged = mergeLibraryCatalog(s.catalog, item)
+    // Баға тек цехтікі (жоқ болса 0) — кітапхана файлындағы баға жобаға кірмейді,
+    // әйтпесе қойғандағы смета жобаны қайта ашқандағыдан өзгеше шығады.
+    const catalog = projectCatalog(s.shop, merged.materials, merged.edgeBands)
     const root = insertLibraryItem(s.root, item, catalog, parentId ?? s.root.id, () => `node-${crypto.randomUUID()}`)
     set({ root, catalog, projectMaterials: catalog.materials, projectEdgeBands: catalog.edgeBands,
       ...cabinetsFromTree(root, s.room, s.layers),

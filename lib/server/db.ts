@@ -227,6 +227,37 @@ function migrate(database: DatabaseSync): void {
       processed_at INTEGER
     );
   `)
+
+  // 11-қадам: телефон замерінің нұсқалары мен фото байты цех шекарасында жатады.
+  // Әрекет ID-і бір цех ішінде бірегей; қайталанған жіберу екінші нұсқа жасамайды.
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS mobile_measurements (
+      shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      id TEXT NOT NULL,
+      json TEXT NOT NULL,
+      revision_version INTEGER NOT NULL,
+      revision_updated_at INTEGER NOT NULL,
+      PRIMARY KEY (shop_id, id)
+    );
+    CREATE TABLE IF NOT EXISTS mobile_measurement_actions (
+      shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      id TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      request_json TEXT NOT NULL,
+      revision_version INTEGER NOT NULL,
+      revision_updated_at INTEGER NOT NULL,
+      PRIMARY KEY (shop_id, id)
+    );
+    CREATE TABLE IF NOT EXISTS mobile_measurement_photos (
+      shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      id TEXT NOT NULL,
+      mime TEXT NOT NULL,
+      bytes BLOB NOT NULL,
+      sha256 TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (shop_id, id)
+    );
+  `)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */

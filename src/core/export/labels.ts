@@ -58,6 +58,7 @@ export type PartLabel = {
 }
 
 export type PartQr = { projectId: string; panelId: string; version: number }
+const QR_PATTERN = /^F1\.[A-Za-z0-9_-]{4,400}$/
 
 /** Қысқа офлайн payload; мекенжай да, сервер сұранысы да қажет емес. */
 export function encodePartQr(part: PartQr): string {
@@ -66,11 +67,14 @@ export function encodePartQr(part: PartQr): string {
     throw new Error('QR: projectId, panelId және оң бүтін version қажет')
   }
   const bytes = new TextEncoder().encode(JSON.stringify([part.projectId, part.panelId, part.version]))
-  return `F1.${btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`
+  const value = `F1.${btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`
+  // Кириллица 2 байт: таңба шегі өтсе де decodePartQr оқымайтын бирка басылмасын.
+  if (!QR_PATTERN.test(value)) throw new Error('QR: projectId пен panelId тым ұзын')
+  return value
 }
 
 export function decodePartQr(value: string): PartQr {
-  if (!/^F1\.[A-Za-z0-9_-]{4,400}$/.test(value)) throw new Error('QR: белгісіз пішім')
+  if (!QR_PATTERN.test(value)) throw new Error('QR: белгісіз пішім')
   let parsed: unknown
   try {
     const bytes = Uint8Array.from(atob(value.slice(3).replace(/-/g, '+').replace(/_/g, '/')), (ch) => ch.charCodeAt(0))

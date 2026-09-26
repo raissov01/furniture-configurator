@@ -120,6 +120,23 @@ describe('офлайн синхрон кезегі', () => {
     expect(backoffMs(99)).toBe(60_000)
   })
 
+  it('backoff-тағы әрекеттен кейінгі сол нысан әрекеті оны басып озбайды', async () => {
+    const store = new MemorySyncStore()
+    const sent: string[] = []
+    const queue = new SyncQueue(store, { send: async (item) => {
+      sent.push(item.id)
+      return sent.length === 1 ? { kind: 'retry' } : { kind: 'applied', revision: { version: 2, updatedAt: 300 } }
+    } })
+    await queue.enqueue(action('a'))
+    await queue.setOnline(true, 1000)
+    // a backoff-та (2000-ға дейін); b сол жобаға кейін жасалды.
+    await queue.enqueue({ ...action('b'), createdAt: 1500 })
+    expect(sent).toEqual(['a'])
+    expect((await store.get('b'))?.status).toBe('pending')
+    await queue.flush(2000)
+    expect(sent).toEqual(['a', 'a', 'b'])
+  })
+
   it('сервер нұсқасы не уақыты өзгерсе екі нұсқаны сақтайды; таңдау ғана шешеді', async () => {
     const server = { version: 3, updatedAt: 900 }
     const store = new MemorySyncStore()

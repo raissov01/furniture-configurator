@@ -22,6 +22,7 @@ import { Spinner } from '@/components/BusyOverlay'
 import { TouchJoystick } from '@/components/TouchJoystick'
 import { isTouchDevice } from '@/lib/walkInput'
 import { ClientComments } from '@/components/ClientComments'
+import { ApprovalPanel } from '@/components/ApprovalPanel'
 import { formatTenge } from '@/src/core/index'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
@@ -239,6 +240,7 @@ function Viewer({
             ? formatTenge(project.priceOverrides.salePrice) : tr('Цена по запросу')}</p>
         </div>
       </section>
+      {code ? <ApprovalPanel code={code} project={project} /> : null}
       {code ? <ClientComments code={code} objects={cabinets.map((cabinet) => ({ id: cabinet.id, name: cabinet.name }))} /> : null}
     </main>
   )

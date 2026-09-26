@@ -64,10 +64,14 @@ export class SyncQueue {
 
   private async flushOnce(now: number): Promise<void> {
     const records = (await this.store.list())
-      .filter((record) => record.status === 'pending' && record.nextAttemptAt <= now)
+      .filter((record) => record.status === 'pending')
       .sort((a, b) => a.action.createdAt - b.action.createdAt || a.action.id.localeCompare(b.action.id))
+    // Backoff-тағы әрекеттің нысаны бұғатталады: кейінгі әрекет оны басып озбасын.
+    const waiting = new Set<string>()
     for (const record of records) {
       if (this.network !== 'online') break
+      if (record.nextAttemptAt > now) { waiting.add(record.action.entityId); continue }
+      if (waiting.has(record.action.entityId)) continue
       let result: Awaited<ReturnType<SyncTransport['send']>>
       try {
         result = await this.transport.send(record.action)
