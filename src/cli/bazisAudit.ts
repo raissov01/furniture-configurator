@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { ZodError } from 'zod'
-import { analyzeBasisAudit, basisAuditMarkdown, parseBasisAudit } from '../core/index'
+import { analyzeBasisAudit, basisAuditMarkdown, parseBasisAudit } from '../core/export/basisAudit'
 
 function arg(name: string, fallback: string): string {
   const i = process.argv.indexOf(`--${name}`)
