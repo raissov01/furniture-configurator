@@ -81,7 +81,12 @@ export function validateManualBoardDrilling(
   root: GroupNode, catalog: Catalog, settings?: SettingsOverride, layers?: Layer[],
 ): void {
   const boardIds = new Set<string>()
-  walkTree(root, (node) => { if (node.kind === 'board') boardIds.add(node.id) })
+  // Parsing a project must not force a manufacturing render of boards without
+  // manual holes. The production view reports their geometry errors itself.
+  walkTree(root, (node) => {
+    if (node.kind === 'board' && (node.board.drilling?.length ?? 0) > 0) boardIds.add(node.id)
+  })
+  if (boardIds.size === 0) return
   const materials = new Map(catalog.materials.map((item) => [item.id, item.thickness]))
   for (const node of flattenTree(root, catalog, settings, layers).nodes) {
     if (!boardIds.has(node.nodeId)) continue
