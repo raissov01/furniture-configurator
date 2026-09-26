@@ -112,6 +112,11 @@ type State = Snapshot & {
   setMaterialPbr(materialId: string, pbr: MaterialPbr | undefined): void
   /** Invalid local backup stays untouched until explicit recovery/load/reset. */
   projectLoadError: string | null
+  /**
+   * Бүлінген жобаның сақтық көшірмеге ЖАЗЫЛМАҒАН түпнұсқасы. Көшірме жазылмайынша
+   * PROJECT_KEY-ді басқа жобамен басуға болмайды (reset, тарих, файл ашу).
+   */
+  unbackedCorruptProject: string | null
   /** A failed history entry does not invalidate the currently loaded project. */
   historyRestoreError: string | null
   dismissHistoryRestoreError(): void
@@ -673,6 +678,7 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   ...cabinetsFromTree(initial.root, initial.room, initial.layers),
   projectLoadError: null,
+  unbackedCorruptProject: null,
   historyRestoreError: null,
   dismissHistoryRestoreError: () => set({ historyRestoreError: null }),
   shop: defaultShop,
@@ -1065,6 +1071,15 @@ export const useConfigurator = create<State>((set, get) => ({
 
   saveProjectLocally() {
     if (get().projectLoadError) return get().projectLoadError
+    const unbacked = get().unbackedCorruptProject
+    if (unbacked !== null) {
+      try {
+        window.localStorage.setItem(CORRUPT_PROJECT_BACKUP_KEY, unbacked)
+        set({ unbackedCorruptProject: null })
+      } catch (error) {
+        return `Бүлінген жобаның сақтық көшірме жазылмады: ${error instanceof Error ? error.message : String(error)}`
+      }
+    }
     try {
       window.localStorage.setItem(PROJECT_KEY, JSON.stringify(get().exportProject()))
       return null
@@ -1109,12 +1124,14 @@ export const useConfigurator = create<State>((set, get) => ({
       // Қате файлды автосақтау басып кетпеуі керек: пайдаланушы басқа жобаны
       // анық ашқанша немесе Reset басқанша түпнұсқа localStorage-та қалады.
       let backupError = ''
+      let unbackedCorruptProject: string | null = null
       try {
         window.localStorage.setItem(CORRUPT_PROJECT_BACKUP_KEY, raw)
       } catch (cause) {
         backupError = `; сақтық көшірме жазылмады: ${cause instanceof Error ? cause.message : String(cause)}`
+        unbackedCorruptProject = raw
       }
-      set({ firstRun: false,
+      set({ firstRun: false, unbackedCorruptProject,
         projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}${backupError}` })
     }
   },
