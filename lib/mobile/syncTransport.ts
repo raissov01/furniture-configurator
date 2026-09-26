@@ -19,9 +19,15 @@ function onlineFailure(status: number): SendResult {
 
 async function readReply(response: Response): Promise<SendResult> {
   if (!response.ok && response.status !== 409) return onlineFailure(response.status)
-  const parsed = replySchema.safeParse(await response.json() as unknown)
+  const raw = await response.json() as unknown
+  const parsed = replySchema.safeParse(raw)
+  if (response.status === 409 && (!parsed.success || parsed.data.kind !== 'conflict')) {
+    // Қайшылық емес 409 (ID басқа өлшемде, серверде жоқ нұсқа) қайталағанмен өзгермейді:
+    // әйтпесе әрекет шексіз кезекте тұрып, сол өлшемнің кейінгі нұсқаларын бөгейді.
+    const reason = raw && typeof raw === 'object' && 'error' in raw && typeof raw.error === 'string' ? raw.error : ''
+    return { kind: 'rejected', reason: reason || 'Сервер қабылдамады (409)' }
+  }
   if (!parsed.success) return { kind: 'retry' }
-  if (response.status === 409 && parsed.data.kind !== 'conflict') return { kind: 'retry' }
   if (parsed.data.kind === 'conflict') {
     return { kind: 'conflict', revision: parsed.data.revision as Revision, serverValue: parsed.data.serverValue as JsonValue }
   }

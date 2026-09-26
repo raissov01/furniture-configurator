@@ -1,8 +1,8 @@
 import 'fake-indexeddb/auto'
 import { IDBFactory } from 'fake-indexeddb'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { emptySurvey, updateMeasure, updateObstacle } from '../components/mobile/measurementModel'
-import { handoffMeasurementToKitchen } from '../components/mobile/kitchenHandoff'
+import { configuratorKitchenTarget, handoffMeasurementToKitchen } from '../components/mobile/kitchenHandoff'
 import { OBSTACLE_KINDS } from '../src/core/measure'
 import type { ProjectFileV4 } from '../src/core/index'
 import { useConfigurator } from '../store/configurator'
@@ -28,6 +28,7 @@ describe('measured kitchen handoff', () => {
     await handoffMeasurementToKitchen(survey, {
       loadKitchen: (options, room) => loaded.push({ options, room }),
       exportProject: () => project,
+      saveLocally: () => null,
       putProject: async (id, value) => { saved.push({ id, value }) },
     })
     expect(loaded).toEqual([{ options: { layout: 'straight', lengthA: 3100 },
@@ -54,6 +55,7 @@ describe('measured kitchen handoff', () => {
       await handoffMeasurementToKitchen(survey, {
         loadKitchen: (options, room) => useConfigurator.getState().loadKitchen(options, room),
         exportProject: () => useConfigurator.getState().exportProject(),
+        saveLocally: () => null,
         putProject: (id, project) => db.putProject(id, project),
       })
       expect((await db.getProject(survey.id))?.room).toMatchObject({ width: 3100, depth: 2200, height: 2670 })
@@ -70,8 +72,57 @@ describe('measured kitchen handoff', () => {
     await expect(handoffMeasurementToKitchen(survey, {
       loadKitchen: () => { invoked = true },
       exportProject: () => ({ schemaVersion: 4 }) as ProjectFileV4,
+      saveLocally: () => { invoked = true; return null },
       putProject: async () => { invoked = true },
     })).rejects.toThrow(/corner|бұрыш/i)
     expect(invoked).toBe(false)
+  })
+
+  it('конфигуратор ашылғанда өлшенген ас үйді ескі автосақтаумен баспайды', async () => {
+    const before = useConfigurator.getState()
+    const db = await IndexedDbMobileStore.open('measured-kitchen-autosave', new IDBFactory())
+    const values = new Map<string, string>()
+    vi.stubGlobal('window', { localStorage: {
+      getItem: (name: string) => values.get(name) ?? null,
+      setItem: (name: string, value: string) => { values.set(name, value) },
+      removeItem: (name: string) => { values.delete(name) },
+    } })
+    try {
+      // Телефонда бұрын ашылған басқа жоба автосақтауда тұр.
+      useConfigurator.getState().saveProjectLocally()
+      expect(values.size).toBeGreaterThan(0)
+      const survey = completeSurvey()
+      await handoffMeasurementToKitchen(survey, configuratorKitchenTarget((id, project) => db.putProject(id, project)))
+      // /configurator ашылғанда Workspace hydrateProject() шақырады.
+      useConfigurator.getState().hydrateProject()
+      expect(useConfigurator.getState().room).toMatchObject({ width: 3100, depth: 2200, height: 2670 })
+      expect(useConfigurator.getState().cabinets.length).toBeGreaterThan(0)
+      // Бұрынғы жоба жойылмайды: Ctrl+Z оны қайтарады.
+      useConfigurator.getState().undo()
+      expect(useConfigurator.getState().room.width).toBe(4000)
+    } finally {
+      vi.unstubAllGlobals()
+      db.close()
+      useConfigurator.setState(before)
+    }
+  })
+
+  it('бүлінген автосақтауды өлшенген ас үймен сақтық көшірмесіз баспайды', async () => {
+    const before = useConfigurator.getState()
+    const key = 'furniture-configurator:project'
+    const values = new Map<string, string>([[key, '{бүлінген']])
+    vi.stubGlobal('window', { localStorage: {
+      getItem: (name: string) => values.get(name) ?? null,
+      setItem: (name: string, value: string) => { values.set(name, value) },
+      removeItem: (name: string) => { values.delete(name) },
+    } })
+    try {
+      await expect(handoffMeasurementToKitchen(completeSurvey(), configuratorKitchenTarget(async () => {})))
+        .rejects.toThrow()
+      expect(values.get(key)).toBe('{бүлінген')
+    } finally {
+      vi.unstubAllGlobals()
+      useConfigurator.setState(before)
+    }
   })
 })

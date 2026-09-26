@@ -85,4 +85,40 @@ describe('mobile measurement upload policy', () => {
     expect(await enqueueLatestMeasurement(survey, store, queue, 1001, 'a2')).toBe('conflict')
     expect((await store.list()).length).toBe(1)
   })
+
+  it('keepServer: сервер нұсқасын таңдағаннан кейін қайта қайшылыққа түспейді', async () => {
+    // Сервер: нұсқасы base-пен сәйкес келмесе — conflict (applyMeasurementSync сияқты).
+    const server = { value: null as unknown, revision: { version: 0, updatedAt: 0 } }
+    const sent: string[] = []
+    const store = new MemorySyncStore()
+    const queue = new SyncQueue(store, { send: async (action) => {
+      sent.push(action.id)
+      if (server.revision.version !== action.baseRevision.version || server.revision.updatedAt !== action.baseRevision.updatedAt) {
+        return { kind: 'conflict', revision: server.revision, serverValue: server.value as import('../src/core/sync/types').JsonValue }
+      }
+      server.value = action.payload
+      server.revision = { version: server.revision.version + 1, updatedAt: 5000 + server.revision.version }
+      return { kind: 'applied', revision: server.revision }
+    } })
+    await queue.setOnline(true, 1000)
+    const mine = validDraft('m-keep-server')
+    expect(await enqueueLatestMeasurement(mine, store, queue, 1001, 'a1')).toBe('queued')
+    // Басқа құрылғы серверде өзгертті.
+    const theirs = updateMeasure(mine, 'height', 2800, 'laser', 1100)
+    server.value = theirs
+    server.revision = { version: 2, updatedAt: 9000 }
+    const edited = updateMeasure(mine, 'height', 2650, 'manual', 1200)
+    expect(await enqueueLatestMeasurement(edited, store, queue, 1201, 'a2')).toBe('queued')
+    expect((await store.get('a2'))?.status).toBe('conflict')
+    // Беттегі «Серверлікін қалдыру»: қайшылық жабылып, жергілікті жоба сервер мәніне ауысады.
+    await queue.resolveConflict('a2', { kind: 'keepServer' }, 1300)
+    // reconcile() сол мәнді қайта ұсынады — ол бұрыннан серверде, жаңа әрекет қажет емес.
+    expect(await enqueueLatestMeasurement(theirs, store, queue, 1301, 'a3')).toBe('unchanged')
+    expect((await store.list()).filter((record) => record.status === 'conflict')).toEqual([])
+    // Кейінгі жергілікті түзету сервердің соңғы нұсқасынан басталады.
+    const later = updateMeasure(theirs, 'height', 2900, 'manual', 1400)
+    expect(await enqueueLatestMeasurement(later, store, queue, 1401, 'a4')).toBe('queued')
+    expect((await store.get('a4'))?.status).toBe('sent')
+    expect(sent).toEqual(['a1', 'a2', 'a4'])
+  })
 })

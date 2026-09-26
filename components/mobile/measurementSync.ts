@@ -1,7 +1,27 @@
 import type { MeasurementSurvey } from '@/src/core/measure'
 import { createMeasurementSyncAction } from '@/src/core/measure'
 import { SyncQueue } from '@/src/core/sync/queue'
-import type { SyncRecord, SyncStore } from '@/src/core/sync/types'
+import type { JsonValue, Revision, SyncRecord, SyncStore } from '@/src/core/sync/types'
+
+/**
+ * Сервердегі соңғы белгілі күй: жіберілген әрекет не «серверлікін қалдыру» арқылы
+ * жабылған қайшылық. Екіншісін ескермесек, сервер мәні ескі нұсқамен қайта
+ * жіберіліп, қайшылық шексіз қайталанады.
+ */
+function latestServerState(records: SyncRecord[], surveyId: string): { payload: JsonValue; revision: Revision } | undefined {
+  const known = records
+    .filter((record) => record.action.kind === 'measurement.upsert' && record.action.entityId === surveyId)
+    .sort((a, b) => b.action.createdAt - a.action.createdAt || b.action.id.localeCompare(a.action.id))
+  for (const record of known) {
+    if (record.status === 'sent' && record.acknowledgedRevision) {
+      return { payload: record.action.payload, revision: record.acknowledgedRevision }
+    }
+    if (record.status === 'superseded' && record.conflict) {
+      return { payload: record.conflict.serverValue, revision: record.conflict.revision }
+    }
+  }
+  return undefined
+}
 
 export type EnqueueResult = 'queued' | 'pending' | 'conflict' | 'rejected' | 'unchanged'
 
@@ -16,9 +36,9 @@ export async function enqueueLatestMeasurement(
   if (records.some((record) => record.status === 'conflict')) return 'conflict'
   if (records.some((record) => record.status === 'rejected')) return 'rejected'
   if (records.some((record) => record.status === 'pending')) return 'pending'
-  const latestSent = records.find((record) => record.status === 'sent')
-  if (latestSent && JSON.stringify(latestSent.action.payload) === JSON.stringify(survey)) return 'unchanged'
-  const base = latestSent?.acknowledgedRevision ?? { version: 0, updatedAt: 0 }
+  const server = latestServerState(records, survey.id)
+  if (server && JSON.stringify(server.payload) === JSON.stringify(survey)) return 'unchanged'
+  const base = server?.revision ?? { version: 0, updatedAt: 0 }
   await queue.enqueue(createMeasurementSyncAction(survey, actionId, base, now))
   return 'queued'
 }
@@ -39,11 +59,9 @@ export async function retryRejectedMeasurement(
   now: number, actionId: string,
 ): Promise<void> {
   if (record.status !== 'rejected') throw new Error('Қайта жіберілетін өлшеу табылмады')
-  const sent = (await store.list())
-    .filter((item) => item.action.entityId === survey.id && item.status === 'sent')
-    .sort((a, b) => b.action.createdAt - a.action.createdAt)[0]
+  const server = latestServerState(await store.list(), survey.id)
   await queue.enqueue(createMeasurementSyncAction(survey, actionId,
-    sent?.acknowledgedRevision ?? { version: 0, updatedAt: 0 }, now))
+    server?.revision ?? { version: 0, updatedAt: 0 }, now))
   await store.update({ ...record, status: 'superseded' })
 }
 

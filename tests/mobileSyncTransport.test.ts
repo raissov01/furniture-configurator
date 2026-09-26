@@ -64,4 +64,17 @@ describe('телефон синхрон тасымалы', () => {
     })
     store.close()
   })
+
+  it('қайшылық емес 409 шексіз қайталанбайды: себебімен rejected болады', async () => {
+    const store = await IndexedDbMobileStore.open('transport-409')
+    await store.putPhoto('photo-1', new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: 'image/jpeg' }))
+    const fetcher: typeof fetch = async (input) => String(input).includes('/photos/')
+      ? Response.json({ kind: 'duplicate' })
+      : Response.json({ error: 'baseRevision: жоқ өлшемнің нұсқасы 0 болуы керек' }, { status: 409 })
+    const action = createMeasurementSyncAction(survey(), 'action-409', { version: 3, updatedAt: 3000 }, 1000)
+    expect(await createMobileSyncTransport(store, fetcher).send(action)).toEqual({
+      kind: 'rejected', reason: 'baseRevision: жоқ өлшемнің нұсқасы 0 болуы керек',
+    })
+    store.close()
+  })
 })

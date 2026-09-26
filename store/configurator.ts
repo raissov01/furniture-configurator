@@ -1072,6 +1072,9 @@ export const useConfigurator = create<State>((set, get) => ({
   editPriceOverrides(patch) {
     set((s) => ({ priceOverrides: { ...s.priceOverrides, ...patch } }))
     get().saveProjectLocally()
+    // Workspace автосақтауы бағаға қарамайды: клиент коды мен келісім мөрі
+    // ескі бағада қалмауы үшін share осында жаңарады.
+    get().syncShare()
   },
 
   saveProjectLocally() {
