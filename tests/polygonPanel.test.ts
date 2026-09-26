@@ -99,6 +99,9 @@ describe('polygon panel manufacturing', () => {
 
   it('persists valid contours in v4 and rejects crossing contours at parse time', () => {
     const project = parseProjectV4(referenceProject)
+    // This board is built with SEED_CATALOG, so persist that same library.
+    project.materials = SEED_CATALOG.materials
+    project.edgeBands = SEED_CATALOG.edgeBands
     project.root.children = [board()]
     const parsed = parseProjectV4(JSON.parse(JSON.stringify(project)))
     expect(parsed.root.children[0]).toEqual(board())

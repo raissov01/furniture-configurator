@@ -65,7 +65,10 @@ describe('/cut reads canonical tree production', () => {
     const hiddenLayer = renderToStaticMarkup(createElement(CutPage))
     expect(hiddenLayer).toContain('data-cut-panel-count="0"')
     expect(cncButton(hiddenLayer)).toContain('disabled=""')
-    useConfigurator.getState().loadProject(file(false, true))
+    const invalidFile = file(false, true)
+    useConfigurator.getState().loadProject(file())
+    // Parser rejects this geometry at import; inject it to exercise live UI error handling.
+    useConfigurator.setState({ root: invalidFile.root })
     const invalid = renderToStaticMarkup(createElement(CutPage))
     expect(invalid).toContain('role="alert"')
     expect(cncButton(invalid)).toContain('disabled=""')
