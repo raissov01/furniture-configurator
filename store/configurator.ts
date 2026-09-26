@@ -18,14 +18,13 @@ import {
   ORIENT_FACING,
   DEFAULT_SILHOUETTE_HEIGHT,
   ConfigValidationError,
-  autoJoint,
+  applyAutoJointChange,
   canMirror,
   catalogOf,
   cloneMaterial as cloneCatalogMaterial,
   createPriceList as createShopPriceList,
   deletePriceList as deleteShopPriceList,
   defaultOpenings,
-  drillKey,
   fitOpenings,
   findSet,
   findNode,
@@ -62,8 +61,9 @@ import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as crea
 import { appendNodeArray, assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, translateTreeNodes, ungroupNode } from '@/src/core/treeEditing'
 import type { ArrayOptions } from '@/src/core/array'
 import type { AutoJointKind } from '@/src/core/autoJoint'
+import type { AutoJointRecord } from '@/src/core/autoJointRebuild'
 import type { SnapOptions } from '@/src/core/snap'
-import type { Axis, Drill } from '@/src/core/types'
+import type { Axis } from '@/src/core/types'
 import type { BoxAlignment } from '@/src/core/align'
 import { arrangeTreeSelection } from '@/src/core/treeArrange'
 import { cabinetsFromTree, reconcileCabinetsInTree, wallAttachedPlacements } from './treeAdapters'
@@ -103,6 +103,7 @@ type Snapshot = {
   projectSettings: SettingsOverride | undefined
   projectMaterials: Material[] | undefined
   projectEdgeBands: EdgeBand[] | undefined
+  autoJoints: AutoJointRecord[]
   lights: SceneLight[]
   activeId: string
 }
@@ -290,6 +291,7 @@ type State = Snapshot & {
   removeBoard(id: string): void
   editBoard(id: string, patch: Partial<BoardSpec>): void
   autoJointBoards(ids: [string, string], kind: AutoJointKind, tolerance: number): void
+  setAutoJointKind(id: string, kind: AutoJointKind): void
   setBoardPosition(id: string, position: Vec3): void
   editSection(index: number, patch: Partial<Section>, key: string): void
   addSection(): void
@@ -428,6 +430,7 @@ const snapshot = (s: State): Snapshot => ({
   projectSettings: s.projectSettings,
   projectMaterials: s.projectMaterials,
   projectEdgeBands: s.projectEdgeBands,
+  autoJoints: s.autoJoints,
   lights: s.lights,
   activeId: s.activeId,
 })
@@ -540,24 +543,11 @@ function projectSettingsAfterShopEdit(
 
 function treeEdit(s: State, root: GroupNode, layers = s.layers) {
   if (root === s.root && layers === s.layers) return {}
-  return { root, layers, ...cabinetsFromTree(root, s.room, layers),
+  const autoJoints = s.autoJoints.length > 0
+    ? applyAutoJointChange(s.exportProject(), { root, layers }).autoJoints ?? []
+    : s.autoJoints
+  return { root, layers, autoJoints, ...cabinetsFromTree(root, s.room, layers),
     past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null }
-}
-
-/**
- * Ескі тесік ОСЫ буынға жата ма. Бір тақта бірнеше буынға қатысады (дно сол
- * және оң боковинамен): басқа буынның тесігі қайшылық емес. Торц тесігі —
- * сол торц бетінде болса; бет тесігі — сол бетте әрі ұсынылған тесіктердің
- * тұрақты буын сызығында (x немесе y) жатса.
- */
-function sameJointHole(hole: Drill, proposed: Drill[], kind: string): boolean {
-  if (hole.purpose !== kind) return false
-  const onFace = proposed.filter((entry) => entry.face === hole.face)
-  if (onFace.length === 0) return false
-  if (hole.face !== 'inner' && hole.face !== 'outer') return true
-  const lineX = onFace.every((entry) => entry.x === onFace[0]!.x)
-  const lineY = onFace.every((entry) => entry.y === onFace[0]!.y)
-  return (lineX && hole.x === onFace[0]!.x) || (lineY && hole.y === onFace[0]!.y)
 }
 
 function mapBoard(root: GroupNode, id: string, update: (board: BoardSpec) => BoardSpec): GroupNode {
@@ -647,6 +637,7 @@ const initial: Snapshot = {
   projectSettings: undefined,
   projectMaterials: undefined,
   projectEdgeBands: undefined,
+  autoJoints: [],
   lights: [],
   activeId: defaultCabinet.id,
 }
@@ -789,6 +780,7 @@ export const useConfigurator = create<State>((set, get) => ({
     if (JSON.stringify(board) === JSON.stringify(node.board)) return
     const root = mapBoard(s.root, id, () => board)
     flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
+    applyAutoJointChange(s.exportProject(), { root })
     set(treeEdit(s, root))
   },
 
@@ -798,44 +790,25 @@ export const useConfigurator = create<State>((set, get) => ({
       const node = assertTreeNodeEditable(s.root, id, s.layers)
       if (node.kind !== 'board') throw new ConfigValidationError('boardIds', `${id}: тақта емес`, 'екі board түйіні')
     }
-    const settings = s.projectSettings ?? s.shop.settings
-    const scene = flattenTree(s.root, s.catalog, settings, s.layers)
-    const changes = autoJoint(scene, ids, kind, s.catalog, settings, tolerance)
-    const hasOldKind = changes.some((change) => {
-      const node = findNode(s.root, change.boardId)
-      return node?.kind === 'board' && (node.board.drilling ?? []).some((hole) => sameJointHole(hole, change.drilling, kind))
-    })
-    const proposalComplete = changes.every((change) => {
-      const node = findNode(s.root, change.boardId)
-      if (node?.kind !== 'board') return false
-      const oldKeys = new Set((node.board.drilling ?? []).map(drillKey))
-      return change.drilling.every((hole) => oldKeys.has(drillKey(hole)))
-    })
-    // Тесік редакторында координата өзгерген болуы мүмкін. Оның қасына ескі
-    // автомат координатаны қайта қоспаймыз; артикул бойынша ескі тесікті
-    // өшіру/алмастыруды provenance жоқ кезде қауіпсіз болжау мүмкін емес.
-    if (hasOldKind && !proposalComplete) throw new ConfigValidationError('board.drilling',
-      'бұл бекіткіштің тесіктері бұрын бар; қолмен түзетілген не тақта жылжыған — ескі тесіктерді тексеріңіз',
-      'DrillEditor-де ескі тесіктерді қолмен тексеру')
-    if (proposalComplete) return
-    let root = s.root
-    let changed = false
-    for (const change of changes) {
-      root = mapBoard(root, change.boardId, (board) => {
-        const current = board.drilling ?? []
-        const keys = new Set(current.map(drillKey))
-        const additional = change.drilling.filter((hole) => {
-          const key = drillKey(hole)
-          if (keys.has(key)) return false
-          keys.add(key)
-          return true
-        })
-        if (additional.length === 0) return board
-        changed = true
-        return { ...board, drilling: [...current, ...additional] }
-      })
-    }
-    if (changed) set(treeEdit(s, root))
+    const existing = s.autoJoints.find((joint) => ids.every((id) => joint.boardIds.includes(id)))
+    if (existing?.kind === kind && existing.tolerance === tolerance) return
+    if (existing && existing.tolerance !== tolerance) throw new ConfigValidationError('joint.tolerance',
+      'бар буынның жанасу шегін бұл әрекет өзгерте алмайды', `${existing.tolerance} мм`)
+    const change = existing
+      ? { joint: { id: existing.id, kind } }
+      : { create: { id: `joint-${crypto.randomUUID()}`, boardIds: ids, kind, tolerance } }
+    const next = applyAutoJointChange(s.exportProject(), change)
+    set({ autoJoints: next.autoJoints ?? [], past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [], lastEditKey: null })
+  },
+
+  setAutoJointKind(id, kind) {
+    const s = get()
+    const existing = s.autoJoints.find((joint) => joint.id === id)
+    if (existing?.kind === kind) return
+    const next = applyAutoJointChange(s.exportProject(), { joint: { id, kind } })
+    set({ autoJoints: next.autoJoints ?? [], past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [], lastEditKey: null })
   },
 
   setBoardPosition(id, position) {
@@ -1010,6 +983,7 @@ export const useConfigurator = create<State>((set, get) => ({
       info: cleanProjectInfo(s.projectInfo),
       priceOverrides: cleanPriceOverrides(s.priceOverrides),
       lights: s.lights,
+      autoJoints: s.autoJoints,
     }
   },
 
@@ -1045,6 +1019,7 @@ export const useConfigurator = create<State>((set, get) => ({
       projectMaterials: project.materials,
       projectEdgeBands: project.edgeBands,
       lights: project.lights,
+      autoJoints: project.autoJoints ?? [],
       ...cabinetsFromTree(project.root, project.room, project.layers),
       activeId: cabinetsFromTree(project.root, project.room, project.layers).cabinets[0]?.id ?? firstBoardId(project.root) ?? '',
       templateId: '',
@@ -1118,6 +1093,7 @@ export const useConfigurator = create<State>((set, get) => ({
         projectMaterials: file.materials,
         projectEdgeBands: file.edgeBands,
         lights: file.lights,
+        autoJoints: file.autoJoints ?? [],
         catalog: projectCatalog(get().shop, file.materials, file.edgeBands),
         ...cabinetsFromTree(file.root, file.room, file.layers),
         activeId: cabinetsFromTree(file.root, file.room, file.layers).cabinets[0]?.id ?? firstBoardId(file.root) ?? '',
@@ -1146,7 +1122,16 @@ export const useConfigurator = create<State>((set, get) => ({
 
   setShop(shop) {
     const synced = syncActivePriceList(shop)
-    set((s) => ({ shop: synced, catalog: projectCatalog(synced, s.projectMaterials, s.projectEdgeBands) }))
+    set((s) => {
+      const catalog = projectCatalog(synced, s.projectMaterials, s.projectEdgeBands)
+      const autoJoints = s.autoJoints.length > 0
+        ? applyAutoJointChange(s.exportProject(), {
+            materials: catalog.materials, edgeBands: catalog.edgeBands,
+            settings: s.projectSettings ?? synced.settings,
+          }).autoJoints ?? []
+        : s.autoJoints
+      return { shop: synced, catalog, autoJoints }
+    })
     // Сақтау сәтсіз болса (жабық режим, толған қойма) — жұмыс тоқтамауы керек.
     try {
       window.localStorage.setItem(SHOP_KEY, JSON.stringify(synced))
@@ -1157,6 +1142,15 @@ export const useConfigurator = create<State>((set, get) => ({
 
   editShop(patch) {
     const s = get()
+    const changesJointInputs = Boolean(patch.settings || patch.materials || patch.edgeBands)
+    // A shop catalogue is global, but this project's manufacturing state needs
+    // one undo step. Keep the previous effective values as project overrides.
+    const previous = changesJointInputs && s.autoJoints.length > 0
+      ? { ...snapshot(s),
+          projectMaterials: s.projectMaterials ?? s.catalog.materials,
+          projectEdgeBands: s.projectEdgeBands ?? s.catalog.edgeBands,
+          projectSettings: s.projectSettings ?? s.shop.settings }
+      : null
     set({
       ...(patch.settings ? { projectSettings: projectSettingsAfterShopEdit(
         s.projectSettings, s.shop.settings, patch.settings) } : {}),
@@ -1164,6 +1158,7 @@ export const useConfigurator = create<State>((set, get) => ({
         s.projectMaterials, s.shop.materials, patch.materials) } : {}),
       ...(patch.edgeBands ? { projectEdgeBands: projectBandsAfterShopEdit(
         s.projectEdgeBands, s.shop.edgeBands, patch.edgeBands) } : {}),
+      ...(previous ? { past: [...s.past, previous].slice(-HISTORY_LIMIT), future: [], lastEditKey: null } : {}),
     })
     get().setShop({ ...get().shop, ...patch })
     if (patch.settings || patch.materials || patch.edgeBands) get().saveProjectLocally()
