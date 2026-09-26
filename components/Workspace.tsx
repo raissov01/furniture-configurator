@@ -2,7 +2,7 @@
 
 import { t as tr, tf } from '@/lib/i18n'
 import Link from 'next/link'
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -40,6 +40,8 @@ import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { TreeDock } from '@/components/panels/TreeDock'
+import { ClassicStructureWindow } from '@/components/ClassicStructureWindow'
+import { ClassicIcon, type ClassicIconName } from '@/components/ClassicIcon'
 import { BusyOverlay, Spinner } from '@/components/BusyOverlay'
 import { TouchJoystick } from '@/components/TouchJoystick'
 import { isTouchDevice } from '@/lib/walkInput'
@@ -105,6 +107,13 @@ const BUDGET_MS = 100
 /** Деталировка тақтасы ашық па — браузерде сақталады (адамның өз ыңғайы). */
 const CUT_OPEN_KEY = 'furniture-configurator:cutlist-open'
 const WORKSPACE_STYLE_KEY = 'furniture-configurator:workspace-style'
+
+type ClassicToolSpec = { icon: ClassicIconName; label: string; action: () => void; disabled?: boolean; active?: boolean; id?: string }
+
+function ClassicTool({ icon, label, action, disabled, active, id }: ClassicToolSpec) {
+  return <button type="button" className="p100-icon-button" title={label} aria-label={label} aria-pressed={active || undefined}
+    data-testid={id ? `classic-tool-${id}` : undefined} disabled={disabled} onClick={action}><ClassicIcon name={icon} /></button>
+}
 
 export function Workspace() {
   const cabinet = useConfigurator((s) => s.cabinets.find((entry) => entry.id === s.activeId))
@@ -181,6 +190,9 @@ export function Workspace() {
   const assemblyStep = useConfigurator((s) => s.assemblyStep)
   const setAssemblyStep = useConfigurator((s) => s.setAssemblyStep)
   const selected = useConfigurator((s) => s.selected)
+  const snapOptions = useConfigurator((s) => s.snapOptions)
+  const setSnapOptions = useConfigurator((s) => s.setSnapOptions)
+  const previousSnapOptions = useRef(snapOptions)
   const setSelected = useConfigurator((s) => s.setSelected)
   const openPanels = useConfigurator((s) => s.openPanels)
   const togglePanelOpen = useConfigurator((s) => s.togglePanelOpen)
@@ -215,6 +227,7 @@ export function Workspace() {
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
   const [classic, setClassic] = useState(true)
+  const [structureOpen, setStructureOpen] = useState(false)
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
   useEffect(() => {
     try { setClassic(window.localStorage.getItem(WORKSPACE_STYLE_KEY) !== 'ours') }
@@ -391,6 +404,52 @@ export function Workspace() {
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  const classicToolRows: ClassicToolSpec[][] = classic ? [
+    [
+      { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
+      { icon: 'open', label: tr('Открыть проект'), action: () => document.getElementById('project-open-input')?.click() },
+      { icon: 'save', label: tr('Сохранить проект'), action: () => document.querySelector<HTMLButtonElement>('[data-testid="project-menu"] button')?.click(), id: 'save' },
+      { icon: 'print', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
+      { icon: 'cut', label: tr('Раскрой'), action: () => { window.location.href = '/cut' } },
+      { icon: 'copy', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
+      { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable },
+      { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo },
+      { icon: 'redo', label: tr('Повторить'), action: redo, disabled: !canRedo },
+      { icon: 'settings', label: tr('Цех: материалы и цены'), action: () => setShopOpen(true) },
+    ],
+    [
+      { icon: 'box', label: tr('Тело'), action: () => setViewMode('solid'), active: viewMode === 'solid' },
+      { icon: 'wire', label: tr('Контур'), action: () => setViewMode('wire'), active: viewMode === 'wire' },
+      { icon: 'eye', label: tr('Размеры на сцене'), action: () => setShowDimensions(!showDimensions), active: showDimensions },
+      { icon: 'magnet', label: tr('Привязка'), action: () => {
+        if (snapOptions.grid > 0 || snapOptions.tolerance > 0) {
+          previousSnapOptions.current = snapOptions
+          setSnapOptions({ grid: 0, tolerance: 0 })
+        } else setSnapOptions(previousSnapOptions.current)
+      }, active: snapOptions.grid > 0 || snapOptions.tolerance > 0 },
+      { icon: 'light', label: tr('Рендер'), action: () => setRenderOpen(true) },
+      { icon: 'measure', label: tr('Размеры на сцене'), action: () => setShowDimensions(!showDimensions), active: showDimensions },
+      { icon: 'fit', label: tr('Вписать в кадр'), action: fitCamera },
+      { icon: 'view', label: tr('Перспектива'), action: () => { setCameraPreset('three-quarter'); setProjection('perspective') } },
+    ],
+    [
+      { icon: 'structure', label: tr('Структура'), action: () => setStructureOpen(true), active: structureOpen, id: 'structure' },
+      { icon: 'layers', label: tr('Слои'), action: () => setStructureOpen(true) },
+      { icon: 'library', label: tr('Библиотека'), action: () => setStructureOpen(true) },
+      { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
+      { icon: 'mirror', label: tr('Зеркальная копия'), action: () => mirrorCabinet(activeId), disabled: !activeEditable },
+      { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
+      { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
+      { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true) },
+    ],
+    [
+      { icon: 'render', label: tr('Рендер'), action: () => setRenderOpen(true) },
+      { icon: 'quote', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
+      { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard },
+      { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
+    ],
+  ] : []
+
   return (
     <div className={cn("flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100", classic && "p100-workspace")} data-workspace-style={classic ? "classic" : "ours"}>
       {propertiesNodeId && <PropertiesDialog nodeId={propertiesNodeId} catalog={catalog} panels={activePanels} boardPanel={boardPanel} error={error?.field ?? null} onClose={() => setPropertiesNodeId(null)} />}
@@ -558,7 +617,17 @@ export function Workspace() {
         </Menu>
       </nav>
 
-      <header className="flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
+      {classic && <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
+        {classicToolRows.map((row, index) => <div className="p100-toolbar-row" key={index}>
+          {row.map((tool) => <ClassicTool key={`${tool.icon}-${tool.label}`} {...tool} />)}
+          {index === 3 && <label className="p100-toolbar-style">{tr('Рабочее место')}
+            <select aria-label={tr('Стиль рабочего места')} value="classic" onChange={(event) => changeStyle(event.target.value === 'classic')}>
+              <option value="classic">{tr('Классический')}</option><option value="ours">{tr('Наш')}</option>
+            </select>
+          </label>}
+        </div>)}
+      </div>}
+      <header className="legacy-tools flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
         <Link
           href="/"
           title={tr('На главную')}
@@ -679,7 +748,7 @@ export function Workspace() {
         (жаңа/дубль/айна/өшіру) — аяста да қалды (астыңғы «Модуль» тобы),
         мұнда тек ЖЫЛДАМ белгіше нұсқасы.
       */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
+      <div className="legacy-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
         <Button size="sm" onClick={addCabinet} title={tr('Новый корпус')}>+</Button>
         <Button size="sm" onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>⧉</Button>
         <Button size="sm" onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable} title={tr('Зеркальная копия')}>⇋</Button>
@@ -751,7 +820,7 @@ export function Workspace() {
       </div>
 
       {/* Екінші қатар: сирек баптаулар («Вид»), силуэт биіктігі, анықтама. */}
-      <div className="flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
+      <div className="legacy-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
         <Menu label={tr('Вид')} size="sm" title={tr('Прозрачность, фасады, проекция, масштаб')}>
           <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
             {tr('Разнести')}
@@ -894,7 +963,13 @@ export function Workspace() {
           — үнсіз ескерту (сахнада тартып апарыңыз), батырма емес.
           Телефонда жасырын: PRO100 макеті десктопқа арналған.
         */}
-        <div className="hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
+        <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
+          {classic ? <>
+            <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} />
+            <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} />
+            <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} />
+            <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" />
+          </> : <>
           <Button
             size="sm"
             active={!selected}
@@ -906,6 +981,7 @@ export function Workspace() {
           <Button size="sm" disabled title={tr('Переместить — перетащите выбранный модуль по стене прямо в 3D-сцене')}>
             ✥
           </Button>
+          </>}
         </div>
         <div className="flex min-h-0 flex-col">
         {/* Телефонда 3D экранның жартысынан астам: 256 px-те ештеңе көрінбейтін. */}
@@ -915,7 +991,10 @@ export function Workspace() {
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
           </div>
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
-          {walk ? null : <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:w-72"><TreeDock /></div>}
+          {walk ? null : classic ? <>
+            <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:hidden"><TreeDock /></div>
+            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} /> : null}
+          </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:w-72"><TreeDock /></div>}
           {/*
             КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
             §2): PRO100-де олар сахнаның үстінде қалқымайды, тар белгіше

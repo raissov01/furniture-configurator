@@ -45,7 +45,7 @@ export function ProjectMenu() {
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1" data-testid="project-menu">
       <Button onClick={save} title={tr('Скачать проект файлом')}>{tr('Сохранить')}</Button>
       <Button onClick={() => input.current?.click()} title={tr('Открыть проект из файла')}>{tr('Открыть')}</Button>
       <input

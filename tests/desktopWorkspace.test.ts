@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
+import { readFileSync } from 'node:fs'
 import { Workspace } from '../components/Workspace'
 import { PropertiesDialog } from '../components/PropertiesDialog'
 import { useConfigurator } from '../store/configurator'
@@ -12,6 +13,11 @@ const originalInitialSnapshot = { ...initialSnapshot }
 afterEach(() => { Object.assign(initialSnapshot, originalInitialSnapshot); useConfigurator.getState().loadProject(original) })
 
 describe('classic desktop workspace', () => {
+  it('keeps classic CSS colors behind measured palette tokens', () => {
+    const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+    const rules = css.split('\n').filter((line) => line.trim().startsWith('.p100-'))
+    expect(rules.join('\n')).not.toMatch(/#[0-9a-f]{3,8}\b/i)
+  })
   it('defaults to the classic shell with camera and a labelled H × W × D status', () => {
     useConfigurator.getState().loadProject(referenceProject)
     const id = useConfigurator.getState().activeId
@@ -19,6 +25,11 @@ describe('classic desktop workspace', () => {
     Object.assign(initialSnapshot, useConfigurator.getState())
     const html = renderToString(createElement(Workspace))
     expect(html).toContain('data-workspace-style="classic"')
+    expect(html).toContain('data-testid="classic-toolbar"')
+    expect(html).toContain('data-testid="classic-tool-save"')
+    expect(html).toContain('data-testid="classic-tool-structure"')
+    expect(html).not.toContain('data-testid="classic-structure-window"')
+    expect(html).toContain('lg:hidden"><section data-testid="tree-dock"')
     expect(html).toContain('Камера 1')
     expect(html).toContain('data-testid="p100-status"')
     expect(html).toContain('(H) ×')
