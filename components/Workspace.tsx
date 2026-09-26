@@ -840,7 +840,7 @@ export function Workspace() {
         </div>
       ) : null}
 
-      <Tour paused={galleryOpen} />
+      <Tour paused={galleryOpen} classic={classic} />
       <BusyOverlay />
       <RenderPanel />
       {/*
