@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { flattenTree, scenePanels } from '@/src/core/flatten'
+import { flattenTree } from '@/src/core/flatten'
+import { projectProduction } from '@/lib/projectProduction'
 import { applyInstallationAction, createInstallationTask, type InstallationAction, type InstallationTask } from '@/src/core/installation'
 import { parseProjectV4 } from '@/src/core/projectV4'
 import { db } from './db'
@@ -45,6 +46,10 @@ export function applyInstallationSync(shopId: string, action: InstallationAction
     let task = readInstallationTask(shopId, action.entityId)
     if (action.kind === 'installation.create') {
       if (task) return conflict(database, task)
+      // Кесте ID-і ортақ: басқа цехтың тапсырмасы UNIQUE қатесімен 500 бермесін.
+      if (database.prepare('SELECT 1 FROM installation_tasks WHERE id = ?').get(action.entityId)) {
+        throw new InstallationError(409, 'Монтаж ID-і бос емес; жаңа ID жасаңыз')
+      }
       if (action.baseRevision.version !== 0 || action.baseRevision.updatedAt !== 0) {
         throw new InstallationError(409, 'Жаңа монтаждың базалық нұсқасы 0 болуы керек')
       }
@@ -53,7 +58,10 @@ export function applyInstallationSync(shopId: string, action: InstallationAction
       if (!raw) throw new InstallationError(404, 'Жоба табылмады')
       const project = parseProjectV4(raw)
       const catalog = { materials: project.materials, edgeBands: project.edgeBands }
-      const panelIds = scenePanels(flattenTree(project.root, catalog, project.settings, project.layers)).map((panel) => panel.id)
+      // Бірнеше корпуста әр шкафта «side-left» бар: ID сахна мен деталировкадағыдай
+      // `mergeProjectPanels` арқылы корпус атымен бірегейленеді.
+      const scene = flattenTree(project.root, catalog, project.settings, project.layers)
+      const panelIds = projectProduction(project.root, scene).panels.map((panel) => panel.id)
       task = createInstallationTask(action.entityId, payload.projectId, panelIds, now)
       database.prepare('INSERT INTO installation_tasks (id, shop_id, project_id, json, updated_at) VALUES (?, ?, ?, ?, ?)')
         .run(task.id, shopId, task.projectId, JSON.stringify(task), now)

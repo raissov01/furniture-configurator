@@ -121,6 +121,15 @@ describe('биркалар PDF', () => {
     expect(() => encodePartQr({ projectId: '', panelId: 'x', version: 1 })).toThrow()
   })
 
+  it('encodePartQr қабылдаған әр мәнді decodePartQr қайта оқиды, әйтпесе басу кезінде қате береді', () => {
+    const part = { projectId: 'жоба'.repeat(20), panelId: 'шкаф--бүйір'.repeat(10) + 'аа', version: 3 }
+    let value: string | undefined
+    try { value = encodePartQr(part) } catch { value = undefined }
+    if (value !== undefined) expect(decodePartQr(value)).toEqual(part)
+    const ascii = { projectId: 'p'.repeat(80), panelId: 'x'.repeat(120), version: 3 }
+    expect(decodePartQr(encodePartQr(ascii))).toEqual(ascii)
+  })
+
   it('QR бар PDF ішіне QR модульдері салынады', async () => {
     const plain = await labelsPdf({ labels: labels.slice(0, 1), projectName: 'Шкаф', fonts })
     const qr = await labelsPdf({ labels: labels.slice(0, 1), projectName: 'Шкаф', projectId: 'project-1', version: 1, fonts })
