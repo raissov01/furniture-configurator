@@ -1310,4 +1310,5 @@ export const en: Record<string, string> = {
   'Создать ремонтное задание': 'Create repair task',
   'Ремонт завершён': 'Repair completed',
   'Постоянное хранение разрешено.': 'Persistent storage granted.',
+  'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Drilling, cutting layouts and machine export — right in AisMebel, no hand-off to Bazis.',
 }

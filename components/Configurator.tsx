@@ -1637,7 +1637,7 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
       */}
       <div className={cn('flex-col gap-3', tab === 'production' ? 'flex' : 'hidden')}>
         <p className="text-[11px] text-neutral-500">
-          {tr('Присадка, раскрой и экспорт для станка — то, чего нет в PRO100 (там эту работу отдают Базису).')}
+          {tr('Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.')}
         </p>
         <Field label={tr('Крепёж корпуса')}>
           <Select

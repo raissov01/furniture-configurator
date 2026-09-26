@@ -1314,4 +1314,5 @@ export const uz: Record<string, string> = {
   'Создать ремонтное задание': 'Ta’mir vazifasini yaratish',
   'Ремонт завершён': 'Ta’mir tugadi',
   'Постоянное хранение разрешено.': 'Doimiy saqlashga ruxsat berildi.',
+  'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Parmalash, bichish va stanokka eksport — to‘g‘ridan-to‘g‘ri AisMebel’da, Bazisga o‘tkazmasdan.',
 }
