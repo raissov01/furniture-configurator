@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { IDENTITY_TRANSFORM, ORIENT_HORIZONTAL, parseProjectV4 } from '../src/core/index'
+import { IDENTITY_TRANSFORM, ORIENT_HORIZONTAL, ORIENT_SIDE, applyAutoJointChange, parseProjectV4 } from '../src/core/index'
 import type { BoardNode, ProjectFileV4 } from '../src/core/index'
 import { PVC2, referenceProject } from './fixtures'
 
@@ -51,6 +51,31 @@ afterEach(() => { for (const dir of temporary.splice(0)) rmSync(dir, { recursive
 // CPU load is not a 5-second product performance requirement; keep the same
 // 30-second bound as the export integration test and every child process.
 describe('CLI accepts the canonical saved v4 project', { timeout: 30000 }, () => {
+  it('broken буынның присадкасын үнсіз тастамай, екі CLI экспортын тоқтатады', () => {
+    const dir = folder()
+    const project = parseProjectV4(referenceProject)
+    const material = project.materials.find((item) => item.thickness === 16)!
+    const free = (id: string, y: number, orientation: BoardNode['board']['orientation']): BoardNode => ({
+      kind: 'board', id, name: id,
+      transform: { ...IDENTITY_TRANSFORM, pos: { x: 0, y, z: 0 } },
+      board: { materialId: material.id, length: 500, width: 300, orientation,
+        role: 'custom', grainAlongLength: true,
+        edges: { L1: null, L2: null, W1: null, W2: null } },
+    })
+    project.root.children = [free('base', 0, ORIENT_HORIZONTAL), free('upright', 16, ORIENT_SIDE)]
+    const joined = applyAutoJointChange(project, { create: {
+      id: 'joint-test', boardIds: ['base', 'upright'], kind: 'confirmat' } })
+    const moved = structuredClone(joined.root)
+    const upright = moved.children[1] as BoardNode
+    upright.transform.pos.y = 40
+    const broken = applyAutoJointChange(joined, { root: moved })
+    const path = fixture(dir, broken)
+    for (const entry of ['cutlist', 'export'] as const) {
+      const result = run(entry, path, join(dir, 'out'))
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('joint.boardIds')
+    }
+  }, 30000)
   it('keeps board DXF filenames inside their export folder without encoding collisions', () => {
     const dir = folder()
     const project = nested()

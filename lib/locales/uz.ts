@@ -11,6 +11,10 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Автоматическая присадка нарушена': 'Avtomatik teshik birikmasi buzildi',
+  'Проверьте контакт досок и крепёж': 'Taxtalar tutashuvi va mahkamlagichni tekshiring',
+  'Удалить соединение': 'Birikmani o‘chirish',
+  'Сначала удалите соединение': 'Avval birikmani o‘chiring',
   'Название не может быть пустым': 'Nom bo‘sh bo‘lishi mumkin emas',
   'Рабочее место': 'Ish joyi',
   'Стиль рабочего места': 'Ish joyi uslubi',

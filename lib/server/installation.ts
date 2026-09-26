@@ -60,7 +60,7 @@ export function applyInstallationSync(shopId: string, action: InstallationAction
       const catalog = { materials: project.materials, edgeBands: project.edgeBands }
       // Бірнеше корпуста әр шкафта «side-left» бар: ID сахна мен деталировкадағыдай
       // `mergeProjectPanels` арқылы корпус атымен бірегейленеді.
-      const scene = flattenTree(project.root, catalog, project.settings, project.layers)
+      const scene = flattenTree(project.root, catalog, project.settings, project.layers, project.autoJoints)
       const panelIds = projectProduction(project.root, scene).panels.map((panel) => panel.id)
       task = createInstallationTask(action.entityId, payload.projectId, panelIds, now)
       database.prepare('INSERT INTO installation_tasks (id, shop_id, project_id, json, updated_at) VALUES (?, ?, ?, ?, ?)')

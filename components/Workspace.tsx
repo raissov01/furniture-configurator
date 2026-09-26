@@ -133,6 +133,7 @@ export function Workspace() {
   const room = useConfigurator((s) => s.room)
   const root = useConfigurator((s) => s.root)
   const layers = useConfigurator((s) => s.layers)
+  const autoJoints = useConfigurator((s) => s.autoJoints)
   const projectSettings = useConfigurator((s) => s.projectSettings)
   const projectLoadError = useConfigurator((s) => s.projectLoadError)
   const historyRestoreError = useConfigurator((s) => s.historyRestoreError)
@@ -201,12 +202,13 @@ export function Workspace() {
 
   const settings = projectSettings ?? shop.settings
   const { panels, error, ms, stale } = usePanels(cabinet, catalog, settings)
-  const { scene, items, error: sceneError } = useTreeSceneItems(root, room, catalog, settings, layers)
+  const { scene, items, error: sceneError } = useTreeSceneItems(root, room, catalog, settings, layers, autoJoints)
   const production = useProjectProduction()
   const hasActiveCabinet = Boolean(cabinet)
   const activePanels = hasActiveCabinet ? panels : []
   const activeNode = findNode(root, activeId)
   const activeBoard = activeNode?.kind === 'board' ? activeNode : null
+  const activeBoardJoint = activeBoard ? autoJoints.find((joint) => joint.boardIds.includes(activeId)) : undefined
   const boardPanel = activeBoard ? production.scene.nodes.find((node) => node.nodeId === activeId)?.panels[0] : undefined
   const editableBoard = useMemo(() => {
     if (!activeBoard) return false
@@ -272,7 +274,7 @@ export function Workspace() {
       syncShare()
     }, 500)
     return () => clearTimeout(timer)
-  }, [room, root, layers, settings, catalog, cabinets, placements, propertiesNodeId, saveProjectLocally, pushHistory, syncShare])
+  }, [room, root, layers, autoJoints, settings, catalog, cabinets, placements, propertiesNodeId, saveProjectLocally, pushHistory, syncShare])
 
   /*
    * Кідірістегі сақтау бет ЖАБЫЛҒАНДА/АУЫСҚАНДА жоғалмауы керек.
@@ -582,7 +584,8 @@ export function Workspace() {
         <Menu label={tr('Элемент')} size="sm">
           <MenuItem onClick={addCabinet}>{tr('Новый корпус')}</MenuItem>
           <MenuItem onClick={addBoard}>{tr('Добавить свободную доску')}</MenuItem>
-          <MenuItem onClick={() => removeBoard(activeId)} disabled={!editableBoard}>{tr('Удалить доску')}</MenuItem>
+          <MenuItem onClick={() => removeBoard(activeId)} disabled={!editableBoard || Boolean(activeBoardJoint)}
+            {...(activeBoardJoint ? { title: tr('Сначала удалите соединение') } : {})}>{tr('Удалить доску')}</MenuItem>
           <MenuItem onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable}>{tr('Дублировать')}</MenuItem>
           <MenuItem onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable}>{tr('Зеркальная копия')}</MenuItem>
           <MenuItem
@@ -872,6 +875,20 @@ export function Workspace() {
         </div>
       ) : null}
 
+      {activeBoardJoint ? (
+        <div role="status" className="border-b border-neutral-300 px-3 py-2 text-xs text-neutral-700 dark:border-neutral-700 dark:text-neutral-300">
+          <b className="font-mono">joint.boardIds</b> — {tr('Сначала удалите соединение')} ({activeBoardJoint.boardIds.join(', ')})
+        </div>
+      ) : null}
+
+      {autoJoints.filter((joint) => joint.status === 'broken').map((joint) => (
+        <div key={joint.id} role="alert" data-testid="broken-auto-joint"
+          className="border-b border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+          {tr('Автоматическая присадка нарушена')}: <b className="font-mono">{joint.error?.field ?? 'joint.boardIds'}</b> —
+          {' '}{tr('Проверьте контакт досок и крепёж')} ({joint.boardIds.join(', ')})
+        </div>
+      ))}
+
       {hasActiveCabinet && error ? (
         <div className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <b className="font-mono">{error.field}</b> — {error.message.replace(`${error.field}: `, '')}
@@ -1116,7 +1133,8 @@ export function Workspace() {
           <div className={cn("flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800", classic && "lg:hidden")}>
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
-            {activeBoard && <Button onClick={() => removeBoard(activeId)} disabled={!editableBoard}>{tr('Удалить доску')}</Button>}
+            {activeBoard && <Button onClick={() => removeBoard(activeId)}
+              disabled={!editableBoard || Boolean(activeBoardJoint)}>{tr('Удалить доску')}</Button>}
             <Button onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
             <Button onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable} title={tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
             <Button

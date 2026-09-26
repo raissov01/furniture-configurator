@@ -76,6 +76,7 @@ async function loadFonts(): Promise<{ regular: Uint8Array; bold: Uint8Array }> {
 export function CutPage() {
   const root = useConfigurator((s) => s.root)
   const layers = useConfigurator((s) => s.layers)
+  const autoJoints = useConfigurator((s) => s.autoJoints)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const projectName = useConfigurator((s) => s.projectName)
   const projectLoadError = useConfigurator((s) => s.projectLoadError)
@@ -101,14 +102,17 @@ export function CutPage() {
 
   const production = useMemo(() => {
     if (projectLoadError) return { panels: [], error: projectLoadError }
+    const broken = autoJoints.find((joint) => joint.status === 'broken')
+    if (broken) return { panels: [],
+      error: `${broken.error?.field ?? 'joint.boardIds'}: ${tr('Автоматическая присадка нарушена')}. ${tr('Проверьте контакт досок и крепёж')}` }
     try {
-      const scene = flattenTree(root, catalog, settings, layers)
+      const scene = flattenTree(root, catalog, settings, layers, autoJoints)
       return { panels: projectProduction(root, scene).panels, error: null }
     } catch (error) {
       if (!(error instanceof ConfigValidationError)) throw error
       return { panels: [], error: error.message }
     }
-  }, [root, catalog, settings, layers, projectLoadError])
+  }, [root, catalog, settings, layers, autoJoints, projectLoadError])
   const panels = production.panels
   // §O6: ойма бар панельдің DXF рез координатасы генерациямен бір
   // catalog/settings-ке сүйенуі керек (`flattenTree` осы project settings-ті
@@ -283,7 +287,7 @@ export function CutPage() {
                   ])
                 // Скриптке әр корпустың ӨЗ панельдері мен бөлмедегі позасы керек
                 // (`basisScript.ts`): присадка Базиске әлем координатасымен барады.
-                const scene = flattenTree(root, catalog, settings, layers)
+                const scene = flattenTree(root, catalog, settings, layers, autoJoints)
                 const options = { projectName, script: { scene, settings } }
                 const entries: Record<string, Uint8Array> = {}
                 for (const [name, bytes] of basisFiles(panels, catalog, options)) entries[name] = bytes
