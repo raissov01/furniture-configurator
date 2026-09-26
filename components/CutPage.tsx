@@ -34,9 +34,6 @@ import type {
 } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
-import { playbackFrame, playbackStep } from '@/src/core/cutPlayback'
-import { selectCutPanels, selectCutScene } from '@/src/core/cutMaterialSelection'
-import type { LabelPage } from '@/src/core/export/labelLayout'
 
 /** Парақ сызбасының экрандағы ені, пиксель. */
 const SHEET_PX = 520
@@ -79,6 +76,7 @@ async function loadFonts(): Promise<{ regular: Uint8Array; bold: Uint8Array }> {
 export function CutPage() {
   const root = useConfigurator((s) => s.root)
   const layers = useConfigurator((s) => s.layers)
+  const autoJoints = useConfigurator((s) => s.autoJoints)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const projectName = useConfigurator((s) => s.projectName)
   const projectLoadError = useConfigurator((s) => s.projectLoadError)
@@ -98,30 +96,24 @@ export function CutPage() {
   }, [hydrateShop, hydrateProject])
 
   const [showCuts, setShowCuts] = useState(true)
-  const [excludedMaterials, setExcludedMaterials] = useState<ReadonlySet<string>>(() => new Set())
-  const [labelPage, setLabelPage] = useState<LabelPage>('a4')
-  const [labelWidth, setLabelWidth] = useState(58)
-  const [labelHeight, setLabelHeight] = useState(40)
   const [busy, setBusy] = useState<string | null>(null)
   /** Экспорттың ескертуі (мыс. Базис қазақ әріптерін оқымайды). */
   const [notice, setNotice] = useState<string | null>(null)
 
   const production = useMemo(() => {
     if (projectLoadError) return { panels: [], error: projectLoadError }
+    const broken = autoJoints.find((joint) => joint.status === 'broken')
+    if (broken) return { panels: [],
+      error: `${broken.error?.field ?? 'joint.boardIds'}: ${tr('Автоматическая присадка нарушена')}. ${tr('Проверьте контакт досок и крепёж')}` }
     try {
-      const scene = flattenTree(root, catalog, settings, layers)
+      const scene = flattenTree(root, catalog, settings, layers, autoJoints)
       return { panels: projectProduction(root, scene).panels, error: null }
     } catch (error) {
       if (!(error instanceof ConfigValidationError)) throw error
       return { panels: [], error: error.message }
     }
-  }, [root, catalog, settings, layers, projectLoadError])
+  }, [root, catalog, settings, layers, autoJoints, projectLoadError])
   const panels = production.panels
-  const materialChoices = useMemo(() => {
-    const ids = new Set(panels.map((panel) => panel.materialId))
-    return catalog.materials.filter((material) => ids.has(material.id))
-  }, [panels, catalog.materials])
-  const selectedPanels = useMemo(() => selectCutPanels(panels, excludedMaterials), [panels, excludedMaterials])
   // §O6: ойма бар панельдің DXF рез координатасы генерациямен бір
   // catalog/settings-ке сүйенуі керек (`flattenTree` осы project settings-ті
   // қолданады). Кабинет деңгейіндегі жеке override мұнда бірнеше корпус
@@ -131,22 +123,22 @@ export function CutPage() {
   const cutting = shop.cutting
   const options = useMemo(() => nestingOptionsOf(shop), [shop])
   const nested = useMemo(() => {
-    if (production.error || selectedPanels.length === 0) return { nesting: null, error: production.error }
+    if (production.error || panels.length === 0) return { nesting: null, error: production.error }
     try {
-      return { nesting: nestPanels(selectedPanels, catalog, options), error: null }
+      return { nesting: nestPanels(panels, catalog, options), error: null }
     } catch (error) {
       if (!(error instanceof ConfigValidationError)) throw error
       return { nesting: null, error: error.message }
     }
-  }, [selectedPanels, production.error, catalog, options])
+  }, [panels, production.error, catalog, options])
   const nesting = nested.nesting
   const plan = useMemo(
     () => (nesting ? cutPlan(nesting, { kerf: cutting.kerf }) : null),
     [nesting, cutting.kerf],
   )
   const advice = useMemo(
-    () => (nesting ? unplacedAdvice(nesting, selectedPanels, catalog, options) : []),
-    [nesting, selectedPanels, catalog, options],
+    () => (nesting ? unplacedAdvice(nesting, panels, catalog, options) : []),
+    [nesting, panels, catalog, options],
   )
 
   const setCutting = (patch: Partial<typeof cutting>) =>
@@ -216,12 +208,9 @@ export function CutPage() {
               onClick={() => void run('labels', async () => {
                 const { labelsPdf } = await import('@/src/core/export/labels')
                 const bytes = await labelsPdf({
-                  labels: partLabels(selectedPanels, catalog, nesting!),
+                  labels: partLabels(panels, catalog, nesting!),
                   projectName,
                   fonts: await loadFonts(),
-                  size: { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
-                  projectId: root.id,
-                  version: 4,
                 })
                 download(`${projectName}-бирки.pdf`, bytes, 'application/pdf')
               })}
@@ -243,21 +232,19 @@ export function CutPage() {
                   import('fflate'),
                 ])
                 const fonts = await loadFonts()
-                const labels = partLabels(selectedPanels, catalog, nesting!)
+                const labels = partLabels(panels, catalog, nesting!)
                 const entries: Record<string, Uint8Array> = {}
                 // Бума ІШІНДЕ бума: цехта раскрой мен присадка әр басқа адамға кетеді.
                 for (const [name, content] of flatArchiveFiles(nestingToDxfFiles(nesting!))) {
                   entries[`raskroy/${name}`] = strToU8(content)
                 }
-                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(selectedPanels, dxfOptions))) {
+                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) {
                   entries[`detali/${name}`] = strToU8(content)
                 }
-                entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(selectedPanels, catalog)}`)
+                entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(panels, catalog)}`)
                 entries['birki.csv'] = strToU8(`\ufeff${labelsToCsv(labels)}`)
                 entries['karta-raskroya.pdf'] = await nestingPdf({ nesting: nesting!, projectName, fonts })
-                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts,
-                  size: { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
-                  projectId: root.id, version: 4 })
+                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts })
                 download(
                   `${projectName}-цех.zip`,
                   zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
@@ -268,7 +255,7 @@ export function CutPage() {
               {busy === 'bundle' ? '…' : tr('Пакет для цеха')}
             </Button>
             <Button
-              disabled={busy !== null || selectedPanels.length === 0 || production.error !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null}
               title={tr('Присадка для станка: на каждую деталь свой файл, плюс index.csv')}
               onClick={() => void run('cnc', async () => {
                 const [{ cncFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -276,7 +263,7 @@ export function CutPage() {
                   import('fflate'),
                 ])
                 const entries: Record<string, Uint8Array> = {}
-                for (const [name, content] of cncFiles(selectedPanels, catalog, { projectName, outerFlipAxis: dxfOptions.settings.outerFlipAxis })) {
+                for (const [name, content] of cncFiles(panels, catalog, { projectName, outerFlipAxis: dxfOptions.settings.outerFlipAxis })) {
                   entries[name] = strToU8(content)
                 }
                 download(
@@ -289,7 +276,7 @@ export function CutPage() {
               {busy === 'cnc' ? '…' : tr('ЧПУ по деталям')}
             </Button>
             <Button
-              disabled={busy !== null || selectedPanels.length === 0 || production.error !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null}
               title={tr('Для Базиса: список деталей для Раскроя (CSV, XLSX), скрипт для Мебельщика — детали и присадка как крепёж, DXF деталей')}
               onClick={() => void run('basis', async () => {
                 const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfFiles }, { zipSync, strToU8 }] =
@@ -300,11 +287,11 @@ export function CutPage() {
                   ])
                 // Скриптке әр корпустың ӨЗ панельдері мен бөлмедегі позасы керек
                 // (`basisScript.ts`): присадка Базиске әлем координатасымен барады.
-                const scene = flattenTree(root, catalog, settings, layers)
-                const exportOptions = { projectName, script: { scene: selectCutScene(scene, excludedMaterials), settings } }
+                const scene = flattenTree(root, catalog, settings, layers, autoJoints)
+                const options = { projectName, script: { scene, settings } }
                 const entries: Record<string, Uint8Array> = {}
-                for (const [name, bytes] of basisFiles(selectedPanels, catalog, exportOptions)) entries[name] = bytes
-                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(selectedPanels, dxfOptions))) {
+                for (const [name, bytes] of basisFiles(panels, catalog, options)) entries[name] = bytes
+                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) {
                   entries[`dxf/${name}`] = strToU8(content)
                 }
                 download(
@@ -315,7 +302,7 @@ export function CutPage() {
 
                 // Базис Windows-1251 оқиды, ал онда қазақ әріптері ЖОҚ.
                 // Үнсіз «?» қылып жіберсек, цех детальді танымай қалады.
-                const names = [projectName, ...selectedPanels.map((p) => p.label)].join(' ')
+                const names = [projectName, ...panels.map((p) => p.label)].join(' ')
                 const bad = unsupportedInCp1251(names)
                 setNotice(bad.length > 0
                   ? `${tr('Базис читает Windows-1251, в ней нет казахских букв')}: ${bad.join(' ')} → «?». ${tr('Переименуйте детали латиницей или по-русски.')}`
@@ -329,24 +316,6 @@ export function CutPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-4">
-        {mounted && materialChoices.length > 0 ? (
-          <fieldset className="mb-4 flex flex-wrap gap-3 rounded-lg border border-neutral-200 bg-white p-3 text-xs dark:border-neutral-800 dark:bg-neutral-900">
-            <legend className="px-1 font-semibold">{tr('Материалы раскроя')}</legend>
-            {materialChoices.map((material) => (
-              <label key={material.id} className="flex items-center gap-2">
-                <input type="checkbox" checked={!excludedMaterials.has(material.id)} onChange={(event) => {
-                  setExcludedMaterials((current) => {
-                    const next = new Set(current)
-                    if (event.target.checked) next.delete(material.id)
-                    else next.add(material.id)
-                    return next
-                  })
-                }} />
-                <span>{material.name}</span>
-              </label>
-            ))}
-          </fieldset>
-        ) : null}
         {nested.error ? (
           <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{nested.error}</p>
         ) : null}
@@ -360,25 +329,13 @@ export function CutPage() {
         {!mounted ? (
           <p className="text-xs text-neutral-500">{tr('Загрузка проекта…')}</p>
         ) : !nesting || !plan ? (
-          <p className="text-xs text-neutral-500">{panels.length > 0 && selectedPanels.length === 0 ? tr('Выберите хотя бы один материал для раскроя.') : tr('Нет деталей для раскроя.')}</p>
+          <p className="text-xs text-neutral-500">{tr('Нет деталей для раскроя.')}</p>
         ) : (
           <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
             <aside className="space-y-3 self-start rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
                 {tr('Настройки станка')}
               </h2>
-              <fieldset className="space-y-2 border-b border-neutral-200 pb-3 dark:border-neutral-800">
-                <legend className="text-xs font-semibold">{tr('Размер бирки, мм')}</legend>
-                <Field label={tr('Ширина бирки')}>
-                  <NumberInput value={labelWidth} min={58} max={200} onChange={setLabelWidth} />
-                </Field>
-                <Field label={tr('Высота бирки')}>
-                  <NumberInput value={labelHeight} min={40} max={200} onChange={setLabelHeight} />
-                </Field>
-                <Field label={tr('Лист для печати')}>
-                  <Select value={labelPage} onChange={setLabelPage} options={[{ value: 'a4', label: 'A4' }, { value: 'a5', label: 'A5' }]} />
-                </Field>
-              </fieldset>
 
               <Field label={tr('Пропил, мм')} hint={tr('толщина пилы')}>
                 <NumberInput
@@ -486,32 +443,9 @@ const CUT_COLOR: Record<CutLine['kind'], string> = {
 function SheetCard({
   sheet, plan, showCuts,
 }: { sheet: NestedSheet; plan: SheetCutPlan; showCuts: boolean }) {
-  const [step, setStep] = useState(0)
-  const [playing, setPlaying] = useState(false)
-  const frame = playbackFrame(plan.cuts, step)
-  useEffect(() => {
-    setStep(0)
-    setPlaying(false)
-  }, [plan])
-  useEffect(() => {
-    if (!playing) return
-    if (step >= plan.cuts.length) {
-      setPlaying(false)
-      return
-    }
-    const timer = window.setTimeout(() => setStep((current) => playbackStep(current, plan.cuts.length, 1)), 650)
-    return () => window.clearTimeout(timer)
-  }, [playing, step, plan.cuts.length])
   const scale = SHEET_PX / sheet.sheetWidth
   return (
     <figure className="space-y-1">
-      <div className="flex w-[520px] max-w-full flex-wrap items-center gap-1 text-xs">
-        <Button onClick={() => { setPlaying(false); setStep((current) => playbackStep(current, frame.total, -1)) }} disabled={step === 0}>{tr('Назад')}</Button>
-        <Button onClick={() => setPlaying(true)} disabled={playing || step >= frame.total}>{tr('Воспроизвести')}</Button>
-        <Button onClick={() => setPlaying(false)} disabled={!playing}>{tr('Пауза')}</Button>
-        <Button onClick={() => { setPlaying(false); setStep((current) => playbackStep(current, frame.total, 1)) }} disabled={step >= frame.total}>{tr('Вперёд')}</Button>
-        <span className="ml-auto tabular-nums" aria-live="polite">{tr('Рез')} {frame.step}/{frame.total}</span>
-      </div>
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
         width={SHEET_PX}
@@ -543,8 +477,7 @@ function SheetCard({
             </text>
           </g>
         ))}
-        {showCuts ? [...frame.completed, ...(frame.active ? [frame.active] : [])].map((c) => {
-          const active = c === frame.active
+        {showCuts ? plan.cuts.map((c) => {
           const x1 = c.axis === 'v' ? c.at : c.from
           const x2 = c.axis === 'v' ? c.at : c.to
           const y1 = c.axis === 'v' ? c.from : c.at
@@ -553,11 +486,11 @@ function SheetCard({
             <g key={c.order}>
               <line
                 x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke={active ? '#2563eb' : CUT_COLOR[c.kind]} strokeWidth={active ? 12 : 6}
+                stroke={CUT_COLOR[c.kind]} strokeWidth={6}
                 strokeDasharray={c.kind === 'trim' ? '24 16' : undefined}
-                strokeOpacity={active ? 1 : 0.65}
+                strokeOpacity={0.85}
               />
-              <circle cx={(x1 + x2) / 2} cy={(y1 + y2) / 2} r={30} fill={active ? '#2563eb' : CUT_COLOR[c.kind]} />
+              <circle cx={(x1 + x2) / 2} cy={(y1 + y2) / 2} r={30} fill={CUT_COLOR[c.kind]} />
               <text
                 x={(x1 + x2) / 2} y={(y1 + y2) / 2}
                 textAnchor="middle" dominantBaseline="middle"

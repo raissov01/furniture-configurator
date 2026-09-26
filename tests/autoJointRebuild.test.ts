@@ -115,4 +115,35 @@ describe('сақталған автоматты буын', () => {
     ;(r.children[0] as BoardNode).board.drilling = [{ ...face, depth: 17 }]
     expect(() => parseProjectV4({ ...file(), root: r })).toThrow(/board\[base\]\.drilling\.0\.depth/)
   })
+
+  it('жасырын тақтаның қол тесігін тексереді, басқа ақаулы тақтаға тәуелді емес', () => {
+    const r = root()
+    const base = r.children[0] as BoardNode
+    const upright = r.children[1] as BoardNode
+    base.hidden = true
+    base.board.drilling = [{ face: 'inner', x: 50, y: 50, diameter: 8, depth: 17, purpose: 'confirmat' }]
+    expect(() => parseProjectV4({ ...file(), root: r })).toThrow(/board\[base\]\.drilling\.0\.depth/)
+    base.hidden = false
+    base.board.drilling[0]!.depth = 8
+    upright.board.materialId = 'unavailable-material'
+    expect(() => parseProjectV4({ ...file(), root: r })).not.toThrow()
+  })
+
+  it('қол тесігімен бір координатаға авто тесік қоспайды және қол тесігін сақтайды', () => {
+    const start = file()
+    const proposed = autoJoint(flattenTree(start.root, SEED_CATALOG), ['base', 'upright'], 'confirmat', SEED_CATALOG)
+    const first = proposed.find((item) => item.boardId === 'base')!.drilling[0]!
+    const base = start.root.children[0] as BoardNode
+    base.board.drilling = [first]
+    expect(() => applyAutoJointChange(start, { create: {
+      id: 'j1', boardIds: ['base', 'upright'], kind: 'confirmat' } })).toThrow(/board\[base\]\.drilling/)
+    base.board.drilling = []
+    const joined = applyAutoJointChange(start, { create: {
+      id: 'j1', boardIds: ['base', 'upright'], kind: 'confirmat' } })
+    const changed = structuredClone(joined.root)
+    ;(changed.children[0] as BoardNode).board.drilling = [first]
+    const broken = applyAutoJointChange(joined, { root: changed })
+    expect(broken.autoJoints?.[0]).toMatchObject({ status: 'broken', error: { field: 'board[base].drilling' } })
+    expect(drill(broken)).toEqual([first])
+  })
 })

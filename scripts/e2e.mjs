@@ -16,7 +16,7 @@ import { spawn } from 'node:child_process'
 import { captureFailureSnapshot, makeHelpers } from './e2eHelpers.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:3000'
-const PORT = 9333
+const PORT = Number(process.env['E2E_CDP_PORT'] ?? 9333)
 const CHROME = process.env['CHROME'] ?? 'google-chrome'
 
 // ── CDP қабығы ───────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ let snapshot = null
 
 async function test(name, fn) {
   const only = process.env['E2E_ONLY']
-  if (only && !name.includes(only)) return
+  if (only && !only.split('|').some((part) => name.includes(part))) return
   current = { name, checks: [] }
   try {
     await fn()
@@ -772,9 +772,9 @@ async function run() {
     // Шақырумен келген адам ЖАҢА цех ашпайды — барына қосылады.
     const worker = `worker-${Date.now()}@example.kz`
     await session.send('Page.navigate', { url: link })
-    await h.wait(9000)
-    await h.clickText('Аккаунт', 1200)
-    await h.clickText('Регистрация', 600)
+    check(await h.until(`Boolean(document.querySelector('input[type=email]')) &&
+      [...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Создать аккаунт')`, 30000),
+    'шақыру сілтемесіндегі тіркелу формасы дайын')
     const fill = async (label, value) => h.evaluate(`(() => {
       const l = [...document.querySelectorAll('label')].find((x) => x.textContent.includes(${JSON.stringify(label)}))
       if (!l) return false
@@ -784,10 +784,13 @@ async function run() {
       i.dispatchEvent(new Event('input', { bubbles: true }))
       return true
     })()`)
-    await fill('Почта', worker)
-    await fill('Пароль', 'password123')
+    check(await fill('Почта', worker), 'жұмысшының поштасы енгізілді')
+    check(await fill('Пароль', 'password123'), 'жұмысшының паролі енгізілді')
     await h.wait(400)
+    check(await h.until(`document.querySelector('input[type=email]')?.value === ${JSON.stringify(worker)}`),
+      'жұмысшы поштасы формада сақталды')
     check(await h.clickText('Создать аккаунт', 800), 'жұмысшы қосылды')
+    check(await h.until(`document.body.innerText.includes('Цех E2E')`, 30000), 'жұмысшы шақырылған цехқа кірді')
     /*
      * Команда тізімі БӨЛЕК сұраныспен келеді. Мәтіннен іздеу жарамайды:
      * терезенің басында аккаунттың ӨЗ поштасы тұр, сондықтан «пошта бар»
