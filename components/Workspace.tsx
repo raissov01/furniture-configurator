@@ -613,7 +613,7 @@ export function Workspace() {
         <ProjectMenu />
 
         {/* Сирек керегі оң жақта; көрініс құралдары 3D-нің өз үстіне көшті. */}
-        <div className="ml-auto flex items-center gap-1">
+        <div className="flex min-w-0 w-full flex-wrap items-center gap-1 sm:ml-auto sm:w-auto">
           {/* БАҒА (qdesign сияқты): басу — смета; баға қойылмаса — цех профилі. */}
           {liveTotal ? (
             'total' in liveTotal ? (
