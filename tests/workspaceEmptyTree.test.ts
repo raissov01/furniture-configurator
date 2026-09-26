@@ -33,6 +33,8 @@ describe('cabinet-free v4 editor shell', () => {
     const editor = renderToString(createElement(Workspace))
     if (kind === 'empty') expect(editor).toContain('Выберите корпус в структуре проекта')
     else expect(editor.match(/data-testid="board-properties"/g)).toHaveLength(1)
+    // Классикалық сахнада Structure әдепкі жабық; белгіше оны ашады.
+    expect(editor).toContain('data-testid="classic-tool-structure"')
     expect(editor.match(/data-testid="tree-dock"/g)).toHaveLength(1)
     const properties = editor.match(/<aside\b[\s\S]*?<\/aside>/)?.[0]
     expect(properties).toBeDefined()

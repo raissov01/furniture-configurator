@@ -21,6 +21,11 @@
 | `--p100-fieldset-border` | `#DCDCDC` | Dimensions тобының жіңішке жиегі | `dialog-properties-general.png` `(777, 416)` |
 | `--p100-focus` | `#0078D4` | Name енгізу өрісінің фокус жиегі және OK батырмасының жиегі | `dialog-properties-general.png` `(785, 385)`; `(927, 750)` |
 | `--p100-text` | `#000000` | Properties белгісінің мәтіні | `dialog-properties-general.png` `(787, 412)` |
+| `--p100-icon-blue` | `#065BA8` | Сақтау дискінің көк беті | `base-inserted.png` `(74, 57)` |
+| `--p100-icon-red` | `#E4B8B9` | Өшіру крестінің антиалиас пикселі | `base-inserted.png` `(278, 57)` |
+| `--p100-icon-yellow` | `#ECDB8B` | Ашу қалтасының сары беті | `base-inserted.png` `(49, 57)` |
+| `--p100-tool-hover` | `#99D1FF` | Белгіше күйінің көк ішкі бөлігі | `base-inserted.png` `(91,77)` |
+| `--p100-tool-border` | `#83BDE7` | Таңдалған белгіше жиегі | `base-inserted.png` `(69,52)` |
 
 ## Қолдану ескертпесі
 
