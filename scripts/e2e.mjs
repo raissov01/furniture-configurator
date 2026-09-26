@@ -597,7 +597,8 @@ async function run() {
     // тіркелген 1,2 с жетпей қалатын — күту НӘТИЖЕ бойынша.
     const before = await h.waitForSavedCabinetWidth(1234, 8000)
     const inputWidth = await h.numberValue('Ширина (W)')
-    check(before, `жоба автосақталды (өріс: ${inputWidth})`)
+    const saveDiagnostic = before ? '' : await h.evaluate("(() => { const file = JSON.parse(localStorage.getItem('furniture-configurator:project') || 'null'); const widths = []; const walk = (node) => { if (node?.kind === 'cabinet') widths.push(node.config.width); for (const child of node?.children || []) walk(child) }; walk(file?.root); return JSON.stringify({ widths, alerts: [...document.querySelectorAll('[role=alert]')].map((item) => item.textContent?.slice(0, 120)) }) })()")
+    check(before, `жоба автосақталды (өріс: ${inputWidth}; ${saveDiagnostic})`)
 
     await h.goto('/configurator', 11000)
     const restored = await h.waitForNumber('Ширина (W)', '1234')

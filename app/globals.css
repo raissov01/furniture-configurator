@@ -103,27 +103,70 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   --p100-focus: #0078d4;
   --p100-text: #000000;
   --p100-muted: #525252;
+  --p100-icon-blue: #065ba8;
+  --p100-icon-red: #e4b8b9;
+  --p100-icon-yellow: #ecdb8b;
+  --p100-tool-hover: #99d1ff;
+  --p100-tool-border: #83bde7;
 }
 @media (min-width: 1024px) {
-  .p100-workspace { background: var(--p100-chrome); color: var(--p100-text); }
+  .p100-workspace { background: var(--p100-chrome); color: var(--p100-text); font: 12px/1.2 'Segoe UI', Tahoma, Arial, sans-serif; }
   .p100-workspace > nav, .p100-workspace > header { background: var(--p100-chrome); border-color: var(--p100-divider); }
   .p100-workspace main[data-tour="scene"] { background: var(--p100-canvas); border: 1px solid var(--p100-canvas-border); }
   .p100-workspace [data-tour="viewtabs"] { background: var(--p100-tab-strip); }
   .p100-workspace aside { background: var(--p100-chrome); border-color: var(--p100-divider); }
-  .p100-workspace > .grid { grid-template-columns: 28px minmax(0,1fr) 220px; }
+  .p100-workspace > .grid { grid-template-columns: 28px minmax(0,1fr); position: relative; }
+  .p100-workspace > .grid > aside { position: absolute; z-index: 12; right: 0; bottom: 0; width: 150px; border: 1px solid var(--p100-divider); }
+  .p100-workspace .legacy-tools { display: none; }
+  .p100-workspace .p100-toolbar { display: block; }
+  .p100-workspace .p100-camera-pane { height: auto; border-top: 0; }
+  .p100-workspace .p100-camera-controls { display: none; }
+  .p100-workspace .p100-side-tools { padding: 3px 1px; gap: 2px; }
+}
+.p100-toolbar { display: none; height: 196px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-chrome); }
+.p100-toolbar-row { display: flex; align-items: center; height: 31px; gap: 1px; padding-left: 3px; }
+.p100-toolbar-row + .p100-toolbar-row { border-top: 1px solid var(--p100-divider); }
+.p100-toolbar-row:last-child { height: 70px; align-items: flex-start; padding-top: 3px; }
+.p100-icon-button { display: inline-flex; width: 27px; height: 25px; align-items: center; justify-content: center; flex: none; padding: 2px; border: 1px solid transparent; border-radius: 1px; background: var(--p100-chrome); color: var(--p100-text); }
+.p100-icon-button:hover:not(:disabled), .p100-icon-button:focus-visible { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
+.p100-icon-button[aria-pressed="true"] { border-color: var(--p100-tool-border); background: var(--p100-tool-selected); }
+.p100-icon-button:disabled { color: var(--p100-divider); }
+.p100-toolbar-style { display: flex; align-items: center; gap: 5px; padding-left: 16px; font-size: 11px; }
+.p100-toolbar-style select { height: 21px; border: 1px solid var(--p100-fieldset-border); border-radius: 1px; background: var(--p100-field); color: var(--p100-text); }
+.p100-floating-window { position: absolute; z-index: 20; width: 435px; height: 190px; border: 1px solid var(--p100-fieldset-border); border-radius: 2px; background: var(--p100-dialog); color: var(--p100-text); }
+.p100-floating-title { display: flex; height: 26px; align-items: center; justify-content: space-between; padding: 0 6px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-dialog); cursor: move; user-select: none; }
+.p100-floating-title button { width: 22px; height: 20px; border: 1px solid transparent; cursor: default; }
+.p100-floating-title button:hover { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
+.p100-floating-window .p100-tree-dock { height: 163px; max-height: 163px; border: 0; }
+.p100-floating-window .p100-tree-dock > button:first-child { display: none; }
+.p100-floating-window .p100-tree-dock [role="tab"] { border-radius: 0; }
+@media (min-width: 1024px) {
+  .p100-workspace button:not(.p100-icon-button) { border-radius: 2px; border-color: var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); box-shadow: none; }
+  .p100-workspace button:not(.p100-icon-button):hover { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
+  .p100-workspace button:not(.p100-icon-button)[class~="bg-neutral-900"] { border-color: var(--p100-tool-border); background: var(--p100-tool-selected); }
+  .p100-workspace :is(input, select, textarea) { border-color: var(--p100-fieldset-border); border-radius: 1px; background: var(--p100-field); color: var(--p100-text); }
+  .p100-workspace :is(.text-neutral-400, .text-neutral-500, .text-neutral-600, [class*="dark:text-neutral-300"]) { color: var(--p100-muted); }
+  .p100-workspace .p100-dialog-backdrop { background: transparent; }
+  .p100-workspace .p100-dialog { border-radius: 2px; }
+  .p100-workspace .p100-dialog-title strong { color: var(--p100-text); }
+  .p100-workspace .p100-dialog-body { background: var(--p100-dialog-content); }
+  .p100-workspace .p100-dialog-body :is([class*="dark:bg-neutral-900"], [class*="dark:bg-neutral-950"]) { background: var(--p100-dialog-content); color: var(--p100-text); }
+  .p100-workspace .p100-dialog-body :is([class*="dark:border-neutral-700"], [class*="dark:border-neutral-800"]) { border-color: var(--p100-fieldset-border); }
+  .p100-workspace .p100-dialog-body :is(input, select, textarea) { background: var(--p100-field); color: var(--p100-text); }
+  .p100-workspace .p100-dialog-body input[type="checkbox"] { accent-color: var(--p100-focus); }
 }
 .p100-camera-pane { margin-top: auto; height: 120px; border-top: 1px solid var(--p100-divider); background: var(--p100-chrome); }
 .p100-camera-title { padding: 4px 8px; border-bottom: 1px solid var(--p100-divider); font-size: 11px; }
 .p100-camera-controls { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; }
 .p100-status { min-height: 22px; align-items: center; gap: 12px; padding: 0 8px; border-top: 1px solid var(--p100-divider); background: var(--p100-chrome); font-size: 11px; }
-.p100-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: #0006; }
+.p100-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: transparent; }
 .p100-dialog { display: flex; flex-direction: column; width: min(520px, calc(100vw - 24px)); max-height: min(760px, calc(100dvh - 24px)); border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
 .p100-dialog-title { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid var(--p100-divider); font-size: 12px; }
 .p100-dialog-title button { min-width: 24px; border: 1px solid transparent; }
 .p100-dialog-lock, .p100-dialog-dimensions { display: flex; align-items: center; gap: 5px; padding: 6px 10px; font-size: 12px; }
 .p100-dialog-body { min-height: 0; overflow: auto; margin: 0 6px; padding: 10px; border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog-content); }
 .p100-dialog-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 8px; border-top: 1px solid var(--p100-divider); }
-.p100-dialog-error { margin: 4px 10px; color: #9f1239; font-size: 12px; }
+.p100-dialog-error { margin: 4px 10px; color: var(--p100-text); font-size: 12px; }
 .p100-dialog :where(input, select, button):focus-visible { outline: 1px solid var(--p100-focus); }
 
 /* Классикалық жұмыс үстелінің терезелері жүйенің dark режимінде де ақшыл.
