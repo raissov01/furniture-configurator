@@ -1310,4 +1310,9 @@ export const en: Record<string, string> = {
   'Создать ремонтное задание': 'Create repair task',
   'Ремонт завершён': 'Repair completed',
   'Постоянное хранение разрешено.': 'Persistent storage granted.',
+  'XLSX — деталировка': 'XLSX — cut list',
+  'CSV — на распил': 'CSV — for sawing',
+  'DXF — на станок': 'DXF — for the CNC',
+  'PDF — сборочный чертёж': 'PDF — assembly drawing',
+  'Экспорт не удался': 'Export failed',
 }

@@ -30,6 +30,9 @@ import { ArButton } from '@/components/ArButton'
 import { VrButton } from '@/components/VrButton'
 import { Tour } from '@/components/Tour'
 import { RenderPanel } from '@/components/RenderPanel'
+import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/classicMenu'
+import { runShopExport } from '@/lib/shopExport'
+import { downloadProjectFile, pickProjectFile } from '@/lib/projectFile'
 import { cloudEnabled } from '@/lib/cloud'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
@@ -65,14 +68,6 @@ const Scene = dynamic(() => import('@/components/Scene'), {
     </div>
   ),
 })
-
-const PRESETS: { value: CameraPreset; label: string }[] = [
-  { value: 'front', label: tr('Фас') },
-  { value: 'three-quarter', label: '3/4' },
-  { value: 'inside', label: tr('Внутри') },
-  { value: 'plan', label: tr('План') },
-  { value: 'room', label: tr('Комната') },
-]
 
 /**
  * PRO100-дың АСТЫҢҒЫ ҚОЙЫНДЫ ҚАТАРЫ (docs/pro100/ui-design.md, §4 «ЕҢ
@@ -120,6 +115,8 @@ export function Workspace() {
   const undo = useConfigurator((s) => s.undo)
   const redo = useConfigurator((s) => s.redo)
   const reset = useConfigurator((s) => s.reset)
+  const loadProject = useConfigurator((s) => s.loadProject)
+  const projectInfo = useConfigurator((s) => s.projectInfo)
   const canUndo = useConfigurator((s) => s.past.length > 0)
   const canRedo = useConfigurator((s) => s.future.length > 0)
   const exploded = useConfigurator((s) => s.exploded)
@@ -404,11 +401,77 @@ export function Workspace() {
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  const openPanel = (panel: ClassicPanel) => {
+    switch (panel) {
+      case 'gallery': setGalleryOpen(true); break
+      case 'ai': setAiOpen(true); break
+      case 'sketch': setSketchOpen(true); break
+      case 'parts': setPartsOpen(true); break
+      case 'history': setHistoryOpen(true); break
+      case 'shop': setShopOpen(true); break
+      case 'project': setProjectOpen(true); break
+      case 'quote': setQuoteOpen(true); break
+      case 'drill': setDrillOpen(true); break
+      case 'room': setRoomOpen(true); break
+      case 'help': setHelpOpen(true); break
+      case 'shareCode': setShareCodeOpen(true); break
+      case 'account': setAccountOpen(true); break
+    }
+  }
+  const [exportError, setExportError] = useState<string | null>(null)
+  const runClassicCommand = (command: ClassicCommand) => {
+    switch (command.type) {
+      case 'open': openPanel(command.panel); break
+      case 'saveProject': downloadProjectFile(exportProject()); break
+      case 'openProject': pickProjectFile(loadProject); break
+      case 'export':
+        setExportError(null)
+        void runShopExport(command.format, { cabinet, panels: activePanels, catalog, settings, projectInfo })
+          .catch((cause: unknown) => setExportError(cause instanceof Error ? cause.message : String(cause)))
+        break
+      case 'clientLink': void copyClientLink(); break
+      case 'reset': reset(); break
+      case 'undo': undo(); break
+      case 'redo': redo(); break
+      case 'preset': setCameraPreset(command.preset); break
+      case 'cycleViewMode': setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid'); break
+      case 'toggleFronts': setShowFronts(!showFronts); break
+      case 'toggleProjection': setProjection(projection === 'perspective' ? 'ortho' : 'perspective'); break
+      case 'toggleDimensions': setShowDimensions(!showDimensions); break
+      case 'fittings':
+        setShowDrilling(command.show === 'drilling')
+        setShowFittings(command.show === 'fittings')
+        break
+      case 'fit': fitCamera(); break
+      case 'toggleSilhouette': setSilhouette({ on: !silhouette.on }); break
+      case 'addCabinet': addCabinet(); break
+      case 'addBoard': addBoard(); break
+      case 'removeBoard': removeBoard(activeId); break
+      case 'duplicate': duplicateCabinet(activeId); break
+      case 'mirror': mirrorCabinet(activeId); break
+      case 'removeCabinet': removeCabinet(activeId); setSelected(null); break
+      case 'toggleOpen': setOpenness(openness > 0 ? 0 : 1); break
+      case 'toggleAssembly': setAssemblyStep(assemblyStep === null ? 1 : null); break
+      case 'navigate': window.location.href = command.href; break
+      case 'theme': case 'quality': case 'lang': case 'workspaceStyle': break
+    }
+  }
+  const menus = classicMenus({
+    canUndo, canRedo, activeEditable, editableBoard,
+    canRemoveCabinet: cabinets.length >= 2 && activeEditable,
+    canExport: hasActiveCabinet && !production.error,
+    canExportPdf: hasActiveCabinet,
+    productionError: Boolean(production.error),
+    cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
+    silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,
+    theme: 'system', quality: 'high', lang: 'ru', price: null, cloud: cloudEnabled, classic,
+  })
+
   const classicToolRows: ClassicToolSpec[][] = classic ? [
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
-      { icon: 'open', label: tr('Открыть проект'), action: () => document.getElementById('project-open-input')?.click() },
-      { icon: 'save', label: tr('Сохранить проект'), action: () => document.querySelector<HTMLButtonElement>('[data-testid="project-menu"] button')?.click(), id: 'save' },
+      { icon: 'open', label: tr('Открыть проект'), action: () => pickProjectFile(loadProject) },
+      { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
       { icon: 'print', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
       { icon: 'cut', label: tr('Раскрой'), action: () => { window.location.href = '/cut' } },
       { icon: 'copy', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
@@ -473,148 +536,31 @@ export function Workspace() {
       /> : null}
       {/*
         PRO100-ДЕГІ МӘЗІР ЖОЛАҒЫ (docs/pro100/ui-design.md, §1: «Файл · Правка ·
-        Вид · Элемент · Инструменты · Справка»). Мұнда ЖАҢА ӘРЕКЕТ жоқ — әр
-        пункт төмендегі `<header>`-дегі БАР батырмалар шақыратын СОЛ store
-        әрекетін шақырады.
+        Вид · Элемент · Инструменты · Справка»). Пункттер `lib/classicMenu.ts`-те
+        деректер ретінде сипатталады, ал `runClassicCommand` оларды store
+        әрекетіне ТІКЕЛЕЙ аударады.
 
-        ⚠ Ескі «Создать ▾» / «Проект ▾» мәзірлері (төменде, өзгеріссіз)
-        ӘДЕЙІ ҚАЛДЫРЫЛДЫ: e2e (`scripts/e2e.mjs`-тегі `h.menu('Создать', …)`
-        / `h.menu('Проект', …)`) мен оқыту турына (`Tour.tsx`,
-        `[data-tour="export"]` / `[data-tour="shop"]`) нақ солардың мәтіні
-        мен орны бойынша тіреледі. Бұл жолақ — ҮСТІНЕ қосылған, PRO100-ге
-        таныс навигация, ескісін алмастырмайды.
+        ⚠ Жасырын header батырмасын `.click()` етуге БОЛМАЙДЫ: классикалық
+        режимде ол header `display:none`, «Файл → Экспорт для цеха» ештеңе
+        ашпайтын (аудит 09-26, P0-1). Ескі «Создать ▾» / «Проект ▾» мәзірлері
+        «Наш» режимі мен e2e үшін өзгеріссіз қалды.
       */}
-      <nav className="flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
-        <Menu label={tr('Файл')} size="sm">
-          <MenuItem onClick={() => setGalleryOpen(true)}>{tr('Готовые шаблоны')}</MenuItem>
-          <MenuItem onClick={() => setAiOpen(true)}>{tr('Техзадание (словами)')}</MenuItem>
-          <MenuItem onClick={() => setSketchOpen(true)} disabled={!activeEditable}>{tr('Нарисовать мышью')}</MenuItem>
-          <MenuItem onClick={() => setPartsOpen(true)} disabled={!activeEditable}>{tr('Своя деталь')}</MenuItem>
-          <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
-          <MenuItem
-            onClick={() => {
-              const file = exportProject()
-              const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = `${file.name || 'проект'}.json`
-              a.click()
-              URL.revokeObjectURL(url)
-            }}
-          >
-            {tr('Сохранить проект')}
-          </MenuItem>
-          {/*
-            Файлды таңдау терезесі ЕКІНШІ РЕТ жазылмайды: `ProjectMenu.tsx`-тегі
-            жасырын input-тың `id`-і бойынша соны басамыз (логика біреу ғана).
-          */}
-          <MenuItem onClick={() => document.getElementById('project-open-input')?.click()}>
-            {tr('Открыть проект')}
-          </MenuItem>
-          {/* Экспорт та солай: `ExportMenu`-дің өз батырмасын басамыз — xlsx/csv/dxf
-              логикасы (ауыр динамик импорт) бір ғана жерде қалады. */}
-          <MenuItem
-            onClick={() => document.querySelector<HTMLButtonElement>('[data-tour="export"] button')?.click()}
-          >
-            {tr('Экспорт для цеха')}
-          </MenuItem>
-          <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
-          <MenuItem
-            onClick={() => void copyClientLink()}
-          >
-            {tr('Ссылка клиенту')}
-          </MenuItem>
-          <MenuItem onClick={() => setShareCodeOpen(true)}>{tr('Код для клиента')}</MenuItem>
-          <MenuItem onClick={reset}>{tr('Сброс')}</MenuItem>
-        </Menu>
-
-        <Menu label={tr('Правка')} size="sm">
-          <MenuItem onClick={undo} disabled={!canUndo}>
-            {tr('Отменить')} <span className="ml-auto text-neutral-400">Ctrl+Z</span>
-          </MenuItem>
-          <MenuItem onClick={redo} disabled={!canRedo}>
-            {tr('Повторить')} <span className="ml-auto text-neutral-400">Ctrl+⇧Z</span>
-          </MenuItem>
-          <MenuItem onClick={() => setHistoryOpen(true)}>{tr('История изменений')}</MenuItem>
-        </Menu>
-
-        <Menu label={tr('Вид')} size="sm">
-          {PRESETS.map((p) => (
-            <MenuItem key={p.value} active={cameraPreset === p.value} onClick={() => setCameraPreset(p.value)}>
-              {p.label}
+      <nav data-tour="menubar" data-testid="classic-menubar" className="flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+        {menus.map((menu) => <Menu key={menu.id} label={tr(menu.label)} size="sm" {...(menu.align ? { align: menu.align } : {})}>
+          {menu.items.map((entry, index) => {
+            if (entry.kind === 'separator') return <div key={`sep-${index}`} className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
+            if (entry.kind === 'heading') return <div key={entry.id} className="px-2.5 pt-1 text-[10px] uppercase tracking-wide text-neutral-500">{tr(entry.label)}</div>
+            if (entry.kind === 'slider') return <label key={entry.id} className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+              {tr(entry.label)}
+              <Slider value={exploded} onChange={setExploded} />
+            </label>
+            return <MenuItem key={entry.id} active={entry.active ?? false} disabled={entry.disabled ?? false} onClick={() => runClassicCommand(entry.command)}>
+              <span data-menu-item={entry.id}>{entry.raw ? entry.label : tr(entry.label)}</span>
+              {entry.detail ? <span className="tabular-nums font-semibold">{entry.detail}</span> : null}
+              {entry.hint ? <span className="ml-auto text-neutral-400">{entry.hint}</span> : null}
             </MenuItem>
-          ))}
-          <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
-          <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
-            {tr('Разнести')}
-            <Slider value={exploded} onChange={setExploded} />
-          </label>
-          <MenuItem
-            active={viewMode !== 'solid'}
-            onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
-          >
-            {viewMode === 'solid' ? tr('Прозрачность') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
-          </MenuItem>
-          <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
-            {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
-          </MenuItem>
-          <MenuItem
-            active={projection === 'ortho'}
-            onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
-          >
-            {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
-          </MenuItem>
-          <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
-            {tr('Размеры на сцене')}
-          </MenuItem>
-          <MenuItem active={!showDrilling && !showFittings} onClick={() => { setShowDrilling(false); setShowFittings(false) }}>
-            {tr('Фурнитура: скрыть')}
-          </MenuItem>
-          <MenuItem active={showDrilling} onClick={() => setShowDrilling(true)}>{tr('Фурнитура: отверстия')}</MenuItem>
-          <MenuItem active={showFittings} onClick={() => setShowFittings(true)}>{tr('Фурнитура: крепёж')}</MenuItem>
-          <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
-          <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
-            {tr('Человек для масштаба')}
-          </MenuItem>
-        </Menu>
-
-        <Menu label={tr('Элемент')} size="sm">
-          <MenuItem onClick={addCabinet}>{tr('Новый корпус')}</MenuItem>
-          <MenuItem onClick={addBoard}>{tr('Добавить свободную доску')}</MenuItem>
-          <MenuItem onClick={() => removeBoard(activeId)} disabled={!editableBoard}>{tr('Удалить доску')}</MenuItem>
-          <MenuItem onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable}>{tr('Дублировать')}</MenuItem>
-          <MenuItem onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable}>{tr('Зеркальная копия')}</MenuItem>
-          <MenuItem
-            onClick={() => { removeCabinet(activeId); setSelected(null) }}
-            disabled={cabinets.length < 2 || !activeEditable}
-          >
-            {tr('Удалить корпус')}
-          </MenuItem>
-          <div className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
-          <MenuItem active={openness > 0} onClick={() => setOpenness(openness > 0 ? 0 : 1)}>
-            {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
-          </MenuItem>
-          <MenuItem active={assemblyStep !== null} onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}>
-            {tr('Сборка')}
-          </MenuItem>
-        </Menu>
-
-        <Menu label={tr('Инструменты')} size="sm">
-          <MenuItem onClick={() => setShopOpen(true)}>{tr('Цех: материалы и цены')}</MenuItem>
-          <MenuItem onClick={() => setProjectOpen(true)}>{tr('Материалы и сборка')}</MenuItem>
-          <MenuItem onClick={() => setQuoteOpen(true)} disabled={Boolean(production.error)}>{tr('Смета и раскрой')}</MenuItem>
-          <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable && !editableBoard}>{tr('Присадка')}</MenuItem>
-          <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
-          <MenuItem onClick={() => { window.location.href = '/cut' }}>{tr('Раскрой (отдельный экран)')}</MenuItem>
-        </Menu>
-
-        <Menu label={tr('Справка')} size="sm" align="right">
-          <MenuItem onClick={() => setHelpOpen(true)}>
-            {tr('Горячие клавиши')} <span className="ml-auto text-neutral-400">?</span>
-          </MenuItem>
-          <MenuItem onClick={() => { window.location.href = '/' }}>{tr('На главную')}</MenuItem>
-        </Menu>
+          })}
+        </Menu>)}
       </nav>
 
       {classic && <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
@@ -879,6 +825,12 @@ export function Workspace() {
         </div>
       ) : null}
 
+      {exportError ? (
+        <div role="alert" className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+          <span className="flex-1">{tr('Экспорт не удался')}: {exportError}</span>
+          <Button size="sm" onClick={() => setExportError(null)}>{tr('Закрыть')}</Button>
+        </div>
+      ) : null}
       {shared ? (
         <div
           role="status"

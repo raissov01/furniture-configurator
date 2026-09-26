@@ -1314,4 +1314,9 @@ export const uz: Record<string, string> = {
   'Создать ремонтное задание': 'Ta’mir vazifasini yaratish',
   'Ремонт завершён': 'Ta’mir tugadi',
   'Постоянное хранение разрешено.': 'Doimiy saqlashga ruxsat berildi.',
+  'XLSX — деталировка': 'XLSX — detallar ro‘yxati',
+  'CSV — на распил': 'CSV — arralash uchun',
+  'DXF — на станок': 'DXF — dastgoh uchun',
+  'PDF — сборочный чертёж': 'PDF — yig‘ish chizmasi',
+  'Экспорт не удался': 'Eksport amalga oshmadi',
 }
