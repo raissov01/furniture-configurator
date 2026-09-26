@@ -104,7 +104,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   --p100-text: #000000;
   --p100-muted: #525252;
   --p100-icon-blue: #065ba8;
-  --p100-icon-red: #e4b8b9;
+  --p100-icon-red: #d13438;
   --p100-icon-yellow: #ecdb8b;
   --p100-tool-hover: #99d1ff;
   --p100-tool-border: #83bde7;
@@ -132,6 +132,8 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-icon-button:hover:not(:disabled), .p100-icon-button:focus-visible { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
 .p100-icon-button[aria-pressed="true"] { border-color: var(--p100-tool-border); background: var(--p100-tool-selected); }
 .p100-icon-button:disabled { color: var(--p100-divider); }
+/* Белгішелердің түсті stroke/fill-і `color`-ды елемейді: disabled күйін сүзгі береді (P0-4). */
+.p100-icon-button:disabled svg { filter: grayscale(1); opacity: 0.45; }
 .p100-toolbar-style { display: flex; align-items: center; gap: 5px; padding-left: 16px; font-size: 11px; }
 .p100-toolbar-style select { height: 21px; border: 1px solid var(--p100-fieldset-border); border-radius: 1px; background: var(--p100-field); color: var(--p100-text); }
 .p100-floating-window { position: absolute; z-index: 20; width: 435px; height: 190px; border: 1px solid var(--p100-fieldset-border); border-radius: 2px; background: var(--p100-dialog); color: var(--p100-text); }
