@@ -9,6 +9,7 @@ import { cloudOff } from '@/lib/server/cloud'
 import { db } from '@/lib/server/db'
 import { currentAccount } from '@/lib/server/session'
 import { allowComment, allowShareMiss, isShareLimited, requestIp } from '@/lib/server/rateLimit'
+import { isApprovalClockError } from '@/lib/server/approvalErrors'
 import { can } from '@/lib/permissions'
 import { approvalStampPdf, approveRevision, createApprovalRevision, parseProjectV4, projectFingerprint } from '@/src/core/index'
 import { toPublicProject } from '@/src/core/publicProject'
@@ -22,7 +23,6 @@ type Stored = { id: string; version: number; project_json: string; hash: string;
 const codePattern = /^\d{6}$/
 const startInput = z.strictObject({ previewPngBase64: z.string().max(1_500_000).optional() })
 const confirmInput = z.strictObject({ confirmationCode: z.string().regex(codePattern) })
-
 function error(message: string, status: number): Response {
   return NextResponse.json({ error: message }, { status, headers: { 'Cache-Control': 'no-store' } })
 }
@@ -168,7 +168,12 @@ export async function PUT(request: Request, { params }: Context): Promise<Respon
       db().prepare('UPDATE approval_revisions SET attempts = attempts + 1 WHERE id = ? AND seal_json IS NULL').run(latest.id)
       return error('Неверный код подтверждения', 403)
     }
-    const sealed = approveRevision(revision(latest), parsed.data.confirmationCode, Date.now())
+    let sealed: ApprovalRevision<ProjectFileV4>
+    try { sealed = approveRevision(revision(latest), parsed.data.confirmationCode, Date.now()) }
+    catch (cause) {
+      if (isApprovalClockError(cause)) return error('Уақыт жарамсыз', 409)
+      throw cause
+    }
     const database = db()
     database.exec('BEGIN IMMEDIATE')
     try {

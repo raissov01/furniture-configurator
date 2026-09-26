@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { SEED_CATALOG, findTemplate, templateToCabinet } from '../src/core/index'
+import { isApprovalClockError } from '../lib/server/approvalErrors'
 
 process.env['DATA_DIR'] = mkdtempSync(join(tmpdir(), 'furniture-approval-'))
 const actor = vi.hoisted(() => ({ value: null as { userId: string; shopId: string; role: 'owner' | 'designer' | 'shop' | 'client' } | null }))
@@ -105,6 +106,26 @@ describe('share келісім API', () => {
     const next = await route.POST(req('POST', {}), context(s.code))
     expect(next.status).toBe(201)
     expect((await next.json() as { version: number }).version).toBe(first.version + 1)
+  })
+
+  it('сервер сағаты нұсқа уақытынан кері кетсе 409 қайтарады', async () => {
+    expect(isApprovalClockError(new Error('УАҚЫТ ЖАРАМСЫЗ'))).toBe(true)
+    const owner = auth.register('approval-clock@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    actor.value = owner.account
+    const s = share.createShare(JSON.stringify(project('Сағат')), Date.now() - 1000, owner.account.shopId)
+    const started = await route.POST(req('POST', {}), context(s.code))
+    expect(started.status).toBe(201)
+    const { confirmationCode } = await started.json() as { confirmationCode: string }
+    const created = database.db().prepare('SELECT created_at FROM approval_revisions WHERE share_code = ?')
+      .get(s.code) as { created_at: number }
+    actor.value = null
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(created.created_at - 1)
+    try {
+      const response = await route.PUT(req('PUT', { confirmationCode }), context(s.code))
+      expect(response.status).toBe(409)
+      expect(await response.text()).toMatch(/уақыт жарамсыз/i)
+    } finally { clock.mockRestore() }
   })
 
   it('бүлінген серверлік снимок 500 береді, стек клиентке шықпайды', async () => {
