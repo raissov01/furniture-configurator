@@ -6,11 +6,11 @@ export function SiteFooter() {
     <footer className="border-t" style={{ borderColor: 'var(--rule)' }}>
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-5 py-10 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-8">
         <div>
-          <p className="text-lg tracking-[0.18em]" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+          <p className="text-lg tracking-[0.04em]" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>
             {SITE.name}
           </p>
           <p className="mt-1 max-w-md text-sm" style={{ color: 'var(--ink-soft)' }}>
-            Конфигуратор корпусной мебели для мебельных цехов Казахстана.
+            Платформа для мебельных цехов Казахстана: корпус, раскрой, присадка и КП.
           </p>
         </div>
         <div className="flex flex-col gap-2 text-sm sm:items-end" style={{ color: 'var(--ink-soft)' }}>

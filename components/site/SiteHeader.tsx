@@ -3,14 +3,9 @@
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
 
-/** Белгі — кромкасы бар плита кесіндісі: өнім осы туралы. */
+/** Белгі — AisMebel логотипі (`public/brand/`, өзгертпейміз). */
 function Mark() {
-  return (
-    <svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true">
-      <rect x="0.5" y="0.5" width="25" height="19" fill="var(--oak)" fillOpacity="0.85" stroke="var(--oak-deep)" />
-      <rect x="0.5" y="0.5" width="4" height="19" fill="var(--oak-deep)" />
-    </svg>
-  )
+  return <img src="/brand/aismebel-mark.svg" width={24} height={24} alt="" aria-hidden="true" />
 }
 
 const LINKS = [
@@ -30,7 +25,7 @@ export function SiteHeader() {
         <Link href="/" className="flex items-center gap-2">
           <Mark />
           <span
-            className="text-lg tracking-[0.18em]"
+            className="text-lg tracking-[0.04em]"
             style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}
           >
             {SITE.name}
