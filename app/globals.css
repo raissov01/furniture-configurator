@@ -161,6 +161,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-camera-pane { margin-top: auto; height: 120px; border-top: 1px solid var(--p100-divider); background: var(--p100-chrome); }
 .p100-camera-title { padding: 4px 8px; border-bottom: 1px solid var(--p100-divider); font-size: 11px; }
 .p100-camera-controls { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; }
+.p100-status-price { padding: 0 6px; font-size: 11px; line-height: 16px; }
 .p100-status { min-height: 22px; align-items: center; gap: 12px; padding: 0 8px; border-top: 1px solid var(--p100-divider); background: var(--p100-chrome); font-size: 11px; }
 .p100-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: transparent; }
 .p100-dialog { display: flex; flex-direction: column; width: min(520px, calc(100vw - 24px)); max-height: min(760px, calc(100dvh - 24px)); border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }

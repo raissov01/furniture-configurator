@@ -69,6 +69,64 @@ describe('classic menu', () => {
   })
 })
 
+describe('classic menu: settings hidden in the old header (P0-5)', () => {
+  const menu = (id: string, state: ClassicMenuState = base) => classicMenus(state).find((entry) => entry.id === id)!
+  const itemsOf = (id: string, state?: ClassicMenuState) => menu(id, state).items.flatMap((item) => item.kind === 'item' ? [item] : [])
+
+  it('Вид offers theme and 3D quality, marking the current ones', () => {
+    const view = itemsOf('view', { ...base, theme: 'dark', quality: 'low' })
+    const themes = view.filter((item) => item.command.type === 'theme')
+    expect(themes.map((item) => item.command)).toEqual([
+      { type: 'theme', theme: 'system' }, { type: 'theme', theme: 'light' }, { type: 'theme', theme: 'dark' },
+    ])
+    expect(themes.filter((item) => item.active).map((item) => item.id)).toEqual(['view.theme.dark'])
+    const qualities = view.filter((item) => item.command.type === 'quality')
+    expect(qualities.map((item) => item.command)).toEqual([
+      { type: 'quality', quality: 'high' }, { type: 'quality', quality: 'medium' }, { type: 'quality', quality: 'low' },
+    ])
+    expect(qualities.filter((item) => item.active).map((item) => item.id)).toEqual(['view.quality.low'])
+  })
+
+  it('Сервис sits before Справка and switches language with native names', () => {
+    expect(classicMenus(base).map((entry) => entry.id).slice(-2)).toEqual(['service', 'help'])
+    const langs = itemsOf('service', { ...base, lang: 'kk' }).filter((item) => item.command.type === 'lang')
+    expect(langs.map((item) => item.command)).toEqual([
+      { type: 'lang', lang: 'ru' }, { type: 'lang', lang: 'kk' }, { type: 'lang', lang: 'uz' }, { type: 'lang', lang: 'en' },
+    ])
+    expect(langs.every((item) => item.raw)).toBe(true)
+    expect(langs.find((item) => item.active)?.label).toBe('Қазақша')
+  })
+
+  it('Сервис shows the live price (opens the quote) or asks for prices (opens the shop)', () => {
+    expect(itemsOf('service').some((item) => item.id === 'service.price')).toBe(false)
+    const priced = itemsOf('service', { ...base, price: { total: '763 490 ₸' } }).find((item) => item.id === 'service.price')!
+    expect(priced.detail).toBe('763 490 ₸')
+    expect(priced.command).toEqual({ type: 'open', panel: 'quote' })
+    const missing = itemsOf('service', { ...base, price: { missing: true } }).find((item) => item.id === 'service.price')!
+    expect(missing.label).toBe('Цены не заданы')
+    expect(missing.command).toEqual({ type: 'open', panel: 'shop' })
+  })
+
+  it('Сервис has «Аккаунт» only when the cloud is on, and the workplace style switch', () => {
+    expect(itemsOf('service').some((item) => item.id === 'service.account')).toBe(false)
+    expect(itemsOf('service', { ...base, cloud: true }).find((item) => item.id === 'service.account')?.command)
+      .toEqual({ type: 'open', panel: 'account' })
+    const styles = itemsOf('service').filter((item) => item.command.type === 'workspaceStyle')
+    expect(styles.map((item) => [item.command, item.active])).toEqual([
+      [{ type: 'workspaceStyle', classic: true }, true], [{ type: 'workspaceStyle', classic: false }, false],
+    ])
+  })
+
+  it('Workspace wires the new commands and shows the price in the classic status bar', () => {
+    const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
+    expect(source).toMatch(/case 'theme':[^\n]*chooseTheme\(command\.theme\)/)
+    expect(source).toMatch(/case 'quality':[^\n]*saveQuality\(command\.quality\)/)
+    expect(source).toMatch(/case 'lang':[^\n]*setLang\(command\.lang\)/)
+    expect(source).toMatch(/case 'workspaceStyle':[^\n]*changeStyle\(command\.classic\)/)
+    expect(source).toContain('data-testid="p100-status-price"')
+  })
+})
+
 describe('project file helpers', () => {
   it('names the download after the project', () => {
     expect(projectFileName({ name: 'Кухня' })).toBe('Кухня.json')

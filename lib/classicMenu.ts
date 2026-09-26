@@ -12,7 +12,7 @@
 
 import type { CameraPreset } from '@/store/configurator'
 import type { Quality, Theme } from '@/lib/appearance'
-import type { Lang } from '@/lib/i18n'
+import { LANGS, type Lang } from '@/lib/i18n'
 import type { ShopExportFormat } from '@/lib/shopExport'
 
 export type ClassicPanel = 'gallery' | 'ai' | 'sketch' | 'parts' | 'history' | 'shop' | 'project' | 'quote' | 'drill' | 'room' | 'help' | 'shareCode' | 'account'
@@ -88,6 +88,17 @@ export type ClassicMenuState = {
 
 const SEP = { kind: 'separator' } as const
 
+const THEMES: { value: Theme; label: string }[] = [
+  { value: 'system', label: 'Как в системе' },
+  { value: 'light', label: 'Светлая' },
+  { value: 'dark', label: 'Тёмная' },
+]
+const QUALITIES: { value: Quality; label: string }[] = [
+  { value: 'high', label: 'Максимум' },
+  { value: 'medium', label: 'Средне' },
+  { value: 'low', label: 'Экономно' },
+]
+
 const PRESETS: { value: CameraPreset; label: string }[] = [
   { value: 'front', label: 'Фас' },
   { value: 'three-quarter', label: '3/4' },
@@ -142,6 +153,12 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('view.fittings.fittings', 'Фурнитура: крепёж', { type: 'fittings', show: 'fittings' }, { active: s.showFittings }),
         item('view.fit', 'Вписать в кадр', { type: 'fit' }),
         item('view.silhouette', 'Человек для масштаба', { type: 'toggleSilhouette' }, { active: s.silhouetteOn }),
+        // Классикалық режимде ескі header жасырын — тема мен 3D сапасы осында (P0-5).
+        SEP,
+        { kind: 'heading', id: 'view.theme', label: 'Тема' },
+        ...THEMES.map((t) => item(`view.theme.${t.value}`, t.label, { type: 'theme', theme: t.value }, { active: s.theme === t.value })),
+        { kind: 'heading', id: 'view.quality', label: 'Качество 3D' },
+        ...QUALITIES.map((q) => item(`view.quality.${q.value}`, q.label, { type: 'quality', quality: q.value }, { active: s.quality === q.value })),
       ],
     },
     {
@@ -165,6 +182,21 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('tools.drill', 'Присадка', { type: 'open', panel: 'drill' }, { disabled: !s.activeEditable && !s.editableBoard }),
         item('tools.room', 'Стены и комната', { type: 'open', panel: 'room' }),
         item('tools.cut', 'Раскрой (отдельный экран)', { type: 'navigate', href: '/cut' }),
+      ],
+    },
+    {
+      // Тіл, баға, аккаунт, жұмыс орны — бұрын тек жасырын header-де еді (P0-5).
+      id: 'service', label: 'Сервис', items: [
+        { kind: 'heading', id: 'service.lang', label: 'Язык' },
+        ...LANGS.map((l) => item(`service.lang.${l.value}`, l.label, { type: 'lang', lang: l.value }, { active: s.lang === l.value, raw: true })),
+        SEP,
+        ...(s.price === null ? [] : ['total' in s.price
+          ? item('service.price', 'Итого клиенту', { type: 'open', panel: 'quote' }, { detail: s.price.total })
+          : item('service.price', 'Цены не заданы', { type: 'open', panel: 'shop' })]),
+        ...(s.cloud ? [item('service.account', 'Аккаунт', { type: 'open', panel: 'account' })] : []),
+        { kind: 'heading', id: 'service.style', label: 'Рабочее место' },
+        item('service.style.classic', 'Классический', { type: 'workspaceStyle', classic: true }, { active: s.classic }),
+        item('service.style.ours', 'Наш', { type: 'workspaceStyle', classic: false }, { active: !s.classic }),
       ],
     },
     {

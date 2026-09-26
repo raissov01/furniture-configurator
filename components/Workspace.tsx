@@ -1,6 +1,6 @@
 'use client'
 
-import { t as tr, tf } from '@/lib/i18n'
+import { getLang, setLang, t as tr, tf } from '@/lib/i18n'
 import Link from 'next/link'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
@@ -34,6 +34,7 @@ import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/clas
 import { runShopExport } from '@/lib/shopExport'
 import { downloadProjectFile, pickProjectFile } from '@/lib/projectFile'
 import { cloudEnabled } from '@/lib/cloud'
+import { THEME_EVENT, chooseTheme, readTheme, saveQuality, type Theme } from '@/lib/appearance'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
   ConfigValidationError, formatTenge, nestPanels, nestingOptionsOf, priceProject,
@@ -187,6 +188,8 @@ export function Workspace() {
   const assemblyStep = useConfigurator((s) => s.assemblyStep)
   const setAssemblyStep = useConfigurator((s) => s.setAssemblyStep)
   const selected = useConfigurator((s) => s.selected)
+  const quality = useConfigurator((s) => s.quality)
+  const setQuality = useConfigurator((s) => s.setQuality)
   const snapOptions = useConfigurator((s) => s.snapOptions)
   const setSnapOptions = useConfigurator((s) => s.setSnapOptions)
   const previousSnapOptions = useRef(snapOptions)
@@ -245,6 +248,14 @@ export function Workspace() {
   }, [])
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+  // Тема браузерде сақталады — гидратациядан кейін оқимыз; header қосқышымен синхрон.
+  const [theme, setTheme] = useState<Theme>('system')
+  useEffect(() => {
+    setTheme(readTheme())
+    const onTheme = (event: Event) => setTheme((event as CustomEvent<Theme>).detail)
+    window.addEventListener(THEME_EVENT, onTheme)
+    return () => window.removeEventListener(THEME_EVENT, onTheme)
+  }, [])
 
   // Сақталған цех профилі тек браузерде оқылады: серверде оқысақ, гидратация
   // сәйкессіздігі шығады.
@@ -453,7 +464,10 @@ export function Workspace() {
       case 'toggleOpen': setOpenness(openness > 0 ? 0 : 1); break
       case 'toggleAssembly': setAssemblyStep(assemblyStep === null ? 1 : null); break
       case 'navigate': window.location.href = command.href; break
-      case 'theme': case 'quality': case 'lang': case 'workspaceStyle': break
+      case 'theme': setTheme(command.theme); chooseTheme(command.theme); break
+      case 'quality': setQuality(command.quality); saveQuality(command.quality); break
+      case 'lang': setLang(command.lang); break
+      case 'workspaceStyle': changeStyle(command.classic); break
     }
   }
   const menus = classicMenus({
@@ -464,7 +478,9 @@ export function Workspace() {
     productionError: Boolean(production.error),
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
     silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,
-    theme: 'system', quality: 'high', lang: 'ru', price: null, cloud: cloudEnabled, classic,
+    theme, quality, lang: getLang(),
+    price: liveTotal === null ? null : 'total' in liveTotal ? { total: formatTenge(liveTotal.total) } : { missing: true },
+    cloud: cloudEnabled, classic,
   })
 
   const classicToolRows: ClassicToolSpec[][] = classic ? [
@@ -1091,6 +1107,12 @@ export function Workspace() {
               ? (() => { const size = boardDimensions(activeNode.board, catalog.materials.find((material) => material.id === activeNode.board.materialId)!); return `${size.height} (H) × ${size.width} (W) × ${size.depth} (D)` })()
               : '—'} мм
         </span>}
+        {/* Баға күй жолағында да (P0-5): басу — смета, баға қойылмаса — цех профилі. */}
+        {liveTotal && <button type="button" data-testid="p100-status-price" className={cn('p100-status-price', !(selected && activeNode) && 'ml-auto')}
+          onClick={() => ('total' in liveTotal ? setQuoteOpen(true) : setShopOpen(true))}
+          title={'total' in liveTotal ? tr('Итого клиенту — открыть смету') : tr('Задайте цены материалов в профиле цеха')}>
+          {'total' in liveTotal ? <span className="tabular-nums">{tr('Итого клиенту')}: <b>{formatTenge(liveTotal.total)}</b></span> : tr('Цены не заданы')}
+        </button>}
       </footer>}
     </div>
   )
