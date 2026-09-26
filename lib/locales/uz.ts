@@ -1318,4 +1318,15 @@ export const uz: Record<string, string> = {
   'Создать ремонтное задание': 'Ta’mir vazifasini yaratish',
   'Ремонт завершён': 'Ta’mir tugadi',
   'Постоянное хранение разрешено.': 'Doimiy saqlashga ruxsat berildi.',
+  // Нарық бағасы (marketPrices.ts)
+  'Цены — рыночная медиана ({date}). Введите свои цены.': 'Narxlar — bozor medianasi ({date}). O‘z narxlaringizni kiriting.',
+  'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.': 'Bozor narxidagi pozitsiyalar: {n}. O‘zgartirgan narxingiz o‘zingizniki bo‘ladi va bozor ma’lumotlari yangilanganda qayta yozilmaydi.',
+  'Вернуть все рыночные цены': 'Barchasini bozor narxiga qaytarish',
+  'Все позиции, для которых есть рыночные данные, получат рыночную медиану — ваши цены по ним будут заменены. Продолжить?': 'Bozor ma’lumoti bor barcha pozitsiyalarga bozor medianasi qo‘yiladi — ulardagi o‘z narxlaringiz almashtiriladi. Davom etasizmi?',
+  'рыночная': 'bozor',
+  'своя': 'o‘ziniki',
+  'Вернуть рыночную цену': 'Bozor narxiga qaytarish',
+  '{label}: медиана, {date}, {n} предложений': '{label}: mediana, {date}, {n} ta taklif',
+  'Вернуть рыночную цену: {price}': 'Bozor narxiga qaytarish: {price}',
+  'Цена изменена цехом — рыночные обновления её не трогают': 'Narxni sex o‘zgartirgan — bozor yangilanishlari unga tegmaydi',
 }

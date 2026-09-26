@@ -1314,4 +1314,15 @@ export const en: Record<string, string> = {
   'Создать ремонтное задание': 'Create repair task',
   'Ремонт завершён': 'Repair completed',
   'Постоянное хранение разрешено.': 'Persistent storage granted.',
+  // Нарық бағасы (marketPrices.ts)
+  'Цены — рыночная медиана ({date}). Введите свои цены.': 'Prices are the market median ({date}). Enter your own prices.',
+  'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.': 'Market-priced items: {n}. A price you change becomes your own and is never overwritten by market updates.',
+  'Вернуть все рыночные цены': 'Restore all market prices',
+  'Все позиции, для которых есть рыночные данные, получат рыночную медиану — ваши цены по ним будут заменены. Продолжить?': 'Every item with market data will get the market median — your prices for them will be replaced. Continue?',
+  'рыночная': 'market',
+  'своя': 'own',
+  'Вернуть рыночную цену': 'Restore market price',
+  '{label}: медиана, {date}, {n} предложений': '{label}: median, {date}, {n} offers',
+  'Вернуть рыночную цену: {price}': 'Restore market price: {price}',
+  'Цена изменена цехом — рыночные обновления её не трогают': 'Price set by the workshop — market updates never touch it',
 }

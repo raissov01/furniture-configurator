@@ -1,11 +1,12 @@
-import { SEED_CATALOG, catalogOf, defaultShopProfile, findTemplate, templateToCabinet } from '@/src/core/index'
+import { SEED_CATALOG, catalogOf, findTemplate, starterShopProfile, templateToCabinet } from '@/src/core/index'
 import type { CabinetConfig, Catalog, ShopProfile } from '@/src/core/index'
 
 /**
  * Каталог енді ЦЕХТЫҢ профилінен келеді — код бір цехтың материалын да,
  * бағасын да білмейді. Мұндағы `catalog` тек бастапқы жүктеу үшін.
+ * Жаңа цехтың бағасы — нарық медианасы (белгісімен); цех өзінікімен ауыстырады.
  */
-export const defaultShop: ShopProfile = defaultShopProfile()
+export const defaultShop: ShopProfile = starterShopProfile()
 
 export const catalog: Catalog = SEED_CATALOG
 

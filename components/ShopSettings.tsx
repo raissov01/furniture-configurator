@@ -31,6 +31,7 @@ import { useConfigurator } from '@/store/configurator'
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { ShopDrillingSettings } from './ShopDrillingSettings'
+import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 
 type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
 
@@ -170,6 +171,10 @@ export function ShopSettings() {
           </p>
         ) : null}
 
+        <div className="mb-3">
+          <MarketPriceNotice shop={shop} editShop={editShop} />
+        </div>
+
         {tab === 'profile' ? (
           <div className="space-y-3">
             <SectionTitle>{tr('Реквизиты — попадут в КП')}</SectionTitle>
@@ -225,9 +230,12 @@ export function ShopSettings() {
                     <NumberInput value={m.sheetHeight} min={500} step={10}
                       onChange={(sheetHeight) => setSheet(m.id, { sheetHeight })} />
                   </span>,
-                  <NumberInput key="p" value={toTenge(m.pricePerSheet)} min={0} step={100}
-                    invalid={m.pricePerSheet <= 0}
-                    onChange={(v) => setPriceSheet(m.id, v)} />,
+                  <span key="p" className="flex items-center gap-1">
+                    <NumberInput value={toTenge(m.pricePerSheet)} min={0} step={100}
+                      invalid={m.pricePerSheet <= 0}
+                      onChange={(v) => setPriceSheet(m.id, v)} />
+                    <MarketPriceTag shop={shop} priceKey={`material:${m.id}`} editShop={editShop} />
+                  </span>,
                   <MaterialActions key="x" id={m.id} />,
                 ],
             }))}
@@ -243,8 +251,11 @@ export function ShopSettings() {
               name: b.name,
               cells: [
                 <span key="t" className="tabular-nums text-neutral-500">{b.thickness}</span>,
-                <NumberInput key="p" value={toTenge(b.pricePerMeter)} min={0} step={10}
-                  onChange={(v) => setBandPrice(b.id, v)} />,
+                <span key="p" className="flex items-center gap-1">
+                  <NumberInput value={toTenge(b.pricePerMeter)} min={0} step={10}
+                    onChange={(v) => setBandPrice(b.id, v)} />
+                  <MarketPriceTag shop={shop} priceKey={`edgeBand:${b.id}`} editShop={editShop} />
+                </span>,
               ],
             }))}
           />
@@ -264,8 +275,11 @@ export function ShopSettings() {
               id: h.id,
               name: h.name,
               cells: [
-                <NumberInput key="p" value={toTenge(h.pricePerUnit)} min={0} step={10}
-                  onChange={(v) => setHardwarePrice(h.id, v)} />,
+                <span key="p" className="flex items-center gap-1">
+                  <NumberInput value={toTenge(h.pricePerUnit)} min={0} step={10}
+                    onChange={(v) => setHardwarePrice(h.id, v)} />
+                  <MarketPriceTag shop={shop} priceKey={`hardware:${h.id}`} editShop={editShop} />
+                </span>,
               ],
             }))}
           />
@@ -349,7 +363,8 @@ export function ShopSettings() {
                           }))}
                         />
                       </td>
-                      <td className="w-32 px-2 py-1.5">
+                      <td className="w-44 px-2 py-1.5">
+                        <span className="flex items-center gap-1">
                         <NumberInput
                           value={toTenge(shop.services[sid].rate)}
                           min={0}
@@ -363,6 +378,8 @@ export function ShopSettings() {
                             })
                           }
                         />
+                        <MarketPriceTag shop={shop} priceKey={`service:${sid}`} editShop={editShop} />
+                        </span>
                       </td>
                     </tr>
                   ))}

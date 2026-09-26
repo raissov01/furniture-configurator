@@ -11,6 +11,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { MarketPriceNotice } from './MarketPrice'
 import { useMemo, useState } from 'react'
 import {
   SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
@@ -280,7 +281,10 @@ export function QuoteView({
                 ) : null}
               </div>
             ) : price ? (
-              <PriceTable price={price} shopName={shop.name} overrides={priceOverrides} onChange={editPriceOverrides} />
+              <>
+                <MarketPriceNotice shop={shop} />
+                <PriceTable price={price} shopName={shop.name} overrides={priceOverrides} onChange={editPriceOverrides} />
+              </>
             ) : null}
           </div>
         )}
