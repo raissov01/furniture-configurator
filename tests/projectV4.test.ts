@@ -156,7 +156,7 @@ describe('v3 → v4 root миграциясы', () => {
     const board = plainBoardNode()
     const withDrill = (diameter: number, depth: number, purpose: string) => ({ ...migrated,
       root: { ...migrated.root, children: [{ ...board, board: { ...board.board,
-        drilling: [{ face: 'inner', x: 10, y: 20, diameter, depth, purpose }] } }] } })
+        drilling: [{ face: 'inner', x: 22, y: 20, diameter, depth, purpose }] } }] } })
     expect(() => parseProjectV4(withDrill(5.5, 8, 'shelfPin'))).toThrow()
     expect(() => parseProjectV4(withDrill(2.8, 8, 'hinge'))).toThrow()
     const fractional = withDrill(5, 8, 'shelfPin')

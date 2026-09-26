@@ -23,6 +23,8 @@ import { rotationFor } from './geometry'
 import { derivePolygonContour } from './polygon'
 import { isNodeHiddenByLayer } from './layers'
 import type { Layer } from './layers'
+import type { AutoJointRecord } from './autoJointRebuild'
+import { rebuildAutoJoints } from './autoJointRebuild'
 
 export type FlatNode = {
   nodeId: string
@@ -133,6 +135,7 @@ export function flattenTree(
    * өзгеріссіз жұмыс істейді.
    */
   layers?: Layer[],
+  autoJoints?: readonly AutoJointRecord[],
 ): FlatScene {
   const nodes: FlatNode[] = []
   const solids: PlacedSolid[] = []
@@ -183,6 +186,17 @@ export function flattenTree(
     }
   }
   step(root, ORIGIN_POSE)
+
+  for (const joint of autoJoints ? rebuildAutoJoints(root, autoJoints, catalog, settings, layers) : []) {
+    if (joint.status !== 'valid') continue
+    for (const result of joint.drilling) {
+      const node = nodes.find((item) => item.nodeId === result.boardId)
+      const panel = node?.panels[0]
+      if (!panel || !node || node.panels.length !== 1) continue
+      // BoardSpec.drilling — тек қол тесіктері. Авто тесіктер осы көрініске ғана қосылады.
+      panel.drilling = [...panel.drilling, ...result.drilling.map((hole) => ({ ...hole }))]
+    }
+  }
 
   return { nodes, solids }
 }

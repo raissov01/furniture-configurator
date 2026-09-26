@@ -21,6 +21,8 @@ import type { CabinetConfig, ProjectFile } from './types'
 import type { SceneLight } from './visual'
 import { validatePolygonContour } from './polygon'
 import { ConfigValidationError } from './errors'
+import type { AutoJointRecord } from './autoJointRebuild'
+import { rebuildAutoJoints, validateManualBoardDrilling } from './autoJointRebuild'
 
 /** v4-те корпус конфигінің жалғыз орны — root ішіндегі CabinetNode. */
 export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'placements'> & {
@@ -28,6 +30,7 @@ export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'pl
   root: GroupNode
   layers?: Layer[] | undefined
   lights: SceneLight[]
+  autoJoints?: AutoJointRecord[] | undefined
 }
 
 const mm = z.number().int()
@@ -134,22 +137,49 @@ export const ProjectFileV4Schema: z.ZodType<ProjectFileV4> = z.strictObject({
   priceOverrides: PriceOverridesSchema.optional(),
   layers: ProjectLayersSchema.optional(),
   lights: SceneLightsSchema.default([]),
+  autoJoints: z.array(z.strictObject({
+    id: z.string().min(1), boardIds: z.tuple([z.string().min(1), z.string().min(1)]),
+    faceBoardId: z.string().min(1), edgeBoardId: z.string().min(1),
+    kind: z.enum(['confirmat', 'minifix', 'dowel']), tolerance: mm.nonnegative(),
+    edited: z.boolean(), status: z.enum(['valid', 'broken']),
+    drilling: z.array(z.strictObject({ boardId: z.string().min(1), drilling: z.array(z.strictObject({
+      face: z.enum(['inner', 'outer', 'edgeL1', 'edgeL2', 'edgeW1', 'edgeW2']),
+      x: mm, y: mm, diameter: z.number().positive(), depth: z.number().positive(),
+      purpose: z.enum(['confirmat', 'dowel', 'minifix', 'shelfPin', 'hinge',
+        'runner', 'handle', 'leg', 'facadeScrew']), hardwareId: z.string().min(1).optional(),
+    })) })),
+    error: z.strictObject({ field: z.string().min(1), message: z.string().min(1) }).optional(),
+  })).optional().default([]),
   root: SceneNodeSchema.refine((node): node is GroupNode => node.kind === 'group', {
     message: 'root түйіні group болуы керек',
   }),
 }).superRefine((project, context) => {
   const ids = new Set<string>()
+  const boardIds = new Set<string>()
   const visit = (node: SceneNode, path: (string | number)[]): void => {
     if (ids.has(node.id)) {
       context.addIssue({ code: 'custom', path: ['root', ...path, 'id'],
         message: `Қайталанған түйін id: ${node.id}` })
     }
     ids.add(node.id)
+    if (node.kind === 'board') boardIds.add(node.id)
     if (node.kind === 'group') {
       node.children.forEach((child, index) => visit(child, [...path, 'children', index]))
     }
   }
   visit(project.root, [])
+  const joints = new Set<string>()
+  for (const [index, joint] of (project.autoJoints ?? []).entries()) {
+    const path = ['autoJoints', index]
+    if (joints.has(joint.id)) context.addIssue({ code: 'custom', path: [...path, 'id'], message: 'Қайталанған буын id' })
+    joints.add(joint.id)
+    if (joint.boardIds[0] === joint.boardIds[1] ||
+      !joint.boardIds.includes(joint.faceBoardId) || !joint.boardIds.includes(joint.edgeBoardId) ||
+      joint.faceBoardId === joint.edgeBoardId ||
+      joint.boardIds.some((id) => !boardIds.has(id))) {
+      context.addIssue({ code: 'custom', path: [...path, 'boardIds'], message: 'Буынға екі бар board id қажет' })
+    }
+  }
 })
 
 export const CURRENT_TREE_SCHEMA_VERSION = 4
@@ -171,13 +201,20 @@ export function migrateV3ToV4(project: ProjectFile & { layers?: Layer[] }): Proj
     transform: IDENTITY_TRANSFORM, config: cabinet,
   })
   const { cabinets: _cabinets, placements: _placements, schemaVersion: _version, ...rest } = project
-  return { ...rest, layers: rest.layers?.length ? rest.layers : [createDefaultLayer()], lights: [], schemaVersion: 4, root }
+  return { ...rest, layers: rest.layers?.length ? rest.layers : [createDefaultLayer()], lights: [], autoJoints: [], schemaVersion: 4, root }
 }
 
 /** v1–v3 оқығанда бұрынғы миграция тізбегі қолданылады; v4 тура тексеріледі. */
 export function parseProjectV4(raw: unknown): ProjectFileV4 {
   const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion
-  if (version === 4) return ProjectFileV4Schema.parse(raw)
+  if (version === 4) {
+    const project = ProjectFileV4Schema.parse(raw)
+    validateManualBoardDrilling(project.root, { materials: project.materials, edgeBands: project.edgeBands },
+      project.settings, project.layers)
+    if (project.autoJoints?.length) project.autoJoints = rebuildAutoJoints(project.root, project.autoJoints,
+      { materials: project.materials, edgeBands: project.edgeBands }, project.settings, project.layers)
+    return project
+  }
   const legacy = parseProjectWithLayers(raw)
   return ProjectFileV4Schema.parse(migrateV3ToV4(legacy))
 }
