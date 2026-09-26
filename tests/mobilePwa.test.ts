@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 describe('телефон PWA кіру нүктесі', () => {
-  it('орнатылған қосымшаны «Тапсырыс» экранынан бастайды', () => {
+  it('орнатылған AisMebel қосымшасын телефон экранынан бастайды', () => {
     const manifest = JSON.parse(readFileSync(join(process.cwd(), 'public/manifest.webmanifest'), 'utf8')) as {
       start_url: string; scope: string; display: string; shortcuts: { url: string }[]
     }
