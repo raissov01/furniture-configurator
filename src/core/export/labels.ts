@@ -22,6 +22,8 @@ import { partNumbers } from '../cutList'
 import type { NestingResult } from '../nesting'
 import type { Catalog, EdgeSpec, Panel } from '../types'
 import type { PdfFonts } from './pdf'
+import { labelLayout } from './labelLayout'
+import type { LabelSize } from './labelLayout'
 import { encodePartQr } from '../partQr'
 export { encodePartQr, decodePartQr } from '../partQr'
 export type { PartQr } from '../partQr'
@@ -242,20 +244,20 @@ function drawLabel(ctx: Ctx, x: number, y: number, w: number, h: number, label: 
   // Позиция нөмірі — ең үлкен сан: цех детальді осымен атайды.
   // ⚠ «№» (U+2116) қаріп жиынтығында ЖОҚ — ол PDF-те үнсіз түсіп қалады
   // (₸ сияқты). Сондықтан «Поз.» деп жазылады; тесті бар.
-  draw(ctx, left, top, `Поз. ${label.position}`, 11, { bold: true })
+  draw(ctx, left, top, `Поз. ${label.position}`, 11, { bold: true, maxWidth: w * 0.48 })
   const pieces = label.of > 1 ? `${label.piece}/${label.of}` : ''
   const sheet = label.sheet === null ? '' : `лист ${label.sheet}`
   const corner = [pieces, sheet].filter(Boolean).join(' · ')
   if (corner) {
     const width = ctx.regular.widthOfTextAtSize(corner, 6.5)
-    draw(ctx, right - width, top + 2, corner, 6.5, { color: MUTED })
+    draw(ctx, right - Math.min(width, w * 0.46), top + 2, corner, 6.5, { color: MUTED, maxWidth: w * 0.46 })
   }
 
   top -= 12
   draw(ctx, left, top, label.name, 8.5, { bold: true, maxWidth: w - padding * 2 })
 
   top -= 14
-  draw(ctx, left, top, `${label.cutLength} × ${label.cutWidth}`, 13, { bold: true })
+  draw(ctx, left, top, `${label.cutLength} × ${label.cutWidth}`, 13, { bold: true, maxWidth: w - padding * 2 - 66 })
   draw(ctx, left, top - 8, 'рез, мм', 5.5, { color: MUTED })
 
   const finished = `готовый ${label.finishedLength} × ${label.finishedWidth}`
@@ -282,6 +284,8 @@ export type LabelsPdfInput = {
   /** Екеуі бірге берілсе, әр детальға офлайн QR салынады. */
   projectId?: string
   version?: number
+  /** Omitted for legacy A4 3×8 sheets. */
+  size?: LabelSize
 }
 
 /** Биркалар парағы: A4-ке 24 дана, детальдер ретімен. */
@@ -294,22 +298,28 @@ export async function labelsPdf(input: LabelsPdfInput): Promise<Uint8Array> {
   const regular = await doc.embedFont(input.fonts.regular, { subset: true })
   const bold = await doc.embedFont(input.fonts.bold, { subset: true })
 
-  const cellW = (PAGE.w - MARGIN * 2) / COLS
-  const cellH = (PAGE.h - MARGIN * 2) / ROWS
-  const perPage = COLS * ROWS
+  const layout = input.size ? labelLayout(input.size) : null
+  const pageW = layout?.pageWidthPt ?? PAGE.w
+  const pageH = layout?.pageHeightPt ?? PAGE.h
+  const margin = layout?.marginPt ?? MARGIN
+  const gap = layout?.gapPt ?? 0
+  const cols = layout?.columns ?? COLS
+  const cellW = layout?.labelWidthPt ?? (PAGE.w - MARGIN * 2) / COLS
+  const cellH = layout?.labelHeightPt ?? (PAGE.h - MARGIN * 2) / ROWS
+  const perPage = layout?.perPage ?? COLS * ROWS
 
   // Деталь жоқ болса да бос бет шығады: PDF-те бір бет болуы керек.
   const pages = Math.max(1, Math.ceil(input.labels.length / perPage))
   for (let p = 0; p < pages; p += 1) {
-    const page = doc.addPage([PAGE.w, PAGE.h])
+    const page = doc.addPage([pageW, pageH])
     const ctx: Ctx = { page, regular, bold }
     const slice = input.labels.slice(p * perPage, (p + 1) * perPage)
     slice.forEach((label, i) => {
-      const col = i % COLS
-      const row = Math.floor(i / COLS)
-      const x = MARGIN + col * cellW
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      const x = margin + col * (cellW + gap)
       // Жоғарыдан төмен толтырамыз: адам биркаларды солай оқиды.
-      const y = PAGE.h - MARGIN - (row + 1) * cellH
+      const y = pageH - margin - cellH - row * (cellH + gap)
       const qrPayload = input.projectId === undefined ? undefined : encodePartQr({
         projectId: input.projectId, panelId: label.panelId, version: input.version!,
       })

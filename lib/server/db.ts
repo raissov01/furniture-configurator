@@ -1,15 +1,14 @@
 /**
- * Дерекқор. Node-тың ӨЗ SQLite-і (`node:sqlite`) — қосымша тәуелділік жоқ,
- * нативті құрастыру да жоқ. Файл `DATA_DIR` ішінде жатады.
- *
- * Неге SQLite: цехқа арналған жазылымда бір VPS жеткілікті, ал сыртқы база
- * әрі ақша, әрі тағы бір істен шығатын нүкте. Пішіні қарапайым SQL болғандықтан,
- * көлемі өскенде Postgres-ке көшу — драйверді ауыстыру ғана.
+ * Әдепкі дерекқор — Node-тың SQLite-і (`node:sqlite`), файл `DATA_DIR` ішінде.
+ * DATABASE_URL PostgreSQL болса, бұрынғы синхронды service интерфейсін
+ * бөлек worker-де жұмыс істейтін PostgreSQL адаптері сақтайды.
  */
 
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { createHash } from 'node:crypto'
+import { PostgresCompat } from './postgres'
 
 const FILE = process.env['DATA_DIR']
   ? join(process.env['DATA_DIR'], 'furniture.db')
@@ -19,6 +18,15 @@ let instance: DatabaseSync | null = null
 
 export function db(): DatabaseSync {
   if (instance) return instance
+  const url = process.env['DATABASE_URL']
+  if (url?.startsWith('postgres://') || url?.startsWith('postgresql://')) {
+    const prefix = process.env['PG_TEST_SCHEMA_PREFIX']
+    const schema = prefix && process.env['DATA_DIR']
+      ? `${prefix.replace(/[^a-z0-9_]/gi, '').slice(0, 20)}_${createHash('sha256').update(process.env['DATA_DIR']).digest('hex').slice(0, 16)}`
+      : undefined
+    instance = new PostgresCompat(url, schema) as unknown as DatabaseSync
+    return instance
+  }
   mkdirSync(dirname(FILE), { recursive: true })
   const database = new DatabaseSync(FILE)
   // Жазу кезінде оқу бөгелмеуі үшін.
@@ -257,6 +265,34 @@ function migrate(database: DatabaseSync): void {
       created_at INTEGER NOT NULL,
       PRIMARY KEY (shop_id, id)
     );
+  `)
+
+  // 12-қадам: аудит, API өнімділігі, қате журналы және фондық тапсырмалар.
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, shop_id TEXT REFERENCES shops(id) ON DELETE CASCADE,
+      actor_id TEXT, action TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT,
+      detail_json TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS audit_log_shop_time ON audit_log (shop_id, created_at DESC);
+    CREATE TABLE IF NOT EXISTS api_metrics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, route TEXT NOT NULL, method TEXT NOT NULL,
+      status INTEGER NOT NULL, latency_ms INTEGER NOT NULL, created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS api_metrics_time ON api_metrics (created_at DESC);
+    CREATE TABLE IF NOT EXISTS error_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, route TEXT NOT NULL, message TEXT NOT NULL,
+      stack TEXT, created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS error_log_time ON error_log (created_at DESC);
+    CREATE TABLE IF NOT EXISTS jobs (
+      id TEXT PRIMARY KEY, kind TEXT NOT NULL, payload_json TEXT NOT NULL,
+      state TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0,
+      run_after INTEGER NOT NULL, lease_until INTEGER, last_error TEXT,
+      created_at INTEGER NOT NULL, shop_id TEXT REFERENCES shops(id) ON DELETE CASCADE,
+      result_json TEXT, lease_token TEXT
+    );
+    CREATE INDEX IF NOT EXISTS jobs_ready ON jobs (state, run_after);
   `)
 }
 

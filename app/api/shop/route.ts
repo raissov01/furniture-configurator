@@ -31,7 +31,7 @@ export async function PUT(request: Request): Promise<Response> {
   try {
     // Пішінін ЯДРО тексереді: серверге бүлінген профиль жазылмауы керек.
     const profile = parseShopProfile(body?.profile)
-    writeShopProfile(account.shopId, profile)
+    writeShopProfile(account.shopId, profile, account.userId)
     return NextResponse.json({ ok: true })
   } catch (error) {
     return NextResponse.json(

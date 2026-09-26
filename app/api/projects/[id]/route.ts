@@ -33,6 +33,6 @@ export async function DELETE(_request: Request, context: Context): Promise<Respo
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
   if (!can(account.role, 'editProject')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
   const { id } = await context.params
-  deleteProject(account.shopId, id)
+  deleteProject(account.shopId, id, account.userId)
   return NextResponse.json({ ok: true })
 }

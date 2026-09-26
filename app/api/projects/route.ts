@@ -44,7 +44,7 @@ export async function POST(request: Request): Promise<Response> {
       if (!check.ok) return NextResponse.json({ error: check.reason }, { status: 409 })
     }
 
-    const saved = writeProject(account.shopId, project.name, project, id)
+    const saved = writeProject(account.shopId, project.name, project, id, account.userId)
     return NextResponse.json({ id: saved })
   } catch (error) {
     return NextResponse.json(

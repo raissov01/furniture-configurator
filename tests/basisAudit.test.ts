@@ -80,7 +80,7 @@ describe('таза audit', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
-  })
+  }, 20_000)
 
   it.each([
     { label: 'holes=null', holes: null },

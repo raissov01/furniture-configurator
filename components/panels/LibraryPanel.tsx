@@ -41,6 +41,8 @@ import {
 import type { LibraryTabId } from './libraryCatalogLogic'
 import { CatalogThumb } from './CatalogThumb'
 import { PersonalLibraryPanel } from './PersonalLibraryPanel'
+import { makePropLibraryItem, placedProps, PROP_CATALOG, removePropNode } from '@/src/core/propCatalog'
+import type { Vec3 } from '@/src/core/types'
 
 const PAGE_SIZE = 60 // гоча №4: 5094 жолды бірден рендерлемеу — беттеу
 
@@ -50,8 +52,58 @@ export function LibraryPanel() {
   const [categoryPath, setCategoryPath] = React.useState<string | null>(null)
   const [page, setPage] = React.useState(0)
   const [lastAdded, setLastAdded] = React.useState<string | null>(null)
+  const [propPosition, setPropPosition] = React.useState<Vec3>({ x: 0, y: 0, z: 0 })
+  const [propError, setPropError] = React.useState<string | null>(null)
 
   const catalog = useConfigurator((s) => s.catalog)
+  const root = useConfigurator((s) => s.root)
+  const placed = React.useMemo(() => placedProps(root), [root])
+  const propItems = React.useMemo(() => PROP_CATALOG.filter((prop) =>
+    (categoryPath === null || prop.category === categoryPath) &&
+    prop.name.toLocaleLowerCase().includes(search.toLocaleLowerCase())), [categoryPath, search])
+
+  const placeProp = (id: string) => {
+    const prop = PROP_CATALOG.find((entry) => entry.id === id)
+    if (!prop) return
+    try {
+      const before = new Set(placed.map((entry) => entry.id))
+      useConfigurator.getState().placeLibraryItem(makePropLibraryItem(prop, propPosition, new Date().toISOString()))
+      const inserted = placedProps(useConfigurator.getState().root).find((entry) => !before.has(entry.id))
+      if (inserted) {
+        useConfigurator.getState().setActive(inserted.id)
+        useConfigurator.getState().setSelected(inserted.id)
+      }
+      setLastAdded(prop.name)
+      setPropError(null)
+    } catch (cause) { setPropError(cause instanceof Error ? cause.message : String(cause)) }
+  }
+
+  const moveProp = (id: string, current: Vec3, axis: keyof Vec3, next: number) => {
+    if (!Number.isInteger(next)) { setPropError(tr('Координата должна быть целым мм.')); return }
+    try {
+      useConfigurator.getState().translateNodes([{ id, delta: { x: axis === 'x' ? next - current.x : 0,
+        y: axis === 'y' ? next - current.y : 0, z: axis === 'z' ? next - current.z : 0 } }])
+      setPropError(null)
+    } catch (cause) { setPropError(cause instanceof Error ? cause.message : String(cause)) }
+  }
+
+  const deleteProp = (id: string) => {
+    try {
+      const state = useConfigurator.getState()
+      const nextRoot = removePropNode(state.root, id)
+      useConfigurator.setState({
+        root: nextRoot,
+        activeId: state.activeId === id ? state.cabinets[0]?.id ?? '' : state.activeId,
+        selected: null,
+        past: [...state.past, { room: state.room, projectName: state.projectName, root: state.root,
+          layers: state.layers, projectSettings: state.projectSettings,
+          projectMaterials: state.projectMaterials, projectEdgeBands: state.projectEdgeBands,
+          lights: state.lights, autoJoints: state.autoJoints, activeId: state.activeId }].slice(-100),
+        future: [], lastEditKey: null,
+      })
+      setPropError(null)
+    } catch (cause) { setPropError(cause instanceof Error ? cause.message : String(cause)) }
+  }
 
   // Таб ауысқанда іздеу/санат/бет тазаланады — әйтпесе «Мебель»-де тапқан
   // сөз «Материалы»-да бос тор көрсетер еді, бос екені түсініксіз болар еді.
@@ -120,7 +172,7 @@ export function LibraryPanel() {
       {tab === 'mine' ? <PersonalLibraryPanel /> : <>
 
       {/* Жол жолағы — эталондағы «Mobilier BUCATARIE\Corpuri...» ашылмалысы. */}
-      {tab === 'mebel' || tab === 'elementy' ? (
+      {tab === 'mebel' || tab === 'elementy' || tab === 'raznoe' ? (
         <div className="shrink-0 border-b border-neutral-800 px-1.5 py-1">
           <select
             value={categoryPath ?? ''}
@@ -130,8 +182,8 @@ export function LibraryPanel() {
             }}
             className="w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[10px] text-neutral-300 outline-none"
           >
-            <option value="">Барлық санат ({tab === 'mebel' ? PRO100_CABINET_ITEMS.length : PRO100_ACCESSORY_ITEMS.length})</option>
-            {categoryChoices.map((c) => (
+            <option value="">{tr('Все категории')} ({tab === 'mebel' ? PRO100_CABINET_ITEMS.length : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS.length : PROP_CATALOG.length})</option>
+            {(tab === 'raznoe' ? [...new Set(PROP_CATALOG.map((prop) => prop.category))] : categoryChoices).map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
@@ -155,11 +207,36 @@ export function LibraryPanel() {
       {/* Нобай торы — 2 баған. */}
       <div className="min-h-0 flex-1 overflow-auto p-1.5">
         {tab === 'raznoe' ? (
-          <p className="p-2 text-[11px] leading-snug text-neutral-500">
-            Бұл архивте «Разное» санатына сәйкес бума табылмады — PRO100
-            кітапханасында тек «Мебель» (шкафтар+элементтер) мен «Материалы»
-            бумалары бар (тексерілді: `unrar lb`, докта санат жоқ).
-          </p>
+          <div className="space-y-3 text-xs">
+            <p className="text-neutral-400">{tr('Свой декор: не попадает в раскрой и смету.')}</p>
+            <div className="flex gap-1">
+              {(['x', 'y', 'z'] as const).map((axis) => <label key={axis} className="min-w-0 flex-1">
+                {axis.toUpperCase()}, {tr('мм')}
+                <input type="number" step="1" value={propPosition[axis]} onChange={(event) =>
+                  setPropPosition((current) => ({ ...current, [axis]: Number(event.target.value) }))}
+                  className="w-full border border-neutral-700 bg-neutral-900 px-1 py-1" />
+              </label>)}
+            </div>
+            {propError ? <p role="alert" className="text-red-400">{propError}</p> : null}
+            <div className="grid grid-cols-2 gap-1.5">
+              {propItems.map((prop) => <button key={prop.id} type="button" onClick={() => placeProp(prop.id)}
+                className="border border-neutral-700 p-2 text-left hover:border-neutral-400">
+                <span className="block font-medium">{tr(prop.name)}</span>
+                <span className="text-[10px] text-neutral-400">{tr(prop.category)}</span>
+              </button>)}
+            </div>
+            <h3 className="border-t border-neutral-700 pt-2 font-semibold">{tr('Размещённый декор')}</h3>
+            {placed.map((node) => <div key={node.id} className="space-y-1 border border-neutral-700 p-2">
+              <div className="flex items-center justify-between gap-2"><span>{tr(node.name)}</span>
+                <button type="button" onClick={() => deleteProp(node.id)} className="text-red-300">{tr('Удалить')}</button></div>
+              <div className="flex gap-1">{(['x', 'y', 'z'] as const).map((axis) =>
+                <label key={axis} className="min-w-0 flex-1">{axis.toUpperCase()}
+                  <input type="number" step="1" value={node.transform.pos[axis]}
+                    onChange={(event) => moveProp(node.id, node.transform.pos, axis, Number(event.target.value))}
+                    className="w-full border border-neutral-700 bg-neutral-900 px-1 py-1" />
+                </label>)}</div>
+            </div>)}
+          </div>
         ) : pageItems.length === 0 ? (
           <p className="p-2 text-[11px] text-neutral-500">Табылмады.</p>
         ) : tab === 'materialy' ? (

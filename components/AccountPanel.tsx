@@ -9,8 +9,10 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { parseProjectV4, parseShopProfile } from '@/src/core/index'
+import { addCloudFolder, moveProjectToFolder, organizeProjects, parseCloudOrg } from '@/src/core/cloudProjectOrganize'
+import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
@@ -51,6 +53,10 @@ export function AccountPanel() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
   const [projects, setProjects] = useState<ProjectRow[]>([])
+  const [org, setOrg] = useState<CloudOrg>(() => parseCloudOrg(null))
+  const [folderFilter, setFolderFilter] = useState<'all' | 'unfiled' | `folder:${string}`>('all')
+  const [newFolder, setNewFolder] = useState('')
+  const visibleProjects = useMemo(() => organizeProjects(projects, org, folderFilter), [projects, org, folderFilter])
   const [plan, setPlan] = useState<PlanInfo | null>(null)
   /** Ақы алу қосулы ма (сервер айтады). Тегін кезеңде тариф көрсетілмейді. */
   const [billing, setBilling] = useState(false)
@@ -76,6 +82,26 @@ export function AccountPanel() {
   const [usage, setUsage] = useState<{ projects: number; members: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!account) return
+    try {
+      setOrg(parseCloudOrg(window.localStorage.getItem(`cloud-folders:${account.userId}`)))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+      setOrg(parseCloudOrg(null))
+    }
+  }, [account?.userId])
+
+  const saveOrg = (next: CloudOrg) => {
+    if (!account) return
+    try {
+      window.localStorage.setItem(`cloud-folders:${account.userId}`, JSON.stringify(next))
+      setOrg(next)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }
 
   const refreshTeam = useCallback(async () => {
     const res = await fetch('/api/team')
@@ -481,13 +507,43 @@ export function AccountPanel() {
               </Button> : null}
             </div>
 
+            <div className="grid gap-2 rounded-md border border-neutral-200 p-2 text-xs dark:border-neutral-700 sm:grid-cols-2">
+              <label>{tr('Папка')}
+                <select className={input} value={folderFilter} onChange={(event) => setFolderFilter(event.target.value as typeof folderFilter)}>
+                  <option value="all">{tr('Все папки')}</option>
+                  <option value="unfiled">{tr('Без папки')}</option>
+                  {org.folders.map((folder) => <option key={folder} value={`folder:${folder}`}>{folder}</option>)}
+                </select>
+              </label>
+              <label>{tr('Сортировка')}
+                <select className={input} value={org.sort} onChange={(event) => saveOrg({ ...org, sort: event.target.value as CloudOrg['sort'] })}>
+                  <option value="date">{tr('По дате')}</option>
+                  <option value="name">{tr('По названию')}</option>
+                </select>
+              </label>
+              <label className="sm:col-span-2">{tr('Новая папка')}
+                <span className="flex gap-2">
+                  <input className={input} value={newFolder} maxLength={80} onChange={(event) => setNewFolder(event.target.value)} />
+                  <Button onClick={() => {
+                    try {
+                      const next = addCloudFolder(org, newFolder)
+                      saveOrg(next)
+                      setNewFolder('')
+                    } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) }
+                  }}>{tr('Добавить')}</Button>
+                </span>
+              </label>
+            </div>
+
             {projects.length === 0 ? (
               <p className="text-xs text-neutral-500">
                 Пока пусто. Сохраните текущий проект — он откроется на любом компьютере.
               </p>
+            ) : visibleProjects.length === 0 ? (
+              <p className="text-xs text-neutral-500">{tr('В этой папке нет проектов.')}</p>
             ) : (
               <ul className="max-h-64 space-y-1 overflow-auto">
-                {projects.map((p) => (
+                {visibleProjects.map((p) => (
                   <li
                     key={p.id}
                     className="flex items-center gap-2 rounded-md border border-neutral-200 px-2 py-1.5 text-xs dark:border-neutral-700"
@@ -498,6 +554,11 @@ export function AccountPanel() {
                         {new Date(p.updatedAt).toLocaleDateString('ru-RU')}
                       </span>
                     </button>
+                    <select aria-label={`${tr('Папка')}: ${p.name}`} className="max-w-28 rounded border border-neutral-300 bg-white p-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                      value={org.projectFolders[p.id] ?? ''} onChange={(event) => saveOrg(moveProjectToFolder(org, p.id, event.target.value || null))}>
+                      <option value="">{tr('Без папки')}</option>
+                      {org.folders.map((folder) => <option key={folder} value={folder}>{folder}</option>)}
+                    </select>
                     {account.role !== 'shop' ? <Button
                       onClick={() => void (async () => {
                         await fetch(`/api/projects/${p.id}`, { method: 'DELETE' })

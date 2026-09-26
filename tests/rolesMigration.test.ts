@@ -7,7 +7,7 @@ import { expect, it } from 'vitest'
 const dir = mkdtempSync(join(tmpdir(), 'furniture-role-migration-'))
 process.env['DATA_DIR'] = dir
 
-it('ескі мүшелер сақталып, founder owner болады', async () => {
+it.skipIf(Boolean(process.env['DATABASE_URL']))('ескі мүшелер сақталып, founder owner болады', async () => {
   const old = new DatabaseSync(join(dir, 'furniture.db'))
   old.exec(`
     CREATE TABLE shops (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at INTEGER NOT NULL);

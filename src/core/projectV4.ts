@@ -14,6 +14,7 @@ import {
 import { createDefaultLayer, isNodeHiddenByLayer } from './layers'
 import { SceneLightsSchema } from './visual'
 import { IDENTITY_TRANSFORM } from './tree'
+import { ManufacturerModelSourceSchema } from './manufacturerAssets'
 import { treeFromProject } from './treeFromProject'
 import type { BoardSpec, GroupNode, SceneNode } from './tree'
 import type { Layer } from './layers'
@@ -122,7 +123,8 @@ export const SceneNodeSchema: z.ZodType<SceneNode> = z.lazy(() => z.discriminate
   z.strictObject({ kind: z.literal('board'), ...baseNode, board }),
   z.strictObject({ kind: z.literal('solid'), ...baseNode,
     solid: z.strictObject({ size: z.strictObject({ x: positiveMm, y: positiveMm, z: positiveMm }),
-      color: z.string().optional(), textureId: z.string().optional() }),
+      color: z.string().optional(), textureId: z.string().optional(),
+      modelSource: ManufacturerModelSourceSchema.optional() }),
   }),
 ]))
 

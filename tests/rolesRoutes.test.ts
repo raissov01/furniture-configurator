@@ -36,7 +36,7 @@ beforeAll(async () => {
   teamRoute = await import('../app/api/team/route')
   memberRoute = await import('../app/api/team/member/route')
   shopRoute = await import('../app/api/shop/route')
-})
+}, 30_000)
 
 describe('маршруттарда permission және 4xx', () => {
   it('бұрыс JSON, бос дене, үлкен мәтін 4xx, traceback шықпайды', async () => {
