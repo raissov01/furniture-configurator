@@ -6,6 +6,7 @@ import { findNode } from '@/src/core/index'
 import type { Catalog, Panel } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { capturePropertiesSession, commitPropertiesName, restorePropertiesSession, type PropertiesSession } from '@/lib/propertiesSession'
+import { propertiesDirty, propertiesInvalid, propertiesKeyAction } from '@/lib/propertiesDialogState'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
 import { Button } from '@/components/ui'
@@ -15,7 +16,8 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   catalog: Catalog
   panels: Panel[]
   boardPanel?: Panel | undefined
-  error: string | null
+  /** Генерация қатесі (`usePanels`): өріс, себебі және рұқсат етілген аралық. */
+  error: { field: string; message: string; allowed?: string | undefined } | null
   onClose: () => void
 }) {
   const root = useConfigurator((s) => s.root)
@@ -30,6 +32,11 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const dialogRef = useRef<HTMLElement | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   if (baseline.current === null) baseline.current = capturePropertiesSession()
+  // «Применить» тек нақты өзгеріс болғанда: store иммутабельді, сілтемелер салыстырылады.
+  const storeDirty = useConfigurator((s) => propertiesDirty(baseline.current!, s))
+  const [nameDirty, setNameDirty] = useState(false)
+  const dirty = storeDirty || nameDirty
+  const invalid = propertiesInvalid(error)
 
   const cancel = () => {
     if (baseline.current) restorePropertiesSession(baseline.current)
@@ -47,47 +54,69 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
     pushHistory()
     syncShare()
     baseline.current = capturePropertiesSession()
+    setNameDirty(false)
     setActionError(null)
     return true
   }
+  /*
+   * Enter = OK, Esc = Отмена (PRO100 сияқты). Ұстағыш `capture` фазасында:
+   * Esc 3D таңдауын алып тастайтын жалпы хоткейге жетпеуі керек.
+   */
+  const latest = useRef({ cancel: () => {}, ok: () => {} })
+  latest.current = {
+    cancel: () => { if (baseline.current) restorePropertiesSession(baseline.current); onClose() },
+    ok: () => { if (!invalid && apply()) onClose() },
+  }
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+      const target = event.target instanceof Element ? event.target.tagName.toLowerCase() : ''
+      const action = propertiesKeyAction({
+        key: event.key, target, isComposing: event.isComposing,
+        shiftKey: event.shiftKey, ctrlKey: event.ctrlKey, altKey: event.altKey, metaKey: event.metaKey,
+      })
+      if (!action) return
+      // Enter тек диалог ішінде (басқа терезедегі өріске тимейміз).
+      if (action === 'ok' && !(event.target instanceof Node && dialogRef.current?.contains(event.target))) return
       event.preventDefault()
       event.stopImmediatePropagation()
-      if (baseline.current) restorePropertiesSession(baseline.current)
-      onClose()
+      if (action === 'cancel') latest.current.cancel()
+      else latest.current.ok()
     }
     const onPageHide = () => { if (baseline.current) restorePropertiesSession(baseline.current) }
     window.addEventListener('keydown', handle, true)
     window.addEventListener('pagehide', onPageHide)
     return () => { window.removeEventListener('keydown', handle, true); window.removeEventListener('pagehide', onPageHide) }
-  }, [onClose])
+  }, [])
 
   if (!node || (node.kind !== 'cabinet' && node.kind !== 'board')) return null
   const locked = Boolean(node.locked)
-  return <div className="p100-dialog-backdrop" data-testid="properties-dialog-backdrop" onMouseDown={(event) => {
-    if (event.target === event.currentTarget) cancel()
-  }}>
-    <section ref={dialogRef} role="dialog" aria-modal="true" aria-label={tr('Свойства')} data-testid="properties-dialog" className="p100-dialog">
+  // Фон — МОДАЛДЫ: сыртқа басу ештеңе істемейді (бұрын өзгерісті ескертусіз жоятын, P0-3).
+  return <div className="p100-dialog-backdrop" data-testid="properties-dialog-backdrop">
+    <section ref={dialogRef} onInput={(event) => {
+      const target = event.target
+      if (target instanceof HTMLInputElement && target.hasAttribute('data-properties-name')) setNameDirty(target.value !== node.name)
+    }} role="dialog" aria-modal="true" aria-label={tr('Свойства')} data-testid="properties-dialog" className="p100-dialog">
       <div className="p100-dialog-title"><strong>{tr('Свойства')}</strong><button type="button" aria-label={tr('Закрыть')} onClick={cancel}>×</button></div>
       <label className="p100-dialog-lock"><input type="checkbox" checked={locked} onChange={(event) => {
         try { setNodeLocked(nodeId, event.target.checked); setActionError(null) }
         catch (cause) { setActionError(cause instanceof Error ? cause.message : tr('Не удалось изменить деталь')) }
       }} />{tr('Заблокировать')}</label>
       {actionError && <p role="alert" className="p100-dialog-error">{actionError}</p>}
+      {invalid && <p role="alert" data-testid="properties-invalid" className="p100-dialog-error p100-dialog-invalid">
+        {tr(invalid.label)}: {invalid.detail}{invalid.allowed ? ` — ${tr('допустимо')} ${invalid.allowed}` : ''}
+      </p>}
       <div className="p100-dialog-body">
         <fieldset disabled={locked}>
           {node.kind === 'board'
             ? <BoardProperties key={node.id} node={node} panel={boardPanel} catalog={catalog} />
-            : <Configurator key={node.id} invalidField={error} panels={panels} />}
+            : <Configurator key={node.id} invalidField={error?.field ?? null} panels={panels} />}
         </fieldset>
         <label className="p100-dialog-dimensions"><input type="checkbox" checked={showDimensions} onChange={(event) => setShowDimensions(event.target.checked)} />{tr('Показывать размеры')}</label>
       </div>
       <div className="p100-dialog-actions">
-        <Button onClick={() => { if (apply()) onClose() }} disabled={Boolean(error)}>{tr('OK')}</Button>
-        <Button onClick={cancel}>{tr('Отмена')}</Button>
-        <Button onClick={apply} disabled={Boolean(error)}>{tr('Применить')}</Button>
+        <Button testId="properties-ok" onClick={() => latest.current.ok()} disabled={Boolean(invalid)} title="Enter">{tr('OK')}</Button>
+        <Button testId="properties-cancel" onClick={cancel} title="Esc">{tr('Отмена')}</Button>
+        <Button testId="properties-apply" onClick={apply} disabled={Boolean(invalid) || !dirty}>{tr('Применить')}</Button>
       </div>
     </section>
   </div>

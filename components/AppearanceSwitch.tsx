@@ -11,7 +11,7 @@
 import { useEffect, useState } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
-import { applyTheme, readQuality, readTheme, saveQuality, saveTheme } from '@/lib/appearance'
+import { THEME_EVENT, applyTheme, chooseTheme, readQuality, readTheme, saveQuality } from '@/lib/appearance'
 import type { Quality, Theme } from '@/lib/appearance'
 import { useConfigurator } from '@/store/configurator'
 
@@ -38,13 +38,18 @@ export function AppearanceSwitch() {
     applyTheme(saved)
     setQuality(readQuality())
   }, [setQuality])
+  // Классикалық «Вид → Тема» басқа жерден ауыстырса — белгіше де ауыссын.
+  useEffect(() => {
+    const onTheme = (event: Event) => setTheme((event as CustomEvent<Theme>).detail)
+    window.addEventListener(THEME_EVENT, onTheme)
+    return () => window.removeEventListener(THEME_EVENT, onTheme)
+  }, [])
 
   const cycleTheme = () => {
     // Үш күй бір батырмада: жүйе → ақ → қараңғы → жүйе.
     const next: Theme = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'
     setTheme(next)
-    saveTheme(next)
-    applyTheme(next)
+    chooseTheme(next)
   }
 
   const cycleQuality = () => {

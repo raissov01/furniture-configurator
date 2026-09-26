@@ -90,6 +90,16 @@ export function applyTheme(theme: Theme): void {
   }
 }
 
+/** Тема ауысқанда хабар: классикалық мәзір мен header қосқышы бір күйде тұрсын. */
+export const THEME_EVENT = 'appearance:theme'
+
+/** Теманы таңдау: сақтау + қолдану + басқа қосқыштарға хабарлау. */
+export function chooseTheme(theme: Theme): void {
+  saveTheme(theme)
+  applyTheme(theme)
+  window.dispatchEvent(new CustomEvent<Theme>(THEME_EVENT, { detail: theme }))
+}
+
 /**
  * 3D канвастың параметрлері.
  *

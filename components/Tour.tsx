@@ -17,56 +17,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
+import { isRectVisible, tourStepsFor, visibleTourSteps, type TourStep } from '@/lib/tourSteps'
 
 const DONE_KEY = 'furniture-configurator:tour-done'
 
-type Step = {
-  /** Қай элементті көрсету. Табылмаса — қадам өткізіледі. */
-  selector: string
-  title: string
-  text: string
+/** Элемент қазір экранда көріне ме (жасырын header ішіндегісі — 0×0). */
+function targetVisible(selector: string): boolean {
+  const el = document.querySelector(selector)
+  return el !== null && isRectVisible(el.getBoundingClientRect(), { width: window.innerWidth, height: window.innerHeight })
 }
 
-/**
- * Қадамдар — жұмыстың НАҚТЫ РЕТІМЕН: габарит → бөлімдер → 3D → деталировка
- * → экспорт. Бұл — цехтың бір тапсырысты өткізу жолы, әрі көмекші сол жолды
- * қайталайды.
- */
-const STEPS: Step[] = [
-  {
-    selector: '[data-tour="size"]',
-    title: 'Начните с габарита',
-    text: 'Высота, ширина и глубина — всё остальное считается от них. Порядок в программе всегда H × W × D.',
-  },
-  {
-    selector: '[data-tour="sections"]',
-    title: 'Наполнение — в разделах слева',
-    text: 'Полки, ящики, фасады, планки. Закрытый раздел показывает своё состояние справа, так что ничего не потеряется.',
-  },
-  {
-    selector: '[data-tour="scene"]',
-    title: 'Это не картинка, а те же детали',
-    text: '3D и деталировка считаются из одной модели: если тут что-то не так, значит и в раскрое будет не так.',
-  },
-  {
-    selector: '[data-tour="cutlist"]',
-    title: 'Деталировка: готовый и рез',
-    text: 'Клиенту показывают готовый размер, цеху — рез. Разница — толщина кромки, и она уже вычтена.',
-  },
-  {
-    selector: '[data-tour="export"]',
-    title: 'Экспорт для цеха',
-    text: 'XLSX и CSV — на распил, DXF — на станок, PDF — на сборку. Присадка и карта раскроя лежат на странице «Раскрой».',
-  },
-  {
-    selector: '[data-tour="shop"]',
-    title: 'Профиль цеха — ваши правила',
-    text: 'Материалы, кромки, цены, зазоры и присадка берутся отсюда. Пока цены пустые, коммерческое предложение не выпускается.',
-  },
-]
-
-export function Tour({ paused = false }: { paused?: boolean }) {
+export function Tour({ paused = false, classic = false }: { paused?: boolean; classic?: boolean }) {
   const [step, setStep] = useState<number | null>(null)
+  /*
+   * Аялдамалар тур БАСТАЛҒАНДА режимге қарай таңдалып, көрінбейтіндері
+   * алынып тасталады (09-26, P0-2): классикада жасырын header-дегі «Экспорт»
+   * пен «Цех» 0×0 тесікпен бүкіл экранды қараңғылап тұратын.
+   */
+  const [steps, setSteps] = useState<TourStep[]>([])
   const [rect, setRect] = useState<DOMRect | null>(null)
 
   const close = useCallback((remember: boolean) => {
@@ -85,6 +53,12 @@ export function Tour({ paused = false }: { paused?: boolean }) {
    * «бастаушы» тұратын (09-13). Бір жүктелуде өзі бір-ақ рет басталады.
    */
   const autoStarted = useRef(false)
+  const start = useCallback(() => {
+    const available = visibleTourSteps(tourStepsFor(classic), targetVisible)
+    setSteps(available)
+    if (available.length === 0) close(true)
+    else setStep(0)
+  }, [classic, close])
   useEffect(() => {
     if (paused || autoStarted.current) return undefined
     let done = true
@@ -95,25 +69,34 @@ export function Tour({ paused = false }: { paused?: boolean }) {
     // Кідіріс: бет пен 3D орнығып болсын, әйтпесе шеңбер қате жерде тұрады.
     const timer = setTimeout(() => {
       autoStarted.current = true
-      setStep(0)
+      start()
     }, 1200)
     return () => clearTimeout(timer)
-  }, [paused])
+  }, [paused, start])
 
   // Басқа жерден қайта қосу: «?» терезесіндегі батырма осы оқиғаны жібереді.
   useEffect(() => {
-    const onStart = () => setStep(0)
-    window.addEventListener('tour:start', onStart)
-    return () => window.removeEventListener('tour:start', onStart)
-  }, [])
+    window.addEventListener('tour:start', start)
+    return () => window.removeEventListener('tour:start', start)
+  }, [start])
 
-  // Ағымдағы қадамның элементін тауып, оның орнын өлшейміз.
+  // Esc — турдан кез келген сәтте шығу (экран ешқашан тұйықталмайды).
+  useEffect(() => {
+    if (step === null) return undefined
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') close(true) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [step, close])
+
+  // Ағымдағы қадамның элементін тауып, оның орнын өлшейміз. Тур кезінде
+  // элемент жоғалса/жасырылса — келесі көрінетін қадамға өтеміз.
   useEffect(() => {
     if (step === null) return undefined
     let index = step
     let el: Element | null = null
-    while (index < STEPS.length && !el) {
-      el = document.querySelector(STEPS[index]!.selector)
+    while (index < steps.length && !el) {
+      const selector = steps[index]!.selector
+      el = targetVisible(selector) ? document.querySelector(selector) : null
       if (!el) index += 1
     }
     if (!el) {
@@ -126,11 +109,11 @@ export function Tour({ paused = false }: { paused?: boolean }) {
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [step, close])
+  }, [step, steps, close])
 
-  if (step === null || !rect) return null
-  const current = STEPS[step]!
-  const last = step === STEPS.length - 1
+  if (step === null || !rect || !steps[step]) return null
+  const current = steps[step]!
+  const last = step === steps.length - 1
 
   // Карточка элементтің АСТЫНА қойылады, ал орын жетпесе — үстіне.
   const below = rect.bottom + 180 < window.innerHeight
@@ -164,7 +147,7 @@ export function Tour({ paused = false }: { paused?: boolean }) {
         style={{ top, left }}
       >
         <p className="text-[10px] uppercase tracking-wider text-neutral-400">
-          {tr('Шаг')} {step + 1} / {STEPS.length}
+          {tr('Шаг')} {step + 1} / {steps.length}
         </p>
         <h3 className="mt-0.5 text-sm font-semibold">{tr(current.title)}</h3>
         <p className="mt-1 text-xs leading-snug text-neutral-600 dark:text-neutral-300">
