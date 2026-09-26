@@ -10,6 +10,10 @@
  * импорты арқылы (бөлек тапсырма).
  */
 import type { EdgeBand, EdgePolicy, Material } from '../../types'
+import { resolveTextureSource } from '../../manufacturerAssets'
+import type { TextureSource } from '../../manufacturerAssets'
+import { decorKey } from './decorKey'
+export { decorKey } from './decorKey'
 
 // ── Кіріс пішіні (зерттеу файлдары, `input/*.json`) ─────────────────────────
 
@@ -147,11 +151,6 @@ export type CatalogIssue = { path: string; message: string }
 
 const norm = (s: string) => s.replace(/[\s\-_.]/g, '').toUpperCase()
 
-/** Декор кілті: өндіруші + декор коды + құрылым (бос орын/регистр ескерілмейді). */
-export function decorKey(manufacturer: string, decorCode: string, structureCode: string | null): string {
-  return `${manufacturer.toLowerCase()}|${norm(decorCode)}|${structureCode === null ? '' : norm(structureCode)}`
-}
-
 const isHttpUrl = (s: unknown): s is string => typeof s === 'string' && /^https?:\/\/\S+$/.test(s)
 const isNonEmpty = (s: unknown): s is string => typeof s === 'string' && s.trim().length > 0
 
@@ -288,6 +287,8 @@ export type OwnMaterialMeta = {
   sourceId: string
   sourceUrl: string
   dateSeen: string
+  /** Рұқсат расталмаса тек өндіруші беті; сурет файлының URL-і жоқ. */
+  textureSource: TextureSource
 }
 
 export type OwnEdgeMeta = {
@@ -423,6 +424,7 @@ export function buildOwnCatalog(input: OwnCatalogInput, opts: { validate?: boole
           publishedThicknessesMm: published, grain: d.grain, grainBasis: d.grainBasis,
           sizeBasis: d.sizeBasis, sizeSourceUrl: d.sizeSourceUrl, sourceId: d.sourceId,
           sourceUrl: d.sourceUrl, dateSeen: d.dateSeen,
+          textureSource: resolveTextureSource(d.manufacturer, d.decorCode, d.structureCode, d.sourceUrl),
         }
       }
     }

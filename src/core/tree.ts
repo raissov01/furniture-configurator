@@ -16,6 +16,7 @@ import type {
 import type { Cutout } from './cutouts'
 import type { MillingPath } from './milling'
 import type { PolygonContourInput } from './polygon'
+import type { ManufacturerModelSource } from './manufacturerAssets'
 
 /** Ата-түйінге ҚАТЫСТЫ орны. Орын — бүтін мм (§0.2), бұрыш — градус. */
 export type Transform = { pos: Vec3; rot: Vec3 }
@@ -90,6 +91,8 @@ export type SolidSpec = {
   size: Vec3
   color?: string | undefined
   textureId?: string | undefined
+  /** Модельге сыртқы сілтеме; mesh файлы жобаға енгізілмейді. */
+  modelSource?: ManufacturerModelSource | undefined
 }
 
 /**
