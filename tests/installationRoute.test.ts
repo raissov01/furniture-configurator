@@ -126,6 +126,24 @@ describe('монтаж API және офлайн кезек', () => {
     expect(kept.task.projectId).toBe(firstProject)
   })
 
+  it('бірнеше корпусты жобада монтаж ашылады, деталь ID-і сахнадағыдай бірегей', async () => {
+    const owner = auth.register('install-multi@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    actor.value = { ...owner.account, role: 'shop' }
+    const cabinet = templateToCabinet(findTemplate('wardrobe-penal-600')!, SEED_CATALOG)
+    const multi = parseProjectV4({
+      schemaVersion: 3, name: 'Екі шкаф', cabinets: [cabinet, { ...cabinet, id: 'second' }], placements: [],
+      room: { width: 4000, depth: 3000, height: 2700 }, materials: SEED_CATALOG.materials, edgeBands: SEED_CATALOG.edgeBands,
+    })
+    for (const child of multi.root.children) child.hidden = false
+    const projectId = store.writeProject(owner.account.shopId, 'Екі шкаф', multi)
+    const created = await sync.POST(request(action('multi-create', 'installation.create', 'multi-install', { projectId }, 0)))
+    expect(created.status).toBe(200)
+    const task = (await (await route.GET(new Request('http://localhost'), context('multi-install'))).json() as { task: { panelIds: string[] } }).task
+    expect(new Set(task.panelIds).size).toBe(task.panelIds.length)
+    expect(task.panelIds.every((id) => id.includes('--'))).toBe(true)
+  })
+
   it('4xx/500 жауаптар стек бермейді', async () => {
     const owner = auth.register('install-error@example.kz', 'password123', 'Цех')
     if (!owner.ok) throw new Error(owner.error)
