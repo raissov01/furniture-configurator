@@ -45,7 +45,7 @@ export async function PATCH(request: Request): Promise<Response> {
     || (body.role !== 'designer' && body.role !== 'shop')) {
     return NextResponse.json({ error: 'Нужны userId и роль designer или shop' }, { status: 400 })
   }
-  if (!setMemberRole(account.shopId, body.userId, body.role)) {
+  if (!setMemberRole(account.shopId, body.userId, body.role, account.userId)) {
     return NextResponse.json({ error: 'Участник не найден или владелец' }, { status: 404 })
   }
   return NextResponse.json({ members: listMembers(account.shopId) })

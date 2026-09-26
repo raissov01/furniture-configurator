@@ -31,7 +31,7 @@ function consume(bucket: string, identity: string, duration: number, maximum: nu
       return false
     }
     database.prepare(`INSERT INTO request_limits (bucket, subject, window_start, attempts) VALUES (?, ?, ?, 1)
-      ON CONFLICT(bucket, subject, window_start) DO UPDATE SET attempts = attempts + 1`).run(bucket, identity, start)
+      ON CONFLICT(bucket, subject, window_start) DO UPDATE SET attempts = request_limits.attempts + 1`).run(bucket, identity, start)
     database.exec('COMMIT')
     return true
   } catch (error) {

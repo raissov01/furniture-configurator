@@ -7,6 +7,7 @@ import { PDFDocument } from 'pdf-lib'
 import { z } from 'zod'
 import { cloudOff } from '@/lib/server/cloud'
 import { db } from '@/lib/server/db'
+import { audit } from '@/lib/server/observability'
 import { currentAccount } from '@/lib/server/session'
 import { allowComment, allowShareMiss, isShareLimited, requestIp } from '@/lib/server/rateLimit'
 import { isApprovalClockError } from '@/lib/server/approvalErrors'
@@ -125,6 +126,7 @@ export async function POST(request: Request, { params }: Context): Promise<Respo
         id, code, share.created_at, account.shopId, next.version, JSON.stringify(next.project),
         next.hash, next.priceMinor, now, codeHash(id, confirmationCode), png,
       )
+      audit({ shopId: account.shopId, actorId: account.userId, action: 'request', entityType: 'approval', entityId: id })
       database.exec('COMMIT')
     } catch (cause) { database.exec('ROLLBACK'); throw cause }
     // Код тек цехқа қайтады. Оны клиент телефонына жеткізу — UI/хабарлама интеграциясының міндеті.
@@ -182,6 +184,7 @@ export async function PUT(request: Request, { params }: Context): Promise<Respon
       }
       const result = database.prepare('UPDATE approval_revisions SET seal_json = ? WHERE id = ? AND seal_json IS NULL')
         .run(JSON.stringify(sealed.seal), latest.id)
+      if (result.changes && share.shop_id) audit({ shopId: share.shop_id, action: 'seal', entityType: 'approval', entityId: latest.id })
       database.exec('COMMIT')
       if (!result.changes) return error('Версия уже подтверждена', 409)
     } catch (cause) { database.exec('ROLLBACK'); throw cause }

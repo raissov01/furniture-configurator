@@ -12,6 +12,7 @@ import { billingEnabled } from '../billing'
 import { DEFAULT_PLAN, PLANS, isPlanId, planOf } from '../plans'
 import type { Plan, PlanId, PlanUsage } from '../plans'
 import { db } from './db'
+import { audit } from './observability'
 
 export type ShopPlan = {
   plan: Plan
@@ -49,7 +50,13 @@ export function readPlan(shopId: string, now = Date.now()): ShopPlan {
 
 export function setPlan(shopId: string, plan: PlanId, until: number | null = null): void {
   if (!isPlanId(plan)) throw new Error(`Белгісіз тариф: ${plan}`)
-  db().prepare('UPDATE shops SET plan = ?, plan_until = ? WHERE id = ?').run(plan, until, shopId)
+  const database = db()
+  database.exec('BEGIN IMMEDIATE')
+  try {
+    const result = database.prepare('UPDATE shops SET plan = ?, plan_until = ? WHERE id = ?').run(plan, until, shopId)
+    if (result.changes) audit({ shopId, action: 'set', entityType: 'price', entityId: shopId, detail: { plan, until } })
+    database.exec('COMMIT')
+  } catch (cause) { database.exec('ROLLBACK'); throw cause }
 }
 
 export function usageOf(shopId: string): PlanUsage {

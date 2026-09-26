@@ -10,6 +10,7 @@
 
 import { randomBytes } from 'node:crypto'
 import { db } from './db'
+import { audit } from './observability'
 import type { Role } from '../permissions'
 
 /** Шақыру осынша күн жарамды. Ұзағы — ұмытылып қалған ашық есік. */
@@ -93,10 +94,16 @@ export function checkInvite(token: string, now = Date.now()): InviteCheck {
   return { ok: true, shopId: row.shop_id, role: row.role }
 }
 
-export function setMemberRole(shopId: string, targetUserId: string, role: Extract<Role, 'designer' | 'shop'>): boolean {
-  const changed = db().prepare("UPDATE users SET role = ? WHERE shop_id = ? AND id = ? AND role <> 'owner'")
-    .run(role, shopId, targetUserId)
-  return Number(changed.changes) > 0
+export function setMemberRole(shopId: string, targetUserId: string, role: Extract<Role, 'designer' | 'shop'>, actorId?: string): boolean {
+  const database = db()
+  database.exec('BEGIN IMMEDIATE')
+  try {
+    const changed = database.prepare("UPDATE users SET role = ? WHERE shop_id = ? AND id = ? AND role <> 'owner'")
+      .run(role, shopId, targetUserId)
+    if (changed.changes) audit({ shopId, actorId, action: 'set', entityType: 'role', entityId: targetUserId, detail: { role } })
+    database.exec('COMMIT')
+    return Boolean(changed.changes)
+  } catch (cause) { database.exec('ROLLBACK'); throw cause }
 }
 
 export function markInviteUsed(token: string, userId: string, now = Date.now()): void {
@@ -154,6 +161,7 @@ export function removeMember(
       .prepare('UPDATE invites SET revoked_at = ? WHERE used_by = ? AND revoked_at IS NULL')
       .run(now, targetUserId)
     database.prepare('DELETE FROM users WHERE id = ? AND shop_id = ?').run(targetUserId, shopId)
+    audit({ shopId, actorId: actorUserId, action: 'remove', entityType: 'role', entityId: targetUserId }, now)
     database.exec('COMMIT')
   } catch (error) {
     database.exec('ROLLBACK')

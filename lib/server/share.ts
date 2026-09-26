@@ -34,14 +34,14 @@ export function createShare(json: string, now = Date.now(), shopId?: string): Sh
   database.prepare("UPDATE shares SET json = '{}' WHERE expires_at <= ? AND json <> '{}'").run(now)
   const key = randomBytes(24).toString('hex')
   const expiresAt = now + SHARE_TTL_MS
-  // 1 000 000 кодтың ішінде бос біреуін табу: қайталанса — қайта таңдау.
+  // Бірегей шектеу екі API репликасы бір кодты таңдаса да тек біреуін өткізеді.
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0')
-    if (database.prepare('SELECT 1 FROM shares WHERE code = ?').get(code)) continue
-    database
-      .prepare('INSERT INTO shares (code, key, json, created_at, updated_at, expires_at, shop_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    const result = database
+      .prepare(`INSERT INTO shares (code, key, json, created_at, updated_at, expires_at, shop_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(code) DO NOTHING`)
       .run(code, key, json, now, now, expiresAt, shopId ?? null)
-    return { code, key, expiresAt }
+    if (result.changes) return { code, key, expiresAt }
   }
   throw new Error('Не удалось подобрать свободный код — попробуйте ещё раз')
 }
