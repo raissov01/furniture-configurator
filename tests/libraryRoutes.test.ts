@@ -12,7 +12,8 @@ vi.mock('@/lib/server/cloud', () => ({ cloudOff: () => null }))
 vi.mock('@/lib/server/session', () => ({ currentAccount: async () => actor.value }))
 let auth: typeof import('../lib/server/auth')
 let route: typeof import('../app/api/library/route')
-beforeAll(async () => { auth = await import('../lib/server/auth'); route = await import('../app/api/library/route') })
+let database: typeof import('../lib/server/db')
+beforeAll(async () => { auth = await import('../lib/server/auth'); route = await import('../app/api/library/route'); database = await import('../lib/server/db') })
 
 const catalog = catalogOf(defaultShopProfile())
 const node: SceneNode = { kind: 'solid', id: 'solid', name: 'Декор',
@@ -46,5 +47,30 @@ describe('аккаунт кітапханасы API', () => {
     actor.value = owner.account
     expect((await route.POST(new Request('http://localhost/api/library', { method: 'POST',
       body: JSON.stringify({ item: { ...item, schemaVersion: 99 } }) }))).status).toBe(400)
+  })
+
+  it('бір бүлінген жолды өткізіп, санын жауапта көрсетеді', async () => {
+    const owner = auth.register('library-corrupt@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    actor.value = owner.account
+    const insert = database.db().prepare('INSERT INTO library_items (user_id, id, json, updated_at) VALUES (?, ?, ?, ?)')
+    insert.run(owner.account.userId, item.id, JSON.stringify(item), 1)
+    insert.run(owner.account.userId, 'broken', '{', 2)
+    const response = await route.GET()
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ items: [item], skipped: 1 })
+  })
+
+  it('200 элемент шегінде бар элементті жаңартады, жаңасын 4xx қайтарады', async () => {
+    const owner = auth.register('library-limit@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    actor.value = owner.account
+    const insert = database.db().prepare('INSERT INTO library_items (user_id, id, json, updated_at) VALUES (?, ?, ?, ?)')
+    for (let i = 0; i < 200; i += 1) insert.run(owner.account.userId, i ? `item-${i}` : item.id, JSON.stringify(item), i)
+    expect((await route.POST(new Request('http://localhost/api/library', { method: 'POST',
+      body: JSON.stringify({ item }) }))).status).toBe(200)
+    const another = { ...item, id: 'over-limit' }
+    expect((await route.POST(new Request('http://localhost/api/library', { method: 'POST',
+      body: JSON.stringify({ item: another }) }))).status).toBe(409)
   })
 })
