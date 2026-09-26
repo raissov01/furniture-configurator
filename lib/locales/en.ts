@@ -10,6 +10,14 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Папка': 'Folder',
+  'Все папки': 'All folders',
+  'Без папки': 'Unfiled',
+  'Сортировка': 'Sort',
+  'По дате': 'By date',
+  'По названию': 'By name',
+  'Новая папка': 'New folder',
+  'В этой папке нет проектов.': 'No projects in this folder.',
   'Размер бирки, мм': 'Label size, mm',
   'Ширина бирки': 'Label width',
   'Высота бирки': 'Label height',

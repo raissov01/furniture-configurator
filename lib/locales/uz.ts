@@ -11,6 +11,14 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Папка': 'Jild',
+  'Все папки': 'Barcha jildlar',
+  'Без папки': 'Jildsiz',
+  'Сортировка': 'Saralash',
+  'По дате': 'Sana bo‘yicha',
+  'По названию': 'Nomi bo‘yicha',
+  'Новая папка': 'Yangi jild',
+  'В этой папке нет проектов.': 'Bu jildda loyiha yo‘q.',
   'Размер бирки, мм': 'Yorliq o‘lchami, mm',
   'Ширина бирки': 'Yorliq eni',
   'Высота бирки': 'Yorliq bo‘yi',
