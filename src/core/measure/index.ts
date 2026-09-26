@@ -34,7 +34,7 @@ const obstacleSchema = z.object({
 const obstaclesSchema = z.object(Object.fromEntries(OBSTACLE_KINDS.map((kind) => [kind, obstacleSchema])) as Record<ObstacleKind, typeof obstacleSchema>).strict()
 const wallSchema = z.object({ length: positiveMeasure, obstacles: obstaclesSchema }).strict()
 
-export const MeasurementSurveySchema = z.object({
+const measurementSurveyShape = z.object({
   id: z.string().trim().min(1),
   height: positiveMeasure,
   walls: z.object({ north: wallSchema, east: wallSchema, south: wallSchema, west: wallSchema }).strict(),
@@ -46,14 +46,10 @@ export const MeasurementSurveySchema = z.object({
 
 export type MeasuredNumber = z.infer<typeof measuredNumber>
 export type ObstacleAnswer = z.infer<typeof obstacleSchema>
-export type MeasurementSurvey = z.infer<typeof MeasurementSurveySchema>
+export type MeasurementSurvey = z.infer<typeof measurementSurveyShape>
 export type MeasurementIssue = { path: string; message: string }
 
-/** Draft validation: a wall is not complete until all six explicit answers have a photo reference. */
-export function validateMeasurement(input: unknown): MeasurementIssue[] {
-  const result = MeasurementSurveySchema.safeParse(input)
-  if (!result.success) return result.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }))
-  const survey = result.data
+function surveyIssues(survey: MeasurementSurvey): MeasurementIssue[] {
   const issues: MeasurementIssue[] = []
   for (const wall of WALL_IDS) {
     const length = survey.walls[wall].length.value
@@ -79,6 +75,20 @@ export function validateMeasurement(input: unknown): MeasurementIssue[] {
     }
   }
   return issues
+}
+
+/** Server actions and "completed" measurements must contain every answer and photo. */
+export const MeasurementSurveySchema = measurementSurveyShape.superRefine((survey, context) => {
+  for (const issue of surveyIssues(survey)) {
+    context.addIssue({ code: 'custom', path: issue.path.split('.'), message: issue.message })
+  }
+})
+
+/** Draft validation remains readable while a survey is being filled in. */
+export function validateMeasurement(input: unknown): MeasurementIssue[] {
+  const result = measurementSurveyShape.safeParse(input)
+  if (!result.success) return result.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }))
+  return surveyIssues(result.data)
 }
 
 export function canCompleteWall(input: unknown, wall: WallId): boolean {

@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { MemorySyncStore } from '../src/core/sync/memoryStore'
 import { SyncQueue } from '../src/core/sync/queue'
 import type { SyncStore } from '../src/core/sync/types'
-import { emptySurvey, updateMeasure } from '../components/mobile/measurementModel'
+import { emptySurvey, updateMeasure, updateObstacle } from '../components/mobile/measurementModel'
+import { OBSTACLE_KINDS } from '../src/core/measure'
 import { enqueueLatestMeasurement, keepLocalMeasurement, retryDelay } from '../components/mobile/measurementSync'
 
 function validDraft(id: string) {
   let draft = updateMeasure(emptySurvey(id, 1000), 'height', 2600, 'manual', 1000)
   for (const wall of ['north', 'east', 'south', 'west'] as const) draft = updateMeasure(draft, `walls.${wall}.length`, 3000, 'manual', 1000)
   for (const corner of ['northWest', 'northEast', 'southEast', 'southWest'] as const) draft = updateMeasure(draft, `corners.${corner}`, 90, 'manual', 1000)
+  for (const wall of ['north', 'east', 'south', 'west'] as const) {
+    for (const kind of OBSTACLE_KINDS) draft = updateObstacle(draft, wall, kind, { status: 'absent', photoRef: `photo:${wall}:${kind}` })
+  }
   return draft
 }
 
