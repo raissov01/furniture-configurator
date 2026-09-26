@@ -14,10 +14,11 @@ function onlineFailure(status: number): SendResult {
   if (status >= 500 || status === 429) return { kind: 'retry' }
   if (status === 401) return { kind: 'rejected', reason: 'Кіру қажет' }
   if (status === 403) return { kind: 'rejected', reason: 'Рұқсат жоқ' }
+  if (status === 413) return { kind: 'rejected', reason: 'Фото 8 МБ-тан асады; суретті сығып қайта таңдаңыз' }
   return { kind: 'rejected', reason: `Сервер қабылдамады (${status})` }
 }
 
-async function readReply(response: Response): Promise<SendResult> {
+async function readReply(response: Response, payload: JsonValue): Promise<SendResult> {
   if (!response.ok && response.status !== 409) return onlineFailure(response.status)
   const raw = await response.json() as unknown
   const parsed = replySchema.safeParse(raw)
@@ -29,6 +30,11 @@ async function readReply(response: Response): Promise<SendResult> {
   }
   if (!parsed.success) return { kind: 'retry' }
   if (parsed.data.kind === 'conflict') {
+    // Two tabs can submit the same survey with distinct action IDs. Its current
+    // server revision already contains our bytes, so there is no user conflict.
+    if (JSON.stringify(parsed.data.serverValue) === JSON.stringify(payload)) {
+      return { kind: 'duplicate', revision: parsed.data.revision }
+    }
     return { kind: 'conflict', revision: parsed.data.revision as Revision, serverValue: parsed.data.serverValue as JsonValue }
   }
   return { kind: parsed.data.kind, revision: parsed.data.revision }
@@ -59,13 +65,13 @@ export function createMobileSyncTransport(store: IndexedDbMobileStore, fetcher: 
         const response = await fetcher('/api/mobile/measure/sync', {
           method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action),
         })
-        return readReply(response)
+        return readReply(response, action.payload)
       }
       if (action.kind.startsWith('installation.')) {
         const response = await fetcher('/api/installation/sync', {
           method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action),
         })
-        return readReply(response)
+        return readReply(response, action.payload)
       }
       return { kind: 'rejected', reason: `Әрекет түріне сервер жолы жоқ: ${action.kind}` }
     },

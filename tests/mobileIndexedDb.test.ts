@@ -6,6 +6,7 @@ import { SyncQueue } from '../src/core/sync/queue'
 import { migrateV3ToV4 } from '../src/core/projectV4'
 import { SEED_CATALOG } from '../src/core/index'
 import type { SyncRecord } from '../src/core/sync/types'
+import { createInstallationTask } from '../src/core/installation'
 
 const record: SyncRecord = {
   action: {
@@ -20,6 +21,35 @@ beforeEach(() => {
 })
 
 describe('телефон IndexedDB сақтау қабаты', () => {
+  it('басқа қойынды schema нұсқасын өсірсе байланысын жауып қайта ашу белгісін береді', async () => {
+    const first = await IndexedDbMobileStore.open('mobile-version-change')
+    let changed = false
+    first.onVersionChange = () => { changed = true }
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('mobile-version-change', 3)
+      request.onsuccess = () => { request.result.close(); resolve() }
+      request.onerror = () => reject(request.error)
+    })
+    expect(changed).toBe(true)
+  })
+  it('монтаж актісі мен фото черновигін база жаңарғаннан кейін де сақтайды', async () => {
+    const factory = new IDBFactory()
+    const old = factory.open('mobile-installation', 1)
+    await new Promise<void>((resolve, reject) => {
+      old.onupgradeneeded = () => { old.result.createObjectStore('surveys', { keyPath: 'id' }) }
+      old.onsuccess = () => { old.result.close(); resolve() }
+      old.onerror = () => reject(old.error)
+    })
+    const first = await IndexedDbMobileStore.open('mobile-installation', factory)
+    const task = createInstallationTask('task-1', 'project-1', ['panel-1'], 1000)
+    await first.putInstallation(task)
+    await first.putInstallationDraft('task-1', { delivery: 'data:image/jpeg;base64,/9j/2Q==' })
+    first.close()
+    const reopened = await IndexedDbMobileStore.open('mobile-installation', factory)
+    expect(await reopened.getInstallation('task-1')).toEqual(task)
+    expect(await reopened.getInstallationDraft('task-1')).toEqual({ delivery: 'data:image/jpeg;base64,/9j/2Q==' })
+    reopened.close()
+  })
   it('әрекет ID-ін атомдық сақтайды және қайта ашқанда кезек жоғалмайды', async () => {
     const first = await IndexedDbMobileStore.open('mobile-queue-test')
     expect(await first.insert(record)).toBe(true)

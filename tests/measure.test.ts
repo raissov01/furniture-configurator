@@ -72,6 +72,16 @@ describe('measurement wizard core', () => {
     expect(() => toRoom(draft)).toThrow(/opposite|қарама/i)
   })
 
+  it('бапталған ауытқумен қарама-қарсы қабырға мен бұрышты қабылдайды, шектен асса қате береді', () => {
+    const draft = survey()
+    draft.walls.south.length = n(3192)
+    draft.corners.northEast = n(91)
+    expect(() => toRoom(draft)).toThrow()
+    expect(toRoom(draft, { wallMm: 10, cornerDeg: 1 })).toEqual({ width: 3200, depth: 2400, height: 2700 })
+    draft.walls.south.length = n(3189)
+    expect(() => toRoom(draft, { wallMm: 10, cornerDeg: 1 })).toThrow(/opposite/i)
+  })
+
   it('calculates affected cabinets and quotes from obstacle footprint and changed wall length', () => {
     const before = survey()
     const after = survey()

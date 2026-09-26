@@ -2,13 +2,16 @@ import { z } from 'zod'
 import { parseProjectV4 } from '../../src/core/projectV4'
 import type { ProjectFileV4 } from '../../src/core/projectV4'
 import type { JsonValue, SyncRecord, SyncStore } from '../../src/core/sync/types'
+import type { InstallationTask } from '../../src/core/installation'
 
-const DB_VERSION = 1
+const DB_VERSION = 2
 const recordKey = z.string().trim().min(1)
 type StoredRecord = { id: string; record: SyncRecord }
 type StoredSurvey = { id: string; value: JsonValue }
 type StoredProject = { id: string; value: ProjectFileV4 }
 type StoredPhoto = { id: string; value: Blob }
+type StoredInstallation = { id: string; value: InstallationTask }
+type StoredInstallationDraft = { id: string; value: Record<string, string> }
 
 function resultOf<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -26,8 +29,9 @@ function completed(transaction: IDBTransaction): Promise<void> {
 
 /** One browser database for durable config, survey, photos and idempotent actions. */
 export class IndexedDbMobileStore implements SyncStore {
+  onVersionChange?: () => void
   private constructor(private readonly database: IDBDatabase) {
-    database.onversionchange = () => database.close()
+    database.onversionchange = () => { database.close(); this.onVersionChange?.() }
   }
 
   static async open(name = 'tapsyrys-mobile', factory: IDBFactory | undefined = globalThis.indexedDB): Promise<IndexedDbMobileStore> {
@@ -35,7 +39,7 @@ export class IndexedDbMobileStore implements SyncStore {
     const request = factory.open(name, DB_VERSION)
     request.onupgradeneeded = () => {
       const database = request.result
-      for (const store of ['actions', 'projects', 'surveys', 'photos']) {
+      for (const store of ['actions', 'projects', 'surveys', 'photos', 'installations', 'installationDrafts']) {
         if (!database.objectStoreNames.contains(store)) database.createObjectStore(store, { keyPath: 'id' })
       }
     }
@@ -147,6 +151,38 @@ export class IndexedDbMobileStore implements SyncStore {
   async getPhoto(id: string): Promise<Blob | undefined> {
     const transaction = this.database.transaction('photos', 'readonly')
     const row = await resultOf(transaction.objectStore('photos').get(recordKey.parse(id)) as IDBRequest<StoredPhoto | undefined>)
+    return row?.value
+  }
+
+  async putInstallation(task: InstallationTask): Promise<void> {
+    const transaction = this.database.transaction('installations', 'readwrite')
+    const done = completed(transaction)
+    transaction.objectStore('installations').put({ id: recordKey.parse(task.id), value: task } satisfies StoredInstallation)
+    await done
+  }
+
+  async getInstallation(id: string): Promise<InstallationTask | undefined> {
+    const transaction = this.database.transaction('installations', 'readonly')
+    const row = await resultOf(transaction.objectStore('installations').get(recordKey.parse(id)) as IDBRequest<StoredInstallation | undefined>)
+    return row?.value
+  }
+
+  async listInstallations(): Promise<InstallationTask[]> {
+    const transaction = this.database.transaction('installations', 'readonly')
+    const rows = await resultOf(transaction.objectStore('installations').getAll() as IDBRequest<StoredInstallation[]>)
+    return rows.map((row) => row.value)
+  }
+
+  async putInstallationDraft(id: string, value: Record<string, string>): Promise<void> {
+    const transaction = this.database.transaction('installationDrafts', 'readwrite')
+    const done = completed(transaction)
+    transaction.objectStore('installationDrafts').put({ id: recordKey.parse(id), value } satisfies StoredInstallationDraft)
+    await done
+  }
+
+  async getInstallationDraft(id: string): Promise<Record<string, string> | undefined> {
+    const transaction = this.database.transaction('installationDrafts', 'readonly')
+    const row = await resultOf(transaction.objectStore('installationDrafts').get(recordKey.parse(id)) as IDBRequest<StoredInstallationDraft | undefined>)
     return row?.value
   }
 }
