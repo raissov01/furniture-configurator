@@ -11,6 +11,21 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Свой декор: не попадает в раскрой и смету.': 'O‘z dekoringiz: bichish va smetaga kirmaydi.',
+  'Размещённый декор': 'Joylashtirilgan dekor',
+  'Координата должна быть целым мм.': 'Koordinata butun millimetr bo‘lishi kerak.',
+  'Одежда': 'Kiyim',
+  'Посуда': 'Idishlar',
+  'Быт': 'Uy-ro‘zg‘or',
+  'Сложенная рубашка': 'Taxlangan ko‘ylak',
+  'Вешалка': 'Ilgich',
+  'Туфля': 'Poyabzal',
+  'Чемодан': 'Chamadon',
+  'Стопка книг': 'Kitoblar to‘plami',
+  'Чашка': 'Piyola',
+  'Стопка тарелок': 'Likopchalar to‘plami',
+  'Комнатное растение': 'Xona o‘simligi',
+  'Настольная лампа': 'Stol chirog‘i',
   'Габариты': 'O‘lchamlar',
   'Задайте размеры': 'O‘lchamlarni kiriting',
   'Введите высоту, ширину и глубину в миллиметрах.': 'Balandlik, en va chuqurlikni millimetrda kiriting.',

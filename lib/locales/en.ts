@@ -10,6 +10,21 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Свой декор: не попадает в раскрой и смету.': 'Original decor: excluded from nesting and pricing.',
+  'Размещённый декор': 'Placed decor',
+  'Координата должна быть целым мм.': 'Coordinate must be whole millimetres.',
+  'Одежда': 'Clothing',
+  'Посуда': 'Tableware',
+  'Быт': 'Household',
+  'Сложенная рубашка': 'Folded shirt',
+  'Вешалка': 'Hanger',
+  'Туфля': 'Shoe',
+  'Чемодан': 'Suitcase',
+  'Стопка книг': 'Book stack',
+  'Чашка': 'Cup',
+  'Стопка тарелок': 'Plate stack',
+  'Комнатное растение': 'Houseplant',
+  'Настольная лампа': 'Desk lamp',
   'Габариты': 'Dimensions',
   'Задайте размеры': 'Set dimensions',
   'Введите высоту, ширину и глубину в миллиметрах.': 'Enter height, width and depth in millimetres.',
