@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="4000mm" height="4000mm" viewBox="0 0 400 400">
+  <path d="M0 0 A 200 200 0 0 1 400 0 Z"/>
+  <polyline points="0,0 100,0 100,100"/>
+</svg>
