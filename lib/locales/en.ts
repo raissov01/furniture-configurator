@@ -1323,4 +1323,5 @@ export const en: Record<string, string> = {
   'Перспектива, аксонометрия, план и четыре стены — одним нажатием.': 'Perspective, axonometry, plan and four walls — in one click.',
   'Строка состояния': 'Status bar',
   'Выбранный элемент, его положение и размеры H × W × D. Двойной щелчок по детали открывает «Свойства».': 'The selected item, its position and H × W × D size. Double-click a part to open Properties.',
+  'допустимо': 'allowed',
 }

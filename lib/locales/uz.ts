@@ -1327,4 +1327,5 @@ export const uz: Record<string, string> = {
   'Перспектива, аксонометрия, план и четыре стены — одним нажатием.': 'Perspektiva, aksonometriya, reja va to‘rt devor — bir bosishda.',
   'Строка состояния': 'Holat qatori',
   'Выбранный элемент, его положение и размеры H × W × D. Двойной щелчок по детали открывает «Свойства».': 'Tanlangan element, uning joylashuvi va H × W × D o‘lchamlari. Detalni ikki marta bosish «Xususiyatlar»ni ochadi.',
+  'допустимо': 'ruxsat etilgan',
 }

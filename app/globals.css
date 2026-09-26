@@ -108,6 +108,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   --p100-icon-yellow: #ecdb8b;
   --p100-tool-hover: #99d1ff;
   --p100-tool-border: #83bde7;
+  --p100-invalid: #c42b1c;
 }
 @media (min-width: 1024px) {
   .p100-workspace { background: var(--p100-chrome); color: var(--p100-text); font: 12px/1.2 'Segoe UI', Tahoma, Arial, sans-serif; }
@@ -186,3 +187,8 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-workspace .p100-tree-dock :is(.text-neutral-500, [class*="dark:text-neutral-400"]) { color: var(--p100-muted); }
 .p100-workspace .p100-tree-dock [aria-selected="true"] { background: var(--p100-tool-selected); }
 .p100-workspace .p100-tree-dock :is(input, select) { background: var(--p100-field); color: var(--p100-text); }
+
+/* Жарамсыз мән (P0-3): классикалық жиек ережелері қызыл жиекті баспасын —
+   бұл ереже файлдың СОҢЫНДА, ал селектор салмағы бейтарап ережелерден кем емес. */
+.p100-workspace :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--p100-invalid); outline: 1px solid var(--p100-invalid); outline-offset: -1px; }
+.p100-dialog-invalid { color: var(--p100-invalid); }

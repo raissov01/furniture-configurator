@@ -515,7 +515,7 @@ export function Workspace() {
 
   return (
     <div className={cn("flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100", classic && "p100-workspace")} data-workspace-style={classic ? "classic" : "ours"}>
-      {propertiesNodeId && <PropertiesDialog nodeId={propertiesNodeId} catalog={catalog} panels={activePanels} boardPanel={boardPanel} error={error?.field ?? null} onClose={() => setPropertiesNodeId(null)} />}
+      {propertiesNodeId && <PropertiesDialog nodeId={propertiesNodeId} catalog={catalog} panels={activePanels} boardPanel={boardPanel} error={error ?? null} onClose={() => setPropertiesNodeId(null)} />}
       <TemplateGallery />
       <AiPanel />
       <RoomPlan />
