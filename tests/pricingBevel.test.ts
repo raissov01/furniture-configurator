@@ -46,6 +46,28 @@ describe('C10: бұрыштық корпустың қиғаш алдыңғы ж�
     const band = { bandId: 'short-end' }
     const metres = edgeMetresByBand([{ ...panel, qty: 1, edges: { L1: null, L2: null, W1: band, W2: band } }])
     expect(metres.get('short-end')).toBe((panel.bevel.widthAtStart + panel.bevel.widthAtEnd) / 1000)
+    // W1 = local x=0 = басы, W2 = соңы; ауыстырып алса қосынды өзгермейді.
+    const w1 = edgeMetresByBand([{ ...panel, qty: 1, edges: { L1: null, L2: null, W1: band, W2: null } }])
+    expect(w1.get('short-end')).toBe(panel.bevel.widthAtStart / 1000)
+  })
+  it('шегіністі сөренің трапециясы шегіністі тереңдікпен сәйкес, W1 кромкасы нақты енге тең', () => {
+    const withInsets = (insets?: { front: number; back: number }) => generateCabinet(corner(350, {
+      sections: [{ ...template.sections[0]!, fronts: null,
+        contents: [{ kind: 'shelves', count: 1, shelfKind: 'adjustable', ...(insets ? { insets } : {}) }] }],
+    }), catalog).find((p) => p.role === 'shelf')!
+    const plain = withInsets()
+    const inset = withInsets({ front: 50, back: 30 })
+    if (!plain.bevel || !isWidthBevel(plain.bevel) || !inset.bevel || !isWidthBevel(inset.bevel)) {
+      throw new Error('width bevel expected')
+    }
+    expect(inset.finishedWidth).toBe(plain.finishedWidth - 80)
+    expect(inset.bevel.widthAtStart).toBe(inset.finishedWidth)
+    expect(inset.bevel.widthAtEnd).toBe(plain.bevel.widthAtEnd - 80)
+    const band = { bandId: 'w1' }
+    const metres = edgeMetresByBand([{ ...inset, qty: 1, edges: { L1: null, L2: null, W1: band, W2: null } }])
+    expect(metres.get('w1')).toBe(inset.finishedWidth / 1000)
+    // Сол ұшы 250 мм қалады, ал тар оң ұшы шегіністен кейін жоғалады.
+    expect(() => withInsets({ front: 200, back: 150 })).toThrow(/отступы/)
   })
   it('дно/крышка/3 сөре — әрқайсысының L1-і гипотенуза (≈621 мм), 568 емес', () => {
     const panels = generateCabinet(corner(350), catalog)
