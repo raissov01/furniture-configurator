@@ -56,6 +56,6 @@
 
 **Files:** `.codex-runs/0924-03d4-autojoint-rebuild-report.md`.
 
-- [ ] Worktree diff ревью; `codex/0924`-ке `merge --no-ff`.
-- [ ] Merge-ден кейін толық тест, typecheck, UI build/e2e; нәтижені қазақша есепке жазу.
-- [ ] Worktree-ді алып тастау; өзіміз қосқан server/browser процестерін тоқтату.
+- [x] Worktree diff және тәуелсіз ревью; `codex/0924`-ке `merge --no-ff` (`55af8a9`, тест қабығы үшін `6cb1e4b`).
+- [x] Merge-ден кейін 244 файл/2433 тест, typecheck, UI build, Structure e2e және соңғы жалпы e2e 26/26; нәтиже қазақша есепке жазылды.
+- [x] Worktree-ді алып тастау; осы кезекте ашылған server/browser процестерін тоқтату.
