@@ -25,6 +25,7 @@ export * from './schema'
 export * from './research'
 export * from './referencePrices'
 export * from './build'
+export * from './materials'
 
 /** Генератор тексерген кіріс (декор/кромка жазбалары, дереккөздерімен). */
 export const OWN_CATALOG_INPUT: OwnCatalogInput = catalogData as OwnCatalogInput

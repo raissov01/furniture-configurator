@@ -24,6 +24,7 @@ import { validatePolygonContour } from './polygon'
 import { ConfigValidationError } from './errors'
 import type { AutoJointRecord } from './autoJointRebuild'
 import { rebuildAutoJoints, validateManualBoardDrilling } from './autoJointRebuild'
+import { migrateLegacyProjectMaterials } from './data/catalog/materials'
 
 /** v4-те корпус конфигінің жалғыз орны — root ішіндегі CabinetNode. */
 export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'placements'> & {
@@ -210,7 +211,7 @@ export function migrateV3ToV4(project: ProjectFile & { layers?: Layer[] }): Proj
 export function parseProjectV4(raw: unknown): ProjectFileV4 {
   const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion
   if (version === 4) {
-    const project = ProjectFileV4Schema.parse(raw)
+    const project = migrateLegacyProjectMaterials(ProjectFileV4Schema.parse(raw))
     validateManualBoardDrilling(project.root, { materials: project.materials, edgeBands: project.edgeBands },
       project.settings, project.layers)
     if (project.autoJoints?.length) project.autoJoints = rebuildAutoJoints(project.root, project.autoJoints,
@@ -218,7 +219,7 @@ export function parseProjectV4(raw: unknown): ProjectFileV4 {
     return project
   }
   const legacy = parseProjectWithLayers(raw)
-  return ProjectFileV4Schema.parse(migrateV3ToV4(legacy))
+  return migrateLegacyProjectMaterials(ProjectFileV4Schema.parse(migrateV3ToV4(legacy)))
 }
 
 /**
