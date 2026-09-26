@@ -58,6 +58,9 @@ try {
   await h.goto('/mobile', 5000)
   assert(await h.until('Boolean(navigator.serviceWorker?.controller)', 15000), 'service worker did not control mobile page')
   await h.goto('/mobile', 5000) // қызметтік жұмысшы HTML/чанктарды кэшке жазады
+  await h.goto('/configurator', 6500)
+  await h.goto('/configurator', 4500) // өндіріс өзегі мен 3D чанктарын кэшке түсіреді
+  await h.goto('/mobile', 4000)
   assert(await h.evaluate("(() => { localStorage.setItem('tapsyrys:role','designer'); return true })()"), 'role seed failed')
   await session.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 })
   await session.send('Page.reload', { ignoreCache: true })
@@ -101,6 +104,8 @@ try {
     }
   })`)
   assert(saved.surveys >= 1 && saved.photos >= 1, 'offline survey and photo did not survive reload')
+  await h.goto('/configurator', 7000)
+  assert((await h.cutListRows()).length >= 6, 'cut list did not regenerate offline')
   console.log('mobile offline e2e: PASS', saved)
 } catch (error) {
   console.error('mobile offline e2e: FAIL', error)

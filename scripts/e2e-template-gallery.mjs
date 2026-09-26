@@ -53,6 +53,9 @@ let session
 try {
   session = await connect()
   const h = makeHelpers(session, base)
+  await session.send('Page.addScriptToEvaluateOnNewDocument', {
+    source: "try { localStorage.removeItem('furniture-configurator:project') } catch {}",
+  })
   await session.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
   await session.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] })
   for (const width of [360, 390, 414]) {
