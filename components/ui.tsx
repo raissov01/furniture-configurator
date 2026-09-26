@@ -58,6 +58,7 @@ export function NumberInput({
   const input = (
     <input
       type="number"
+      aria-invalid={invalid || undefined}
       className={cn(cls, 'tabular-nums', invalid && 'border-red-500 dark:border-red-500', dense && 'order-2 min-w-0 rounded-none border-x-0 px-0.5 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none')}
       value={value}
       min={min}
@@ -204,7 +205,7 @@ export function Slider({
 }
 
 export function Button({
-  children, onClick, disabled, active, title, tour, size = 'md',
+  children, onClick, disabled, active, title, tour, size = 'md', testId,
 }: {
   children: React.ReactNode
   onClick?: () => void
@@ -219,12 +220,14 @@ export function Button({
    * бұрынғы батырмалардың бәрі (сыртқы түрі өзгермейді).
    */
   size?: 'sm' | 'md'
+  testId?: string
 }) {
   return (
     <button
       type="button"
       title={title}
       data-tour={tour}
+      data-testid={testId}
       onClick={onClick}
       disabled={disabled}
       className={cn(

@@ -19,67 +19,25 @@ import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 import { LESSONS, nextAvailableLessonStep, parseCompletedLessons } from '@/src/core/lessonCatalog'
 import type { LessonStep } from '@/src/core/lessonCatalog'
+import { isRectVisible, tourStepsFor, visibleTourSteps } from '@/lib/tourSteps'
 
 const DONE_KEY = 'furniture-configurator:tour-done'
 export const LESSON_DONE_KEY = 'furniture-configurator:lessons-done'
 
-type Step = {
-  /** Қай элементті көрсету. Табылмаса — қадам өткізіледі. */
-  selector: string
-  title: string
-  text: string
-}
-
 function targetOf(step: LessonStep): Element | null {
-  if (step.selector) return document.querySelector(step.selector)
-  return [...document.querySelectorAll('[title]')].find((element) =>
-    element.getAttribute('title') === tr(step.titleTarget ?? '')) ?? null
+  const element = step.selector ? document.querySelector(step.selector) :
+    [...document.querySelectorAll('[title]')].find((candidate) =>
+      candidate.getAttribute('title') === tr(step.titleTarget ?? '')) ?? null
+  return element && isRectVisible(element.getBoundingClientRect(), { width: window.innerWidth, height: window.innerHeight }) ? element : null
 }
 
-/**
- * Қадамдар — жұмыстың НАҚТЫ РЕТІМЕН: габарит → бөлімдер → 3D → деталировка
- * → экспорт. Бұл — цехтың бір тапсырысты өткізу жолы, әрі көмекші сол жолды
- * қайталайды.
- */
-const STEPS: Step[] = [
-  {
-    selector: '[data-tour="size"]',
-    title: 'Начните с габарита',
-    text: 'Высота, ширина и глубина — всё остальное считается от них. Порядок в программе всегда H × W × D.',
-  },
-  {
-    selector: '[data-tour="sections"]',
-    title: 'Наполнение — в разделах слева',
-    text: 'Полки, ящики, фасады, планки. Закрытый раздел показывает своё состояние справа, так что ничего не потеряется.',
-  },
-  {
-    selector: '[data-tour="scene"]',
-    title: 'Это не картинка, а те же детали',
-    text: '3D и деталировка считаются из одной модели: если тут что-то не так, значит и в раскрое будет не так.',
-  },
-  {
-    selector: '[data-tour="cutlist"]',
-    title: 'Деталировка: готовый и рез',
-    text: 'Клиенту показывают готовый размер, цеху — рез. Разница — толщина кромки, и она уже вычтена.',
-  },
-  {
-    selector: '[data-tour="export"]',
-    title: 'Экспорт для цеха',
-    text: 'XLSX и CSV — на распил, DXF — на станок, PDF — на сборку. Присадка и карта раскроя лежат на странице «Раскрой».',
-  },
-  {
-    selector: '[data-tour="shop"]',
-    title: 'Профиль цеха — ваши правила',
-    text: 'Материалы, кромки, цены, зазоры и присадка берутся отсюда. Пока цены пустые, коммерческое предложение не выпускается.',
-  },
-]
-
-export function Tour({ paused = false }: { paused?: boolean }) {
+export function Tour({ paused = false, classic = false }: { paused?: boolean; classic?: boolean }) {
   const [step, setStep] = useState<number | null>(null)
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [rect, setRect] = useState<DOMRect | null>(null)
+  const [tourSteps, setTourSteps] = useState<readonly LessonStep[]>([])
   const lesson = LESSONS.find((item) => item.id === lessonId)
-  const activeSteps: readonly LessonStep[] = lesson?.steps ?? STEPS
+  const activeSteps: readonly LessonStep[] = lesson?.steps ?? tourSteps
 
   const close = useCallback((completed: boolean) => {
     setStep(null)
@@ -101,6 +59,15 @@ export function Tour({ paused = false }: { paused?: boolean }) {
    * «бастаушы» тұратын (09-13). Бір жүктелуде өзі бір-ақ рет басталады.
    */
   const autoStarted = useRef(false)
+  const start = useCallback(() => {
+    setLessonId(null)
+    setRect(null)
+    const available = visibleTourSteps(tourStepsFor(classic), (selector) =>
+      targetOf({ selector, title: '', text: '' }) !== null)
+    setTourSteps(available)
+    if (available.length === 0) close(true)
+    else setStep(0)
+  }, [classic, close])
   useEffect(() => {
     if (paused || autoStarted.current) return undefined
     let done = true
@@ -111,14 +78,14 @@ export function Tour({ paused = false }: { paused?: boolean }) {
     // Кідіріс: бет пен 3D орнығып болсын, әйтпесе шеңбер қате жерде тұрады.
     const timer = setTimeout(() => {
       autoStarted.current = true
-      setStep(0)
+      start()
     }, 1200)
     return () => clearTimeout(timer)
-  }, [paused])
+  }, [paused, start])
 
   // Басқа жерден қайта қосу: «?» терезесіндегі батырма осы оқиғаны жібереді.
   useEffect(() => {
-    const onStart = () => { setLessonId(null); setRect(null); setStep(0) }
+    const onStart = () => start()
     const onLesson = (event: Event) => {
       const id = (event as CustomEvent<{ lessonId: string }>).detail?.lessonId
       if (!LESSONS.some((item) => item.id === id)) return
@@ -129,14 +96,22 @@ export function Tour({ paused = false }: { paused?: boolean }) {
     window.addEventListener('tour:start', onStart)
     window.addEventListener('tour:lesson', onLesson)
     return () => { window.removeEventListener('tour:start', onStart); window.removeEventListener('tour:lesson', onLesson) }
-  }, [])
+  }, [start])
+
+  // Esc кез келген турды жабады, фон басқаруды ешқашан тұйықтамайды.
+  useEffect(() => {
+    if (step === null) return undefined
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') close(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [step, close])
 
   // Ағымдағы қадамның элементін тауып, оның орнын өлшейміз.
   useEffect(() => {
     if (step === null) return undefined
     const index = nextAvailableLessonStep(activeSteps, step, (item) => targetOf(item) !== null)
     if (index === null) {
-      close(false)
+      close(!lesson)
       return undefined
     }
     const el = targetOf(activeSteps[index]!)!
@@ -146,9 +121,9 @@ export function Tour({ paused = false }: { paused?: boolean }) {
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [step, close, lessonId])
+  }, [step, close, lessonId, activeSteps, lesson])
 
-  if (step === null || !rect) return null
+  if (step === null || !rect || !activeSteps[step]) return null
   const current = activeSteps[step]!
   const last = step === activeSteps.length - 1
 

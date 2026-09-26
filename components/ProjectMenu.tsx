@@ -9,7 +9,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useRef } from 'react'
-import { parseProjectV4 } from '@/src/core/index'
+import { downloadProjectFile, loadProjectFromFile } from '@/lib/projectFile'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 
@@ -18,27 +18,13 @@ export function ProjectMenu() {
   const loadProject = useConfigurator((s) => s.loadProject)
   const input = useRef<HTMLInputElement>(null)
 
-  const save = () => {
-    const file = exportProject()
-    const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${file.name || 'проект'}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  const save = () => downloadProjectFile(exportProject())
 
   const open = async (fileList: FileList | null) => {
     const file = fileList?.[0]
     if (!file) return
     try {
-      loadProject(parseProjectV4(JSON.parse(await file.text())))
-    } catch (error) {
-      // Бүлінген файл ҮНСІЗ жұтылмауы керек: адам не болғанын білуі тиіс.
-      window.alert(
-        `Не удалось открыть проект: ${error instanceof Error ? error.message : 'файл не распознан'}`,
-      )
+      await loadProjectFromFile(file, loadProject)
     } finally {
       if (input.current) input.current.value = ''
     }
@@ -50,9 +36,8 @@ export function ProjectMenu() {
       <Button onClick={() => input.current?.click()} title={tr('Открыть проект из файла')}>{tr('Открыть')}</Button>
       <input
         ref={input}
-        // PRO100-дың «Файл → Открыть» мәзір пунктінен де осы файл терезесі
-        // шақырылады (`Workspace.tsx`-тегі жаңа мәзір жолағы): логиканы
-        // ЕКІНШІ РЕТ жазбау үшін, сол жерде осы `id` бойынша табылып басылады.
+        // Классикалық «Файл → Открыть» бұл input-қа тиіспейді: ол
+        // `lib/projectFile.ts`-тегі `pickProjectFile`-ты тікелей шақырады.
         id="project-open-input"
         type="file"
         accept="application/json,.json"
