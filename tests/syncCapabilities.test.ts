@@ -9,7 +9,8 @@ describe('функцияның желі талабы', () => {
   })
 
   it('серверге қажет функциялар queued не online деп бір жерден белгіленеді', () => {
-    expect(offlineCapability('publishShare')).toEqual({ mode: 'queued', requiresInternet: true })
+    expect(offlineCapability('publishShare')).toEqual({ mode: 'online', requiresInternet: true })
+    expect(offlineCapability('whatsappLink')).toEqual({ mode: 'online', requiresInternet: true })
     for (const key of ['clientApproval', 'aiGenerate', 'bankPaymentCheck', 'firstLogin'] as const) {
       expect(offlineCapability(key)).toEqual({ mode: 'online', requiresInternet: true })
     }

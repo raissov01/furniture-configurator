@@ -7,8 +7,9 @@ export const OFFLINE_CAPABILITIES = {
   downloadedOrder: 'offline', qrScan: 'offline', workshopStatus: 'offline', assemblyChecklist: 'offline',
   manualPayment: 'offline',
   projectSync: 'queued', measurementSync: 'queued', photoUpload: 'queued', workshopStatusSync: 'queued',
-  assemblySync: 'queued', manualPaymentSync: 'queued', publishShare: 'queued', commentSend: 'queued',
-  whatsappLink: 'queued',
+  assemblySync: 'queued', manualPaymentSync: 'queued', commentSend: 'queued',
+  // Share creation and wa.me have no durable queue transport yet.
+  publishShare: 'online', whatsappLink: 'online',
   firstLogin: 'online', teamInvite: 'online', roleChange: 'online', cloudDownload: 'online',
   clientApproval: 'online', otp: 'online', bankPaymentLink: 'online', bankPaymentCheck: 'online',
   aiGenerate: 'online', aiVariants: 'online', aiRender: 'online', speechRecognition: 'online',

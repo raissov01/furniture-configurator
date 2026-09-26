@@ -51,16 +51,27 @@ function placedBoard(node: FlatNode): Panel {
   }
 }
 
-function drillFits(panel: Panel, hole: Drill, thickness: number): boolean {
+export function validateJointDrill(panel: Panel, hole: Drill, thickness: number, field: string): void {
   const radius = hole.diameter / 2
   const face = hole.face === 'inner' || hole.face === 'outer'
   const edgeOnLength = hole.face === 'edgeW1' || hole.face === 'edgeW2'
   const along = face ? panel.cutLength : edgeOnLength ? panel.cutWidth : panel.cutLength
   const across = face ? panel.cutWidth : thickness
   const depthLimit = face ? thickness : edgeOnLength ? panel.cutLength : panel.cutWidth
-  return hole.x >= radius && hole.x <= along - radius
-    && hole.y >= radius && hole.y <= across - radius
-    && hole.depth > 0 && hole.depth <= depthLimit
+  if (!Number.isFinite(hole.x) || !Number.isFinite(hole.y) || !Number.isFinite(hole.diameter) ||
+    hole.diameter <= 0 || hole.x < radius || hole.x > along - radius ||
+    hole.y < radius || hole.y > across - radius) {
+    throw new ConfigValidationError(`${field}.position`, `${panel.id}: тесік тақта шегінен шықты`,
+      `x ${radius}..${along - radius} мм, y ${radius}..${across - radius} мм`)
+  }
+  if (!Number.isFinite(hole.depth) || hole.depth <= 0 || hole.depth > depthLimit) {
+    throw new ConfigValidationError(`${field}.depth`, `${panel.id}: тесік тереңдігі тақтадан асты`,
+      `0..${depthLimit} мм`)
+  }
+  if (!face && hole.y !== thickness / 2) {
+    throw new ConfigValidationError(`${field}.position`, `${panel.id}: торц тесігі қалыңдық ортасында емес`,
+      `y = ${thickness / 2} мм`)
+  }
 }
 
 /** Жоба конфигін өзгертпейді; екі тақтаның тек жаңа Drill[] тізімін қайтарады. */
@@ -106,8 +117,12 @@ export function autoJoint(
     throw new ConfigValidationError('joint.length', 'таңдалған бекіткіш буынға сыймады', 'екі тақтада да тесік бар буын')
   }
   for (const panel of [first, second]) {
-    for (const hole of panel.drilling) if (!drillFits(panel, hole, thickness(panel))) {
-      throw new ConfigValidationError('joint.geometry', `${panel.id}: Ø${hole.diameter} тесігі тақтаға сыймады`, 'тесік толық рез материалдың ішінде')
+    for (const [index, hole] of panel.drilling.entries()) {
+      try { validateJointDrill(panel, hole, thickness(panel), `joint.drilling.${panel.id}.${index}`) }
+      catch (error) {
+        if (!(error instanceof ConfigValidationError)) throw error
+        throw new ConfigValidationError(error.field, `${panel.id}: Ø${hole.diameter} тесігі сыймады — ${error.message}`)
+      }
     }
   }
   return [first, second].map((panel, index) => ({ boardId: boardIds[index]!, drilling: panel.drilling }))

@@ -34,7 +34,7 @@ const obstacleSchema = z.object({
 const obstaclesSchema = z.object(Object.fromEntries(OBSTACLE_KINDS.map((kind) => [kind, obstacleSchema])) as Record<ObstacleKind, typeof obstacleSchema>).strict()
 const wallSchema = z.object({ length: positiveMeasure, obstacles: obstaclesSchema }).strict()
 
-export const MeasurementSurveySchema = z.object({
+const measurementSurveyShape = z.object({
   id: z.string().trim().min(1),
   height: positiveMeasure,
   walls: z.object({ north: wallSchema, east: wallSchema, south: wallSchema, west: wallSchema }).strict(),
@@ -46,14 +46,10 @@ export const MeasurementSurveySchema = z.object({
 
 export type MeasuredNumber = z.infer<typeof measuredNumber>
 export type ObstacleAnswer = z.infer<typeof obstacleSchema>
-export type MeasurementSurvey = z.infer<typeof MeasurementSurveySchema>
+export type MeasurementSurvey = z.infer<typeof measurementSurveyShape>
 export type MeasurementIssue = { path: string; message: string }
 
-/** Draft validation: a wall is not complete until all six explicit answers have a photo reference. */
-export function validateMeasurement(input: unknown): MeasurementIssue[] {
-  const result = MeasurementSurveySchema.safeParse(input)
-  if (!result.success) return result.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }))
-  const survey = result.data
+function surveyIssues(survey: MeasurementSurvey): MeasurementIssue[] {
   const issues: MeasurementIssue[] = []
   for (const wall of WALL_IDS) {
     const length = survey.walls[wall].length.value
@@ -81,6 +77,20 @@ export function validateMeasurement(input: unknown): MeasurementIssue[] {
   return issues
 }
 
+/** Server actions and "completed" measurements must contain every answer and photo. */
+export const MeasurementSurveySchema = measurementSurveyShape.superRefine((survey, context) => {
+  for (const issue of surveyIssues(survey)) {
+    context.addIssue({ code: 'custom', path: issue.path.split('.'), message: issue.message })
+  }
+})
+
+/** Draft validation remains readable while a survey is being filled in. */
+export function validateMeasurement(input: unknown): MeasurementIssue[] {
+  const result = measurementSurveyShape.safeParse(input)
+  if (!result.success) return result.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }))
+  return surveyIssues(result.data)
+}
+
 export function canCompleteWall(input: unknown, wall: WallId): boolean {
   if (typeof input !== 'object' || input === null || !('walls' in input)) return false
   const walls = input.walls
@@ -96,23 +106,33 @@ export function canCompleteWall(input: unknown, wall: WallId): boolean {
   return !validateMeasurement(input).some((issue) => issue.path.startsWith(`walls.${wall}.`))
 }
 
-function completeRectangularSurvey(input: unknown): MeasurementSurvey {
+export type RoomTolerance = { wallMm: number; cornerDeg: number }
+
+function validTolerance(value: RoomTolerance): void {
+  if (!Number.isSafeInteger(value.wallMm) || value.wallMm < 0 ||
+      !Number.isSafeInteger(value.cornerDeg) || value.cornerDeg < 0) {
+    throw new Error('tolerance: wallMm және cornerDeg теріс емес бүтін болуы керек')
+  }
+}
+
+function completeRectangularSurvey(input: unknown, tolerance: RoomTolerance): MeasurementSurvey {
+  validTolerance(tolerance)
   const issues = validateMeasurement(input)
   if (issues.length) throw new Error(`Өлшеу аяқталмаған: ${issues.map((issue) => issue.path).join(', ')}`)
   const survey = MeasurementSurveySchema.parse(input)
   for (const corner of CORNER_IDS) {
-    if (survey.corners[corner].value !== 90) throw new Error(`corner ${corner}: Room тек тік бұрышты бөлмені қолдайды`)
+    if (Math.abs(survey.corners[corner].value - 90) > tolerance.cornerDeg) throw new Error(`corner ${corner}: Room тек төзімділік шегіндегі тік бұрышты бөлмені қолдайды`)
   }
-  if (survey.walls.north.length.value !== survey.walls.south.length.value ||
-      survey.walls.east.length.value !== survey.walls.west.length.value) {
+  if (Math.abs(survey.walls.north.length.value - survey.walls.south.length.value) > tolerance.wallMm ||
+      Math.abs(survey.walls.east.length.value - survey.walls.west.length.value) > tolerance.wallMm) {
     throw new Error('opposite walls: қарама-қарсы қабырғалар тең емес')
   }
   return survey
 }
 
 /** Existing Room is rectangular and has no obstacle field. Keep obstacles in the survey. */
-export function toRoom(input: unknown): Room {
-  const survey = completeRectangularSurvey(input)
+export function toRoom(input: unknown, tolerance: RoomTolerance = { wallMm: 0, cornerDeg: 0 }): Room {
+  const survey = completeRectangularSurvey(input, tolerance)
   return {
     width: survey.walls.north.length.value,
     depth: survey.walls.east.length.value,
@@ -128,8 +148,8 @@ export type KitchenMeasurementInput = {
   constraints: Record<WallId, MeasurementSurvey['walls'][WallId]['obstacles']>
 }
 
-export function toKitchenInput(input: unknown, walls: readonly WallId[]): KitchenMeasurementInput {
-  const survey = completeRectangularSurvey(input)
+export function toKitchenInput(input: unknown, walls: readonly WallId[], tolerance: RoomTolerance = { wallMm: 0, cornerDeg: 0 }): KitchenMeasurementInput {
+  const survey = completeRectangularSurvey(input, tolerance)
   if (walls.length < 1 || walls.length > 3 || new Set(walls).size !== walls.length) {
     throw new Error('Kitchen walls: бірден үшке дейін бөлек қабырға керек')
   }
@@ -145,7 +165,7 @@ export function toKitchenInput(input: unknown, walls: readonly WallId[]): Kitche
     ...(c ? { lengthC: survey.walls[c].length.value } : {}),
   }
   return {
-    room: toRoom(survey), options,
+    room: toRoom(survey, tolerance), options,
     wallMap: { runA: a, runB: b ?? null, runC: c ?? null },
     constraints: Object.fromEntries(WALL_IDS.map((wall) => [wall, survey.walls[wall].obstacles])) as KitchenMeasurementInput['constraints'],
   }

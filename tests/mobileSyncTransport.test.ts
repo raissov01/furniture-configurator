@@ -59,9 +59,15 @@ describe('телефон синхрон тасымалы', () => {
     const conflictFetch: typeof fetch = async (input) => String(input).includes('/photos/')
       ? Response.json({ kind: 'duplicate' })
       : Response.json({ kind: 'conflict', revision: { version: 2, updatedAt: 3000 }, serverValue: survey() }, { status: 409 })
-    expect(await createMobileSyncTransport(store, conflictFetch).send(action)).toMatchObject({
-      kind: 'conflict', revision: { version: 2, updatedAt: 3000 }, serverValue: { id: 'measure-1' },
+    expect(await createMobileSyncTransport(store, conflictFetch).send(action)).toEqual({
+      kind: 'duplicate', revision: { version: 2, updatedAt: 3000 },
     })
+    const changed = survey()
+    changed.height.value = 2800
+    const differentFetch: typeof fetch = async (input) => String(input).includes('/photos/')
+      ? Response.json({ kind: 'duplicate' })
+      : Response.json({ kind: 'conflict', revision: { version: 3, updatedAt: 3001 }, serverValue: changed }, { status: 409 })
+    expect(await createMobileSyncTransport(store, differentFetch).send(action)).toMatchObject({ kind: 'conflict' })
     store.close()
   })
 
@@ -75,6 +81,14 @@ describe('телефон синхрон тасымалы', () => {
     expect(await createMobileSyncTransport(store, fetcher).send(action)).toEqual({
       kind: 'rejected', reason: 'baseRevision: жоқ өлшемнің нұсқасы 0 болуы керек',
     })
+    store.close()
+  })
+  it('фотоға 413 келсе нақты өлшем шегін көрсетеді', async () => {
+    const store = await IndexedDbMobileStore.open('transport-413')
+    await store.putPhoto('photo-1', new Blob(['photo'], { type: 'image/jpeg' }))
+    const result = await createMobileSyncTransport(store, async () => new Response(null, { status: 413 }))
+      .send(createMeasurementSyncAction(survey(), 'action-413', { version: 0, updatedAt: 0 }, 1000))
+    expect(result).toEqual({ kind: 'rejected', reason: expect.stringContaining('8 МБ') })
     store.close()
   })
 })

@@ -36,6 +36,23 @@ beforeAll(async () => {
 })
 
 describe('мобильді өлшем API', () => {
+  it('толық емес өлшемді сервер аяқталған деп қабылдамайды', async () => {
+    const owner = auth.register('mobile-incomplete@example.kz', 'password123', 'Өлшем')
+    if (!owner.ok) throw new Error(owner.error)
+    actor.value = { ...owner.account, role: 'designer' }
+    const image = new Uint8Array([0xff, 0xd8, 0xff, 0xd9])
+    expect((await photos.POST(new Request('http://localhost/api/mobile/photos/photo-1', {
+      method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: image,
+    }), params('photo-1'))).status).toBe(200)
+    const incomplete = survey()
+    incomplete.walls.west.obstacles.socket = { status: 'unanswered', photoRef: null, location: null }
+    const action = { id: 'incomplete-action', kind: 'measurement.upsert', entityId: incomplete.id,
+      payload: incomplete, baseRevision: { version: 0, updatedAt: 0 }, createdAt: 1000 }
+    const response = await sync.POST(new Request('http://localhost/api/mobile/measure/sync', {
+      method: 'POST', body: JSON.stringify(action),
+    }))
+    expect(response.status).toBe(400)
+  })
   it('рөл мен цех шекарасын тексереді; фото және әрекет қайталанса нұсқа өспейді', async () => {
     const owner = auth.register('mobile-route-owner@example.kz', 'password123', 'Цех мобильді')
     const outsider = auth.register('mobile-route-other@example.kz', 'password123', 'Басқа цех')

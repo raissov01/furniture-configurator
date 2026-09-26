@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import type { Placement } from '../src/core/types'
-import { MemorySyncStore } from '../src/core/sync/memoryStore'
-import { SyncQueue } from '../src/core/sync/queue'
 import {
   OBSTACLE_KINDS, calculateMeasurementImpact, canCompleteWall, createMeasurementSyncAction,
   toKitchenInput, toRoom, validateMeasurement, type MeasurementSurvey,
@@ -72,6 +70,16 @@ describe('measurement wizard core', () => {
     expect(() => toRoom(draft)).toThrow(/opposite|қарама/i)
   })
 
+  it('бапталған ауытқумен қарама-қарсы қабырға мен бұрышты қабылдайды, шектен асса қате береді', () => {
+    const draft = survey()
+    draft.walls.south.length = n(3192)
+    draft.corners.northEast = n(91)
+    expect(() => toRoom(draft)).toThrow()
+    expect(toRoom(draft, { wallMm: 10, cornerDeg: 1 })).toEqual({ width: 3200, depth: 2400, height: 2700 })
+    draft.walls.south.length = n(3189)
+    expect(() => toRoom(draft, { wallMm: 10, cornerDeg: 1 })).toThrow(/opposite/i)
+  })
+
   it('calculates affected cabinets and quotes from obstacle footprint and changed wall length', () => {
     const before = survey()
     const after = survey()
@@ -111,24 +119,11 @@ describe('measurement wizard core', () => {
     expect(action.id).toBe('action-1')
   })
 
-  it('queues an unfinished draft offline and sends it once on reconnect', async () => {
+  it('keeps an unfinished draft out of the completed sync action', () => {
     const draft = survey()
     draft.walls.west.obstacles.vent = { status: 'unanswered', photoRef: null, location: null }
-    const store = new MemorySyncStore()
-    const sent: string[] = []
-    const queue = new SyncQueue(store, { send: async (action) => {
-      sent.push(action.id)
-      return { kind: 'applied', revision: { version: 1, updatedAt: 1001 } }
-    } })
-    await queue.setOnline(false, 1000)
-    const action = createMeasurementSyncAction(draft, 'draft-1', { version: 0, updatedAt: 0 }, 1000)
-    await queue.enqueue(action)
-    await queue.enqueue(action)
-    expect(sent).toEqual([])
-    expect((await store.list()).map((record) => record.status)).toEqual(['pending'])
-    await queue.setOnline(true, 1001)
-    expect(sent).toEqual(['draft-1'])
-    expect((await store.list()).map((record) => record.status)).toEqual(['sent'])
+    expect(() => createMeasurementSyncAction(draft, 'draft-1', { version: 0, updatedAt: 0 }, 1000))
+      .toThrow(/walls|status/)
   })
 
   it('requires tile thickness with measured provenance when tile is present', () => {

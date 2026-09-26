@@ -12,4 +12,10 @@ describe('телефон PWA кіру нүктесі', () => {
     expect(manifest.display).toBe('standalone')
     expect(manifest.shortcuts.some((shortcut) => shortcut.url === '/configurator')).toBe(true)
   })
+  it('жаңа worker телефон бетін алдын ала кэштеп, API мен IndexedDB-ге тимейді', () => {
+    const worker = readFileSync(join(process.cwd(), 'public/sw.js'), 'utf8')
+    expect(worker).toMatch(/cache\.add\(['"]\/mobile['"]\)/)
+    expect(worker).toMatch(/url\.pathname\.startsWith\(['"]\/api\/['"]\)/)
+    expect(worker).not.toMatch(/indexedDB\.deleteDatabase|caches\.delete\(['"]tapsyrys/)
+  })
 })

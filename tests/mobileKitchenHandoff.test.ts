@@ -35,6 +35,34 @@ describe('measured kitchen handoff', () => {
       room: { width: 3100, depth: 2200, height: 2670 } }])
     expect(saved).toEqual([{ id: 'survey-kitchen-1', value: project }])
   })
+  it('таңдалған кез келген қабырғадан ас үй қатарын құрады', async () => {
+    const loaded: unknown[] = []
+    await handoffMeasurementToKitchen(completeSurvey(), {
+      loadKitchen: (options) => loaded.push(options),
+      exportProject: () => ({ schemaVersion: 4 }) as ProjectFileV4,
+      saveLocally: () => null,
+      putProject: async () => undefined,
+    }, ['east'])
+    expect(loaded).toEqual([{ layout: 'straight', lengthA: 2200 }])
+  })
+  it('шығыс қабырға таңдалса генератор модульдерін сол қабырғаға орналастырады', async () => {
+    const before = useConfigurator.getState()
+    try {
+      await handoffMeasurementToKitchen(completeSurvey(), {
+        loadKitchen: (options, room) => useConfigurator.getState().loadKitchen(options, room),
+        placeOnWall: (wall) => {
+          for (const placement of useConfigurator.getState().placements) {
+            useConfigurator.getState().movePlacement(placement.cabinetId, { wall })
+          }
+        },
+        exportProject: () => useConfigurator.getState().exportProject(),
+        saveLocally: () => null,
+        putProject: async () => undefined,
+      }, ['east'])
+      expect(useConfigurator.getState().placements.length).toBeGreaterThan(0)
+      expect(useConfigurator.getState().placements.every((placement) => placement.wall === 'east')).toBe(true)
+    } finally { useConfigurator.setState(before) }
+  })
 
   it('stores measured H, W and D in the generated project room', () => {
     const before = useConfigurator.getState()
