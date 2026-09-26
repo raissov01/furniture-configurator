@@ -7,8 +7,11 @@ const MINUTE = 60 * 1000
 /** Тек сенімді reverse proxy берген IP; шеткі proxy осы тақырыптарды қайта жазуы тиіс. */
 export function requestIp(request: Request): string {
   const ip = request.headers.get('x-real-ip') ?? 'unknown'
-  return ip.split(',')[0]!.trim().slice(0, 64)
+  return ip.split(',')[0]!.trim().slice(0, 64) || 'unknown'
 }
+
+// Proxy мекенжайын ала алмасақ, барлық белгісіз клиент ортақ қатаң шекке түседі.
+const shareIpMaximum = (ip: string): number => ip === 'unknown' ? 5 : 20
 
 function subject(ip: string, code?: string): string {
   return createHash('sha256').update(code ? `${ip}\0${code}` : ip).digest('hex')
@@ -39,7 +42,7 @@ function consume(bucket: string, identity: string, duration: number, maximum: nu
 
 /** Бір IP-ден 20 қате/сағат және бір кодқа 5 қате/сағат. */
 export function allowShareMiss(ip: string, code: string, now = Date.now()): boolean {
-  if (!consume('share-ip', subject(ip), HOUR, 20, now)) return false
+  if (!consume('share-ip', subject(ip), HOUR, shareIpMaximum(ip), now)) return false
   return consume('share-code', subject(ip, code), HOUR, 5, now)
 }
 
@@ -51,7 +54,7 @@ export function isShareLimited(ip: string, code: string, now = Date.now()): bool
       .get(bucket, identity, start) as { attempts: number } | undefined
     return row?.attempts ?? 0
   }
-  return count('share-ip', subject(ip)) >= 20 || count('share-code', subject(ip, code)) >= 5
+  return count('share-ip', subject(ip)) >= shareIpMaximum(ip) || count('share-code', subject(ip, code)) >= 5
 }
 
 /** Бір IP бір share-ге минутына ең көбі бес пікір жазады. */
