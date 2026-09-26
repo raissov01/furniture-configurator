@@ -1,5 +1,6 @@
 """CLI `--dry-run`: Linux-та GUI-сіз толық жүгіріс, ui_pro100 импортталмайды."""
 import json
+import io
 import sys
 from pathlib import Path
 
@@ -26,6 +27,18 @@ def test_dry_run_audit_writes_files_without_gui(tmp_path, capsys):
     assert (out / "pro100-audit.txt").read_text(encoding="utf-8").startswith("Аудит PRO100")
     assert "ui_pro100" not in sys.modules
     assert "[dry-run] Element > Properties" in capsys.readouterr().out
+
+
+def test_main_reconfigures_cp1251_console_before_logging(tmp_path, monkeypatch):
+    output = io.BytesIO()
+    errors = io.BytesIO()
+    monkeypatch.setattr(sys, "stdout", io.TextIOWrapper(output, encoding="cp1251", errors="strict"))
+    monkeypatch.setattr(sys, "stderr", io.TextIOWrapper(errors, encoding="cp1251", errors="strict"))
+    code = main(["audit", str(write_kit(tmp_path)), "--dry-run", "--out", str(tmp_path / "out")])
+    assert code in (0, 3, 4)
+    assert sys.stdout.encoding == "utf-8"
+    assert sys.stderr.encoding == "utf-8"
+    assert b"\xe2\x86\x92" in output.getvalue()
 
 
 def test_dry_run_library_listing_missing_item_is_step_error(tmp_path):
