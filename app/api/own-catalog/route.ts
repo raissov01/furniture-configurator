@@ -8,7 +8,7 @@ import type { BasisColumnMap } from '@/src/core/ownCatalogImport'
 import { parsePro100Textures } from '@/src/core/pro100Textures'
 
 /** Базистің 33 554 жолдық Excel экспортына жеткілікті бір файл шегі. */
-export const MAX_CATALOG_FILE_BYTES = 10_000_000
+const MAX_CATALOG_FILE_BYTES = 10_000_000
 const error = (message: string, status: number) => NextResponse.json({ error: message }, { status })
 
 async function readLimited(request: Request): Promise<Uint8Array | null> {
