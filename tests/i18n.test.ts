@@ -5,6 +5,7 @@
  * екіншісінде жоқ болса, сол тілде экранның бір бөлігі орысша қалады да,
  * пайдаланушы «жартылай аударылған» бағдарлама көреді.
  */
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { en } from '../lib/locales/en'
 import { kk } from '../lib/locales/kk'
@@ -17,6 +18,23 @@ describe('сөздіктер', () => {
     const base = Object.keys(kk).sort()
     for (const [name, dict] of Object.entries(dicts)) {
       expect(Object.keys(dict).sort(), name).toEqual(base)
+    }
+  })
+
+  it('бір кілт сөздікте екі рет жазылмайды (кейінгісі аударманы басып кетеді)', () => {
+    const key = /^\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")\s*:/
+    for (const name of Object.keys(dicts)) {
+      const seen = new Map<string, number>()
+      const duplicates: string[] = []
+      readFileSync(new URL(`../lib/locales/${name}.ts`, import.meta.url), 'utf8').split('\n').forEach((line, index) => {
+        const match = key.exec(line)
+        if (!match) return
+        const text = (match[1] ?? match[2] ?? '').replace(/\\(.)/g, '$1')
+        const first = seen.get(text)
+        if (first !== undefined) duplicates.push(`${first}/${index + 1}: ${text}`)
+        else seen.set(text, index + 1)
+      })
+      expect(duplicates, name).toEqual([])
     }
   })
 

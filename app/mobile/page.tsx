@@ -13,8 +13,7 @@ import type { JsonValue, NetworkState, SyncRecord } from '@/src/core/sync/types'
 import { MeasurementWizard } from '@/components/mobile/MeasurementWizard'
 import { enqueueLatestMeasurement, keepLocalMeasurement, retryDelay, retryRejectedMeasurement } from '@/components/mobile/measurementSync'
 import { emptySurvey, parseSavedMeasurementDraft } from '@/components/mobile/measurementModel'
-import { handoffMeasurementToKitchen } from '@/components/mobile/kitchenHandoff'
-import { useConfigurator } from '@/store/configurator'
+import { configuratorKitchenTarget, handoffMeasurementToKitchen } from '@/components/mobile/kitchenHandoff'
 
 const ROLE_CACHE = 'tapsyrys:role' // UI navigation only; projects, measurements and photos are in IndexedDB.
 const roles: Role[] = ['owner', 'designer', 'shop', 'client']
@@ -211,12 +210,7 @@ export default function MobileTodayPage() {
   const createKitchen = async (survey: MeasurementSurvey) => {
     if (!store) throw new Error(t('Локальное хранилище недоступно'))
     await saveSurvey(survey)
-    const config = useConfigurator.getState()
-    await handoffMeasurementToKitchen(survey, {
-      loadKitchen: (options, room) => config.loadKitchen(options, room),
-      exportProject: () => useConfigurator.getState().exportProject(),
-      putProject: (id, project) => store.putProject(id, project),
-    })
+    await handoffMeasurementToKitchen(survey, configuratorKitchenTarget((id, project) => store.putProject(id, project)))
     router.push(`/configurator?measurement=${encodeURIComponent(survey.id)}`)
   }
 

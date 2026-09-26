@@ -53,13 +53,18 @@ let session
 try {
   session = await connect()
   const h = makeHelpers(session, base)
+  await session.send('Page.addScriptToEvaluateOnNewDocument', {
+    source: "try { localStorage.removeItem('furniture-configurator:project') } catch {}",
+  })
   await session.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
   await session.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] })
-  await h.goto('/configurator', 6500)
-  assert(await h.menu('Создать', 'Готовые шаблоны'), 'template gallery could not open')
-  assert(await h.until("Boolean(document.querySelector('[aria-label=\"Поиск модуля\"]'))", 12000), 'search field missing')
   for (const width of [360, 390, 414]) {
     await session.send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 1, mobile: true })
+    // Chrome қайта өлшемдегенде fixed қабаттың layout viewport-ы ескі енді ұстап қалады.
+    // Жаңа навигация нақты телефон еніндегі құжатты қайта есептейді.
+    await h.goto('/configurator', 4000)
+    assert(await h.menu('Создать', 'Готовые шаблоны'), `template gallery could not open at ${width} px`)
+    assert(await h.until("Boolean(document.querySelector('[aria-label=\"Поиск модуля\"]'))", 12000), 'search field missing')
     const metrics = await h.evaluate(`(() => {
       const dialog = document.querySelector('[data-testid=template-gallery-dialog]')
       const cards = document.querySelector('[data-testid=first-run-categories]')
