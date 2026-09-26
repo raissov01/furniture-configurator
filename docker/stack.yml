@@ -1,0 +1,83 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: furniture
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [internal]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d furniture"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    deploy:
+      replicas: 1
+      placement: { constraints: ["node.role == manager"] }
+  web: &app
+    image: ${PLATFORM_IMAGE}
+    command: [web]
+    environment: &appenv
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      OPENAI_API_KEY_FILE: /run/secrets/openai_key
+      SESSION_SECRET_FILE: /run/secrets/session_secret
+      DATA_DIR: /data
+      PLATFORM_ADMIN_SHOP_ID: ${PLATFORM_ADMIN_SHOP_ID:-}
+    secrets: &appsecrets [postgres_password, openai_key, session_secret]
+    volumes: [data:/data]
+    networks: [internal]
+    healthcheck: &apphealth
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    deploy:
+      replicas: 2
+      placement: { constraints: ["node.role == manager"] }
+      update_config: { parallelism: 1, delay: 10s, order: start-first }
+      rollback_config: { parallelism: 1, delay: 5s }
+  api:
+    <<: *app
+    command: [api]
+  worker:
+    <<: *app
+    command: [worker]
+    healthcheck:
+      test: [CMD-SHELL, "ps | grep '[s]cripts/worker.ts' >/dev/null"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    deploy:
+      replicas: 1
+      placement: { constraints: ["node.role == manager"] }
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["80:80"]
+    configs:
+      - source: nginx_config
+        target: /etc/nginx/nginx.conf
+    networks: [internal]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1/api/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    deploy:
+      replicas: 1
+secrets:
+  postgres_password: { external: true }
+  openai_key: { external: true }
+  session_secret: { external: true }
+configs:
+  nginx_config:
+    name: furniture_nginx_${PLATFORM_CONFIG_VERSION}
+    file: ./nginx.conf
+volumes:
+  pgdata:
+  data:
+networks:
+  internal: {}

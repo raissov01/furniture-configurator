@@ -1,0 +1,96 @@
+name: Platform
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: NODE_OPTIONS=--max-old-space-size=2048 npm test -- --maxWorkers=2
+      - run: npm run typecheck
+      - run: npm run build
+
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      runtime: ${{ steps.scope.outputs.runtime }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - id: scope
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            echo "runtime=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only HEAD^ HEAD | grep -Eq '^(app/|lib/|src/|scripts/|docker/|public/|assets/|package(-lock)?\.json|next\.config\.ts)'; then
+            echo "runtime=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "runtime=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  image:
+    needs: [verify, detect]
+    if: needs.detect.outputs.runtime == 'true' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        shell: bash
+        run: echo "tag=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):${{ github.sha }}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: ${{ steps.tag.outputs.tag }}
+
+  deploy:
+    needs: image
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Deploy reviewed image
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          PLATFORM_IMAGE: ${{ needs.image.outputs.tag }}
+          PLATFORM_CONFIG_VERSION: ${{ github.sha }}
+          PLATFORM_ADMIN_SHOP_ID: ${{ secrets.PLATFORM_ADMIN_SHOP_ID }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" 'mkdir -p /opt/furniture-platform/docker'
+          scp docker/stack.yml docker/nginx.conf "$DEPLOY_USER@$DEPLOY_HOST:/opt/furniture-platform/docker/"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd /opt/furniture-platform && PLATFORM_IMAGE='$PLATFORM_IMAGE' PLATFORM_CONFIG_VERSION='$PLATFORM_CONFIG_VERSION' PLATFORM_ADMIN_SHOP_ID='$PLATFORM_ADMIN_SHOP_ID' docker stack deploy --with-registry-auth -c docker/stack.yml furniture"
