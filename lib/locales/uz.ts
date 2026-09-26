@@ -11,6 +11,8 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Материалы раскроя': 'Bichish materiallari',
+  'Выберите хотя бы один материал для раскроя.': 'Bichish uchun kamida bitta materialni tanlang.',
   'Воспроизвести': 'Ijro etish',
   'Пауза': 'Toʻxtatish',
   'Вперёд': 'Oldinga',

@@ -10,6 +10,8 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Материалы раскроя': 'Nesting materials',
+  'Выберите хотя бы один материал для раскроя.': 'Select at least one material for nesting.',
   'Воспроизвести': 'Play',
   'Пауза': 'Pause',
   'Вперёд': 'Next',

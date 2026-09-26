@@ -35,6 +35,7 @@ import type {
 import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
 import { playbackFrame, playbackStep } from '@/src/core/cutPlayback'
+import { selectCutPanels, selectCutScene } from '@/src/core/cutMaterialSelection'
 
 /** Парақ сызбасының экрандағы ені, пиксель. */
 const SHEET_PX = 520
@@ -96,6 +97,7 @@ export function CutPage() {
   }, [hydrateShop, hydrateProject])
 
   const [showCuts, setShowCuts] = useState(true)
+  const [excludedMaterials, setExcludedMaterials] = useState<ReadonlySet<string>>(() => new Set())
   const [busy, setBusy] = useState<string | null>(null)
   /** Экспорттың ескертуі (мыс. Базис қазақ әріптерін оқымайды). */
   const [notice, setNotice] = useState<string | null>(null)
@@ -111,6 +113,11 @@ export function CutPage() {
     }
   }, [root, catalog, settings, layers, projectLoadError])
   const panels = production.panels
+  const materialChoices = useMemo(() => {
+    const ids = new Set(panels.map((panel) => panel.materialId))
+    return catalog.materials.filter((material) => ids.has(material.id))
+  }, [panels, catalog.materials])
+  const selectedPanels = useMemo(() => selectCutPanels(panels, excludedMaterials), [panels, excludedMaterials])
   // §O6: ойма бар панельдің DXF рез координатасы генерациямен бір
   // catalog/settings-ке сүйенуі керек (`flattenTree` осы project settings-ті
   // қолданады). Кабинет деңгейіндегі жеке override мұнда бірнеше корпус
@@ -120,22 +127,22 @@ export function CutPage() {
   const cutting = shop.cutting
   const options = useMemo(() => nestingOptionsOf(shop), [shop])
   const nested = useMemo(() => {
-    if (production.error || panels.length === 0) return { nesting: null, error: production.error }
+    if (production.error || selectedPanels.length === 0) return { nesting: null, error: production.error }
     try {
-      return { nesting: nestPanels(panels, catalog, options), error: null }
+      return { nesting: nestPanels(selectedPanels, catalog, options), error: null }
     } catch (error) {
       if (!(error instanceof ConfigValidationError)) throw error
       return { nesting: null, error: error.message }
     }
-  }, [panels, production.error, catalog, options])
+  }, [selectedPanels, production.error, catalog, options])
   const nesting = nested.nesting
   const plan = useMemo(
     () => (nesting ? cutPlan(nesting, { kerf: cutting.kerf }) : null),
     [nesting, cutting.kerf],
   )
   const advice = useMemo(
-    () => (nesting ? unplacedAdvice(nesting, panels, catalog, options) : []),
-    [nesting, panels, catalog, options],
+    () => (nesting ? unplacedAdvice(nesting, selectedPanels, catalog, options) : []),
+    [nesting, selectedPanels, catalog, options],
   )
 
   const setCutting = (patch: Partial<typeof cutting>) =>
@@ -205,7 +212,7 @@ export function CutPage() {
               onClick={() => void run('labels', async () => {
                 const { labelsPdf } = await import('@/src/core/export/labels')
                 const bytes = await labelsPdf({
-                  labels: partLabels(panels, catalog, nesting!),
+                  labels: partLabels(selectedPanels, catalog, nesting!),
                   projectName,
                   fonts: await loadFonts(),
                 })
@@ -229,16 +236,16 @@ export function CutPage() {
                   import('fflate'),
                 ])
                 const fonts = await loadFonts()
-                const labels = partLabels(panels, catalog, nesting!)
+                const labels = partLabels(selectedPanels, catalog, nesting!)
                 const entries: Record<string, Uint8Array> = {}
                 // Бума ІШІНДЕ бума: цехта раскрой мен присадка әр басқа адамға кетеді.
                 for (const [name, content] of flatArchiveFiles(nestingToDxfFiles(nesting!))) {
                   entries[`raskroy/${name}`] = strToU8(content)
                 }
-                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) {
+                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(selectedPanels, dxfOptions))) {
                   entries[`detali/${name}`] = strToU8(content)
                 }
-                entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(panels, catalog)}`)
+                entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(selectedPanels, catalog)}`)
                 entries['birki.csv'] = strToU8(`\ufeff${labelsToCsv(labels)}`)
                 entries['karta-raskroya.pdf'] = await nestingPdf({ nesting: nesting!, projectName, fonts })
                 entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts })
@@ -252,7 +259,7 @@ export function CutPage() {
               {busy === 'bundle' ? '…' : tr('Пакет для цеха')}
             </Button>
             <Button
-              disabled={busy !== null || panels.length === 0 || production.error !== null}
+              disabled={busy !== null || selectedPanels.length === 0 || production.error !== null}
               title={tr('Присадка для станка: на каждую деталь свой файл, плюс index.csv')}
               onClick={() => void run('cnc', async () => {
                 const [{ cncFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -260,7 +267,7 @@ export function CutPage() {
                   import('fflate'),
                 ])
                 const entries: Record<string, Uint8Array> = {}
-                for (const [name, content] of cncFiles(panels, catalog, { projectName, outerFlipAxis: dxfOptions.settings.outerFlipAxis })) {
+                for (const [name, content] of cncFiles(selectedPanels, catalog, { projectName, outerFlipAxis: dxfOptions.settings.outerFlipAxis })) {
                   entries[name] = strToU8(content)
                 }
                 download(
@@ -273,7 +280,7 @@ export function CutPage() {
               {busy === 'cnc' ? '…' : tr('ЧПУ по деталям')}
             </Button>
             <Button
-              disabled={busy !== null || panels.length === 0 || production.error !== null}
+              disabled={busy !== null || selectedPanels.length === 0 || production.error !== null}
               title={tr('Для Базиса: список деталей для Раскроя (CSV, XLSX), скрипт для Мебельщика — детали и присадка как крепёж, DXF деталей')}
               onClick={() => void run('basis', async () => {
                 const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfFiles }, { zipSync, strToU8 }] =
@@ -285,10 +292,10 @@ export function CutPage() {
                 // Скриптке әр корпустың ӨЗ панельдері мен бөлмедегі позасы керек
                 // (`basisScript.ts`): присадка Базиске әлем координатасымен барады.
                 const scene = flattenTree(root, catalog, settings, layers)
-                const options = { projectName, script: { scene, settings } }
+                const exportOptions = { projectName, script: { scene: selectCutScene(scene, excludedMaterials), settings } }
                 const entries: Record<string, Uint8Array> = {}
-                for (const [name, bytes] of basisFiles(panels, catalog, options)) entries[name] = bytes
-                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) {
+                for (const [name, bytes] of basisFiles(selectedPanels, catalog, exportOptions)) entries[name] = bytes
+                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(selectedPanels, dxfOptions))) {
                   entries[`dxf/${name}`] = strToU8(content)
                 }
                 download(
@@ -299,7 +306,7 @@ export function CutPage() {
 
                 // Базис Windows-1251 оқиды, ал онда қазақ әріптері ЖОҚ.
                 // Үнсіз «?» қылып жіберсек, цех детальді танымай қалады.
-                const names = [projectName, ...panels.map((p) => p.label)].join(' ')
+                const names = [projectName, ...selectedPanels.map((p) => p.label)].join(' ')
                 const bad = unsupportedInCp1251(names)
                 setNotice(bad.length > 0
                   ? `${tr('Базис читает Windows-1251, в ней нет казахских букв')}: ${bad.join(' ')} → «?». ${tr('Переименуйте детали латиницей или по-русски.')}`
@@ -313,6 +320,24 @@ export function CutPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-4">
+        {mounted && materialChoices.length > 0 ? (
+          <fieldset className="mb-4 flex flex-wrap gap-3 rounded-lg border border-neutral-200 bg-white p-3 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+            <legend className="px-1 font-semibold">{tr('Материалы раскроя')}</legend>
+            {materialChoices.map((material) => (
+              <label key={material.id} className="flex items-center gap-2">
+                <input type="checkbox" checked={!excludedMaterials.has(material.id)} onChange={(event) => {
+                  setExcludedMaterials((current) => {
+                    const next = new Set(current)
+                    if (event.target.checked) next.delete(material.id)
+                    else next.add(material.id)
+                    return next
+                  })
+                }} />
+                <span>{material.name}</span>
+              </label>
+            ))}
+          </fieldset>
+        ) : null}
         {nested.error ? (
           <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{nested.error}</p>
         ) : null}
@@ -326,7 +351,7 @@ export function CutPage() {
         {!mounted ? (
           <p className="text-xs text-neutral-500">{tr('Загрузка проекта…')}</p>
         ) : !nesting || !plan ? (
-          <p className="text-xs text-neutral-500">{tr('Нет деталей для раскроя.')}</p>
+          <p className="text-xs text-neutral-500">{panels.length > 0 && selectedPanels.length === 0 ? tr('Выберите хотя бы один материал для раскроя.') : tr('Нет деталей для раскроя.')}</p>
         ) : (
           <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
             <aside className="space-y-3 self-start rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
