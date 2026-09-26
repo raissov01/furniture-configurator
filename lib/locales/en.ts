@@ -10,6 +10,10 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Размер бирки, мм': 'Label size, mm',
+  'Ширина бирки': 'Label width',
+  'Высота бирки': 'Label height',
+  'Лист для печати': 'Print page',
   'Материалы раскроя': 'Nesting materials',
   'Выберите хотя бы один материал для раскроя.': 'Select at least one material for nesting.',
   'Воспроизвести': 'Play',

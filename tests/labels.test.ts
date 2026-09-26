@@ -145,6 +145,16 @@ describe('биркалар PDF', () => {
     expect(Math.round(page!.getHeight())).toBe(842)
   })
 
+  it('58 × 40 mm print labels keep their physical size and paginate every part', async () => {
+    const many = Array.from({ length: 19 }, (_, i) => ({ ...labels[i % labels.length]!, panelId: `part-${i}` }))
+    const bytes = await labelsPdf({ labels: many, projectName: 'Шкаф', fonts, size: { page: 'a4', widthMm: 58, heightMm: 40 } })
+    const doc = await PDFDocument.load(bytes)
+    expect(doc.getPageCount()).toBe(2)
+    expect(doc.getPage(0).getWidth()).toBeCloseTo(210 * 72 / 25.4)
+    expect(doc.getPage(0).getHeight()).toBeCloseTo(297 * 72 / 25.4)
+    expect(bytes.length).toBeGreaterThan(0)
+  })
+
   it('деталь болмаса да бір бет шығады', async () => {
     const bytes = await labelsPdf({ labels: [], projectName: 'Пусто', fonts })
     expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1)

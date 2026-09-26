@@ -11,6 +11,10 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Размер бирки, мм': 'Yorliq o‘lchami, mm',
+  'Ширина бирки': 'Yorliq eni',
+  'Высота бирки': 'Yorliq bo‘yi',
+  'Лист для печати': 'Chop etish varag‘i',
   'Материалы раскроя': 'Bichish materiallari',
   'Выберите хотя бы один материал для раскроя.': 'Bichish uchun kamida bitta materialni tanlang.',
   'Воспроизвести': 'Ijro etish',

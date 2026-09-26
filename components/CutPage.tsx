@@ -36,6 +36,7 @@ import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
 import { playbackFrame, playbackStep } from '@/src/core/cutPlayback'
 import { selectCutPanels, selectCutScene } from '@/src/core/cutMaterialSelection'
+import type { LabelPage } from '@/src/core/export/labelLayout'
 
 /** Парақ сызбасының экрандағы ені, пиксель. */
 const SHEET_PX = 520
@@ -98,6 +99,9 @@ export function CutPage() {
 
   const [showCuts, setShowCuts] = useState(true)
   const [excludedMaterials, setExcludedMaterials] = useState<ReadonlySet<string>>(() => new Set())
+  const [labelPage, setLabelPage] = useState<LabelPage>('a4')
+  const [labelWidth, setLabelWidth] = useState(58)
+  const [labelHeight, setLabelHeight] = useState(40)
   const [busy, setBusy] = useState<string | null>(null)
   /** Экспорттың ескертуі (мыс. Базис қазақ әріптерін оқымайды). */
   const [notice, setNotice] = useState<string | null>(null)
@@ -215,6 +219,7 @@ export function CutPage() {
                   labels: partLabels(selectedPanels, catalog, nesting!),
                   projectName,
                   fonts: await loadFonts(),
+                  size: { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
                 })
                 download(`${projectName}-бирки.pdf`, bytes, 'application/pdf')
               })}
@@ -248,7 +253,7 @@ export function CutPage() {
                 entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(selectedPanels, catalog)}`)
                 entries['birki.csv'] = strToU8(`\ufeff${labelsToCsv(labels)}`)
                 entries['karta-raskroya.pdf'] = await nestingPdf({ nesting: nesting!, projectName, fonts })
-                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts })
+                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts, size: { page: labelPage, widthMm: labelWidth, heightMm: labelHeight } })
                 download(
                   `${projectName}-цех.zip`,
                   zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
@@ -358,6 +363,18 @@ export function CutPage() {
               <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
                 {tr('Настройки станка')}
               </h2>
+              <fieldset className="space-y-2 border-b border-neutral-200 pb-3 dark:border-neutral-800">
+                <legend className="text-xs font-semibold">{tr('Размер бирки, мм')}</legend>
+                <Field label={tr('Ширина бирки')}>
+                  <NumberInput value={labelWidth} min={58} max={200} onChange={setLabelWidth} />
+                </Field>
+                <Field label={tr('Высота бирки')}>
+                  <NumberInput value={labelHeight} min={40} max={200} onChange={setLabelHeight} />
+                </Field>
+                <Field label={tr('Лист для печати')}>
+                  <Select value={labelPage} onChange={setLabelPage} options={[{ value: 'a4', label: 'A4' }, { value: 'a5', label: 'A5' }]} />
+                </Field>
+              </fieldset>
 
               <Field label={tr('Пропил, мм')} hint={tr('толщина пилы')}>
                 <NumberInput
