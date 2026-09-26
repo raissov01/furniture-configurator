@@ -85,6 +85,41 @@ export const SERVICE_BASIS_NAMES: Record<ServiceBasis, string> = {
 export type Services = Record<ServiceId, ServiceRate>
 
 /**
+ * «Парақ басы» қызметтері — `services`-тің ҮСТІНЕ қосылатын ҚОСЫМША баптау
+ * (qdesign-дегі қаржы кестесі: распил/присадка/кромкалау — бір параққа).
+ *
+ * ⚠ §6 жұмыс ақысы моделі ӨЗГЕРМЕЙДІ: `services` бұрынғыдай есептеледі, ал
+ * бұл баптау тек ҚОСЫМША жол береді. Әдепкі — баптау мүлде ЖОҚ (`undefined`)
+ * немесе `enabled: false`, яғни смета бұрынғымен тиынға дейін бірдей.
+ *
+ * Парақ саны РАСКРОЙДАН алынады (нақты кеткен парақ), тақта (постформинг)
+ * парақ емес — оған бұл қызметтер түспейді.
+ */
+export type SheetServiceId = 'cutting' | 'drilling' | 'edging'
+
+export const SHEET_SERVICE_IDS: SheetServiceId[] = ['cutting', 'drilling', 'edging']
+
+export const SHEET_SERVICE_NAMES: Record<SheetServiceId, string> = {
+  cutting: 'Распил (за лист)',
+  drilling: 'Присадка (за лист)',
+  edging: 'Кромкование (за лист)',
+}
+
+/** Бір параққа мөлшерлеме, ТИЫН. 0 — осы қызмет алынбайды. */
+export type SheetServiceRates = Record<SheetServiceId, number>
+
+export type SheetServices = {
+  enabled: boolean
+  /** Барлық материалға ортақ мөлшерлеме. */
+  rates: SheetServiceRates
+  /**
+   * Материал бойынша бөлек мөлшерлеме (мыс. 3 мм ХДФ-ті кесу арзан). Берілсе,
+   * сол материалға `rates`-тің ОРНЫНА қолданылады.
+   */
+  byMaterial?: Record<string, SheetServiceRates> | undefined
+}
+
+/**
  * Монтаж. qdesign-дегідей: модуль ЕНІНІҢ бір метріне мөлшерлеме.
  * Бұл цехтың жұмысы емес, БӨЛЕК қызмет — сондықтан коэффициенттен тыс
  * қосылады (төмендегі `priceProject` түсініктемесін қара).
@@ -173,6 +208,8 @@ export type ShopProfile = {
   /** Раскройдың станоктық баптаулары. */
   cutting: CuttingSettings
   installation: Installation
+  /** Парақ басы ҚОСЫМША қызметтер. Жоқ болса — бұрынғы смета (жоғарыдағы түсінікті қара). */
+  sheetServices?: SheetServices | undefined
   /**
    * Цехтың өз коэффициенті: материал + қызмет + фурнитура сомасы осыған
    * көбейеді. Монтаж бен үстеме бұған КІРМЕЙДІ.
@@ -654,6 +691,18 @@ const PriceListSchema = z.object({
   markupPercent: z.number().int().min(0).max(1000),
 })
 
+const SheetServiceRatesSchema = z.strictObject({
+  cutting: minorUnits,
+  drilling: minorUnits,
+  edging: minorUnits,
+})
+
+export const SheetServicesSchema = z.strictObject({
+  enabled: z.boolean(),
+  rates: SheetServiceRatesSchema,
+  byMaterial: z.record(z.string().min(1), SheetServiceRatesSchema).optional(),
+})
+
 export const ShopProfileSchema = z.object({
   schemaVersion: z.literal(8),
   id: z.string().min(1),
@@ -677,6 +726,7 @@ export const ShopProfileSchema = z.object({
   }),
   cutting: CuttingSettingsSchema,
   installation: z.object({ ratePerMetreWidth: minorUnits }),
+  sheetServices: SheetServicesSchema.optional(),
   coefficient: z.number().positive(),
   labour: LabourRatesSchema,
   markupPercent: z.number().int().min(0).max(1000),

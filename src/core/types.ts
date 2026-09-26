@@ -1328,6 +1328,27 @@ export type PriceOverrides = {
   lineDiscounts?: Record<string, Discount> | undefined
   /** Жолдық жеңілдіктерден кейін қалған сомаға қолданылатын жеңілдік. */
   overallDiscount?: Discount | undefined
+  /**
+   * «Орнатусыз»: `true` болса монтаж (1 п.м. модуль ені) сметаға ТҮСПЕЙДІ,
+   * цехтың мөлшерлемесі қойылса да. Әдепкі — жоқ, яғни бұрынғыдай.
+   */
+  withoutInstallation?: boolean | undefined
+  /**
+   * Қолмен қойылған сату бағасын ЛДСП ауданына ПРОПОРЦИОНАЛ жаңарту (опция).
+   * `salePrice` сақталған сәттегі аудан осында жазылады; модуль өлшемі
+   * өзгерсе, баға `salePrice × қазіргі аудан / baseAreaMm2` болып қайта
+   * есептеледі (`salePriceScaling.ts`, дөңгелектеу ережесі сонда).
+   * Жоқ болса — қолмен баға бұрынғыдай ТҰРАҚТЫ.
+   */
+  salePriceScaling?: SalePriceScaling | undefined
+}
+
+/** `PriceOverrides.salePriceScaling`: баға сақталған сәттің базасы. */
+export type SalePriceScaling = {
+  /** Сақталған сәттегі ЛДСП ауданы, мм², бүтін сан. */
+  baseAreaMm2: number
+  /** Ауданға кіретін материалдар (сақталған сәтте анықталады, кейін ауыспайды). */
+  materialIds: string[]
 }
 
 export type ProjectFile = {

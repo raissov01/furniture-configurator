@@ -470,6 +470,11 @@ export const PriceOverridesSchema = z.object({
   salePrice: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   lineDiscounts: z.record(z.string(), DiscountSchema).optional(),
   overallDiscount: DiscountSchema.optional(),
+  withoutInstallation: z.boolean().optional(),
+  salePriceScaling: z.object({
+    baseAreaMm2: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    materialIds: z.array(z.string().min(1)).min(1),
+  }).optional(),
 })
 
 export const ProjectFileSchema = ProjectFileV2Schema.extend({
