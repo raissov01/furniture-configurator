@@ -2,6 +2,7 @@
 
 import { getLang, setLang, t as tr, tf } from '@/lib/i18n'
 import Link from 'next/link'
+import { SITE } from '@/lib/site'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
@@ -563,7 +564,11 @@ export function Workspace() {
         ашпайтын (аудит 09-26, P0-1). Ескі «Создать ▾» / «Проект ▾» мәзірлері
         «Наш» режимі мен e2e үшін өзгеріссіз қалды.
       */}
+
       <nav data-tour="menubar" data-testid="classic-menubar" className="flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+        {classic && <Link href="/" title={`${SITE.name} — ${tr('На главную')}`} className="mr-1 hidden items-center lg:inline-flex" data-testid="classic-brand">
+          <img src="/brand/aismebel-mark.svg" width={16} height={16} alt={SITE.name} />
+        </Link>}
         {menus.map((menu) => <Menu key={menu.id} label={tr(menu.label)} size="sm" {...(menu.align ? { align: menu.align } : {})}>
           {menu.items.map((entry, index) => {
             if (entry.kind === 'separator') return <div key={`sep-${index}`} className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
@@ -576,6 +581,7 @@ export function Workspace() {
               <span data-menu-item={entry.id}>{entry.raw ? entry.label : tr(entry.label)}</span>
               {entry.detail ? <span className="tabular-nums font-semibold">{entry.detail}</span> : null}
               {entry.hint ? <span className="ml-auto text-neutral-400">{entry.hint}</span> : null}
+
             </MenuItem>
 
           })}
@@ -599,11 +605,9 @@ export function Workspace() {
           title={tr('На главную')}
           className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500 transition hover:text-neutral-900 dark:hover:text-neutral-100"
         >
-          <svg width="18" height="14" viewBox="0 0 26 20" aria-hidden="true">
-            <rect x="0.5" y="0.5" width="25" height="19" fill="#c9a227" fillOpacity="0.85" stroke="#7c5f14" />
-            <rect x="0.5" y="0.5" width="4" height="19" fill="#7c5f14" />
-          </svg>
-          РЕЗ
+          {/* Бренд белгісі (бұрын «РЕЗ» — платформаның жұмыс атауы еді, режим емес). */}
+          <img src="/brand/aismebel-mark.svg" width={18} height={18} alt="" aria-hidden="true" data-testid="brand-mark" />
+          {SITE.name}
         </Link>
 
         {/* Тақырыпта ЖОБА; таңдалған модуль мен оның габариті — оң панельде. */}

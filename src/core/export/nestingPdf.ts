@@ -13,6 +13,7 @@ import { PDFDocument, rgb } from 'pdf-lib'
 import type { PDFFont, PDFPage } from 'pdf-lib'
 import type { NestedSheet, NestingResult } from '../nesting'
 import type { PdfFonts } from './pdf'
+import { stampPdfBrand } from '../brand'
 
 /** A4 альбом, пункт. */
 const PAGE = { w: 842, h: 595 }
@@ -94,6 +95,7 @@ export async function nestingPdf(input: NestingPdfInput): Promise<Uint8Array> {
     }
   }
 
+  stampPdfBrand(doc)
   return doc.save()
 }
 

@@ -4,6 +4,7 @@ import { PDFDocument, rgb } from 'pdf-lib'
 import { projectFingerprint } from '../approval'
 import type { ApprovalRevision } from '../approval'
 import type { PdfFonts } from './pdf'
+import { stampPdfBrand } from '../brand'
 
 export type ApprovalPdfInput = {
   revision: ApprovalRevision<unknown>
@@ -39,5 +40,6 @@ export async function approvalStampPdf(input: ApprovalPdfInput): Promise<Uint8Ar
     const ratio = Math.min(510 / png.width, 470 / png.height)
     page.drawImage(png, { x: 42, y: 120, width: png.width * ratio, height: png.height * ratio })
   }
+  stampPdfBrand(doc)
   return doc.save()
 }

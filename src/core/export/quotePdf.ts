@@ -19,6 +19,7 @@ import type { PriceBreakdown } from '../pricing'
 import type { ShopProfile } from '../shop'
 import { projectInfoRows } from './pdf'
 import type { PdfFonts } from './pdf'
+import { BRAND, stampPdfBrand } from '../brand'
 
 /** A4 портрет, пункт. */
 const PAGE = { w: 595, h: 842 }
@@ -97,6 +98,8 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
   label(ctx, MARGIN, y, 'Коммерческое предложение', 16, true)
   right(ctx, PAGE.w - MARGIN, y, input.date, 9, false, MUTED)
   y -= 22
+  // Бастаманың оң жағында — платформаның атауы (КП цехтікі, атау шағын әрі сұр).
+  right(ctx, PAGE.w - MARGIN, y, BRAND.name, 8, true, MUTED)
 
   const shopLine = [input.shop.name, input.shop.city, input.shop.phone].filter(Boolean).join(' · ')
   if (shopLine) {
@@ -181,5 +184,6 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
   label(ctx, MARGIN + 260, y, 'К ОПЛАТЕ', 12, true)
   right(ctx, COL.sum, y, money(totals.total), 12, true)
 
+  stampPdfBrand(doc)
   return doc.save()
 }

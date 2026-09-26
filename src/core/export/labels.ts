@@ -25,6 +25,7 @@ import type { PdfFonts } from './pdf'
 import { labelLayout } from './labelLayout'
 import type { LabelSize } from './labelLayout'
 import { encodePartQr } from '../partQr'
+import { stampPdfBrand } from '../brand'
 export { encodePartQr, decodePartQr } from '../partQr'
 export type { PartQr } from '../partQr'
 
@@ -327,6 +328,7 @@ export async function labelsPdf(input: LabelsPdfInput): Promise<Uint8Array> {
     })
   }
 
+  stampPdfBrand(doc)
   return doc.save()
 }
 

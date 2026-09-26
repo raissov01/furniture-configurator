@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { t } from '@/lib/i18n'
+import { BRAND } from '@/src/core/brand'
 import type { Role } from '@/lib/permissions'
 import { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { createMobileSyncTransport } from '@/lib/mobile/syncTransport'
@@ -273,7 +274,11 @@ export default function MobileTodayPage() {
       {offlineSince !== null && now - offlineSince >= 24 * 60 * 60 * 1000 && ` ${t('Вы давно офлайн. Подключитесь, чтобы отправить очередь.')}`}
     </p>}
     <header className="mb-6">
-      <p className="text-sm font-semibold tracking-wide">{t('Заказ')}</p>
+      {/* Қосымшаның атауы (бұрын «Тапсырыс» — жұмыс атауы еді). */}
+      <p className="flex items-center gap-1.5 text-sm font-semibold tracking-wide" data-testid="brand">
+        <img src="/brand/aismebel-mark.svg" width={18} height={18} alt="" aria-hidden="true" />
+        {BRAND.name}
+      </p>
       <h1 className="mt-1 text-2xl font-semibold">{role === 'shop' ? t('Цех') : role === 'client' ? t('Клиент') : t('Сегодня')}</h1>
     </header>
     {!role && <div className="border border-[#8c8c8c] bg-white p-4 text-sm">

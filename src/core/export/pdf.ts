@@ -14,6 +14,7 @@ import { formatProjectDate } from '../projectDate'
 import { fitTransform, projectElevation, projectIsometric } from './drawing'
 import type { Bounds, ElevationView } from './drawing'
 import type { CabinetConfig, Catalog, Panel, ProjectInfo } from '../types'
+import { stampPdfBrand } from '../brand'
 
 export type PdfFonts = { regular: Uint8Array; bold: Uint8Array }
 
@@ -352,6 +353,7 @@ export async function assemblyDrawingPdf(input: AssemblyPdfInput): Promise<Uint8
     drawCutList(ctx, input)
   }
 
+  stampPdfBrand(doc)
   return doc.save()
 }
 

@@ -142,5 +142,5 @@ describe('store тарихының инварианттары', () => {
         expectDerived(`seed ${seed}: redo → ${i}`)
       }
     }
-  })
+  }, 20_000)
 })

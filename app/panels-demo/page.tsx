@@ -27,7 +27,7 @@ const PANELS: DockPanelSpec[] = [
 ]
 
 export const metadata = {
-  title: 'PRO100 панельдер демо',
+  title: 'Панельдер демо',
   description: 'Структура/Прайс-лист/Размеры/Информация — докинг жүйесіндегі төрт панель',
 }
 

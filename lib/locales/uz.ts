@@ -1318,6 +1318,7 @@ export const uz: Record<string, string> = {
   'Создать ремонтное задание': 'Ta’mir vazifasini yaratish',
   'Ремонт завершён': 'Ta’mir tugadi',
   'Постоянное хранение разрешено.': 'Doimiy saqlashga ruxsat berildi.',
+
   'XLSX — деталировка': 'XLSX — detallar ro‘yxati',
   'CSV — на распил': 'CSV — arralash uchun',
   'DXF — на станок': 'DXF — dastgoh uchun',
@@ -1333,4 +1334,7 @@ export const uz: Record<string, string> = {
   'Выбранный элемент, его положение и размеры H × W × D. Двойной щелчок по детали открывает «Свойства».': 'Tanlangan element, uning joylashuvi va H × W × D o‘lchamlari. Detalni ikki marta bosish «Xususiyatlar»ni ochadi.',
   'допустимо': 'ruxsat etilgan',
   'Сервис': 'Servis',
+
+  'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Parmalash, bichish va stanokka eksport — to‘g‘ridan-to‘g‘ri AisMebel’da, Bazisga o‘tkazmasdan.',
+
 }

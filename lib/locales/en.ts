@@ -1314,6 +1314,7 @@ export const en: Record<string, string> = {
   'Создать ремонтное задание': 'Create repair task',
   'Ремонт завершён': 'Repair completed',
   'Постоянное хранение разрешено.': 'Persistent storage granted.',
+
   'XLSX — деталировка': 'XLSX — cut list',
   'CSV — на распил': 'CSV — for sawing',
   'DXF — на станок': 'DXF — for the CNC',
@@ -1329,4 +1330,7 @@ export const en: Record<string, string> = {
   'Выбранный элемент, его положение и размеры H × W × D. Двойной щелчок по детали открывает «Свойства».': 'The selected item, its position and H × W × D size. Double-click a part to open Properties.',
   'допустимо': 'allowed',
   'Сервис': 'Service',
+
+  'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Drilling, cutting layouts and machine export — right in AisMebel, no hand-off to Bazis.',
+
 }

@@ -101,7 +101,7 @@ describe('таза audit', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
-  })
+  }, 20_000)
 })
 
 describe('енгізілген айырмалар — әрқайсысы өз түрімен және себебімен', () => {

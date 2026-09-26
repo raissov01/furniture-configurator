@@ -75,7 +75,7 @@ export default function Page() {
         <Section className="pb-4 pt-12 sm:pt-20">
           <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
             <div className="rise">
-              <Eyebrow>{tr('Для мебельных цехов · ЛДСП')}</Eyebrow>
+              <Eyebrow>{SITE.name} · {tr('Для мебельных цехов · ЛДСП')}</Eyebrow>
               <h1
                 className="text-[2.6rem] leading-[0.98] sm:text-6xl lg:text-[4.2rem]"
                 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.015em' }}

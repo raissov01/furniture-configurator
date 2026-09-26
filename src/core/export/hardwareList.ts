@@ -24,6 +24,7 @@ import { countHardware, formatTenge } from '../pricing'
 import type { HardwareItem, HardwareKind, ShopProfile } from '../shop'
 import type { Panel } from '../types'
 import type { PdfFonts } from './pdf'
+import { stampPdfBrand } from '../brand'
 
 export type HardwareListRow = {
   id: string
@@ -266,5 +267,6 @@ export async function hardwareListPdf(input: HardwareListPdfInput): Promise<Uint
     )
   }
 
+  stampPdfBrand(doc)
   return doc.save()
 }
