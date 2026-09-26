@@ -72,6 +72,8 @@ def _countdown(minutes: int, args: argparse.Namespace) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     args = _parser().parse_args(argv)
 
     def log(msg: str) -> None:

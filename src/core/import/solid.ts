@@ -147,10 +147,13 @@ export function importGlbSolid(bytes: Uint8Array, options: SolidImportOptions): 
   if (!roots?.length) fail('glb.scene', 'белсенді сахнада түйін жоқ')
   let bounds: Bounds | null = null
   const materials = new Set<string>()
+  const visited = new Set<number>()
   const visit = (index: number, parent: Matrix, ancestors: Set<number>): void => {
     const node = nodes[index]
     if (!node) fail('glb.node', `түйін ${index} табылмады`)
     if (ancestors.has(index)) fail('glb.node', 'циклді түйіндер ағашы')
+    if (visited.has(index)) fail('glb.node', 'ортақ немесе қайталанған түйін')
+    visited.add(index)
     const matrix = multiply(parent, nodeMatrix(node))
     if (node.mesh !== undefined) {
       const mesh = json.meshes?.[node.mesh]

@@ -65,6 +65,11 @@ describe('DXF → BoardNode', () => {
 })
 
 describe('OBJ/GLB → SolidNode spec', () => {
+  it('GLB ортақ child түйіндерін қайта-қайта аралауға рұқсат бермейді', () => {
+    const nodes = Array.from({ length: 13 }, (_, i) => ({ children: i === 12 ? [] : [i + 1, i + 1] }))
+    const bytes = glb({ asset: { version: '2.0' }, scenes: [{ nodes: [0] }], nodes })
+    expect(() => importGlbSolid(bytes, { id: 'shared', name: 'Ортақ' })).toThrow(/ортақ|қайталан/)
+  })
   it('OBJ габаритін мм-ге аударады, material атауларын ретімен жинайды', () => {
     const result = importObjSolid(fixture('solid-box.obj').toString('utf8'),
       { id: 'appliance', name: 'Пеш', mmPerUnit: 100 })

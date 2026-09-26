@@ -24,4 +24,8 @@ describe('еркін тақтаның H × W × D габариті', () => {
     expect(() => resizeBoard(board(ORIENT_FACING), material, 'depth', 20)).toThrow(/depth|D|қалың/)
     expect(() => resizeBoard(board(ORIENT_SIDE), material, 'height', 700.5)).toThrow(/бүтін/)
   })
+  it('нөл өлшемді тақтаға жол бермейді', () => {
+    expect(() => resizeBoard(board(ORIENT_FACING), material, 'height', 0)).toThrow(/бүтін мм > 0/)
+    expect(() => resizeBoard(board(ORIENT_FACING), material, 'width', 0)).toThrow(/бүтін мм > 0/)
+  })
 })

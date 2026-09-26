@@ -107,7 +107,11 @@ export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
       edgeW1: bandLabel(p.edges.W1),
       edgeW2: bandLabel(p.edges.W2),
       grain: material.hasGrain ? (p.grainAlongLength ? 'вдоль длины' : 'поперёк длины') : 'нет',
-      note: [p.note, bevelNote(p)].filter(Boolean).join('; '),
+      note: [p.note, bevelNote(p), p.contour
+        ? `Контур: DXF бойынша; рез — дайындама; кромка: ${p.contour.bands
+          .map((spec, i) => spec ? `${i + 1}=${bandLabel(spec)} мм` : '')
+          .filter(Boolean).join(', ') || 'жоқ'}` : '']
+        .filter(Boolean).join('; '),
     }
 
     // Бірдей деталь — бір жол. Кілтке орналасу КІРМЕЙДІ: цехқа детальдің
@@ -116,6 +120,7 @@ export function groupPanels(panels: Panel[], catalog: Catalog): CutListGroup[] {
       row.name, row.cutLength, row.cutWidth, row.thickness, row.material,
       row.edgeL1, row.edgeL2, row.edgeW1, row.edgeW2, row.grain, row.note,
       JSON.stringify(p.bevel ?? null),
+      JSON.stringify(p.contour ?? null),
     ].join('|')
 
     const existing = groups.get(key)

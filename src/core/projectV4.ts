@@ -19,6 +19,8 @@ import type { BoardSpec, GroupNode, SceneNode } from './tree'
 import type { Layer } from './layers'
 import type { CabinetConfig, ProjectFile } from './types'
 import type { SceneLight } from './visual'
+import { validatePolygonContour } from './polygon'
+import { ConfigValidationError } from './errors'
 
 /** v4-те корпус конфигінің жалғыз орны — root ішіндегі CabinetNode. */
 export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'placements'> & {
@@ -84,6 +86,24 @@ const board: z.ZodType<BoardSpec> = z.strictObject({
   milling: z.array(z.strictObject({
     points: z.array(z.strictObject({ x: mm, y: mm })), closed: z.boolean(),
   })).optional(),
+  contour: z.strictObject({
+    points: z.array(z.strictObject({ x: mm, y: mm })).min(3),
+    bands: z.array(edge).min(3),
+  }).optional(),
+}).superRefine((value, ctx) => {
+  if (!value.contour) return
+  if (Object.values(value.edges).some(Boolean)) {
+    ctx.addIssue({ code: 'custom', path: ['edges'], message: 'контур үшін төрт жиек бос болуы керек' })
+  }
+  if (value.corners || (value.cutouts?.length ?? 0) > 0) {
+    ctx.addIssue({ code: 'custom', path: ['contour'], message: 'контурмен бірге corners/cutouts қолдау таппайды' })
+  }
+  try {
+    validatePolygonContour(value.contour, value.length, value.width, 'contour')
+  } catch (error) {
+    if (!(error instanceof ConfigValidationError)) throw error
+    ctx.addIssue({ code: 'custom', path: ['contour'], message: error.message })
+  }
 })
 
 const baseNode = {

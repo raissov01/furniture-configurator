@@ -158,6 +158,7 @@ import type { ApplianceKind, FillingKind } from './filling'
 import type { Cutout, PanelCutouts } from './cutouts'
 import type { DrillEdits } from './drillEdits'
 import type { MillingPath, MillingSpec } from './milling'
+import type { PolygonContour } from './polygon'
 
 export type Vec3 = { x: number; y: number; z: number }
 
@@ -339,6 +340,8 @@ export type Panel = {
   cutWidth: number
 
   edges: PanelEdges
+  /** Дайын және кесілетін полигон; раскрой cutLength × cutWidth дайындамасын алады. */
+  contour?: PolygonContour | undefined
   /** Материалда текстура бар болса, ол finishedLength бойымен жүре ме */
   grainAlongLength: boolean
   /** Бір өрнекке сәйкестендірілетін детальдар раскройда бөлек парақ тобын алады. */
@@ -370,6 +373,8 @@ export type Panel = {
 
   /** Деталировкадағы «Примечание» бағаны. Контекстті ядро біледі, кесте емес. */
   note: string
+  /** Сөре тірегі; генератор қояды, смета мәтіндік note-ті талдамайды. */
+  shelfKind?: ShelfKind | undefined
 
   /**
    * Деталь ҚАЛАЙ ашылады. Тек 3D-дегі анимация үшін — деталировкаға да,

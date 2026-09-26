@@ -248,7 +248,10 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
   for (const { layer: outlineLayer, outer } of outlineFrames) {
   // Қиғаш деталь: контур ТРАПЕЦИЯ болып шығады. Өлшемі (L × Wd) —
   // ЗАГОТОВКАНЫҢ габариті, ал станок осы контур бойынша кеседі.
-  if (panel.bevel && isWidthBevel(panel.bevel)) {
+  if (panel.contour) {
+    entities.push(...lwpolyline(outlineLayer,
+      panel.contour.cutPoints.map((p) => framePoint(p.x, p.y, outer)), true))
+  } else if (panel.bevel && isWidthBevel(panel.bevel)) {
     // Ен ұзындық бойымен өзгереді (бұрыштық корпустың крышкасы).
     const shrink = panel.finishedWidth - Wd
     const w0 = Math.max(0, panel.bevel.widthAtStart - shrink)
