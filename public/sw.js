@@ -28,7 +28,15 @@ self.addEventListener('install', (event) => {
    * жаңа нұсқа шыққанда ескі HTML қалып қоятын. Енді бет тек СӘТТІ
    * ЖҮКТЕЛГЕННЕН кейін жазылады, ал ол әрқашан желіден бастап алынады.
    */
-  event.waitUntil(caches.open(SHELL))
+  event.waitUntil((async () => {
+    const cache = await caches.open(SHELL)
+    // Keep the phone entry point available even when it has not been visited.
+    await cache.add('/mobile')
+    const html = await (await cache.match('/mobile')).text()
+    const assets = [...html.matchAll(/(?:src|href)="(\/_next\/static\/[^"?]+(?:\?[^"\s]*)?)"/g)]
+      .map((match) => match[1])
+    await cache.addAll([...new Set(assets)])
+  })())
 })
 
 self.addEventListener('activate', (event) => {
@@ -70,7 +78,7 @@ self.addEventListener('fetch', (event) => {
         if (res.ok) (await caches.open(SHELL)).put(request, res.clone())
         return res
       } catch {
-        return (await caches.match(request)) ?? (await caches.match('/configurator')) ?? Response.error()
+        return (await caches.match(request)) ?? (await caches.match('/mobile')) ?? (await caches.match('/configurator')) ?? Response.error()
       }
     })())
   }

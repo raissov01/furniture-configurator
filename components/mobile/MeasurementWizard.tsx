@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { t } from '@/lib/i18n'
-import { CORNER_IDS, OBSTACLE_KINDS, WALL_IDS, validateMeasurement, type MeasurementSurvey, type ObstacleKind } from '@/src/core/measure'
+import { CORNER_IDS, OBSTACLE_KINDS, WALL_IDS, validateMeasurement, type MeasurementSurvey, type ObstacleKind, type RoomTolerance } from '@/src/core/measure'
 import type { WallId } from '@/src/core/types'
 import type { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
+import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
 import type { JsonValue } from '@/src/core/sync/types'
 import type { EnqueueResult } from './measurementSync'
 import { canAdvanceWall, roomIssues, wallIssues, setObstacleLocation, updateMeasure, updateObstacle, updateObstacleDimension, type CaptureSource, type ObstacleDimension, type SurveyField } from './measurementModel'
@@ -50,7 +51,7 @@ type Props = {
   store: IndexedDbMobileStore
   onBack: () => void
   onSave: (survey: MeasurementSurvey) => Promise<EnqueueResult>
-  onKitchen: (survey: MeasurementSurvey) => Promise<void>
+  onKitchen: (survey: MeasurementSurvey, wall: WallId, tolerance: RoomTolerance) => Promise<void>
   pending: number
   networkLabel: string
   networkColor: string
@@ -62,12 +63,15 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   const [wallIndex, setWallIndex] = useState(0)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [kitchenWall, setKitchenWall] = useState<WallId>('north')
+  const [wallTolerance, setWallTolerance] = useState(0)
+  const [cornerTolerance, setCornerTolerance] = useState(0)
   const wall = WALL_IDS[wallIndex] ?? 'north'
   const issues = validateMeasurement(survey)
   const saveChain = useRef<Promise<void>>(Promise.resolve())
   useEffect(() => {
-    saveChain.current = saveChain.current.then(() => store.putSurvey(survey.id, survey as unknown as JsonValue))
-      .catch((error: unknown) => { setMessage(error instanceof Error ? error.message : t('Не удалось сохранить черновик')) })
+    saveChain.current = saveChain.current.catch(() => undefined).then(() => store.putSurvey(survey.id, survey as unknown as JsonValue))
+    void saveChain.current.catch((error: unknown) => { setMessage(error instanceof Error ? error.message : t('Не удалось сохранить черновик')) })
   }, [store, survey])
 
   const changeNumber = (field: SurveyField, value: string, source: CaptureSource) => {
@@ -81,6 +85,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   }
 
   const save = async () => {
+    if (issues.length) { setMessage(t('Сначала завершите все обязательные поля замера')); return }
     setBusy(true)
     try {
       await saveChain.current
@@ -98,8 +103,8 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   }
 
   const leave = async () => {
-    await saveChain.current
-    onBack()
+    try { await saveChain.current; onBack() }
+    catch (error) { setMessage(error instanceof Error ? error.message : t('Не удалось сохранить черновик')) }
   }
 
   const selectPhoto = async (kind: ObstacleKind, file: File | undefined) => {
@@ -108,7 +113,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     const photoId = `photo:${crypto.randomUUID()}`
     setBusy(true)
     try {
-      await store.putPhoto(photoId, file)
+      await store.putPhoto(photoId, await prepareMeasurementPhoto(file))
       setSurvey((current) => updateObstacle(current, wall, kind, { photoRef: photoId }))
       setMessage(t('Фото сохранено на этом устройстве'))
     } catch (error) {
@@ -256,11 +261,26 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
         <ul className="mt-2 list-disc pl-5">{issues.map((issue) => <li key={`${issue.path}:${issue.message}`}>{issueLabel(issue.path)}: {issueCopy(issue.path)}</li>)}</ul>
       </div> : <p className="border border-[#247333] bg-white p-3 text-sm">{t('Все обязательные ответы и фото есть')}</p>}
       <button className={`${button} w-full`} type="button" onClick={() => { setStep('wall'); setWallIndex(0) }}>{t('Исправить замер')}</button>
-      <button className={`${button} w-full !border-[#005a9e] !bg-[#005a9e] !text-white`} type="button" disabled={busy} onClick={() => void save()}>{t('Сохранить замер')}</button>
-      <p className="text-sm text-[#525252]">{t('Первый ряд кухни будет на северной стене. Препятствия сохранены в замере; автоматический обход пока не выполняется.')}</p>
+      <button className={`${button} w-full !border-[#005a9e] !bg-[#005a9e] !text-white`} type="button" disabled={busy || issues.length > 0} onClick={() => void save()}>{t('Сохранить замер')}</button>
+      <label className="block text-sm">{t('Стена первого ряда кухни')}
+        <select className={`${input} mt-1`} value={kitchenWall} onChange={(event) => setKitchenWall(event.target.value as WallId)}>
+          {WALL_IDS.map((id) => <option key={id} value={id}>{t(wallLabels[id])}</option>)}
+        </select>
+      </label>
+      <label className="block text-sm">{t('Допуск противоположных стен, мм')}
+        <input className={`${input} mt-1`} type="number" min="0" step="1" value={wallTolerance}
+          onChange={(event) => setWallTolerance(Number(event.target.value))} />
+      </label>
+      <label className="block text-sm">{t('Допуск углов, °')}
+        <input className={`${input} mt-1`} type="number" min="0" step="1" value={cornerTolerance}
+          onChange={(event) => setCornerTolerance(Number(event.target.value))} />
+      </label>
+      {WALL_IDS.some((id) => OBSTACLE_KINDS.some((kind) => survey.walls[id].obstacles[kind].status === 'present')) &&
+        <p className="border border-[#a46a00] bg-[#fff3d5] p-3 text-sm">{t('Препятствия отмечены в замере. Проверьте положение модулей вручную до изготовления.')}</p>}
       <button className={`${button} w-full`} type="button" disabled={issues.length > 0 || busy} onClick={() => {
         setBusy(true)
-        void saveChain.current.then(() => onKitchen(survey)).catch((error: unknown) => {
+        void saveChain.current.then(() => onKitchen(survey, kitchenWall,
+          { wallMm: wallTolerance, cornerDeg: cornerTolerance })).catch((error: unknown) => {
           const reason = error instanceof Error ? error.message : ''
           setMessage(reason.includes('corner') ? t('Для кухни все четыре угла должны быть 90°') :
             reason.includes('opposite walls') ? t('Для кухни противоположные стены должны быть равны') :

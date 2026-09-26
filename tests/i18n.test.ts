@@ -45,6 +45,14 @@ describe('сөздіктер', () => {
     }
   })
 
+  it('телефондағы негізгі жолдар en және uz тілінде орысша қалмайды', () => {
+    for (const key of ['Новый замер', 'Сохранить замер', 'Замеры на этом устройстве',
+      'Сканировать деталь', 'Монтаж', 'Постоянное хранение разрешено.', 'Стена первого ряда кухни']) {
+      expect(en[key], `en: ${key}`).not.toBe(key)
+      expect(uz[key], `uz: ${key}`).not.toBe(key)
+    }
+  })
+
   it('орындары бар жолдарда орындар САҚТАЛҒАН', () => {
     for (const [name, dict] of Object.entries(dicts)) {
       for (const [key, value] of Object.entries(dict)) {

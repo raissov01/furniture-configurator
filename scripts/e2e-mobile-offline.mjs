@@ -54,10 +54,18 @@ let session
 try {
   session = await connect()
   const h = makeHelpers(session, base)
+  for (const width of [360, 390, 414]) {
+    await session.send('Emulation.setDeviceMetricsOverride', { width, height: 800, deviceScaleFactor: 1, mobile: true })
+    await h.goto('/mobile', 5000)
+    assert(await h.evaluate('document.documentElement.scrollWidth <= innerWidth'), `${width} px mobile page overflows`)
+  }
   await session.send('Emulation.setDeviceMetricsOverride', { width: 360, height: 800, deviceScaleFactor: 1, mobile: true })
-  await h.goto('/mobile', 5000)
   assert(await h.until('Boolean(navigator.serviceWorker?.controller)', 15000), 'service worker did not control mobile page')
   await h.goto('/mobile', 5000) // қызметтік жұмысшы HTML/чанктарды кэшке жазады
+  await h.goto('/mobile/scan', 5000)
+  assert(await h.until("document.body.innerText.includes('Сканировать деталь')", 5000), 'QR screen missing')
+  await h.goto('/mobile/installation', 5000)
+  assert(await h.until("document.body.innerText.includes('Монтаж')", 5000), 'installation screen missing')
   await h.goto('/configurator', 6500)
   await h.goto('/configurator', 4500) // өндіріс өзегі мен 3D чанктарын кэшке түсіреді
   await h.goto('/mobile', 4000)
@@ -104,6 +112,31 @@ try {
     }
   })`)
   assert(saved.surveys >= 1 && saved.photos >= 1, 'offline survey and photo did not survive reload')
+  await h.goto('/mobile/scan', 5000)
+  assert(await h.until("document.body.innerText.includes('Сканировать деталь')", 5000), 'QR screen did not reopen offline')
+  await h.goto('/mobile/installation', 5000)
+  assert(await h.until("document.body.innerText.includes('Монтаж')", 5000), 'installation screen did not reopen offline')
+  await h.goto('/mobile', 5000)
+  // A new deployment changes ?v=. The worker replaces its shell cache while
+  // the IndexedDB survey/photo/action stores must survive unchanged.
+  await session.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 })
+  assert(await h.evaluate("navigator.serviceWorker.register('/sw.js?v=e2e-hardening').then(() => true)"), 'updated worker could not register')
+  assert(await h.until("navigator.serviceWorker.controller?.scriptURL.includes('v=e2e-hardening')", 15000), 'updated worker did not activate')
+  await session.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 })
+  await session.send('Page.reload', { ignoreCache: true })
+  assert(await h.until("document.body.innerText.includes('Замеры на этом устройстве')", 15000), 'updated worker lost offline mobile shell')
+  const afterUpdate = await h.evaluate(`new Promise((resolve, reject) => {
+    const open = indexedDB.open('tapsyrys-mobile')
+    open.onerror = () => reject(open.error)
+    open.onsuccess = () => {
+      const db = open.result
+      const tx = db.transaction(['surveys','photos','actions'], 'readonly')
+      const counts = ['surveys','photos','actions'].map((name) => tx.objectStore(name).count())
+      tx.oncomplete = () => { resolve(counts.map((item) => item.result)); db.close() }
+      tx.onerror = () => reject(tx.error)
+    }
+  })`)
+  assert(afterUpdate[0] >= saved.surveys && afterUpdate[1] >= saved.photos, 'worker update lost IndexedDB data')
   await h.goto('/configurator', 7000)
   assert((await h.cutListRows()).length >= 6, 'cut list did not regenerate offline')
   console.log('mobile offline e2e: PASS', saved)

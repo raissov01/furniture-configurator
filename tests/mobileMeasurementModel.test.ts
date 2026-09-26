@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { OBSTACLE_KINDS } from '../src/core/measure'
+import { validateMeasurement } from '../src/core/measure'
 import {
   canAdvanceWall, emptySurvey, measured, parseSavedMeasurementDraft, roomIssues, setObstacleLocation, updateMeasure, updateObstacle, updateObstacleDimension,
 } from '../components/mobile/measurementModel'
 
 describe('mobile measurement draft', () => {
+  it('аяқталмаған бөлмені дайын өлшем деп сақтауға жібермейді', () => {
+    expect(validateMeasurement(emptySurvey('draft', 1000)).length).toBeGreaterThan(0)
+  })
   it('reopens an unfinished local draft while rejecting malformed storage rows', () => {
     const draft = emptySurvey('unfinished-1', 1000)
     expect(parseSavedMeasurementDraft(JSON.parse(JSON.stringify(draft)))).toEqual(draft)

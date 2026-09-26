@@ -14,6 +14,8 @@ import { MeasurementWizard } from '@/components/mobile/MeasurementWizard'
 import { enqueueLatestMeasurement, keepLocalMeasurement, retryDelay, retryRejectedMeasurement } from '@/components/mobile/measurementSync'
 import { emptySurvey, parseSavedMeasurementDraft } from '@/components/mobile/measurementModel'
 import { configuratorKitchenTarget, handoffMeasurementToKitchen } from '@/components/mobile/kitchenHandoff'
+import type { WallId } from '@/src/core/types'
+import type { RoomTolerance } from '@/src/core/measure'
 
 const ROLE_CACHE = 'tapsyrys:role' // UI navigation only; projects, measurements and photos are in IndexedDB.
 const roles: Role[] = ['owner', 'designer', 'shop', 'client']
@@ -42,6 +44,40 @@ export default function MobileTodayPage() {
   const [conflicts, setConflicts] = useState<SyncRecord[]>([])
   const [rejected, setRejected] = useState<SyncRecord[]>([])
   const [message, setMessage] = useState('')
+  const [durableStorage, setDurableStorage] = useState<'checking' | 'granted' | 'denied' | 'unavailable'>('checking')
+  const [offlineSince, setOfflineSince] = useState<number | null>(null)
+  const [now, setNow] = useState(Date.now())
+
+  useEffect(() => {
+    let mounted = true
+    const persist = async () => {
+      const storage = navigator.storage
+      if (!storage?.persist) { if (mounted) setDurableStorage('unavailable'); return }
+      try {
+        const granted = await storage.persist()
+        if (mounted) setDurableStorage(granted ? 'granted' : 'denied')
+      } catch { if (mounted) setDurableStorage('unavailable') }
+    }
+    void persist()
+    const timer = setInterval(() => setNow(Date.now()), 60_000)
+    return () => { mounted = false; clearInterval(timer) }
+  }, [])
+
+  useEffect(() => {
+    const key = 'tapsyrys:offline-since'
+    if (online) {
+      setOfflineSince(null)
+      try { localStorage.removeItem(key) } catch { /* Reminder still works during this session. */ }
+      return
+    }
+    let since = Date.now()
+    try {
+      const saved = Number(localStorage.getItem(key))
+      if (Number.isSafeInteger(saved) && saved > 0 && saved <= since) since = saved
+      localStorage.setItem(key, String(since))
+    } catch { /* Reminder still works during this session. */ }
+    setOfflineSince(since)
+  }, [online])
 
   const refresh = useCallback(async (db: IndexedDbMobileStore) => {
     const raw = await db.listSurveys()
@@ -77,6 +113,7 @@ export default function MobileTodayPage() {
       try {
         db = await IndexedDbMobileStore.open()
         if (!mounted) { db.close(); return }
+        db.onVersionChange = () => { if (mounted) window.location.reload() }
         setStore(db)
         const sync = new SyncQueue(db, createMobileSyncTransport(db))
         setQueue(sync)
@@ -207,10 +244,10 @@ export default function MobileTodayPage() {
     } finally { setSending(false) }
   }
 
-  const createKitchen = async (survey: MeasurementSurvey) => {
+  const createKitchen = async (survey: MeasurementSurvey, wall: WallId, tolerance: RoomTolerance) => {
     if (!store) throw new Error(t('Локальное хранилище недоступно'))
     await saveSurvey(survey)
-    await handoffMeasurementToKitchen(survey, configuratorKitchenTarget((id, project) => store.putProject(id, project)))
+    await handoffMeasurementToKitchen(survey, configuratorKitchenTarget((id, project) => store.putProject(id, project)), [wall], tolerance)
     router.push(`/configurator?measurement=${encodeURIComponent(survey.id)}`)
   }
 
@@ -224,6 +261,17 @@ export default function MobileTodayPage() {
     <div role="status" className={`mb-4 border p-3 text-sm ${networkColor}`}>
       {networkLabel} · {t('Ожидает отправки')}: {pending}
     </div>
+    <p role="status" className="mb-4 border bg-white p-3 text-sm">
+      {durableStorage === 'granted' ? t('Постоянное хранение разрешено.') :
+        durableStorage === 'denied' ? t('Постоянное хранение не разрешено браузером.') :
+          durableStorage === 'unavailable' ? t('Постоянное хранение недоступно.') : t('Проверяем постоянное хранение…')}
+    </p>
+    {durableStorage !== 'granted' && (pending > 0 || surveys.length > 0) && <p role="status" className="mb-4 border border-[#a46a00] bg-[#fff3d5] p-3 text-sm">
+      {t('Данные замеров и фото пока только на этом телефоне. Сохраните копию после подключения к интернету.')}
+      {' '}{durableStorage === 'denied' ? t('Постоянное хранение не разрешено браузером.') :
+        durableStorage === 'unavailable' ? t('Постоянное хранение недоступно.') : t('Проверяем постоянное хранение…')}
+      {offlineSince !== null && now - offlineSince >= 24 * 60 * 60 * 1000 && ` ${t('Вы давно офлайн. Подключитесь, чтобы отправить очередь.')}`}
+    </p>}
     <header className="mb-6">
       <p className="text-sm font-semibold tracking-wide">{t('Заказ')}</p>
       <h1 className="mt-1 text-2xl font-semibold">{role === 'shop' ? t('Цех') : role === 'client' ? t('Клиент') : t('Сегодня')}</h1>
@@ -247,7 +295,8 @@ export default function MobileTodayPage() {
     </section>}
     {role === 'shop' && <section className="space-y-3">
       <p className="border border-[#b8b8b8] bg-white p-3 text-sm">{t('Работа цеха: сканирование деталей и монтаж.')}</p>
-      <p className="border border-[#b8b8b8] bg-white p-3 text-sm">{t('Сканирование и монтаж ещё готовятся.')}</p>
+      <Link className={button} href="/mobile/scan">{t('Сканировать деталь')}</Link>
+      <Link className={button} href="/mobile/installation">{t('Монтаж')}</Link>
     </section>}
     {role === 'client' && <section className="border border-[#b8b8b8] bg-white p-3 text-sm">
       {t('Откройте ссылку на своё предложение от мастерской.')}
