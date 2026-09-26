@@ -11,7 +11,9 @@ export function toProductionShopProfile(shop: ShopProfile): ShopProfile {
     priceLists: shop.priceLists.map((list) => ({ ...list,
       materialPrices: {}, edgeBandPrices: {}, hardwarePrices: {},
       serviceRates: { cutting: 0, drilling: 0, edging: 0, packing: 0, assembly: 0 },
-      installationRatePerMetreWidth: 0, coefficient: 1, markupPercent: 0 })),
+      installationRatePerMetreWidth: 0, coefficient: 1, markupPercent: 0, marketPrices: {} })),
+    // Нарық белгісінде баға тұр — өндіріс рөліне ол да көрінбейді.
+    marketPrices: {},
     labour: { perSquareMetre: 0, perHole: 0, perEdgeMetre: 0 },
     services: Object.fromEntries(Object.entries(shop.services).map(([id, service]) => [id, { ...service, rate: 0 }])) as ShopProfile['services'],
     installation: { ratePerMetreWidth: 0 },

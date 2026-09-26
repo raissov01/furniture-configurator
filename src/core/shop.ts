@@ -6,9 +6,10 @@
  * геометрияны біледі, ал «біздің цехта былай» дегеннің бәрі осында тұрады.
  * Сондықтан жаңа цех қосу үшін кодқа қол тигізудің қажеті жоқ.
  *
- * БАҒА. Барлық баға ӘДЕЙІ 0 күйінде келеді. Ойдан жазылған баға клиентке
- * кеткен КП-ға түседі, ал ол цехтың ақшасы (§6). Цех бағасын толтырғанша
- * `shopReadiness()` «КП шығаруға болмайды» деп тұрады.
+ * БАҒА. `defaultShopProfile()` — бағасыз каталог (бәрі 0). Жаңа цех
+ * `starterShopProfile()`-пен ашылады: дерегі бар позициялар НАРЫҚ МЕДИАНАСЫМЕН
+ * толады (`marketPrices.ts`, әр бағада белгі), дерегі жоқтары 0 қалады.
+ * Бос бағамен `shopReadiness()` «КП шығаруға болмайды» деп тұрады.
  */
 
 import { z } from 'zod'
@@ -23,6 +24,10 @@ import type { NestingOptions, OptimizationLevel } from './nesting'
 import { SEED_EDGE_BANDS, SEED_MATERIALS } from './seed'
 import { EdgeBandSchema, MaterialSchema } from './schema'
 import { capturePriceValues, syncActivePriceList } from './priceLists'
+import {
+  applyMarketDefaults, refreshMarketPrices, resetAllPositionsToMarket, resetPositionToMarket,
+} from './marketPrices'
+import type { MarketPriceMark, PriceKey } from './marketPrices'
 import type { PriceList } from './priceLists'
 import type { CabinetConfig, Catalog, EdgeBand, Material, Panel, SettingsOverride } from './types'
 
@@ -138,7 +143,7 @@ export function defaultServices(): Services {
 }
 
 export type ShopProfile = {
-  schemaVersion: 8
+  schemaVersion: 9
   id: string
   /** КП-да тұратын атау */
   name: string
@@ -155,6 +160,12 @@ export type ShopProfile = {
   priceLists: PriceList[]
   /** Белсенді прайстың ақшасы жоғарыдағы material/hardware/service өрістерінде де тұр. */
   activePriceListId: string
+  /**
+   * Бағасы НАРЫҚТАН алынған позициялар (`material:<id>`, `edgeBand:<id>`,
+   * `hardware:<id>`, `service:<id>`). Белгісі жоқ бағасы бар позиция — цехтың
+   * өз бағасы; нарық жаңарғанда оған тимейміз.
+   */
+  marketPrices: Record<PriceKey, MarketPriceMark>
   /**
    * Ілгек жүйелері. Бренд ПРИСАДКАҒА әсер етеді (чашканың K өлшемі),
    * сондықтан бұл сметаның жолы емес, геометрияның кірісі.
@@ -370,7 +381,7 @@ export function defaultHardware(): HardwareItem[] {
  */
 export function defaultShopProfile(id = 'shop-1'): ShopProfile {
   const base = {
-    schemaVersion: 8 as const,
+    schemaVersion: 9 as const,
     id,
     name: '',
     city: '',
@@ -389,12 +400,57 @@ export function defaultShopProfile(id = 'shop-1'): ShopProfile {
     markupPercent: 0,
     maxShelfSpan: null,
     limits: defaultLimits(),
+    marketPrices: {},
   }
   return {
     ...base,
     activePriceListId: 'price-default',
     priceLists: [{ id: 'price-default', name: 'Основной', ...capturePriceValues(base) }],
   }
+}
+
+/**
+ * ЖАҢА ЦЕХ осымен ашылады: каталог + нарық медианасы (дерегі барына ғана).
+ * Цех бағасын өзгертсе, ол «өз бағасы» болады (`marketPrices.ts`).
+ */
+export function starterShopProfile(id = 'shop-1'): ShopProfile {
+  return syncActivePriceList(applyMarketDefaults(defaultShopProfile(id)))
+}
+
+type PriceFields = Pick<ShopProfile, 'materials' | 'edgeBands' | 'hardware' | 'services' | 'installation'> & {
+  priceLists?: PriceList[] | undefined
+}
+
+/**
+ * Цехта бірде-бір баға жоқ па (материал, тақта, кромка, фурнитура, қызмет,
+ * монтаж — ешбір прайс-парақта). Тек сондай ескі цех нарық бағасымен толады;
+ * бір баға болса да, цех бағасын өзі жүргізеді — ештеңе ауыспайды.
+ */
+export function hasNoPrices(shop: PriceFields): boolean {
+  const zero = (n: number | undefined) => (n ?? 0) === 0
+  const current = shop.materials.every((m) => zero(m.pricePerSheet) && zero(m.slab?.pricePerMeter)) &&
+    shop.edgeBands.every((b) => zero(b.pricePerMeter)) &&
+    shop.hardware.every((h) => zero(h.pricePerUnit)) &&
+    Object.values(shop.services).every((s) => zero(s.rate)) &&
+    zero(shop.installation.ratePerMetreWidth)
+  const lists = (shop.priceLists ?? []).every((l) =>
+    Object.values(l.materialPrices).every((p) => zero(p.pricePerSheet) && zero(p.slabPricePerMeter)) &&
+    Object.values(l.edgeBandPrices).every(zero) &&
+    Object.values(l.hardwarePrices).every(zero) &&
+    Object.values(l.serviceRates).every(zero) &&
+    zero(l.installationRatePerMetreWidth))
+  return current && lists
+}
+
+/** «Вернуть рыночную цену» — бір позиция. Белсенді прайс-парақ бірге жаңарады. */
+export function resetToMarket(shop: ShopProfile, key: PriceKey): ShopProfile {
+  const next = resetPositionToMarket(shop, key)
+  return next === shop ? shop : syncActivePriceList(next)
+}
+
+/** «Вернуть все рыночные цены»: нарық дерегі бар барлық позиция. */
+export function resetAllToMarket(shop: ShopProfile): ShopProfile {
+  return syncActivePriceList(resetAllPositionsToMarket(shop))
 }
 
 /** Генерацияға керегі — материалдар мен кромкалар. Профильдің қалғаны кірмейді. */
@@ -633,6 +689,13 @@ const DimensionLimitsSchema = z.object({
   maxDepth: dimensionLimit,
 })
 
+const MarketPricesSchema = z.record(z.string(), z.object({
+  group: z.string().min(1),
+  priceTiyn: minorUnits,
+  dateSeen: z.string().min(1),
+  offers: z.number().int().positive(),
+}))
+
 const PriceListSchema = z.object({
   id: z.string().min(1),
   name: z.string().trim().min(1),
@@ -652,10 +715,11 @@ const PriceListSchema = z.object({
   installationRatePerMetreWidth: minorUnits,
   coefficient: z.number().positive(),
   markupPercent: z.number().int().min(0).max(1000),
+  marketPrices: MarketPricesSchema,
 })
 
 export const ShopProfileSchema = z.object({
-  schemaVersion: z.literal(8),
+  schemaVersion: z.literal(9),
   id: z.string().min(1),
   name: z.string(),
   city: z.string(),
@@ -682,6 +746,7 @@ export const ShopProfileSchema = z.object({
   markupPercent: z.number().int().min(0).max(1000),
   maxShelfSpan: z.number().int().positive().nullable(),
   limits: DimensionLimitsSchema,
+  marketPrices: MarketPricesSchema,
 }).superRefine((shop, context) => {
   const ids = shop.priceLists.map((list) => list.id)
   if (new Set(ids).size !== ids.length) {
@@ -694,7 +759,7 @@ export const ShopProfileSchema = z.object({
 
 /** v6-ның өз өрістерін баға тізімін құрастырмай тұрып тексереміз. */
 const ShopProfileV6Schema = z.object(ShopProfileSchema.shape)
-  .omit({ priceLists: true, activePriceListId: true })
+  .omit({ priceLists: true, activePriceListId: true, marketPrices: true })
   .extend({ schemaVersion: z.literal(6) })
 
 /**
@@ -781,6 +846,7 @@ export function parseShopProfile(raw: unknown): ShopProfile {
     }
   }
 
+
   // v7 → v8: жаңа присадка мәндері `settings` ішіндегі override ретінде қалады.
   // Бұрын енгізілген параметрлер, каталог пен бағалар өзгермейді.
   const v7 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
@@ -788,5 +854,27 @@ export function parseShopProfile(raw: unknown): ShopProfile {
     migrated = { ...(migrated as object), schemaVersion: 8 }
   }
 
-  return syncActivePriceList(ShopProfileSchema.parse(migrated) as ShopProfile)
+  // v8 → v9: нарық белгілері. Ескі цехтың бағалары — ӨЗ бағасы (белгісіз).
+  // Бағасы МҮЛДЕ бос цех ғана нарық медианасымен толады (төменде, тексерілген
+  // соң): бір баға енгізген цехта ештеңе ауыспайды.
+  const v8 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
+  const legacy = typeof v8 === 'number' && v8 <= 8
+  if (v8 === 8) {
+    const old = migrated as { priceLists?: unknown }
+    migrated = {
+      ...(migrated as object),
+      schemaVersion: 9,
+      marketPrices: {},
+      priceLists: Array.isArray(old.priceLists)
+        ? old.priceLists.map((list: unknown) => (list !== null && typeof list === 'object'
+          ? { marketPrices: {}, ...(list as object) }
+          : list))
+        : old.priceLists,
+    }
+  }
+
+  const parsed = syncActivePriceList(ShopProfileSchema.parse(migrated) as ShopProfile)
+  if (legacy && hasNoPrices(parsed)) return syncActivePriceList(applyMarketDefaults(parsed))
+  // Нарық деректері жаңарса — тек белгісі бар позициялар жаңарады.
+  return syncActivePriceList(refreshMarketPrices(parsed))
 }
