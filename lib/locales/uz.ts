@@ -62,6 +62,8 @@ export const uz: Record<string, string> = {
   'Название или тип': 'Nomi yoki turi',
   'Подкатегории': 'Quyi toifalar',
   'Модули не найдены': 'Modullar topilmadi',
+  'Набор заменяет весь проект и расставляет корпуса по стенам. Ctrl+Z возвращает предыдущий.': 'To\'plam butun loyihani almashtirib, korpuslarni devorlar bo\'ylab joylashtiradi. Ctrl+Z oldingi holatni qaytaradi.',
+  'Шаблон полностью заменяет текущий корпус. Ctrl+Z возвращает предыдущий.': 'Andoza joriy korpusni to\'liq almashtiradi. Ctrl+Z oldingi holatni qaytaradi.',
   'Нижние': 'Pastki',
   'Верхние': 'Yuqori',
   'Пеналы': 'Baland shkaflar',
