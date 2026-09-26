@@ -292,7 +292,7 @@ type State = Snapshot & {
 
   loadTemplate(id: string): void
   loadSet(id: string): void
-  loadKitchen(options: import('@/src/core/index').KitchenOptions): void
+  loadKitchen(options: import('@/src/core/index').KitchenOptions, measuredRoom?: Room): void
   loadFurniture(options: import('@/src/core/index').FurnitureOptions): void
   loadCabinet(cabinet: CabinetConfig): void
 
@@ -909,13 +909,18 @@ export const useConfigurator = create<State>((set, get) => ({
    * Ас үй ГЕНЕРАТОРЫ: қабырға ұзындығынан толық гарнитур.
    *
    * `loadSet`-пен бір қалыпта — бүкіл жобаны АЛМАСТЫРАДЫ (Ctrl+Z қайтарады).
-   * Бөлме генератор берген өлшемге көшеді: гарнитур сонда ғана дәл сыяды.
+   * Әдетте бөлме генератор берген өлшемге көшеді; өлшеуден келгенде нақты бөлме сақталады.
    */
-  loadKitchen(options) {
+  loadKitchen(options, measuredRoom) {
     const s = get()
     const { cabinets, placements, room } = generateKitchen(options, s.catalog)
-    if (cabinets.length === 0) return
-    const nextRoom = withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) })
+    if (cabinets.length === 0) {
+      if (measuredRoom) throw new Error('Өлшенген қабырғаға ас үй модулі сыймады')
+      return
+    }
+    const nextRoom = measuredRoom
+      ? withOpenings(measuredRoom)
+      : withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) })
     set({
       room: nextRoom,
       ...replaceProjectScene(s, cabinets, placements, nextRoom),
