@@ -45,6 +45,10 @@ export function applyInstallationSync(shopId: string, action: InstallationAction
     let task = readInstallationTask(shopId, action.entityId)
     if (action.kind === 'installation.create') {
       if (task) return conflict(database, task)
+      // Кесте ID-і ортақ: басқа цехтың тапсырмасы UNIQUE қатесімен 500 бермесін.
+      if (database.prepare('SELECT 1 FROM installation_tasks WHERE id = ?').get(action.entityId)) {
+        throw new InstallationError(409, 'Монтаж ID-і бос емес; жаңа ID жасаңыз')
+      }
       if (action.baseRevision.version !== 0 || action.baseRevision.updatedAt !== 0) {
         throw new InstallationError(409, 'Жаңа монтаждың базалық нұсқасы 0 болуы керек')
       }

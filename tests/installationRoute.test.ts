@@ -110,6 +110,22 @@ describe('монтаж API және офлайн кезек', () => {
     expect((await (await route.GET(new Request('http://localhost'), context(taskId))).json() as { task: { status: string } }).task.status).toBe('closed')
   })
 
+  it('басқа цехтың тапсырма ID-і 500 емес, 409 береді және оның тапсырмасын өзгертпейді', async () => {
+    const first = auth.register('install-id-a@example.kz', 'password123', 'Цех А')
+    const second = auth.register('install-id-b@example.kz', 'password123', 'Цех Б')
+    if (!first.ok || !second.ok) throw new Error('Тіркелу сәтсіз')
+    actor.value = { ...first.account, role: 'shop' }
+    const firstProject = store.writeProject(first.account.shopId, 'Шкаф', project())
+    expect((await sync.POST(request(action('id-a', 'installation.create', 'shared-install', { projectId: firstProject }, 0)))).status).toBe(200)
+    actor.value = { ...second.account, role: 'shop' }
+    const secondProject = store.writeProject(second.account.shopId, 'Шкаф', project())
+    const clash = await sync.POST(request(action('id-b', 'installation.create', 'shared-install', { projectId: secondProject }, 0)))
+    expect(clash.status).toBe(409)
+    actor.value = { ...first.account, role: 'shop' }
+    const kept = await (await route.GET(new Request('http://localhost'), context('shared-install'))).json() as { task: { projectId: string } }
+    expect(kept.task.projectId).toBe(firstProject)
+  })
+
   it('4xx/500 жауаптар стек бермейді', async () => {
     const owner = auth.register('install-error@example.kz', 'password123', 'Цех')
     if (!owner.ok) throw new Error(owner.error)
