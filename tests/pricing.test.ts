@@ -85,6 +85,26 @@ describe('фурнитура присадкадан шығады', () => {
     expect(counts.get('shelf-pin-5')).toBe(shelves * 4)
     expect(counts.get('shelf-pin-5')!).toBeLessThan(pinHoles)
   })
+
+  it('конфирматқа бекітілген сөреге полкодержатель қоспайды', () => {
+    const fixed = { ...cabinet, sections: cabinet.sections.map((section) => ({
+      ...section, contents: [{ kind: 'shelves' as const, count: 2, shelfKind: 'fixed' as const }],
+    })) }
+    for (const carcassJoint of ['confirmat', 'minifix'] as const) {
+      const fixedPanels = generateCabinet({ ...fixed, carcassJoint }, catalog)
+      expect(fixedPanels.filter((p) => p.role === 'shelf')).toHaveLength(2)
+      expect(countHardware(fixedPanels).get('shelf-pin-5')).toBeUndefined()
+      expect(countHardware(fixedPanels).get(carcassJoint === 'minifix' ? 'minifix-15' : 'confirmat-7x50'))
+        .toBeGreaterThan(0)
+    }
+  })
+
+  it('сөре белгісінің мәтіні өзгерсе де ұстағыш санын присадка мен түрінен шығарады', () => {
+    const renamed = panels.map((p) => p.role === 'shelf' ? { ...p, note: 'Shelf' } : p)
+    expect(countHardware(renamed).get('shelf-pin-5')).toBe(16)
+    const withoutPinHoles = renamed.map((p) => ({ ...p, drilling: p.drilling.filter((d) => d.purpose !== 'shelfPin') }))
+    expect(countHardware(withoutPinHoles).get('shelf-pin-5')).toBeUndefined()
+  })
 })
 
 describe('есеп', () => {

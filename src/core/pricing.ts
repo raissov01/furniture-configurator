@@ -131,6 +131,10 @@ export type PriceBreakdown = {
  */
 function edgeLength(p: Panel, side: keyof Panel['edges']): number {
   const b = p.bevel
+  if (b && isWidthBevel(b)) {
+    if (side === 'W1') return b.widthAtStart
+    if (side === 'W2') return b.widthAtEnd
+  }
   if (b && isWidthBevel(b) && (side === 'L1' || side === 'L2')) {
     const diagonalSide = b.alignWidth === 'end' ? 'L1' : 'L2'
     if (side === diagonalSide) {
@@ -196,7 +200,7 @@ export function countHardware(panels: Panel[]): Map<string, number> {
   const bump = (id: string) => byHardwareId.set(id, (byHardwareId.get(id) ?? 0) + 1)
 
   for (const p of panels) {
-    if (p.role === 'shelf') shelves += 1
+    if (p.role === 'shelf' && p.shelfKind === 'adjustable') shelves += 1
     if (p.role === 'drawerSide') drawerSides += 1
     for (const d of p.drilling) {
       /*
@@ -237,7 +241,9 @@ export function countHardware(panels: Panel[]): Map<string, number> {
     // Әр ілгекке бір жауап планка.
     if (id.startsWith('hinge-')) add('hinge-plate', n)
   }
-  if (shelves > 0) add('shelf-pin-5', shelves * 4)
+  if (shelves > 0 && panels.some((p) => p.drilling.some((d) => d.purpose === 'shelfPin'))) {
+    add('shelf-pin-5', shelves * 4)
+  }
   /*
    * Көтергіш механизм: оның присадкасы ЖОҚ (шаблон бойынша бұрғыланады),
    * сондықтан ол тесіктен емес, ФАСАДТЫҢ ӨЗІНЕН саналады.

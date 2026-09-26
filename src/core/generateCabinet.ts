@@ -857,6 +857,7 @@ export function generateCabinet(
             ORIENT_HORIZONTAL,
             shelfNote,
           )
+          shelf.shelfKind = content.shelfKind
           // Бұрыштық корпуста сөре де ТРАПЕЦИЯ: тереңдігі бүйірлерімен бірге
           // өзгереді, әйтпесе оң жағы қиғаш алдыңғы жиектен шығып тұрар еді.
           const shelfBevel = widthBevel(space.depth, shelfDepthRight)

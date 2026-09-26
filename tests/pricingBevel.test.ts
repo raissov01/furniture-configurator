@@ -39,6 +39,12 @@ const corner = (depthAtRight: number, patch: Partial<CabinetConfig> = {}): Cabin
 })
 
 describe('C10: бұрыштық корпустың қиғаш алдыңғы жиегінің кромка ұзындығы', () => {
+  it('трапецияның екі қысқа ұшын өз енімен есептейді', () => {
+    const panel = generateCabinet(corner(350), catalog).find((p) => p.bevel)!
+    const band = { bandId: 'short-end' }
+    const metres = edgeMetresByBand([{ ...panel, qty: 1, edges: { L1: null, L2: null, W1: band, W2: band } }])
+    expect(metres.get('short-end')).toBe((panel.bevel!.widthAtStart + panel.bevel!.widthAtEnd) / 1000)
+  })
   it('дно/крышка/3 сөре — әрқайсысының L1-і гипотенуза (≈621 мм), 568 емес', () => {
     const panels = generateCabinet(corner(350), catalog)
     // bottom, top, s1-shelf-1..3 — бесеуі де widthAtStart:600 → widthAtEnd:350,
