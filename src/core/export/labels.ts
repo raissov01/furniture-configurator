@@ -23,6 +23,7 @@ import type { NestingResult } from '../nesting'
 import type { Catalog, EdgeSpec, Panel } from '../types'
 import type { PdfFonts } from './pdf'
 import { encodePartQr } from '../partQr'
+import { stampPdfBrand } from '../brand'
 export { encodePartQr, decodePartQr } from '../partQr'
 export type { PartQr } from '../partQr'
 
@@ -317,6 +318,7 @@ export async function labelsPdf(input: LabelsPdfInput): Promise<Uint8Array> {
     })
   }
 
+  stampPdfBrand(doc)
   return doc.save()
 }
 
