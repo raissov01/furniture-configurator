@@ -5,8 +5,8 @@ import { ConfigValidationError } from './errors'
 import { flattenTree } from './flatten'
 import type { Layer } from './layers'
 import type { ProjectFileV4 } from './projectV4'
-import { walkTree } from './tree'
-import type { GroupNode } from './tree'
+import { IDENTITY_TRANSFORM, findNode, walkTree } from './tree'
+import type { BoardNode, GroupNode } from './tree'
 import type { Catalog, SettingsOverride } from './types'
 
 export type AutoJointRecord = {
@@ -30,6 +30,17 @@ function generated(
   return autoJoint(flattenTree(root, catalog, settings, layers), boardIds, kind, catalog, settings, tolerance)
 }
 
+function rejectManualConflict(root: GroupNode, results: readonly AutoJointResult[]): void {
+  for (const result of results) {
+    const node = findNode(root, result.boardId)
+    if (node?.kind !== 'board') continue
+    const collides = (node.board.drilling ?? []).some((manual) => result.drilling.some((generatedHole) =>
+      manual.face === generatedHole.face && manual.x === generatedHole.x && manual.y === generatedHole.y))
+    if (collides) throw new ConfigValidationError(`board[${result.boardId}].drilling`,
+      'қол тесігі автоматты буын тесігімен бір орында', 'қол тесігін жылжытыңыз не буынды алып тастаңыз')
+  }
+}
+
 /** Алғашқы буын: бет пен торц нақты анықталғаннан кейін ғана сақталады. */
 export function createAutoJoint(
   root: GroupNode, boardIds: [string, string], kind: AutoJointKind,
@@ -37,6 +48,7 @@ export function createAutoJoint(
   layers?: Layer[], edited = false,
 ): AutoJointRecord {
   const drilling = generated(root, boardIds, kind, catalog, settings, tolerance, layers)
+  rejectManualConflict(root, drilling)
   const face = drilling.find((item) => item.drilling.some((hole) => hole.face === 'inner' || hole.face === 'outer'))
   const edge = drilling.find((item) => item.boardId !== face?.boardId)
   if (!face || !edge) throw new ConfigValidationError('joint.geometry', 'бет пен торц табылмады')
@@ -52,6 +64,7 @@ export function rebuildAutoJoints(
   return joints.map((joint) => {
     try {
       const drilling = generated(root, joint.boardIds, joint.kind, catalog, settings, joint.tolerance, layers)
+      rejectManualConflict(root, drilling)
       const face = drilling.find((item) => item.drilling.some((hole) => hole.face === 'inner' || hole.face === 'outer'))
       if (face?.boardId !== joint.faceBoardId) {
         throw new ConfigValidationError('joint.faceBoardId', 'буынның бет тақтасы өзгерді', joint.faceBoardId)
@@ -78,24 +91,24 @@ export type AutoJointChange = {
 
 /** Қол тесіктерін де нақты рез панель шегімен салыстырады. */
 export function validateManualBoardDrilling(
-  root: GroupNode, catalog: Catalog, settings?: SettingsOverride, layers?: Layer[],
+  root: GroupNode, catalog: Catalog, settings?: SettingsOverride, _layers?: Layer[],
 ): void {
-  const boardIds = new Set<string>()
-  // Parsing a project must not force a manufacturing render of boards without
-  // manual holes. The production view reports their geometry errors itself.
+  const boards: BoardNode[] = []
+  // Check each board independently. Hidden boards still need valid CNC data;
+  // an unrelated invalid board is reported by the production view instead.
   walkTree(root, (node) => {
-    if (node.kind === 'board' && (node.board.drilling?.length ?? 0) > 0) boardIds.add(node.id)
+    if (node.kind === 'board' && (node.board.drilling?.length ?? 0) > 0) boards.push(node)
   })
-  if (boardIds.size === 0) return
   const materials = new Map(catalog.materials.map((item) => [item.id, item.thickness]))
-  for (const node of flattenTree(root, catalog, settings, layers).nodes) {
-    if (!boardIds.has(node.nodeId)) continue
-    const panel = node.panels[0]
-    if (!panel) continue
+  for (const board of boards) {
+    const isolated: GroupNode = { kind: 'group', id: 'manual-drill-validation', name: 'manual-drill-validation',
+      transform: IDENTITY_TRANSFORM, children: [{ ...board, hidden: false, layerId: undefined,
+        transform: IDENTITY_TRANSFORM }] }
+    const panel = flattenTree(isolated, catalog, settings).nodes[0]!.panels[0]!
     const thickness = materials.get(panel.materialId)
-    if (thickness === undefined) throw new ConfigValidationError(`board[${node.nodeId}].materialId`, 'материал табылмады')
+    if (thickness === undefined) throw new ConfigValidationError(`board[${board.id}].materialId`, 'материал табылмады')
     panel.drilling.forEach((hole, index) => validateJointDrill(panel, hole, thickness,
-      `board[${node.nodeId}].drilling.${index}`))
+      `board[${board.id}].drilling.${index}`))
   }
 }
 
@@ -121,7 +134,9 @@ export function applyAutoJointChange(project: ProjectFileV4, change: AutoJointCh
     if (!joints.some((item) => item.id === change.joint!.id)) {
       throw new ConfigValidationError('joint.id', 'буын табылмады', 'бар id')
     }
-    joints = joints.map((item) => item.id === change.joint!.id ? { ...item, kind: change.joint!.kind } : item)
+    joints = joints.map((item) => item.id === change.joint!.id
+      ? { ...item, kind: change.joint!.kind, edited: item.edited || item.kind !== change.joint!.kind }
+      : item)
   }
   return { ...project, root, materials, edgeBands, settings, layers,
     autoJoints: rebuildAutoJoints(root, joints, catalog, settings, layers) }

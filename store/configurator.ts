@@ -292,6 +292,7 @@ type State = Snapshot & {
   editBoard(id: string, patch: Partial<BoardSpec>): void
   autoJointBoards(ids: [string, string], kind: AutoJointKind, tolerance: number): void
   setAutoJointKind(id: string, kind: AutoJointKind): void
+  removeAutoJoint(id: string): void
   setBoardPosition(id: string, position: Vec3): void
   editSection(index: number, patch: Partial<Section>, key: string): void
   addSection(): void
@@ -543,6 +544,9 @@ function projectSettingsAfterShopEdit(
 
 function treeEdit(s: State, root: GroupNode, layers = s.layers) {
   if (root === s.root && layers === s.layers) return {}
+  const orphan = s.autoJoints.find((joint) => joint.boardIds.some((id) => findNode(root, id)?.kind !== 'board'))
+  if (orphan) throw new ConfigValidationError('joint.boardIds',
+    `${orphan.id}: буын тақтасын өшірмес бұрын буынды өшіріңіз`, 'екі бар board id')
   const autoJoints = s.autoJoints.length > 0
     ? applyAutoJointChange(s.exportProject(), { root, layers }).autoJoints ?? []
     : s.autoJoints
@@ -809,6 +813,15 @@ export const useConfigurator = create<State>((set, get) => ({
     const next = applyAutoJointChange(s.exportProject(), { joint: { id, kind } })
     set({ autoJoints: next.autoJoints ?? [], past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [], lastEditKey: null })
+  },
+
+  removeAutoJoint(id) {
+    const s = get()
+    if (!s.autoJoints.some((joint) => joint.id === id)) {
+      throw new ConfigValidationError('joint.id', `буын табылмады: ${id}`, 'бар id')
+    }
+    set({ autoJoints: s.autoJoints.filter((joint) => joint.id !== id),
+      past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null })
   },
 
   setBoardPosition(id, position) {
@@ -1143,6 +1156,21 @@ export const useConfigurator = create<State>((set, get) => ({
   editShop(patch) {
     const s = get()
     const changesJointInputs = Boolean(patch.settings || patch.materials || patch.edgeBands)
+    const nextShop = syncActivePriceList({ ...s.shop, ...patch })
+    const projectSettings = patch.settings
+      ? projectSettingsAfterShopEdit(s.projectSettings, s.shop.settings, patch.settings) : s.projectSettings
+    const projectMaterials = patch.materials
+      ? projectMaterialsAfterShopEdit(s.projectMaterials, s.shop.materials, patch.materials) : s.projectMaterials
+    const projectEdgeBands = patch.edgeBands
+      ? projectBandsAfterShopEdit(s.projectEdgeBands, s.shop.edgeBands, patch.edgeBands) : s.projectEdgeBands
+    const nextCatalog = projectCatalog(nextShop, projectMaterials, projectEdgeBands)
+    // Check the whole geometry before mutating either project overrides or undo.
+    const autoJoints = s.autoJoints.length > 0 && changesJointInputs
+      ? applyAutoJointChange(s.exportProject(), {
+          materials: nextCatalog.materials, edgeBands: nextCatalog.edgeBands,
+          settings: projectSettings ?? nextShop.settings,
+        }).autoJoints ?? []
+      : s.autoJoints
     // A shop catalogue is global, but this project's manufacturing state needs
     // one undo step. Keep the previous effective values as project overrides.
     const previous = changesJointInputs && s.autoJoints.length > 0
@@ -1152,15 +1180,10 @@ export const useConfigurator = create<State>((set, get) => ({
           projectSettings: s.projectSettings ?? s.shop.settings }
       : null
     set({
-      ...(patch.settings ? { projectSettings: projectSettingsAfterShopEdit(
-        s.projectSettings, s.shop.settings, patch.settings) } : {}),
-      ...(patch.materials ? { projectMaterials: projectMaterialsAfterShopEdit(
-        s.projectMaterials, s.shop.materials, patch.materials) } : {}),
-      ...(patch.edgeBands ? { projectEdgeBands: projectBandsAfterShopEdit(
-        s.projectEdgeBands, s.shop.edgeBands, patch.edgeBands) } : {}),
+      projectSettings, projectMaterials, projectEdgeBands, autoJoints,
       ...(previous ? { past: [...s.past, previous].slice(-HISTORY_LIMIT), future: [], lastEditKey: null } : {}),
     })
-    get().setShop({ ...get().shop, ...patch })
+    get().setShop(nextShop)
     if (patch.settings || patch.materials || patch.edgeBands) get().saveProjectLocally()
   },
 

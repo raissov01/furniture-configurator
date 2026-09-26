@@ -128,10 +128,24 @@ describe('store автоматты буынның provenance дерегі', () =
     expect((findNode(state().root, 'base') as BoardNode).board.drilling).toEqual([manual])
   })
 
+  it('цех материалы қол тесігін жарамсыз етсе өзгеріс жартылай сақталмайды', () => {
+    state().loadProject(file())
+    state().autoJointBoards(['base', 'upright'], 'confirmat', 0)
+    const before = state().exportProject()
+    const historyLength = state().past.length
+    const thinner = state().shop.materials.map((material) =>
+      material.id === material16.id ? { ...material, thickness: 4 } : material)
+    expect(() => state().editShop({ materials: thinner })).toThrow(/board\[base\]\.drilling\.0\.depth/)
+    expect(state().exportProject()).toEqual(before)
+    expect(state().past).toHaveLength(historyLength)
+    expect(state().shop.materials.find((material) => material.id === material16.id)?.thickness).toBe(16)
+  })
+
   it('бекіткіш түрі ауысса minifix тесіктерін бір қадамда қайта құрады', () => {
     state().loadProject(file())
     state().autoJointBoards(['base', 'upright'], 'confirmat', 0)
     state().setAutoJointKind(state().autoJoints[0]!.id, 'minifix')
+    expect(state().autoJoints[0]?.edited).toBe(true)
     expect(generated()).toEqual([manual, ...expected()])
     expect(generated().filter((hole) => hole.purpose !== 'shelfPin').every((hole) => hole.purpose === 'minifix')).toBe(true)
     state().undo()
@@ -144,5 +158,22 @@ describe('store автоматты буынның provenance дерегі', () =
     expect(() => state().editBoard('base', { drilling: [{ ...manual, depth: 17 }] }))
       .toThrow(/board\[base\]\.drilling\.0\.depth/)
     expect((findNode(state().root, 'base') as BoardNode).board.drilling).toEqual([manual])
+  })
+
+  it('буын тақтасын өшіру үшін әуелі сақталған буынды ашық өшіру керек', () => {
+    state().loadProject(file())
+    state().autoJointBoards(['base', 'upright'], 'confirmat', 0)
+    expect(() => state().removeBoard('upright')).toThrow(/joint\.boardIds/)
+    expect(findNode(state().root, 'upright')).toBeDefined()
+    const jointId = state().autoJoints[0]!.id
+    state().removeAutoJoint(jointId)
+    expect(state().autoJoints).toEqual([])
+    expect(generated()).toEqual([manual])
+    state().removeBoard('upright')
+    expect(findNode(state().root, 'upright')).toBeUndefined()
+    state().undo()
+    expect(findNode(state().root, 'upright')).toBeDefined()
+    state().undo()
+    expect(state().autoJoints[0]?.id).toBe(jointId)
   })
 })
