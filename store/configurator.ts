@@ -1431,7 +1431,10 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   placeLibraryItem(item, parentId) {
     const s = get()
-    const catalog = mergeLibraryCatalog(s.catalog, item)
+    const merged = mergeLibraryCatalog(s.catalog, item)
+    // Баға тек цехтікі (жоқ болса 0) — кітапхана файлындағы баға жобаға кірмейді,
+    // әйтпесе қойғандағы смета жобаны қайта ашқандағыдан өзгеше шығады.
+    const catalog = projectCatalog(s.shop, merged.materials, merged.edgeBands)
     const root = insertLibraryItem(s.root, item, catalog, parentId ?? s.root.id, () => `node-${crypto.randomUUID()}`)
     set({ root, catalog, projectMaterials: catalog.materials, projectEdgeBands: catalog.edgeBands,
       ...cabinetsFromTree(root, s.room, s.layers),

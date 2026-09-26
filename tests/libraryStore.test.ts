@@ -67,4 +67,20 @@ describe('кітапханадан жобаға қою', () => {
     const next = useConfigurator.getState()
     expect(next.catalog.materials.find((entry) => entry.id === materialId)?.pbr).toEqual({ roughness: 0.3 })
   })
+  it('кітапханадағы бөгде материалдың бағасы жобаға кірмейді: қою мен қайта ашу бір бағаны береді', () => {
+    const state = useConfigurator.getState()
+    const material = { ...state.catalog.materials[0]!, id: 'foreign-material', name: 'Бөгде', pricePerSheet: 999_00 }
+    const board: SceneNode = { kind: 'board', id: 'foreign-board', name: 'Тақта',
+      transform: { pos: { x: 0, y: 0, z: 0 }, rot: { x: 0, y: 0, z: 0 } },
+      board: { materialId: material.id, length: 500, width: 300,
+        orientation: { length: 'x', width: 'z', thickness: 'y' },
+        edges: { L1: null, L2: null, W1: null, W2: null }, grainAlongLength: false, role: 'custom' } }
+    const item = createLibraryItem(board, { ...state.catalog, materials: [...state.catalog.materials, material] },
+      'Тақта', '2026-09-25T00:00:00.000Z', 'foreign-item')
+    state.placeLibraryItem(item)
+    const placed = useConfigurator.getState().catalog.materials.find((entry) => entry.id === material.id)
+    useConfigurator.getState().loadProject(useConfigurator.getState().exportProject())
+    const reopened = useConfigurator.getState().catalog.materials.find((entry) => entry.id === material.id)
+    expect(placed?.pricePerSheet).toBe(reopened?.pricePerSheet)
+  })
 })
