@@ -835,7 +835,9 @@ export function generateCabinet(
           const span = shelfSpan(sectionIndex)
           const shelfWidth = span.length - insetLeft - insetRight
           const shelfDepthHere = space.depth - insetFront - insetBack
-          if (shelfWidth < MIN_RAIL_WIDTH || shelfDepthHere < MIN_RAIL_WIDTH) {
+          // Бұрыштық корпуста трапецияның оң ұшы да сол шегіністермен қысқарады.
+          const shelfDepthRightHere = shelfDepthRight - insetFront - insetBack
+          if (shelfWidth < MIN_RAIL_WIDTH || Math.min(shelfDepthHere, shelfDepthRightHere) < MIN_RAIL_WIDTH) {
             throw new ConfigValidationError(
               `${field}.insets`,
               `отступы оставляют полку ${shelfWidth}×${shelfDepthHere} мм`,
@@ -860,7 +862,7 @@ export function generateCabinet(
           shelf.shelfKind = content.shelfKind
           // Бұрыштық корпуста сөре де ТРАПЕЦИЯ: тереңдігі бүйірлерімен бірге
           // өзгереді, әйтпесе оң жағы қиғаш алдыңғы жиектен шығып тұрар еді.
-          const shelfBevel = widthBevel(space.depth, shelfDepthRight)
+          const shelfBevel = widthBevel(shelfDepthHere, shelfDepthRightHere)
           if (shelfBevel) shelf.bevel = { ...shelfBevel }
           panels.push(shelf)
           shelves.push({ shelf, sectionIndex, kind: content.shelfKind })

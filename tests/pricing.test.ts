@@ -99,6 +99,15 @@ describe('фурнитура присадкадан шығады', () => {
     }
   })
 
+  it('аралас корпуста ұстағыш тек реттелетін сөреге (бекітілген сөре мен бөлгішке емес)', () => {
+    const mixed = generateCabinet(templateToCabinet(findTemplate('wardrobe-sliding-1800')!, catalog), catalog)
+    const shelves = mixed.filter((p) => p.role === 'shelf')
+    const adjustable = shelves.filter((p) => p.shelfKind === 'adjustable').length
+    expect(adjustable).toBeGreaterThan(0)
+    expect(shelves.length).toBeGreaterThan(adjustable)
+    expect(countHardware(mixed).get('shelf-pin-5')).toBe(adjustable * 4)
+  })
+
   it('сөре белгісінің мәтіні өзгерсе де ұстағыш санын присадка мен түрінен шығарады', () => {
     const renamed = panels.map((p) => p.role === 'shelf' ? { ...p, note: 'Shelf' } : p)
     expect(countHardware(renamed).get('shelf-pin-5')).toBe(16)
