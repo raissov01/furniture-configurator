@@ -16,7 +16,7 @@ import { spawn } from 'node:child_process'
 import { captureFailureSnapshot, makeHelpers } from './e2eHelpers.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:3000'
-const PORT = 9333
+const PORT = Number(process.env['E2E_CDP_PORT'] ?? 9333)
 const CHROME = process.env['CHROME'] ?? 'google-chrome'
 
 // ── CDP қабығы ───────────────────────────────────────────────────────────────

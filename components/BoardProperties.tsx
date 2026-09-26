@@ -113,7 +113,7 @@ export function BoardProperties({ node, panel, catalog }: { node: BoardNode; pan
     </div>
     <div className={tab === 'production' ? 'space-y-2' : 'hidden'}>
       <Button onClick={() => setDrillOpen(true)}>{tr('Открыть присадку')}</Button>
-      <ExportMenu panels={panel ? [panel] : []} exportId={node.id} exportName={node.name} />
+      {panel ? <ExportMenu panels={[panel]} exportId={node.id} exportName={node.name} /> : null}
     </div>
   </section>
 }

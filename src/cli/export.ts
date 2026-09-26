@@ -40,6 +40,11 @@ async function main(): Promise<number> {
     throw err
   }
 
+  const broken = project.autoJoints?.find((joint) => joint.status === 'broken')
+  if (broken) {
+    console.error(`${broken.error?.field ?? 'joint.boardIds'}: ${broken.error?.message ?? 'автоматты буын бұзылды'}`)
+    return 1
+  }
   const catalog = { materials: project.materials, edgeBands: project.edgeBands }
   const fonts = {
     regular: new Uint8Array(readFileSync(join(ASSETS, 'DejaVuSans-subset.ttf'))),
@@ -50,7 +55,7 @@ async function main(): Promise<number> {
 
   let scene
   try {
-    scene = flattenTree(project.root, catalog, project.settings, project.layers)
+    scene = flattenTree(project.root, catalog, project.settings, project.layers, project.autoJoints)
   } catch (err) {
     if (err instanceof ConfigValidationError) {
       console.error(`\n✗ ${project.name}\n  ${err.message}`)

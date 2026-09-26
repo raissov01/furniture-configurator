@@ -5,7 +5,7 @@ import type { DragEvent, KeyboardEvent, MouseEvent } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
 import { ConfigValidationError, flattenTree } from '@/src/core/index'
-import type { AutoJointKind, Axis, FlatScene, GroupNode } from '@/src/core/index'
+import type { AutoJointKind, AutoJointRecord, Axis, FlatScene, GroupNode } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { buildCanonicalRows, canDropInto, externalSelectionNodeIds, selectTreeRows } from './canonicalTreeRows'
 import type { CanonicalTreeRow } from './canonicalTreeRows'
@@ -26,11 +26,14 @@ type Props = {
   onArray: (id: string, opts: { axis: Axis; count: number; step: number }) => void
   onArrange: (ids: string[], axis: Axis, mode: 'min' | 'center' | 'max' | 'distribute') => void
   onAutoJoint: (ids: [string, string], kind: AutoJointKind, tolerance: number) => void
+  onRemoveJoint?: (id: string) => void
+  autoJoints?: readonly AutoJointRecord[]
 }
 
 /** One canonical project tree. The persisted node tree, not a second UI tree, drives its rows. */
 export function StructureTreeView({ root, rows, activeId, selected, onSelectNode, onSelectPart,
-  onRename, onHidden, onLocked, onGroup, onUngroup, onReparent, onArray, onArrange, onAutoJoint }: Props) {
+  onRename, onHidden, onLocked, onGroup, onUngroup, onReparent, onArray, onArrange, onAutoJoint, onRemoveJoint,
+  autoJoints = [] }: Props) {
   const [tab, setTab] = useState<'project' | 'selection'>('project')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [selectedNodes, setSelectedNodes] = useState<string[]>([])
@@ -110,6 +113,10 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
   const selectedBoards = selectedNodes.length === 2
     && selectedNodes.every((id) => byId.get(id)?.kind === 'board')
     ? selectedNodes as [string, string] : null
+  const selectedJoint = selectedBoards
+    ? autoJoints.find((joint) => selectedBoards.every((id) => joint.boardIds.includes(id)))
+    : undefined
+  const selectedJointKind = jointKind || selectedJoint?.kind || ''
   const collapsedAncestor = (row: CanonicalTreeRow): boolean => {
     let parent = row.parentId
     while (parent) { if (collapsed[parent]) return true; parent = byId.get(parent)?.parentId ?? null }
@@ -152,6 +159,12 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
         className={cn('border-b-2 px-2 py-1', tab === value ? 'border-blue-600 text-blue-700 dark:text-blue-300' : 'border-transparent text-neutral-500')}
         onClick={() => setTab(value)}>{value === 'project' ? tr('Проект') : tr('Выделение')}</button>)}
     </div>
+    {autoJoints.filter((joint) => joint.status === 'broken').map((joint) =>
+      <div key={joint.id} role="alert" data-testid="broken-auto-joint"
+        className="border border-amber-600 p-1 text-amber-900 dark:text-amber-200">
+        {tr('Автоматическая присадка нарушена')}: <b className="font-mono">{joint.error?.field ?? 'joint.boardIds'}</b> —
+        {' '}{tr('Проверьте контакт досок и крепёж')} ({joint.boardIds.join(', ')})
+      </div>)}
     <div className="flex items-center gap-1 border-b border-neutral-300 pb-1 dark:border-neutral-700">
       <button type="button" disabled={selectedNodes.length < 2} onClick={group} title={tr('Группировать (Ctrl+G)')}
         className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">{tr('Группа')}</button>
@@ -196,7 +209,7 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
     </div>
     {selectedBoards && <div className="flex flex-wrap items-end gap-1 border-b border-neutral-300 pb-1 dark:border-neutral-700" data-testid="auto-joint-tools">
       <label>{tr('Крепёж для присадки')}
-        <select value={jointKind} onChange={(event) => setJointKind(event.target.value as AutoJointKind | '')}
+        <select value={selectedJointKind} onChange={(event) => setJointKind(event.target.value as AutoJointKind | '')}
           className="block border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900">
           <option value="">{tr('Выберите крепёж')}</option>
           <option value="confirmat">{tr('Конфирмат')}</option>
@@ -205,15 +218,21 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
       </label>
       <span className="text-neutral-500" title={tr('Для шканта нужны настройки артикула в цехе')}>{tr('Шкант — вручную')}</span>
       <label>{tr('Допуск касания, мм')}
-        <input type="number" min={0} step={1} value={jointTolerance}
+        <input type="number" min={0} step={1} value={selectedJoint?.tolerance ?? jointTolerance}
+          disabled={Boolean(selectedJoint)}
           onChange={(event) => setJointTolerance(Number(event.target.value))}
           className="block w-20 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900" />
       </label>
-      <button type="button" disabled={!jointKind} data-testid="auto-joint-apply"
-        onClick={() => { if (jointKind && run(() => onAutoJoint(selectedBoards, jointKind, jointTolerance))) setJointKind('') }}
+      <button type="button" disabled={!selectedJointKind} data-testid="auto-joint-apply"
+        onClick={() => { if (selectedJointKind && run(() => onAutoJoint(selectedBoards, selectedJointKind, selectedJoint?.tolerance ?? jointTolerance))) setJointKind('') }}
         className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">
         {tr('Автоматическая присадка')}
       </button>
+      {selectedJoint && onRemoveJoint ? <button type="button" data-testid="auto-joint-remove"
+        onClick={() => run(() => onRemoveJoint(selectedJoint.id))}
+        className="border border-neutral-300 px-1 py-0.5 dark:border-neutral-700">
+        {tr('Удалить соединение')}
+      </button> : null}
     </div>}
     {error && <p role="alert" className="border border-red-600 p-1 text-red-700">{error}</p>}
     <div role="tree" aria-label={tr('Структура проекта')} onKeyDown={onKeyDown} className="min-h-0 overflow-auto">
@@ -262,6 +281,7 @@ export function StructurePanel() {
   const layers = useConfigurator((s) => s.layers)
   const catalog = useConfigurator((s) => s.catalog)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
+  const autoJoints = useConfigurator((s) => s.autoJoints)
   const activeId = useConfigurator((s) => s.activeId)
   const selected = useConfigurator((s) => s.selected)
   const setActive = useConfigurator((s) => s.setActive)
@@ -273,19 +293,20 @@ export function StructurePanel() {
   const arrayNode = useConfigurator((s) => s.arrayNode)
   const arrangeNodes = useConfigurator((s) => s.arrangeNodes)
   const autoJointBoards = useConfigurator((s) => s.autoJointBoards)
+  const removeAutoJoint = useConfigurator((s) => s.removeAutoJoint)
   const ungroup = useConfigurator((s) => s.ungroup)
   const reparent = useConfigurator((s) => s.reparent)
   const { scene, error } = useMemo((): { scene: FlatScene; error: string | null } => {
-    try { return { scene: flattenTree(root, catalog, settings, layers), error: null } }
+    try { return { scene: flattenTree(root, catalog, settings, layers, autoJoints), error: null } }
     catch (cause) {
       if (!(cause instanceof ConfigValidationError)) throw cause
       return { scene: { nodes: [], solids: [] }, error: cause.message }
     }
-  }, [root, catalog, settings, layers])
+  }, [root, catalog, settings, layers, autoJoints])
   const rows = useMemo(() => buildCanonicalRows(root, scene, layers), [root, scene, layers])
   return <>
     {error && <p role="alert" className="mb-1 border border-red-600 p-1 text-xs text-red-700">{error}</p>}
-    <StructureTreeView root={root} rows={rows} activeId={activeId} selected={selected}
+    <StructureTreeView root={root} rows={rows} activeId={activeId} selected={selected} autoJoints={autoJoints}
       onSelectNode={(id) => { setActive(id); setSelected(rows.find((row) => row.id === id)?.selectId ?? null) }}
       onSelectPart={(nodeId, selectId) => { setActive(nodeId); setSelected(selectId) }}
       onRename={renameNode}
@@ -295,6 +316,7 @@ export function StructurePanel() {
       onArray={arrayNode}
       onArrange={arrangeNodes}
       onAutoJoint={autoJointBoards}
+      onRemoveJoint={removeAutoJoint}
       onUngroup={(id) => { ungroup(id); setSelected(null) }}
       onReparent={(id, parentId) => { reparent(id, parentId); setSelected(null) }} />
   </>

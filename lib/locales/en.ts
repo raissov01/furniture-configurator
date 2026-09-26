@@ -10,6 +10,10 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Автоматическая присадка нарушена': 'Automatic drilling joint is broken',
+  'Проверьте контакт досок и крепёж': 'Check board contact and fastener',
+  'Удалить соединение': 'Remove joint',
+  'Сначала удалите соединение': 'Remove the joint first',
   'Название не может быть пустым': 'Name cannot be empty',
   'Рабочее место': 'Workspace',
   'Стиль рабочего места': 'Workspace style',
