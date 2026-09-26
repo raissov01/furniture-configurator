@@ -53,4 +53,18 @@ describe('кітапханадан жобаға қою', () => {
     changed.undo()
     expect(useConfigurator.getState().cabinets[0]!.carcassMaterialId).toBe(sourceId)
   })
+  it('материалдың тек 3D PBR көрінісі өзгерсе, сақталған элементті қоюды бөгемейді', () => {
+    const state = useConfigurator.getState()
+    const materialId = state.catalog.materials[0]!.id
+    const board: SceneNode = { kind: 'board', id: 'pbr-board', name: 'Тақта',
+      transform: { pos: { x: 0, y: 0, z: 0 }, rot: { x: 0, y: 0, z: 0 } },
+      board: { materialId, length: 500, width: 300,
+        orientation: { length: 'x', width: 'z', thickness: 'y' },
+        edges: { L1: null, L2: null, W1: null, W2: null }, grainAlongLength: false, role: 'custom' } }
+    const item = createLibraryItem(board, state.catalog, 'Тақта', '2026-09-25T00:00:00.000Z', 'pbr-item')
+    state.setMaterialPbr(materialId, { roughness: 0.3 })
+    expect(() => useConfigurator.getState().placeLibraryItem(item)).not.toThrow()
+    const next = useConfigurator.getState()
+    expect(next.catalog.materials.find((entry) => entry.id === materialId)?.pbr).toEqual({ roughness: 0.3 })
+  })
 })
