@@ -59,3 +59,17 @@ describe('store.autoJointBoards', () => {
     expect([drills('base'), drills('upright')]).toEqual(before)
   })
 })
+
+describe('store.autoJointBoards: бір тақта бірнеше буында', () => {
+  it('дноның екінші боковинамен буыны біріншісінің тесігіне қайшы деп саналмайды', () => {
+    const right = { ...board('right', 16, false), transform: { pos: { x: 484, y: 16, z: 0 }, rot: { x: 0, y: 0, z: 0 } } }
+    useConfigurator.setState({ root: { ...tree(), children: [...tree().children, right] }, past: [], future: [] })
+    const before = drills('base').length
+    useConfigurator.getState().autoJointBoards(['base', 'upright'], 'confirmat', 0)
+    useConfigurator.getState().autoJointBoards(['base', 'right'], 'confirmat', 0)
+    expect(drills('base').filter((hole) => hole.purpose === 'confirmat')).toHaveLength(4)
+    expect(drills('base')).toHaveLength(before + 4)
+    expect(drills('right')).toHaveLength(2)
+    expect(drills('upright')).toHaveLength(2)
+  })
+})
