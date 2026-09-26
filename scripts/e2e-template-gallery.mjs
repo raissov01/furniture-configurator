@@ -1,6 +1,6 @@
 /** Каталог іздеуі, ішкі санат және телефон еніндегі көрініс. */
 import { spawn } from 'node:child_process'
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -54,10 +54,38 @@ try {
   session = await connect()
   const h = makeHelpers(session, base)
   await session.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
+  await session.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] })
   await h.goto('/configurator', 6500)
   assert(await h.menu('Создать', 'Готовые шаблоны'), 'template gallery could not open')
   assert(await h.until("Boolean(document.querySelector('[aria-label=\"Поиск модуля\"]'))", 12000), 'search field missing')
-  assert(await h.evaluate("document.querySelector('[data-testid=template-results]')?.getBoundingClientRect().width <= innerWidth"), 'gallery overflows phone viewport')
+  for (const width of [360, 390, 414]) {
+    await session.send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 1, mobile: true })
+    const metrics = await h.evaluate(`(() => {
+      const dialog = document.querySelector('[data-testid=template-gallery-dialog]')
+      const cards = document.querySelector('[data-testid=first-run-categories]')
+      const chips = document.querySelector('[aria-label="Подкатегории"]')
+      const rect = dialog?.getBoundingClientRect()
+      const rgb = (value) => value.match(/\\d+/g).slice(0, 3).map(Number)
+      const lum = (value) => rgb(value).map((channel) => {
+        const v = channel / 255
+        return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4
+      }).reduce((sum, channel, i) => sum + channel * [.2126, .7152, .0722][i], 0)
+      const style = getComputedStyle(dialog)
+      const values = [lum(style.color), lum(style.backgroundColor)].sort((a, b) => b - a)
+      return { viewport: innerWidth, scroll: document.documentElement.scrollWidth,
+        left: rect?.left, right: rect?.right, columns: cards ? getComputedStyle(cards).gridTemplateColumns.split(' ').length : 0,
+        chips: chips ? chips.scrollWidth <= chips.clientWidth || getComputedStyle(chips).overflowX === 'auto' : true,
+        ratio: (values[0] + .05) / (values[1] + .05) }
+    })()`)
+    assert(metrics.scroll <= width && metrics.left >= 0 && metrics.right <= width, `gallery overflows ${width} px: ${JSON.stringify(metrics)}`)
+    assert(metrics.columns === 1, `first-run cards are not one column at ${width} px`)
+    assert(metrics.chips, `subcategory chips are clipped at ${width} px`)
+    assert(metrics.ratio >= 4.5, `gallery contrast below WCAG AA at ${width} px: ${metrics.ratio}`)
+    if (width === 390) {
+      const screenshot = await session.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+      writeFileSync(process.env['P100_GALLERY_SCREENSHOT'] ?? join(tmpdir(), 'p100-gallery-390.png'), Buffer.from(screenshot.data, 'base64'))
+    }
+  }
   assert(await h.clickText('Кухня'), 'kitchen filter missing')
   assert(await h.clickText('Верхние'), 'kitchen subcategory missing')
   assert(await h.evaluate("(() => { const cards=[...document.querySelectorAll('[data-template-id]')]; return cards.length>0 && cards.every(c=>c.getAttribute('data-template-id').includes('wall')) })()"), 'subcategory did not narrow kitchen modules')

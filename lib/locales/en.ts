@@ -61,6 +61,8 @@ export const en: Record<string, string> = {
   'Название или тип': 'Name or type',
   'Подкатегории': 'Subcategories',
   'Модули не найдены': 'No modules found',
+  'Набор заменяет весь проект и расставляет корпуса по стенам. Ctrl+Z возвращает предыдущий.': 'The set replaces the project and places cabinets along the walls. Ctrl+Z restores the previous state.',
+  'Шаблон полностью заменяет текущий корпус. Ctrl+Z возвращает предыдущий.': 'The template replaces the current cabinet. Ctrl+Z restores the previous state.',
   'Нижние': 'Base units',
   'Верхние': 'Wall units',
   'Пеналы': 'Tall units',

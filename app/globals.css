@@ -102,6 +102,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   --p100-fieldset-border: #dcdcdc;
   --p100-focus: #0078d4;
   --p100-text: #000000;
+  --p100-muted: #525252;
 }
 @media (min-width: 1024px) {
   .p100-workspace { background: var(--p100-chrome); color: var(--p100-text); }
@@ -124,3 +125,21 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-dialog-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 8px; border-top: 1px solid var(--p100-divider); }
 .p100-dialog-error { margin: 4px 10px; color: #9f1239; font-size: 12px; }
 .p100-dialog :where(input, select, button):focus-visible { outline: 1px solid var(--p100-focus); }
+
+/* Классикалық жұмыс үстелінің терезелері жүйенің dark режимінде де ақшыл.
+   Диалогтардың сыртқы және ішкі беті PRO100 эталонындағы өлшенген түстерді алады. */
+.p100-workspace .fixed.inset-0 { backdrop-filter: none; }
+.p100-workspace .fixed.inset-0 > .bg-white { background: var(--p100-dialog); color: var(--p100-text); border-color: var(--p100-fieldset-border); }
+.p100-workspace .fixed.inset-0 .bg-neutral-50 { background: var(--p100-dialog-content); color: var(--p100-text); }
+.p100-workspace .fixed.inset-0 :is(input, select, textarea) { background: var(--p100-field); color: var(--p100-text); border-color: var(--p100-fieldset-border); }
+.p100-workspace .fixed.inset-0 :is(.text-neutral-400, .text-neutral-500, [class*="dark:text-neutral-400"]) { color: var(--p100-muted); }
+
+.p100-workspace .p100-gallery { background: var(--p100-dialog); color: var(--p100-text); border-color: var(--p100-fieldset-border); }
+.p100-workspace .p100-gallery button { background: var(--p100-field); color: var(--p100-text); }
+.p100-workspace .p100-gallery button.border-neutral-900 { background: var(--p100-tool-selected); color: var(--p100-text); }
+.p100-workspace .p100-gallery .p100-muted { color: var(--p100-muted); background: var(--p100-dialog-content); }
+.p100-workspace .p100-tree-dock { background: var(--p100-dialog); color: var(--p100-text); border-color: var(--p100-fieldset-border); }
+.p100-workspace .p100-tree-dock button { background: var(--p100-dialog); color: var(--p100-text); }
+.p100-workspace .p100-tree-dock :is(.text-neutral-500, [class*="dark:text-neutral-400"]) { color: var(--p100-muted); }
+.p100-workspace .p100-tree-dock [aria-selected="true"] { background: var(--p100-tool-selected); }
+.p100-workspace .p100-tree-dock :is(input, select) { background: var(--p100-field); color: var(--p100-text); }
