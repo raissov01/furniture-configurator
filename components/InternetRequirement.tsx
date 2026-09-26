@@ -5,7 +5,7 @@ import { offlineCapability, type OfflineFeature } from '@/src/core/sync/capabili
 
 export function InternetRequirement({ feature, online, dark = false }: { feature: OfflineFeature; online: boolean; dark?: boolean }) {
   if (!offlineCapability(feature).requiresInternet) return null
-  return <p className={`mt-1 text-xs ${dark ? 'text-[#d4d4d4]' : 'text-[#525252] dark:text-[#d4d4d4]'}`} role="note">
+  return <p className={`mt-1 text-xs ${dark ? 'text-[#d4d4d4]' : 'text-[var(--p100-muted)]'}`} role="note">
     {t('Работает через интернет')}{online ? '' : ` · ${t('Подключитесь к сети, чтобы продолжить.')}`}
   </p>
 }

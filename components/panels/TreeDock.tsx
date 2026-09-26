@@ -50,7 +50,7 @@ export function TreeDock() {
     catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось изменить слой')) }
   }
 
-  return <section data-testid="tree-dock" className="flex max-h-[70vh] min-h-0 flex-col border border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-950">
+  return <section data-testid="tree-dock" className="p100-tree-dock flex max-h-[70vh] min-h-0 flex-col border border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-950">
     <button type="button" aria-expanded={!collapsed} aria-label={collapsed ? tr('Развернуть') : tr('Свернуть')}
       onClick={() => setCollapsed((value) => !value)} className="border-b border-neutral-300 px-2 py-1 text-left text-xs font-semibold dark:border-neutral-700">
       {collapsed ? '+ ' : '− '}{tr('Структура проекта')}

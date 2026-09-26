@@ -115,7 +115,7 @@ export function ShareCodeDialog() {
       const url = approvalWhatsAppUrl({ phone, projectName, priceMinor, shareCode: session.code,
         confirmationCode: approval.confirmationCode, link,
         language: getLang() === 'kk' ? 'kk' : 'ru' })
-      if (!window.open(url, '_blank', 'noopener,noreferrer')) throw new Error(tr('Не удалось открыть WhatsApp'))
+      window.open(url, '_blank', 'noopener,noreferrer')
       setError(null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : tr('Не удалось открыть WhatsApp'))
@@ -123,11 +123,11 @@ export function ShareCodeDialog() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4" onClick={() => setOpen(false)}>
+    <div className="p100-dialog-backdrop overflow-auto p-3" onClick={() => setOpen(false)}>
       <div
         role="dialog"
         aria-label={tr('Код для клиента')}
-        className="mt-24 w-full max-w-md rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900"
+        className="p100-dialog overflow-y-auto p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -135,16 +135,16 @@ export function ShareCodeDialog() {
           <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
         </div>
 
-        {error && <p role="alert" className="mb-3 text-sm text-red-700 dark:text-red-400">{error}</p>}
+        {error && <p role="alert" className="mb-3 text-sm text-red-700">{error}</p>}
         {!cloudEnabled ? (
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
+          <p className="text-sm text-[var(--p100-muted)]">
             {tr('В этой сборке нет облака — отправьте клиенту ссылку (Проект → Ссылка клиенту).')}
           </p>
         ) : !session ? (
           <div className="py-6"><Spinner label={tr('Создаём код…')} /></div>
         ) : (
           <>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-[var(--p100-muted)]">
               {tr('Клиент открывает страницу и вводит код — проект откроется у него в 3D, с прогулкой.')}
             </p>
             <div data-share-code className="my-4 text-center font-mono text-4xl tabular-nums tracking-[0.3em]">
@@ -154,15 +154,15 @@ export function ShareCodeDialog() {
               <Button active onClick={() => copy(session.code, tr('Код скопирован'))}>{tr('Скопировать код')}</Button>
               <Button onClick={() => copy(link, tr('Ссылка на проект скопирована'))}>{tr('Скопировать ссылку')}</Button>
             </div>
-            <p className="mt-3 text-center text-[11px] text-neutral-500">
+            <p className="mt-3 text-center text-[11px] text-[var(--p100-muted)]">
               {window.location.origin}/c · {tr('Код действует 24 часа')}
             </p>
-            <p className="mt-1 text-center text-[11px] text-neutral-500">
+            <p className="mt-1 text-center text-[11px] text-[var(--p100-muted)]">
               {tr('Автообновление: изменения видны клиенту через несколько секунд.')}
             </p>
-            <section className="mt-4 border-t border-neutral-300 pt-3 dark:border-neutral-700" data-testid="share-approval">
+            <section className="mt-4 border-t border-[var(--p100-divider)] pt-3" data-testid="share-approval">
               <h3 className="text-sm font-semibold">{tr('Согласование версии')}</h3>
-              {priceMinor === undefined ? <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-300">
+              {priceMinor === undefined ? <p className="mt-2 text-xs text-[var(--p100-muted)]">
                 {tr('Для согласования укажите точную итоговую цену в тиынах.')}
               </p> : <p className="mt-2 text-sm">{tr('Цена')}: {formatTengeExact(priceMinor)}</p>}
               <button type="button" disabled={!online || busy || priceMinor === undefined}
@@ -172,7 +172,7 @@ export function ShareCodeDialog() {
               {approval && <div className="mt-3 space-y-2 border border-neutral-300 p-3 text-sm">
                 <p>{tr('Версия')}: {approval.version}</p>
                 <p>{tr('Код подтверждения')}: <strong className="font-mono text-lg">{approval.confirmationCode}</strong></p>
-                <p className="text-xs">{tr('Передайте код клиенту; после перезагрузки он больше не показывается.')}</p>
+                <p className="text-xs text-[var(--p100-muted)]">{tr('Передайте код клиенту; после перезагрузки он больше не показывается.')}</p>
                 <label className="block">{tr('Телефон клиента с кодом страны')}
                   <input className="mt-1 min-h-11 w-full border border-neutral-400 bg-white px-3 text-base text-black"
                     type="tel" inputMode="tel" value={phone} onChange={(event) => setPhone(event.target.value)}
@@ -187,7 +187,7 @@ export function ShareCodeDialog() {
             </section>
             <div className="mt-3"><CommentsInbox session={session} /></div>
             {copied ? (
-              <p role="status" className="mt-2 text-center text-xs text-neutral-700 dark:text-neutral-200">{copied}</p>
+              <p role="status" className="mt-2 text-center text-xs text-[var(--p100-muted)]">{copied}</p>
             ) : null}
           </>
         )}

@@ -98,7 +98,11 @@ export function TemplateGallery() {
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        data-testid="template-gallery-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={firstRun ? tr('С чего начнём?') : tr('Готовые шаблоны')}
+        className="p100-gallery min-w-0 w-full max-w-5xl overflow-x-hidden rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -134,7 +138,7 @@ export function TemplateGallery() {
               />
             </label>
             {subcategories.length > 1 ? (
-              <div aria-label={tr('Подкатегории')} className="flex gap-2 overflow-x-auto pb-1">
+              <div aria-label={tr('Подкатегории')} className="flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1 [&>button]:shrink-0">
                 <Button active={!subcategory} onClick={() => setSubcategory(undefined)}>{tr('Все')}</Button>
                 {subcategories.map((value) => (
                   <Button key={value} active={subcategory === value} onClick={() => setSubcategory(value)}>{tr(value)}</Button>
@@ -147,14 +151,14 @@ export function TemplateGallery() {
         <KitchenWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
 
         {firstRun ? (
-          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div data-testid="first-run-categories" className="mb-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
             {TEMPLATE_CATEGORIES.map((c) => (
               <button
                 key={c.value}
                 type="button"
                 onClick={() => { setFilter(c.value); setSubcategory(undefined) }}
                 className={cn(
-                  'rounded-lg border px-3 py-2 text-left transition hover:border-neutral-500',
+                  'min-w-0 rounded-lg border px-3 py-2 text-left transition hover:border-neutral-500',
                   filter === c.value
                     ? 'border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800'
                     : 'border-neutral-200 dark:border-neutral-700',
@@ -345,7 +349,7 @@ export function TemplateGallery() {
                   {tr('Ширины (W), мм')}: {t.recommendedWidths.join(', ')}
                 </div>
               ) : null}
-              <div className="text-[11px] leading-snug text-neutral-400">{tr(t.description)}</div>
+              <div className="p100-muted text-[11px] leading-snug text-neutral-400">{tr(t.description)}</div>
             </button>
           ))}
         </div>
@@ -353,10 +357,10 @@ export function TemplateGallery() {
 
         {filter !== 'sets' && shown.length === 0 ? <p className="py-5 text-center text-sm text-neutral-500">{tr('Модули не найдены')}</p> : null}
 
-        <p className="mt-3 text-[11px] text-neutral-400">
+        <p className="p100-muted mt-3 text-[11px] text-neutral-400">
           {filter === 'sets'
-            ? 'Набор заменяет весь проект и расставляет корпуса по стенам. Ctrl+Z возвращает предыдущий.'
-            : 'Шаблон полностью заменяет текущий корпус. Ctrl+Z возвращает предыдущий.'}
+            ? tr('Набор заменяет весь проект и расставляет корпуса по стенам. Ctrl+Z возвращает предыдущий.')
+            : tr('Шаблон полностью заменяет текущий корпус. Ctrl+Z возвращает предыдущий.')}
         </p>
       </div>
     </div>
