@@ -11,17 +11,25 @@
 import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 import { HOTKEYS } from '@/lib/hotkeys'
-import { startTour } from '@/components/Tour'
+import { LESSON_DONE_KEY, startLesson, startTour } from '@/components/Tour'
 import { useConfigurator } from '@/store/configurator'
+import { LESSONS, parseCompletedLessons } from '@/src/core/lessonCatalog'
+import { useEffect, useState } from 'react'
 
 export function HelpPanel() {
   const open = useConfigurator((s) => s.helpOpen)
   const setOpen = useConfigurator((s) => s.setHelpOpen)
+  const [completed, setCompleted] = useState<string[]>([])
+  useEffect(() => {
+    if (!open) return
+    try { setCompleted(parseCompletedLessons(window.localStorage.getItem(LESSON_DONE_KEY))) }
+    catch (cause) { console.error('Lesson progress could not be read', cause); setCompleted([]) }
+  }, [open])
   if (!open) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => setOpen(false)}
     >
       <div
@@ -37,6 +45,18 @@ export function HelpPanel() {
           </div>
         </div>
 
+        <section className="mb-4 border-b border-neutral-200 pb-3 dark:border-neutral-700">
+          <h3 className="mb-2 text-xs font-semibold">{tr('Тематические уроки')}</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {LESSONS.map((lesson) => (
+              <button key={lesson.id} type="button" className="rounded border border-neutral-300 px-2 py-1.5 text-left text-xs hover:border-neutral-700 dark:border-neutral-700"
+                onClick={() => { setOpen(false); startLesson(lesson.id) }}>
+                <span className="block font-medium">{tr(lesson.name)}</span>
+                <span className="text-[11px] text-neutral-500">{completed.includes(lesson.id) ? tr('Пройдено · повторить') : tr('Начать урок')}</span>
+              </button>
+            ))}
+          </div>
+        </section>
         <dl className="space-y-1">
           {HOTKEYS.map((h) => (
             <div key={h.keys} className="flex items-center gap-3 text-xs">

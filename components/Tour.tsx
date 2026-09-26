@@ -17,14 +17,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
+import { LESSONS, nextAvailableLessonStep, parseCompletedLessons } from '@/src/core/lessonCatalog'
+import type { LessonStep } from '@/src/core/lessonCatalog'
 
 const DONE_KEY = 'furniture-configurator:tour-done'
+export const LESSON_DONE_KEY = 'furniture-configurator:lessons-done'
 
 type Step = {
   /** Қай элементті көрсету. Табылмаса — қадам өткізіледі. */
   selector: string
   title: string
   text: string
+}
+
+function targetOf(step: LessonStep): Element | null {
+  if (step.selector) return document.querySelector(step.selector)
+  return [...document.querySelectorAll('[title]')].find((element) =>
+    element.getAttribute('title') === tr(step.titleTarget ?? '')) ?? null
 }
 
 /**
@@ -67,15 +76,22 @@ const STEPS: Step[] = [
 
 export function Tour({ paused = false }: { paused?: boolean }) {
   const [step, setStep] = useState<number | null>(null)
+  const [lessonId, setLessonId] = useState<string | null>(null)
   const [rect, setRect] = useState<DOMRect | null>(null)
+  const lesson = LESSONS.find((item) => item.id === lessonId)
+  const activeSteps: readonly LessonStep[] = lesson?.steps ?? STEPS
 
-  const close = useCallback((remember: boolean) => {
+  const close = useCallback((completed: boolean) => {
     setStep(null)
-    if (!remember) return
     try {
-      window.localStorage.setItem(DONE_KEY, '1')
-    } catch { /* жады жоқ болса, келесі жолы қайта көрсетіледі — қате емес */ }
-  }, [])
+      if (lessonId) {
+        if (completed) {
+          const done = parseCompletedLessons(window.localStorage.getItem(LESSON_DONE_KEY))
+          window.localStorage.setItem(LESSON_DONE_KEY, JSON.stringify([...new Set([...done, lessonId])]))
+        }
+      } else window.localStorage.setItem(DONE_KEY, '1')
+    } catch (cause) { console.error('Lesson progress could not be saved', cause) }
+  }, [lessonId])
 
   /*
    * Бірінші кіргенде ғана. Тексеру эффектіде: серверде localStorage жоқ.
@@ -102,35 +118,39 @@ export function Tour({ paused = false }: { paused?: boolean }) {
 
   // Басқа жерден қайта қосу: «?» терезесіндегі батырма осы оқиғаны жібереді.
   useEffect(() => {
-    const onStart = () => setStep(0)
+    const onStart = () => { setLessonId(null); setRect(null); setStep(0) }
+    const onLesson = (event: Event) => {
+      const id = (event as CustomEvent<{ lessonId: string }>).detail?.lessonId
+      if (!LESSONS.some((item) => item.id === id)) return
+      setLessonId(id)
+      setRect(null)
+      setStep(0)
+    }
     window.addEventListener('tour:start', onStart)
-    return () => window.removeEventListener('tour:start', onStart)
+    window.addEventListener('tour:lesson', onLesson)
+    return () => { window.removeEventListener('tour:start', onStart); window.removeEventListener('tour:lesson', onLesson) }
   }, [])
 
   // Ағымдағы қадамның элементін тауып, оның орнын өлшейміз.
   useEffect(() => {
     if (step === null) return undefined
-    let index = step
-    let el: Element | null = null
-    while (index < STEPS.length && !el) {
-      el = document.querySelector(STEPS[index]!.selector)
-      if (!el) index += 1
-    }
-    if (!el) {
-      close(true)
+    const index = nextAvailableLessonStep(activeSteps, step, (item) => targetOf(item) !== null)
+    if (index === null) {
+      close(false)
       return undefined
     }
+    const el = targetOf(activeSteps[index]!)!
     if (index !== step) setStep(index)
     el.scrollIntoView({ block: 'nearest' })
     const measure = () => setRect(el!.getBoundingClientRect())
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [step, close])
+  }, [step, close, lessonId])
 
   if (step === null || !rect) return null
-  const current = STEPS[step]!
-  const last = step === STEPS.length - 1
+  const current = activeSteps[step]!
+  const last = step === activeSteps.length - 1
 
   // Карточка элементтің АСТЫНА қойылады, ал орын жетпесе — үстіне.
   const below = rect.bottom + 180 < window.innerHeight
@@ -164,14 +184,14 @@ export function Tour({ paused = false }: { paused?: boolean }) {
         style={{ top, left }}
       >
         <p className="text-[10px] uppercase tracking-wider text-neutral-400">
-          {tr('Шаг')} {step + 1} / {STEPS.length}
+          {lesson ? `${tr(lesson.name)} · ` : null}{tr('Шаг')} {step + 1} / {activeSteps.length}
         </p>
         <h3 className="mt-0.5 text-sm font-semibold">{tr(current.title)}</h3>
         <p className="mt-1 text-xs leading-snug text-neutral-600 dark:text-neutral-300">
           {tr(current.text)}
         </p>
         <div className="mt-3 flex items-center gap-2">
-          <Button onClick={() => close(true)}>{tr('Пропустить')}</Button>
+          <Button onClick={() => close(false)}>{tr('Пропустить')}</Button>
           <div className="ml-auto flex gap-2">
             {step > 0 ? <Button onClick={() => setStep(step - 1)}>{tr('Назад')}</Button> : null}
             <Button active onClick={() => (last ? close(true) : setStep(step + 1))}>
@@ -187,4 +207,8 @@ export function Tour({ paused = false }: { paused?: boolean }) {
 /** «?» терезесінен қайта қосу. */
 export function startTour(): void {
   window.dispatchEvent(new Event('tour:start'))
+}
+
+export function startLesson(lessonId: string): void {
+  window.dispatchEvent(new CustomEvent('tour:lesson', { detail: { lessonId } }))
 }
