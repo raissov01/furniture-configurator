@@ -10,6 +10,10 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Воспроизвести': 'Play',
+  'Пауза': 'Pause',
+  'Вперёд': 'Next',
+  'Рез': 'Cut',
   'Название не может быть пустым': 'Name cannot be empty',
   'Рабочее место': 'Workspace',
   'Стиль рабочего места': 'Workspace style',

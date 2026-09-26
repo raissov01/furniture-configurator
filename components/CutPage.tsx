@@ -34,6 +34,7 @@ import type {
 } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
+import { playbackFrame, playbackStep } from '@/src/core/cutPlayback'
 
 /** Парақ сызбасының экрандағы ені, пиксель. */
 const SHEET_PX = 520
@@ -439,9 +440,32 @@ const CUT_COLOR: Record<CutLine['kind'], string> = {
 function SheetCard({
   sheet, plan, showCuts,
 }: { sheet: NestedSheet; plan: SheetCutPlan; showCuts: boolean }) {
+  const [step, setStep] = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const frame = playbackFrame(plan.cuts, step)
+  useEffect(() => {
+    setStep(0)
+    setPlaying(false)
+  }, [plan])
+  useEffect(() => {
+    if (!playing) return
+    if (step >= plan.cuts.length) {
+      setPlaying(false)
+      return
+    }
+    const timer = window.setTimeout(() => setStep((current) => playbackStep(current, plan.cuts.length, 1)), 650)
+    return () => window.clearTimeout(timer)
+  }, [playing, step, plan.cuts.length])
   const scale = SHEET_PX / sheet.sheetWidth
   return (
     <figure className="space-y-1">
+      <div className="flex w-[520px] max-w-full flex-wrap items-center gap-1 text-xs">
+        <Button onClick={() => { setPlaying(false); setStep((current) => playbackStep(current, frame.total, -1)) }} disabled={step === 0}>{tr('Назад')}</Button>
+        <Button onClick={() => setPlaying(true)} disabled={playing || step >= frame.total}>{tr('Воспроизвести')}</Button>
+        <Button onClick={() => setPlaying(false)} disabled={!playing}>{tr('Пауза')}</Button>
+        <Button onClick={() => { setPlaying(false); setStep((current) => playbackStep(current, frame.total, 1)) }} disabled={step >= frame.total}>{tr('Вперёд')}</Button>
+        <span className="ml-auto tabular-nums" aria-live="polite">{tr('Рез')} {frame.step}/{frame.total}</span>
+      </div>
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
         width={SHEET_PX}
@@ -473,7 +497,8 @@ function SheetCard({
             </text>
           </g>
         ))}
-        {showCuts ? plan.cuts.map((c) => {
+        {showCuts ? [...frame.completed, ...(frame.active ? [frame.active] : [])].map((c) => {
+          const active = c === frame.active
           const x1 = c.axis === 'v' ? c.at : c.from
           const x2 = c.axis === 'v' ? c.at : c.to
           const y1 = c.axis === 'v' ? c.from : c.at
@@ -482,11 +507,11 @@ function SheetCard({
             <g key={c.order}>
               <line
                 x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke={CUT_COLOR[c.kind]} strokeWidth={6}
+                stroke={active ? '#2563eb' : CUT_COLOR[c.kind]} strokeWidth={active ? 12 : 6}
                 strokeDasharray={c.kind === 'trim' ? '24 16' : undefined}
-                strokeOpacity={0.85}
+                strokeOpacity={active ? 1 : 0.65}
               />
-              <circle cx={(x1 + x2) / 2} cy={(y1 + y2) / 2} r={30} fill={CUT_COLOR[c.kind]} />
+              <circle cx={(x1 + x2) / 2} cy={(y1 + y2) / 2} r={30} fill={active ? '#2563eb' : CUT_COLOR[c.kind]} />
               <text
                 x={(x1 + x2) / 2} y={(y1 + y2) / 2}
                 textAnchor="middle" dominantBaseline="middle"
