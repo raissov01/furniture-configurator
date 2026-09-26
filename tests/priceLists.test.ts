@@ -50,7 +50,7 @@ describe('цех прайс-парақтары', () => {
     delete (legacy as { priceLists?: unknown }).priceLists
     delete (legacy as { activePriceListId?: unknown }).activePriceListId
     const migrated = parseShopProfile(legacy)
-    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.schemaVersion).toBe(9)
     expect(migrated.priceLists).toHaveLength(1)
     expect(migrated.activePriceListId).toBe(migrated.priceLists[0]!.id)
     const blank = createPriceList(migrated, 'Бос прайс', 'blank')

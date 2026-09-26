@@ -1319,6 +1319,7 @@ export const uz: Record<string, string> = {
   'Ремонт завершён': 'Ta’mir tugadi',
   'Постоянное хранение разрешено.': 'Doimiy saqlashga ruxsat berildi.',
 
+
   'XLSX — деталировка': 'XLSX — detallar ro‘yxati',
   'CSV — на распил': 'CSV — arralash uchun',
   'DXF — на станок': 'DXF — dastgoh uchun',
@@ -1336,5 +1337,18 @@ export const uz: Record<string, string> = {
   'Сервис': 'Servis',
 
   'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Parmalash, bichish va stanokka eksport — to‘g‘ridan-to‘g‘ri AisMebel’da, Bazisga o‘tkazmasdan.',
+
+
+  // Нарық бағасы (marketPrices.ts)
+  'Цены — рыночная медиана ({date}). Введите свои цены.': 'Narxlar — bozor medianasi ({date}). O‘z narxlaringizni kiriting.',
+  'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.': 'Bozor narxidagi pozitsiyalar: {n}. O‘zgartirgan narxingiz o‘zingizniki bo‘ladi va bozor ma’lumotlari yangilanganda qayta yozilmaydi.',
+  'Вернуть все рыночные цены': 'Barchasini bozor narxiga qaytarish',
+  'Все позиции, для которых есть рыночные данные, получат рыночную медиану — ваши цены по ним будут заменены. Продолжить?': 'Bozor ma’lumoti bor barcha pozitsiyalarga bozor medianasi qo‘yiladi — ulardagi o‘z narxlaringiz almashtiriladi. Davom etasizmi?',
+  'рыночная': 'bozor',
+  'своя': 'o‘ziniki',
+  'Вернуть рыночную цену': 'Bozor narxiga qaytarish',
+  '{label}: медиана, {date}, {n} предложений': '{label}: mediana, {date}, {n} ta taklif',
+  'Вернуть рыночную цену: {price}': 'Bozor narxiga qaytarish: {price}',
+  'Цена изменена цехом — рыночные обновления её не трогают': 'Narxni sex o‘zgartirgan — bozor yangilanishlari unga tegmaydi',
 
 }

@@ -227,7 +227,7 @@ describe('3-нұсқадан көшу', () => {
     delete (old as Record<string, unknown>)['coefficient']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.schemaVersion).toBe(9)
     // Аудан → распил, тесік → присадка, метр → кромка.
     expect(migrated.services.cutting).toEqual({ basis: 'squareMetre', rate: 150000 })
     expect(migrated.services.drilling).toEqual({ basis: 'hole', rate: 3000 })
@@ -245,11 +245,13 @@ describe('3-нұсқадан көшу', () => {
  */
 describe('4-нұсқадан көшу — раскрой баптаулары', () => {
   it('ескі профильге әдепкі баптаулар қосылады, қалғаны тимейді', () => {
-    const old = { ...base, schemaVersion: 4 }
+    // Бір бағасы бар цех: мүлде бос цех нарық бағасымен толар еді (marketPrices.test.ts).
+    const priced = { ...base, installation: { ratePerMetreWidth: 500_000 } }
+    const old = { ...priced, schemaVersion: 4 }
     delete (old as Record<string, unknown>)['cutting']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(8)
+    expect(migrated.schemaVersion).toBe(9)
     expect(migrated.cutting).toEqual({ kerf: 4, trimEdge: null, optimization: 'standard' })
     expect(migrated.services).toEqual(base.services)
     expect(migrated.materials).toEqual(base.materials)

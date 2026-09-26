@@ -3,6 +3,8 @@
  * өндірістік ережелер ShopProfile-дің ортақ каталогында қалады.
  */
 import { ConfigValidationError } from './errors'
+import { pruneMarketMarks } from './marketPrices'
+import type { MarketPriceMark } from './marketPrices'
 import type { ShopProfile } from './shop'
 
 export type PriceValues = {
@@ -19,12 +21,15 @@ export type PriceValues = {
   installationRatePerMetreWidth: number
   coefficient: number
   markupPercent: number
+  /** Нарықтан алынған позициялар (`marketPrices.ts`); қалғаны — цехтың өз бағасы. */
+  marketPrices: Record<string, MarketPriceMark>
 }
 
 export type PriceList = PriceValues & { id: string; name: string }
 
 type PriceSource = Pick<ShopProfile,
-  'materials' | 'edgeBands' | 'hardware' | 'services' | 'installation' | 'coefficient' | 'markupPercent'>
+  'materials' | 'edgeBands' | 'hardware' | 'services' | 'installation' | 'coefficient' | 'markupPercent'> &
+  Partial<Pick<ShopProfile, 'marketPrices'>>
 
 /** Қазіргі бағаны жоғалтпай дәл жазу; жаңа тізімді көшіргенде де осы дерек алынады. */
 export function capturePriceValues(shop: PriceSource): PriceValues {
@@ -51,6 +56,7 @@ export function capturePriceValues(shop: PriceSource): PriceValues {
     installationRatePerMetreWidth: shop.installation.ratePerMetreWidth,
     coefficient: shop.coefficient,
     markupPercent: shop.markupPercent,
+    marketPrices: { ...(shop.marketPrices ?? {}) },
   }
 }
 
@@ -64,8 +70,10 @@ function activeList(shop: ShopProfile): PriceList {
 }
 
 /** UI баға өрістерін өзгерткен сайын белсенді прайс snapshot-ы бірге жаңарады. */
-export function syncActivePriceList(shop: ShopProfile): ShopProfile {
-  activeList(shop)
+export function syncActivePriceList(input: ShopProfile): ShopProfile {
+  activeList(input)
+  // Цех өзгерткен баға нарық белгісін жоғалтады — ол енді «өз бағасы».
+  const shop = pruneMarketMarks(input)
   const values = capturePriceValues(shop)
   return {
     ...shop,
@@ -109,6 +117,7 @@ function applyPriceValues(shop: ShopProfile, values: PriceValues): ShopProfile {
     installation: { ...shop.installation, ratePerMetreWidth: values.installationRatePerMetreWidth },
     coefficient: values.coefficient,
     markupPercent: values.markupPercent,
+    marketPrices: { ...(values.marketPrices ?? {}) },
   }
 }
 
@@ -131,7 +140,7 @@ export function createPriceList(shop: ShopProfile, name: string, mode: 'blank' |
   const values: PriceValues = mode === 'copy' ? capturePriceValues(shop) : {
     materialPrices: {}, edgeBandPrices: {}, hardwarePrices: {},
     serviceRates: { cutting: 0, drilling: 0, edging: 0, packing: 0, assembly: 0 },
-    installationRatePerMetreWidth: 0, coefficient: 1, markupPercent: 0,
+    installationRatePerMetreWidth: 0, coefficient: 1, markupPercent: 0, marketPrices: {},
   }
   const list: PriceList = { id, name: validName(name), ...values }
   return applyPriceValues({
