@@ -220,6 +220,8 @@ export function CutPage() {
                   projectName,
                   fonts: await loadFonts(),
                   size: { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
+                  projectId: root.id,
+                  version: 4,
                 })
                 download(`${projectName}-бирки.pdf`, bytes, 'application/pdf')
               })}
@@ -253,7 +255,9 @@ export function CutPage() {
                 entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(selectedPanels, catalog)}`)
                 entries['birki.csv'] = strToU8(`\ufeff${labelsToCsv(labels)}`)
                 entries['karta-raskroya.pdf'] = await nestingPdf({ nesting: nesting!, projectName, fonts })
-                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts, size: { page: labelPage, widthMm: labelWidth, heightMm: labelHeight } })
+                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts,
+                  size: { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
+                  projectId: root.id, version: 4 })
                 download(
                   `${projectName}-цех.zip`,
                   zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),

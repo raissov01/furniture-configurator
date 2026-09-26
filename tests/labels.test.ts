@@ -155,6 +155,13 @@ describe('биркалар PDF', () => {
     expect(bytes.length).toBeGreaterThan(0)
   })
 
+  it('58 × 40 mm print labels also accept QR, text and edge marks', async () => {
+    const bytes = await labelsPdf({ labels: labels.slice(0, 1), projectName: 'Шкаф', fonts,
+      projectId: 'root', version: 4, size: { page: 'a4', widthMm: 58, heightMm: 40 } })
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1)
+    expect(bytes.length).toBeGreaterThan(0)
+  })
+
   it('деталь болмаса да бір бет шығады', async () => {
     const bytes = await labelsPdf({ labels: [], projectName: 'Пусто', fonts })
     expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1)
