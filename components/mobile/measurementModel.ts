@@ -81,7 +81,8 @@ export function updateObstacle(
   const next = structuredClone(survey)
   const prior = next.walls[wall].obstacles[kind]
   const answer = { ...prior, ...patch }
-  if (answer.status !== prior.status && patch.photoRef === undefined) answer.photoRef = null
+  // Жауапсыз кезде түсірілген фото алғашқы жауапқа тиесілі; жауап ауысқанда ғана тазаланады.
+  if (prior.status !== 'unanswered' && answer.status !== prior.status && patch.photoRef === undefined) answer.photoRef = null
   if (answer.status !== 'present') {
     answer.location = null
     answer.thickness = null

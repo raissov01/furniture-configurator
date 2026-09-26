@@ -70,4 +70,15 @@ describe('mobile measurement draft', () => {
     expect(roomIssues(draft)).toContain('walls.east.length')
     expect(roomIssues(draft)).toContain('corners.northWest')
   })
+
+  it('жауаптан бұрын түсірілген фото «бар/жоқ» басылғанда жоғалмайды', () => {
+    // Шеберде фото өрісі жауап батырмаларымен қатар тұр: алдымен суретке түсіру табиғи.
+    let draft = emptySurvey('survey-photo-first', 1000)
+    draft = updateObstacle(draft, 'west', 'vent', { photoRef: 'photo:vent' })
+    draft = updateObstacle(draft, 'west', 'vent', { status: 'absent' })
+    expect(draft.walls.west.obstacles.vent.photoRef).toBe('photo:vent')
+    // Жауап ауысса, ескі дәлел жаңа жауапқа жарамайды.
+    draft = updateObstacle(draft, 'west', 'vent', { status: 'present' })
+    expect(draft.walls.west.obstacles.vent.photoRef).toBeNull()
+  })
 })
