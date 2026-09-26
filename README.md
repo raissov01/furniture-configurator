@@ -1,6 +1,10 @@
-# Furniture 3D Configurator
+# AisMebel
 
-Корпусная мебель үшін параметрлік конфигуратор. Спец: [CLAUDE.md](CLAUDE.md),
+<img src="public/brand/aismebel-logo.svg" alt="AisMebel" height="40">
+
+**AisMebel — мебель цехтарына.** Корпусная мебель үшін параметрлік платформа:
+3D, деталировка, раскрой, присадка, КП. (Репозиторий аты `furniture-configurator`
+— тарихи, өзгертілмеді.) Спец: [CLAUDE.md](CLAUDE.md),
 жол картасы: [PHASE-2.md](PHASE-2.md).
 
 ## Күйі
