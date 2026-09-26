@@ -15,6 +15,7 @@ import type {
 } from './types'
 import type { Cutout } from './cutouts'
 import type { MillingPath } from './milling'
+import type { PolygonContourInput } from './polygon'
 
 /** Ата-түйінге ҚАТЫСТЫ орны. Орын — бүтін мм (§0.2), бұрыш — градус. */
 export type Transform = { pos: Vec3; rot: Vec3 }
@@ -80,6 +81,8 @@ export type BoardSpec = {
   cutouts?: Cutout[] | undefined
   corners?: PanelCorners | undefined
   milling?: MillingPath[] | undefined
+  /** Еркін пішін: дайын контур және әр кесіндінің кромкасы. edges бұл кезде бос. */
+  contour?: PolygonContourInput | undefined
 }
 
 /** Өндіріске КЕТПЕЙТІН қорап: техника, тас, декор. */

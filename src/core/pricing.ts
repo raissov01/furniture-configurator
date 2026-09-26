@@ -16,6 +16,7 @@ import { ConfigValidationError } from './errors'
 import type { HardwarePlacement } from './hardware'
 import type { NestingResult } from './nesting'
 import { isWidthBevel } from './types'
+import { polygonArea } from './polygon'
 import type { Discount, Panel, PriceOverrides } from './types'
 import { SERVICE_IDS, SERVICE_NAMES } from './shop'
 import type { ServiceId, ServiceRate, ShopProfile } from './shop'
@@ -144,6 +145,16 @@ function edgeLength(p: Panel, side: keyof Panel['edges']): number {
 export function edgeMetresByBand(panels: Panel[]): Map<string, number> {
   const mm = new Map<string, number>()
   for (const p of panels) {
+    if (p.contour) {
+      for (const [i, start] of p.contour.points.entries()) {
+        const spec = p.contour.bands[i]
+        if (!spec) continue
+        const end = p.contour.points[(i + 1) % p.contour.points.length]!
+        const length = Math.hypot(end.x - start.x, end.y - start.y)
+        mm.set(spec.bandId, (mm.get(spec.bandId) ?? 0) + length * p.qty)
+      }
+      continue
+    }
     const sides: [keyof Panel['edges'], number][] = [
       ['L1', edgeLength(p, 'L1')],
       ['L2', edgeLength(p, 'L2')],
@@ -256,7 +267,8 @@ export function countHoles(panels: Panel[]): number {
 
 /** Детальдардың ГОТОВЫЙ ауданы, м². */
 export function panelAreaSquareMetres(panels: Panel[]): number {
-  const mm2 = panels.reduce((sum, p) => sum + p.finishedLength * p.finishedWidth, 0)
+  const mm2 = panels.reduce((sum, p) => sum +
+    (p.contour ? polygonArea(p.contour.points) : p.finishedLength * p.finishedWidth) * p.qty, 0)
   return mm2 / 1_000_000
 }
 
@@ -316,10 +328,20 @@ export function priceProject(
 
   for (const p of panels) {
     const st = statFor(p.materialId)
-    st.area += (p.finishedLength * p.finishedWidth) / 1_000_000
+    st.area += (p.contour ? polygonArea(p.contour.points) : p.finishedLength * p.finishedWidth) / 1_000_000
     st.lengthMetres += Math.max(p.finishedLength, p.finishedWidth) / 1000
     st.panels += 1
     st.holes += p.drilling.length
+    if (p.contour) {
+      for (const [i, start] of p.contour.points.entries()) {
+        const spec = p.contour.bands[i]
+        if (!spec) continue
+        const end = p.contour.points[(i + 1) % p.contour.points.length]!
+        const metres = Math.hypot(end.x - start.x, end.y - start.y) * p.qty / 1000
+        st.edges.set(spec.bandId, (st.edges.get(spec.bandId) ?? 0) + metres)
+      }
+      continue
+    }
     const sides: [keyof Panel['edges'], number][] = [
       ['L1', edgeLength(p, 'L1')], ['L2', edgeLength(p, 'L2')],
       ['W1', edgeLength(p, 'W1')], ['W2', edgeLength(p, 'W2')],

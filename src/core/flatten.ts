@@ -20,6 +20,7 @@ import { mergeSettings } from './constants'
 import { calculateCutDimensions } from './edges'
 import { ConfigValidationError } from './errors'
 import { rotationFor } from './geometry'
+import { derivePolygonContour } from './polygon'
 import { isNodeHiddenByLayer } from './layers'
 import type { Layer } from './layers'
 
@@ -72,7 +73,19 @@ function boardPanel(
       )
     }
   }
-  const { cutLength, cutWidth } = calculateCutDimensions(
+  if (spec.contour && Object.values(spec.edges).some(Boolean)) {
+    throw new ConfigValidationError(`board[${node.id}].edges`,
+      'контур кесінділерінің кромкасы contour.bands ішінде беріледі', 'төрт жиек те бос')
+  }
+  if (spec.contour && (spec.corners || (spec.cutouts?.length ?? 0) > 0)) {
+    throw new ConfigValidationError(`board[${node.id}].contour`,
+      'контурмен бірге corners/cutouts операциясы қолдау таппайды', 'тек контур')
+  }
+  const contour = spec.contour
+    ? derivePolygonContour(spec.contour, spec.length, spec.width, bands,
+      settings.minBandSubtract, `board[${node.id}].contour`)
+    : undefined
+  const { cutLength, cutWidth } = contour ?? calculateCutDimensions(
     spec.length, spec.width, spec.edges, bands, settings,
   )
   for (const [field, value] of Object.entries({ cutLength, cutWidth })) {
@@ -93,6 +106,8 @@ function boardPanel(
     cutLength,
     cutWidth,
     edges: spec.edges,
+    ...(contour ? { contour: { points: contour.points, bands: contour.bands,
+      cutPoints: contour.cutPoints } } : {}),
     grainAlongLength: spec.grainAlongLength,
     ...(spec.veneerGroup ? { veneerGroup: spec.veneerGroup } : {}),
     qty: 1,
