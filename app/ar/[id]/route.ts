@@ -26,7 +26,7 @@ export async function GET(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <title>Мебель в вашей комнате — AR</title>
+  <title>Мебель в вашей комнате — AR · AisMebel</title>
   <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
   <style>
     html,body{margin:0;height:100%;background:#0f1216;font-family:system-ui,sans-serif;color:#e8eaed}

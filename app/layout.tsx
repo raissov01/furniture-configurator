@@ -3,6 +3,7 @@ import { Golos_Text, JetBrains_Mono, PT_Sans_Narrow } from 'next/font/google'
 import './globals.css'
 import { I18nProvider } from '@/components/I18nProvider'
 import { ServiceWorker } from '@/components/ServiceWorker'
+import { BRAND } from '@/src/core/brand'
 
 /**
  * Қаріптер: ПТ Санс Нарроу — аймақтың техникалық көрсеткіштерінің қарпі
@@ -32,19 +33,30 @@ const mono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Конфигуратор корпусной мебели для цехов',
+  // Беттердің өз атауы болса — «Раскрой — … · AisMebel», болмаса толық атау.
+  title: { default: BRAND.fullName, template: `%s · ${BRAND.name}` },
+  applicationName: BRAND.name,
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/brand/favicon-32.png', sizes: '32x32', type: 'image/png' },
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: '/apple-touch-icon.png',
   },
   // Телефонға орнатылғанда терезенің аты қысқа болуы керек.
-  appleWebApp: { capable: true, title: 'Конфигуратор', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: BRAND.name, statusBarStyle: 'black-translucent' },
   description:
-    'Задаёте габарит — получаете деталировку, карту раскроя и коммерческое предложение. Ваши материалы, ваши цены, ваши правила сборки.',
+    'AisMebel — платформа для мебельных цехов: задаёте габарит — получаете деталировку, карту раскроя и коммерческое предложение. Ваши материалы, ваши цены, ваши правила сборки.',
+  openGraph: {
+    siteName: BRAND.name,
+    title: BRAND.fullName,
+    type: 'website',
+    images: [{ url: '/icon-512.png', width: 512, height: 512, alt: BRAND.name }],
+  },
+  twitter: { card: 'summary', title: BRAND.fullName, images: ['/icon-512.png'] },
 }
 
 /**
