@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
-  IDENTITY_TRANSFORM, ORIENT_HORIZONTAL, ORIENT_SIDE, SEED_CATALOG,
+  IDENTITY_TRANSFORM, ORIENT_HORIZONTAL, ORIENT_SIDE, SEED_CATALOG, SEED_SETS,
   autoJoint, findNode, flattenTree, parseProjectV4,
 } from '../src/core/index'
 import type { BoardNode, GroupNode, ProjectFileV4 } from '../src/core/index'
@@ -45,6 +45,18 @@ function expected() {
 }
 
 describe('store автоматты буынның provenance дерегі', () => {
+  it('жоба жиынтықпен толық алмастырылса ескі буын сақталмайды, undo оны қайтарады', () => {
+    state().loadProject(file())
+    state().autoJointBoards(['base', 'upright'], 'confirmat', 0)
+    const joint = state().autoJoints[0]!
+    state().loadSet(SEED_SETS[0]!.id)
+    expect(state().autoJoints).toEqual([])
+    expect(() => parseProjectV4(state().exportProject())).not.toThrow()
+    state().undo()
+    expect(state().autoJoints).toEqual([joint])
+    expect(generated()).toEqual([manual, ...expected()])
+  })
+
   it('буынды v4-ке бөлек сақтайды; бір undo/redo қадамы қол тесігіне тимейді', () => {
     state().loadProject(file())
     state().autoJointBoards(['base', 'upright'], 'confirmat', 0)

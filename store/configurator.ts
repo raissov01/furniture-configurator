@@ -454,7 +454,9 @@ function replaceProjectScene(s: State, cabinets: CabinetConfig[], placements: Pl
   const root = treeFromProject({ schemaVersion: 3, name: s.root.name, room, cabinets, placements,
     materials: s.catalog.materials, edgeBands: s.catalog.edgeBands })
   const layers = [createDefaultLayer()]
-  return { root, layers, ...cabinetsFromTree(root, room, layers) }
+  // A preset replaces the complete scene. Its undo snapshot keeps old joints,
+  // but the new root must not serialize references to removed free boards.
+  return { root, layers, autoJoints: [], ...cabinetsFromTree(root, room, layers) }
 }
 
 /** Қабырғамен бірге нақты жылжитын корпустардың ID тізімі. */
