@@ -12,7 +12,17 @@ it.each(['basis price', 'own alias price'] as const)('%s сақталған ба
   const targetId = LEGACY_MATERIAL_ALIASES[oldId]!
   const material = BASIS_MATERIALS.find((m) => m.id === oldId)!
   const shop = defaultShopProfile('legacy-price-test')
-  shop.materials = [...shop.materials, { ...material, id: source === 'basis price' ? oldId : targetId, pricePerSheet: 3_400_000 }]
+  const shopId = source === 'basis price' ? oldId : targetId
+  shop.materials = [...shop.materials, { ...material, id: shopId, pricePerSheet: 3_400_000 }]
+  shop.priceLists = shop.priceLists.map((list) => ({ ...list,
+    materialPrices: { ...list.materialPrices, [shopId]: { pricePerSheet: 3_400_000 } } }))
+  if (source === 'own alias price') {
+    const mark = { group: 'ldsp', priceTiyn: 3_400_000, dateSeen: '2026-09-25', offers: 1 }
+    shop.marketPrices[`material:${targetId}`] = mark
+    shop.priceLists = shop.priceLists.map((list) => ({ ...list,
+      marketPrices: { ...list.marketPrices, [`material:${targetId}`]: mark } }))
+    shop.priceLists.push({ ...shop.priceLists[0]!, id: 'second-price', name: 'Екінші прайс' })
+  }
   useConfigurator.setState({ shop, catalog: catalogOf(shop) })
   const raw = {
     schemaVersion: 4, name: 'Ескі жоба', materials: [material], edgeBands: [],
@@ -29,6 +39,13 @@ it.each(['basis price', 'own alias price'] as const)('%s сақталған ба
   expect(saved.materials.some((m) => m.id === oldId)).toBe(true)
   expect(saved.priceOverrides?.lineDiscounts?.[`materials:${oldId}`]).toEqual({ kind: 'percent', value: 10 })
   expect(state.catalog.materials.find((m) => m.id === oldId)?.pricePerSheet).toBe(3_400_000)
+  expect(state.shop.priceLists[0]!.materialPrices[oldId]?.pricePerSheet).toBe(3_400_000)
+  if (source === 'own alias price') {
+    expect(state.shop.marketPrices[`material:${oldId}`]).toEqual(shop.marketPrices[`material:${targetId}`])
+    expect(state.shop.priceLists[0]!.marketPrices[`material:${oldId}`]).toEqual(shop.marketPrices[`material:${targetId}`])
+    useConfigurator.getState().selectPriceList('second-price')
+    expect(useConfigurator.getState().shop.materials.find((m) => m.id === oldId)?.pricePerSheet).toBe(3_400_000)
+  }
   const panels = scenePanels(flattenTree(saved.root, state.catalog, saved.settings, saved.layers))
   const bill = priceProject(panels, nestPanels(panels, state.catalog), state.shop, [], [], saved.priceOverrides)
   expect(bill.materials.find((line) => line.id === oldId)?.unitPrice).toBe(3_400_000)
