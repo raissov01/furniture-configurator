@@ -1,6 +1,7 @@
 'use client'
 
 import { getLang, setLang, t as tr, tf } from '@/lib/i18n'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
@@ -1013,7 +1014,7 @@ export function Workspace() {
         if (!part) return null
         return (
           <div className="flex items-center gap-3 border-b border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs dark:border-neutral-800 dark:bg-neutral-900">
-            <b>{part.label}</b>
+            <b>{panelDisplayLabel(part.label)}</b>
             <span className="tabular-nums text-neutral-500">
               {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
             </span>

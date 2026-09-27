@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { Edges, Html } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { grainTexture } from '@/lib/grainTexture'
@@ -777,7 +778,7 @@ export function PanelMesh({
       {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>
           <div className="pointer-events-none whitespace-nowrap rounded bg-neutral-900/90 px-2 py-1 text-[11px] text-white shadow">
-            <b>{panel.label}</b>
+            <b>{panelDisplayLabel(panel.label)}</b>
             <span className="mx-1.5 opacity-50">·</span>
             готовый {panel.finishedLength}×{panel.finishedWidth}
             <span className="mx-1.5 opacity-50">·</span>

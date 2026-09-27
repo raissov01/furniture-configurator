@@ -38,6 +38,7 @@ import { playbackStep } from '@/src/core/cutPlayback'
 import { labelExportOptions, labelSizeLimits, projectLabelIdentity } from '@/lib/labelExportOptions'
 import { cutExportAllowed, safeCutPlan } from '@/lib/safeCutPlan'
 import type { LabelPage } from '@/src/core/export/labelLayout'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 
 /**
  * ⚠ Тізім ФУНКЦИЯ, тұрақты емес. Модуль деңгейіндегі `tr()` тіл сақтаудан
@@ -548,7 +549,7 @@ function SheetCard({
               fontSize={Math.max(34, Math.min(p.width, p.height) * 0.16)}
               fill="#3f3108"
             >
-              {p.label} {p.width}×{p.height}
+              {panelDisplayLabel(p.label)} {p.width}×{p.height}
             </text>
           </g>
         ))}
@@ -630,7 +631,7 @@ function UnplacedBlock({ advice }: { advice: ReturnType<typeof unplacedAdvice> }
       {advice.map((a) => (
         <div key={a.panelId} className="space-y-1">
           <div className="font-medium">
-            {a.label} — {a.cutLength}×{a.cutWidth} {tr('мм')}, {tr('лист')} {a.materialName}{' '}
+            {panelDisplayLabel(a.label)} — {a.cutLength}×{a.cutWidth} {tr('мм')}, {tr('лист')} {a.materialName}{' '}
             ({tr('полезно')} {a.usable.width}×{a.usable.height}, {tr('обрезка')} {a.trimEdge} {tr('мм')})
           </div>
           <ul className="list-disc space-y-0.5 pl-5">
