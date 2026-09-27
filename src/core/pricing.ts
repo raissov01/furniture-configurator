@@ -197,25 +197,25 @@ export function countHardware(panels: Panel[]): Map<string, number> {
   let drawerSides = 0
   /** Ілгек пен тұтқа брендке қарай әртүрлі позицияға түседі — id бойынша. */
   const byHardwareId = new Map<string, number>()
-  const bump = (id: string) => byHardwareId.set(id, (byHardwareId.get(id) ?? 0) + 1)
+  const bump = (id: string, qty: number) => byHardwareId.set(id, (byHardwareId.get(id) ?? 0) + qty)
 
   for (const p of panels) {
-    if (p.role === 'shelf' && p.shelfKind === 'adjustable') shelves += 1
-    if (p.role === 'drawerSide') drawerSides += 1
+    if (p.role === 'shelf' && p.shelfKind === 'adjustable') shelves += p.qty
+    if (p.role === 'drawerSide') drawerSides += p.qty
     for (const d of p.drilling) {
       /*
        * Бір конфирмат — ЕКІ тесік: беттегі өтпелі мен ТОРЦТАҒЫ пилот.
        * Санағанда ТОРЦТАҒЫСЫН аламыз: диаметрге қарау сынғыш болатын
        * (диаметрлер 2026-09-02-де ауысты), ал беті-торцы ешқашан ауыспайды.
        */
-      if (d.purpose === 'confirmat' && d.face.startsWith('edge')) confirmats += 1
+      if (d.purpose === 'confirmat' && d.face.startsWith('edge')) confirmats += p.qty
       // Эксцентриктің ҰЯСЫ — бір стяжка. Штифт пен бұранданың тесіктері сол
       // стяжканың басқа бөліктері, оларды қайта санауға болмайды.
-      if (d.purpose === 'minifix' && d.diameter === MINIFIX_CAM_DIAMETER) minifixes += 1
+      if (d.purpose === 'minifix' && d.diameter === MINIFIX_CAM_DIAMETER) minifixes += p.qty
       // Чашка = бір ілгек. Планканың тесіктері сол ілгектің екінші ұшы,
       // оларды қайта санауға болмайды.
       if (d.purpose === 'hinge' && d.diameter === HINGE_CUP_DIAMETER) {
-        bump(d.hardwareId ?? 'hinge-overlay')
+        bump(d.hardwareId ?? 'hinge-overlay', p.qty)
       }
       // Тұтқа: скобаға екі тесік, кнопкаға бір. Тесік санынан тұтқа санын
       // шығару үшін ұзындығын білу керек, сондықтан ПАНЕЛЬМЕН санаймыз —
@@ -228,7 +228,7 @@ export function countHardware(panels: Panel[]): Map<string, number> {
     const ids = new Set(
       p.drilling.filter((d) => d.purpose === 'handle').map((d) => d.hardwareId ?? 'handle-bar'),
     )
-    for (const id of ids) bump(id)
+    for (const id of ids) bump(id, p.qty)
   }
 
   if (confirmats > 0) {
@@ -248,7 +248,7 @@ export function countHardware(panels: Panel[]): Map<string, number> {
    * Көтергіш механизм: оның присадкасы ЖОҚ (шаблон бойынша бұрғыланады),
    * сондықтан ол тесіктен емес, ФАСАДТЫҢ ӨЗІНЕН саналады.
    */
-  const flaps = panels.filter((p) => p.opening?.kind === 'flap').length
+  const flaps = panels.reduce((sum, p) => sum + (p.opening?.kind === 'flap' ? p.qty : 0), 0)
   if (flaps > 0) add('lift-flap', flaps)
   // Бір ящикте екі бүйір, ал направляющая ЖҰП болып сатылады: сондықтан
   // жиынтық саны = ящик саны, бүйір саны емес.
@@ -268,7 +268,7 @@ export function countHardware(panels: Panel[]): Map<string, number> {
 
 /** Барлық бұрғылау тесігі — жұмыс ақысы осыған да байланады. */
 export function countHoles(panels: Panel[]): number {
-  return panels.reduce((sum, p) => sum + p.drilling.length, 0)
+  return panels.reduce((sum, p) => sum + p.drilling.length * p.qty, 0)
 }
 
 /** Детальдардың ГОТОВЫЙ ауданы, м². */
@@ -334,10 +334,10 @@ export function priceProject(
 
   for (const p of panels) {
     const st = statFor(p.materialId)
-    st.area += (p.contour ? polygonArea(p.contour.points) : p.finishedLength * p.finishedWidth) / 1_000_000
-    st.lengthMetres += Math.max(p.finishedLength, p.finishedWidth) / 1000
-    st.panels += 1
-    st.holes += p.drilling.length
+    st.area += (p.contour ? polygonArea(p.contour.points) : p.finishedLength * p.finishedWidth) * p.qty / 1_000_000
+    st.lengthMetres += Math.max(p.finishedLength, p.finishedWidth) * p.qty / 1000
+    st.panels += p.qty
+    st.holes += p.drilling.length * p.qty
     if (p.contour) {
       for (const [i, start] of p.contour.points.entries()) {
         const spec = p.contour.bands[i]
@@ -395,8 +395,8 @@ export function priceProject(
     if (!slab && sheets > 0 && sheetPrice <= 0) missingPrices.push(`${name}: цена листа`)
     if (slab && st.lengthMetres > 0 && slab.pricePerMeter <= 0) missingPrices.push(`${name}: цена за метр`)
     const materialCost = slab
-      ? roundTenge(st.lengthMetres * slab.pricePerMeter)
-      : roundTenge(sheets * sheetPrice)
+      ? roundMinor(st.lengthMetres * slab.pricePerMeter)
+      : roundMinor(sheets * sheetPrice)
 
     const cells = new Map<string, number>()
     let edgeCost = 0
@@ -404,7 +404,7 @@ export function priceProject(
       const band = bandById.get(bandId)
       const price = band?.pricePerMeter ?? 0
       if (price <= 0) missingPrices.push(`${band?.name ?? bandId}: цена за метр`)
-      const cell = roundTenge(metres * price)
+      const cell = roundMinor(metres * price)
       cells.set(bandId, cell)
       edgeCost += cell
     }
@@ -413,7 +413,7 @@ export function priceProject(
     const services = {} as Record<ServiceId, number>
     for (const sid of SERVICE_IDS) {
       const rate = shop.services[sid]
-      services[sid] = roundTenge(serviceQty(rate, id, st) * rate.rate)
+      services[sid] = roundMinor(serviceQty(rate, id, st) * rate.rate)
     }
 
     const servicesSum = SERVICE_IDS.reduce((sum, sid) => sum + services[sid], 0)
@@ -518,7 +518,7 @@ export function priceProject(
         qty: unit === 'м' ? Math.round(qty * 1000) / 1000 : Math.round(qty * 100) / 100,
         unit,
         unitPrice,
-        cost: roundTenge(qty * unitPrice),
+        cost: roundMinor(qty * unitPrice),
       }
     })
     .sort((a, b) => b.cost - a.cost)
@@ -553,13 +553,13 @@ export function priceProject(
    */
   validatePriceOverrides(overrides)
   const coefficient = overrides?.coefficient ?? (shop.coefficient > 0 ? shop.coefficient : 1)
-  const coefficientAmount = roundTenge(base * (coefficient - 1))
+  const coefficientAmount = roundMinor(base * (coefficient - 1))
 
   const metres = moduleWidths.reduce((sum, w) => sum + w, 0) / 1000
-  const installationCost = roundTenge(metres * shop.installation.ratePerMetreWidth)
+  const installationCost = roundMinor(metres * shop.installation.ratePerMetreWidth)
 
   const subtotal = base + coefficientAmount + installationCost
-  const markup = roundTenge((subtotal * shop.markupPercent) / 100)
+  const markup = roundMinor((subtotal * shop.markupPercent) / 100)
   /** Коэффициенттен шыққан сома — qdesign-дегі «Алдын ала сату бағасы». */
   const calculatedTotal = subtotal + markup
   /**
@@ -742,14 +742,12 @@ const SERVICE_UNITS: Record<ServiceRate['basis'], PriceLine['unit']> = {
 }
 
 /**
- * Жол сомасын БҮТІН ТЕҢГЕГЕ дөңгелектеу.
+ * Жол сомасын БҮТІН ТИЫНҒА дөңгелектеу.
  *
  * КП — клиент оқитын құжат, ал цех бағанды қолмен қосады. Егер әр жол
- * тиынмен сақталып, көрсету кезінде ғана дөңгелектенсе, баған қосындысы
- * қорытындымен 1–2 ₸ айырмашылық береді де, құжатқа сенім кетеді.
- * Сондықтан дөңгелектеу ЕСЕПТЕУ кезінде, бір рет жүреді.
+ * Есептеу ұяшықтары тиынға дейін сақталады; көрсету де осы дәлдікте болады.
  */
-const roundTenge = (minor: number) => Math.round(minor / 100) * 100
+const roundMinor = (minor: number) => Math.round(minor)
 
 /**
  * Тиынды теңгеге келтіріп, көрсетуге дайын жол қайтарады.
@@ -759,13 +757,14 @@ const roundTenge = (minor: number) => Math.round(minor / 100) * 100
  * экранда «₸», ал PDF-те «тг» жазылады.
  */
 export function formatTenge(minor: number, currency = '₸'): string {
-  const tenge = Math.round(minor / 100)
-  return `${tenge.toLocaleString('ru-RU')} ${currency}`
+  return formatTengeExact(minor, currency)
 }
 
 /** Жеңілдік тиынмен аяқталғанда құжатта сол тиынды жоғалтпай көрсетеді. */
 export function formatTengeExact(minor: number, currency = '₸'): string {
-  const tenge = Math.floor(minor / 100).toLocaleString('ru-RU')
-  const tiyn = minor % 100
-  return `${tenge}${tiyn ? `,${String(tiyn).padStart(2, '0')}` : ''} ${currency}`
+  const sign = minor < 0 ? '−' : ''
+  const absolute = Math.abs(minor)
+  const tenge = Math.floor(absolute / 100).toLocaleString('ru-RU')
+  const tiyn = absolute % 100
+  return `${sign}${tenge}${tiyn ? `,${String(tiyn).padStart(2, '0')}` : ''} ${currency}`
 }

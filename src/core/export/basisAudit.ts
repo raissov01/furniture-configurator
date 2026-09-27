@@ -135,7 +135,7 @@ export type AuditCategory =
   | 'panel-missing' | 'panel-size' | 'panel-thickness' | 'panel-position' | 'panel-normal' | 'panel-material'
   | 'edge-missing' | 'edge-thickness' | 'edge-clip'
   | 'fastener-missing' | 'fastener-point' | 'fastener-panels'
-  | 'hole-missing' | 'hole-extra' | 'hole-diameter' | 'hole-depth' | 'hole-position'
+  | 'hole-missing' | 'hole-extra' | 'hole-diameter' | 'hole-depth' | 'hole-position' | 'hole-position-unverified'
 
 export type AuditProblem = {
   category: AuditCategory
@@ -152,7 +152,7 @@ export type BasisAuditReport = {
   project: string
   runAt: string | null
   tolerance: number
-  counts: { ok: number; mismatch: number; missing: number; extra: number; notSent: number; skipped: number }
+  counts: { ok: number; mismatch: number; missing: number; extra: number; notSent: number; skipped: number; positionUnverified: number }
   problems: AuditProblem[]
   /** Тесіктің орны қай кеңістікте табылды: 'world:Position' → саны */
   holeFrames: Record<string, number>
@@ -184,6 +184,7 @@ export const CATEGORY_HINTS: Record<AuditCategory, string> = {
   'hole-diameter': 'Диаметр: Базистің крепеж моделі басқа тесік береді (мыс. конфирмат Ø7 ↔ біздің Ø8) — модельдің айырмасы, координата емес.',
   'hole-depth': 'Тереңдік: крепеж моделінің бұрғылау тереңдігі біздің константадан өзгеше.',
   'hole-position': 'Орын: тесік бар, бірақ біз күткен нүктеде емес — бет/ось келісімі не крепеж нүктесінің мағынасы.',
+  'hole-position-unverified': 'Базис тесіктің координатасын қайтармады: диаметр мен тереңдік сәйкес, бірақ бұрғылау орны расталмады.',
 }
 
 // ── Салыстыру ────────────────────────────────────────────────────────────────
@@ -207,7 +208,7 @@ export function analyzeBasisAudit(audit: BasisAuditFile): BasisAuditReport {
   const tol = audit.tolerance
   const near = (a: number | null | undefined, b: number): boolean => typeof a === 'number' && Math.abs(a - b) <= tol
   const problems: AuditProblem[] = []
-  const counts = { ok: 0, mismatch: 0, missing: 0, extra: 0, notSent: 0, skipped: 0 }
+  const counts = { ok: 0, mismatch: 0, missing: 0, extra: 0, notSent: 0, skipped: 0, positionUnverified: 0 }
   const push = (p: AuditProblem) => problems.push(p)
 
   // Орта
@@ -356,14 +357,26 @@ export function analyzeBasisAudit(audit: BasisAuditFile): BasisAuditReport {
         if (m.frame === null && m.hasVectors) {
           push({ category: 'hole-position', where, expected: eh.point, actual: m.nearest, delta: m.nearestDistance ?? undefined })
         }
-        if (problems.length === before) counts.ok += 1
-        else counts.mismatch += 1
+        const positionUnverified = m.frame === null && !m.hasVectors
+        if (positionUnverified) {
+          counts.positionUnverified += 1
+          push({ category: 'hole-position-unverified', where, expected: eh.point, actual: 'координата өрісі жоқ' })
+        }
+        if (problems.length > before + (positionUnverified ? 1 : 0)) counts.mismatch += 1
+        else if (!positionUnverified) counts.ok += 1
       })
       actual.forEach((h, k) => {
         if (used.has(k)) return
         counts.extra += 1
         push({ category: 'hole-extra', where: `panel#${pi} ${p.name}`, actual: { diameter: h.diameter, depth: h.depth, fastener: h.fastenerName ?? null } })
       })
+    })
+  }
+
+  if (counts.positionUnverified > 0) {
+    push({
+      category: 'environment', where: 'holes.position', actual: `${counts.positionUnverified} тесіктің орны оқылмады`,
+      hint: 'Audit толық емес: Базистің Hole API-і координата өрісін қайтарғанын тексеріңіз.',
     })
   }
 
@@ -419,13 +432,13 @@ function matchHole(
   tol: number,
   positionOnly: boolean,
 ): { index: number; frame: string | null; hasVectors: boolean; nearest: number[] | null; nearestDistance: number | null } {
-  let best = { index: -1, frame: null as string | null, score: Infinity, nearest: null as number[] | null, nearestDistance: null as number | null }
-  let hasVectors = false
+  let best = { index: -1, frame: null as string | null, score: Infinity, nearest: null as number[] | null, nearestDistance: null as number | null, hasVectors: false }
   actual.forEach((a, i) => {
     if (used.has(i)) return
     let frame: string | null = null
     let nearest: number[] | null = null
     let nearestD = Infinity
+    let hasVectors = false
     for (const [key, v] of Object.entries(a.props ?? {})) {
       if (!isVec(v)) continue
       hasVectors = true
@@ -439,10 +452,10 @@ function matchHole(
     if (frame === null && (positionOnly || dd > 3)) return
     const score = (frame ? 0 : 1000) + dd * 10 + (typeof a.depth === 'number' ? Math.abs(a.depth - eh.depth) : 50)
     if (score < best.score) {
-      best = { index: i, frame, score, nearest, nearestDistance: Number.isFinite(nearestD) ? Math.round(nearestD * 1000) / 1000 : null }
+      best = { index: i, frame, score, nearest, nearestDistance: Number.isFinite(nearestD) ? Math.round(nearestD * 1000) / 1000 : null, hasVectors }
     }
   })
-  return { index: best.index, frame: best.frame, hasVectors, nearest: best.nearest, nearestDistance: best.nearestDistance }
+  return { index: best.index, frame: best.frame, hasVectors: best.hasVectors, nearest: best.nearest, nearestDistance: best.nearestDistance }
 }
 
 // ── Қазақша Markdown есеп ────────────────────────────────────────────────────
@@ -467,6 +480,7 @@ const CATEGORY_TITLES: Record<AuditCategory, string> = {
   'hole-diameter': 'Тесік диаметрі',
   'hole-depth': 'Тесік тереңдігі',
   'hole-position': 'Тесіктің орны',
+  'hole-position-unverified': 'Тесік орны тексерілмеді',
 }
 
 const show = (v: unknown): string => (v === undefined ? '—' : typeof v === 'string' ? v : JSON.stringify(v))
@@ -480,9 +494,9 @@ export function basisAuditMarkdown(report: BasisAuditReport, limitPerCategory = 
     '',
     '## Қорытынды',
     '',
-    '| Сәйкес | Айырма | Жоқ | Артық | Жіберілмеген (крепеж таңдалмаған) | Өткізілген (скрипт салмайды) |',
+    '| Сәйкес | Айырма | Жоқ | Артық | Орны тексерілмеген | Жіберілмеген (крепеж таңдалмаған) | Өткізілген (скрипт салмайды) |',
     '|---:|---:|---:|---:|---:|---:|',
-    `| ${c.ok} | ${c.mismatch} | ${c.missing} | ${c.extra} | ${c.notSent} | ${c.skipped} |`,
+    `| ${c.ok} | ${c.mismatch} | ${c.missing} | ${c.extra} | ${c.positionUnverified} | ${c.notSent} | ${c.skipped} |`,
     '',
     report.holesAvailable
       ? `Тесіктер Базистің өзінен оқылды. Орны табылған кеңістік: ${Object.keys(report.holeFrames).length ? Object.entries(report.holeFrames).map(([k, v]) => `${k} (${v})`).join(', ') : 'табылмады (тесікте вектор өрісі жоқ не сәйкес келмеді)'}.`

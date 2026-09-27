@@ -102,6 +102,31 @@ describe('таза audit', () => {
       rmSync(dir, { recursive: true, force: true })
     }
   }, 20_000)
+
+  it('координатасыз тесік бөлек саналады және CLI толық audit деп аяқталмайды', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'bazis-audit-position-'))
+    try {
+      const json = cleanAudit()
+      const holes = json.holes.perPanel.flatMap((panel) => panel.holes)
+      expect(holes.length).toBeGreaterThan(1)
+      holes[0]!.props = {}
+      const report = analyzeBasisAudit(parseBasisAudit(json))
+      expect(report.problems.filter((p) => p.category === 'hole-position-unverified')).toHaveLength(1)
+      expect(report.counts.positionUnverified).toBe(1)
+      expect(report.counts.ok).toBeLessThan(report.scriptSummary!.ok!)
+      expect(report.holeFrames['world:Position']).toBeGreaterThan(0)
+      expect(basisAuditMarkdown(report)).toContain('Тесік орны тексерілмеді')
+      const file = join(dir, 'no-position.json')
+      writeFileSync(file, JSON.stringify(json))
+      const result = spawnSync('node_modules/.bin/tsx', ['src/cli/bazisAudit.ts', file, '--out', join(dir, 'report.md')], {
+        cwd: process.cwd(), encoding: 'utf8',
+      })
+      expect(result.status).toBe(3)
+      expect(result.stdout).toContain('толық емес')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }, 20_000)
 })
 
 describe('енгізілген айырмалар — әрқайсысы өз түрімен және себебімен', () => {

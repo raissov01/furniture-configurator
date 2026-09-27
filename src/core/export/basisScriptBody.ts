@@ -695,7 +695,7 @@ function near(a, b) {
 }
 
 function compare(audit) {
-  var c = { tolerance: TOL, panels: [], fasteners: [], holes: [], summary: { ok: 0, mismatch: 0, missing: 0, extra: 0, skipped: 0, notSent: 0 } };
+  var c = { tolerance: TOL, panels: [], fasteners: [], holes: [], summary: { ok: 0, mismatch: 0, missing: 0, extra: 0, skipped: 0, notSent: 0, positionUnverified: 0 } };
   for (var i = 0; i < audit.panels.length; i++) {
     c.panels.push(comparePanel(audit.panels[i], c.summary));
   }
@@ -884,10 +884,14 @@ function compareHoles(audit, c) {
       if (mm.frame === null && mm.hasVectors) {
         problem(pr, 'MISMATCH', where, 'position', eh.point, mm.nearest);
       }
-      c.holes.push({ panel: pi, drill: eh.drill, fastener: fi, actual: mm.index, frame: mm.frame, status: pr.length ? 'MISMATCH' : 'OK', problems: pr });
+      var positionUnverified = mm.frame === null && !mm.hasVectors;
+      if (positionUnverified) {
+        c.summary.positionUnverified++;
+      }
+      c.holes.push({ panel: pi, drill: eh.drill, fastener: fi, actual: mm.index, frame: mm.frame, status: pr.length ? 'MISMATCH' : positionUnverified ? 'POSITION_UNVERIFIED' : 'OK', problems: pr, where: where });
       if (pr.length) {
         c.summary.mismatch++;
-      } else {
+      } else if (!positionUnverified) {
         c.summary.ok++;
       }
     }
@@ -908,11 +912,12 @@ function matchHole(eh, local, actual, used, positionOnly) {
     }
     var a = actual[i];
     var frame = null;
+    var hasVectors = false;
     var nearestD = 1e9;
     for (var key in a.props) {
       var v = a.props[key];
       if (v && v.length === 3 && typeof v[0] === 'number') {
-        best.hasVectors = true;
+        hasVectors = true;
         var dw = dist(v, eh.point);
         var dl = local ? dist(v, local) : 1e9;
         if (dw <= TOL) {
@@ -934,6 +939,7 @@ function matchHole(eh, local, actual, used, positionOnly) {
       best.score = score;
       best.index = i;
       best.frame = frame;
+      best.hasVectors = hasVectors;
       best.nearest = nearestD < 1e9 ? Math.round(nearestD * 1000) / 1000 : null;
     }
   }
@@ -946,7 +952,7 @@ function auditSummaryText(audit) {
     return MSG.auditSummary + ': ' + MSG.auditFailed;
   }
   var s = c.summary;
-  var lines = [MSG.auditSummary + ': ' + s.ok + ' ' + MSG.ok + ', ' + s.mismatch + ' ' + MSG.mismatch + ', ' + s.missing + ' ' + MSG.missingItems + ', ' + s.extra + ' ' + MSG.extra];
+  var lines = [MSG.auditSummary + ': ' + s.ok + ' ' + MSG.ok + ', ' + s.mismatch + ' ' + MSG.mismatch + ', ' + s.missing + ' ' + MSG.missingItems + ', ' + s.extra + ' ' + MSG.extra + ', POSITION_UNVERIFIED: ' + s.positionUnverified];
   var probs = firstProblems(c, 20);
   for (var i = 0; i < probs.length; i++) {
     lines.push('  ' + probs[i]);
@@ -962,6 +968,9 @@ function firstProblems(c, limit) {
       var r = groups[g][i];
       if (r.status === 'MISSING' || r.status === 'EXTRA') {
         out.push(r.status + ' ' + (r.where || ('#' + r.index)));
+      }
+      if (r.status === 'POSITION_UNVERIFIED') {
+        out.push('POSITION_UNVERIFIED ' + r.where + ': hole coordinates not available');
       }
       var pr = r.problems || [];
       for (var k = 0; k < pr.length && out.length < limit; k++) {
