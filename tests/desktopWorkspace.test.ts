@@ -27,6 +27,8 @@ describe('classic desktop workspace', () => {
     expect(html).toContain('data-workspace-style="classic"')
     expect(html).toContain('data-testid="classic-toolbar"')
     expect(html).toContain('data-testid="classic-tool-save"')
+    // The lesson target must survive toolbar command deduplication.
+    expect(html.match(/data-testid="classic-tool-quote"/g)).toHaveLength(1)
     expect(html).toContain('data-testid="classic-tool-structure"')
     expect(html).toContain('data-testid="classic-tool-walk"')
     expect(html).toContain('data-testid="classic-tool-open-all"')

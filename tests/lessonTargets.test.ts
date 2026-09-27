@@ -33,4 +33,9 @@ describe('lesson targets', () => {
     const firstQuote = source.split('\n').find((line) => line.includes('classicShopTools.quote.icon') && line.includes('classicShopTools.quote.label'))
     expect(firstQuote).toContain("id: 'quote'")
   })
+
+  it('routes the quote lesson to the dedicated toolbar control', () => {
+    const quote = LESSONS.find((lesson) => lesson.id === 'quote')!
+    expect(lessonStepFor(quote, true, false)?.selector).toBe('[data-testid="classic-tool-quote"]')
+  })
 })

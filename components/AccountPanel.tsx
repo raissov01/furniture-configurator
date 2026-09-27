@@ -473,7 +473,7 @@ export function AccountPanel() {
       const parsed = parseProjectV4(data.project)
       loadProject(parsed)
       rememberCloud({ id, revision: data.revision! })
-      await bindCloudProject(id, exportProject())
+      await bindCloudProject(id, parsed)
       setCloudConflict(null)
       setError(null)
       setOpen(false)
