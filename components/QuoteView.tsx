@@ -21,6 +21,7 @@ import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
+import { visibleMaterials } from '@/lib/cutView'
 
 type Tab = 'nesting' | 'price'
 
@@ -75,6 +76,7 @@ export function QuoteView({
   const priceOverrides = useConfigurator((s) => s.priceOverrides)
   const editPriceOverrides = useConfigurator((s) => s.editPriceOverrides)
   const [tab, setTab] = useState<Tab>('nesting')
+  const [materialFilter, setMaterialFilter] = useState('all')
   const [customer, setCustomer] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const exportAllowed = childExportAllowed(propertiesOpen)
@@ -222,6 +224,14 @@ export function QuoteView({
           <p className="text-xs text-neutral-500">{tr('Нет деталей для раскроя.')}</p>
         ) : tab === 'nesting' ? (
           <div className="space-y-4">
+            <label className="block max-w-xs text-xs">
+              <span className="mb-1 block font-medium">{tr('Материал')} — {tr('Только видимые карты')}</span>
+              <select value={materialFilter} onChange={(event) => setMaterialFilter(event.target.value)}
+                className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-900">
+                <option value="all">{tr('Все материалы')}</option>
+                {nesting.byMaterial.map((item) => <option key={item.materialId} value={item.materialId}>{item.materialName}</option>)}
+              </select>
+            </label>
             {nesting.unplaced.length > 0 ? (
               <div className="rounded-md border border-red-300 bg-red-50 px-2.5 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
                 Не помещаются на лист: {nesting.unplaced.map((u) => `${u.label} (${u.reason})`).join('; ')}
@@ -239,7 +249,7 @@ export function QuoteView({
               ))}
             </div>
 
-            {nesting.byMaterial.map((m) => (
+            {visibleMaterials(nesting.byMaterial, materialFilter).map((m) => (
               <div key={m.materialId} className="space-y-2">
                 <h3 className="text-xs font-semibold">{m.materialName}</h3>
                 <div className="flex flex-wrap gap-3">

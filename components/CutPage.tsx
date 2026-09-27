@@ -34,6 +34,7 @@ import type {
 } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
+import { visibleMaterials } from '@/lib/cutView'
 
 /** Парақ сызбасының экрандағы ені, пиксель. */
 const SHEET_PX = 520
@@ -96,6 +97,7 @@ export function CutPage() {
   }, [hydrateShop, hydrateProject])
 
   const [showCuts, setShowCuts] = useState(true)
+  const [materialFilter, setMaterialFilter] = useState('all')
   const [busy, setBusy] = useState<string | null>(null)
   /** Экспорттың ескертуі (мыс. Базис қазақ әріптерін оқымайды). */
   const [notice, setNotice] = useState<string | null>(null)
@@ -337,6 +339,17 @@ export function CutPage() {
                 {tr('Настройки станка')}
               </h2>
 
+              <Field label={tr('Материал')} hint={tr('Только видимые карты')}>
+                <Select
+                  value={materialFilter}
+                  onChange={setMaterialFilter}
+                  options={[
+                    { value: 'all', label: tr('Все материалы') },
+                    ...nesting.byMaterial.map((item) => ({ value: item.materialId, label: item.materialName })),
+                  ]}
+                />
+              </Field>
+
               <Field label={tr('Пропил, мм')} hint={tr('толщина пилы')}>
                 <NumberInput
                   value={cutting.kerf}
@@ -375,7 +388,7 @@ export function CutPage() {
 
               <Totals stats={plan.stats} sheetCount={nesting.sheetCount} />
 
-              {plan.byMaterial.map((m) => {
+              {visibleMaterials(plan.byMaterial, materialFilter).map((m) => {
                 const material = nesting.byMaterial.find((x) => x.materialId === m.materialId)!
                 return (
                   <section key={m.materialId} className="space-y-2">

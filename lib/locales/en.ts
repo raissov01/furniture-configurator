@@ -10,6 +10,8 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Все материалы': 'All materials',
+  'Только видимые карты': 'Visible sheets only',
   'Текст': 'Text',
   'Добавить текст': 'Add text',
   '+ текст': '+ text',

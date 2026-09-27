@@ -11,6 +11,8 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Все материалы': 'Barcha materiallar',
+  'Только видимые карты': 'Faqat ko‘rsatiladigan xaritalar',
   'Текст': 'Matn',
   'Добавить текст': 'Matn qo‘shish',
   '+ текст': '+ matn',
