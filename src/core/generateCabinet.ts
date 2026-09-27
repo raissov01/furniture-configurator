@@ -2249,7 +2249,11 @@ function makeDrawers(input: {
 
   const clearance = system ? system.sideClearance : settings.drawerRunnerGap
   const boxWidth = Math.floor(openingWidth - 2 * clearance)
-  const available = shelfDepth - settings.drawerBackGap
+  // Фасад қалыңдығы мен артқы саңылаудың екеуі де ұзындықты шектейді (§4.8).
+  const available = Math.min(
+    shelfDepth - settings.drawerBackGap,
+    shelfDepth + settings.shelfSetback - frontMat.thickness,
+  )
   const lengths = system ?? metalBox
   const nominal = lengths ? nominalRunnerLength(lengths, available) : available
   if (nominal === null) {
