@@ -11,7 +11,7 @@ import type { ReactNode } from 'react'
 
 export function Dimension({ value, label }: { value: string; label?: string }) {
   return (
-    <div className="dimline py-6 text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--font-mono)' }}>
+    <div className="dimline py-6 text-[11px] tracking-[0.18em]" style={{ fontFamily: 'var(--font-mono)' }}>
       <span>{label ?? ''}</span>
       <span className="dimline-track" />
       <span>{value}</span>

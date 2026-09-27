@@ -11,7 +11,7 @@
  * жібереді (немесе сол сілтемемен клиентке көрсетеді).
  */
 
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 import { ClassicIcon } from '@/components/ClassicIcon'
 import { cloudEnabled } from '@/lib/cloud'
@@ -46,7 +46,7 @@ export function ArButton() {
       // ⚠ СІЛТЕМЕ ЕНДІ AR БЕТІНЕ (`/ar/{id}`), шикі GLB-ге ЕМЕС: телефон бетті
       // ашқанда model-viewer жиһазды КАМЕРАМЕН бөлмеге қояды (Android). Бұрын
       // шикі .glb ашылып, тек 3D көрінетін.
-      const pageUrl = `${window.location.origin}/ar/${data.id}`
+      const pageUrl = `${window.location.origin}/ar/${data.id}?lang=${getLang()}`
       if (isAndroid()) {
         // Android-та Scene Viewer-ді ТІКЕЛЕЙ шақырамыз (бір рет басу — AR).
         setAr({ busy: false, link: pageUrl })

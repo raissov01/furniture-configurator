@@ -19,7 +19,8 @@
  * Ол файл қазір бірнеше агенттің қолында (тапсырмадағы ескерту).
  */
 import * as React from 'react'
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
+import { countLabel } from '@/lib/countLabel'
 import { cn } from '@/lib/cn'
 import { useConfigurator } from '@/store/configurator'
 import { findTemplate, templateToCabinet } from '@/src/core/index'
@@ -182,11 +183,11 @@ export function LibraryPanel() {
             type="button"
             onClick={() => changeTab(t.id)}
             className={cn(
-              'flex-1 border-r border-neutral-800 px-1 py-1.5 text-[10px] uppercase tracking-wider last:border-r-0',
+              'flex-1 border-r border-neutral-800 px-1 py-1.5 text-[10px] last:border-r-0',
               tab === t.id ? 'bg-neutral-900 text-neutral-100' : 'text-neutral-500 hover:text-neutral-300',
             )}
           >
-            {t.label}
+            {tr(t.label)}
           </button>
         ))}
       </div>
@@ -226,7 +227,7 @@ export function LibraryPanel() {
             setSearch(e.target.value)
             setPage(0)
           }}
-          placeholder="Іздеу…"
+          placeholder={tr('Поиск…')}
           className="w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[11px] text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-500"
         />
       </div>
@@ -283,7 +284,7 @@ export function LibraryPanel() {
             </div>)}
           </div>
         ) : pageItems.length === 0 ? (
-          <p className="p-2 text-[11px] text-neutral-500">Табылмады.</p>
+          <p className="p-2 text-[11px] text-neutral-500">{tr('Ничего не найдено')}</p>
         ) : tab === 'materialy' ? (
           <div className="grid grid-cols-2 gap-1.5">
             {(pageItems as Material[]).map((m) => (
@@ -312,7 +313,7 @@ export function LibraryPanel() {
             disabled={clampedPage === 0}
             className="border border-neutral-800 px-1.5 py-0.5 disabled:opacity-30"
           >
-            ← Алдыңғы
+            ← {tr('Назад')}
           </button>
           <span className="tabular-nums">{clampedPage + 1} / {totalPages} ({activeItems.length})</span>
           <button
@@ -321,14 +322,14 @@ export function LibraryPanel() {
             disabled={clampedPage >= totalPages - 1}
             className="border border-neutral-800 px-1.5 py-0.5 disabled:opacity-30"
           >
-            Келесі →
+            {tr('Далее')} →
           </button>
         </div>
       ) : null}
 
       {lastAdded ? (
         <div className="shrink-0 border-t border-neutral-800 px-1.5 py-1 text-[10px] text-neutral-400">
-          Қосылды: <span className="text-neutral-200">{lastAdded}</span>
+          {tr('Добавлено')}: <span className="text-neutral-200">{lastAdded}</span>
         </div>
       ) : null}
       </>}
@@ -346,9 +347,9 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
         : tr('Тип корпуса не определён из названия') : null
   const dims: string[] = []
   if (item.parsed.widthMm !== undefined) dims.push(`W${item.parsed.widthMm}`)
-  if (item.parsed.doorCount !== undefined) dims.push(`${item.parsed.doorCount}дв`)
-  if (item.parsed.drawerCount !== undefined) dims.push(`${item.parsed.drawerCount}ящ`)
-  if (item.parsed.hasSink) dims.push('мойка')
+  if (item.parsed.doorCount !== undefined) dims.push(countLabel(item.parsed.doorCount, 'Дверь', getLang()))
+  if (item.parsed.drawerCount !== undefined) dims.push(countLabel(item.parsed.drawerCount, 'Ящик', getLang()))
+  if (item.parsed.hasSink) dims.push(tr('Раковина'))
 
   return (
     <button
@@ -381,11 +382,11 @@ function MaterialTile({ material }: { material: Material }) {
       {/* Түс/декор дерегі БАЗИСТЕ импортталмаған (basisCatalog.ts §комментарий) —
           сондықтан ойдан түс салмай, бейтарап тор + қалыңдық белгісі. */}
       <div className="flex h-16 w-full items-center justify-center border border-neutral-800 bg-neutral-950">
-        <span className="text-[10px] text-neutral-500">{material.thickness} мм</span>
+        <span className="text-[10px] text-neutral-500">{material.thickness} {tr('мм')}</span>
       </div>
       <div className="w-full truncate text-[10px] text-neutral-300">{material.name}</div>
       <div className="w-full truncate text-[9px] tabular-nums text-neutral-500">
-        {material.pricePerSheet > 0 ? `${(material.pricePerSheet / 100).toLocaleString('ru-RU')} ₸/лист` : 'баға белгісіз'}
+        {material.pricePerSheet > 0 ? `${(material.pricePerSheet / 100).toLocaleString('ru-RU')} ₸/${tr('Лист').toLowerCase()}` : tr('Цена неизвестна')}
       </div>
     </div>
   )

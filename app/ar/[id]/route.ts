@@ -12,22 +12,25 @@
 
 import { NextResponse } from 'next/server'
 import { FRONT_CAMERA_ORBIT } from '@/lib/arPreview'
+import { arPageCopy, arPageLang } from '@/lib/arPageCopy'
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id } = await params
+  const lang = arPageLang(new URL(request.url).searchParams.get('lang'))
+  const copy = arPageCopy(lang)
   if (!/^[0-9a-f-]{36}$/i.test(id)) {
-    return new NextResponse('Не найдено', { status: 404 })
+    return new NextResponse(copy.notFound, { status: 404 })
   }
   const glb = `/api/ar/${id}`
   const html = `<!doctype html>
-<html lang="ru">
+<html lang="${lang}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <title>Мебель в вашей комнате — AR · AisMebel</title>
+  <title>${copy.title}</title>
   <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
   <style>
     html,body{margin:0;height:100%;background:#0f1216;font-family:system-ui,sans-serif;color:#e8eaed}
@@ -40,10 +43,10 @@ export async function GET(
   </style>
 </head>
 <body>
-  <div class="hint">Наведите камеру на пол и поставьте мебель в комнате</div>
+  <div class="hint">${copy.hint}</div>
   <model-viewer
     src="${glb}"
-    alt="Мебель"
+    alt="${copy.alt}"
     ar
     ar-modes="scene-viewer webxr quick-look"
     ar-placement="floor"
@@ -55,8 +58,8 @@ export async function GET(
     exposure="1.1"
     environment-image="neutral"
     poster-color="#0f1216">
-    <button slot="ar-button" class="arbtn">Смотреть в комнате</button>
-    <div class="fail" slot="error">Не удалось загрузить модель</div>
+    <button slot="ar-button" class="arbtn">${copy.action}</button>
+    <div class="fail" slot="error">${copy.error}</div>
   </model-viewer>
 </body>
 </html>`

@@ -531,7 +531,7 @@ export function AccountPanel() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-sm font-semibold">{account ? account.shopName : 'Вход в аккаунт'}</h2>
+          <h2 className="text-sm font-semibold">{account ? tr(account.shopName) : tr('Вход в аккаунт')}</h2>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)} disabled={busy}>{tr('Закрыть')}</Button>
           </div>
@@ -815,7 +815,7 @@ export function AccountPanel() {
                   forgetCloud()
                 })()}
               >
-                Выйти
+                {tr('Выйти')}
               </Button>
             </div>
           </div>
@@ -845,7 +845,7 @@ export function AccountPanel() {
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
               {formErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.email)}</span> : null}
             </Field>
-            <Field label={tr('Пароль')} hint={mode === 'register' ? 'от 8 символов' : undefined}>
+            <Field label={tr('Пароль')} hint={mode === 'register' ? tr('от 8 символов') : undefined}>
               <input className={`${input} ${formErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
                 aria-invalid={Boolean(formErrors.password)}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
@@ -856,12 +856,11 @@ export function AccountPanel() {
             </Field>
 
             <Button onClick={() => void submit()} disabled={busy || !formReady} active>
-              {mode === 'login' ? 'Войти' : 'Создать аккаунт'}
+              {mode === 'login' ? tr('Войти') : tr('Создать аккаунт')}
             </Button>
 
             <p className="text-[11px] leading-snug text-neutral-400">
-              Без аккаунта конфигуратор работает полностью — данные лежат в этом браузере.
-              Аккаунт нужен, чтобы профиль цеха и проекты были доступны с другого компьютера.
+              {tr('Без аккаунта конфигуратор работает полностью — данные лежат в этом браузере. Аккаунт нужен, чтобы профиль цеха и проекты были доступны с другого компьютера.')}
             </p>
           </div>
         )}

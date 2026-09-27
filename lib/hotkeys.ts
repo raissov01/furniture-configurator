@@ -59,8 +59,8 @@ export const HOTKEYS: Hotkey[] = [
   { keys: 'D', match: ['d'], description: 'Размеры на сцене', action: { kind: 'dimensions' } },
   { keys: '?', match: ['?', '/'], description: 'Эта справка', action: { kind: 'help' } },
   { keys: 'Ctrl+Z', match: ['z'], ctrl: true, description: 'Отменить', action: { kind: 'undo' } },
-  { keys: 'Ctrl+Shift+Z', match: ['z'], ctrl: true, shift: true, description: 'Вернуть', action: { kind: 'redo' } },
-  { keys: 'Ctrl+Y', match: ['y'], ctrl: true, shift: false, description: 'Вернуть', action: { kind: 'redo' } },
+  { keys: 'Ctrl+Shift+Z', match: ['z'], ctrl: true, shift: true, description: 'Повторить', action: { kind: 'redo' } },
+  { keys: 'Ctrl+Y', match: ['y'], ctrl: true, shift: false, description: 'Повторить', action: { kind: 'redo' } },
   { keys: 'Delete', match: ['delete'], description: 'Удалить выбранный объект', action: { kind: 'delete' } },
 ]
 

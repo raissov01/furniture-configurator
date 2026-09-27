@@ -116,7 +116,7 @@ function LandingContent() {
           </div>
         </Section>
 
-        <Section><Dimension label={tr('Лист')} value={`${demoSheet.sheet.sheetWidth} × ${demoSheet.sheet.sheetHeight} мм`} /></Section>
+        <Section><Dimension label={tr('Лист')} value={`${demoSheet.sheet.sheetHeight} (H) × ${demoSheet.sheet.sheetWidth} (W) ${tr('мм')}`} /></Section>
 
         {/* ── Артефакты ────────────────────────────────────────────────────── */}
         <Section id="artifacts" className="py-8 sm:py-14">
@@ -208,7 +208,7 @@ function LandingContent() {
           </div>
         </Section>
 
-        <Section><Dimension label={tr('Пропил')} value="4 мм" /></Section>
+        <Section><Dimension label={tr('Пропил')} value={`4 ${tr('мм')}`} /></Section>
 
         {/* ── Как это работает ─────────────────────────────────────────────── */}
         <Section id="how" className="py-8 sm:py-14">
@@ -223,7 +223,7 @@ function LandingContent() {
           </div>
         </Section>
 
-        <Section><Dimension label={tr('Кромка')} value="2.0 / 0.4 мм" /></Section>
+        <Section><Dimension label={tr('Кромка')} value={`2.0 / 0.4 ${tr('мм')}`} /></Section>
 
         {/* ── Правила цеха ─────────────────────────────────────────────────── */}
         <Section id="rules" className="py-8 sm:py-14">
