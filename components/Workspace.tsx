@@ -55,6 +55,7 @@ import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { TreeDock } from '@/components/panels/TreeDock'
+import { nextDockRequest, type DockRequest } from '@/lib/treeDockUi'
 import { WorkspaceDock } from '@/components/dock/WorkspaceDock'
 import { ClassicStructureWindow } from '@/components/ClassicStructureWindow'
 import { ClassicIcon, type ClassicIconName } from '@/components/ClassicIcon'
@@ -294,6 +295,11 @@ export function Workspace() {
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
   const [classic, setClassic] = useState(true)
   const [structureOpen, setStructureOpen] = useState(false)
+  const [dockRequest, setDockRequest] = useState<DockRequest>({ tab: 'structure', revision: 0 })
+  const openDockTab = (tab: DockRequest['tab']) => {
+    setDockRequest((current) => nextDockRequest(current, tab))
+    if (classic && window.matchMedia('(min-width: 1024px)').matches) setStructureOpen(true)
+  }
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
   const [draftState, setDraftState] = useState<{ id: string; errors: Record<string, boolean> }>({ id: activeId, errors: {} })
   const draftInvalid = draftState.id === activeId && hasDraftErrors(draftState.errors)
@@ -600,7 +606,8 @@ export function Workspace() {
       { icon: 'view', label: tr('Перспектива'), action: () => { setCameraPreset('three-quarter'); setProjection('perspective') } },
     ],
     [
-      { icon: 'structure', label: tr('Структура'), action: () => setStructureOpen(true), active: structureOpen, id: 'structure' },
+      { icon: 'structure', label: tr('Структура'), action: () => openDockTab('structure'), active: structureOpen, id: 'structure' },
+      { icon: 'library', label: tr('Библиотека'), action: () => openDockTab('library'), id: 'library' },
       { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
@@ -734,6 +741,7 @@ export function Workspace() {
             <MenuItem onClick={requestReset}>{tr('Сброс')}</MenuItem>
           </Menu>
           <Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
+          <Button onClick={() => openDockTab('library')}>{tr('Библиотека')}</Button>
           {/* Раскрой — БӨЛЕК бет (цех станогы қасында ашады), сондықтан тікелей. */}
           <Link
             href="/cut"
@@ -1074,7 +1082,8 @@ export function Workspace() {
             <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} onHover={setHoveredToolLabel} />
             <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" onHover={setHoveredToolLabel} />
             <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" onHover={setHoveredToolLabel} />
+            <ClassicTool icon="structure" label={tr('Структура')} action={() => openDockTab('structure')} id="structure-side" onHover={setHoveredToolLabel} />
+            <ClassicTool icon="library" label={tr('Библиотека')} action={() => openDockTab('library')} id="library-side" onHover={setHoveredToolLabel} />
           </> : <>
           <Button
             size="sm"
@@ -1091,6 +1100,7 @@ export function Workspace() {
         </div>
         <div className="flex min-h-0 flex-col">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
+        {!walk && <div data-testid="mobile-tree-dock" className="relative z-20 shrink-0 px-2 pt-1 lg:hidden"><TreeDock request={dockRequest} /></div>}
         <main className="relative isolate h-[28dvh] min-h-[240px] max-h-[28dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
@@ -1099,10 +1109,9 @@ export function Workspace() {
           </div>
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
           {walk ? null : classic ? <>
-            <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:hidden"><TreeDock /></div>
-            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)}
+            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} dockRequest={dockRequest}
               canOpenProperties={Boolean(activeBoard || activeSolid || cabinet)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
-          </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:w-72"><TreeDock /></div>}
+          </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 hidden w-72 lg:block"><TreeDock request={dockRequest} /></div>}
           {/*
             КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
             §2): PRO100-де олар сахнаның үстінде қалқымайды, тар белгіше
