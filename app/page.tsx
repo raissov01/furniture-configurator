@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * Лендинг. Бет «сызба парағы» болып оқылады: бөлімдерді өлшем сызығы бөледі,
  * сандар мен белгілер моноқаріппен жүреді.
@@ -16,35 +18,35 @@ import { SiteFooter } from '@/components/site/SiteFooter'
 import { SheetFigure } from '@/components/site/SheetFigure'
 import { Cta, Dimension, Eyebrow, H2, Section, Titled } from '@/components/site/parts'
 
-const STEPS = [
+const STEPS = () => [
   {
     title: tr('Опишите задачу или возьмите шаблон'),
-    text: 'Пишете словами: «прихожая 1800, шкаф под верхнюю одежду». Получаете три готовых варианта корпуса. Или берёте шаблон из библиотеки и меняете размеры.',
+    text: tr('Пишете словами: «прихожая 1800, шкаф под верхнюю одежду». Получаете три готовых варианта корпуса. Или берёте шаблон из библиотеки и меняете размеры.'),
   },
   {
     title: tr('Правите корпус'),
-    text: 'Секции, полки, фасады, задняя стенка внакладку или в паз. Модель и деталировка пересчитываются на каждое изменение.',
+    text: tr('Секции, полки, фасады, задняя стенка внакладку или в паз. Модель и деталировка пересчитываются на каждое изменение.'),
   },
   {
     title: tr('Ставите корпуса в комнату'),
-    text: 'Задаёте стены, выбираете, на какой стене что стоит. Пересечения и корпуса, которые не влезли, подсвечиваются сразу.',
+    text: tr('Задаёте стены, выбираете, на какой стене что стоит. Пересечения и корпуса, которые не влезли, подсвечиваются сразу.'),
   },
   {
     title: tr('Забираете раскрой и смету'),
-    text: 'Карта раскроя на печать, DXF по листу на станок, коммерческое предложение клиенту. Всё по одной кнопке.',
+    text: tr('Карта раскроя на печать, DXF по листу на станок, коммерческое предложение клиенту. Всё по одной кнопке.'),
   },
 ]
 
-const RULES = [
+const RULES = () => [
   ['Пропил', '4 мм', 'между каждой деталью на листе'],
   ['Подрезка листа', '10 мм', 'с каждой стороны — кромка листа в дело не идёт'],
   ['Кромка 0.4 мм', 'не вычитается', 'станок не держит эту точность, клей съедает разницу'],
   ['Система присадки', '32 мм', 'первое отверстие полкодержателя — ваше значение'],
   ['Зазор фасадов', 'ваш', 'по умолчанию 3 мм, меняется в профиле'],
   ['Предел прогиба полки', 'пусто', 'мы не знаем ваш материал — пока не заполните, предупреждения нет'],
-]
+] as const
 
-const FAQ = [
+const FAQ = () => [
   {
     q: 'Мои цены и материалы будут у вас?',
     a: 'Они в вашем профиле, и цех заполняет их сам. В коде нет ни одной цены и ни одного зазора: пока цены не заданы, коммерческое предложение вообще не выпускается — выдуманная цена уходит клиенту.',
@@ -65,6 +67,9 @@ const FAQ = [
 
 export default function Page() {
   const ldsp = demoNesting.byMaterial[0]!
+  const steps = STEPS()
+  const rules = RULES().map(([name, value, note]) => [tr(name), tr(value), tr(note)])
+  const faq = FAQ().map((item) => ({ q: tr(item.q), a: tr(item.a) }))
 
   return (
     <div className="site min-h-full">
@@ -80,19 +85,17 @@ export default function Page() {
                 className="text-[2.6rem] leading-[0.98] sm:text-6xl lg:text-[4.2rem]"
                 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.015em' }}
               >
-                Корпус, раскрой и цена — из одной модели
+                {tr('Корпус, раскрой и цена — из одной модели')}
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                Задаёте габарит — получаете деталировку с колонками «готовый» и «рез»,
-                карту раскроя на печать и коммерческое предложение. На ваших материалах,
-                по вашим ценам и вашим правилам сборки.
+                {tr('Задаёте габарит — получаете деталировку с колонками «готовый» и «рез», карту раскроя на печать и коммерческое предложение. На ваших материалах, по вашим ценам и вашим правилам сборки.')}
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Cta href="/configurator">{tr('Открыть конфигуратор')}</Cta>
                 <Cta href="#artifacts" tone="ghost">{tr('Посмотреть, что забирает цех')}</Cta>
               </div>
               <p className="mt-4 text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>
-                Без установки. Считает в браузере.
+                {tr('Без установки. Считает в браузере.')}
               </p>
             </div>
 
@@ -103,8 +106,7 @@ export default function Page() {
                 waste={demoSheet.waste}
               />
               <p className="mt-2 text-[11px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                Это не иллюстрация. Лист собран тем же движком, что работает в конфигураторе:
-                гильотинный раскрой, пропил 4 мм, текстура не поворачивается.
+                {tr('Это не иллюстрация. Лист собран тем же движком, что работает в конфигураторе: гильотинный раскрой, пропил 4 мм, текстура не поворачивается.')}
               </p>
             </div>
           </div>
@@ -117,8 +119,8 @@ export default function Page() {
           <Eyebrow>{tr('01 — на выходе')}</Eyebrow>
           <H2>{tr('Три документа, которые цех правда отдаёт')}</H2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            Не «3D-визуализация», а бумаги, по которым режут, сверлят и выставляют счёт.
-            Ниже — настоящий вывод по шкафу из {demoRows.reduce((s, r) => s + r.qty, 0)} деталей.
+            {tr('Документы для раскроя, сверления и расчёта цены. Ниже — результат для шкафа:')}{' '}
+            {demoRows.reduce((s, r) => s + r.qty, 0)} {tr('деталей')}.
           </p>
 
           <div className="mt-8 grid items-start gap-6 lg:grid-cols-2">
@@ -127,7 +129,7 @@ export default function Page() {
                 className="border-b px-4 py-2 text-[11px] uppercase tracking-[0.18em]"
                 style={{ borderColor: 'var(--rule)', fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}
               >
-                Деталировка
+                {tr('Деталировка')}
               </figcaption>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs" style={{ fontFamily: 'var(--font-mono)' }}>
@@ -142,7 +144,7 @@ export default function Page() {
                   <tbody>
                     {demoRows.map((r) => (
                       <tr key={`${r.name}-${r.finishedLength}-${r.finishedWidth}`} className="border-t" style={{ borderColor: 'var(--rule)' }}>
-                        <td className="px-4 py-1.5" style={{ fontFamily: 'var(--font-body)' }}>{r.name}</td>
+                        <td className="px-4 py-1.5" style={{ fontFamily: 'var(--font-body)' }}>{tr(r.name)}</td>
                         <td className="px-2 py-1.5 text-right">{r.qty}</td>
                         <td className="px-2 py-1.5 text-right" style={{ color: 'var(--blueprint)' }}>{r.finishedLength}</td>
                         <td className="px-2 py-1.5 text-right" style={{ color: 'var(--blueprint)' }}>{r.finishedWidth}</td>
@@ -154,8 +156,7 @@ export default function Page() {
                 </table>
               </div>
               <p className="border-t px-4 py-2 text-[11px]" style={{ borderColor: 'var(--rule)', color: 'var(--ink-soft)' }}>
-                Клиент видит готовый размер, цех — рез. Разницу даёт кромка, и она посчитана,
-                а не «примерно».
+                {tr('Клиент видит готовый размер, цех — рез. Разница учитывает толщину кромки.')}
               </p>
             </figure>
 
@@ -165,7 +166,7 @@ export default function Page() {
                   className="mb-3 text-[11px] uppercase tracking-[0.18em]"
                   style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}
                 >
-                  Смета
+                  {tr('Смета')}
                 </figcaption>
                 <dl className="space-y-1.5 text-sm">
                   {[
@@ -175,7 +176,7 @@ export default function Page() {
                     ['Услуги цеха', demoPrice.services.reduce((s, l) => s + l.cost, 0)],
                   ].map(([label, cost]) => (
                     <div key={String(label)} className="flex items-baseline justify-between gap-4">
-                      <dt style={{ color: 'var(--ink-soft)' }}>{label}</dt>
+                      <dt style={{ color: 'var(--ink-soft)' }}>{tr(String(label))}</dt>
                       <dd style={{ fontFamily: 'var(--font-mono)' }}>{formatTenge(Number(cost))}</dd>
                     </div>
                   ))}
@@ -188,8 +189,7 @@ export default function Page() {
                   </div>
                 </dl>
                 <p className="mt-3 text-[11px]" style={{ color: 'var(--ink-soft)' }}>
-                  Цены здесь — пример. Материал считается по числу листов, а не по площади:
-                  цех покупает целый лист, а остаток оплачивает сам.
+                  {tr('Цены здесь — пример. Материал считается по числу листов: цех покупает целый лист и оплачивает остаток.')}
                 </p>
               </figure>
 
@@ -198,7 +198,7 @@ export default function Page() {
                   className="mb-3 text-[11px] uppercase tracking-[0.18em]"
                   style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}
                 >
-                  Файлы на станок
+                  {tr('Файлы на станок')}
                 </figcaption>
                 <ul className="space-y-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
                   <li><b style={{ color: 'var(--ink)' }}>{tr('PDF карты раскроя')}</b> {tr('— по листу на страницу, с подписями деталей.')}</li>
@@ -218,8 +218,8 @@ export default function Page() {
           <Eyebrow>{tr('02 — порядок работы')}</Eyebrow>
           <H2>{tr('Четыре шага от разговора до реза')}</H2>
           <div className="mt-8 grid gap-8 sm:grid-cols-2">
-            {STEPS.map((s, i) => (
-              <Titled key={s.title} mark={`Шаг ${i + 1}`} title={s.title}>
+            {steps.map((s, i) => (
+              <Titled key={s.title} mark={`${tr('Шаг')} ${i + 1}`} title={s.title}>
                 {s.text}
               </Titled>
             ))}
@@ -233,15 +233,13 @@ export default function Page() {
           <Eyebrow>{tr('03 — почему это не «ещё один конструктор»')}</Eyebrow>
           <H2>{tr('Мы не выдумываем ваши числа')}</H2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            Каждый цех собирает по-своему. Если зашить одно значение в код, у остальных
-            тихо получится мебель, которая не собирается. Поэтому все константы —
-            в профиле цеха, а не в программе.
+            {tr('У каждого цеха свои правила сборки. Технологические значения задаются в профиле цеха.')}
           </p>
 
           <div className="sheet mt-8 overflow-x-auto">
             <table className="w-full text-sm">
               <tbody>
-                {RULES.map(([name, value, note]) => (
+                {rules.map(([name, value, note]) => (
                   <tr key={name} className="border-b last:border-b-0" style={{ borderColor: 'var(--rule)' }}>
                     <td className="w-52 px-4 py-3" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{name}</td>
                     <td className="w-40 px-4 py-3" style={{ fontFamily: 'var(--font-mono)', color: 'var(--blueprint)' }}>{value}</td>
@@ -253,7 +251,7 @@ export default function Page() {
           </div>
         </Section>
 
-        <Section><Dimension label={tr('Раскрой')} value={`${demoNesting.sheetCount} листа · отход ${ldsp.wastePercent.toFixed(1)}%`} /></Section>
+        <Section><Dimension label={tr('Раскрой')} value={`${demoNesting.sheetCount} ${tr('листа')} · ${tr('отход')} ${ldsp.wastePercent.toFixed(1)}%`} /></Section>
 
         {/* ── Тарифы ───────────────────────────────────────────────────────── */}
         <Section id="pricing" className="py-8 sm:py-14">
@@ -264,18 +262,18 @@ export default function Page() {
               <div
                 key={t.id}
                 className="sheet flex flex-col p-5"
-                style={t.highlighted ? { borderColor: 'var(--ink)', borderWidth: 2 } : undefined}
+                style={t.highlighted ? { borderColor: 'var(--ink)' } : undefined}
               >
-                <p className="text-xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{t.name}</p>
+                <p className="text-xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{tr(t.name)}</p>
                 <p className="mt-1 text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>
-                  {t.note}
+                  {tr(t.note)}
                 </p>
-                <p className="mt-4 text-2xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{t.price}</p>
+                <p className="mt-4 text-2xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{tr(t.price)}</p>
                 <ul className="mt-4 flex-1 space-y-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
                   {t.features.map((f) => (
                     <li key={f} className="flex gap-2">
                       <span style={{ color: 'var(--oak-deep)' }}>—</span>
-                      <span>{f}</span>
+                      <span>{tr(f)}</span>
                     </li>
                   ))}
                 </ul>
@@ -292,7 +290,7 @@ export default function Page() {
           <Eyebrow>{tr('05 — вопросы')}</Eyebrow>
           <H2>{tr('Что обычно спрашивают')}</H2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            {FAQ.map((item) => (
+            {faq.map((item) => (
               <div key={item.q}>
                 <h3 className="mb-1.5 text-base" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                   {item.q}
@@ -308,13 +306,13 @@ export default function Page() {
           <div className="sheet flex flex-col items-start gap-5 p-7 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-2xl sm:text-3xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>
-                Соберите свой шкаф прямо сейчас
+                {tr('Соберите свой шкаф прямо сейчас')}
               </p>
               <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>
-                Регистрация не нужна. Профиль цеха можно заполнить позже.
+                {tr('Регистрация не нужна. Профиль цеха можно заполнить позже.')}
               </p>
             </div>
-            <Cta href="/configurator">Открыть {SITE.name}</Cta>
+            <Cta href="/configurator">{tr('Открыть')} {SITE.name}</Cta>
           </div>
         </Section>
       </main>

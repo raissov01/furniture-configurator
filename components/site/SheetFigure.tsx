@@ -5,6 +5,7 @@
  */
 
 import type { NestedSheet } from '@/src/core/index'
+import { t as tr } from '@/lib/i18n'
 
 export function SheetFigure({
   sheet, materialName, waste, compact = false,
@@ -20,7 +21,7 @@ export function SheetFigure({
         viewBox={`-30 -30 ${sheet.sheetWidth + 60} ${sheet.sheetHeight + 60}`}
         className="w-full"
         role="img"
-        aria-label={`Карта раскроя: ${materialName}, лист ${sheet.index}`}
+        aria-label={`${tr('Карта раскроя')}: ${materialName}, ${tr('лист')} ${sheet.index}`}
       >
         <rect x={0} y={0} width={sheet.sheetWidth} height={sheet.sheetHeight}
           fill="none" stroke="var(--ink)" strokeWidth={6} />
@@ -46,7 +47,7 @@ export function SheetFigure({
                   fontSize={46} fill="#3f3108"
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
-                  {p.label}
+                  {tr(p.label)}
                 </text>
                 <text
                   x={p.x + p.width / 2} y={p.y + p.height / 2 + 34}
@@ -65,8 +66,8 @@ export function SheetFigure({
         className="mt-2 flex flex-wrap items-baseline justify-between gap-2 text-[11px]"
         style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}
       >
-        <span>{materialName} · лист {sheet.index} · {sheet.sheetWidth}×{sheet.sheetHeight}</span>
-        <span>деталей {sheet.parts.length} · отход {waste.toFixed(1)}%</span>
+        <span>{materialName} · {tr('лист')} {sheet.index} · {sheet.sheetWidth}×{sheet.sheetHeight}</span>
+        <span>{tr('деталей')} {sheet.parts.length} · {tr('отход')} {waste.toFixed(1)}%</span>
       </figcaption>
     </figure>
   )

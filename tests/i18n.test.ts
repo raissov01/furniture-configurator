@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { en } from '../lib/locales/en'
 import { kk } from '../lib/locales/kk'
 import { uz } from '../lib/locales/uz'
+import { TARIFFS } from '../lib/site'
 
 const dicts = { kk, uz, en }
 
@@ -63,6 +64,33 @@ describe('сөздіктер', () => {
     for (const [name, dict] of Object.entries(dicts)) {
       const missing = [...keys].filter((key) => dict[key] === undefined).sort()
       expect(missing, name).toEqual([])
+    }
+  })
+
+  it('F29: басты беттің мәтіні мен тарифтері үш тілде толық аударылады', () => {
+    const files = ['../app/page.tsx', '../components/site/SiteHeader.tsx',
+      '../components/site/SiteFooter.tsx', '../components/site/SheetFigure.tsx']
+    const keys = new Set<string>()
+    for (const file of files) {
+      const code = readFileSync(new URL(file, import.meta.url), 'utf8')
+      for (const match of code.matchAll(/\btr\('([^']+)'\)/g)) keys.add(match[1]!)
+      if (file === '../app/page.tsx') {
+        const rules = code.slice(code.indexOf('const RULES'), code.indexOf('const FAQ'))
+        for (const match of rules.matchAll(/'([^']+)'/g)) {
+          if (!/^\d+ мм$/.test(match[1]!)) keys.add(match[1]!)
+        }
+        const faq = code.slice(code.indexOf('const FAQ'), code.indexOf('export default'))
+        for (const match of faq.matchAll(/[qa]: '([^']+)'/g)) keys.add(match[1]!)
+      }
+      if (file.endsWith('SiteHeader.tsx')) {
+        for (const match of code.matchAll(/label: '([^']+)'/g)) keys.add(match[1]!)
+      }
+    }
+    for (const tariff of TARIFFS) {
+      for (const value of [tariff.name, tariff.price, tariff.note, ...tariff.features]) keys.add(value)
+    }
+    for (const [lang, dictionary] of Object.entries(dicts)) {
+      expect([...keys].filter((key) => dictionary[key] === undefined).sort(), lang).toEqual([])
     }
   })
 

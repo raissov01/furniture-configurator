@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
+import { t as tr } from '@/lib/i18n'
 
 /** Белгі — AisMebel логотипі (`public/brand/`, өзгертпейміз). */
 function Mark() {
@@ -35,7 +36,7 @@ export function SiteHeader() {
         <nav className="ml-4 hidden items-center gap-5 text-sm lg:flex" style={{ color: 'var(--ink-soft)' }}>
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className="transition hover:text-[color:var(--ink)]">
-              {l.label}
+              {tr(l.label)}
             </Link>
           ))}
         </nav>
@@ -45,7 +46,7 @@ export function SiteHeader() {
           className="ml-auto border px-4 py-2 text-sm transition"
           style={{ background: 'var(--ink)', color: 'var(--paper)', borderColor: 'var(--ink)' }}
         >
-          Открыть конфигуратор
+          {tr('Открыть конфигуратор')}
         </Link>
       </div>
     </header>
