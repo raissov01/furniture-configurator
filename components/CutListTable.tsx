@@ -12,6 +12,7 @@ import type { Catalog, CutListRow, Panel } from '@/src/core/index'
 import { cn } from '@/lib/cn'
 import { nextCutListSort, sortCutListRows } from '@/lib/cutListSort'
 import type { CutListSort } from '@/lib/cutListSort'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 
 const GROUP_STYLE: Record<string, string> = {
   'ГОТОВЫЙ · клиент': 'bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200',
@@ -75,7 +76,7 @@ export function CutListTable({
           <ul className="mt-1 list-disc pl-4">
             {fitWarnings.map((w) => (
               <li key={w.panelId}>
-                {w.label}: {w.message}
+                {panelDisplayLabel(w.label)}: {w.message}
               </li>
             ))}
           </ul>
@@ -137,7 +138,7 @@ export function CutListTable({
                       c.audience === 'shop' && c.group === 'РЕЗ · цех' && 'font-semibold text-amber-800 dark:text-amber-300',
                     )}
                   >
-                    {String(row[c.key])}
+                    {c.key === 'name' ? panelDisplayLabel(row.name) : String(row[c.key])}
                   </td>
                 ))}
               </tr>

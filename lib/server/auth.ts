@@ -12,14 +12,15 @@
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
 import { db } from './db'
 import type { Role } from '../permissions'
+import { MAX_SHOP_NAME_LENGTH, MIN_ACCOUNT_PASSWORD_LENGTH } from '../accountPanelState'
 
 export const SESSION_COOKIE = 'furniture_session'
 /** Сессия осынша күн жарамды. */
 const SESSION_DAYS = 30
 /** Құпиясөздің ең аз ұзындығы. Қысқасы — бұзылған аккаунт. */
-export const MIN_PASSWORD = 8
+export const MIN_PASSWORD = MIN_ACCOUNT_PASSWORD_LENGTH
 /** Цех атауының ең ұзын көрінетін мәтіні; сақтау мен UI енгізу шегі. */
-export const MAX_SHOP_NAME_LENGTH = 100
+export { MAX_SHOP_NAME_LENGTH }
 
 export type Account = {
   userId: string

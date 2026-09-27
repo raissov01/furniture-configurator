@@ -7,7 +7,9 @@ import { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { parseProjectV4 } from '@/src/core/projectV4'
 import { flattenTree } from '@/src/core/flatten'
 import { projectProduction } from '@/lib/projectProduction'
-import { decodePartQr, type PartQr } from '@/src/core/partQr'
+import { decodePartQr, encodePartQr, type PartQr } from '@/src/core/partQr'
+import { scanVersionStatus } from '@/lib/mobile/partScanUi'
+import type { InstallationTask } from '@/src/core/installation'
 import type { Panel } from '@/src/core/types'
 
 type Detector = { detect(video: HTMLVideoElement): Promise<{ rawValue: string }[]> }
@@ -15,39 +17,90 @@ type DetectorClass = new (options: { formats: string[] }) => Detector
 
 export default function MobileScanPage() {
   const video = useRef<HTMLVideoElement>(null)
+  const scanRequest = useRef(0)
   const [raw, setRaw] = useState('')
   const [part, setPart] = useState<PartQr | null>(null)
   const [panel, setPanel] = useState<Panel | null>(null)
   const [message, setMessage] = useState('')
   const [camera, setCamera] = useState(false)
 
+  const shareReorder = async () => {
+    if (!part) return
+    const code = encodePartQr(part)
+    const detail = panel
+      ? `\n${panel.label}\n${t('Рез')}: ${panel.cutLength} (${t('Длина')}) × ${panel.cutWidth} (${t('Ширина')}) ${t('мм')}`
+      : ''
+    const request = `${t('Запрос на повторное изготовление детали')}\n${code}${detail}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: t('Повторное изготовление детали'), text: request })
+        setMessage(t('Запрос передан через системное меню. Отправьте его в цех для подтверждения.'))
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(request)
+        setMessage(t('Запрос скопирован. Отправьте его в цех для подтверждения.'))
+      } else {
+        setMessage(t('Поделиться не удалось. Скопируйте код бирки вручную и отправьте в цех.'))
+      }
+    } catch (error) {
+      setMessage(error instanceof Error && error.name === 'AbortError'
+        ? t('Отправка отменена')
+        : error instanceof Error ? error.message : t('Не удалось передать запрос'))
+    }
+  }
+
   const openCode = async (value: string) => {
+    const request = ++scanRequest.current
+    setPart(null)
+    setPanel(null)
+    setMessage('')
     try {
       const decoded = decodePartQr(value.trim())
-      setPart(decoded)
-      setPanel(null)
       const db = await IndexedDbMobileStore.open()
       try {
-        let project = await db.getProject(decoded.projectId)
-        if (!project && navigator.onLine) {
-          const response = await fetch(`/api/projects/${encodeURIComponent(decoded.projectId)}`, { credentials: 'same-origin' })
-          if (response.ok) {
-            const body: unknown = await response.json()
-            if (body && typeof body === 'object' && 'project' in body) {
-              project = parseProjectV4(body.project)
-              await db.putProject(decoded.projectId, project)
-            }
+        let tasks = (await db.listInstallations()).filter((task) => task.projectId === decoded.projectId)
+        if (navigator.onLine) {
+          const list = await fetch('/api/installation', { credentials: 'same-origin', cache: 'no-store' })
+          if (!list.ok) throw new Error(t('Не удалось проверить версию монтажа. Повторите при наличии сети.'))
+          const listing = await list.json() as { tasks: { id: string; projectId: string }[] }
+          const fresh: InstallationTask[] = []
+          for (const item of listing.tasks.filter((entry) => entry.projectId === decoded.projectId)) {
+            const detail = await fetch(`/api/installation/${encodeURIComponent(item.id)}`, { credentials: 'same-origin', cache: 'no-store' })
+            if (!detail.ok) throw new Error(t('Не удалось проверить версию монтажа. Повторите при наличии сети.'))
+            const body = await detail.json() as { task: InstallationTask }
+            await db.putInstallation(body.task)
+            fresh.push(body.task)
           }
+          tasks = fresh
+        }
+        const version = scanVersionStatus(decoded, tasks)
+        if (request !== scanRequest.current) return
+        setPart(decoded)
+        if (version === 'stale') { setMessage(t('Эта бирка устарела. Используйте новый QR после ремонта.')); return }
+        if (version === 'unknown' && tasks.some((task) => task.panelIds.includes(decoded.panelId))) {
+          setMessage(t('Версия бирки не совпадает с монтажным заданием.')); return
+        }
+        let project = await db.getProject(decoded.projectId)
+        if (navigator.onLine) {
+          const response = await fetch(`/api/projects/${encodeURIComponent(decoded.projectId)}`, { credentials: 'same-origin' })
+          if (!response.ok) throw new Error(t('Не удалось проверить свежую версию проекта. Повторите при наличии сети.'))
+          const body: unknown = await response.json()
+          if (!body || typeof body !== 'object' || !('project' in body)) throw new Error(t('Неверный ответ проекта'))
+          project = parseProjectV4(body.project)
+          await db.putProject(decoded.projectId, project)
         }
         if (!project) { setMessage(t('Проект не загружен на телефон. Откройте его при наличии сети.')); return }
         const scene = flattenTree(project.root, { materials: project.materials, edgeBands: project.edgeBands },
           project.settings, project.layers, project.autoJoints)
         const found = projectProduction(project.root, scene).panels.find((item) => item.id === decoded.panelId)
         if (!found) throw new Error(t('Деталь не найдена в проекте'))
+        if (request !== scanRequest.current) return
         setPanel(found)
-        setMessage('')
+        setMessage(version === 'unknown' ? t('Для проекта нет монтажного задания: версия QR не подтверждена.') :
+          navigator.onLine ? '' : t('Офлайн: последняя версия сервера не проверена.'))
       } finally { db.close() }
-    } catch (error) { setMessage(error instanceof Error ? error.message : t('QR не прочитан')) }
+    } catch (error) { if (request === scanRequest.current) {
+      setPart(null); setPanel(null); setMessage(error instanceof Error ? error.message : t('QR не прочитан'))
+    } }
   }
 
   useEffect(() => {
@@ -93,6 +146,9 @@ export default function MobileScanPage() {
         <p>{t('Кромка')}: {Object.entries(panel.edges).filter(([, edge]) => edge !== null).map(([side]) => side).join(', ') || '—'}</p>
         <p>{t('Присадка')}: {panel.drilling.length}</p>
       </>}
+      <button type="button" className="mt-3 min-h-12 w-full border border-[#8c8c8c] bg-white p-3 text-left"
+        onClick={() => void shareReorder()}>{t('Передать запрос на повторное изготовление')}</button>
+      <p className="mt-1 text-xs">{t('Изготовление начнётся только после подтверждения цехом.')}</p>
     </section>}
     {message && <p role="status" className="border bg-white p-3 text-sm">{message}</p>}
   </main>

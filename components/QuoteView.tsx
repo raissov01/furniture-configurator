@@ -12,6 +12,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { MarketPriceNotice } from './MarketPrice'
+import { serviceLineText, unitLabel } from '@/lib/priceUnits'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
   SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
@@ -23,8 +24,10 @@ import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
 import { useModalLayer } from '@/lib/useModalLayer'
 import { visibleMaterials } from '@/lib/cutView'
+import { parseCoefficientInput, parsePercentInput, parseTengeInput } from '@/lib/f22ShareUi'
 import { MoneyInput } from './MoneyInput'
 import { priceSourceRows } from '@/lib/priceSourceUi'
+import { KaspiManualPanel } from './KaspiManualPanel'
 
 type Tab = 'nesting' | 'price'
 
@@ -73,12 +76,12 @@ export function QuoteView({
   // Тапсырыс реквизиттері («Проект» терезесінің «Реквизиты» қойындысы) — КП-ға
   // солардан барады. «Заказчик» өрісі осы жерде әлі де қолмен түзетілуі мүмкін.
   const projectInfo = useConfigurator((s) => s.projectInfo)
+  const editProjectInfo = useConfigurator((s) => s.editProjectInfo)
   // Баға түзетулері (qdesign паритеті): коэффициент/сату бағасын осы жобаға ғана ауыстыру.
   const priceOverrides = useConfigurator((s) => s.priceOverrides)
   const editPriceOverrides = useConfigurator((s) => s.editPriceOverrides)
   const [tab, setTab] = useState<Tab>('nesting')
   const [materialFilter, setMaterialFilter] = useState('all')
-  const [customer, setCustomer] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const [salePriceDraftValid, setSalePriceDraftValid] = useState(true)
   const exportAllowed = childExportAllowed(propertiesOpen)
@@ -183,7 +186,7 @@ export function QuoteView({
               onClick={() => void run('quote', async () => {
                 const { quotePdf } = await import('@/src/core/export/quotePdf')
                 const orderDate = projectInfo.date ? isoToRu(projectInfo.date) : new Date().toLocaleDateString('ru-RU')
-                const client = customer.trim() || projectInfo.client
+                const client = projectInfo.client?.trim()
                 const bytes = await quotePdf({
                   price: price!, shop, projectName,
                   date: orderDate,
@@ -279,9 +282,9 @@ export function QuoteView({
             <label className="flex items-center gap-2 text-xs">
               <span className="text-neutral-500">{tr('Заказчик')}</span>
               <input
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
-                placeholder={projectInfo.client || tr('имя клиента — попадёт в КП')}
+                value={projectInfo.client ?? ''}
+                onChange={(e) => editProjectInfo({ client: e.target.value })}
+                placeholder={tr('имя клиента — попадёт в КП')}
                 className="w-64 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
               />
             </label>
@@ -315,6 +318,9 @@ export function QuoteView({
               <>
                 <MarketPriceNotice shop={shop} />
                 <PriceTable price={price} shopName={shop.name} overrides={priceOverrides} onChange={editPriceOverrides} />
+                {price.missingPrices.length === 0 && price.total > 0 &&
+                  <KaspiManualPanel key={projectInfo.orderNo || projectName} totalMinor={price.total}
+                    defaultReference={projectInfo.orderNo || projectName} />}
               </>
             ) : null}
           </div>
@@ -391,23 +397,18 @@ function PriceOverridesEditor({
   shopCoefficient: number
   onSalePriceValidityChange: (valid: boolean) => void
 }) {
+  // Экранда теңгемен көрсетеді, сақтауда тиынмен (§0.2: ақша бүтін минор бірлік).
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-md border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-700">
       <label className="flex flex-col gap-1">
         <span className="text-neutral-500">{tr('Коэффициент (этот проект)')}</span>
-        <input
-          type="number"
-          step="0.1"
-          min="0"
-          value={overrides.coefficient ?? ''}
-          placeholder={String(shopCoefficient)}
-          onChange={(e) => {
-            const raw = e.target.value
-            onChange({ coefficient: raw === '' ? undefined : Number(raw) })
-          }}
-          className="w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
-        />
+        <ValidatedField label={tr('Коэффициент (этот проект)')} value={overrides.coefficient}
+          display={String} parse={parseCoefficientInput} onValid={(value) => onChange({ coefficient: value })}
+          placeholder={String(shopCoefficient)} compact />
       </label>
+      {overrides.coefficient !== undefined && <Button onClick={() => onChange({ coefficient: undefined })}>
+        {tr('Вернуться к коэффициенту цеха')}
+      </Button>}
       <label className="flex flex-col gap-1">
         <span className="text-neutral-500">{tr('Цена продажи, ₸ (вручную)')}</span>
         <MoneyInput value={overrides.salePrice} label={tr('Цена продажи, ₸ (вручную)')}
@@ -450,23 +451,70 @@ function DiscountInput({ label, discount, onChange }: {
           <option value="amount">₸</option>
         </select>
         {discount ? (
-          <input
-            aria-label={label}
-            type="number"
-            min="0"
-            max={discount.kind === 'percent' ? 100 : undefined}
-            step="0.01"
-            value={discount.kind === 'amount' ? (discount.value / 100).toFixed(2) : discount.value}
-            onChange={(e) => onChange({
-              ...discount,
-              value: discount.kind === 'amount' ? Math.round(Number(e.target.value) * 100) : Number(e.target.value),
-            })}
-            className="w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900"
-          />
+          discount.kind === 'amount' ? <MoneyField label={label} value={discount.value}
+            onValid={(minor) => onChange({ ...discount, value: minor })} compact /> :
+            <PercentField label={label} value={discount.value}
+              onValid={(value) => onChange({ ...discount, value })} />
         ) : null}
       </span>
     </label>
   )
+}
+
+const moneyDisplay = (minor: number): string => (minor / 100).toFixed(2)
+const moneyParse = (raw: string): { ok: true; value: number } | { ok: false; allowed: string } => {
+  const result = parseTengeInput(raw)
+  return result.ok ? { ok: true, value: result.minor } : result
+}
+
+function ValidatedField({ label, value, display, parse, onValid, placeholder, compact = false }: {
+  label: string
+  value: number | undefined
+  display: (value: number) => string
+  parse: (raw: string) => { ok: true; value: number } | { ok: false; allowed: string }
+  onValid: (value: number) => void
+  placeholder?: string
+  compact?: boolean
+}) {
+  const [raw, setRaw] = useState(value === undefined ? '' : display(value))
+  const [error, setError] = useState<string | null>(null)
+  const ownValue = useRef<number | null>(null)
+  useEffect(() => {
+    if (ownValue.current !== null && value === ownValue.current) { ownValue.current = null; return }
+    setRaw(value === undefined ? '' : display(value))
+    setError(null)
+  }, [value, display])
+  return <span className="flex flex-col gap-1">
+    <input aria-label={label} aria-invalid={error !== null} type="text" inputMode="decimal"
+      value={raw} placeholder={placeholder} onChange={(event) => {
+        const nextRaw = event.target.value
+        setRaw(nextRaw)
+        const result = parse(nextRaw)
+        if (!result.ok) { setError(`${label}: ${tr('разрешено')} ${result.allowed}`); return }
+        setError(null)
+        ownValue.current = result.value
+        onValid(result.value)
+      }} onBlur={() => {
+        const result = parse(raw)
+        if (result.ok) setRaw(display(result.value))
+      }}
+      className={cn(compact ? 'w-24' : 'w-36', 'border bg-white px-2 py-1 outline-none',
+        error ? 'border-red-600 text-red-800' : 'border-neutral-300 focus:border-neutral-900')} />
+    {error && <span role="alert" className="max-w-48 text-[11px] text-red-700">{error}</span>}
+  </span>
+}
+
+function MoneyField({ label, value, onValid, placeholder, compact = false }: {
+  label: string; value: number | undefined; onValid: (minor: number) => void; placeholder?: string; compact?: boolean
+}) {
+  return <ValidatedField label={label} value={value} display={moneyDisplay}
+    parse={moneyParse}
+    onValid={onValid} {...(placeholder === undefined ? {} : { placeholder })} compact={compact} />
+}
+
+function PercentField({ label, value, onValid }: { label: string; value: number; onValid: (value: number) => void }) {
+  return <ValidatedField label={label} value={value} display={String}
+    parse={parsePercentInput} onValid={onValid} compact />
 }
 
 function PriceTable({ price, shopName, overrides, onChange }: {
@@ -550,10 +598,11 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                       {g.lines.map((l) => {
                         const key = `${g.key}:${l.id}`
                         const sources = priceSourceRows(l)
-                        return <Fragment key={key}><tr className="border-t border-neutral-100 dark:border-neutral-800">
+                        return <Fragment key={key}><tr className="border-t border-neutral-100 dark:border-neutral-800"
+                          title={g.key === 'services' ? serviceLineText(l) : undefined}>
                           <td className="py-1">{l.name}</td>
                           <td className="w-24 py-1 text-right tabular-nums text-neutral-500">
-                            {l.qty} {l.unit}
+                            {l.qty} {unitLabel(l.unit)}
                           </td>
                           <td className={cn('w-28 py-1 text-right tabular-nums', l.unitPrice <= 0 && 'text-amber-600')}>
                             {formatTenge(l.unitPrice)}

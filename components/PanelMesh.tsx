@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { Edges, Html } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { grainTexture } from '@/lib/grainTexture'
@@ -14,6 +15,8 @@ import { boxGrainUAxis, decorTexture, grainRotation, normalTexture, type GrainUV
 import { materialRenderKey, resolveMaterialLook } from '@/lib/materialLook'
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
+import { polygonShape } from '@/lib/f32PolygonShape'
+import { roundedHolePath } from '@/lib/f32RoundedHole'
 import type { Axis, Catalog, EdgeBand, Panel, PanelHandle, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { drillToLocalMarker } from '@/lib/drillGeometry'
@@ -299,6 +302,8 @@ function cutoutHoles(panel: Panel): Path[] {
     const hole = new Path()
     if (cutout.shape === 'circle') {
       hole.absarc(b.x + b.width / 2, b.y + b.height / 2, cutout.diameter / 2, 0, Math.PI * 2, false)
+    } else if (cutout.radius && cutout.radius > 0) {
+      return roundedHolePath(b, cutout.radius)
     } else {
       hole.moveTo(b.x, b.y)
       hole.lineTo(b.x + b.width, b.y)
@@ -484,7 +489,8 @@ export function PanelMesh({
      * қателіктің ең қымбат түрі дәл сол.
      */
     const rounded = panel.corners && Object.values(panel.corners).some((r) => r > 0)
-    if (!panel.bevel && panel.cutouts.length === 0 && !rounded) return null
+    if (!panel.contour && !panel.bevel && panel.cutouts.length === 0 && !rounded) return null
+    if (panel.contour) return polygonShape(panel.contour, panel.finishedLength, panel.finishedWidth)
     if (!panel.bevel) {
       const L = panel.finishedLength
       const Wd = panel.finishedWidth
@@ -546,7 +552,7 @@ export function PanelMesh({
     s0.closePath()
     s0.holes = cutoutHoles(panel)
     return s0
-  }, [panel.bevel, panel.finishedWidth, panel.finishedLength, panel.cutouts, panel.corners])
+  }, [panel.bevel, panel.contour, panel.finishedWidth, panel.finishedLength, panel.cutouts, panel.corners])
 
   const texture = useMemo(() => {
     /*
@@ -777,7 +783,7 @@ export function PanelMesh({
       {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>
           <div className="pointer-events-none whitespace-nowrap rounded bg-neutral-900/90 px-2 py-1 text-[11px] text-white shadow">
-            <b>{panel.label}</b>
+            <b>{panelDisplayLabel(panel.label)}</b>
             <span className="mx-1.5 opacity-50">·</span>
             готовый {panel.finishedLength}×{panel.finishedWidth}
             <span className="mx-1.5 opacity-50">·</span>
