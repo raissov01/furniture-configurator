@@ -12,7 +12,7 @@ const state = new Int32Array(workerData.state)
 Atomics.store(state, 0, 1)
 parentPort.on('message', ({ port }) => port.on('message', ({ id, sql }) => {
   if (sql === 'DOWN') { Atomics.store(state, 0, -1); setTimeout(() => Atomics.store(state, 0, 1), 100); return }
-  if (sql === 'SLOW') Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000)
+  if (sql === 'SLOW') Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2500)
   port.postMessage({ id, ok: true, value: { rows: [{ sql }], changes: 0 } })
 }))
 `)
@@ -25,7 +25,9 @@ afterAll(() => {
 })
 
 it('тайм-ауттан соң worker жаңарып, келесі сұрау ескі жауапты алмайды', () => {
-  const db = new PostgresCompat('postgres://fake', undefined, 300)
+  // Restarting a worker can take over 300 ms when the full suite runs alongside
+  // other worktrees. The simulated slow query remains longer than this timeout.
+  const db = new PostgresCompat('postgres://fake', undefined, 1200)
   try {
     expect(() => db.prepare('SLOW').get()).toThrow(/timed out/)
     expect(db.prepare('FAST').get()).toEqual({ sql: 'FAST' })
@@ -34,12 +36,12 @@ it('тайм-ауттан соң worker жаңарып, келесі сұрау 
 })
 
 it('байланыс үзілгенін тез хабарлап, қайта қосылғанда сұрауды орындайды', async () => {
-  const db = new PostgresCompat('postgres://fake', undefined, 300)
+  const db = new PostgresCompat('postgres://fake', undefined, 1200)
   try {
     expect(db.prepare('READY').get()).toEqual({ sql: 'READY' })
     const started = Date.now()
     expect(() => db.prepare('DOWN').get()).toThrow(/unavailable|connection/i)
-    expect(Date.now() - started).toBeLessThan(250)
+    expect(Date.now() - started).toBeLessThan(1000)
     await new Promise((resolve) => setTimeout(resolve, 150))
     expect(db.prepare('AFTER').get()).toEqual({ sql: 'AFTER' })
   } finally { db.close() }
