@@ -16,6 +16,7 @@ export const en: Record<string, string> = {
   'Инструменты': 'Tools',
   'Справка': 'Help',
   'Новый корпус': 'New cabinet',
+  'Сбросить текущий проект?': 'Reset the current project?',
   'Выбор': 'Select',
   'Стена С': 'North wall',
   'Стена З': 'West wall',

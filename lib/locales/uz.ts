@@ -18,6 +18,7 @@ export const uz: Record<string, string> = {
   'Сервис': 'Xizmat',
   'Справка': 'Yordam',
   'Новый корпус': 'Yangi korpus',
+  'Сбросить текущий проект?': 'Joriy loyihani tozalaysizmi?',
   'Выбор': 'Tanlash',
   'Стена С': 'Shimoliy devor',
   'Стена З': "G'arbiy devor",

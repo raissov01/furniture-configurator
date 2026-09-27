@@ -29,6 +29,7 @@ import { HistoryPanel } from '@/components/HistoryPanel'
 import { ShareCodeDialog } from '@/components/ShareCodeDialog'
 import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
+import { deleteAction, resetDecision } from '@/lib/workspaceActions'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
@@ -159,6 +160,7 @@ export function Workspace() {
   const addSolid = useConfigurator((s) => s.addSolid)
   const addAnnotation = useConfigurator((s) => s.addAnnotation)
   const removeBoard = useConfigurator((s) => s.removeBoard)
+  const removeAnnotation = useConfigurator((s) => s.removeAnnotation)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
@@ -264,6 +266,20 @@ export function Workspace() {
     } catch (cause) {
       setMirrorError(cause instanceof Error ? cause.message : String(cause))
     }
+  }
+
+  const deleteSelected = () => {
+    let editable = false
+    try { assertTreeNodeEditable(root, activeId, layers); editable = true }
+    catch (cause) { if (!(cause instanceof ConfigValidationError)) throw cause }
+    const action = deleteAction(activeNode?.kind ?? null, editable, cabinets.length, Boolean(activeBoardJoint))
+    if (action === 'board') removeBoard(activeId)
+    if (action === 'annotation') removeAnnotation(activeId)
+    if (action === 'cabinet') removeCabinet(activeId)
+    if (action) setSelected(null)
+  }
+  const requestReset = () => {
+    if (resetDecision(window.confirm(tr('Сбросить текущий проект?'))) === 'reset') reset()
   }
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
@@ -433,6 +449,8 @@ export function Workspace() {
    */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const dialogState = useConfigurator.getState()
+      if (propertiesNodeId || dialogState.galleryOpen || dialogState.shopOpen || dialogState.quoteOpen || dialogState.drillOpen || dialogState.roomOpen) return
       if (isTyping(e.target)) return
       // Escape — 3D-дегі таңдауды алу. Хоткейлер тізіміне кірмейді: бұл
       // «әрекет» емес, кез келген жерден шығудың әдеттегі жолы.
@@ -457,6 +475,7 @@ export function Workspace() {
         case 'help': setHelpOpen(true); break
         case 'undo': undo(); break
         case 'redo': redo(); break
+        case 'delete': deleteSelected(); break
       }
     }
     window.addEventListener('keydown', onKey)
@@ -500,7 +519,7 @@ export function Workspace() {
           .catch((cause: unknown) => setExportError(cause instanceof Error ? cause.message : String(cause)))
         break
       case 'clientLink': void copyClientLink(); break
-      case 'reset': reset(); break
+      case 'reset': requestReset(); break
       case 'undo': undo(); break
       case 'redo': redo(); break
       case 'preset': setCameraPreset(command.preset); break
@@ -706,7 +725,7 @@ export function Workspace() {
             <MenuItem onClick={() => void copyClientLink()}>{tr('Ссылка клиенту')}</MenuItem>
             {/* qdesign «3D-көріністе ашу» сияқты: 6 таңбалы код, 24 сағат, автожаңарту. */}
             <MenuItem onClick={() => setShareCodeOpen(true)}>{tr('Код для клиента')}</MenuItem>
-            <MenuItem onClick={reset}>{tr('Сброс')}</MenuItem>
+            <MenuItem onClick={requestReset}>{tr('Сброс')}</MenuItem>
           </Menu>
           <Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
           {/* Раскрой — БӨЛЕК бет (цех станогы қасында ашады), сондықтан тікелей. */}
