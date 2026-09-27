@@ -11,7 +11,10 @@
 
 import { create } from 'zustand'
 import { t as tr } from '@/lib/i18n'
+import { changesCabinet } from '@/lib/cabinetEdit'
+import { planSectionAddition } from '@/lib/sectionUi'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
+import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import {
   DEFAULT_ROOM,
   IDENTITY_TRANSFORM,
@@ -39,7 +42,6 @@ import {
   replaceTreeBoardMaterial,
   replaceTreeMaterial,
   nextFreeOffset,
-  nextSectionId,
   parseProjectV4,
   SceneLightsSchema,
   parseShopProfile,
@@ -54,7 +56,7 @@ import type { PanoramaContext } from '@/lib/panorama'
 import type {
   BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
   Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
-  SectionContent, SettingsOverride, ShopProfile, Vec3, WallId,
+  SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
@@ -111,6 +113,8 @@ type Snapshot = {
   autoJoints: AutoJointRecord[]
   lights: SceneLight[]
   activeId: string
+  projectInfo: ProjectInfo
+  priceOverrides: PriceOverrides
 }
 
 type State = Snapshot & {
@@ -136,20 +140,6 @@ type State = Snapshot & {
    */
   shop: ShopProfile
   catalog: Catalog
-  /**
-   * Тапсырыс реквизиттері (Заказ/Дата/Клиент/Дизайнер/Примечание). КП мен
-   * цех құжаттарына шығады. Undo тарихына кірмейді — бұл геометрия емес,
-   * метадерек (§7-дегі «конфиг қана сақталады» ережесіне қайшы емес: файлда
-   * жатады, тек undo-стектің бөлігі емес — шкафты қайтарғанда реквизиттің
-   * жоғалуы қате болар еді).
-   */
-  projectInfo: ProjectInfo
-  /**
-   * Баға түзетулері (qdesign паритеті): коэффициент/сату бағасын осы жобаға
-   * ғана ауыстыру. `projectInfo`-дай Undo тарихына кірмейді — метадерек,
-   * геометрия емес.
-   */
-  priceOverrides: PriceOverrides
   shopOpen: boolean
   quoteOpen: boolean
   sketchOpen: boolean
@@ -300,7 +290,7 @@ type State = Snapshot & {
   removeAutoJoint(id: string): void
   setBoardPosition(id: string, position: Vec3): void
   editSection(index: number, patch: Partial<Section>, key: string): void
-  addSection(): void
+  addSection(): string | null
   removeSection(index: number): void
 
   loadTemplate(id: string): void
@@ -439,6 +429,8 @@ const snapshot = (s: State): Snapshot => ({
   autoJoints: s.autoJoints,
   lights: s.lights,
   activeId: s.activeId,
+  projectInfo: s.projectInfo,
+  priceOverrides: s.priceOverrides,
 })
 
 function legacyEdit(s: State, cabinets: CabinetConfig[], placements = s.placements, room = s.room,
@@ -651,6 +643,8 @@ const initial: Snapshot = {
   autoJoints: [],
   lights: [],
   activeId: defaultCabinet.id,
+  projectInfo: {},
+  priceOverrides: {},
 }
 
 /** Жобадағы қай шкаф өңделіп жатыр. Тізім ешқашан бос қалмайды. */
@@ -685,8 +679,6 @@ export const useConfigurator = create<State>((set, get) => ({
   dismissHistoryRestoreError: () => set({ historyRestoreError: null }),
   shop: defaultShop,
   catalog: catalogOf(defaultShop),
-  projectInfo: {},
-  priceOverrides: {},
   shopOpen: false,
   quoteOpen: false,
   sketchOpen: false,
@@ -747,6 +739,7 @@ export const useConfigurator = create<State>((set, get) => ({
 
   edit(key, patch) {
     const s = get()
+    if (!changesCabinet(s.cabinets.find((cabinet) => cabinet.id === s.activeId), patch)) return
     const now = Date.now()
     // Слайдер сүйрегенде әр миллиметр бөлек undo қадамы болмауы керек.
     const coalesce = s.lastEditKey === key && now - s.lastEditAt < COALESCE_MS
@@ -851,14 +844,10 @@ export const useConfigurator = create<State>((set, get) => ({
   addSection() {
     const s = get()
     const cabinet = activeCabinet(s)
-    const nextId = nextSectionId(cabinet.sections)
-    const contents: SectionContent[] = [{ kind: 'shelves', count: 3, shelfKind: 'adjustable' }]
-    get().edit('sections:add', {
-      sections: [
-        ...cabinet.sections,
-        { id: nextId, widthMode: 'flex', contents, fronts: { count: 1, mount: 'overlay' } },
-      ],
-    })
+    const result = planSectionAddition(cabinet, s.catalog, s.projectSettings ?? s.shop.settings)
+    if (!result.ok) return result.message
+    get().edit('sections:add', { sections: result.sections })
+    return null
   },
 
   removeSection(index) {
@@ -882,8 +871,12 @@ export const useConfigurator = create<State>((set, get) => ({
       return
     }
     const next = { ...templateToCabinet(template, s.catalog), id: s.activeId }
+    const titles = templateProjectTitles(s.projectName, s.root.name, defaultCabinet.name, next.name)
+    const edited = legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c)))
     set({
-      ...legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c))),
+      ...edited,
+      projectName: titles.projectName,
+      root: { ...edited.root, name: titles.rootName },
       templateId: id,
       galleryOpen: false,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
@@ -1070,9 +1063,17 @@ export const useConfigurator = create<State>((set, get) => ({
     })
   },
 
-  /** Тапсырыс реквизиттерін түзету. UI өрісте бос жолды бос қалдырады да, `exportProject` оны экспортта қиып тастайды. */
+  /** Тапсырыс реквизиттерін түзету. UI бос жолды бос қалдырады; экспорт оны қиып тастайды. */
   editProjectInfo(patch) {
-    set((s) => ({ projectInfo: { ...s.projectInfo, ...patch } }))
+    const s = get()
+    const next = { ...s.projectInfo, ...patch }
+    if (JSON.stringify(next) === JSON.stringify(s.projectInfo)) return
+    const now = Date.now()
+    const key = `projectInfo:${Object.keys(patch).sort().join(',')}`
+    const coalesce = s.lastEditKey === key && now - s.lastEditAt < COALESCE_MS
+    set({ projectInfo: next,
+      past: coalesce ? s.past : [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [], lastEditKey: key, lastEditAt: now })
     get().saveProjectLocally()
   },
 
@@ -1082,7 +1083,15 @@ export const useConfigurator = create<State>((set, get) => ({
    * тастайды да, баға қайта коэффициентпен есептеледі.
    */
   editPriceOverrides(patch) {
-    set((s) => ({ priceOverrides: { ...s.priceOverrides, ...patch } }))
+    const s = get()
+    const next = { ...s.priceOverrides, ...patch }
+    if (JSON.stringify(next) === JSON.stringify(s.priceOverrides)) return
+    const now = Date.now()
+    const key = `priceOverrides:${Object.keys(patch).sort().join(',')}`
+    const coalesce = s.lastEditKey === key && now - s.lastEditAt < COALESCE_MS
+    set({ priceOverrides: next,
+      past: coalesce ? s.past : [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
+      future: [], lastEditKey: key, lastEditAt: now })
     get().saveProjectLocally()
     // Workspace автосақтауы бағаға қарамайды: клиент коды мен келісім мөрі
     // ескі бағада қалмауы үшін share осында жаңарады.
@@ -1717,6 +1726,8 @@ export const useConfigurator = create<State>((set, get) => ({
       ...initial,
       ...cabinetsFromTree(initial.root, initial.room, initial.layers),
       catalog: projectCatalog(s.shop),
+      projectInfo: {},
+      priceOverrides: {},
       projectLoadError: null,
       historyRestoreError: null,
       templateId: defaultTemplateId,

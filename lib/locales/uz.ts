@@ -800,6 +800,8 @@ export const uz: Record<string, string> = {
   'по длине стены': 'devor uzunligi bo\'yicha',
   'Стена A, мм': 'A devor, mm',
   'Стена B (угол), мм': 'B devor (burchak), mm',
+  'Стена A: целые мм, 600–20 000 мм': 'A devor: butun mm, 600–20 000 mm',
+  'Стена B: целые мм, 600–20 000 мм': 'B devor: butun mm, 600–20 000 mm',
   'Угол (Г)': 'Burchak (G)',
   'Мойка': 'Rakovina',
   'Верхний ряд': 'Yuqori qator',
@@ -1350,6 +1352,14 @@ export const uz: Record<string, string> = {
   '{label}: медиана, {date}, {n} предложений': '{label}: mediana, {date}, {n} ta taklif',
   'Вернуть рыночную цену: {price}': 'Bozor narxiga qaytarish: {price}',
   'Цена изменена цехом — рыночные обновления её не трогают': 'Narxni sex o‘zgartirgan — bozor yangilanishlari unga tegmaydi',
+  'Поле обязательно': 'Maydon majburiy',
+  'Введите целое число, мм': 'Butun millimetr kiriting',
+  'Значение вне диапазона': 'Qiymat ruxsat etilgan oraliqdan tashqarida',
+  'Введите число': 'Son kiriting',
+  'Значение': 'Qiymat',
+  'Рекомендуется': 'Tavsiya etiladi',
+  'Ориентир цеха': 'Sex mo‘ljali',
+  'Обязательный диапазон габаритов': 'O‘lchamlarning majburiy oralig‘i',
 
   'Код клиента истёк': 'Mijoz kodining muddati tugadi',
   'Код клиента изменился': 'Mijoz kodi o‘zgardi',
@@ -1358,5 +1368,7 @@ export const uz: Record<string, string> = {
   'Клиент согласовал версию': 'Mijoz tasdiqlagan versiya',
   'Текущий проект изменён после согласования': 'Joriy loyiha tasdiqdan keyin o‘zgardi',
   'Скачать подписанный PDF': 'Muhrlangan PDF faylni yuklab olish',
+  'Рассчитывается': 'Hisoblanadi',
+  'Увеличьте ширину корпуса или уменьшите число фасадов.': 'Korpus enini oshiring yoki fasadlar sonini kamaytiring.',
 
 }
