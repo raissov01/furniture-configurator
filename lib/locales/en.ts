@@ -10,6 +10,7 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Сортировать': 'Sort',
   'Допустимо целое число в диапазоне': 'Allowed whole-number range',
   'Текст': 'Text',
   'Добавить текст': 'Add text',

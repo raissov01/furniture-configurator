@@ -11,6 +11,7 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Сортировать': 'Saralash',
   'Допустимо целое число в диапазоне': 'Ruxsat etilgan butun son oralig‘i',
   'Текст': 'Matn',
   'Добавить текст': 'Matn qo‘shish',
