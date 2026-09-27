@@ -11,6 +11,16 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Исправьте ошибки проекта': 'Loyiha xatolarini tuzating',
+  'Нужны два корпуса': 'Ikkita korpus kerak',
+  'Выбранный корпус заблокирован': 'Tanlangan korpus qulflangan',
+  'Нет действий для отмены': 'Bekor qilinadigan amal yo‘q',
+  'Нет действий для повтора': 'Takrorlanadigan amal yo‘q',
+  'Выберите фасад': 'Fasadni tanlang',
+  'Выберите редактируемый корпус': 'Tahrirlanadigan korpusni tanlang',
+  'Выберите редактируемый объект': 'Tahrirlanadigan obyektni tanlang',
+  'Выберите корпус или доску': 'Korpus yoki taxtani tanlang',
+  'Выберите элемент': 'Elementni tanlang',
   'Стандартная номенклатура': 'Standart nomenklatura',
   'Новое КП': 'Yangi taklif',
   'Пока цены не заданы, коммерческое предложение не выпускается: клиент не увидит выдуманную цену.': 'Narxlar belgilanmaguncha taklif chiqarilmaydi; mijoz o‘ylab topilgan narxni ko‘rmaydi.',

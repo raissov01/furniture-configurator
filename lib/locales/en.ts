@@ -10,6 +10,16 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Исправьте ошибки проекта': 'Fix the project errors',
+  'Нужны два корпуса': 'Two cabinets are required',
+  'Выбранный корпус заблокирован': 'The selected cabinet is locked',
+  'Нет действий для отмены': 'Nothing to undo',
+  'Нет действий для повтора': 'Nothing to redo',
+  'Выберите фасад': 'Select a front',
+  'Выберите редактируемый корпус': 'Select an editable cabinet',
+  'Выберите редактируемый объект': 'Select an editable object',
+  'Выберите корпус или доску': 'Select a cabinet or board',
+  'Выберите элемент': 'Select an element',
   'Стандартная номенклатура': 'Standard nomenclature',
   'Новое КП': 'New quote',
   'Пока цены не заданы, коммерческое предложение не выпускается: клиент не увидит выдуманную цену.': 'A quote cannot be issued until prices are set, so the client will not see an invented price.',
