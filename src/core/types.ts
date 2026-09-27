@@ -745,7 +745,7 @@ export type SectionContent =
    * Техниканың ҰЯСЫ. Мұнда да панель жоқ: цехтың міндеті — дұрыс өлшемді
    * орын қалдыру. Техниканың ӨЗІ сметаға КІРМЕЙДІ (клиент өзі алады).
    */
-  | { kind: 'appliance'; appliance: ApplianceKind; height?: number | undefined }
+  | { kind: 'appliance'; appliance: ApplianceKind; modelId?: string | undefined; height?: number | undefined }
   | { kind: 'empty'; height?: number | undefined }
 
 /**
