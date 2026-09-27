@@ -19,9 +19,10 @@ import {
   placementCorners,
   roomWalls,
   validatePlacements,
+  validateOpenings,
   wallById,
 } from '@/src/core/index'
-import type { CabinetConfig, Placement, Room, RoomFinish, WallId } from '@/src/core/index'
+import type { CabinetConfig, Placement, Room, RoomFinish, RoomOpening, WallId } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { wallAttachedPlacements } from '@/store/treeAdapters'
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
@@ -31,6 +32,7 @@ import { cn } from '@/lib/cn'
 import { isCeilingIssue } from '@/lib/roomElevationUi'
 import { planDragOffset } from '@/lib/roomPlanDrag'
 import { shouldCloseRoomDialog } from '@/lib/roomDialog'
+import { nextOpening, updateOpening } from '@/lib/roomOpeningsUi'
 
 /** Қабырға сызығының қалыңдығы, мм (шартты — тек көрініс үшін). */
 const WALL_MM = 60
@@ -87,6 +89,7 @@ export function RoomPlan() {
   )
 
   const issues = useMemo(() => validatePlacements(room, entries), [room, entries])
+  const openingIssues = useMemo(() => validateOpenings(room), [room])
   const issueFor = (id: string) => issues.filter((i) => i.cabinetId === id)
   const dialogRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -165,6 +168,9 @@ export function RoomPlan() {
             <fieldset>
               <FinishEditor room={room} onChange={(finish) => editRoom({ finish })} />
             </fieldset>
+
+            <SectionTitle>{tr('Проёмы')}</SectionTitle>
+            <OpeningEditor room={room} issues={openingIssues} onChange={(openings) => editRoom({ openings })} />
 
             <SectionTitle>{tr('Стена')}</SectionTitle>
             <div className="flex flex-wrap gap-1">
@@ -326,6 +332,58 @@ function FinishEditor({ room, onChange }: { room: Room; onChange: (finish: RoomF
           options={FLOOR_KINDS.map((f) => ({ value: f.value, label: tr(f.label) }))}
         />
       </Field>
+    </div>
+  )
+}
+
+function OpeningEditor({ room, issues, onChange }: {
+  room: Room
+  issues: ReturnType<typeof validateOpenings>
+  onChange: (openings: RoomOpening[]) => void
+}) {
+  const openings = room.openings ?? []
+  const patch = (id: string, change: Partial<RoomOpening>) => onChange(updateOpening(openings, id, change))
+  return (
+    <div className="space-y-2">
+      {openings.map((opening) => {
+        const wallLength = wallById(room, opening.wall).length
+        const bad = issues.filter((issue) => issue.openingId === opening.id)
+        return (
+          <div key={opening.id} className={cn('min-w-0 rounded-md border border-neutral-200 p-2 dark:border-neutral-700', bad.length > 0 && 'border-red-500 dark:border-red-500')}>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <strong className="text-xs">{tr(opening.kind === 'window' ? 'Окно' : 'Дверь')}</strong>
+              <Button onClick={() => onChange(openings.filter((item) => item.id !== opening.id))}>{tr('Удалить')}</Button>
+            </div>
+            <div className="grid min-w-0 grid-cols-1 gap-2 min-[460px]:grid-cols-2">
+              <Field label={tr('Стена')}>
+                <Select value={opening.wall} onChange={(wall) => patch(opening.id, { wall })}
+                  options={roomWalls(room).map((wall) => ({ value: wall.id, label: tr(wall.label) }))} />
+              </Field>
+              <Field label={tr('Положение проёма')} hint={`0..${Math.max(0, wallLength - opening.width)} мм`}>
+                <NumberInput value={opening.offset} min={0} max={Math.max(0, wallLength - opening.width)}
+                  label={tr('Положение проёма')} onChange={(offset) => patch(opening.id, { offset })} />
+              </Field>
+              <Field label={tr('Ширина проёма')} hint={`1..${wallLength} мм`}>
+                <NumberInput value={opening.width} min={1} max={wallLength}
+                  onChange={(width) => patch(opening.id, { width })} />
+              </Field>
+              <Field label={tr('Высота проёма')} hint={`1..${room.height} мм`}>
+                <NumberInput value={opening.height} min={1} max={room.height}
+                  onChange={(height) => patch(opening.id, { height })} />
+              </Field>
+              <Field label={tr('От пола проёма')} hint={`0..${room.height} мм`}>
+                <NumberInput value={opening.elevation} min={0} max={room.height}
+                  onChange={(elevation) => patch(opening.id, { elevation })} />
+              </Field>
+            </div>
+            {bad.map((issue, index) => <p role="alert" key={index} className="mt-1 text-[11px] text-red-700 dark:text-red-400">{issue.message}</p>)}
+          </div>
+        )
+      })}
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={openings.length >= 20} onClick={() => onChange([...openings, nextOpening(room, openings, 'window')])}>{tr('+ окно')}</Button>
+        <Button disabled={openings.length >= 20} onClick={() => onChange([...openings, nextOpening(room, openings, 'door')])}>{tr('+ дверь')}</Button>
+      </div>
     </div>
   )
 }
