@@ -27,6 +27,7 @@ import { visibleMaterials } from '@/lib/cutView'
 import { parseCoefficientInput, parsePercentInput, parseTengeInput } from '@/lib/f22ShareUi'
 import { MoneyInput } from './MoneyInput'
 import { priceSourceRows } from '@/lib/priceSourceUi'
+import { KaspiManualPanel } from './KaspiManualPanel'
 
 type Tab = 'nesting' | 'price'
 
@@ -317,6 +318,9 @@ export function QuoteView({
               <>
                 <MarketPriceNotice shop={shop} />
                 <PriceTable price={price} shopName={shop.name} overrides={priceOverrides} onChange={editPriceOverrides} />
+                {price.missingPrices.length === 0 && price.total > 0 &&
+                  <KaspiManualPanel key={projectInfo.orderNo || projectName} totalMinor={price.total}
+                    defaultReference={projectInfo.orderNo || projectName} />}
               </>
             ) : null}
           </div>

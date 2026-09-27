@@ -64,6 +64,19 @@ try {
   await h.goto('/mobile', 5000) // қызметтік жұмысшы HTML/чанктарды кэшке жазады
   await h.goto('/mobile/scan', 5000)
   assert(await h.until("document.body.innerText.includes('Сканировать деталь')", 5000), 'QR screen missing')
+  const reorderCode = `F1.${Buffer.from(JSON.stringify(['project-e2e', 'panel-e2e', 1])).toString('base64url')}`
+  assert(await h.evaluate(`(() => {
+    const input = document.querySelector('input')
+    if (!input) return false
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${JSON.stringify(reorderCode)})
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async (data) => { window.__p1Shared = data } })
+    return true
+  })()`), 'QR reorder code entry missing')
+  assert(await h.clickText('Найти деталь', 200), 'QR lookup missing')
+  assert(await h.until("document.body.innerText.includes('Передать запрос на повторное изготовление')", 5000), 'QR reorder action missing')
+  assert(await h.clickText('Передать запрос на повторное изготовление', 200), 'QR reorder button missing')
+  assert(await h.evaluate(`window.__p1Shared?.text?.includes(${JSON.stringify(reorderCode)})`), 'reorder request lost the QR identifier')
   await h.goto('/mobile/installation', 5000)
   assert(await h.until("document.body.innerText.includes('Монтаж')", 5000), 'installation screen missing')
   await h.goto('/configurator', 6500)
@@ -76,6 +89,8 @@ try {
   assert(await h.evaluate('document.documentElement.scrollWidth <= innerWidth'), '360 px mobile page overflows')
   assert(await h.clickText('Новый замер'), 'offline measurement wizard missing')
   assert(await h.until("document.body.innerText.includes('Помещение и стены')", 5000), 'room step missing')
+  assert(await h.until("[...document.querySelectorAll('label')].some((label) => label.textContent.includes('Высота помещения') && label.querySelector('input[type=number]'))", 5000),
+    'room inputs missing after opening the offline wizard')
   for (const [label, value] of [
     ['Высота помещения', 2500], ['Северная стена', 3000], ['Восточная стена', 4000],
     ['Южная стена', 3000], ['Западная стена', 4000], ['Северо-западный', 90],
