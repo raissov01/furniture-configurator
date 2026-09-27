@@ -149,8 +149,8 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-floating-window .p100-tree-dock [role="tab"] { border-radius: 0; }
 @media (min-width: 1024px) {
   .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch]) { border-radius: 2px; border-color: var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
-  .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch]):hover { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
-  .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch]):active { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); transform: translate(1px, 1px); }
+  .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch]):hover:not(:disabled) { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
+  .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch]):active:not(:disabled) { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); transform: translate(1px, 1px); }
   .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch])[aria-pressed="true"],
   .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch])[class~="bg-neutral-900"] { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); }
   .p100-workspace button:not(.p100-icon-button):focus-visible { outline: 1px dotted var(--p100-text); outline-offset: -3px; }

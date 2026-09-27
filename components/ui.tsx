@@ -318,6 +318,7 @@ export function Button({
       title={title}
       data-tour={tour}
       data-testid={testId}
+      aria-pressed={active || undefined}
       onClick={onClick}
       disabled={disabled}
       className={cn(

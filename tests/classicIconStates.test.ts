@@ -8,6 +8,7 @@ import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { ClassicIcon } from '../components/ClassicIcon'
+import { Button } from '../components/ui'
 
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
 const token = (name: string) => css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i'))?.[1]
@@ -43,5 +44,12 @@ describe('classic icon states', () => {
     const html = renderToString(createElement(ClassicIcon, { name: 'copy' }))
     expect(html).toContain('stroke="currentColor"')
     expect(renderToString(createElement(ClassicIcon, { name: 'delete' }))).toContain('var(--p100-icon-red)')
+  })
+
+  it('exposes a selected button to assistive technology and keeps disabled controls still', () => {
+    const selected = renderToString(createElement(Button, { active: true, children: 'Таңдау' }))
+    expect(selected).toContain('aria-pressed="true"')
+    expect(css).toMatch(/button:not\(\.p100-icon-button\):not\(\[data-decor-swatch\]\):hover:not\(:disabled\)/)
+    expect(css).toMatch(/button:not\(\.p100-icon-button\):not\(\[data-decor-swatch\]\):active:not\(:disabled\)/)
   })
 })
