@@ -59,6 +59,7 @@ import { usePanels } from '@/lib/usePanels'
 import { useTreeSceneItems } from '@/lib/useTreeSceneItems'
 import { useProjectProduction } from '@/lib/useProjectProduction'
 import { productionAvailability } from '@/lib/productionAvailability'
+import { assemblyStepView } from '@/lib/assemblyStepView'
 import {
   DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, shelfSpanWarnings,
 } from '@/src/core/index'
@@ -646,6 +647,14 @@ export function Workspace() {
       {classic && <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
         {classicToolRows.map((row, index) => <div className="p100-toolbar-row" key={index}>
           {row.map((tool) => <ClassicTool key={`${tool.icon}-${tool.label}`} {...tool} />)}
+          {index === 2 && assemblyStep !== null && <label className="ml-2 flex items-center gap-1 border border-neutral-400 px-1 text-xs" data-testid="classic-assembly-step">
+            <span>{tr('Сборка')}</span>
+            <input type="range" aria-label={tr('Показать сборку по шагам')} min={1}
+              max={assemblyStepView(assemblyStep, projectPanels.length).max}
+              value={assemblyStepView(assemblyStep, projectPanels.length).value}
+              onChange={(event) => setAssemblyStep(Number(event.target.value))} />
+            <span className="tabular-nums">{assemblyStepView(assemblyStep, projectPanels.length).label}</span>
+          </label>}
           {index === 3 && <label className="p100-toolbar-style">{tr('Рабочее место')}
             <select aria-label={tr('Стиль рабочего места')} value="classic" onChange={(event) => changeStyle(event.target.value === 'classic')}>
               <option value="classic">{tr('Классический')}</option><option value="ours">{tr('Наш')}</option>
