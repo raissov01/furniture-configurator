@@ -43,6 +43,7 @@ import { RenderPanel } from '@/components/RenderPanel'
 import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/classicMenu'
 import { classicMenuItemTitle } from '@/lib/classicMenuUi'
 import { classicShopTools } from '@/lib/classicShopTools'
+import { classicDockTools } from '@/lib/classicDockTools'
 import { runShopExport } from '@/lib/shopExport'
 import { selectShopExportPanels } from '@/lib/shopExportScope'
 import { downloadProjectFile, pickProjectFile, projectFileErrorMessage } from '@/lib/projectFile'
@@ -620,8 +621,9 @@ export function Workspace() {
       { icon: 'view', label: tr('Перспектива'), action: () => { setCameraPreset('three-quarter'); setProjection('perspective') } },
     ],
     [
-      { icon: 'structure', label: tr('Структура'), action: () => openDockTab('structure'), active: structureOpen, id: 'structure' },
-      { icon: 'library', label: tr('Библиотека'), action: () => openDockTab('library'), id: 'library' },
+      { icon: classicDockTools.structure.icon, label: tr(classicDockTools.structure.label), action: () => openDockTab('structure'), active: structureOpen && dockRequest.tab === 'structure', id: 'structure' },
+      { icon: classicDockTools.layers.icon, label: tr(classicDockTools.layers.label), action: () => openDockTab('layers'), active: structureOpen && dockRequest.tab === 'layers', id: 'layers' },
+      { icon: classicDockTools.library.icon, label: tr(classicDockTools.library.label), action: () => openDockTab('library'), active: structureOpen && dockRequest.tab === 'library', id: 'library' },
       { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
