@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { BASIS_MATERIALS, SEED_CATALOG, findTemplate, parseProjectV4, projectFingerprint, templateToCabinet } from '../src/core/index'
+import { BASIS_MATERIALS, SEED_CATALOG, defaultShopProfile, findTemplate, parseProjectV4, projectFingerprint, templateToCabinet } from '../src/core/index'
 import { toPublicProject } from '../src/core/publicProject'
 import { isApprovalClockError } from '../lib/server/approvalErrors'
 
@@ -15,6 +15,9 @@ let auth: typeof import('../lib/server/auth')
 let share: typeof import('../lib/server/share')
 let route: typeof import('../app/api/share/[code]/approval/route')
 let database: typeof import('../lib/server/db')
+let shareRoute: typeof import('../app/api/share/route')
+let shareCodeRoute: typeof import('../app/api/share/[code]/route')
+let store: typeof import('../lib/server/store')
 const context = (code: string) => ({ params: Promise.resolve({ code }) })
 const req = (method: string, body?: unknown) => new Request('http://localhost/api/share/x/approval', {
   method, ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -31,9 +34,52 @@ beforeAll(async () => {
   share = await import('../lib/server/share')
   route = await import('../app/api/share/[code]/approval/route')
   database = await import('../lib/server/db')
+  shareRoute = await import('../app/api/share/route')
+  shareCodeRoute = await import('../app/api/share/[code]/route')
+  store = await import('../lib/server/store')
 })
 
 describe('share келісім API', () => {
+  it('позициялық жеңілдікпен код соңғы бағаны сақтайды және келісім 422 қайтармайды', async () => {
+    const owner = auth.register('approval-discount@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    actor.value = owner.account
+    const base = defaultShopProfile()
+    store.writeShopProfile(owner.account.shopId, {
+      ...base,
+      materials: base.materials.map((m) => ({ ...m, pricePerSheet: 100_000 })),
+      edgeBands: base.edgeBands.map((b) => ({ ...b, pricePerMeter: 1_000 })),
+      hardware: base.hardware.map((h) => ({ ...h, pricePerUnit: 1_000 })),
+    })
+    const raw = project('Жеңілдік', 13_000_050)
+    const cabinet = raw.cabinets[0]!
+    const discounted = {
+      ...raw,
+      placements: [{ cabinetId: cabinet.id, wall: 'south', offset: 0 }],
+      priceOverrides: {
+        salePrice: 13_000_050,
+        lineDiscounts: { [`materials:${cabinet.carcassMaterialId}`]: { kind: 'amount', value: 10_000 } },
+      },
+    }
+    const created = await shareRoute.POST(req('POST', discounted))
+    expect(created.status).toBe(200)
+    const { code, key } = await created.json() as { code: string; key: string }
+    const publicResponse = await shareCodeRoute.GET(req('GET'), context(code))
+    expect((await publicResponse.json() as { project: { priceOverrides: { salePrice: number } } }).project.priceOverrides)
+      .toEqual({ salePrice: 12_990_050 })
+    const started = await route.POST(req('POST', {}), context(code))
+    expect(started.status).toBe(201)
+    expect((await started.json() as { priceMinor: number }).priceMinor).toBe(12_990_050)
+    const updated = await shareCodeRoute.PUT(new Request('http://localhost/api/share/x', {
+      method: 'PUT', headers: { 'x-share-key': key },
+      body: JSON.stringify({ ...discounted, priceOverrides: { ...discounted.priceOverrides, salePrice: 14_000_000 } }),
+    }), context(code))
+    expect(updated.status).toBe(200)
+    const renewed = await route.POST(req('POST', {}), context(code))
+    expect(renewed.status).toBe(201)
+    expect((await renewed.json() as { priceMinor: number }).priceMinor).toBe(13_990_000)
+  })
+
   it('ескі материал ID-і бар келісімнің fingerprint-ін ауыстырмайды', async () => {
     const owner = auth.register('approval-legacy-material@example.kz', 'password123', 'Цех')
     if (!owner.ok) throw new Error(owner.error)
