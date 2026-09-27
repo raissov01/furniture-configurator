@@ -35,6 +35,7 @@ import type {
   SettingsOverride, Vec3,
 } from '../types'
 import { BASIS_SCRIPT_BODY } from './basisScriptBody'
+import { requireCncReadyPanels } from './cncGuard'
 
 // ── Типтер ───────────────────────────────────────────────────────────────────
 
@@ -333,6 +334,7 @@ export function basisScriptData(
   settingsOverride?: SettingsOverride,
   options: BasisScriptOptions = { projectName: 'Проект' },
 ): BasisScriptData {
+  requireCncReadyPanels(scene.nodes.flatMap((node) => node.panels))
   const ctx: Ctx = {
     catalog,
     bands: new Map(catalog.edgeBands.map((b) => [b.id, b])),
