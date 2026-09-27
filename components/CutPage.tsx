@@ -166,9 +166,9 @@ export function CutPage() {
             ← {tr('Конфигуратор')}
           </Link>
           <h1 className="text-sm font-semibold">{tr('Раскрой')}</h1>
-          <span className="text-[11px] text-neutral-500">{projectName}</span>
+          <span className="min-w-0 max-w-full truncate text-[11px] text-neutral-500">{projectName}</span>
 
-          <div className="ml-auto flex items-center gap-1">
+          <div data-testid="cut-export-actions" className="flex w-full flex-wrap items-center gap-1 sm:ml-auto sm:w-auto">
             <Button active={showCuts} onClick={() => setShowCuts(!showCuts)}>
               {tr('Показать резы')}
             </Button>
@@ -334,7 +334,7 @@ export function CutPage() {
         ) : !nesting || !plan ? (
           <p className="text-xs text-neutral-500">{tr('Нет деталей для раскроя.')}</p>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
             <aside className="space-y-3 self-start rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
                 {tr('Настройки станка')}
@@ -373,7 +373,7 @@ export function CutPage() {
               </p>
             </aside>
 
-            <div className="space-y-5">
+            <div className="min-w-0 space-y-5">
               {advice.length > 0 ? <UnplacedBlock advice={advice} /> : null}
 
               <Totals stats={plan.stats} sheetCount={nesting.sheetCount} />
@@ -390,7 +390,7 @@ export function CutPage() {
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex min-w-0 flex-wrap gap-4">
                       {material.sheets.map((sheet) => (
                         <SheetCard
                           key={sheet.index}
@@ -448,12 +448,12 @@ function SheetCard({
 }: { sheet: NestedSheet; plan: SheetCutPlan; showCuts: boolean }) {
   const scale = SHEET_PX / sheet.sheetWidth
   return (
-    <figure className="space-y-1">
+    <figure className="w-full max-w-[520px] min-w-0 space-y-1">
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
         width={SHEET_PX}
         height={sheet.sheetHeight * scale}
-        className="rounded border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
+        className="h-auto w-full max-w-[520px] rounded border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
         role="img"
         aria-label={`Лист ${sheet.index}`}
       >
