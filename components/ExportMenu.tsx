@@ -42,7 +42,7 @@ export function ExportMenu({ cabinet, panels, exportId, exportName }: {
         <MenuItem disabled={busy !== null} onClick={() => void run('csv')}>
           CSV — {tr('на распил')}
         </MenuItem>
-        <MenuItem disabled={busy !== null} title={tr('Каждая деталь — отдельный DXF, всё в одном архиве')} onClick={() => void run('dxf')}>
+        <MenuItem disabled={busy !== null} title={tr('DXF деталей и торцевая присадка CSV в одном архиве')} onClick={() => void run('dxf')}>
           DXF — {tr('на станок')}
         </MenuItem>
         {cabinet && <MenuItem disabled={busy !== null} title={tr('Проекции, сборка и деталировка')} onClick={() => void run('pdf')}>
