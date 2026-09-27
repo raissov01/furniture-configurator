@@ -183,6 +183,9 @@ export function flattenTree(
       case 'solid':
         solids.push({ nodeId: node.id, name: node.name, spec: node.solid, pose })
         return
+      case 'annotation':
+        // Тек көрініс: өндірістік FlatNode/Panel/Hardware қатарына кірмейді.
+        return
     }
   }
   step(root, ORIGIN_POSE)

@@ -20,10 +20,10 @@ import { edgeSummary, groupDrillingByPurpose, materialName, roleLabel } from './
 import type { EdgeFieldName } from './infoFields'
 
 const EDGE_LABEL: Record<EdgeFieldName, string> = {
-  L1: 'L1 (алдыңғы ұзын жиек)',
-  L2: 'L2 (артқы ұзын жиек)',
-  W1: 'W1 (қысқа жиек)',
-  W2: 'W2 (қысқа жиек)',
+  L1: 'передний длинный край',
+  L2: 'задний длинный край',
+  W1: 'короткий край',
+  W2: 'короткий край',
 }
 
 export function InfoPanel() {
@@ -39,7 +39,7 @@ export function InfoPanel() {
   if (!part) {
     return (
       <div data-panel="info" className="text-[11px] text-neutral-500">
-        {tr('Ештеңе таңдалмаған — 3D-де немесе Структура панелінде детальді бас.')}
+        {tr('Ничего не выбрано — выберите деталь в 3D или панели Структура.')}
       </div>
     )
   }
@@ -76,7 +76,7 @@ export function InfoPanel() {
         <div className="flex flex-col gap-0.5">
           {edges.map((e) => (
             <div key={e.edge} className="flex items-baseline justify-between gap-2">
-              <span className="text-neutral-500">{EDGE_LABEL[e.edge]}</span>
+              <span className="text-neutral-500">{e.edge} ({tr(EDGE_LABEL[e.edge])})</span>
               <span className="text-neutral-200">
                 {e.bandName ? `${e.bandName}${e.thickness !== null ? ` (${e.thickness} ${tr('мм')})` : ''}` : tr('нет')}
               </span>
