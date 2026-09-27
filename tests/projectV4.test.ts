@@ -23,6 +23,19 @@ const legacy: ProjectFile = {
   priceOverrides: { coefficient: 2, salePrice: 500_000 },
 }
 
+it('ескі жобадағы 0 мм кромка шегін v4 ағашы мен жалпы баптауда көшіреді', () => {
+  const project = parseProjectV4(legacy)
+  const raw = structuredClone(project)
+  raw.settings = { ...raw.settings, minBandSubtract: 0 }
+  const cabinetNode = raw.root.children.find((node) => node.kind === 'cabinet')
+  if (cabinetNode?.kind !== 'cabinet') throw new Error('Шкаф жоқ')
+  cabinetNode.config.settings = { ...cabinetNode.config.settings, minBandSubtract: 0 }
+  const migrated = parseProjectV4(raw)
+  expect(migrated.settings?.minBandSubtract).toBe(1)
+  const result = migrated.root.children.find((node) => node.kind === 'cabinet')
+  expect(result?.kind === 'cabinet' ? result.config.settings?.minBandSubtract : null).toBe(1)
+})
+
 const plainBoardNode = () => ({
   kind: 'board', id: 'b1', name: 'Еркін тақта',
   transform: { pos: { x: 10, y: 20, z: 30 }, rot: { x: 0, y: 90, z: 0 } },
