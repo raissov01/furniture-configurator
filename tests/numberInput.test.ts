@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
+import { readFileSync } from 'node:fs'
 import { Dense, Field, NumberInput } from '../components/ui'
 import { hasDraftErrors, parseNumberDraft, stepAvailable, updateDraftErrors } from '../lib/numberDraft'
 
@@ -38,5 +39,12 @@ describe('number draft validation', () => {
     }))
     expect(html).toMatch(/aria-label="Уменьшить"[^>]*disabled=""/)
     expect(html).toMatch(/aria-label="Увеличить"[^>]*title="Увеличить"/)
+  })
+
+  it('blocks exports while an uncommitted dimension draft is invalid', () => {
+    const workspace = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
+    expect(workspace).toMatch(/canExport: hasActiveCabinet && !production\.error && !draftInvalid/)
+    expect(workspace).toMatch(/canExportPdf: hasActiveCabinet && !draftInvalid/)
+    expect(workspace).toMatch(/cabinet && !production\.error && !draftInvalid \? <ExportMenu/)
   })
 })
