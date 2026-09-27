@@ -5,7 +5,7 @@ import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { DockHost } from '../components/dock/DockHost'
-import { createDockState } from '../components/dock/layout'
+import { closedPanelIds, createDockState } from '../components/dock/layout'
 import { loadDockState } from '../components/dock/persist'
 import { importDxfRoomPlan } from '../src/core/import/dxf'
 import { dxfRoomSize } from '../lib/dxfRoomSize'
@@ -21,7 +21,17 @@ describe('Workspace док панельдері', () => {
     }))
     expect(html).toContain('data-dock-panel="find"')
     expect(html).toContain('data-dock-hidden="true"')
-    expect(html).toMatch(/Открыть[\s\S]*Найти<\/button>/)
+    expect(html).toContain('aria-label="Панели"')
+    expect(html).toContain('Найти</button>')
+    expect(html).not.toContain('uppercase')
+    expect(html).not.toContain('absolute bottom-2 left-2')
+  })
+
+  it('жабық панель тізімін тек күйден есептейді', () => {
+    const state = createDockState(['find', 'price', 'info'])
+    state.panels.find = { ...state.panels.find!, visible: false }
+    state.panels.info = { ...state.panels.info!, visible: false }
+    expect(closedPanelIds(state, ['find', 'price', 'info'])).toEqual(['find', 'info'])
   })
 
   it('жеке сақтау кілті жоқ болса, берілген жабық күйді алады', () => {

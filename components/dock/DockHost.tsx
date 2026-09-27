@@ -16,6 +16,7 @@ import {
   activateTab,
   bringToFront,
   closePanel,
+  closedPanelIds,
   createDockState,
   dockPanel,
   edgeAtPoint,
@@ -115,12 +116,13 @@ export function DockHost({ panels, children, initiallyClosed = [], storageKey }:
   }, [bounds])
 
   return (
-    <div ref={containerRef} className="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-neutral-950">
+    <div ref={containerRef} data-testid="workspace-dock-host" className="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-neutral-100 dark:bg-neutral-900">
       <div className="flex min-h-0 flex-1 flex-col">
         <DockZone side="top" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
         <div className="flex min-h-0 flex-1">
+          <ClosedPanelsMenu panels={panels} state={state} onOpen={(id) => setState((s) => openPanel(s, id))} />
           <DockZone side="left" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
-          <div className="relative min-w-0 flex-1 border border-neutral-800">{children}</div>
+          <div className="relative min-w-0 flex-1 border border-neutral-300 dark:border-neutral-700">{children}</div>
           <DockZone side="right" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
         </div>
         <DockZone side="bottom" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
@@ -151,8 +153,6 @@ export function DockHost({ panels, children, initiallyClosed = [], storageKey }:
           )
         })}
       </div>
-
-      <ClosedPanelsMenu panels={panels} state={state} onOpen={(id) => setState((s) => openPanel(s, id))} />
     </div>
   )
 }
@@ -204,9 +204,10 @@ function DockZone({
               <button
                 key={id}
                 type="button"
+                aria-selected={id === active}
                 onClick={() => setState((s) => activateTab(s, side, id))}
                 className={cn(
-                  'px-2 py-1 text-[11px] uppercase tracking-wider',
+                  'px-2 py-1 text-[11px]',
                   id === active ? 'bg-neutral-950 text-neutral-100' : 'text-neutral-500 hover:text-neutral-300',
                 )}
               >
@@ -314,21 +315,21 @@ function FloatingPanel({
 function ClosedPanelsMenu({
   panels, state, onOpen,
 }: { panels: DockPanelSpec[]; state: DockState; onOpen: (id: PanelId) => void }) {
-  const closed = panels.filter((p) => !(state.panels[p.id]?.visible ?? true))
+  const closedIds = closedPanelIds(state, panels.map((panel) => panel.id))
+  const closed = panels.filter((panel) => closedIds.includes(panel.id))
   if (closed.length === 0) return null
   return (
-    <div className="pointer-events-none absolute bottom-2 left-2 z-50 flex flex-wrap gap-1">
-      {closed.map((p) => (
-        <button
-          key={p.id}
-          type="button"
-          onClick={() => onOpen(p.id)}
-          className="pointer-events-auto border border-neutral-800 bg-neutral-900 px-2 py-1 text-[10px] uppercase tracking-wider text-neutral-400 hover:text-neutral-100"
-        >
-          {tr('Открыть')} {p.title}
-        </button>
-      ))}
-    </div>
+    <details className="relative z-30 w-7 shrink-0 border-r border-neutral-300 bg-neutral-100 text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
+      <summary aria-label={tr('Панели')} className="flex min-h-24 cursor-pointer list-none items-center justify-center border border-neutral-300 bg-neutral-100 px-1 text-xs text-neutral-800 [writing-mode:vertical-rl] dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">{tr('Панели')}</summary>
+      <div role="menu" aria-label={tr('Панели')} className="absolute left-full top-0 z-40 min-w-40 border border-neutral-300 bg-white p-1 text-xs dark:border-neutral-700 dark:bg-neutral-900">
+        {closed.map((panel) => (
+          <button key={panel.id} role="menuitem" type="button" onClick={() => onOpen(panel.id)}
+            className="block w-full border border-transparent px-2 py-1 text-left hover:border-neutral-300 dark:hover:border-neutral-600">
+            {panel.title}
+          </button>
+        ))}
+      </div>
+    </details>
   )
 }
 

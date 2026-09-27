@@ -11,6 +11,7 @@
 import { t as tr } from '@/lib/i18n'
 import { LIBRARY_AUTH_CHANGED_EVENT } from '@/lib/librarySyncUi'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
 import { parseProjectV4, parseShopProfile } from '@/src/core/index'
 import { addCloudFolder, moveProjectToFolder, organizeProjects, parseCloudOrg } from '@/src/core/cloudProjectOrganize'
 import type { CloudOrg } from '@/src/core/cloudProjectOrganize'

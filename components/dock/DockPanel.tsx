@@ -59,7 +59,7 @@ export function DockPanel({
       }
     >
       <div
-        className="flex shrink-0 cursor-move touch-none select-none items-center gap-2 border-b border-neutral-800 bg-neutral-900 px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400"
+        className="flex shrink-0 cursor-move touch-none select-none items-center gap-2 border-b border-neutral-800 bg-neutral-900 px-2 py-1 text-[11px] font-semibold text-neutral-400"
         onPointerDown={onTitlePointerDown}
       >
         <span className="flex-1 truncate">{title}</span>

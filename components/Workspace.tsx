@@ -31,7 +31,7 @@ import { ShareCodeDialog } from '@/components/ShareCodeDialog'
 import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
-import { uniqueToolbarRows } from '@/lib/classicToolbar'
+import { assertUniqueToolbarRows, compactToolbarRows } from '@/lib/classicToolbar'
 import { classicToolStatus } from '@/lib/classicStatus'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
@@ -599,31 +599,28 @@ export function Workspace() {
     cloud: cloudEnabled, selectedDoor: canToggleSelectedDoor(projectPanels.find((part) => part.id === selected)), selectedDoorOpen: Boolean(selected && openPanels[selected]),
   })
 
-  const classicToolRows: ClassicToolSpec[][] = uniqueToolbarRows<ClassicToolSpec>([
+  const classicToolRows: ClassicToolSpec[][] = compactToolbarRows<ClassicToolSpec>(assertUniqueToolbarRows<ClassicToolSpec>([
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
       { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
       { icon: classicShopTools.quote.icon, label: tr(classicShopTools.quote.label), action: () => setQuoteOpen(true), disabled: Boolean(production.error), id: 'quote' },
       { icon: classicShopTools.nesting.icon, label: tr(classicShopTools.nesting.label), action: () => { window.location.href = '/cut' }, id: 'cut' },
-      { icon: 'copy', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable },
       { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, id: 'undo' },
       { icon: 'redo', label: tr('Повторить'), action: redo, disabled: !canRedo, id: 'redo' },
-      { icon: 'settings', label: tr('Цех: материалы и цены'), action: () => setShopOpen(true) },
+      { icon: 'shop', label: tr('Цех: материалы и цены'), action: () => setShopOpen(true) },
     ],
     [
       { icon: 'box', label: tr('Тело'), action: () => setViewMode('solid'), active: viewMode === 'solid' },
       { icon: 'ghost', label: tr('Полупрозрачно'), action: () => setViewMode('ghost'), active: viewMode === 'ghost', id: 'ghost' },
       { icon: 'wire', label: tr('Контур'), action: () => setViewMode('wire'), active: viewMode === 'wire' },
-      { icon: 'eye', label: tr('Размеры на сцене'), action: () => setShowDimensions(!showDimensions), active: showDimensions },
       { icon: 'magnet', label: tr('Привязка'), action: () => {
         if (snapOptions.grid > 0 || snapOptions.tolerance > 0) {
           previousSnapOptions.current = snapOptions
           setSnapOptions({ grid: 0, tolerance: 0 })
         } else setSnapOptions(previousSnapOptions.current)
       }, active: snapOptions.grid > 0 || snapOptions.tolerance > 0 },
-      { icon: 'light', label: tr('Рендер'), action: () => setRenderOpen(true) },
       { icon: 'measure', label: tr('Размеры на сцене'), action: () => setShowDimensions(!showDimensions), active: showDimensions },
       { icon: 'fit', label: tr('Вписать в кадр'), action: fitCamera },
       { icon: 'view', label: tr('Перспектива'), action: () => { setCameraPreset('three-quarter'); setProjection('perspective') } },
@@ -641,19 +638,17 @@ export function Workspace() {
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
-      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
-      { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
-      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
+      { icon: 'decor', label: tr('Добавить декоративный блок'), action: addSolid },
+      { icon: 'text', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
     ],
     [
       { icon: 'render', label: tr('Рендер'), action: () => setRenderOpen(true) },
-      { icon: 'quote', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
       { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard, id: 'drill' },
-      { icon: 'settings', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !propertiesNodeSupported(activeNode?.kind), id: 'properties' },
+      { icon: 'properties', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !propertiesNodeSupported(activeNode?.kind), id: 'properties' },
       { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
     ],
-  ])
+  ]))
 
   return (
     <div className="p100-workspace flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100" data-workspace-style="classic">
@@ -742,7 +737,7 @@ export function Workspace() {
               onChange={(event) => setAssemblyStep(Number(event.target.value))} />
             <span className="tabular-nums">{assemblyStepView(assemblyStep, projectPanels.length).label}</span>
           </label>}
-          {index === 3 && <div className="p100-xr-tools">
+          {index === classicToolRows.length - 1 && <div className="p100-xr-tools">
             {hasActiveCabinet && !sceneError && !projectLoadError ? <span data-testid="classic-ar"><ArButton /></span> : null}
             <span data-testid="classic-vr"><VrButton /></span>
           </div>}
@@ -801,6 +796,50 @@ export function Workspace() {
         </div>
 
         <ProjectMenu />
+        <div data-testid="workspace-view-menu"><Menu label={tr('Вид')} size="sm" title={tr('Прозрачность, фасады, проекция, масштаб')}>
+          <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+            {tr('Разнести')}
+            <Slider value={exploded} onChange={setExploded} />
+          </label>
+          <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
+            {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
+          </MenuItem>
+          <MenuItem
+            active={projection === 'ortho'}
+            onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
+          >
+            {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
+          </MenuItem>
+          <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
+            {tr('Размеры на сцене')}
+          </MenuItem>
+          <MenuItem active={!showDrilling && !showFittings} onClick={() => { setShowDrilling(false); setShowFittings(false) }}>
+            {tr('Фурнитура: скрыть')}
+          </MenuItem>
+          <MenuItem active={showDrilling} onClick={() => setShowDrilling(true)}>{tr('Фурнитура: отверстия')}</MenuItem>
+          <MenuItem active={showFittings} onClick={() => setShowFittings(true)}>{tr('Фурнитура: крепёж')}</MenuItem>
+          <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
+          <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
+            {tr('Человек для масштаба')}
+          </MenuItem>
+        </Menu></div>
+        {silhouette.on ? <div className="flex flex-col gap-0.5">
+          <input type="text" inputMode="numeric" aria-label={tr('Рост человека, мм')}
+            aria-invalid={Boolean(silhouetteError)} aria-describedby={silhouetteError ? 'silhouette-height-error' : undefined}
+            className={cn('w-20 border bg-white px-1.5 py-1 text-xs tabular-nums dark:bg-neutral-900',
+              silhouetteError ? 'border-red-600 text-red-700' : 'border-neutral-300 dark:border-neutral-700')}
+            value={silhouetteDraft} title={tr('Рост человека, мм')}
+            onChange={(event) => {
+              const raw = event.target.value
+              setSilhouetteDraft(raw)
+              const parsed = parseSilhouetteHeight(raw)
+              if (parsed.value !== undefined) setSilhouette({ height: parsed.value })
+            }} />
+          {silhouetteError ? <span id="silhouette-height-error" role="alert" className="text-xs text-red-700">
+            {tr('Рост человека, мм')}: {tr('Допустимо целое число в диапазоне')} {MIN_SILHOUETTE_HEIGHT}…{MAX_SILHOUETTE_HEIGHT} мм
+          </span> : null}
+        </div> : null}
+        <Button size="sm" onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
 
         {/* Сирек керегі оң жақта; көрініс құралдары 3D-нің өз үстіне көшті. */}
         <div className="flex min-w-0 w-full flex-wrap items-center gap-1 sm:ml-auto sm:w-auto">
@@ -963,54 +1002,6 @@ export function Workspace() {
         ) : null}
       </div>
 
-      {/* Екінші қатар: сирек баптаулар («Вид»), силуэт биіктігі, анықтама. */}
-      <div className="compact-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
-        <Menu label={tr('Вид')} size="sm" title={tr('Прозрачность, фасады, проекция, масштаб')}>
-          <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
-            {tr('Разнести')}
-            <Slider value={exploded} onChange={setExploded} />
-          </label>
-          <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
-            {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
-          </MenuItem>
-          <MenuItem
-            active={projection === 'ortho'}
-            onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
-          >
-            {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
-          </MenuItem>
-          <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
-            {tr('Размеры на сцене')}
-          </MenuItem>
-          <MenuItem active={!showDrilling && !showFittings} onClick={() => { setShowDrilling(false); setShowFittings(false) }}>
-            {tr('Фурнитура: скрыть')}
-          </MenuItem>
-          <MenuItem active={showDrilling} onClick={() => setShowDrilling(true)}>{tr('Фурнитура: отверстия')}</MenuItem>
-          <MenuItem active={showFittings} onClick={() => setShowFittings(true)}>{tr('Фурнитура: крепёж')}</MenuItem>
-          <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
-          <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
-            {tr('Человек для масштаба')}
-          </MenuItem>
-        </Menu>
-        {silhouette.on ? <div className="flex flex-col gap-0.5">
-          <input type="text" inputMode="numeric" aria-label={tr('Рост человека, мм')}
-            aria-invalid={Boolean(silhouetteError)} aria-describedby={silhouetteError ? 'silhouette-height-error' : undefined}
-            className={cn('w-20 border bg-white px-1.5 py-1 text-xs tabular-nums dark:bg-neutral-900',
-              silhouetteError ? 'border-red-600 text-red-700' : 'border-neutral-300 dark:border-neutral-700')}
-            value={silhouetteDraft} title={tr('Рост человека, мм')}
-            onChange={(event) => {
-              const raw = event.target.value
-              setSilhouetteDraft(raw)
-              const parsed = parseSilhouetteHeight(raw)
-              if (parsed.value !== undefined) setSilhouette({ height: parsed.value })
-            }} />
-          {silhouetteError ? <span id="silhouette-height-error" role="alert" className="text-xs text-red-700">
-            {tr('Рост человека, мм')}: {tr('Допустимо целое число в диапазоне')} {MIN_SILHOUETTE_HEIGHT}…{MAX_SILHOUETTE_HEIGHT} мм
-          </span> : null}
-        </div> : null}
-        <Button size="sm" onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
-      </div>
-
       {production.error ? (
         <div role="alert" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           {production.error} — {tr('Деталировка временно недоступна. Экспорт заблокирован.')}
@@ -1065,40 +1056,6 @@ export function Workspace() {
       <Tour paused={galleryOpen} classic={classic} />
       <BusyOverlay />
       <RenderPanel />
-      {/*
-        3D-де БАСЫП таңдалған деталь: цехтың сұрағы «мынау қандай деталь»
-        деп басталады, ал жауап әрқашан бір жерде тұруы керек.
-      */}
-      {selected ? (() => {
-        // Іздеу ЖОБА тізімінен: бір жобадағы екі шкафтың детальі де осында.
-        const part = projectPanels.find((p) => p.id === selected)
-        if (!part) return null
-        return (
-          <div className="flex items-center gap-3 border-b border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs dark:border-neutral-800 dark:bg-neutral-900">
-            <b>{panelDisplayLabel(part.label)}</b>
-            <span className="tabular-nums text-neutral-500">
-              {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
-            </span>
-            <span className="tabular-nums text-amber-600 dark:text-amber-400">
-              {tr('Рез · цех')}: {part.cutLength}×{part.cutWidth}
-            </span>
-            <span className="tabular-nums text-neutral-500">
-              {part.drilling.length} {tr('отв.')}
-            </span>
-            {part.note ? <span className="truncate text-neutral-400">{part.note}</span> : null}
-            {/* Корпус әрекеттері (көшіру/айна/өшіру) енді оң панельдің астында — әрқашан көзде. */}
-            <div className="ml-auto flex items-center gap-1">
-              {/* Есік/ящик — осы жерден бір-бірлеп ашылады (екі рет басу да солай). */}
-              {part.opening ? (
-                <Button active={Boolean(openPanels[part.id])} onClick={() => togglePanelOpen(part.id)}>
-                  {openPanels[part.id] ? tr('Закрыть дверцу') : tr('Открыть дверцу')}
-                </Button>
-              ) : null}
-              <Button onClick={() => setSelected(null)}>{tr('Закрыть')}</Button>
-            </div>
-          </div>
-        )
-      })() : null}
 
       {sizeWarnings.length > 0 ? (
         <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
@@ -1149,6 +1106,37 @@ export function Workspace() {
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
           </div>
+          {/* 3D-де таңдалған деталь жайлы ақпарат сахна өлшемін өзгертпейді. */}
+          {selected ? (() => {
+            // Іздеу ЖОБА тізімінен: бір жобадағы екі шкафтың детальі де осында.
+            const part = projectPanels.find((p) => p.id === selected)
+            if (!part) return null
+            return (
+              <div data-testid="selected-info-overlay" className="pointer-events-auto absolute inset-x-2 bottom-2 z-20 flex max-h-[45%] flex-wrap items-center gap-2 overflow-y-auto border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
+                <b>{panelDisplayLabel(part.label)}</b>
+                <span className="tabular-nums text-neutral-500">
+                  {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
+                </span>
+                <span className="tabular-nums text-amber-600 dark:text-amber-400">
+                  {tr('Рез · цех')}: {part.cutLength}×{part.cutWidth}
+                </span>
+                <span className="tabular-nums text-neutral-500">
+                  {part.drilling.length} {tr('отв.')}
+                </span>
+                {part.note ? <span className="truncate text-neutral-400">{part.note}</span> : null}
+                {/* Корпус әрекеттері (көшіру/айна/өшіру) енді оң панельдің астында — әрқашан көзде. */}
+                <div className="ml-auto flex items-center gap-1">
+                  {/* Есік/ящик — осы жерден бір-бірлеп ашылады (екі рет басу да солай). */}
+                  {part.opening ? (
+                    <Button active={Boolean(openPanels[part.id])} onClick={() => togglePanelOpen(part.id)}>
+                      {openPanels[part.id] ? tr('Закрыть дверцу') : tr('Открыть дверцу')}
+                    </Button>
+                  ) : null}
+                  <Button onClick={() => setSelected(null)}>{tr('Закрыть')}</Button>
+                </div>
+              </div>
+            )
+          })() : null}
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
           {walk ? null : structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} dockRequest={dockRequest}
             canOpenProperties={propertiesNodeSupported(activeNode?.kind)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
