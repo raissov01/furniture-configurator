@@ -605,11 +605,10 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   // Қолмен берілген раскладкаға плита ӨЗДІГІНЕН қосылмайды: пайдаланушы
   // оны «Тумба под варочную панель» арқылы өзі қояды.
   const wantHob = hobFuel !== 'none' && !options.modules
-  const runB = options.modules
-    ? options.modules.runB
-    : corner
-      ? composeRun(options.lengthB!, { sink: false, appliances, main: false, hob: wantHob && !hasHob(runA) })
-      : []
+  const runB = corner
+    ? (options.modules?.runB
+      ?? composeRun(options.lengthB!, { sink: false, appliances, main: false, hob: wantHob && !hasHob(runA) }))
+    : []
   // Үшінші қабырға (П-пішін) — әрқашан авто (раскладка редакторы А/B ғана).
   const runC = uShape && (options.lengthC ?? 0) >= MODULE_MIN
     ? composeRun(options.lengthC!, {

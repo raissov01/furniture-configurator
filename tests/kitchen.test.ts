@@ -357,6 +357,15 @@ describe('generateKitchen', () => {
     expect(validatePlacements(r.room, r.cabinets.map((c) => ({ cabinet: c, placement: r.placements.find((p) => p.cabinetId === c.id)! })))).toEqual([])
   })
 
+  it('түзу пішінге ауысқанда сақталған B модульдерін орналастырмайды', () => {
+    const result = generateKitchen({ layout: 'straight', lengthA: 600, upper: false,
+      sink: false, appliances: false, hob: 'none',
+      modules: { runA: [{ kind: 'baseDoors', width: 600 }],
+        runB: [{ kind: 'baseDoors', width: 600 }] } }, SEED_CATALOG)
+    expect(result.placements.map((p) => p.wall)).toEqual(['north'])
+    expect(result.cabinets).toHaveLength(1)
+  })
+
   it('шыны жоғарғы: үстіңгі фасад glass=true, төменгі — жоқ', () => {
     const r = generateKitchen({ layout: 'straight', lengthA: 3000, upper: true, appliances: false, glassUpper: true }, SEED_CATALOG)
     // Үстіңгі шкафтардың секция фасады шыны.
