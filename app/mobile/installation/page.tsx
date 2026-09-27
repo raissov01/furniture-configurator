@@ -8,6 +8,7 @@ import { createMobileSyncTransport } from '@/lib/mobile/syncTransport'
 import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
 import { canEditInstallation, closeBlockReason, installationQueueNotice, signatureHasStroke } from '@/lib/mobile/installationUi'
 import { installationCreateAction } from '@/lib/installationHandoff'
+import { printableRepairs } from '@/lib/mobile/repairLabel'
 import { INSTALLATION_CHECKLIST, parseInstallationAction, type ChecklistKey, type InstallationActionKind, type InstallationTask } from '@/src/core/installation'
 import { SyncQueue } from '@/src/core/sync/queue'
 import type { JsonValue } from '@/src/core/sync/types'
@@ -232,7 +233,7 @@ export default function MobileInstallationPage() {
       {task.repairs.filter((repair) => repair.status === 'open').map((repair) => <button key={repair.id}
         className="block border p-2" disabled={busy || pending || !canEditInstallation(task)} onClick={() => void send('installation.repairComplete', { repairId: repair.id })}>
         {t('Ремонт завершён')}: {repair.panelId}</button>)}
-      {task.repairs.filter((repair) => repair.status === 'complete').map((repair) =>
+      {printableRepairs(task).map((repair) =>
         <Link key={repair.id} className="block min-h-11 border p-2" href={`/mobile/installation/label?task=${encodeURIComponent(task.id)}&repair=${encodeURIComponent(repair.id)}`}>
           {t('Напечатать новую бирку QR')}: {repair.panelId} · v{repair.labelVersion}
         </Link>)}
