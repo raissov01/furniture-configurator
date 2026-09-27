@@ -61,6 +61,7 @@ export type ClassicMenuState = {
   canUndo: boolean
   canRedo: boolean
   activeEditable: boolean
+  canMirrorSelected?: boolean
   editableBoard: boolean
   canRemoveCabinet: boolean
   /** Цех экспорты мүмкін бе (белсенді корпус бар, өндірісте қате жоқ). */
@@ -173,7 +174,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('element.board', 'Добавить свободную доску', { type: 'addBoard' }),
         item('element.removeBoard', 'Удалить доску', { type: 'removeBoard' }, { disabled: !s.editableBoard }),
         item('element.duplicate', 'Дублировать', { type: 'duplicate' }, { disabled: !s.activeEditable }),
-        item('element.mirror', 'Зеркальная копия', { type: 'mirror' }, { disabled: !s.activeEditable }),
+        item('element.mirror', 'Зеркальная копия', { type: 'mirror' }, { disabled: !(s.canMirrorSelected ?? s.activeEditable) }),
         item('element.remove', 'Удалить корпус', { type: 'removeCabinet' }, { disabled: !s.canRemoveCabinet }),
         SEP,
         item('element.open', s.open ? 'Закрыть створки' : 'Распахнуть', { type: 'toggleOpen' }, { active: s.open }),

@@ -13,6 +13,7 @@ import { create } from 'zustand'
 import { t as tr } from '@/lib/i18n'
 import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
+import { appendFreeMirror } from '@/lib/freeMirrorAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import {
@@ -283,6 +284,7 @@ type State = Snapshot & {
 
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
+  mirrorFreeNode(id: string): string
   removeBoard(id: string): void
   editBoard(id: string, patch: Partial<BoardSpec>): void
   autoJointBoards(ids: [string, string], kind: AutoJointKind, tolerance: number): void
@@ -765,6 +767,14 @@ export const useConfigurator = create<State>((set, get) => ({
     }] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id
+  },
+
+  mirrorFreeNode(id) {
+    const s = get()
+    const result = appendFreeMirror(s.root, id, s.catalog, s.layers, s.projectSettings ?? s.shop.settings)
+    flattenTree(result.root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
+    set({ ...treeEdit(s, result.root), activeId: result.id, selected: result.id })
+    return result.id
   },
 
   removeBoard(id) {

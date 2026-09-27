@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic'
 import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
+import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
 import { PropertiesDialog } from '@/components/PropertiesDialog'
@@ -41,7 +42,7 @@ import { cloudEnabled } from '@/lib/cloud'
 import { THEME_EVENT, chooseTheme, readTheme, saveQuality, type Theme } from '@/lib/appearance'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
-  ConfigValidationError, formatTenge, nestPanels, nestingOptionsOf, priceProject,
+  ConfigValidationError, canMirror, formatTenge, nestPanels, nestingOptionsOf, priceProject,
   boardDimensions, findNode,
 } from '@/src/core/index'
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
@@ -146,6 +147,7 @@ export function Workspace() {
   const activeId = useConfigurator((s) => s.activeId)
   const duplicateCabinet = useConfigurator((s) => s.duplicateCabinet)
   const mirrorCabinet = useConfigurator((s) => s.mirrorCabinet)
+  const mirrorFreeNode = useConfigurator((s) => s.mirrorFreeNode)
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
   const addCabinet = useConfigurator((s) => s.addCabinet)
   const addBoard = useConfigurator((s) => s.addBoard)
@@ -231,6 +233,21 @@ export function Workspace() {
       return false
     }
   }, [root, activeId, layers, hasActiveCabinet])
+  const freeMirrorCheck = useMemo(() => activeNode && activeNode.kind !== 'cabinet'
+    ? freeMirrorAvailability(root, activeId, catalog, layers, settings) : null,
+    [activeNode, root, activeId, catalog, layers, settings])
+  const canMirrorSelected = cabinet ? activeEditable && canMirror(cabinet).ok : Boolean(freeMirrorCheck?.ok)
+  const [mirrorError, setMirrorError] = useState<string | null>(null)
+  useEffect(() => setMirrorError(null), [activeId])
+  const mirrorSelected = () => {
+    try {
+      if (cabinet) mirrorCabinet(activeId)
+      else mirrorFreeNode(activeId)
+      setMirrorError(null)
+    } catch (cause) {
+      setMirrorError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
@@ -484,7 +501,7 @@ export function Workspace() {
       case 'addBoard': addBoard(); break
       case 'removeBoard': if (editableBoard && !activeBoardJoint) removeBoard(activeId); break
       case 'duplicate': duplicateCabinet(activeId); break
-      case 'mirror': mirrorCabinet(activeId); break
+      case 'mirror': mirrorSelected(); break
       case 'removeCabinet': removeCabinet(activeId); setSelected(null); break
       case 'toggleOpen': setOpenness(openness > 0 ? 0 : 1); break
       case 'toggleAssembly': setAssemblyStep(assemblyStep === null ? 1 : null); break
@@ -496,7 +513,7 @@ export function Workspace() {
     }
   }
   const menus = classicMenus({
-    canUndo, canRedo, activeEditable, editableBoard: editableBoard && !activeBoardJoint,
+    canUndo, canRedo, activeEditable, canMirrorSelected, editableBoard: editableBoard && !activeBoardJoint,
     canRemoveCabinet: cabinets.length >= 2 && activeEditable,
     canExport: projectPanels.length > 0 && productionState.exportsAvailable,
     canExportPdf: Boolean(pdfCabinet) && productionState.exportsAvailable,
@@ -541,7 +558,7 @@ export function Workspace() {
       { icon: 'layers', label: tr('Слои'), action: () => setStructureOpen(true) },
       { icon: 'library', label: tr('Библиотека'), action: () => setStructureOpen(true) },
       { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
-      { icon: 'mirror', label: tr('Зеркальная копия'), action: () => mirrorCabinet(activeId), disabled: !activeEditable },
+      { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true) },
@@ -752,7 +769,7 @@ export function Workspace() {
       <div className="legacy-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
         <Button size="sm" onClick={addCabinet} title={tr('Новый корпус')}>+</Button>
         <Button size="sm" onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>⧉</Button>
-        <Button size="sm" onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable} title={tr('Зеркальная копия')}>⇋</Button>
+        <Button size="sm" onClick={mirrorSelected} disabled={!canMirrorSelected} title={freeMirrorCheck?.reason ?? tr('Зеркальная копия')}>⇋</Button>
         <Button
           size="sm"
           onClick={() => { removeCabinet(activeId); setSelected(null) }}
@@ -902,6 +919,11 @@ export function Workspace() {
         <div role="alert" className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <span className="flex-1">{tr('Экспорт не удался')}: {exportError}</span>
           <Button size="sm" onClick={() => setExportError(null)}>{tr('Закрыть')}</Button>
+        </div>
+      ) : null}
+      {(mirrorError || (activeNode && activeNode.kind !== 'cabinet' && freeMirrorCheck && !freeMirrorCheck.ok)) ? (
+        <div role="status" className="border-b border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          {tr('Зеркальная копия')}: {mirrorError ?? freeMirrorCheck?.reason}
         </div>
       ) : null}
       {shared ? (
@@ -1149,7 +1171,7 @@ export function Workspace() {
             {activeBoard && <Button onClick={() => removeBoard(activeId)}
               disabled={!editableBoard || Boolean(activeBoardJoint)}>{tr('Удалить доску')}</Button>}
             <Button onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
-            <Button onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable} title={tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
+            <Button onClick={mirrorSelected} disabled={!canMirrorSelected} title={freeMirrorCheck?.reason ?? tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
             <Button
               onClick={() => { removeCabinet(activeId); setSelected(null) }}
               disabled={cabinets.length < 2 || !activeEditable}
