@@ -68,7 +68,7 @@ export const metadata: Metadata = {
  * көрінуі керек.
  */
 export const viewport: Viewport = {
-  themeColor: '#17191e',
+  themeColor: BRAND.color,
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',

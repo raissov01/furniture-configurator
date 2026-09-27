@@ -25,7 +25,7 @@ import type { PdfFonts } from './pdf'
 import { labelLayout } from './labelLayout'
 import type { LabelSize } from './labelLayout'
 import { encodePartQr } from '../partQr'
-import { stampPdfBrand } from '../brand'
+import { BRAND, stampPdfBrand } from '../brand'
 export { encodePartQr, decodePartQr } from '../partQr'
 export type { PartQr } from '../partQr'
 
@@ -61,6 +61,13 @@ export type PartLabel = {
   /** Қай парақтан кесіледі. Раскрой берілмесе — `null`. */
   sheet: number | null
   note: string
+}
+
+/** Бирканың төменгі жолы: атау қағазға басылады, PDF метадерегімен шектелмейді. */
+export function labelFooter(label: Pick<PartLabel, 'cabinetId' | 'grain'>, projectName: string): string {
+  const grain = label.grain === 'along' ? 'текстура вдоль' :
+    label.grain === 'across' ? 'текстура поперёк' : ''
+  return [BRAND.name, projectName, label.cabinetId, grain].filter(Boolean).join(' · ')
 }
 
 /**
@@ -269,13 +276,11 @@ function drawLabel(ctx: Ctx, x: number, y: number, w: number, h: number, label: 
   edgeDiagram(ctx, right - 66, y + padding + (qrPayload ? 46 : 24), label)
   if (qrPayload) drawPartQr(ctx, right - 38, y + 5, qrPayload)
 
-  const grain = label.grain === null ? '' : label.grain === 'along' ? ' · текстура вдоль' : ' · текстура поперёк'
   const bottomTextWidth = w - padding * 2 - (qrPayload ? 44 : 4)
   draw(ctx, left, y + padding + 8, `${label.materialName}, ${label.thickness} мм`, 6, {
     color: MUTED, maxWidth: bottomTextWidth,
   })
-  const bottom = [label.cabinetId, projectName].filter(Boolean).join(' · ') + grain
-  draw(ctx, left, y + padding, bottom, 5.5, { color: MUTED, maxWidth: bottomTextWidth })
+  draw(ctx, left, y + padding, labelFooter(label, projectName), 5.5, { color: MUTED, maxWidth: bottomTextWidth })
 }
 
 export type LabelsPdfInput = {
