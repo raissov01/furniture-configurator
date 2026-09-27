@@ -5,6 +5,7 @@
 
 import type { Catalog, Panel } from '../types'
 import { formatCutList } from '../cutList'
+import { requireCncReadyPanels } from './cncGuard'
 
 // `name` бірінші бағанда: оптимизатор оны елемейді, ал цех кесілген детальді
 // сол атаумен таниды. Атаусыз CSV кесуден кейін жарамсыз болып қалады.
@@ -30,6 +31,7 @@ export function cutListToCsv(panels: Panel[], catalog: Catalog): string {
 
 /** Присадка: әр тесік жеке жол. Станокқа тікелей беруге келеді. */
 export function drillingToCsv(panels: Panel[]): string {
+  requireCncReadyPanels(panels)
   const lines = ['panel,label,face,x,y,diameter,depth,purpose']
   for (const p of panels) {
     for (const d of p.drilling) {

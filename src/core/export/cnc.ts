@@ -24,6 +24,7 @@ import { pointOnMachinedFace } from '../faceCoordinates'
 import { validateJointDrill } from '../autoJoint'
 
 import { transliterate } from './dxf'
+import { requireCncReady } from './cncGuard'
 import type { Catalog, Drill, Panel } from '../types'
 
 /** Бағандардың ажыратқышы. Неге `;` — README-де жазылған. */
@@ -126,6 +127,7 @@ export type CncOptions = {
  * әрі шығыс детерминирленген болады — сол кіріс әрқашан сол файлды береді.
  */
 export function cncPanelCsv(panel: Panel, catalog: Catalog, options: CncOptions): string {
+  requireCncReady(panel)
   const material = catalog.materials.find((m) => m.id === panel.materialId)
   if (!material) throw new Error(`Материал табылмады: ${panel.materialId}`)
 

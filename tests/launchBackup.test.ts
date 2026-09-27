@@ -16,6 +16,27 @@ function pgQuery(url: string, sql: string) {
   return execFileSync('psql', ['-At', '-d', url, '-c', sql], { encoding: 'utf8' }).trim()
 }
 
+it('сыртқы бэкапқа тек архив қосады және бос жергілікті буманы жібермейді', () => {
+  const code = `import importlib.util,json,tempfile,pathlib
+spec=importlib.util.spec_from_file_location('backup','scripts/launch_backup.py')
+module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+commands=[]; module.run=lambda command: commands.append(command)
+with tempfile.TemporaryDirectory() as temporary:
+ folder=pathlib.Path(temporary)
+ try: module.sync_remote(folder,'user@host:/backup/','s3://bucket/backup/')
+ except ValueError: empty_rejected=True
+ else: empty_rejected=False
+ (folder/'aismebel-2026-09-27.tar.gz').write_bytes(b'archive')
+ module.sync_remote(folder,'user@host:/backup/','s3://bucket/backup/')
+ print(json.dumps({'emptyRejected':empty_rejected,'commands':commands}))`
+  const output = execFileSync('python3', ['-c', code], { cwd: process.cwd(), encoding: 'utf8',
+    env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' } })
+  const result = JSON.parse(output) as { emptyRejected: boolean; commands: string[][] }
+  expect(result.emptyRejected).toBe(true)
+  expect(result.commands).toHaveLength(2)
+  for (const command of result.commands) expect(command).not.toContain('--delete')
+})
+
 it('passes PostgreSQL URL fields through libpq environment variables', () => {
   const code = `import importlib.util,json
 spec=importlib.util.spec_from_file_location('backup','scripts/launch_backup.py')
