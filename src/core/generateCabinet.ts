@@ -1670,6 +1670,13 @@ export function generateCabinet(
     const last = group.fronts.length - 1
     const spec = layouts[group.sectionIndex]?.section.fronts
     const hingeSystem = resolveHingeSystem(catalog, spec?.hingeSystemId)
+    if (spec?.opening !== 'up' && hingeSystem && hingeSystem.mount !== spec?.mount) {
+      throw new ConfigValidationError(
+        `sections[${group.sectionIndex}].fronts.hingeSystemId`,
+        `петля "${hingeSystem.id}" (${hingeSystem.mount}) фасад түріне ${spec?.mount} сәйкес емес`,
+        `mount=${spec?.mount} петля жүйесін цех каталогынан таңдаңыз`,
+      )
+    }
     const handle = resolveHandle(catalog, spec?.handle)
     const milling = spec?.milling ?? null
 

@@ -28,7 +28,8 @@ describe('накладной фасад', () => {
   it.each([400, 450, 600, 601, 900, 1197, 1200, 1801, 2400])(
     'W=%i: кез келген фасад саны үшін ені + саңылау = W дәл',
     (width) => {
-      for (let n = 1; n <= 4; n += 1) {
+      // Бір секцияда тек екі қарсы жаққа ілінетін есікке тік тірек бар.
+      for (let n = 1; n <= 2; n += 1) {
         const f = fronts(width, n)
         const widths = new Set(f.map((p) => p.finishedWidth))
         expect(widths.size, `n=${n}: фасадтар бірдей емес`).toBe(1)
