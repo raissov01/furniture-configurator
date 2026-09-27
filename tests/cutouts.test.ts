@@ -83,6 +83,13 @@ describe('панельге жабылуы', () => {
 })
 
 describe('тексерулер', () => {
+  it('дайын өлшемдегі ойма кромкадан кейінгі рез контурынан шықпауға тиіс', () => {
+    const front = generateCabinet(base(), SEED_CATALOG).find((p) => p.role === 'front')!
+    expect(front.finishedLength - front.cutLength).toBeGreaterThan(0)
+    const cutout: Cutout = { id: 'edge', shape: 'rect', corner: 'bottomLeft',
+      x: 0, y: 100, width: 20, height: 20 }
+    expect(() => build([cutout], front.id)).toThrow(/panelCutouts.*рез/)
+  })
   it('панельден шығып кетсе — ҚАТЕ', () => {
     expect(() => build([socket({ x: 5000 })])).toThrow(/вырез выходит за деталь/)
     expect(() => build([socket({ x: 10 })])).toThrow(/вырез выходит за деталь/)
@@ -167,6 +174,15 @@ describe('пресеттер', () => {
 })
 
 describe('экспорт пен сақтау', () => {
+  it('R5 ойықты DXF-ке төрт түзу және төрт доға етіп шығарады', () => {
+    const cutout: Cutout = { id: 'vent', shape: 'rect', corner: 'bottomLeft',
+      x: 100, y: 100, width: 204, height: 60, radius: 5 }
+    const dxf = cabinetToDxfFiles(build([cutout]),
+      { catalog: SEED_CATALOG, settings: mergeSettings() }).get('back.dxf')!
+    expect(dxf.match(/\n0\nARC\n8\nCUTOUT\n/g)).toHaveLength(4)
+    expect(dxf.match(/\n0\nLINE\n8\nCUTOUT\n/g)).toHaveLength(4)
+    expect(dxf).toContain('40\n5.0')
+  })
   it('DXF-те ойма БӨЛЕК қабатта', () => {
     // §O6: ойманың рез координатасын дұрыс шығару үшін catalog/settings керек.
     const dxf = cabinetToDxfFiles(

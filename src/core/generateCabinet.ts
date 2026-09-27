@@ -1384,7 +1384,7 @@ export function generateCabinet(
         ...(fixture.frontInset === undefined ? {} : { frontInset: fixture.frontInset }),
       }))
     }
-    if (fixtureCutouts.length > 0) applyCutouts([worktop], { worktop: fixtureCutouts })
+    if (fixtureCutouts.length > 0) applyCutouts([worktop], { worktop: fixtureCutouts }, bands, settings)
   }
 
   // ── Планкалар мен фальш-панельдер ──────────────────────────────────────────
@@ -1867,7 +1867,7 @@ export function generateCabinet(
   })
 
   // Оймалар: панельдің ішінен алынатын тесіктер (раковина, розетка, құбыр).
-  applyCutouts(panels, config.panelCutouts)
+  applyCutouts(panels, config.panelCutouts, bands, settings)
   // Жеке детальдің текстурасы мен бұрыштарының радиусы.
   applyPanelOverrides(panels, config.panelGrain, config.panelCorners)
 
