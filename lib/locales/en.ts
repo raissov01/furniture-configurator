@@ -12,6 +12,7 @@
 export const en: Record<string, string> = {
   'Вернуться к коэффициенту цеха': 'Use shop coefficient',
   'разрешено': 'allowed:',
+  'Ссылка на проект повреждена или устарела. Попросите новую ссылку.': 'The project link is damaged or outdated. Ask for a new link.',
   'Текстуры PRO100': 'PRO100 textures',
   'Обновить список': 'Refresh list',
   'Для импорта нужен вход в аккаунт': 'Sign in to use imported textures',

@@ -24,6 +24,7 @@ import { isTouchDevice } from '@/lib/walkInput'
 import { ClientComments } from '@/components/ClientComments'
 import { ApprovalPanel } from '@/components/ApprovalPanel'
 import { formatTengeExact } from '@/src/core/index'
+import { shareErrorText } from '@/lib/shareLinkError'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
 // Жүктелгенше «жүктелуде» шеңбері — клиент бет қатып қалды деп ойламасын.
@@ -70,9 +71,7 @@ export function ViewerPage() {
     } catch (error) {
       setState({
         kind: 'error',
-        message: error instanceof ConfigValidationError
-          ? `${error.message}${error.allowed ? ` — ${error.allowed}` : ''}`
-          : 'Не удалось открыть проект по этой ссылке.',
+        message: shareErrorText(error, tr),
       })
     }
     return undefined

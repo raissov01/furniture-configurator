@@ -13,6 +13,7 @@
 export const uz: Record<string, string> = {
   'Вернуться к коэффициенту цеха': 'Sex koeffitsiyentiga qaytish',
   'разрешено': 'ruxsat etilgan:',
+  'Ссылка на проект повреждена или устарела. Попросите новую ссылку.': 'Loyiha havolasi buzilgan yoki eskirgan. Yangi havola so‘rang.',
   'Текстуры PRO100': 'PRO100 teksturalari',
   'Обновить список': 'Ro‘yxatni yangilash',
   'Для импорта нужен вход в аккаунт': 'Import teksturalari uchun hisobga kiring',
