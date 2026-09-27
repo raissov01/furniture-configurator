@@ -30,8 +30,7 @@ import { drillingToCsv } from './csv'
 import { cutPlan } from '../cutPlan'
 import type { CutLine } from '../cutPlan'
 import type { NestedSheet, NestingResult } from '../nesting'
-import { cutoutBounds } from '../cutouts'
-import { subtractedThickness } from '../edges'
+import { cutoutBounds, cutoutCutOrigin } from '../cutouts'
 import { isWidthBevel } from '../types'
 import { requireCncReady } from './cncGuard'
 import type { Catalog, ConstructionSettings, Drill, EdgeBand, Groove, Panel } from '../types'
@@ -225,8 +224,9 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
       )
     }
     const bands: Map<string, EdgeBand> = new Map(options.catalog.edgeBands.map((b) => [b.id, b]))
-    cutOrigin.x = subtractedThickness(panel.edges.W1, bands, options.settings)
-    cutOrigin.y = subtractedThickness(panel.edges.L1, bands, options.settings)
+    const origin = cutoutCutOrigin(panel, bands, options.settings)
+    cutOrigin.x = origin.x
+    cutOrigin.y = origin.y
   }
 
   const layers = [

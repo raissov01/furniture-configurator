@@ -83,6 +83,13 @@ describe('панельге жабылуы', () => {
 })
 
 describe('тексерулер', () => {
+  it('дайын өлшемдегі ойма кромкадан кейінгі рез контурынан шықпауға тиіс', () => {
+    const front = generateCabinet(base(), SEED_CATALOG).find((p) => p.role === 'front')!
+    expect(front.finishedLength - front.cutLength).toBeGreaterThan(0)
+    const cutout: Cutout = { id: 'edge', shape: 'rect', corner: 'bottomLeft',
+      x: 0, y: 100, width: 20, height: 20 }
+    expect(() => build([cutout], front.id)).toThrow(/panelCutouts.*рез/)
+  })
   it('панельден шығып кетсе — ҚАТЕ', () => {
     expect(() => build([socket({ x: 5000 })])).toThrow(/вырез выходит за деталь/)
     expect(() => build([socket({ x: 10 })])).toThrow(/вырез выходит за деталь/)
