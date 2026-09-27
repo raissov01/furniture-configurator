@@ -14,6 +14,7 @@ import { boxGrainUAxis, decorTexture, grainRotation, normalTexture, type GrainUV
 import { materialRenderKey, resolveMaterialLook } from '@/lib/materialLook'
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
+import { polygonShape } from '@/lib/f32PolygonShape'
 import type { Axis, Catalog, EdgeBand, Panel, PanelHandle, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { drillToLocalMarker } from '@/lib/drillGeometry'
@@ -484,7 +485,8 @@ export function PanelMesh({
      * қателіктің ең қымбат түрі дәл сол.
      */
     const rounded = panel.corners && Object.values(panel.corners).some((r) => r > 0)
-    if (!panel.bevel && panel.cutouts.length === 0 && !rounded) return null
+    if (!panel.contour && !panel.bevel && panel.cutouts.length === 0 && !rounded) return null
+    if (panel.contour) return polygonShape(panel.contour, panel.finishedLength, panel.finishedWidth)
     if (!panel.bevel) {
       const L = panel.finishedLength
       const Wd = panel.finishedWidth
@@ -546,7 +548,7 @@ export function PanelMesh({
     s0.closePath()
     s0.holes = cutoutHoles(panel)
     return s0
-  }, [panel.bevel, panel.finishedWidth, panel.finishedLength, panel.cutouts, panel.corners])
+  }, [panel.bevel, panel.contour, panel.finishedWidth, panel.finishedLength, panel.cutouts, panel.corners])
 
   const texture = useMemo(() => {
     /*
