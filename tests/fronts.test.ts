@@ -62,7 +62,11 @@ describe('накладной фасад', () => {
 
 describe('вкладной фасад', () => {
   it('ішкі саңылауға сыяды және корпустан шықпайды', () => {
-    const f = fronts(600, 1, 'inset')[0]!
+    const f = generateCabinet(withCabinet({
+      width: 600,
+      settings: { shelfSetback: 20 },
+      sections: oneSection({ fronts: { count: 1, mount: 'inset' } }),
+    }), catalog).find((panel) => panel.role === 'front')!
     expect(f.finishedWidth).toBe(600 - 2 * T - 2 * gap)
     expect(f.finishedLength).toBe(2000 - 2 * T - 2 * gap)
     expect(f.position.z).toBe(0)

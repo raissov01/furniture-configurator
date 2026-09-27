@@ -25,7 +25,7 @@ import {
   findDrawerSystem, findMetalBoxSystem, isMetalBoxSystem, metalBoxParts, nominalRunnerLength,
 } from './drawerSystems'
 import type { DrawerSystem, MetalBoxSystem } from './drawerSystems'
-import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, rotationFor } from './geometry'
+import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, panelExtents, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
@@ -1129,6 +1129,25 @@ export function generateCabinet(
       inset ? 0 : -secFrontMat.thickness,
       secFrontMat, settings, make,
     )
+    if (inset) {
+      for (const front of created) {
+        const frontSize = panelExtents(front, secFrontMat.thickness)
+        for (const shelf of panels.filter((panel) => panel.role === 'shelf')) {
+          const shelfMaterial = requireMaterial(materials, shelf.materialId, 'shelf.materialId')
+          const shelfSize = panelExtents(shelf, shelfMaterial.thickness)
+          const intersects = (['x', 'y', 'z'] as const).every((axis) =>
+            front.position[axis] < shelf.position[axis] + shelfSize[axis]
+            && shelf.position[axis] < front.position[axis] + frontSize[axis])
+          if (intersects) {
+            throw new ConfigValidationError(
+              `sections[${sectionIndex}].fronts.mount`,
+              `вкладной фасад ${front.id} пен сөре ${shelf.id} физикалық қиылысады`,
+              'settings.shelfSetback немесе сөренің алдыңғы insets.front шегінісін ұлғайтыңыз',
+            )
+          }
+        }
+      }
+    }
     panels.push(...created)
     frontGroups.push({ fronts: created, sectionIndex })
   })
