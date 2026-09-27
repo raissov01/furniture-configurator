@@ -13,8 +13,19 @@ function run(...args: string[]) {
 }
 
 function pgQuery(url: string, sql: string) {
-  return execFileSync('psql', ['-At', '-c', sql], { env: { ...process.env, PGDATABASE: url }, encoding: 'utf8' }).trim()
+  return execFileSync('psql', ['-At', '-d', url, '-c', sql], { encoding: 'utf8' }).trim()
 }
+
+it('passes PostgreSQL URL fields through libpq environment variables', () => {
+  const code = `import importlib.util,json
+spec=importlib.util.spec_from_file_location('backup','scripts/launch_backup.py')
+module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+env=module.pg_environment('postgresql://alice:p%40ss@db.internal:5433/furniture?sslmode=require')
+print(json.dumps({key:env.get(key) for key in ('PGUSER','PGPASSWORD','PGHOST','PGPORT','PGDATABASE','PGSSLMODE')}))`
+  const output = execFileSync('python3', ['-c', code], { cwd: process.cwd(), encoding: 'utf8' })
+  expect(JSON.parse(output)).toEqual({ PGUSER: 'alice', PGPASSWORD: 'p@ss', PGHOST: 'db.internal',
+    PGPORT: '5433', PGDATABASE: 'furniture', PGSSLMODE: 'require' })
+})
 
 it('backs up a live SQLite WAL database and files, then restores identical content', () => {
   const root = mkdtempSync(join(tmpdir(), 'launch-backup-'))

@@ -14,7 +14,7 @@ import sqlite3
 import subprocess
 import sys
 import tarfile
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, unquote, urlparse
 import tempfile
 
 PREFIX = 'aismebel-'
@@ -28,10 +28,40 @@ def digest(path):
     return hash_.hexdigest()
 
 
-def run(command, *, database_url=None):
+def pg_environment(database_url):
+    parsed = urlparse(database_url)
+    if parsed.scheme not in ('postgres', 'postgresql') or not parsed.path.lstrip('/'):
+        raise ValueError('DATABASE_URL PostgreSQL URI және DB атауы болуы керек')
     environment = os.environ.copy()
-    if database_url:
-        environment['PGDATABASE'] = database_url
+    for key in ('PGDATABASE', 'PGHOST', 'PGHOSTADDR', 'PGPORT', 'PGUSER', 'PGPASSWORD',
+                'PGSERVICE', 'PGSERVICEFILE', 'PGSSLMODE', 'PGSSLROOTCERT', 'PGSSLCERT',
+                'PGSSLKEY', 'PGCONNECT_TIMEOUT', 'PGAPPNAME', 'PGOPTIONS', 'PGTARGETSESSIONATTRS'):
+        environment.pop(key, None)
+    environment['PGDATABASE'] = unquote(parsed.path.lstrip('/'))
+    if parsed.hostname:
+        environment['PGHOST'] = unquote(parsed.hostname)
+    if parsed.port:
+        environment['PGPORT'] = str(parsed.port)
+    if parsed.username:
+        environment['PGUSER'] = unquote(parsed.username)
+    if parsed.password:
+        environment['PGPASSWORD'] = unquote(parsed.password)
+    allowed = {
+        'sslmode': 'PGSSLMODE', 'sslrootcert': 'PGSSLROOTCERT',
+        'sslcert': 'PGSSLCERT', 'sslkey': 'PGSSLKEY',
+        'connect_timeout': 'PGCONNECT_TIMEOUT', 'host': 'PGHOST',
+        'port': 'PGPORT', 'application_name': 'PGAPPNAME',
+        'options': 'PGOPTIONS', 'target_session_attrs': 'PGTARGETSESSIONATTRS',
+    }
+    for key, value in parse_qsl(parsed.query, keep_blank_values=True):
+        if key not in allowed:
+            raise ValueError(f'DATABASE_URL параметрі қолдау таппайды: {key}')
+        environment[allowed[key]] = value
+    return environment
+
+
+def run(command, *, database_url=None):
+    environment = pg_environment(database_url) if database_url else os.environ.copy()
     subprocess.run(command, check=True, env=environment)
 
 
@@ -174,7 +204,7 @@ def restore(args):
             count = subprocess.check_output(
                 ['psql', '--tuples-only', '--no-align', '--command',
                  "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')"],
-                env={**os.environ, 'PGDATABASE': url}, text=True).strip()
+                env=pg_environment(url), text=True).strip()
             if count != '0':
                 raise ValueError('PostgreSQL нысаналы базасы бос болуы керек')
             run(['pg_restore', '--no-owner', '--no-acl', '--single-transaction', '--exit-on-error', str(stage / 'database.dump')],

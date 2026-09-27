@@ -10,7 +10,7 @@
 
 ## Тексеру
 
-- `NODE_OPTIONS=--max-old-space-size=2048 npx vitest run tests/launchBackup.test.ts --maxWorkers=2`: 1 өтті, PostgreSQL integration сынағы 1 skip (екі бос тест DB URL-і берілмеген). SQLite-де dump→restore жазбалары және файл байттары тең; manifest бұзылса restore тоқтайды.
+- `NODE_OPTIONS=--max-old-space-size=2048 npx vitest run tests/launchBackup.test.ts --maxWorkers=2`: 2 өтті, PostgreSQL integration сынағы 1 skip (екі бос тест DB URL-і берілмеген). SQLite-де dump→restore жазбалары және файл байттары тең; manifest бұзылса restore тоқтайды. PostgreSQL URL өрістерінің libpq орта айнымалыларына дұрыс бөлінуі тексерілді.
 - `npm run -s typecheck`: өтті.
 - Осы ортада `pg_dump`, `pg_restore`, `psql` және серверлік nginx жоқ; нақты PostgreSQL restore және `nginx -t` staging-те checklist бойынша тексерілуі керек. `next build`, dev-server, браузер, e2e жүргізілген жоқ.
 
@@ -18,5 +18,6 @@
 
 - `03de28a` — `feat: күнделікті дерек пен файл архивін жасау`
 - `f2b944b` — `docs: іске қосу және бақылау үлгілерін дайындау`
+- Қосымша түзету: PostgreSQL CLI URL-ін нақты libpq орта айнымалыларына бөлу (осы есеп жаңартуымен бірге).
 
 Бастапқы worktree-дегі өзге өзгерістер (`package*.json`, `docs/mcp`, `scripts/mcp-*`, `tests/mcpTools.test.ts`) бұл есептің коммиттеріне кірмеді. UI кейін қажет болса жеке кезекте қаралады.
