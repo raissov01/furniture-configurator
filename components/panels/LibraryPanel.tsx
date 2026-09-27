@@ -33,10 +33,11 @@ import type { Pro100LibraryItem } from '@/src/core/data/pro100Catalog'
 import {
   categoryLabel,
   categoryOptions,
+  cabinetImportChoice,
   filterItems,
   LIBRARY_TABS,
   paginate,
-  pickTemplateForCabinetItem,
+  visibleCategoryOptions,
 } from './libraryCatalogLogic'
 import type { LibraryTabId } from './libraryCatalogLogic'
 import { CatalogThumb } from './CatalogThumb'
@@ -50,8 +51,10 @@ export function LibraryPanel() {
   const [tab, setTab] = React.useState<LibraryTabId | 'mine'>('mebel')
   const [search, setSearch] = React.useState('')
   const [categoryPath, setCategoryPath] = React.useState<string | null>(null)
+  const [categorySearch, setCategorySearch] = React.useState('')
   const [page, setPage] = React.useState(0)
   const [lastAdded, setLastAdded] = React.useState<string | null>(null)
+  const [pendingCabinet, setPendingCabinet] = React.useState<Pro100LibraryItem | null>(null)
   const [propPosition, setPropPosition] = React.useState<Vec3>({ x: 0, y: 0, z: 0 })
   const [propError, setPropError] = React.useState<string | null>(null)
 
@@ -112,7 +115,9 @@ export function LibraryPanel() {
     setTab(next)
     setSearch('')
     setCategoryPath(null)
+    setCategorySearch('')
     setPage(0)
+    setPendingCabinet(null)
   }
 
   const cabinetItems = React.useMemo(
@@ -135,20 +140,25 @@ export function LibraryPanel() {
     const source = tab === 'mebel' ? PRO100_CABINET_ITEMS : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS : []
     return categoryOptions(source)
   }, [tab])
+  const visibleCategories = React.useMemo(() => visibleCategoryOptions(categoryChoices, categorySearch, categoryPath),
+    [categoryChoices, categorySearch, categoryPath])
 
   const { pageItems, totalPages, page: clampedPage } = paginate(activeItems, page, PAGE_SIZE)
 
+  const pendingChoice = pendingCabinet ? cabinetImportChoice(pendingCabinet) : null
   const addCabinetToProject = (item: Pro100LibraryItem) => {
-    const { templateId, size } = pickTemplateForCabinetItem(item.parsed)
-    const template = findTemplate(templateId)
-    if (!template) return // қорғаныс: SEED_TEMPLATES-тен алынбаса, ешнәрсе істемейміз (silent no-op емес — тексерілген, tests/libraryCatalogLogic.test.ts осы жағдайды жабады)
+    const choice = cabinetImportChoice(item)
+    if (!choice.allowed) return
+    const template = findTemplate(choice.templateId)
+    if (!template) return
 
     useConfigurator.getState().appendCabinet({
-      ...templateToCabinet(template, catalog, size),
+      ...templateToCabinet(template, catalog, choice.size),
       id: `cabinet-${crypto.randomUUID()}`,
       name: `${item.name} (PRO100)`,
     })
     setLastAdded(item.name)
+    setPendingCabinet(null)
   }
 
   return (
@@ -175,6 +185,11 @@ export function LibraryPanel() {
       {/* Жол жолағы — эталондағы «Mobilier BUCATARIE\Corpuri...» ашылмалысы. */}
       {tab === 'mebel' || tab === 'elementy' || tab === 'raznoe' ? (
         <div className="shrink-0 border-b border-neutral-800 px-1.5 py-1">
+          {(tab === 'mebel' || tab === 'elementy') && (
+            <input type="search" value={categorySearch} onChange={(event) => setCategorySearch(event.target.value)}
+              placeholder={tr('Найти категорию')} aria-label={tr('Найти категорию')}
+              className="mb-1 w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[10px] text-neutral-200 outline-none focus:border-neutral-500" />
+          )}
           <select
             value={categoryPath ?? ''}
             onChange={(e) => {
@@ -184,7 +199,7 @@ export function LibraryPanel() {
             className="w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[10px] text-neutral-300 outline-none"
           >
             <option value="">{tr('Все категории')} ({tab === 'mebel' ? PRO100_CABINET_ITEMS.length : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS.length : PROP_CATALOG.length})</option>
-            {(tab === 'raznoe' ? [...new Set(PROP_CATALOG.map((prop) => prop.category))] : categoryChoices).map((c) => (
+            {(tab === 'raznoe' ? [...new Set(PROP_CATALOG.map((prop) => prop.category))] : visibleCategories).map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
@@ -204,6 +219,19 @@ export function LibraryPanel() {
           className="w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[11px] text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-500"
         />
       </div>
+
+      {pendingCabinet && pendingChoice?.allowed ? (
+        <div className="shrink-0 space-y-1 border-b border-neutral-700 p-2 text-xs" role="region" aria-label={tr('Подтвердить шаблон')}>
+          <p className="font-medium">{pendingCabinet.name}</p>
+          <p>{tr('Будет добавлен приблизительный шаблон')}: {tr(pendingChoice.templateName)}</p>
+          <p className="tabular-nums">{pendingChoice.dimensions.height} (H) × {pendingChoice.dimensions.width} (W) × {pendingChoice.dimensions.depth} (D) {tr('мм')}</p>
+          <p className="text-amber-300">{tr('Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.')}</p>
+          <div className="flex gap-1">
+            <button type="button" className="border border-neutral-500 px-2 py-1" onClick={() => addCabinetToProject(pendingCabinet)}>{tr('Добавить шаблон')}</button>
+            <button type="button" className="border border-neutral-700 px-2 py-1" onClick={() => setPendingCabinet(null)}>{tr('Отмена')}</button>
+          </div>
+        </div>
+      ) : null}
 
       {/* Нобай торы — 2 баған. */}
       <div className="min-h-0 flex-1 overflow-auto p-1.5">
@@ -252,7 +280,7 @@ export function LibraryPanel() {
               <CabinetTile
                 key={item.id}
                 item={item}
-                onSelect={tab === 'mebel' ? () => addCabinetToProject(item) : undefined}
+                onSelect={tab === 'mebel' ? () => setPendingCabinet(item) : undefined}
               />
             ))}
           </div>
@@ -295,6 +323,11 @@ export function LibraryPanel() {
 // ── Бір нобай ұяшығы (шкаф/элемент) ─────────────────────────────────────────
 
 function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (() => void) | undefined }) {
+  const choice = cabinetImportChoice(item)
+  const reason = !choice.allowed ? choice.reason === 'unsupportedShape' ? tr('Геометрия этого корпуса не поддерживается')
+    : choice.reason === 'unknownWidth' ? tr('Ширина (W) не определена из названия')
+      : choice.reason === 'widthRange' ? `${tr('Ширина (W) вне диапазона')}: ${choice.range?.min}–${choice.range?.max} ${tr('мм')}`
+        : tr('Тип корпуса не определён из названия') : null
   const dims: string[] = []
   if (item.parsed.widthMm !== undefined) dims.push(`W${item.parsed.widthMm}`)
   if (item.parsed.doorCount !== undefined) dims.push(`${item.parsed.doorCount}дв`)
@@ -305,12 +338,12 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
     <button
       type="button"
       onClick={onSelect}
-      disabled={!onSelect}
+      disabled={!onSelect || !choice.allowed}
       className={cn(
         'flex flex-col items-center gap-1 border border-neutral-800 bg-neutral-900 p-1.5 text-left',
-        onSelect ? 'hover:border-neutral-500' : 'cursor-default opacity-70',
+        onSelect && choice.allowed ? 'hover:border-neutral-500' : 'cursor-default opacity-70',
       )}
-      title={item.path.length > 1 ? categoryLabel(item.path) : undefined}
+      title={reason ?? (item.path.length > 1 ? categoryLabel(item.path) : undefined)}
     >
       <div className="h-16 w-full">
         <CatalogThumb parsed={item.parsed} />
@@ -319,6 +352,7 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
       {dims.length > 0 ? (
         <div className="w-full truncate text-[9px] tabular-nums text-neutral-500">{dims.join(' · ')}</div>
       ) : null}
+      {onSelect && reason ? <span className="w-full text-[9px] text-amber-300">{reason}</span> : null}
     </button>
   )
 }

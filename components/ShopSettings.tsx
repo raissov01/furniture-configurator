@@ -39,6 +39,7 @@ import { ShopDrillingSettings } from './ShopDrillingSettings'
 import { MoneyInput } from './MoneyInput'
 import { PriceImportPanel } from './PriceImportPanel'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
+import { OwnTextureMapper } from './OwnTextureMapper'
 
 type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
 
@@ -221,6 +222,7 @@ export function ShopSettings() {
         {tab === 'materials' ? (
           <div className="space-y-3">
             <AddMaterial />
+            <OwnTextureMapper />
             <PriceTable
             head={['Материал', 'Толщина', 'Лист, мм', 'Цена листа, ₸', '']}
             rows={shop.materials.map((m) => ({
