@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
+import { referenceWardrobe } from './fixtures'
 
 process.env['DATA_DIR'] = mkdtempSync(join(tmpdir(), 'aismebel-mcp-'))
 
@@ -70,6 +71,54 @@ describe('MCP құралдары және цех шекарасы', () => {
     const drilling = await service.runMcpTool(ownerA, 'get_drilling', { projectId })
     expect(drilling.ok).toBe(true)
     if (drilling.ok) expect(drilling.data).toHaveProperty('panels')
+  })
+
+  it('MCP присадкасы UI өндіріс жолымен тесік саны және координат бойынша тең', async () => {
+    const { readProject, readShopProfile } = await import('../lib/server/store')
+    const { projectProduction } = await import('../lib/projectProduction')
+    const { catalogOf, flattenTree, parseProjectV4, parseShopProfile, starterShopProfile } = await import('../src/core/index')
+    const project = parseProjectV4(readProject(ownerA.shopId, projectId))
+    const stored = readShopProfile(ownerA.shopId)
+    const shop = stored ? parseShopProfile(stored) : starterShopProfile(ownerA.shopId)
+    const catalog = { ...catalogOf(shop), materials: project.materials, edgeBands: project.edgeBands }
+    const scene = flattenTree(project.root, catalog, project.settings, project.layers, project.autoJoints)
+    const expected = projectProduction(project.root, scene).panels.flatMap((panel) =>
+      panel.drilling.map((hole) => ({ panelId: panel.id, ...hole })))
+    const result = await service.runMcpTool(ownerA, 'get_drilling', { projectId })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const panels = result.data.panels as { panelId: string; holes: import('../src/core/index').Panel['drilling'] }[]
+    const actual = panels.flatMap((panel) => panel.holes.map((hole) => ({ panelId: panel.panelId, ...hole })))
+    expect(actual.length).toBe(expected.length)
+    expect(actual).toEqual(expected)
+    expect(actual.some((hole) => hole.purpose === 'handle')).toBe(true)
+  })
+
+  it('inset Blum чашкасының 13 мм тереңдігін MCP мен UI бірдей береді', async () => {
+    const { writeProject } = await import('../lib/server/store')
+    const { projectProduction } = await import('../lib/projectProduction')
+    const { catalogOf, flattenTree, parseProjectV4, starterShopProfile } = await import('../src/core/index')
+    const shop = starterShopProfile(ownerA.shopId)
+    const cabinet = { ...referenceWardrobe, sections: referenceWardrobe.sections.map((section) => ({
+      ...section, fronts: { count: 2, mount: 'inset' as const },
+    })) }
+    const project = parseProjectV4({ schemaVersion: 3, name: 'Inset Blum',
+      cabinets: [cabinet], placements: [{ cabinetId: cabinet.id, wall: 'north', offset: 0 }],
+      room: { width: 3000, depth: 3000, height: 2700 }, materials: shop.materials,
+      edgeBands: shop.edgeBands, settings: { shelfSetback: 30 } })
+    const id = writeProject(ownerA.shopId, project.name, project, undefined, ownerA.userId)
+    const catalog = { ...catalogOf(shop), materials: project.materials, edgeBands: project.edgeBands }
+    const expected = projectProduction(project.root,
+      flattenTree(project.root, catalog, project.settings, project.layers, project.autoJoints)).panels
+      .flatMap((panel) => panel.drilling.filter((hole) => hole.purpose === 'hinge').map((hole) => ({ panelId: panel.id, ...hole })))
+    const response = await service.runMcpTool(ownerA, 'get_drilling', { projectId: id })
+    expect(response.ok).toBe(true)
+    if (!response.ok) return
+    const panels = response.data.panels as { panelId: string; holes: import('../src/core/index').Panel['drilling'] }[]
+    const actual = panels.flatMap((panel) => panel.holes.filter((hole) => hole.purpose === 'hinge')
+      .map((hole) => ({ panelId: panel.panelId, ...hole })))
+    expect(actual).toEqual(expected)
+    expect(actual.some((hole) => hole.diameter === 35 && hole.depth === 13)).toBe(true)
   })
 
   it('материал іздеуі тек өз профилін және тиыннан форматталған бағаны береді', async () => {

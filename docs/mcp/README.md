@@ -11,6 +11,15 @@ MCP цех иесіне тоғыз құрал береді: `create_project_from
 позициялар `get_quote.missingPrices` ішінде көрсетіледі; оларды толықтырмай
 клиентке КП жібермеңіз.
 
+### Қазіргі қолжетімділік
+
+Қазір жергілікті Claude Code клиенті HTTP `Authorization: Bearer` тақырыбымен
+немесе дерекқормен бір машинадағы stdio клиенті жұмыс істейді. Claude-тың
+қашықтағы custom connector-ы мен ChatGPT бұл серверге қосыла алмайды:
+сервер OAuth авторизациясын жарияламайды. Төмендегі Claude Desktop үлгісі
+ноутбуктағы қашық серверге жалғанбайды; ол `DATA_DIR`/`DATABASE_URL` арқылы
+дерекқорды тікелей оқиды. Оны тек дерекқорға рұқсаты бар машинада қолданыңыз.
+
 ### Іске қосу және токен
 
 `npm ci` жасаңыз. MCP бөлек Node рөлі ретінде жұмыс істейді; қолданба мен MCP
@@ -42,7 +51,7 @@ chmod 600 "$HOME/.aismebel-mcp-token"
 
 ### Claude Desktop
 
-Жергілікті Claude Desktop үшін реподағы stdio companion бірдей тоғыз құралды
+Дерекқормен бір машинадағы Claude Desktop үшін stdio companion тоғыз құралды
 ресми SDK арқылы жариялайды. `claude_desktop_config.json` ішіндегі `mcpServers`
 бөлігіне абсолют жолдарды қойыңыз:
 
@@ -62,23 +71,19 @@ chmod 600 "$HOME/.aismebel-mcp-token"
 ```
 
 Claude Desktop-ты қайта ашып, `list_projects` және `search_materials` шақырып
-көріңіз. Жергілікті companion HTTP серверін қажет етпейді; екеуі бір құралдар
-тізбегін және бір дерекқорды қолданады. Claude Desktop-тың жергілікті MCP
-механизмі remote connector-дан бөлек екені [Claude Help Center-де](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)
-түсіндірілген.
+көріңіз. Companion HTTP серверін қажет етпейді; ол дерекқорға тікелей кіреді.
+Claude Desktop-тың қашықтағы connector-ы үшін бұл конфигурация жарамсыз.
 
-### ChatGPT
+### Қашықтағы Claude connector және ChatGPT
 
-ChatGPT-тің қашықтағы жеке MCP қосқышы үшін жай статикалық bearer токені
-жеткіліксіз. [OpenAI-дың ресми auth нұсқаулығы](https://developers.openai.com/plugins/build/auth)
-OAuth 2.1 authorization code + PKCE, protected resource metadata және
-authorization server discovery талап етеді. Бұл репода ондай OAuth provider
-жоқ, сондықтан осы нұсқаны ChatGPT Plugins тізіміне **тікелей қосу әлі
-мүмкін емес**. Кейін OAuth provider қосылып, `/mcp` HTTPS арқылы ашылғанда,
-[ресми қосу қадамдары](https://developers.openai.com/plugins/deploy/connect-chatgpt)
-бойынша Settings → Security and login → Developer mode, содан кейін Plugins →
-Add → сервердің `https://…/mcp` адресін енгізіңіз. Бұл жерде ештеңе
-деплойланбаған.
+Статикалық веб-сессия bearer токені remote connector авторизациясын
+алмастырмайды. [MCP авторизация спецификациясы](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization)
+OAuth 2.1, protected resource metadata (RFC 9728), authorization server
+discovery (RFC 8414), PKCE, клиентті тіркеу және resource audience тексеруін
+талап етеді. Бұл репода OAuth authorization server, тіркеу және цехқа арналған
+scope шектеуі жоқ. Сондықтан Claude remote connector мен ChatGPT қосылымын
+осы серверге баптамаңыз; сервер жағы аяқталып, жеке қауіпсіздік тесттерінен
+өткеннен кейін ғана іске қосыңыз.
 
 ## Русский
 
@@ -93,14 +98,13 @@ Add → сервердің `https://…/mcp` адресін енгізіңіз. 
    `DATABASE_URL`, что у приложения.
 2. Выпустите токен командой выше для роли `owner` или `designer` и храните
    файл с правами `600`. Срок действия — 30 дней.
-3. Для Claude Desktop добавьте локальный stdio companion из примера выше.
-   Он использует токен из файла и ту же базу. Для прямого удалённого MCP
-   запустите `npm run mcp:serve`, настройте HTTPS и OAuth через внешний
-   авторизационный слой.
-4. Для ChatGPT сначала нужен полноценный OAuth 2.1 provider с discovery и
-   PKCE. Текущий bearer сервер напрямую в ChatGPT Plugins не подключается;
-   требования и шаги подключения приведены в [официальной документации
-   OpenAI](https://developers.openai.com/plugins/build/auth).
+3. Локальный Claude Desktop stdio companion запускайте только на машине с
+   прямым доступом к той же базе. Ноутбук владельца не соединяется через него
+   с удалённым сервером.
+4. Удалённые коннекторы Claude и ChatGPT сейчас не поддерживаются: отсутствуют
+   OAuth 2.1 authorization server, discovery, PKCE, регистрация клиента,
+   audience и отдельные права для MCP. Текущий HTTP bearer рассчитан на
+   локальное использование с Claude Code.
 
 `get_project` и все производственные инструменты ограничены `shopId` из
 проверенной сессии. `shop` и `client` не получают доступ к внутренним ценам
