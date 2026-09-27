@@ -54,7 +54,7 @@ describe('сөздіктер', () => {
   })
 
   it('F29: конфигуратор мен раскройдың тікелей аударылатын жолдары сөздікте бар', () => {
-    const sources = ['Workspace.tsx', 'CutPage.tsx']
+    const sources = ['Workspace.tsx', 'CutPage.tsx', 'Configurator.tsx']
     const keys = new Set<string>(['Файл', 'Правка', 'Вид', 'Элемент', 'Инструменты', 'Справка'])
     for (const source of sources) {
       const code = readFileSync(new URL(`../components/${source}`, import.meta.url), 'utf8')
