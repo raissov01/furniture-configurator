@@ -35,6 +35,10 @@ describe('generateFurniture', () => {
     for (const c of r.cabinets) expect(() => generateCabinet(c, SEED_CATALOG)).not.toThrow()
   })
 
+  it('ТВ аймақ: қабырғаға сыймайтын жиын үнсіз жасалмайды', () => {
+    expect(() => generateFurniture({ type: 'tv', layout: 'straight', lengthA: 1700 }, SEED_CATALOG)).toThrow(/lengthA/)
+  })
+
   it('материал бүкіл модульге қолданылады', () => {
     const front = SEED_CATALOG.materials[1]!.id
     const r = generateFurniture({ type: 'wardrobe', layout: 'straight', lengthA: 2400, materials: { frontId: front } }, SEED_CATALOG)
@@ -44,5 +48,23 @@ describe('generateFurniture', () => {
   it('ас үй — kitchen.ts-ке бағытталады (мойка/столешница бар)', () => {
     const r = generateFurniture({ type: 'kitchen', layout: 'straight', lengthA: 3000, sink: true }, SEED_CATALOG)
     expect(r.cabinets.some((c) => c.worktop)).toBe(true)
+  })
+
+  it('кабинет: жұмыс үстелдері қабырғаға дәл сыяды және нақты панель береді', () => {
+    const r = generateFurniture({ type: 'office', layout: 'straight', lengthA: 3000 }, SEED_CATALOG)
+    expect(r.cabinets.length).toBeGreaterThanOrEqual(2)
+    expect(r.cabinets.every((c) => c.height >= 700 && c.height <= 800)).toBe(true)
+    expect(r.cabinets.reduce((sum, c) => sum + c.width, 0)).toBe(3000)
+    expect(validatePlacements(r.room, entriesOf(r))).toEqual([])
+    expect(r.cabinets.flatMap((c) => generateCabinet(c, SEED_CATALOG)).length).toBeGreaterThan(10)
+  })
+
+  it('жатын бөлме: кереует пен екі тумба, әр деталь өндірістік', () => {
+    const r = generateFurniture({ type: 'bedroom', layout: 'straight', lengthA: 3000 }, SEED_CATALOG)
+    expect(r.cabinets).toHaveLength(3)
+    expect(r.cabinets.map((c) => c.width)).toEqual([700, 1600, 700])
+    expect(r.cabinets[1]?.depth).toBe(2000)
+    expect(validatePlacements(r.room, entriesOf(r))).toEqual([])
+    expect(r.cabinets.flatMap((c) => generateCabinet(c, SEED_CATALOG)).length).toBeGreaterThan(10)
   })
 })

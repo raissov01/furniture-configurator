@@ -10,6 +10,8 @@
 
 import OpenAI from 'openai'
 import { aiAccess } from '@/lib/server/aiAccess'
+import { sanitizeGeneratedOptions } from '@/src/core/stageBrief'
+import type { StageBriefOptions } from '@/src/core/stageBrief'
 
 const MODEL = process.env['OPENAI_MODEL'] ?? 'gpt-5.4'
 
@@ -19,10 +21,11 @@ const SYSTEM = `Ты помогаешь настроить ГЕНЕРАТОР к
 форму, длины стен и что включить.
 
 Поля:
-- type: "kitchen" (кухня, ас үй), "wardrobe" (шкаф), "tv" (тв-зона, тумба под
-  тв), "chest" (комод).
+- type: "kitchen" (кухня, ас үй), "wardrobe" (шкаф), "tv" (тв-зона),
+  "chest" (комод), "office" (кабинет, жұмыс үстелі),
+  "bedroom" (жатын бөлме, кереует).
 - layout: "corner" (угловая, Г-образная, две стены, бұрыш) или "straight"
-  (прямая, одна стена). Для tv всегда "straight".
+  (прямая, одна стена). Для tv и bedroom всегда "straight".
 - lengthA: длина основной стены в мм (целое). "3 метра" -> 3000. Если не
   сказано - 3000.
 - lengthB: длина второй стены в мм для угловой; иначе null.
@@ -40,7 +43,7 @@ const RESPONSE_SCHEMA = {
   additionalProperties: false,
   required: ['type', 'layout', 'lengthA', 'lengthB', 'sink', 'upper', 'appliances'],
   properties: {
-    type: { type: 'string', enum: ['kitchen', 'wardrobe', 'tv', 'chest'] },
+    type: { type: 'string', enum: ['kitchen', 'wardrobe', 'tv', 'chest', 'office', 'bedroom'] },
     layout: { type: 'string', enum: ['straight', 'corner'] },
     lengthA: { type: 'integer' },
     lengthB: { type: ['integer', 'null'] },
@@ -49,31 +52,6 @@ const RESPONSE_SCHEMA = {
     appliances: { type: 'boolean' },
   },
 } as const
-
-type GenOptions = {
-  type: 'kitchen' | 'wardrobe' | 'tv' | 'chest'
-  layout: 'straight' | 'corner'
-  lengthA: number
-  lengthB: number | null
-  sink: boolean
-  upper: boolean
-  appliances: boolean
-}
-
-/** Модель шыққанды ҮСТІНЕН бекіту: ұзындық ақылға қонымды шекте, tv түзу. */
-function sanitize(o: GenOptions): GenOptions {
-  const clamp = (n: number) => Math.min(8000, Math.max(600, Math.round(n)))
-  const layout = o.type === 'tv' ? 'straight' : o.layout
-  return {
-    type: o.type,
-    layout,
-    lengthA: clamp(o.lengthA),
-    lengthB: layout === 'corner' ? clamp(o.lengthB ?? 2400) : null,
-    sink: Boolean(o.sink),
-    upper: Boolean(o.upper),
-    appliances: Boolean(o.appliances),
-  }
-}
 
 export async function POST(request: Request): Promise<Response> {
   const denied = await aiAccess('text')
@@ -116,11 +94,11 @@ export async function POST(request: Request): Promise<Response> {
     throw error
   }
 
-  let parsed: GenOptions
+  let parsed: StageBriefOptions
   try {
-    parsed = JSON.parse(raw) as GenOptions
+    parsed = JSON.parse(raw) as StageBriefOptions
   } catch {
     return Response.json({ error: 'Модель вернула ответ не по форме. Повторите.' }, { status: 502 })
   }
-  return Response.json({ options: sanitize(parsed) })
+  return Response.json({ options: sanitizeGeneratedOptions(parsed) })
 }

@@ -219,7 +219,7 @@ export function TemplateGallery() {
                 <span className="text-xs font-semibold">{tr('Генератор кухни')}</span>
                 <span className="text-[11px] text-neutral-500">{tr('по длине стены')}</span>
                 <div className="ml-auto">
-                  <Button active onClick={() => setWizardOpen(true)}>{tr('Мастер кухни (5 шагов)')}</Button>
+                  <Button active onClick={() => setWizardOpen(true)}>{tr('Мастер мебели (5 шагов)')}</Button>
                 </div>
               </div>
               <div className="flex flex-wrap items-end gap-3 max-[420px]:flex-col max-[420px]:items-stretch">
