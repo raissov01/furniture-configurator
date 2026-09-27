@@ -22,7 +22,8 @@ spec=importlib.util.spec_from_file_location('backup','scripts/launch_backup.py')
 module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
 env=module.pg_environment('postgresql://alice:p%40ss@db.internal:5433/furniture?sslmode=require')
 print(json.dumps({key:env.get(key) for key in ('PGUSER','PGPASSWORD','PGHOST','PGPORT','PGDATABASE','PGSSLMODE')}))`
-  const output = execFileSync('python3', ['-c', code], { cwd: process.cwd(), encoding: 'utf8' })
+  const output = execFileSync('python3', ['-c', code], { cwd: process.cwd(), encoding: 'utf8',
+    env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' } })
   expect(JSON.parse(output)).toEqual({ PGUSER: 'alice', PGPASSWORD: 'p@ss', PGHOST: 'db.internal',
     PGPORT: '5433', PGDATABASE: 'furniture', PGSSLMODE: 'require' })
 })
