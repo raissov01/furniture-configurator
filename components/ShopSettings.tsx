@@ -35,6 +35,7 @@ import { materialUsedInTree } from '@/lib/materialUsedInTree'
 import { ruleInputPolicy } from '@/lib/shopRuleInput'
 import { updateCatalogMaterialName } from '@/lib/catalogMaterialName'
 import { ShopDrillingSettings } from './ShopDrillingSettings'
+import { MoneyInput } from './MoneyInput'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 
 type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
@@ -50,10 +51,6 @@ const TABS: { value: Tab; label: string }[] = [
   { value: 'rules', label: tr('Правила цеха') },
   { value: 'drilling', label: tr('Присадка') },
 ]
-
-/** Баға ішінде ТИЫНМЕН сақталады, экранда теңгемен көрсетіледі. */
-const toTenge = (minor: number) => Math.round(minor / 100)
-const toMinor = (tenge: number) => Math.round(tenge) * 100
 
 const text =
   'w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none ' +
@@ -84,21 +81,21 @@ export function ShopSettings() {
 
   if (!open) return null
 
-  const setPriceSheet = (id: string, tenge: number) =>
-    editShop({ materials: shop.materials.map((m) => (m.id === id ? { ...m, pricePerSheet: toMinor(tenge) } : m)) })
+  const setPriceSheet = (id: string, tiyn: number) =>
+    editShop({ materials: shop.materials.map((m) => (m.id === id ? { ...m, pricePerSheet: tiyn } : m)) })
   // Тақта (постформинг) метрмен сатылады — оның бағасы парақтың емес, метрдің.
-  const setPriceMeter = (id: string, tenge: number) =>
+  const setPriceMeter = (id: string, tiyn: number) =>
     editShop({
       materials: shop.materials.map((m) => (m.id === id && m.slab
-        ? { ...m, slab: { ...m.slab, pricePerMeter: toMinor(tenge) } }
+        ? { ...m, slab: { ...m.slab, pricePerMeter: tiyn } }
         : m)),
     })
   const setSheet = (id: string, patch: { sheetWidth?: number; sheetHeight?: number }) =>
     editShop({ materials: shop.materials.map((m) => (m.id === id ? { ...m, ...patch } : m)) })
-  const setBandPrice = (id: string, tenge: number) =>
-    editShop({ edgeBands: shop.edgeBands.map((b) => (b.id === id ? { ...b, pricePerMeter: toMinor(tenge) } : b)) })
-  const setHardwarePrice = (id: string, tenge: number) =>
-    editShop({ hardware: shop.hardware.map((h) => (h.id === id ? { ...h, pricePerUnit: toMinor(tenge) } : h)) })
+  const setBandPrice = (id: string, tiyn: number) =>
+    editShop({ edgeBands: shop.edgeBands.map((b) => (b.id === id ? { ...b, pricePerMeter: tiyn } : b)) })
+  const setHardwarePrice = (id: string, tiyn: number) =>
+    editShop({ hardware: shop.hardware.map((h) => (h.id === id ? { ...h, pricePerUnit: tiyn } : h)) })
   const setHingeK = (id: string, cupFromEdge: number) =>
     editShop({ hingeSystems: shop.hingeSystems.map((h) => (h.id === id ? { ...h, cupFromEdge } : h)) })
   const setHingeEnd = (id: string, endOffset: number) =>
@@ -220,9 +217,8 @@ export function ShopSettings() {
                     Плита: {m.slab.stockLengths.join(' / ')} мм
                   </span>,
                   <span key="p" className="flex items-center gap-1">
-                    <NumberInput value={toTenge(m.slab.pricePerMeter)} min={0} step={100}
-                      invalid={m.slab.pricePerMeter <= 0}
-                      onChange={(v) => setPriceMeter(m.id, v)} />
+                    <MoneyInput value={m.slab.pricePerMeter} label={`${m.name}: баға, 0..₸`}
+                                            onChange={(v) => setPriceMeter(m.id, v)} />
                     <span className="text-[11px] text-neutral-500">/м</span>
                   </span>,
                   <MaterialActions key="x" id={m.id} />,
@@ -236,9 +232,8 @@ export function ShopSettings() {
                       onChange={(sheetHeight) => setSheet(m.id, { sheetHeight })} />
                   </span>,
                   <span key="p" className="flex items-center gap-1">
-                    <NumberInput value={toTenge(m.pricePerSheet)} min={0} step={100}
-                      invalid={m.pricePerSheet <= 0}
-                      onChange={(v) => setPriceSheet(m.id, v)} />
+                    <MoneyInput value={m.pricePerSheet} label={`${m.name}: баға, 0..₸`}
+                                            onChange={(v) => setPriceSheet(m.id, v)} />
                     <MarketPriceTag shop={shop} priceKey={`material:${m.id}`} editShop={editShop} />
                   </span>,
                   <MaterialActions key="x" id={m.id} />,
@@ -257,7 +252,7 @@ export function ShopSettings() {
               cells: [
                 <span key="t" className="tabular-nums text-neutral-500">{b.thickness}</span>,
                 <span key="p" className="flex items-center gap-1">
-                  <NumberInput value={toTenge(b.pricePerMeter)} min={0} step={10}
+                  <MoneyInput value={b.pricePerMeter} label={`${b.name}: баға, 0..₸`}
                     onChange={(v) => setBandPrice(b.id, v)} />
                   <MarketPriceTag shop={shop} priceKey={`edgeBand:${b.id}`} editShop={editShop} />
                 </span>,
@@ -281,7 +276,7 @@ export function ShopSettings() {
               name: h.name,
               cells: [
                 <span key="p" className="flex items-center gap-1">
-                  <NumberInput value={toTenge(h.pricePerUnit)} min={0} step={10}
+                  <MoneyInput value={h.pricePerUnit} label={`${h.name}: баға, 0..₸`}
                     onChange={(v) => setHardwarePrice(h.id, v)} />
                   <MarketPriceTag shop={shop} priceKey={`hardware:${h.id}`} editShop={editShop} />
                 </span>,
@@ -382,15 +377,14 @@ export function ShopSettings() {
                       </td>
                       <td className="w-44 px-2 py-1.5">
                         <span className="flex items-center gap-1">
-                        <NumberInput
-                          value={toTenge(shop.services[sid].rate)}
-                          min={0}
-                          step={100}
+                        <MoneyInput
+                          value={shop.services[sid].rate}
+                          label={`${SERVICE_NAMES[sid]}: баға, 0..₸`}
                           onChange={(v) =>
                             editShop({
                               services: {
                                 ...shop.services,
-                                [sid]: { ...shop.services[sid], rate: toMinor(v) },
+                                [sid]: { ...shop.services[sid], rate: v },
                               },
                             })
                           }
@@ -411,8 +405,8 @@ export function ShopSettings() {
                   onChange={(v) => editShop({ coefficient: v > 0 ? v : 1 })} />
               </Field>
               <Field label={tr('Монтаж, ₸ за 1 м ширины')} hint={tr('в коэффициент не входит')}>
-                <NumberInput value={toTenge(shop.installation.ratePerMetreWidth)} min={0} step={500}
-                  onChange={(v) => editShop({ installation: { ratePerMetreWidth: toMinor(v) } })} />
+                <MoneyInput value={shop.installation.ratePerMetreWidth} label="Монтаж бағасы, 0..₸"
+                  onChange={(v) => editShop({ installation: { ratePerMetreWidth: v } })} />
               </Field>
               <Field label={tr('Наценка, %')}>
                 <NumberInput value={shop.markupPercent} min={0} max={1000} step={1}

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
 import { visibleMaterials } from '@/lib/cutView'
+import { MoneyInput } from './MoneyInput'
 
 type Tab = 'nesting' | 'price'
 
@@ -76,6 +77,7 @@ export function QuoteView({
   const [materialFilter, setMaterialFilter] = useState('all')
   const [customer, setCustomer] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
+  const [salePriceDraftValid, setSalePriceDraftValid] = useState(true)
   const exportAllowed = childExportAllowed(propertiesOpen)
   const dialogRef = useRef<HTMLDivElement>(null)
   useEffect(() => { if (open) dialogRef.current?.focus() }, [open])
@@ -155,7 +157,7 @@ export function QuoteView({
               {busy === 'dxf' ? '…' : 'DXF'}
             </Button>
             <Button
-              disabled={!exportAllowed || busy !== null || !price || price.missingPrices.length > 0}
+              disabled={!exportAllowed || !salePriceDraftValid || busy !== null || !price || price.missingPrices.length > 0}
               title={
                 priceError
                   ? priceError
@@ -275,7 +277,8 @@ export function QuoteView({
                 {projectInfo.designer ? ` · ${tr('Дизайнер')} ${projectInfo.designer}` : ''}
               </p>
             ) : null}
-            <PriceOverridesEditor overrides={priceOverrides} onChange={editPriceOverrides} shopCoefficient={shop.coefficient} />
+            <PriceOverridesEditor overrides={priceOverrides} onChange={editPriceOverrides}
+              shopCoefficient={shop.coefficient} onSalePriceValidityChange={setSalePriceDraftValid} />
             {priceError ? (
               <div className="rounded-md border border-red-300 bg-red-50 px-2.5 py-2 text-[11px] text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
                 {priceError}
@@ -366,15 +369,13 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
  * коэффициенттен шыққан сомамен есептеледі.
  */
 function PriceOverridesEditor({
-  overrides, onChange, shopCoefficient,
+  overrides, onChange, shopCoefficient, onSalePriceValidityChange,
 }: {
   overrides: PriceOverrides
   onChange: (patch: Partial<PriceOverrides>) => void
   shopCoefficient: number
+  onSalePriceValidityChange: (valid: boolean) => void
 }) {
-  // Экранда теңгемен көрсетеді, сақтауда тиынмен (§0.2: ақша бүтін минор бірлік).
-  const salePriceTenge = overrides.salePrice !== undefined ? (overrides.salePrice / 100).toFixed(2) : undefined
-
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-md border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-700">
       <label className="flex flex-col gap-1">
@@ -394,18 +395,8 @@ function PriceOverridesEditor({
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-neutral-500">{tr('Цена продажи, ₸ (вручную)')}</span>
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          value={salePriceTenge ?? ''}
-          placeholder={tr('из коэффициента')}
-          onChange={(e) => {
-            const raw = e.target.value
-            onChange({ salePrice: raw === '' ? undefined : Math.round(Number(raw) * 100) })
-          }}
-          className="w-36 rounded-md border border-neutral-300 bg-white px-2 py-1 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
-        />
+        <MoneyInput value={overrides.salePrice} label={tr('Цена продажи, ₸ (вручную)')}
+          onChange={(salePrice) => onChange({ salePrice })} onValidityChange={onSalePriceValidityChange} />
       </label>
       {overrides.salePrice !== undefined ? (
         <Button onClick={() => onChange({ salePrice: undefined })}>
