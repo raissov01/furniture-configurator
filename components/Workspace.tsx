@@ -34,7 +34,7 @@ import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
 import { assertUniqueToolbarRows, compactToolbarRows } from '@/lib/classicToolbar'
-import { classicToolStatus } from '@/lib/classicStatus'
+import { classicToolStatus, selectedStatusName } from '@/lib/classicStatus'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
@@ -403,6 +403,7 @@ export function Workspace() {
   // id-лер корпустың атауымен префиксталады: бір жобадағы екі шкафта да
   // `side-left` бар, ал экспортта олар бөлек файл болуы керек.
   const projectPanels = production.panels
+  const selectedPart = projectPanels.find((panel) => panel.id === selected)
   const pdfNode = production.scene.nodes.find((node) => node.nodeId === activeId && findNode(root, node.nodeId)?.kind === 'cabinet')
     ?? production.scene.nodes.find((node) => findNode(root, node.nodeId)?.kind === 'cabinet')
   const pdfCabinet = pdfNode ? cabinets.find((entry) => entry.id === pdfNode.nodeId) : undefined
@@ -1021,7 +1022,7 @@ export function Workspace() {
           {/* 3D-де таңдалған деталь жайлы ақпарат сахна өлшемін өзгертпейді. */}
           {selected ? (() => {
             // Іздеу ЖОБА тізімінен: бір жобадағы екі шкафтың детальі де осында.
-            const part = projectPanels.find((p) => p.id === selected)
+            const part = selectedPart
             if (!part) return null
             return (
               <div data-testid="selected-info-overlay" className="p100-selection-bar pointer-events-auto absolute inset-x-2 bottom-2 z-20 flex max-h-[45%] flex-wrap items-center gap-2 overflow-y-auto px-3 py-1.5 text-xs">
@@ -1194,8 +1195,12 @@ export function Workspace() {
         </aside>
       </div>
       <footer className="p100-status hidden lg:flex" role="status" data-testid="p100-status">
-        <span>{classicToolStatus(hoveredToolLabel, selected, activeNode?.name, tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
-        {selected && activeNode && <span className="ml-auto tabular-nums">
+        <span>{classicToolStatus(hoveredToolLabel, selected,
+          selectedStatusName(selected, activeNode, selectedPart, tr), tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
+        {selected && selectedPart ? <span className="ml-auto tabular-nums">
+          {tr('Готовый · клиент')}: {selectedPart.finishedLength}×{selectedPart.finishedWidth} мм
+          {' · '}{tr('Рез · цех')}: {selectedPart.cutLength}×{selectedPart.cutWidth} мм
+        </span> : selected && activeNode && <span className="ml-auto tabular-nums">
           {tr('Положение')}: X {activeNode.transform.pos.x} · Y {activeNode.transform.pos.y} · Z {activeNode.transform.pos.z} мм
           {' · '}{tr('Размеры')}: {activeNode.kind === 'cabinet'
             ? `${activeNode.config.height} (H) × ${activeNode.config.width} (W) × ${activeNode.config.depth} (D)`
