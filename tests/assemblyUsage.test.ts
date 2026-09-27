@@ -66,6 +66,19 @@ describe('жинау реті', () => {
     if (back) expect(stepOf((p) => p.id === back.id).direction).toBe('сзади')
   })
 
+  it('екі бүйірді корпустағы X орнына қарай қарсы жақтан қояды', () => {
+    const sides = panels.filter((panel) => panel.role === 'side')
+    expect(sides).toHaveLength(2)
+    const [left, right] = [...sides].sort((a, b) => a.position.x - b.position.x)
+    expect(steps.find((step) => step.panelId === left!.id)?.direction).toBe('слева')
+    expect(steps.find((step) => step.panelId === right!.id)?.direction).toBe('справа')
+    const reversed = assemblySteps(panels.map((panel) => panel.id === left!.id
+      ? { ...panel, position: { ...panel.position, x: right!.position.x } }
+      : panel.id === right!.id ? { ...panel, position: { ...panel.position, x: left!.position.x } } : panel))
+    expect(reversed.find((step) => step.panelId === left!.id)?.direction).toBe('справа')
+    expect(reversed.find((step) => step.panelId === right!.id)?.direction).toBe('слева')
+  })
+
   it('тесік саны панельдікімен бірдей', () => {
     for (const step of steps) {
       expect(step.holes).toBe(panels.find((p) => p.id === step.panelId)!.drilling.length)
