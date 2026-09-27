@@ -42,6 +42,7 @@ export type PropertiesKeyEvent = {
   key: string
   /** Фокустағы элемент тегі (кіші әріппен). */
   target: string
+  exactInput?: boolean
   isComposing?: boolean
   shiftKey?: boolean
   ctrlKey?: boolean
@@ -57,5 +58,6 @@ export function propertiesKeyAction(event: PropertiesKeyEvent): 'ok' | 'cancel' 
   if (event.key === 'Escape') return 'cancel'
   if (event.key !== 'Enter') return null
   if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return null
+  if (event.exactInput) return null
   return NATIVE_ENTER.has(event.target) ? null : 'ok'
 }

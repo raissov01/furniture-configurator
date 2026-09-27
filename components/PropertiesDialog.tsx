@@ -79,7 +79,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
     const handle = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target.tagName.toLowerCase() : ''
       const action = propertiesKeyAction({
-        key: event.key, target, isComposing: event.isComposing,
+        key: event.key, target, exactInput: event.target instanceof Element && event.target.hasAttribute('data-exact-mm'), isComposing: event.isComposing,
         shiftKey: event.shiftKey, ctrlKey: event.ctrlKey, altKey: event.altKey, metaKey: event.metaKey,
       })
       if (!action) return

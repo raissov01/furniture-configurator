@@ -6,7 +6,7 @@ import { t as tr } from '@/lib/i18n'
 import { Button, Field, NumberInput, Select, Toggle } from '@/components/ui'
 import { ExportMenu } from '@/components/ExportMenu'
 import { boardDimensions, resizeBoard } from '@/src/core/boardProperties'
-import { parseExactMm } from '@/src/core/exactMm'
+import { exactInputDraft } from '@/lib/exactInputDraft'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, panelFitWarnings } from '@/src/core/index'
 import type { BoardNode, BoardSpec, Catalog, Orientation, Panel, PanelEdges } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -20,23 +20,34 @@ const orientations: { value: string; label: string; orientation: Orientation }[]
 ]
 const edges: (keyof PanelEdges)[] = ['L1', 'L2', 'W1', 'W2']
 
-function RelativeMmInput({ current, label, onChange, onError }: {
-  current: number; label: string; onChange: (value: number) => void; onError: (message: string) => void
+function RelativeMmInput({ current, label, positive = false, onChange, onError }: {
+  current: number; label: string; positive?: boolean; onChange: (value: number) => void; onError: (message: string) => void
 }) {
   const [draft, setDraft] = useState('')
-  return <input type="text" inputMode="numeric" value={draft} placeholder={tr('+/- мм')}
+  const [draftError, setDraftError] = useState<string | null>(null)
+  return <div><input type="text" inputMode="numeric" value={draft} placeholder={tr('+/- мм')}
+    data-exact-mm
     title={tr('Абсолютно: 600 или =-100; относительно: +20 или -10')}
-    aria-label={`${label}: ${tr('Точный ввод')}`} className="mt-1 w-full border border-neutral-300 bg-white px-1 py-0.5 text-xs dark:border-neutral-700 dark:bg-neutral-900"
-    onChange={(event) => setDraft(event.target.value)} onBlur={() => setDraft('')}
+    aria-label={`${label}: ${tr('Точный ввод')}`} aria-invalid={Boolean(draftError) || undefined}
+    className={`mt-1 w-full border bg-white px-1 py-0.5 text-xs dark:bg-neutral-900 ${draftError ? 'border-red-600' : 'border-neutral-300 dark:border-neutral-700'}`}
+    onChange={(event) => {
+      const next = event.target.value
+      setDraft(next)
+      setDraftError(exactInputDraft(next, current, label, positive).error ?? null)
+    }}
     onKeyDown={(event) => {
       if (event.key !== 'Enter') return
       event.preventDefault()
-      try { onChange(parseExactMm(draft, current)); setDraft(''); onError('') }
+      const parsed = exactInputDraft(draft, current, label, positive)
+      if (parsed.value === undefined) { setDraftError(parsed.error ?? `${label}: ${tr('Неверное значение')}`); return }
+      try { onChange(parsed.value); setDraft(''); setDraftError(null); onError('') }
       catch (cause) { onError(cause instanceof Error ? cause.message : tr('Неверное значение')) }
     }} />
+    {draftError && <span role="alert" className="block text-[11px] text-red-700">{draftError}</span>}
+  </div>
 }
 
-export function BoardProperties({ node, panel, catalog }: { node: BoardNode; panel: Panel | undefined; catalog: Catalog }) {
+export function BoardProperties({ node, panel, catalog, locked = false, productionReady = true }: { node: BoardNode; panel: Panel | undefined; catalog: Catalog; locked?: boolean; productionReady?: boolean }) {
   const [tab, setTab] = useState<Tab>('general')
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState(node.name)
@@ -83,7 +94,7 @@ export function BoardProperties({ node, panel, catalog }: { node: BoardNode; pan
             hint={fixed ? tr('толщина материала') : undefined}>
             {fixed ? <input type="number" readOnly value={size[dimension]} className="w-full border border-neutral-300 bg-neutral-100 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-800" />
               : <><NumberInput value={size[dimension]} min={1} onChange={(value) => run(() => editBoard(node.id, resizeBoard(node.board, material, dimension, value)))} />
-                <RelativeMmInput current={size[dimension]} label={dimension.toUpperCase()} onError={setError}
+                <RelativeMmInput current={size[dimension]} label={dimension.toUpperCase()} positive onError={setError}
                   onChange={(value) => editBoard(node.id, resizeBoard(node.board, material, dimension, value))} /></>}
           </Field>
         })}
