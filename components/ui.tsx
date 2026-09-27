@@ -141,26 +141,90 @@ export function Menu({
 }) {
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
+  const triggerRef = React.useRef<HTMLButtonElement>(null)
+  const items = () => [...(ref.current?.querySelectorAll<HTMLButtonElement>('[role="menu"] [role="menuitem"]') ?? [])]
+    .filter((item) => !item.disabled)
+  const openMenu = () => {
+    document.dispatchEvent(new CustomEvent('ui-menu-open', { detail: ref.current }))
+    setOpen(true)
+  }
+  React.useEffect(() => {
+    const onOtherMenu = (event: Event) => {
+      if ((event as CustomEvent<Element | null>).detail !== ref.current) setOpen(false)
+    }
+    document.addEventListener('ui-menu-open', onOtherMenu)
+    return () => document.removeEventListener('ui-menu-open', onOtherMenu)
+  }, [])
   React.useEffect(() => {
     if (!open) return
     const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
+    return () => document.removeEventListener('mousedown', onDoc)
   }, [open])
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape' && open) {
+      event.preventDefault()
+      event.stopPropagation()
+      setOpen(false)
+      triggerRef.current?.focus()
+      return
+    }
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      const bar = ref.current?.closest('[role="menubar"]')
+      const triggers = [...(bar?.querySelectorAll<HTMLButtonElement>('[data-menu-trigger]') ?? [])]
+      const index = triggers.indexOf(triggerRef.current!)
+      if (index < 0 || triggers.length < 2) return
+      event.preventDefault()
+      const delta = event.key === 'ArrowRight' ? 1 : -1
+      const next = triggers[(index + delta + triggers.length) % triggers.length]!
+      setOpen(false)
+      next.focus()
+      next.click()
+      return
+    }
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+    event.preventDefault()
+    const enabled = items()
+    if (!open || enabled.length === 0) {
+      openMenu()
+      window.setTimeout(() => {
+        const available = items()
+        ;(event.key === 'ArrowUp' ? available.at(-1) : available[0])?.focus()
+      }, 0)
+      return
+    }
+    const index = enabled.indexOf(document.activeElement as HTMLButtonElement)
+    const delta = event.key === 'ArrowDown' ? 1 : -1
+    enabled[(index + delta + enabled.length) % enabled.length]?.focus()
+  }
   return (
-    <div ref={ref} className="relative">
-      <Button
-        active={active || open}
-        {...(title ? { title } : {})}
-        {...(size ? { size } : {})}
-        onClick={() => setOpen((v) => !v)}
+    <div ref={ref} className="relative" onKeyDown={onKeyDown} onMouseEnter={() => {
+      const bar = ref.current?.closest('[role="menubar"]')
+      if (bar?.querySelector('[data-menu-trigger][aria-expanded="true"]') && !open) openMenu()
+    }}>
+      <button
+        ref={triggerRef}
+        type="button"
+        role="menuitem"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        data-menu-trigger
+        title={title}
+        onClick={() => open ? setOpen(false) : openMenu()}
+        className={cn(
+          'rounded-md border font-medium transition',
+          size === 'sm' ? 'px-1.5 py-0.5 text-[11px] leading-4' : 'px-2.5 py-1.5 text-xs',
+          active || open
+            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+            : 'border-neutral-300 bg-white text-neutral-700 hover:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-500',
+        )}
       >
-        {label} <span className="text-[9px] opacity-60">▾</span>
-      </Button>
+        {label} <span data-menu-chevron className="text-[9px] opacity-60">▾</span>
+      </button>
       {open ? (
         <div
+          role="menu"
+          aria-label={typeof label === 'string' ? label : undefined}
           className={cn(
             'absolute z-40 mt-1 min-w-44 rounded-lg border border-neutral-200 bg-white p-1 shadow-xl dark:border-neutral-700 dark:bg-neutral-900',
             align === 'right' ? 'right-0' : 'left-0',
@@ -187,6 +251,8 @@ export function MenuItem({
   return (
     <button
       type="button"
+      role="menuitem"
+      tabIndex={-1}
       disabled={disabled}
       title={title}
       onClick={() => { onClick?.(); close() }}
