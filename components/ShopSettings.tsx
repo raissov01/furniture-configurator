@@ -36,6 +36,7 @@ import { ruleInputPolicy } from '@/lib/shopRuleInput'
 import { updateCatalogMaterialName } from '@/lib/catalogMaterialName'
 import { ShopDrillingSettings } from './ShopDrillingSettings'
 import { MoneyInput } from './MoneyInput'
+import { PriceImportPanel } from './PriceImportPanel'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 
 type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
@@ -198,6 +199,7 @@ export function ShopSettings() {
               Профиль хранится в этом браузере. Когда появятся аккаунты, он переедет на сервер как есть.
             </p>
             <PriceListManager shop={shop} />
+            <PriceImportPanel shop={shop} />
           </div>
         ) : null}
 
