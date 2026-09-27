@@ -15,6 +15,7 @@ import type { Quality, Theme } from '@/lib/appearance'
 import { LANGS, type Lang } from '@/lib/i18n'
 import type { ShopExportFormat } from '@/lib/shopExport'
 import type { ShopExportScope } from '@/lib/shopExportScope'
+import { classicFileHint } from '@/lib/hotkeys'
 
 export type ClassicPanel = 'gallery' | 'ai' | 'sketch' | 'parts' | 'history' | 'shop' | 'project' | 'quote' | 'drill' | 'room' | 'help' | 'shareCode' | 'account'
 
@@ -125,14 +126,14 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('file.sketch', 'Нарисовать мышью', { type: 'open', panel: 'sketch' }, { disabled: !s.activeEditable }),
         item('file.parts', 'Своя деталь', { type: 'open', panel: 'parts' }, { disabled: !s.activeEditable }),
         SEP,
-        item('file.save', 'Сохранить проект', { type: 'saveProject' }),
-        item('file.open', 'Открыть проект', { type: 'openProject' }),
+        item('file.save', 'Сохранить проект', { type: 'saveProject' }, { hint: classicFileHint('saveProject') }),
+        item('file.open', 'Открыть проект', { type: 'openProject' }, { hint: classicFileHint('openProject') }),
         SEP,
         { kind: 'heading', id: 'file.export', label: 'Экспорт для цеха — весь проект' },
         item('file.export.xlsx', 'XLSX — весь проект', { type: 'export', format: 'xlsx', scope: 'project' }, { disabled: !s.canExport }),
         item('file.export.csv', 'CSV — весь проект', { type: 'export', format: 'csv', scope: 'project' }, { disabled: !s.canExport }),
         item('file.export.dxf', 'DXF — весь проект', { type: 'export', format: 'dxf', scope: 'project' }, { disabled: !s.canExport }),
-        item('file.export.project.pdf', 'PDF — весь проект', { type: 'export', format: 'pdf', scope: 'project' }, { disabled: !s.canExportPdf }),
+        item('file.export.project.pdf', 'PDF — весь проект', { type: 'export', format: 'pdf', scope: 'project' }, { disabled: !s.canExportPdf, hint: classicFileHint('printProject') }),
         { kind: 'heading', id: 'file.export.cabinet', label: 'Активный корпус' },
         item('file.export.cabinet.xlsx', 'XLSX — активный корпус', { type: 'export', format: 'xlsx', scope: 'cabinet' }, { disabled: !(s.canExportActiveCabinet ?? s.canExportPdf) }),
         item('file.export.cabinet.csv', 'CSV — активный корпус', { type: 'export', format: 'csv', scope: 'cabinet' }, { disabled: !(s.canExportActiveCabinet ?? s.canExportPdf) }),
@@ -176,7 +177,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
     },
     {
       id: 'element', label: 'Элемент', items: [
-        item('element.add', 'Новый корпус', { type: 'addCabinet' }),
+        item('element.add', 'Новый корпус', { type: 'addCabinet' }, { hint: classicFileHint('newCabinet') }),
         item('element.board', 'Добавить свободную доску', { type: 'addBoard' }),
         item('element.solid', 'Добавить декоративный блок', { type: 'addSolid' }),
         item('element.removeBoard', 'Удалить доску', { type: 'removeBoard' }, { disabled: !s.editableBoard }),

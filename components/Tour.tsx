@@ -19,25 +19,24 @@ import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 import { LESSONS, nextAvailableLessonStep, parseCompletedLessons } from '@/src/core/lessonCatalog'
 import type { LessonStep } from '@/src/core/lessonCatalog'
-import { isRectVisible, tourStepsFor, visibleTourSteps } from '@/lib/tourSteps'
+import { tourStepsFor, visibleTourSteps } from '@/lib/tourSteps'
+import { lessonStepFor } from '@/lib/lessonTargets'
+import { findTourTarget } from '@/lib/tourTarget'
+import { tourCardPosition } from '@/lib/f32TourPosition'
 
 const DONE_KEY = 'furniture-configurator:tour-done'
 export const LESSON_DONE_KEY = 'furniture-configurator:lessons-done'
-
-function targetOf(step: LessonStep): Element | null {
-  const element = step.selector ? document.querySelector(step.selector) :
-    [...document.querySelectorAll('[title]')].find((candidate) =>
-      candidate.getAttribute('title') === tr(step.titleTarget ?? '')) ?? null
-  return element && isRectVisible(element.getBoundingClientRect(), { width: window.innerWidth, height: window.innerHeight }) ? element : null
-}
 
 export function Tour({ paused = false, classic = false }: { paused?: boolean; classic?: boolean }) {
   const [step, setStep] = useState<number | null>(null)
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [rect, setRect] = useState<DOMRect | null>(null)
+  const [cardHeight, setCardHeight] = useState(220)
+  const cardRef = useRef<HTMLDivElement>(null)
   const [tourSteps, setTourSteps] = useState<readonly LessonStep[]>([])
+  const [lessonSteps, setLessonSteps] = useState<readonly LessonStep[]>([])
   const lesson = LESSONS.find((item) => item.id === lessonId)
-  const activeSteps: readonly LessonStep[] = lesson?.steps ?? tourSteps
+  const activeSteps: readonly LessonStep[] = lesson ? lessonSteps : tourSteps
 
   const close = useCallback((completed: boolean) => {
     setStep(null)
@@ -62,8 +61,8 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
   const start = useCallback(() => {
     setLessonId(null)
     setRect(null)
-    const available = visibleTourSteps(tourStepsFor(classic), (selector) =>
-      targetOf({ selector, title: '', text: '' }) !== null)
+    const available = visibleTourSteps(tourStepsFor(classic, window.innerWidth < 1024), (selector) =>
+      findTourTarget({ selector, title: '', text: '' }, tr) !== null)
     setTourSteps(available)
     if (available.length === 0) close(true)
     else setStep(0)
@@ -88,15 +87,19 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
     const onStart = () => start()
     const onLesson = (event: Event) => {
       const id = (event as CustomEvent<{ lessonId: string }>).detail?.lessonId
-      if (!LESSONS.some((item) => item.id === id)) return
+      const selectedLesson = LESSONS.find((item) => item.id === id)
+      if (!selectedLesson) return
+      const selectedStep = lessonStepFor(selectedLesson, classic, window.innerWidth < 1024)
+      if (!selectedStep) return
       setLessonId(id)
+      setLessonSteps([selectedStep])
       setRect(null)
       setStep(0)
     }
     window.addEventListener('tour:start', onStart)
     window.addEventListener('tour:lesson', onLesson)
     return () => { window.removeEventListener('tour:start', onStart); window.removeEventListener('tour:lesson', onLesson) }
-  }, [start])
+  }, [start, classic])
 
   // Esc кез келген турды жабады, фон басқаруды ешқашан тұйықтамайды.
   useEffect(() => {
@@ -109,12 +112,12 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
   // Ағымдағы қадамның элементін тауып, оның орнын өлшейміз.
   useEffect(() => {
     if (step === null) return undefined
-    const index = nextAvailableLessonStep(activeSteps, step, (item) => targetOf(item) !== null)
+    const index = nextAvailableLessonStep(activeSteps, step, (item) => findTourTarget(item, tr) !== null)
     if (index === null) {
       close(!lesson)
       return undefined
     }
-    const el = targetOf(activeSteps[index]!)!
+    const el = findTourTarget(activeSteps[index]!, tr)!
     if (index !== step) setStep(index)
     el.scrollIntoView({ block: 'nearest' })
     const measure = () => setRect(el!.getBoundingClientRect())
@@ -123,14 +126,22 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
     return () => window.removeEventListener('resize', measure)
   }, [step, close, lessonId, activeSteps, lesson])
 
+  useEffect(() => {
+    if (step === null || !cardRef.current) return undefined
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setCardHeight(entry.target.getBoundingClientRect().height)
+    })
+    observer.observe(cardRef.current)
+    return () => observer.disconnect()
+  }, [step])
+
   if (step === null || !rect || !activeSteps[step]) return null
   const current = activeSteps[step]!
   const last = step === activeSteps.length - 1
 
   // Карточка элементтің АСТЫНА қойылады, ал орын жетпесе — үстіне.
-  const below = rect.bottom + 180 < window.innerHeight
-  const top = below ? rect.bottom + 12 : Math.max(12, rect.top - 172)
-  const left = Math.min(Math.max(12, rect.left), window.innerWidth - 340)
+  const { top, left } = tourCardPosition(rect, window.innerWidth, window.innerHeight,
+    cardHeight, Math.min(320, window.innerWidth - 24))
 
   return (
     /*
@@ -145,7 +156,7 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
     <div className="pointer-events-none fixed inset-0 z-[60]">
       {/* Қараңғы қабат ТЕСІКПЕН: көрсетіліп тұрған элемент жарық қалады. */}
       <div
-        className="pointer-events-none absolute rounded-lg ring-2 ring-amber-400 transition-all"
+        className="pointer-events-none absolute rounded-lg ring-1 ring-amber-400 transition-all"
         style={{
           top: rect.top - 4,
           left: rect.left - 4,
@@ -155,7 +166,8 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
         }}
       />
       <div
-        className="pointer-events-auto absolute w-80 rounded-xl border border-neutral-200 bg-white p-3 shadow-2xl dark:border-neutral-700 dark:bg-neutral-900"
+        ref={cardRef}
+        className="pointer-events-auto absolute w-80 max-w-[calc(100vw-24px)] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900"
         style={{ top, left }}
       >
         <p className="text-[10px] uppercase tracking-wider text-neutral-400">

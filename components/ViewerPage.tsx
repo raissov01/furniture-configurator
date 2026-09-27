@@ -12,7 +12,7 @@ import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ConfigValidationError, decodeProjectV4, parseProjectV4 } from '@/src/core/index'
+import { decodeProjectV4, parseProjectV4 } from '@/src/core/index'
 import type { ProjectFileV4 } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
@@ -23,7 +23,8 @@ import { TouchJoystick } from '@/components/TouchJoystick'
 import { isTouchDevice } from '@/lib/walkInput'
 import { ClientComments } from '@/components/ClientComments'
 import { ApprovalPanel } from '@/components/ApprovalPanel'
-import { formatTenge } from '@/src/core/index'
+import { formatTengeExact } from '@/src/core/index'
+import { viewerHashError, viewerPressedState } from '@/components/viewerPublicError'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
 // Жүктелгенше «жүктелуде» шеңбері — клиент бет қатып қалды деп ойламасын.
@@ -39,8 +40,8 @@ const Scene = dynamic(() => import('@/components/Scene'), {
 /** Клиентке керегі осы үшеуі: жалпы көрініс, фас және бөлме. */
 const PRESETS: { value: CameraPreset; label: string }[] = [
   { value: 'three-quarter', label: '3/4' },
-  { value: 'front', label: tr('Фас') },
-  { value: 'room', label: tr('Комната') },
+  { value: 'front', label: 'Фас' },
+  { value: 'room', label: 'Комната' },
 ]
 
 /** Кодпен ашылған жобаны серверден қайта тексеру аралығы, мс (автожаңарту). */
@@ -60,7 +61,7 @@ export function ViewerPage() {
     if (new URLSearchParams(window.location.search).get('c')) return undefined
     const hash = window.location.hash.slice(1)
     if (!hash) {
-      setState({ kind: 'error', message: 'В ссылке нет проекта. Попросите отправить её целиком.' })
+      setState({ kind: 'error', message: tr(viewerHashError(hash, null)) })
       return undefined
     }
     try {
@@ -70,9 +71,7 @@ export function ViewerPage() {
     } catch (error) {
       setState({
         kind: 'error',
-        message: error instanceof ConfigValidationError
-          ? `${error.message}${error.allowed ? ` — ${error.allowed}` : ''}`
-          : 'Не удалось открыть проект по этой ссылке.',
+        message: tr(viewerHashError(hash, error)),
       })
     }
     return undefined
@@ -96,8 +95,8 @@ export function ViewerPage() {
           setState({
             kind: 'error',
             message: res?.status === 404
-              ? 'Код не найден или его срок истёк: код действует 24 часа. Попросите у мастера новый.'
-              : 'Не удалось открыть проект по коду. Проверьте интернет.',
+              ? tr('Код не найден или его срок истёк: код действует 24 часа. Попросите у мастера новый.')
+              : tr('Не удалось открыть проект по коду. Проверьте интернет.'),
           })
         }
         return
@@ -109,11 +108,11 @@ export function ViewerPage() {
         const project = parseProjectV4(data.project)
         loadProject(project)
         setState({ kind: 'ready', project })
-      } catch (error) {
+      } catch {
         if (first) {
           setState({
             kind: 'error',
-            message: error instanceof ConfigValidationError ? error.message : 'Проект по коду не прочитался.',
+            message: tr('Проект по коду не прочитался.'),
           })
         }
       }
@@ -168,6 +167,7 @@ function Viewer({
   const walk = useConfigurator((s) => s.walk)
   const setWalk = useConfigurator((s) => s.setWalk)
   const touch = useMemo(isTouchDevice, [])
+  const controls = { walk, openness, preset }
 
   const { scene, items, error } = useTreeSceneItems(root, room, catalog, projectSettings ?? shopSettings, layers)
   const cabinets = items.map((item) => item.cabinet)
@@ -178,28 +178,28 @@ function Viewer({
   }, [catalog])
 
   return (
-    <main className="flex h-screen flex-col bg-neutral-950 text-neutral-100">
+    <main className="flex min-h-dvh flex-col bg-neutral-950 text-neutral-100 sm:h-dvh">
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-2">
         <span className="text-sm font-semibold">{project.name}</span>
         <span className="text-xs text-neutral-500">
           {cabinets.length === 1 ? '1 корпус' : `${cabinets.length} корпуса`}
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-1">
-          <Button active={walk} onClick={() => setWalk(!walk)}>{tr('Прогулка')}</Button>
+          <Button active={walk} ariaPressed={viewerPressedState(controls, 'walk')} onClick={() => setWalk(!walk)}>{tr('Прогулка')}</Button>
           {/* Клиент үшін ЕҢ түсінікті батырма: ашылған есік пен шығарылған
               ящик жиһаздың ішін де, өлшемін де сөзсіз түсіндіреді. */}
-          <Button active={openness > 0} onClick={() => setOpenness(openness > 0 ? 0 : 1)}>
+          <Button active={openness > 0} ariaPressed={viewerPressedState(controls, 'fronts')} onClick={() => setOpenness(openness > 0 ? 0 : 1)}>
             {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
           </Button>
           {PRESETS.map((p) => (
-            <Button key={p.value} active={preset === p.value} onClick={() => setPreset(p.value)}>
-              {p.label}
+            <Button key={p.value} active={preset === p.value} ariaPressed={viewerPressedState(controls, p.value)} onClick={() => setPreset(p.value)}>
+              {tr(p.label)}
             </Button>
           ))}
         </div>
       </header>
 
-      <div className="relative min-h-0 flex-1">
+      <div className="relative min-h-[260px] flex-1 sm:min-h-0">
         {error ? <div role="alert" className="absolute inset-x-0 top-0 z-10 bg-red-950 px-4 py-2 text-sm text-red-100">
           {error.message}
         </div> : null}
@@ -237,7 +237,7 @@ function Viewer({
             </p>
           ))}
           <p className="ml-auto font-medium">{project.priceOverrides?.salePrice !== undefined
-            ? formatTenge(project.priceOverrides.salePrice) : tr('Цена по запросу')}</p>
+            ? formatTengeExact(project.priceOverrides.salePrice) : tr('Цена по запросу')}</p>
         </div>
       </section>
       {code ? <ApprovalPanel code={code} project={project} /> : null}

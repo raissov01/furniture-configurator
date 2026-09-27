@@ -15,11 +15,25 @@
  *
  * АҚША — бүтін тиын. Ұсыныстар бүтін теңге; медиана тиынмен есептеледі
  * (жұп санда ортаңғы екеуінің ортасы — 50 тиынға дейін дәл).
+ *
+ * ҰСЫНЫЛҒАН БАҒА (пайдаланушы шешімі, 2026-09-27). Әдепкі баға енді бірінші
+ * кезекте — `RECOMMENDED_PRICES` (дереккөзі `qdesign-2026-09-26`, ішкі
+ * `.codex-runs/qdesign-prices/`). Тек БІЗДІҢ позицияларымызға дәл сәйкес
+ * келген сан алынды; бөтен каталог, атау, құрылым көшірілмеді. Сәйкесі жоқ
+ * позицияда — бұрынғы нарық медианасы, екеуі де жоқ болса — бос. Нарық
+ * медианасы белгіде салыстыру үшін сақталады. UI-да дереккөздің аты
+ * КӨРСЕТІЛМЕЙДІ: белгі — «Рекомендуемая цена (26.09.2026)».
  */
 import type { ServiceBasis, ServiceId, ShopProfile } from './shop'
 
-/** Жеткізушілер беттері тексерілген күн. */
+/** Жеткізушілер беттері тексерілген күн (бірінші зерттеу). */
 export const MARKET_PRICE_DATE = '2026-09-24'
+/**
+ * Екінші зерттеу: `.codex-runs/lite/hardware-prices/` пен `lite/shop-rates/`
+ * (бос қалған фурнитура мен цех қызметтері). Топтың күні — оның ұсыныстары
+ * қаралған күн.
+ */
+export const MARKET_PRICE_DATE_0927 = '2026-09-27'
 
 export type MarketOffer = {
   supplier: string
@@ -50,6 +64,12 @@ const TASTAK = 'Тастак'
 const MEB = 'Мебельщик'
 const BLUM_AKTAU = 'Мебельная фурнитура Blum (furnitura7292.kz)'
 const DAMEN = 'DAMEN-Mebel'
+const CONFIRMAT = 'Конфирмат'
+const CONFIRMAT_PRICE = 'https://www.confirmat.kz/pricelist'
+const ORION = 'F.A.ORION'
+const ZHANTIS = 'Zhantis'
+const ZHANTIS_BOXES = 'https://zhantis.kz/product-groups/space-twin'
+const D27 = MARKET_PRICE_DATE_0927
 
 /**
  * Салыстыру топтары: тек «exact» ұсыныстар, қорда бар, ағымдағы тариф
@@ -178,8 +198,76 @@ export const MARKET_GROUPS: MarketGroup[] = [
     offers: [offer('RoomSet', 'Астана', 'https://roomset.kz/tseny/', 'Стандарт тесікті бұрғылау', 35)],
   },
   {
-    id: 'service-edging-metre', label: 'Облицовка кромкой ПВХ, за метр', unit: 'lm', dateSeen: MARKET_PRICE_DATE,
-    offers: [offer(DAMEN, 'Астана', 'https://damen-mebel.kz/raspil/', 'ПВХ кромка жапсыру', 150)],
+    // Тек «listed», түзу жиек, лента ені 19 мм-ді қамтиды. RoomSet 200 — «от»,
+    // Mebex — лента ені 16/32 мм, Евромаркет — 2024 прайсы: кірмеді.
+    id: 'service-edging-metre', label: 'Облицовка кромкой ПВХ, прямая, за метр', unit: 'lm', dateSeen: D27,
+    offers: [
+      offer(DAMEN, 'Астана', 'https://damen-mebel.kz/raspil/', 'ПВХ кромка жапсыру', 150),
+      offer('ДСП Центр', 'Алматы', 'https://dspc.kz/services', 'ПВХ түзу кромкалау, лента ені 23 мм-ге дейін', 195),
+    ],
+  },
+
+  // ── 2026-09-27: `.codex-runs/lite/hardware-prices/prices.json` ──
+  // Тек дана/жиынтық бағасы жарияланған ұсыныстар; қаптама (10 дана)
+  // данаға бөлінбеді, ҚҚС белгісіз жолдарға салық қосылмады.
+  {
+    id: 'confirmat-cap-single', label: 'Заглушка конфирмата, за штуку', unit: 'pcs', dateSeen: D27,
+    offers: [offer(EM, 'Қарағанды', 'https://em-c.kz/catalog/zaglushki_nakonechniki/', 'Конфирмат заглушкасы, қара', 3)],
+  },
+  {
+    id: 'hinge-mounting-plate', label: 'Планка ответная под петлю', unit: 'pcs', dateSeen: D27,
+    offers: [
+      offer(CONFIRMAT, 'Астана', CONFIRMAT_PRICE, 'Boyard H5010, петляға қарсы планка NEO H0', 110),
+      offer('Häfele Kazakhstan', 'Алматы', 'https://hafeleshop.kz/mebelnye-petli', 'Häfele 311.70.752, монтаж планкасы Metalla 540 SM', 176),
+    ],
+  },
+  {
+    // Каталогтағы «Ручка-скоба» межцентровоесіз — ұзындықтары араласады
+    // (роликті бағыттағыштағыдай); атауында көрінеді.
+    id: 'handle-bar-96-160', label: 'Ручка-скоба, 96 и 160 мм', unit: 'pcs', dateSeen: D27,
+    offers: [
+      offer(EM, 'Қарағанды', 'https://www.em-c.kz/catalog/rossiya/', 'Скоба тұтқа RS-105-96, 96 мм, қара', 560),
+      offer(PROFI, 'Астана', 'https://www.profikz.kz/catalog/litsevaya_furnitura/ruchki/skoby/58354/', 'Скоба тұтқа 608-160, 160 мм, қара', 1360),
+    ],
+  },
+  {
+    id: 'handle-rail-96-160', label: 'Ручка-рейлинг, 96–160 мм', unit: 'pcs', dateSeen: D27,
+    offers: [
+      offer(EM, 'Қарағанды', 'https://www.em-c.kz/catalog/rossiya/', 'Рейлинг тұтқа R-3010-96, 96 мм, хром', 540),
+      offer(PROFI, 'Астана', 'https://www.profikz.kz/catalog/litsevaya_furnitura/ruchki/reylingi/57692/', 'Рейлинг тұтқа RIFF 096-10-096, 96 мм, хром', 365),
+      offer(EM, 'Қарағанды', 'https://em-c.kz/catalog/r_3031_128_ruchka_reyling_128_mm_khrom.html', 'Рейлинг тұтқа R-3031-128, 128 мм, хром', 940),
+      offer(PROFI, 'Астана', 'https://profikz.kz/catalog/litsevaya_furnitura/ruchki/reylingi/57653/', 'Рейлинг тұтқа RIFF 096-12-128, 128 мм', 737),
+      offer(EM, 'Қарағанды', 'https://www.em-c.kz/catalog/rossiya/', 'Рейлинг тұтқа R-3031-160, 160 мм, хром', 1250),
+    ],
+  },
+  {
+    id: 'shelf-pin-metal-5-single', label: 'Полкодержатель металлический Ø5, за штуку', unit: 'pcs', dateSeen: D27,
+    offers: [offer(CONFIRMAT, 'Астана', 'https://confirmat.kz/category/21', 'Металл полкодержатель Ø5 мм, 26.01.144', 6)],
+  },
+  {
+    id: 'dowel-8x30-single', label: 'Шкант 8×30, за штуку', unit: 'pcs', dateSeen: D27,
+    offers: [
+      offer(CONFIRMAT, 'Астана', 'https://confirmat.kz/category/22', 'Шкант ағаш 8×30 мм, насечка', 5),
+      offer(ORION, 'Шымкент', 'https://fa-orion.kz/p93988447-shkant-mebelnyj-830.html', 'Шкант жиһаздық 8×30 мм', 3),
+    ],
+  },
+  {
+    // Жиынтық: эксцентрик + дюбель + футорка; эксцентрик Ø15 — өндіруші
+    // карточкасы (boyard.biz, ST01/47/6/Zn/01, 2026-09-27 қаралды).
+    id: 'minifix-15-set', label: 'Минификс 15 мм, комплект (эксцентрик + дюбель + футорка)', unit: 'pcs', dateSeen: D27,
+    offers: [offer(CONFIRMAT, 'Астана', CONFIRMAT_PRICE, 'Boyard ST01/47/6/Zn/01, толық жиынтық', 58)],
+  },
+  {
+    id: 'runner-ball-400-basic', label: 'Направляющие шариковые 400 мм без доводчика, комплект', unit: 'pcs', dateSeen: D27,
+    offers: [offer(CONFIRMAT, 'Астана', CONFIRMAT_PRICE, 'Boyard DB3501Zn/400, толық шығу, доводчиксіз', 1004)],
+  },
+  {
+    id: 'box-blum-tandembox-450', label: 'Blum TANDEMBOX antaro M, 450 мм, комплект', unit: 'pcs', dateSeen: D27,
+    offers: [offer(ZHANTIS, 'Алматы', ZHANTIS_BOXES, 'TANDEMBOX antaro M+D, 450 мм, ені 250 мм дейін (BS001490)', 32122)],
+  },
+  {
+    id: 'box-blum-legrabox-450', label: 'Blum LEGRABOX pure M, 450 мм, комплект', unit: 'pcs', dateSeen: D27,
+    offers: [offer(ZHANTIS, 'Алматы', ZHANTIS_BOXES, 'LEGRABOX pure M+C, 450 мм, ені 250 мм дейін (BS001214)', 55797)],
   },
 ]
 
@@ -200,6 +288,14 @@ export function marketMedianTiyn(group: MarketGroup): number {
 }
 
 /**
+ * Әдепкі бағаның дереккөзі. `source` жоқ ескі белгі — нарық медианасы.
+ */
+export const RECOMMENDED_PRICE_SOURCE = 'qdesign-2026-09-26'
+export const RECOMMENDED_PRICE_DATE = '2026-09-26'
+export const MARKET_MEDIAN_SOURCE = 'market-median'
+export type MarketPriceSource = typeof RECOMMENDED_PRICE_SOURCE | typeof MARKET_MEDIAN_SOURCE
+
+/**
  * Позицияның кілті: `material:<id>`, `edgeBand:<id>`, `hardware:<id>`,
  * `service:<ServiceId>`. Тақта (постформинг) кілті жоқ — оның нарық бағасы
  * метрге келтірілмеген.
@@ -218,6 +314,17 @@ const SEED_DECORS = ['w980', 'u104', 'h1145', 'h3303'] as const
  *   сондықтан 19 мм бөлшек топ алынды (топ атауында ені көрінеді);
  * - ілгектер: бренді, накладкасы, доводчигі сәйкес ұсыныс; «без пружины» — дерек жоқ;
  * - қызметтер: тек әдепкі негізбен (лист / отверстие / метр кромки).
+ *
+ * 2026-09-27 деректерінен ӘДЕЙІ БОС қалғандар (себебі — есепте):
+ * - Häfele ілгектері — накладкасы карточкада жоқ; Boyard серіппесізі —
+ *   полунакладная/вкладная 90°; брендсіз ілгек, DTC — баға жоқ;
+ * - `lift-flap` — тек Blum AVENTOS HK-S, жалпы көтергіштің орнына жүрмейді;
+ * - `leg-100` — «регулируемая» расталмаған; `rod-25`/`rod-bracket` — ұсыныс
+ *   сопақ штангаға, 3 м бұйымды метрге бөлмейміз; купе — тек тік профиль
+ *   мен ролик, біздің «рельс» пен «профиль + ролик» жиынтығы емес;
+ * - постформинг — толық бұйым бағасы метрге бөлінген (баламасы), алынбайды;
+ * - `assembly`/`installation` — ұсыныс «за модуль», бізде м²/ені метрі;
+ *   `packing` — дерек жоқ.
  */
 export const MARKET_DEFAULTS: Record<PriceKey, MarketDefault> = {
   ...Object.fromEntries(SEED_DECORS.flatMap((d) => [
@@ -237,41 +344,175 @@ export const MARKET_DEFAULTS: Record<PriceKey, MarketDefault> = {
   'hardware:runner-roller': { group: 'runner-roller-pair' },
   'hardware:runner-ball': { group: 'runner-ball-pair' },
   'hardware:runner-tandem': { group: 'runner-blum-tandem-partial' },
+  'hardware:confirmat-cap': { group: 'confirmat-cap-single' },
+  'hardware:hinge-plate': { group: 'hinge-mounting-plate' },
+  'hardware:handle-bar': { group: 'handle-bar-96-160' },
+  'hardware:handle-rail': { group: 'handle-rail-96-160' },
+  'hardware:shelf-pin-5': { group: 'shelf-pin-metal-5-single' },
+  'hardware:dowel-8x30': { group: 'dowel-8x30-single' },
+  'hardware:minifix-15': { group: 'minifix-15-set' },
+  'hardware:runner-ball-400': { group: 'runner-ball-400-basic' },
+  'hardware:box-tandembox': { group: 'box-blum-tandembox-450' },
+  'hardware:box-legrabox': { group: 'box-blum-legrabox-450' },
   'service:cutting': { group: 'service-cutting-ldsp-sheet', basis: 'sheet' },
   'service:drilling': { group: 'service-drilling-hole', basis: 'hole' },
   'service:edging': { group: 'service-edging-metre', basis: 'edgeMetre' },
 }
 
-/** Позицияның бағасы нарықтан алынғанының белгісі (профильде сақталады). */
-export type MarketPriceMark = {
-  group: string
-  /** Қойылған нарық бағасы, тиын. Қазіргі баға одан өзгерсе — «өз бағасы». */
+export type RecommendedPrice = {
+  /** Бір бірліктің бағасы, тиын (дереккөздегі бүтін теңге × 100). */
   priceTiyn: number
-  dateSeen: string
-  /** Медиана неше ұсыныстан. */
-  offers: number
+  /** Қызметте — бірлігі біздің негізбен бірдей болғаны тексерілген. */
+  basis?: ServiceBasis
 }
 
-export type MarketQuote = MarketPriceMark & { label: string; suppliers: number; basis?: ServiceBasis }
+/**
+ * Ұсынылған баға: БІЗДІҢ позиция → сан. Сәйкестік қатаң (2026-09-27 ережесі):
+ * - материал: түрі, қалыңдығы, парақ форматы, бренді, декор коды бірдей —
+ *   тек Egger W980/U104/H1145/H3303, 16 мм, 2800×2070 (34 000 ₸/парақ).
+ *   18 мм ЛДСП, 2750×1830 Kronospan, ХДФ 3 мм, МДФ 16/19 — сәйкесі жоқ
+ *   (дереккөзде 18 мм ЛДСП жоқ, ХДФ 4/6 мм 2500×2080, МДФ 16 бағасыз);
+ * - кромка — АЛЫНБАДЫ: дереккөзде ол материалға байланған, ені мен қалыңдығы жоқ;
+ * - ілгек: бренд + дана. Дереккөзде жабылу түрі бөлінбейді, сондықтан тек
+ *   «с доводчиком» позициясына; серіппесіз мен брендсізге — жоқ;
+ * - бағыттағыш/ящик: Blum TANDEM, MERIVOBOX, TANDEMBOX, LEGRABOX — бренд +
+ *   комплект. Брендсіз роликті/шарикті бағыттағыштар — жоқ;
+ * - бекіткіш: конфирмат, шкант, полкодержатель — брендсіз, дана, бізде әр
+ *   түрдің ЖАЛҒЫЗ позициясы. Минификс — біздікі жиынтық, дереккөзде дана: жоқ;
+ * - тұтқа, ножка — дереккөзде бір жалпы баға, бізде бірнеше түр: жоқ;
+ * - штанга (дөңгелек, метр), брючница (дана) — бірлігі мен түрі бірдей;
+ *   голопрофиль — дереккөзде метр, бізде дана: жоқ;
+ * - қызмет: распил мен упаковка — ₸/парақ, біздің негіз де парақ.
+ *   Присадка — ₸/парақ: жаңа цехтың присадкасы да ПАРАҚҚА саналады
+ *   (пайдаланушы шешімі, 2026-09-27; нарық медианасы ₸/тесік — салыстыру
+ *   үшін). Нөл мәндер (облицовка, работа, монтаж) және сату коэффициенті
+ *   (цехтың маржа саясаты) — алынбады.
+ */
+export const RECOMMENDED_PRICES: Record<PriceKey, RecommendedPrice> = {
+  ...Object.fromEntries(SEED_DECORS.map((d) => [`material:ldsp16-${d}`, { priceTiyn: 3_400_000 }])),
+  'hardware:hinge-blum-soft': { priceTiyn: 290_000 },
+  'hardware:hinge-hettich-soft': { priceTiyn: 160_000 },
+  'hardware:hinge-hafele-soft': { priceTiyn: 140_000 },
+  'hardware:hinge-gtv-soft': { priceTiyn: 90_000 },
+  'hardware:hinge-dtc-soft': { priceTiyn: 65_000 },
+  'hardware:hinge-boyard-soft': { priceTiyn: 45_000 },
+  'hardware:runner-tandem': { priceTiyn: 1_200_000 },
+  'hardware:box-merivobox': { priceTiyn: 2_800_000 },
+  'hardware:box-tandembox': { priceTiyn: 3_200_000 },
+  'hardware:box-legrabox': { priceTiyn: 4_500_000 },
+  'hardware:confirmat-7x50': { priceTiyn: 800 },
+  'hardware:dowel-8x30': { priceTiyn: 400 },
+  'hardware:shelf-pin-5': { priceTiyn: 1200 },
+  'hardware:rod-25': { priceTiyn: 70_000 },
+  'hardware:filling-trousers': { priceTiyn: 2_800_000 },
+  'service:cutting': { priceTiyn: 200_000, basis: 'sheet' },
+  'service:packing': { priceTiyn: 200_000, basis: 'sheet' },
+  'service:drilling': { priceTiyn: 500_000, basis: 'sheet' },
+}
 
-/** Позицияның ағымдағы нарық бағасы; дерек жоқ болса null. */
-export function marketQuote(key: PriceKey): MarketQuote | null {
+/** Әдепкі бағасы бар барлық позиция (ұсынылған не нарық). */
+const DEFAULT_KEYS: PriceKey[] = [...new Set([...Object.keys(RECOMMENDED_PRICES), ...Object.keys(MARKET_DEFAULTS)])]
+
+/** Позицияның бағасы әдепкіден алынғанының белгісі (профильде сақталады). */
+export type MarketPriceMark = {
+  /** Нарық тобы — салыстыру үшін; ұсынылған бағаның нарықта баламасы болмауы мүмкін. */
+  group?: string
+  /** Жоқ болса — нарық медианасы (ескі белгілер). */
+  source?: MarketPriceSource
+  /** Қойылған әдепкі баға, тиын. Қазіргі баға одан өзгерсе — «өз бағасы». */
+  priceTiyn: number
+  dateSeen: string
+  /** Нарық медианасы неше ұсыныстан (нарық тобы жоқ болса 0). */
+  offers: number
+  /** Салыстыру үшін нарық медианасы, тиын (топ бар болса). */
+  marketMedianTiyn?: number
+  /**
+   * Қызметте — баға қай бірлікке қойылды. Бірлік ауысса белгі жарамсыз
+   * («своя»), ал әдепкі бірлігі өзгерсе, бұрынғы бірліктегі белгі өз
+   * бірлігінде ҚАЛАДЫ — цехтың сметасы кенет басқа бірлікке көшпейді.
+   */
+  basis?: ServiceBasis
+}
+
+/** Нарық тобының көрінісі — салыстыру үшін. */
+export type MarketInfo = {
+  group: string
+  label: string
+  priceTiyn: number
+  dateSeen: string
+  offers: number
+  suppliers: number
+}
+
+export type MarketQuote = MarketPriceMark & {
+  source: MarketPriceSource
+  market: MarketInfo | null
+}
+
+function marketInfo(key: PriceKey): MarketInfo | null {
   const entry = MARKET_DEFAULTS[key]
   const group = entry ? GROUP_BY_ID.get(entry.group) : undefined
-  if (!entry || !group) return null
+  if (!group) return null
   return {
     group: group.id,
+    label: group.label,
     priceTiyn: marketMedianTiyn(group),
     dateSeen: group.dateSeen,
     offers: group.offers.length,
-    label: group.label,
     suppliers: new Set(group.offers.map((o) => o.supplier)).size,
-    ...(entry.basis ? { basis: entry.basis } : {}),
   }
 }
 
-const markOf = (q: MarketQuote): MarketPriceMark =>
-  ({ group: q.group, priceTiyn: q.priceTiyn, dateSeen: q.dateSeen, offers: q.offers })
+/**
+ * Позицияның ағымдағы әдепкі бағасы: ұсынылған баға, болмаса нарық
+ * медианасы; екеуі де жоқ болса null.
+ */
+export function marketQuote(key: PriceKey): MarketQuote | null {
+  const recommended = RECOMMENDED_PRICES[key]
+  const market = marketInfo(key)
+  const comparison = market
+    ? { group: market.group, marketMedianTiyn: market.priceTiyn, offers: market.offers }
+    : { offers: 0 }
+  if (recommended) {
+    return {
+      source: RECOMMENDED_PRICE_SOURCE,
+      priceTiyn: recommended.priceTiyn,
+      dateSeen: RECOMMENDED_PRICE_DATE,
+      ...comparison,
+      market,
+      ...(recommended.basis ? { basis: recommended.basis } : {}),
+    }
+  }
+  if (!market) return null
+  const basis = MARKET_DEFAULTS[key]?.basis
+  return {
+    source: MARKET_MEDIAN_SOURCE,
+    priceTiyn: market.priceTiyn,
+    dateSeen: market.dateSeen,
+    ...comparison,
+    market,
+    ...(basis ? { basis } : {}),
+  }
+}
+
+const markOf = (q: MarketQuote): MarketPriceMark => ({
+  source: q.source,
+  priceTiyn: q.priceTiyn,
+  dateSeen: q.dateSeen,
+  offers: q.offers,
+  ...(q.group !== undefined ? { group: q.group } : {}),
+  ...(q.marketMedianTiyn !== undefined ? { marketMedianTiyn: q.marketMedianTiyn } : {}),
+  ...(q.basis !== undefined ? { basis: q.basis } : {}),
+})
+
+/**
+ * Белгі мен ағымдағы әдепкі бірдей ме (жаңарту керек емес пе). Дереккөздің
+ * күні әртүрлі, сондықтан `source` бөлек салыстырылмайды; салыстыру медианасы
+ * жоқ ескі белгі бір рет толығады.
+ */
+const sameMark = (mark: MarketPriceMark, quote: MarketQuote): boolean =>
+  mark.priceTiyn === quote.priceTiyn && mark.dateSeen === quote.dateSeen && mark.offers === quote.offers &&
+  mark.group === quote.group && mark.marketMedianTiyn === quote.marketMedianTiyn
 
 type Position = { value: number; basis?: ServiceBasis }
 
@@ -320,11 +561,21 @@ function withPosition(shop: ShopProfile, key: PriceKey, value: number, basis?: S
   }
 }
 
-/** Белгі әлі жарамды ма: баға да, қызметтің негізі де нарықтағыдай. */
+/**
+ * Белгісі жоқ ескі (v9) қызмет белгісінің бірлігі — сол кездегі әдепкі:
+ * нарық тобының негізі (присадка — тесік), ол жоқ болса ұсынылғанның.
+ */
+export function legacyMarkBasis(key: PriceKey, mark: MarketPriceMark): ServiceBasis | undefined {
+  if (mark.basis !== undefined) return mark.basis
+  if (mark.source === RECOMMENDED_PRICE_SOURCE) return RECOMMENDED_PRICES[key]?.basis
+  return MARKET_DEFAULTS[key]?.basis
+}
+
+/** Белгі әлі жарамды ма: баға да, қызметтің негізі де белгідегідей. */
 function markHolds(shop: ShopProfile, key: PriceKey, mark: MarketPriceMark): boolean {
   const pos = positionOf(shop, key)
   if (!pos || pos.value !== mark.priceTiyn) return false
-  const basis = MARKET_DEFAULTS[key]?.basis
+  const basis = legacyMarkBasis(key, mark)
   return basis === undefined || pos.basis === basis
 }
 
@@ -360,7 +611,7 @@ function setMarket(shop: ShopProfile, key: PriceKey, quote: MarketQuote): ShopPr
  */
 export function applyMarketDefaults(shop: ShopProfile): ShopProfile {
   let out = shop
-  for (const key of Object.keys(MARKET_DEFAULTS)) {
+  for (const key of DEFAULT_KEYS) {
     const quote = marketQuote(key)
     const pos = positionOf(out, key)
     if (!quote || !pos || pos.value !== 0) continue
@@ -380,7 +631,9 @@ export function refreshMarketPrices(shop: ShopProfile): ShopProfile {
     const quote = marketQuote(key)
     if (!quote) continue
     const mark = out.marketPrices[key]!
-    if (mark.priceTiyn === quote.priceTiyn && mark.dateSeen === quote.dateSeen && mark.offers === quote.offers) continue
+    if (sameMark(mark, quote)) continue
+    // Әдепкінің бірлігі өзгерген: цех бұрынғы бірлікте қалады (баға да).
+    if (quote.basis !== undefined && legacyMarkBasis(key, mark) !== quote.basis) continue
     out = setMarket(out, key, quote)
   }
   return out
@@ -396,7 +649,7 @@ export function resetPositionToMarket(shop: ShopProfile, key: PriceKey): ShopPro
 /** Нарық дерегі бар барлық позицияны нарыққа қайтару (өз бағасы да). */
 export function resetAllPositionsToMarket(shop: ShopProfile): ShopProfile {
   let out = shop
-  for (const key of Object.keys(MARKET_DEFAULTS)) out = resetPositionToMarket(out, key)
+  for (const key of DEFAULT_KEYS) out = resetPositionToMarket(out, key)
   return out
 }
 

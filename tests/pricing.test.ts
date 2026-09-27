@@ -228,7 +228,7 @@ describe('профиль нұсқасы', () => {
     delete (old as Record<string, unknown>)['markupPercent']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     expect(migrated.markupPercent).toBe(0)
     expect(migrated.services.cutting.rate).toBe(0)
     expect(migrated.coefficient).toBe(1)
@@ -241,7 +241,7 @@ describe('профиль нұсқасы', () => {
     delete (old as Record<string, unknown>)['handles']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     expect(migrated.hingeSystems.length).toBeGreaterThan(0)
     expect(migrated.handles.length).toBeGreaterThan(0)
     // Жаңа фурнитура сметада да болуы керек, әйтпесе бағасын қоятын жер жоқ.
@@ -262,7 +262,7 @@ describe('профиль нұсқасы', () => {
     delete (old as Record<string, unknown>)['handles']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     for (const h of base.hardware) {
       expect(migrated.hardware.find((x) => x.id === h.id)?.pricePerUnit, h.id).toBe(777)
     }

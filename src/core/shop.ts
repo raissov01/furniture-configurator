@@ -26,7 +26,8 @@ import { SEED_EDGE_BANDS, SEED_MATERIALS } from './seed'
 import { EdgeBandSchema, MaterialSchema } from './schema'
 import { capturePriceValues, syncActivePriceList } from './priceLists'
 import {
-  applyMarketDefaults, refreshMarketPrices, resetAllPositionsToMarket, resetPositionToMarket,
+  MARKET_MEDIAN_SOURCE, RECOMMENDED_PRICE_SOURCE, applyMarketDefaults, legacyMarkBasis, refreshMarketPrices,
+  resetAllPositionsToMarket, resetPositionToMarket,
 } from './marketPrices'
 import type { MarketPriceMark, PriceKey } from './marketPrices'
 import type { PriceList } from './priceLists'
@@ -136,7 +137,8 @@ export function defaultServices(): Services {
   return {
     // Әдепкі негіздер — ең жиі кездесетіні; бағалары ӘРҚАШАН 0.
     cutting: { basis: 'sheet', rate: 0 },
-    drilling: { basis: 'hole', rate: 0 },
+    // Жаңа цехтың присадкасы ПАРАҚҚА (2026-09-27); бар цех өз бірлігінде қалады.
+    drilling: { basis: 'sheet', rate: 0 },
     edging: { basis: 'edgeMetre', rate: 0 },
     packing: { basis: 'sheet', rate: 0 },
     assembly: { basis: 'squareMetre', rate: 0 },
@@ -144,7 +146,7 @@ export function defaultServices(): Services {
 }
 
 export type ShopProfile = {
-  schemaVersion: 9
+  schemaVersion: 10
   id: string
   /** КП-да тұратын атау */
   name: string
@@ -384,7 +386,7 @@ export function defaultHardware(): HardwareItem[] {
  */
 export function defaultShopProfile(id = 'shop-1'): ShopProfile {
   const base = {
-    schemaVersion: 9 as const,
+    schemaVersion: 10 as const,
     id,
     name: '',
     city: '',
@@ -445,7 +447,7 @@ export function hasNoPrices(shop: PriceFields): boolean {
   return current && lists
 }
 
-/** «Вернуть рыночную цену» — бір позиция. Белсенді прайс-парақ бірге жаңарады. */
+/** «Вернуть рекомендуемую / рыночную цену» — бір позиция. Белсенді прайс-парақ бірге жаңарады. */
 export function resetToMarket(shop: ShopProfile, key: PriceKey): ShopProfile {
   const next = resetPositionToMarket(shop, key)
   return next === shop ? shop : syncActivePriceList(next)
@@ -693,10 +695,14 @@ const DimensionLimitsSchema = z.object({
 })
 
 const MarketPricesSchema = z.record(z.string(), z.object({
-  group: z.string().min(1),
+  // Ескі (v9 бастапқы) белгіде `source` жоқ — ол нарық медианасы.
+  group: z.string().min(1).optional(),
+  source: z.enum([RECOMMENDED_PRICE_SOURCE, MARKET_MEDIAN_SOURCE]).optional(),
   priceTiyn: minorUnits,
   dateSeen: z.string().min(1),
-  offers: z.number().int().positive(),
+  offers: z.number().int().nonnegative(),
+  marketMedianTiyn: minorUnits.optional(),
+  basis: z.enum(['sheet', 'squareMetre', 'hole', 'edgeMetre', 'panel']).optional(),
 }))
 
 const PriceListSchema = z.object({
@@ -722,7 +728,7 @@ const PriceListSchema = z.object({
 })
 
 export const ShopProfileSchema = z.object({
-  schemaVersion: z.literal(9),
+  schemaVersion: z.literal(10),
   id: z.string().min(1),
   name: z.string(),
   city: z.string(),
@@ -759,6 +765,19 @@ export const ShopProfileSchema = z.object({
     context.addIssue({ code: 'custom', path: ['activePriceListId'], message: 'белсенді прайс табылмады' })
   }
 })
+
+/**
+ * v9 → v10: қызмет белгісіне сол кездегі бірлігін жазу; дереккөзі жоқ ескі
+ * белгі — нарық медианасы. Баға мен қалғаны тимейді.
+ */
+function withMarkBasis(marks: unknown): unknown {
+  if (marks === null || typeof marks !== 'object') return marks
+  return Object.fromEntries(Object.entries(marks as Record<string, unknown>).map(([key, mark]) => {
+    if (!key.startsWith('service:') || mark === null || typeof mark !== 'object') return [key, mark]
+    const basis = legacyMarkBasis(key, mark as MarketPriceMark)
+    return [key, { source: MARKET_MEDIAN_SOURCE, ...(mark as object), ...(basis === undefined ? {} : { basis }) }]
+  }))
+}
 
 /** v6-ның өз өрістерін баға тізімін құрастырмай тұрып тексереміз. */
 const ShopProfileV6Schema = z.object(ShopProfileSchema.shape)
@@ -872,6 +891,24 @@ export function parseShopProfile(raw: unknown): ShopProfile {
       priceLists: Array.isArray(old.priceLists)
         ? old.priceLists.map((list: unknown) => (list !== null && typeof list === 'object'
           ? { marketPrices: {}, ...(list as object) }
+          : list))
+        : old.priceLists,
+    }
+  }
+
+  // v9 → v10: присадканың бірлігін цех таңдайды, жаңа цехта — парақ. Қызмет
+  // белгісі енді бірлігін сақтайды: ескі белгіге сол кездегі бірлігі жазылады,
+  // сондықтан бар цех (присадка тесікке) бағасымен де, бірлігімен де ҚАЛАДЫ.
+  const v9 = (migrated as { schemaVersion?: unknown } | null)?.schemaVersion
+  if (v9 === 9) {
+    const old = migrated as { marketPrices?: unknown; priceLists?: unknown }
+    migrated = {
+      ...(migrated as object),
+      schemaVersion: 10,
+      marketPrices: withMarkBasis(old.marketPrices),
+      priceLists: Array.isArray(old.priceLists)
+        ? old.priceLists.map((list: unknown) => (list !== null && typeof list === 'object'
+          ? { ...(list as object), marketPrices: withMarkBasis((list as { marketPrices?: unknown }).marketPrices) }
           : list))
         : old.priceLists,
     }

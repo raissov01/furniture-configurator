@@ -42,6 +42,7 @@ import {
 import type { LibraryTabId } from './libraryCatalogLogic'
 import { CatalogThumb } from './CatalogThumb'
 import { PersonalLibraryPanel } from './PersonalLibraryPanel'
+import { parsePropCoordinate } from '@/lib/propCoordinateUi'
 import { makePropLibraryItem, placedProps, PROP_CATALOG, removePropNode } from '@/src/core/propCatalog'
 import type { Vec3 } from '@/src/core/types'
 
@@ -56,6 +57,9 @@ export function LibraryPanel() {
   const [lastAdded, setLastAdded] = React.useState<string | null>(null)
   const [pendingCabinet, setPendingCabinet] = React.useState<Pro100LibraryItem | null>(null)
   const [propPosition, setPropPosition] = React.useState<Vec3>({ x: 0, y: 0, z: 0 })
+  const [propDraft, setPropDraft] = React.useState<Record<keyof Vec3, string>>({ x: '0', y: '0', z: '0' })
+  const [placedDraft, setPlacedDraft] = React.useState<Record<string, string>>({})
+  const [coordErrors, setCoordErrors] = React.useState<Record<string, string>>({})
   const [propError, setPropError] = React.useState<string | null>(null)
 
   const catalog = useConfigurator((s) => s.catalog)
@@ -66,6 +70,7 @@ export function LibraryPanel() {
     prop.name.toLocaleLowerCase().includes(search.toLocaleLowerCase())), [categoryPath, search])
 
   const placeProp = (id: string) => {
+    if (Object.keys(coordErrors).some((key) => key.startsWith('new:'))) return
     const prop = PROP_CATALOG.find((entry) => entry.id === id)
     if (!prop) return
     try {
@@ -88,6 +93,12 @@ export function LibraryPanel() {
         y: axis === 'y' ? next - current.y : 0, z: axis === 'z' ? next - current.z : 0 } }])
       setPropError(null)
     } catch (cause) { setPropError(cause instanceof Error ? cause.message : String(cause)) }
+  }
+  const editCoordinate = (key: string, axis: keyof Vec3, raw: string, apply: (value: number) => void) => {
+    const result = parsePropCoordinate(raw, axis.toUpperCase())
+    if (!result.ok) { setCoordErrors((current) => ({ ...current, [key]: result.error })); return }
+    setCoordErrors((current) => { const next = { ...current }; delete next[key]; return next })
+    apply(result.value)
   }
 
   const deleteProp = (id: string) => {
@@ -163,7 +174,7 @@ export function LibraryPanel() {
 
   return (
     <div className="flex h-full flex-col bg-neutral-950 text-neutral-100">
-      {/* 4 таб — PRO100 эталонымен бірдей ретте. */}
+      {/* Толық каталогтың бес қойындысы. */}
       <div className="flex shrink-0 border-b border-neutral-800">
         {[...LIBRARY_TABS, { id: 'mine' as const, label: tr('Моя библиотека') }].map((t) => (
           <button
@@ -241,15 +252,17 @@ export function LibraryPanel() {
             <div className="flex gap-1">
               {(['x', 'y', 'z'] as const).map((axis) => <label key={axis} className="min-w-0 flex-1">
                 {axis.toUpperCase()}, {tr('мм')}
-                <input type="number" step="1" value={propPosition[axis]} onChange={(event) =>
-                  setPropPosition((current) => ({ ...current, [axis]: Number(event.target.value) }))}
-                  className="w-full border border-neutral-700 bg-neutral-900 px-1 py-1" />
+                <input type="text" inputMode="numeric" value={propDraft[axis]} aria-invalid={Boolean(coordErrors[`new:${axis}`])}
+                  onChange={(event) => { const raw = event.target.value; setPropDraft((current) => ({ ...current, [axis]: raw }))
+                    editCoordinate(`new:${axis}`, axis, raw, (value) => setPropPosition((current) => ({ ...current, [axis]: value }))) }}
+                  className={cn('w-full border bg-neutral-900 px-1 py-1', coordErrors[`new:${axis}`] ? 'border-red-600' : 'border-neutral-700')} />
               </label>)}
             </div>
-            {propError ? <p role="alert" className="text-red-400">{propError}</p> : null}
+            {(Object.keys(coordErrors).length > 0 || propError) ? <p role="alert" className="text-red-400">{Object.values(coordErrors)[0] ?? propError}</p> : null}
             <div className="grid grid-cols-2 gap-1.5">
               {propItems.map((prop) => <button key={prop.id} type="button" onClick={() => placeProp(prop.id)}
-                className="border border-neutral-700 p-2 text-left hover:border-neutral-400">
+                disabled={Object.keys(coordErrors).some((key) => key.startsWith('new:'))}
+                className="border border-neutral-700 p-2 text-left hover:border-neutral-400 disabled:opacity-40">
                 <span className="block font-medium">{tr(prop.name)}</span>
                 <span className="text-[10px] text-neutral-400">{tr(prop.category)}</span>
               </button>)}
@@ -260,9 +273,12 @@ export function LibraryPanel() {
                 <button type="button" onClick={() => deleteProp(node.id)} className="text-red-300">{tr('Удалить')}</button></div>
               <div className="flex gap-1">{(['x', 'y', 'z'] as const).map((axis) =>
                 <label key={axis} className="min-w-0 flex-1">{axis.toUpperCase()}
-                  <input type="number" step="1" value={node.transform.pos[axis]}
-                    onChange={(event) => moveProp(node.id, node.transform.pos, axis, Number(event.target.value))}
-                    className="w-full border border-neutral-700 bg-neutral-900 px-1 py-1" />
+                  <input type="text" inputMode="numeric" value={placedDraft[`${node.id}:${axis}`] ?? String(node.transform.pos[axis])}
+                    aria-invalid={Boolean(coordErrors[`${node.id}:${axis}`])}
+                    onChange={(event) => { const raw = event.target.value; const key = `${node.id}:${axis}`
+                      setPlacedDraft((current) => ({ ...current, [key]: raw }))
+                      editCoordinate(key, axis, raw, (value) => moveProp(node.id, node.transform.pos, axis, value)) }}
+                    className={cn('w-full border bg-neutral-900 px-1 py-1', coordErrors[`${node.id}:${axis}`] ? 'border-red-600' : 'border-neutral-700')} />
                 </label>)}</div>
             </div>)}
           </div>

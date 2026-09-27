@@ -16,6 +16,8 @@ import { planSectionAddition } from '@/lib/sectionUi'
 import { appendFreeMirror } from '@/lib/freeMirrorAction'
 import { roomDimensionIssue } from '@/lib/roomDimensions'
 import { projectionForPreset } from '@/lib/viewProjection'
+import { CLOUD_SELECTION_KEY, nextHistoryId, revisionDecision } from '@/lib/f24UiLogic'
+import type { LocalRevision } from '@/lib/f24UiLogic'
 import { validSilhouetteHeight } from '@/lib/silhouetteInput'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
@@ -83,11 +85,29 @@ import type { Axis } from '@/src/core/types'
 import type { BoxAlignment } from '@/src/core/align'
 import { arrangeTreeSelection } from '@/src/core/treeArrange'
 import { cabinetsFromTree, reconcileCabinetsInTree, wallAttachedPlacements } from './treeAdapters'
+import { readShareSession, saveShareSession } from '@/lib/shareSessionStorage'
 
 /** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
 const SHOP_KEY = 'furniture-configurator:shop'
 /** Ағымдағы жоба — бетті жаңартқанда жұмыс жоғалмауы үшін. */
 const PROJECT_KEY = 'furniture-configurator:project'
+export const PROJECT_META_KEY = 'furniture-configurator:project-meta'
+const localTabId = Math.random().toString(36).slice(2) + Date.now().toString(36)
+let localRevision: LocalRevision | null = null
+function readLocalRevision(): LocalRevision | null {
+  const raw = window.localStorage.getItem(PROJECT_META_KEY)
+  if (!raw) return null
+  const value: unknown = JSON.parse(raw)
+  if (!value || typeof value !== 'object') return null
+  const meta = value as Partial<LocalRevision>
+  return Number.isSafeInteger(meta.revision) && typeof meta.tabId === 'string'
+    ? { revision: meta.revision!, tabId: meta.tabId } : null
+}
+function clearCloudSelection(): void {
+  if (typeof window === 'undefined') return
+  try { window.sessionStorage?.removeItem(CLOUD_SELECTION_KEY) }
+  catch (error) { console.warn('Бұлт жобасының таңбасы өшірілмеді', error) }
+}
 /** Parsing failed: preserve the exact raw bytes before a deliberate replacement. */
 const CORRUPT_PROJECT_BACKUP_KEY = 'furniture-configurator:project-corrupt-backup'
 /** Локал сақтаулар тарихы: соңғы бірнеше нұсқа. */
@@ -130,6 +150,8 @@ type Snapshot = {
 }
 
 type State = Snapshot & {
+  /** Explicit project replacement changes cloud identity; ordinary edits keep it. */
+  projectEpoch: number
   setProjectLights(lights: SceneLight[]): void
   setMaterialPbr(materialId: string, pbr: MaterialPbr | undefined): void
   setMaterialDecor(materialId: string, decor: Material['decor']): void
@@ -143,6 +165,10 @@ type State = Snapshot & {
   /** A failed history entry does not invalidate the currently loaded project. */
   historyRestoreError: string | null
   dismissHistoryRestoreError(): void
+  localSaveError: string | null
+  localConflict: boolean
+  checkLocalRevision(): void
+  resolveLocalConflict(choice: 'mine' | 'other'): void
   /** Тек root-тан туатын ескі кабинет UI адаптері; жобаға сақталмайды. */
   cabinets: CabinetConfig[]
   placements: Placement[]
@@ -732,10 +758,30 @@ export const useConfigurator = create<State>((set, get) => ({
     get().saveProjectLocally()
   },
   ...cabinetsFromTree(initial.root, initial.room, initial.layers),
+  projectEpoch: 0,
   projectLoadError: null,
   unbackedCorruptProject: null,
   historyRestoreError: null,
   dismissHistoryRestoreError: () => set({ historyRestoreError: null }),
+  localSaveError: null,
+  localConflict: false,
+  checkLocalRevision() {
+    try {
+      if (revisionDecision(readLocalRevision(), localRevision) === 'conflict') set({ localConflict: true })
+    } catch (error) { set({ localSaveError: `Локал нұсқа оқылмады: ${error instanceof Error ? error.message : String(error)}` }) }
+  },
+  resolveLocalConflict(choice) {
+    if (choice === 'other') {
+      get().hydrateProject()
+      if (!get().projectLoadError) set({ localConflict: false, localSaveError: null })
+      return
+    }
+    try {
+      localRevision = readLocalRevision()
+      set({ localConflict: false })
+      get().saveProjectLocally()
+    } catch (error) { set({ localSaveError: `Локал нұсқа оқылмады: ${error instanceof Error ? error.message : String(error)}` }) }
+  },
   shop: defaultShop,
   catalog: catalogOf(defaultShop),
   shopOpen: false,
@@ -1137,6 +1183,8 @@ export const useConfigurator = create<State>((set, get) => ({
   loadProject(file) {
     const s = get()
     const project = parseProjectV4(file, { migrateMaterials: false })
+    saveShareSession(null)
+    clearCloudSelection()
     const known = new Set(s.shop.materials.map((m) => m.id))
     const shopMaterials = new Map(s.shop.materials.map((m) => [m.id, m]))
     const missing = project.materials.filter((m) => !known.has(m.id)).map((m) => ({ ...m,
@@ -1168,6 +1216,7 @@ export const useConfigurator = create<State>((set, get) => ({
       : s.shop
 
     set({
+      projectEpoch: s.projectEpoch + 1,
       shop,
       catalog: projectCatalog(shop, project.materials, project.edgeBands),
       room: project.room,
@@ -1184,6 +1233,7 @@ export const useConfigurator = create<State>((set, get) => ({
       templateId: '',
       projectInfo: project.info ?? {},
       priceOverrides: project.priceOverrides ?? {},
+      shareSession: null,
       projectLoadError: null,
       historyRestoreError: null,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
@@ -1239,10 +1289,21 @@ export const useConfigurator = create<State>((set, get) => ({
       }
     }
     try {
+      const stored = readLocalRevision()
+      if (revisionDecision(stored, localRevision) === 'conflict') {
+        set({ localConflict: true })
+        return 'Жоба басқа қойындыда өзгерді. Сақтау нұсқасын таңдаңыз.'
+      }
       window.localStorage.setItem(PROJECT_KEY, JSON.stringify(get().exportProject()))
+      const next = { revision: (stored?.revision ?? 0) + 1, tabId: localTabId }
+      window.localStorage.setItem(PROJECT_META_KEY, JSON.stringify(next))
+      localRevision = next
+      if (get().localSaveError) set({ localSaveError: null })
       return null
     } catch (error) {
-      return `Жоба браузер қоймасына жазылмады: ${error instanceof Error ? error.message : String(error)}`
+      const message = `Жоба браузер қоймасына жазылмады: ${error instanceof Error ? error.message : String(error)}`
+      set({ localSaveError: message })
+      return message
     }
   },
 
@@ -1251,6 +1312,7 @@ export const useConfigurator = create<State>((set, get) => ({
     let raw: string | null = null
     try {
       raw = window.localStorage.getItem(PROJECT_KEY)
+      localRevision = readLocalRevision()
     } catch (error) {
       set({ firstRun: false,
         projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}; сақтық көшірме жазылмады: бастапқы файл оқылмады` })
@@ -1274,10 +1336,13 @@ export const useConfigurator = create<State>((set, get) => ({
         activeId: cabinetsFromTree(file.root, file.room, file.layers).cabinets[0]?.id ?? firstBoardId(file.root) ?? '',
         projectInfo: file.info ?? {},
         priceOverrides: file.priceOverrides ?? {},
+        shareSession: readShareSession(),
         // Жұмыс табылды — бастау экранын көрсетудің қажеті жоқ.
         firstRun: false,
         projectLoadError: null,
         historyRestoreError: null,
+        localConflict: false,
+        localSaveError: null,
       })
     } catch (error) {
       // Қате файлды автосақтау басып кетпеуі керек: пайдаланушы басқа жобаны
@@ -1458,6 +1523,11 @@ export const useConfigurator = create<State>((set, get) => ({
    */
   setShareCodeOpen: (shareCodeOpen) => set({ shareCodeOpen }),
   startShare: async () => {
+    const previous = get().shareSession
+    if (previous && previous.expiresAt > Date.now()) {
+      const synced = await get().syncShare()
+      return synced.ok ? { ok: true, code: previous.code, expiresAt: previous.expiresAt } : synced
+    }
     const res = await fetch('/api/share', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1470,7 +1540,9 @@ export const useConfigurator = create<State>((set, get) => ({
     if (!res.ok || !data.code || !data.key || !data.expiresAt) {
       return { ok: false, error: data.error ?? 'Не удалось создать код' }
     }
-    set({ shareSession: { code: data.code, key: data.key, expiresAt: data.expiresAt } })
+    const session = { code: data.code, key: data.key, expiresAt: data.expiresAt }
+    saveShareSession(session)
+    set({ shareSession: session })
     return { ok: true, code: data.code, expiresAt: data.expiresAt }
   },
   syncShare: () => {
@@ -1531,10 +1603,10 @@ export const useConfigurator = create<State>((set, get) => ({
       const raw = window.localStorage.getItem(HISTORY_KEY)
       const list: { at: number; name: string; json: string }[] = raw ? JSON.parse(raw) : []
       if (list[0]?.json === json) return
-      const next = [{ at: Date.now(), name: file.name, json }, ...list].slice(0, HISTORY_KEEP)
+      const next = [{ at: nextHistoryId(Date.now(), list[0]?.at), name: file.name, json }, ...list].slice(0, HISTORY_KEEP)
       window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
-    } catch {
-      // қоймаға жазылмады: тарих жоқ, бірақ жұмыс тоқтамайды
+    } catch (error) {
+      set({ localSaveError: `Тарих браузер қоймасына жазылмады: ${error instanceof Error ? error.message : String(error)}` })
     }
   },
 
@@ -1874,12 +1946,16 @@ export const useConfigurator = create<State>((set, get) => ({
 
   reset() {
     const s = get()
+    saveShareSession(null)
+    clearCloudSelection()
     set({
       ...initial,
+      projectEpoch: s.projectEpoch + 1,
       ...cabinetsFromTree(initial.root, initial.room, initial.layers),
       catalog: projectCatalog(s.shop),
       projectInfo: {},
       priceOverrides: {},
+      shareSession: null,
       projectLoadError: null,
       historyRestoreError: null,
       templateId: defaultTemplateId,

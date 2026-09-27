@@ -1,11 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import { t as tr } from '@/lib/i18n'
+import { t as tr, tf } from '@/lib/i18n'
 import { useConfigurator } from '@/store/configurator'
 import { createLibraryItem, findNode, mergeLibraryCatalog, replaceLibraryMaterial, walkTree } from '@/src/core/index'
 import type { LibraryItem, SceneNode } from '@/src/core/index'
 import { exportLibraryJson, importLibraryJson, readLocalLibrary, writeLocalLibrary } from '@/lib/libraryLocal'
+import { importUploadSummary, LIBRARY_AUTH_CHANGED_EVENT, libraryUploadOutcome } from '@/lib/librarySyncUi'
 
 const inputStyle = 'min-w-0 border border-neutral-700 bg-neutral-950 px-1.5 py-1 text-xs text-neutral-100'
 const buttonStyle = 'border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-40'
@@ -46,6 +47,9 @@ export function PersonalLibraryPanel() {
   const [newMaterialId, setNewMaterialId] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
+  const [userId, setUserId] = React.useState<string | null | undefined>(undefined)
+  const [authEpoch, setAuthEpoch] = React.useState(0)
+  const [guestCount, setGuestCount] = React.useState(0)
   const fileRef = React.useRef<HTMLInputElement>(null)
 
   const nodes = React.useMemo(() => {
@@ -64,39 +68,64 @@ export function PersonalLibraryPanel() {
   [items, categoryFilter, search])
 
   React.useEffect(() => {
-    try { setLocal(readLocalLibrary(window.localStorage)) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : tr('Библиотека не прочиталась')) }
-    void fetch('/api/library').then(async (response) => {
-      if (response.status === 401 || response.status === 503) { setMessage(tr('Доступна только локальная библиотека')); return }
-      if (!response.ok) throw new Error(tr('Библиотека аккаунта не загрузилась'))
-      const body = await response.json() as { items: LibraryItem[] }
-      setRemote(body.items)
-    }).catch((cause: unknown) => setError(cause instanceof Error ? cause.message : tr('Библиотека аккаунта не загрузилась')))
+    const refresh = () => setAuthEpoch((value) => value + 1)
+    window.addEventListener(LIBRARY_AUTH_CHANGED_EVENT, refresh)
+    window.addEventListener('focus', refresh)
+    return () => { window.removeEventListener(LIBRARY_AUTH_CHANGED_EVENT, refresh); window.removeEventListener('focus', refresh) }
   }, [])
+  React.useEffect(() => {
+    let active = true
+    setUserId(undefined); setLocal([]); setRemote([]); setError(null); setMessage(null)
+    void (async () => {
+      try {
+        const response = await fetch('/api/me', { cache: 'no-store' })
+        if (!response.ok && response.status !== 503) throw new Error(tr('Библиотека аккаунта не загрузилась'))
+        const body = response.ok ? await response.json() as { account?: { userId?: string } | null } : { account: null }
+        const nextUserId = body.account?.userId ?? null
+        if (!active) return
+        setUserId(nextUserId)
+        setLocal(readLocalLibrary(window.localStorage, nextUserId))
+        if (nextUserId === null) return
+        setGuestCount(readLocalLibrary(window.localStorage).length)
+        const libraryResponse = await fetch('/api/library', { cache: 'no-store' })
+        if (!active) return
+        if (!libraryResponse.ok) throw new Error(tr('Библиотека аккаунта не загрузилась'))
+        const library = await libraryResponse.json() as { items: LibraryItem[] }
+        if (active) setRemote(library.items)
+      } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : tr('Библиотека не прочиталась')) }
+    })()
+    return () => { active = false }
+  }, [authEpoch])
 
   const persist = (next: LibraryItem[]) => {
-    writeLocalLibrary(window.localStorage, next)
+    if (userId === undefined) throw new Error(tr('Библиотека аккаунта не загрузилась'))
+    writeLocalLibrary(window.localStorage, next, userId)
     setLocal(next)
   }
   const upload = async (item: LibraryItem) => {
+    if (userId === null) return libraryUploadOutcome(503, null)
     const response = await fetch('/api/library', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ item }) })
-    if (response.status === 401 || response.status === 503) {
-      setMessage(tr('Сохранено только на этом устройстве'))
-      return
-    }
-    if (!response.ok) throw new Error(tr('Не удалось сохранить в аккаунте'))
-    setRemote((current) => [...current.filter((entry) => entry.id !== item.id), item])
+    const body = response.ok ? null : await response.json() as { error?: string }
+    const outcome = libraryUploadOutcome(response.status, body?.error ?? null)
+    if (outcome.savedToAccount) setRemote((current) => [...current.filter((entry) => entry.id !== item.id), item])
+    return outcome
   }
-  const save = () => {
+  const save = async () => {
     try {
       const node = findNode(root, nodeId)
       if (!node || node.id === root.id) throw new Error(tr('Выберите элемент проекта'))
       const item = createLibraryItem(node, catalog, category.trim() || tr('Элементы'),
         new Date().toISOString(), crypto.randomUUID(), projectSettings ?? shopSettings)
       persist([...local, item])
-      setError(null); setMessage(tr('Элемент сохранён'))
-      void upload(item).catch((cause: unknown) => setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить в аккаунте')))
+      setError(null); setMessage(null)
+      try {
+        const outcome = await upload(item)
+        setMessage(tr(outcome.message)); setError(outcome.error)
+      } catch (cause) {
+        setMessage(tr('Сохранено только на этом устройстве'))
+        setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить в аккаунте'))
+      }
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить элемент')) }
   }
   const place = (item: LibraryItem) => {
@@ -125,12 +154,24 @@ export function PersonalLibraryPanel() {
       setTimeout(() => URL.revokeObjectURL(url), 0)
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось экспортировать JSON')) }
   }
+  const syncImported = async (next: LibraryItem[]) => {
+    let saved = 0
+    for (const item of next) {
+      try {
+        const outcome = await upload(item)
+        if (outcome.savedToAccount) saved += 1
+        else if (outcome.error) { setError(outcome.error); break }
+      } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить в аккаунте')); break }
+    }
+    setMessage(userId === null ? tr('Библиотека импортирована только на этом устройстве')
+      : tf(importUploadSummary(saved, next.length), { saved, total: next.length }))
+  }
   const importFile = async (file: File) => {
     try {
       const next = importLibraryJson(await file.text(), items)
       persist(next)
-      setError(null); setMessage(tr('Библиотека импортирована'))
-      for (const item of next) await upload(item)
+      setError(null); setMessage(null)
+      await syncImported(next)
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось импортировать JSON')) }
   }
   const replaceAll = async () => {
@@ -145,7 +186,7 @@ export function PersonalLibraryPanel() {
       })
       persist(next)
       setError(null); setMessage(tr('Материал заменён в библиотеке'))
-      for (const item of next) await upload(item)
+      await syncImported(next)
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось заменить материал')) }
   }
 
@@ -157,8 +198,19 @@ export function PersonalLibraryPanel() {
     </label>
     <div className="flex gap-1">
       <input className={`flex-1 ${inputStyle}`} aria-label={tr('Категория')} value={category} onChange={(event) => setCategory(event.target.value)} />
-      <button type="button" className={buttonStyle} onClick={save} disabled={!nodes.length}>{tr('Сохранить в библиотеку')}</button>
+      <button type="button" className={buttonStyle} onClick={() => void save()} disabled={!nodes.length || userId === undefined}>{tr('Сохранить в библиотеку')}</button>
     </div>
+    {userId && guestCount > 0 && <button type="button" className={buttonStyle} onClick={() => {
+      try {
+        const guest = readLocalLibrary(window.localStorage)
+        const next = importLibraryJson(exportLibraryJson(guest), items)
+        persist(next)
+        writeLocalLibrary(window.localStorage, [])
+        setGuestCount(0)
+        setError(null)
+        void syncImported(next)
+      } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось импортировать JSON')) }
+    }}>{tr('Перенести гостевую библиотеку в аккаунт')}</button>}
     <div className="flex gap-1">
       <select className={`w-1/2 ${inputStyle}`} aria-label={tr('Фильтр категории')} value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
         <option value="">{tr('Все категории')}</option>
@@ -173,14 +225,14 @@ export function PersonalLibraryPanel() {
         const file = event.target.files?.[0]; if (file) void importFile(file); event.target.value = ''
       }} />
     </div>
-    <div className="grid grid-cols-2 gap-1">
+    <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
       {shown.map((item) => <div key={item.id} className="border border-neutral-700 p-1.5 text-xs">
         <ItemPreview item={item} />
         <div className="truncate" title={item.name}>{item.name}</div>
         <div className="truncate text-neutral-500">{item.category} · {item.meta.sizeHint.y} (H) × {item.meta.sizeHint.x} (W) × {item.meta.sizeHint.z} (D) мм</div>
-        <div className="mt-1 flex gap-1">
-          <button type="button" className={buttonStyle} onClick={() => place(item)}>{tr('Поставить')}</button>
-          <button type="button" className={buttonStyle} onClick={() => remove(item)}>{tr('Удалить')}</button>
+        <div className="mt-1 flex min-w-0 flex-col gap-1 xl:flex-row">
+          <button type="button" className={`${buttonStyle} min-w-0`} onClick={() => place(item)}>{tr('Поставить')}</button>
+          <button type="button" className={`${buttonStyle} min-w-0`} onClick={() => remove(item)}>{tr('Удалить')}</button>
         </div>
       </div>)}
     </div>

@@ -7,6 +7,7 @@ import { edgeMetresByBand, panelAreaSquareMetres } from '../src/core/pricing'
 import { priceProject } from '../src/core/pricing'
 import { nestPanels } from '../src/core/nesting'
 import { panelToDxf } from '../src/core/export/dxf'
+import { polygonShape } from '../lib/f32PolygonShape'
 import { formatCutList } from '../src/core/cutList'
 import { defaultShopProfile } from '../src/core/shop'
 import { parseProjectV4 } from '../src/core/projectV4'
@@ -39,6 +40,18 @@ function panel(contour = rectangle) {
 }
 
 describe('polygon panel manufacturing', () => {
+  it('keeps each 3D outline vertex on the DXF cut outline for an unbanded L panel', () => {
+    const p = panel({ points: [
+      { x: 0, y: 0 }, { x: 600, y: 0 }, { x: 600, y: 160 },
+      { x: 220, y: 160 }, { x: 220, y: 400 }, { x: 0, y: 400 },
+    ], bands: [null, null, null, null, null, null] })
+    const visual = polygonShape(p.contour!, p.finishedLength, p.finishedWidth).extractPoints(12).shape
+    const dxf = panelToDxf(p)
+    for (const point of p.contour!.points) {
+      expect(visual.some((vertex) => vertex.x === point.x && vertex.y === point.y)).toBe(true)
+      expect(dxf).toContain(`10\n${point.x.toFixed(1)}\n20\n${point.y.toFixed(1)}`)
+    }
+  })
   it(' rejects holes in the missing L corner and holes whose radius crosses the cut contour', () => {
     const l = panel({ points: [
       { x: 0, y: 0 }, { x: 600, y: 0 }, { x: 600, y: 160 },
