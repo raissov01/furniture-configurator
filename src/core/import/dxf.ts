@@ -256,12 +256,21 @@ const SUPPORTED_TYPES = new Set(['LINE', 'LWPOLYLINE', 'POLYLINE', 'CIRCLE', 'AR
 
 const round = (n: number): number => Math.round(n)
 
-function toMmPoint(x: number, z: number, factor: number): DxfPoint {
-  return { x: round(x * factor), z: round(z * factor) }
+function checkedMm(value: number, factor: number, field: string, positive = false): number {
+  const mm = round(value * factor)
+  if (!Number.isSafeInteger(mm) || (positive && mm <= 0)) {
+    throw new ConfigValidationError(field, 'DXF өлшемі жарамсыз',
+      positive ? `1..${Number.MAX_SAFE_INTEGER} мм` : `−${Number.MAX_SAFE_INTEGER}..${Number.MAX_SAFE_INTEGER} мм`)
+  }
+  return mm
+}
+
+function toMmPoint(x: number, z: number, factor: number, xField: string, zField: string): DxfPoint {
+  return { x: checkedMm(x, factor, xField), z: checkedMm(z, factor, zField) }
 }
 
 function dist(a: DxfPoint, b: DxfPoint): number {
-  return round(Math.hypot(b.x - a.x, b.z - a.z))
+  return checkedMm(Math.hypot(b.x - a.x, b.z - a.z), 1, 'dxf.wall.length', true)
 }
 
 /** LWPOLYLINE: 10/20 жұптары — әр жұп бір төбе (bulge/доға ЕЛЕНБЕЙДІ — тік кесінді деп саналады). */
@@ -272,7 +281,7 @@ function lwpolylineVertices(groups: RawGroup[], factor: number): DxfPoint[] {
     if (g.code === 10) {
       pendingX = Number(g.value)
     } else if (g.code === 20 && pendingX !== undefined) {
-      verts.push(toMmPoint(pendingX, Number(g.value), factor))
+      verts.push(toMmPoint(pendingX, Number(g.value), factor, 'dxf.LWPOLYLINE.10', 'dxf.LWPOLYLINE.20'))
       pendingX = undefined
     }
   }
@@ -283,7 +292,7 @@ function polylineVertices(vertexGroupsList: RawGroup[][], factor: number): DxfPo
   return vertexGroupsList.map((vg) => {
     const x = Number(findValue(vg, 10) ?? '0')
     const z = Number(findValue(vg, 20) ?? '0')
-    return toMmPoint(x, z, factor)
+    return toMmPoint(x, z, factor, 'dxf.VERTEX.10', 'dxf.VERTEX.20')
   })
 }
 
@@ -334,8 +343,8 @@ export function importDxfRoomPlan(text: string, options: DxfImportOptions = {}):
     if (!included) continue
 
     if (entity.type === 'LINE') {
-      const start = toMmPoint(Number(findValue(entity.groups, 10) ?? '0'), Number(findValue(entity.groups, 20) ?? '0'), factor)
-      const end = toMmPoint(Number(findValue(entity.groups, 11) ?? '0'), Number(findValue(entity.groups, 21) ?? '0'), factor)
+      const start = toMmPoint(Number(findValue(entity.groups, 10) ?? '0'), Number(findValue(entity.groups, 20) ?? '0'), factor, 'dxf.LINE.10', 'dxf.LINE.20')
+      const end = toMmPoint(Number(findValue(entity.groups, 11) ?? '0'), Number(findValue(entity.groups, 21) ?? '0'), factor, 'dxf.LINE.11', 'dxf.LINE.21')
       walls.push({ layer, start, end, length: dist(start, end) })
     } else if (entity.type === 'LWPOLYLINE') {
       const closed = (Number(findValue(entity.groups, 70) ?? '0') & 1) === 1
@@ -344,16 +353,21 @@ export function importDxfRoomPlan(text: string, options: DxfImportOptions = {}):
       const closed = (Number(findValue(entity.groups, 70) ?? '0') & 1) === 1
       walls.push(...segmentsFromVertices(polylineVertices(entity.vertices ?? [], factor), closed, layer))
     } else if (entity.type === 'CIRCLE') {
-      const center = toMmPoint(Number(findValue(entity.groups, 10) ?? '0'), Number(findValue(entity.groups, 20) ?? '0'), factor)
-      circles.push({ layer, center, radius: round(Number(findValue(entity.groups, 40) ?? '0') * factor) })
+      const center = toMmPoint(Number(findValue(entity.groups, 10) ?? '0'), Number(findValue(entity.groups, 20) ?? '0'), factor, 'dxf.CIRCLE.10', 'dxf.CIRCLE.20')
+      circles.push({ layer, center, radius: checkedMm(Number(findValue(entity.groups, 40) ?? '0'), factor, 'dxf.CIRCLE.40', true) })
     } else if (entity.type === 'ARC') {
-      const center = toMmPoint(Number(findValue(entity.groups, 10) ?? '0'), Number(findValue(entity.groups, 20) ?? '0'), factor)
+      const center = toMmPoint(Number(findValue(entity.groups, 10) ?? '0'), Number(findValue(entity.groups, 20) ?? '0'), factor, 'dxf.ARC.10', 'dxf.ARC.20')
+      const startAngleDeg = Number(findValue(entity.groups, 50) ?? '0')
+      const endAngleDeg = Number(findValue(entity.groups, 51) ?? '0')
+      if (!Number.isFinite(startAngleDeg) || !Number.isFinite(endAngleDeg)) {
+        throw new ConfigValidationError('dxf.ARC.angle', 'бұрыш сан емес', 'шекті сан, градус')
+      }
       arcs.push({
         layer,
         center,
-        radius: round(Number(findValue(entity.groups, 40) ?? '0') * factor),
-        startAngleDeg: Number(findValue(entity.groups, 50) ?? '0'),
-        endAngleDeg: Number(findValue(entity.groups, 51) ?? '0'),
+        radius: checkedMm(Number(findValue(entity.groups, 40) ?? '0'), factor, 'dxf.ARC.40', true),
+        startAngleDeg,
+        endAngleDeg,
       })
     }
   }
@@ -362,7 +376,10 @@ export function importDxfRoomPlan(text: string, options: DxfImportOptions = {}):
   if (walls.length > 0) {
     const xs = walls.flatMap((w) => [w.start.x, w.end.x])
     const zs = walls.flatMap((w) => [w.start.z, w.end.z])
-    bounds = { width: round(Math.max(...xs) - Math.min(...xs)), depth: round(Math.max(...zs) - Math.min(...zs)) }
+    bounds = {
+      width: checkedMm(Math.max(...xs) - Math.min(...xs), 1, 'dxf.bounds.width'),
+      depth: checkedMm(Math.max(...zs) - Math.min(...zs), 1, 'dxf.bounds.depth'),
+    }
   }
 
   return {
