@@ -672,6 +672,7 @@ export function Workspace() {
           })}
         </Menu>)}
 
+        {classic && <Link href="/mobile" className="ml-auto inline-flex min-h-6 items-center border border-neutral-300 px-2 text-xs dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>}
       </nav>
 
       {cloudEnabled && <ApprovalBanner code={shareCode} />}
@@ -694,7 +695,7 @@ export function Workspace() {
           </label>}
         </div>)}
       </div>}
-      <header className="legacy-tools flex flex-wrap items-center gap-3 border-b border-neutral-200 px-3 py-2 dark:border-neutral-800">
+      <header className="legacy-tools flex max-h-[35dvh] flex-wrap items-center gap-3 overflow-y-auto border-b border-neutral-200 px-3 py-2 lg:max-h-none lg:overflow-visible dark:border-neutral-800">
         <Link
           href="/"
           title={tr('На главную')}
@@ -707,6 +708,7 @@ export function Workspace() {
 
         {/* Тақырыпта ЖОБА; таңдалған модуль мен оның габариті — оң панельде. */}
         <h1 className="max-w-72 truncate text-sm font-semibold" title={projectName}>{projectName}</h1>
+        <Link href="/mobile" className="inline-flex min-h-11 items-center border border-neutral-300 px-2 text-xs lg:min-h-0 dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>
 
         {/*
           ТОПТАЛҒАН ТАҚТА: бұрын 30+ батырма қатар тұрып «каша» болатын. Енді

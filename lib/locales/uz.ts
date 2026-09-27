@@ -1601,4 +1601,6 @@ export const uz: Record<string, string> = {
   'Ваш аккаунт будет удалён. Вы больше не сможете войти. Удалить аккаунт и уйти?': 'Hisobingiz o‘chiriladi. Endi kira olmaysiz. Hisobni o‘chirib chiqasizmi?',
   'Приглашение отозвано.': 'Taklif bekor qilindi.',
   'Не удалось отозвать приглашение': 'Taklifni bekor qilib bo‘lmadi',
+  'Телефон · Сегодня': 'Telefon · Bugun',
+  'Длина стены': 'Devor uzunligi',
 }

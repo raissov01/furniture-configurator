@@ -89,6 +89,7 @@ export default function Page() {
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Cta href="/configurator">{tr('Открыть конфигуратор')}</Cta>
+                <Cta href="/mobile" tone="ghost">{tr('Телефон · Сегодня')}</Cta>
                 <Cta href="#artifacts" tone="ghost">{tr('Посмотреть, что забирает цех')}</Cta>
               </div>
               <p className="mt-4 text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>

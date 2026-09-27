@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
+import { t } from '@/lib/i18n'
 
 /** Белгі — AisMebel логотипі (`public/brand/`, өзгертпейміз). */
 function Mark() {
@@ -40,9 +41,11 @@ export function SiteHeader() {
           ))}
         </nav>
 
+        <Link href="/mobile" className="ml-auto inline-flex min-h-11 items-center border px-2 text-sm sm:px-4"
+          style={{ borderColor: 'var(--rule)' }}>{t('Телефон · Сегодня')}</Link>
         <Link
           href="/configurator"
-          className="ml-auto border px-4 py-2 text-sm transition"
+          className="hidden border px-4 py-2 text-sm transition sm:inline-flex sm:min-h-11 sm:items-center"
           style={{ background: 'var(--ink)', color: 'var(--paper)', borderColor: 'var(--ink)' }}
         >
           Открыть конфигуратор
