@@ -59,7 +59,7 @@ export async function POST(request: Request): Promise<Response> {
     if (format === 'basis-xlsx') {
       const mapHeader = request.headers.get('x-column-map')
       if (mapHeader && mapHeader.length > 2_000) return error('Баған картасы тым үлкен', 400)
-      const map = mapHeader ? JSON.parse(mapHeader) as BasisColumnMap : undefined
+      const map = mapHeader ? JSON.parse(mapHeader.startsWith('%') ? decodeURIComponent(mapHeader) : mapHeader) as BasisColumnMap : undefined
       data = parseBasisExcel(bytes, map)
       count = data.materials.length + data.edgeBands.length
     } else {
