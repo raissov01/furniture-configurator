@@ -176,6 +176,28 @@ describe('есеп', () => {
     }
   })
 
+  it('әр есеп жолы нақты панельге немесе орналастыруға тиынмен бөлінеді', () => {
+    const price = priceProject(panels, nesting, pricedShop)
+    const ids = new Set(panels.map((panel) => panel.id))
+    for (const line of [...price.materials, ...price.edges, ...price.hardware, ...price.services]) {
+      expect(line.sources?.length, line.name).toBeGreaterThan(0)
+      expect(line.sources!.reduce((sum, source) => sum + source.cost, 0), line.name).toBe(line.cost)
+      for (const source of line.sources!) {
+        expect(ids.has(source.panelId!), line.name).toBe(true)
+        expect(Number.isInteger(source.cost)).toBe(true)
+        expect(source.cost).toBeGreaterThanOrEqual(0)
+      }
+    }
+    const holes = price.services.find((line) => line.id === 'service-drilling')
+    if (holes?.unit === 'отв') {
+      expect(holes.sources!.reduce((sum, source) => sum + source.qty, 0)).toBe(countHoles(panels))
+    }
+    const cheap = { ...pricedShop, materials: pricedShop.materials.map((m) => ({ ...m, pricePerSheet: 1 })) }
+    for (const line of priceProject(panels, nesting, cheap).materials) {
+      expect(line.sources!.every((source) => source.cost >= 0)).toBe(true)
+    }
+  })
+
   it('үстеме 0 болса қорытынды сомаға тең', () => {
     const p = priceProject(panels, nesting, { ...pricedShop, markupPercent: 0 })
     expect(p.total).toBe(p.subtotal)

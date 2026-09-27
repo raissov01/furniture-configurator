@@ -33,6 +33,17 @@ export type PriceLine = {
   cost: number
   /** Осы позицияға берілген жеңілдік, тиын; жоқ болса 0. */
   discountAmount?: number | undefined
+  /** Цех жіктемесі: осы жолды тудырған панельдер/орналастырылған фурнитура. */
+  sources?: PriceSource[] | undefined
+}
+
+export type PriceSource = {
+  panelId?: string | undefined
+  placementIndex?: number | undefined
+  /** Жолдың өлшем бірлігімен есептелген үлес. */
+  qty: number
+  /** Жол құнының осы көзге тиесілі бүтін тиын үлесі. */
+  cost: number
 }
 
 /**
@@ -522,6 +533,67 @@ export function priceProject(
       }
     })
     .sort((a, b) => b.cost - a.cost)
+
+  // Парақ пен параққа тәуелді қызмет бір панельге тікелей тиесілі емес.
+  // Олардың құнын сол материалдың рез ауданына пропорционал бөлеміз;
+  // соңғы үлес қалдық тиынды алады, сондықтан көздер қосындысы жолмен дәл келеді.
+  const panelCutArea = (p: Panel) => p.cutLength * p.cutWidth * p.qty
+  const materialInputs = (id: string, slab: boolean) => panels
+    .filter((p) => p.materialId === id)
+    .map((p) => ({ panelId: p.id, qty: slab
+      ? Math.max(p.finishedLength, p.finishedWidth) * p.qty / 1000
+      : panelCutArea(p) }))
+  const edgeInputs = (bandId: string) => panels
+    .map((p) => ({ panelId: p.id, qty: edgeMetresByBand([p]).get(bandId) ?? 0 }))
+    .filter((source) => source.qty > 0)
+  const serviceInputs = (basis: ServiceRate['basis']) => panels.map((p) => ({
+    panelId: p.id,
+    qty: basis === 'hole' ? p.drilling.length * p.qty
+      : basis === 'panel' ? p.qty
+      : basis === 'squareMetre' ? (p.contour ? polygonArea(p.contour.points) : p.finishedLength * p.finishedWidth) * p.qty / 1_000_000
+      : basis === 'edgeMetre' ? [...edgeMetresByBand([p]).values()].reduce((sum, metres) => sum + metres, 0)
+      : panelCutArea(p),
+  })).filter((source) => source.qty > 0)
+  const allocate = (line: PriceLine, inputs: Omit<PriceSource, 'cost'>[]) => {
+    const sum = inputs.reduce((total, source) => total + source.qty, 0)
+    if (sum <= 0) return
+    let assigned = 0
+    let cumulative = 0
+    line.sources = inputs.map((source, index) => {
+      cumulative += source.qty
+      const cost = index === inputs.length - 1 ? line.cost - assigned
+        : Math.round(line.cost * cumulative / sum) - assigned
+      assigned += cost
+      return { ...source, qty: line.qty * source.qty / sum, cost }
+    })
+  }
+  for (const line of materials) {
+    const slab = Boolean(materialById.get(line.id)?.slab)
+    allocate(line, materialInputs(line.id, slab))
+  }
+  for (const line of edges) allocate(line, edgeInputs(line.id))
+  for (const line of services) {
+    const sid = line.id.slice('service-'.length) as ServiceId
+    allocate(line, serviceInputs(shop.services[sid].basis))
+  }
+  const hasPins = panels.some((p) => p.drilling.some((d) => d.purpose === 'shelfPin'))
+  const runnerId = panels.flatMap((p) => p.drilling)
+    .find((d) => d.purpose === 'runner' && d.hardwareId)?.hardwareId ?? 'runner-roller-400'
+  for (const line of hardware) {
+    const inputs: Omit<PriceSource, 'cost'>[] = panels.flatMap((p) => {
+      const qty = line.id === 'shelf-pin-5'
+        ? p.role === 'shelf' && p.shelfKind === 'adjustable' && hasPins ? p.qty * 4 : 0
+        : line.id === runnerId && p.role === 'drawerSide' ? p.qty / 2
+        : countHardware([p]).get(line.id) ?? 0
+      return qty > 0 ? [{ panelId: p.id, qty }] : []
+    })
+    for (const [index, placement] of placements.entries()) {
+      if (placement.priced && placement.hardwareId === line.id) {
+        inputs.push({ placementIndex: index, qty: placement.length > 0 ? placement.length / 1000 : placement.qty })
+      }
+    }
+    allocate(line, inputs)
+  }
 
   // ── Қорытынды ─────────────────────────────────────────────────────────────
   //
