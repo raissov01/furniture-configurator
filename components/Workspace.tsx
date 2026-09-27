@@ -802,7 +802,15 @@ export function Workspace() {
       {(activeBoard || activeSolid || cabinet) && <div data-testid="mobile-properties-trigger"
         className="relative z-30 flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
         <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
-        <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>
+        {cabinet && <div className="flex shrink-0 gap-1">
+          <Button tour="mobile-size" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Габариты')}</Button>
+          <Button tour="mobile-sections" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Секции модуля')}</Button>
+          <Button tour="mobile-cutlist" size="sm" onClick={() => {
+            if (!cutOpen) toggleCut()
+            document.querySelector('[data-tour="cutlist"]')?.scrollIntoView({ block: 'nearest' })
+          }}>{tr('Деталировка')}</Button>
+        </div>}
+        {!cabinet && <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
       </div>}
 
       {projectLoadError && (

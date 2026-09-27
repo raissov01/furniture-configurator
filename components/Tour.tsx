@@ -58,7 +58,7 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
   const start = useCallback(() => {
     setLessonId(null)
     setRect(null)
-    const available = visibleTourSteps(tourStepsFor(classic), (selector) =>
+    const available = visibleTourSteps(tourStepsFor(classic, window.innerWidth < 1024), (selector) =>
       findTourTarget({ selector, title: '', text: '' }, tr) !== null)
     setTourSteps(available)
     if (available.length === 0) close(true)
