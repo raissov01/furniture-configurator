@@ -8,7 +8,7 @@ import { selectionPropertiesNotice } from '@/lib/propertiesDialogState'
 import { ConfigValidationError, copyNodeProperties, findNode, flattenTree } from '@/src/core/index'
 import type { AutoJointKind, AutoJointRecord, Axis, FlatScene, GroupNode, PropertyClipboard, PropertyGroup, ScalePercent } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
-import { buildCanonicalRows, canDropInto, externalSelectionNodeIds, selectTreeRows } from './canonicalTreeRows'
+import { buildCanonicalRows, canDropInto, externalSelectionNodeIds, numberedCabinetLabels, selectTreeRows } from './canonicalTreeRows'
 import type { CanonicalTreeRow } from './canonicalTreeRows'
 
 type Props = {
@@ -60,6 +60,7 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
   const pasteProperties = useConfigurator((s) => s.pasteProperties)
   const scaleNode = useConfigurator((s) => s.scaleNode)
   const byId = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows])
+  const cabinetLabels = useMemo(() => numberedCabinetLabels(rows), [rows])
   const selectable = useMemo(() => rows.filter((row) => row.kind !== 'part' && row.id !== root.id && !row.locked).map((row) => row.id), [rows, root.id])
   const lastExternal = useRef<string | null>(null)
 
@@ -329,7 +330,7 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
               draggable={row.kind !== 'part' && row.id !== root.id && !row.locked}
               onDragStart={(event) => event.dataTransfer.setData('text/plain', row.id)}
               onClick={(event) => click(event, row)} onDoubleClick={() => startRename(row)}
-              className={cn('min-w-0 flex-1 truncate text-left', row.hidden && 'text-neutral-400 line-through', row.locked && 'opacity-60')}>{row.label}</button>}
+              className={cn('min-w-0 flex-1 truncate text-left', row.hidden && 'text-neutral-400 line-through', row.locked && 'opacity-60')}>{cabinetLabels.get(row.id) ?? row.label}</button>}
           {row.kind === 'part' && row.roleLabel && <span className="text-[10px] text-neutral-500">{tr(row.roleLabel)}</span>}
           {row.kind !== 'part' && row.id !== root.id && <>
             <button type="button" aria-label={row.ownHidden ? tr('Показать') : tr('Скрыть')}

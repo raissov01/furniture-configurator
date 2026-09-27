@@ -1056,7 +1056,7 @@ export function Workspace() {
 
       <Tour paused={galleryOpen} classic={classic} />
       <BusyOverlay />
-      <RenderPanel />
+      <RenderPanel panels={projectPanels} cabinets={items.map((item) => item.cabinet)} />
       {/*
         3D-де БАСЫП таңдалған деталь: цехтың сұрағы «мынау қандай деталь»
         деп басталады, ал жауап әрқашан бір жерде тұруы керек.

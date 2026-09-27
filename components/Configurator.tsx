@@ -606,6 +606,15 @@ function HandleFields({
               options={HANDLE_POSITIONS.map((p) => ({ value: p, label: handlePositionName(p) }))}
             />
           </Field>
+          {model.kind === 'profile' && <Field label={tr('Цвет профиля')}>
+            <Select value={handleSpec.profileColor ?? 'silver'}
+              onChange={(profileColor) => setHandle({ profileColor: profileColor as NonNullable<HandleSpec['profileColor']> }, 'ProfileColor')}
+              options={[
+                { value: 'darkGray', label: tr('Тёмно-серый') },
+                { value: 'silver', label: tr('Серебристый') },
+                { value: 'black', label: tr('Чёрный') },
+              ]} />
+          </Field>}
           {drilled ? (
             <>
               <Field label={tr('Отступ от края, мм')}>

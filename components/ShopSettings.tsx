@@ -19,6 +19,8 @@ import {
   SERVICE_BASIS_NAMES,
   SERVICE_IDS,
   SERVICE_NAMES,
+  SHEET_SERVICE_IDS,
+  SHEET_SERVICE_NAMES,
   SHEET_FORMATS,
   SHEET_THICKNESSES,
   makeMaterial,
@@ -416,6 +418,26 @@ export function ShopSettings() {
                 </tbody>
               </table>
             </div>
+
+            <SectionTitle>{tr('Дополнительные услуги за лист')}</SectionTitle>
+            <label className="mb-2 flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={shop.sheetServices?.enabled === true}
+                onChange={(event) => editShop({ sheetServices: {
+                  enabled: event.target.checked,
+                  rates: shop.sheetServices?.rates ?? { cutting: 0, drilling: 0, edging: 0 },
+                  ...(shop.sheetServices?.byMaterial ? { byMaterial: shop.sheetServices.byMaterial } : {}),
+                } })} />
+              {tr('Добавить услуги за каждый использованный лист')}
+            </label>
+            {shop.sheetServices?.enabled && <div className="grid gap-2 sm:grid-cols-3">
+              {SHEET_SERVICE_IDS.map((sid) => <Field key={sid} label={tr(SHEET_SERVICE_NAMES[sid])}
+                hint={tr('Дополнительно к обычным услугам')}>
+                <MoneyInput value={shop.sheetServices?.rates[sid] ?? 0} label={tr(SHEET_SERVICE_NAMES[sid])}
+                  onChange={(value) => editShop({ sheetServices: {
+                    ...shop.sheetServices!, rates: { ...shop.sheetServices!.rates, [sid]: value },
+                  } })} />
+              </Field>)}
+            </div>}
 
             <SectionTitle>{tr('Коэффициент, монтаж и наценка')}</SectionTitle>
             <div className="grid gap-2 sm:grid-cols-3">

@@ -49,7 +49,7 @@ export type QaAnswers = Partial<Record<QaQuestionId, string | number>>
 
 export type QaResult =
   | { kind: 'cabinet'; cabinet: CabinetConfig }
-  | { kind: 'kitchen'; kitchen: KitchenResult }
+  | { kind: 'kitchen'; kitchen: KitchenResult; options: import('./kitchen').KitchenOptions }
 
 const FURNITURE: QaChoice[] = [
   { value: 'wardrobe', label: 'Шкаф / гардероб' },
@@ -239,7 +239,7 @@ export function qaBuild(answers: QaAnswers, catalog: Catalog): QaResult {
 
   if (kind === 'kitchen') {
     const layout = text(all, 'layout') as KitchenLayout
-    const kitchen = generateKitchen({
+    const options: import('./kitchen').KitchenOptions = {
       layout,
       lengthA: num(all, 'lengthA')!,
       ...(layout !== 'straight' ? { lengthB: num(all, 'lengthB')! } : {}),
@@ -248,9 +248,10 @@ export function qaBuild(answers: QaAnswers, catalog: Catalog): QaResult {
       sink: all.sink === 'yes',
       appliances: all.appliances === 'yes',
       materials: { carcassId: carcassMaterialId, frontId: frontMaterialId },
-    }, catalog)
+    }
+    const kitchen = generateKitchen(options, catalog)
     for (const cabinet of kitchen.cabinets) generateCabinet(cabinet, catalog)
-    return { kind: 'kitchen', kitchen }
+    return { kind: 'kitchen', kitchen, options }
   }
 
   const sectionCount = num(all, 'sections')!

@@ -229,6 +229,8 @@ export function handlePositionName(p: HandlePosition): string {
 /** Фасадқа тағылған нақты тұтқа. */
 export type HandleSpec = {
   handleId: string
+  /** Тұтқасыз профильдің беткі түсі; ескі жоба күміс болып қалады. */
+  profileColor?: 'darkGray' | 'silver' | 'black' | undefined
   /** Таңдалған межцентровое, мм. `knob` үшін мағынасыз (0). */
   boreSpacing: number
   position: HandlePosition
@@ -465,14 +467,15 @@ export function handleShape(
 
   if (model.kind === 'profile') {
     const edge = p === 'left' || p === 'right' ? p : p.startsWith('top') ? 'top' : 'bottom'
+    const profileColor = spec.profileColor ?? 'silver'
     return edge === 'left' || edge === 'right'
       ? {
-        handleId: model.id, kind: 'profile', edge,
+        handleId: model.id, kind: 'profile', edge, profileColor,
         along: frontLength / 2, across: edge === 'left' ? 0 : frontWidth,
         direction: 'along', spacing: 0, length: frontLength,
       }
       : {
-        handleId: model.id, kind: 'profile', edge,
+        handleId: model.id, kind: 'profile', edge, profileColor,
         along: edge === 'top' ? frontLength : 0, across: frontWidth / 2,
         direction: 'across', spacing: 0, length: frontWidth,
       }
@@ -530,6 +533,7 @@ export const HandleModelSchema = z.object({
 
 export const HandleSpecSchema = z.object({
   handleId: z.string().min(1),
+  profileColor: z.enum(['darkGray', 'silver', 'black']).optional(),
   boreSpacing: z.number().nonnegative(),
   position: z.enum([
     'top', 'bottom', 'left', 'right', 'topLeft', 'topRight', 'bottomLeft', 'bottomRight',

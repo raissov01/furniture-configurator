@@ -310,6 +310,7 @@ export function isWidthBevel(
  */
 export type PanelHandle = {
   handleId: string
+  profileColor?: 'darkGray' | 'silver' | 'black' | undefined
   kind: Exclude<HandleKind, 'none'>
   /** Тұтқаның ортасы, мм */
   along: number

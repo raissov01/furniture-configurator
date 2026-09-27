@@ -589,6 +589,33 @@ async function run() {
     await h.clickText('Закрыть', 800)
   })
 
+  await test('qdesign: рендер, сұрақ-жауап және қаржы басқаруы', async () => {
+    await h.goto('/configurator', 11000)
+    await h.sceneCenter(60000)
+    await h.closeModals()
+    check(await h.clickText('Рендер', 900), 'рендер терезесі ашылды')
+    check(await h.evaluate("document.querySelector('[role=group][aria-label=\"Пропорция кадра\"]')?.querySelectorAll('button').length === 4"),
+      'төрт кадр пропорциясы бар')
+    check(await h.evaluate("Boolean([...document.querySelectorAll('input[type=file]')].find(x => x.accept.includes('image/jpeg')))"),
+      'бөлме фотосын таңдау бар')
+    await h.closeModals()
+
+    check(await h.menu('Создать', 'Техзадание (словами)', 900), 'бриф ашылды')
+    check(await h.clickText('Вопросы по шагам', 500), 'сұрақ ағыны ашылды')
+    check((await h.text()).includes('Что будем делать?'), 'бірінші сұрақ көрінеді')
+    check(await h.clickText('Следующий вопрос', 500), 'әдепкі жауаппен келесі сұрақ')
+    check((await h.text()).includes('Длина стены под мебель'), 'өлшем сұрағы шықты')
+    await h.closeModals()
+
+    check(await h.menu('Проект', 'Смета и раскрой', 900), 'қаржы ашылды')
+    check(await h.clickText('Стоимость', 500), 'баға қойындысы ашылды')
+    const controls = await h.text()
+    check(controls.includes('Без монтажа'), 'орнатусыз белгісі бар')
+    check(controls.includes('Менять ручную цену по площади ЛДСП'), 'ауданға сай баға опциясы бар')
+    check(controls.includes('Базовые цены фурнитуры'), 'фурнитура бағасын өзгерту бар')
+    await h.closeModals()
+  })
+
   await test('Смета: қызметтер, коэффициент, фурнитура тізімі', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
