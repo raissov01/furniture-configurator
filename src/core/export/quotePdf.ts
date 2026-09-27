@@ -54,6 +54,16 @@ export type QuotePdfInput = {
 
 type Ctx = { page: PDFPage; regular: PDFFont; bold: PDFFont }
 
+export type QuoteSheetRow = { materialId: string; materialName: string; sheets: number }
+
+/** The client sees the purchased sheets from nesting even when a sale price hides costs. */
+export function quoteSheetRows(price: PriceBreakdown): QuoteSheetRow[] {
+  return price.byMaterial
+    .filter((row) => row.sheets > 0)
+    .map((row) => ({ materialId: row.materialId, materialName: row.materialName, sheets: row.sheets }))
+    .sort((a, b) => a.materialId.localeCompare(b.materialId))
+}
+
 const COL = { qty: 300, unit: 360, price: 430, sum: PAGE.w - MARGIN }
 
 function label(ctx: Ctx, x: number, y: number, value: string, size = 9, bold = false, color = INK): void {
@@ -149,6 +159,20 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
       }
     }
     y -= 4
+  }
+
+  const sheetRows = quoteSheetRows(input.price)
+  if (sheetRows.length > 0) {
+    need(36)
+    y -= 6
+    label(ctx, MARGIN, y, 'Расход листов по раскрою', 9, true)
+    y -= 16
+    for (const row of sheetRows) {
+      need(20)
+      label(ctx, MARGIN + 12, y, row.materialName, 8)
+      right(ctx, COL.sum, y, `${row.sheets} л.`, 8, true)
+      y -= 14
+    }
   }
 
   need(105)

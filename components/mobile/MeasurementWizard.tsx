@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '@/lib/i18n'
 import { CORNER_IDS, OBSTACLE_KINDS, WALL_IDS, validateMeasurement, type MeasurementSurvey, type ObstacleKind, type RoomTolerance } from '@/src/core/measure'
 import type { WallId } from '@/src/core/types'
 import type { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
 import type { JsonValue } from '@/src/core/sync/types'
+import type { ProjectFileV4 } from '@/src/core/projectV4'
+import { measurementImpactView } from '@/lib/mobile/measurementImpactView'
 import type { EnqueueResult } from './measurementSync'
-import { canAdvanceWall, roomIssues, wallIssues, setObstacleLocation, updateMeasure, updateObstacle, updateObstacleDimension, type CaptureSource, type ObstacleDimension, type SurveyField } from './measurementModel'
+import { applyDistoText, canAdvanceWall, roomIssues, wallIssues, setObstacleLocation, updateMeasure, updateObstacle, updateObstacleDimension, type CaptureSource, type ObstacleDimension, type SurveyField } from './measurementModel'
 import { locationIssue, parseWholeInput, toleranceIssue } from './measurementUiLogic'
 
 const wallLabels: Record<WallId, string> = { north: 'Северная стена', east: 'Восточная стена', south: 'Южная стена', west: 'Западная стена' }
@@ -64,7 +66,7 @@ type Props = {
   store: IndexedDbMobileStore
   onBack: () => void
   onSave: (survey: MeasurementSurvey) => Promise<EnqueueResult>
-  onKitchen: (survey: MeasurementSurvey, wall: WallId, tolerance: RoomTolerance) => Promise<void>
+  onKitchen?: (survey: MeasurementSurvey, wall: WallId, tolerance: RoomTolerance) => Promise<void>
   pending: number
   networkLabel: string
   networkColor: string
@@ -82,9 +84,23 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   const [wallToleranceRaw, setWallToleranceRaw] = useState('0')
   const [cornerToleranceRaw, setCornerToleranceRaw] = useState('0')
   const [draftNumbers, setDraftNumbers] = useState<Record<string, string>>({})
+  const [laserTarget, setLaserTarget] = useState<'height' | `walls.${WallId}.length`>('height')
+  const [laserText, setLaserText] = useState('')
+  const [linkedProject, setLinkedProject] = useState<ProjectFileV4 | null>(null)
   const wall = WALL_IDS[wallIndex] ?? 'north'
   const issues = validateMeasurement(survey)
   const saveChain = useRef<Promise<void>>(Promise.resolve())
+  useEffect(() => {
+    let alive = true
+    void store.getProject(initial.id).then((project) => {
+      if (alive) setLinkedProject(project ?? null)
+    }).catch((error: unknown) => {
+      if (alive) setMessage(error instanceof Error ? error.message : t('Не удалось открыть связанный проект'))
+    })
+    return () => { alive = false }
+  }, [store, initial.id])
+  const impact = useMemo(() => linkedProject ? measurementImpactView(initial, survey, linkedProject) : null,
+    [initial, survey, linkedProject])
   useEffect(() => {
     saveChain.current = saveChain.current.catch(() => undefined).then(() => store.putSurvey(survey.id, survey as unknown as JsonValue))
     void saveChain.current.catch((error: unknown) => { setMessage(error instanceof Error ? error.message : t('Не удалось сохранить черновик')) })
@@ -98,6 +114,21 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     setMessage('')
   }
 
+  const captureLaser = () => {
+    try {
+      const next = applyDistoText(survey, laserTarget, laserText, Date.now())
+      setSurvey(next)
+      setLaserText('')
+      setMessage(t('Измерение Leica DISTO D5 записано'))
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t('Не удалось прочитать измерение'))
+    }
+  }
+
+  const sourceLine = (value: MeasurementSurvey['height']) => value.value > 0
+    ? `${t('Источник')}: ${t(value.source === 'laser' ? 'Лазер' : value.source === 'voice' ? 'Голос' : 'Вручную')} · ${t('Время')}: ${new Date(value.capturedAt).toLocaleString()}`
+    : t('Источник отмечается вручную')
+
   const save = async () => {
     if (issues.length) { setMessage(t('Сначала завершите все обязательные поля замера')); return }
     setBusy(true)
@@ -108,6 +139,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
         result === 'rejected' ? t('Отправка отклонена; вернитесь и повторите вручную после исправления причины') :
         result === 'pending' ? t('Замер сохранён локально; предыдущая версия ещё ожидает отправки') :
         result === 'unchanged' ? t('Замер уже сохранён') :
+        result === 'local' ? t('Замер сохранён на этом устройстве') :
         t('Замер сохранён на этом устройстве и поставлен в очередь отправки'))
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t('Не удалось сохранить замер'))
@@ -180,7 +212,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
           <option value="manual">{t('Вручную')}</option><option value="voice">{t('Голос')}</option><option value="laser">{t('Лазер')}</option>
         </select>
       </span>
-      <span className="mt-1 block text-xs text-[#525252]">{t(unit)} · {t('Источник отмечается вручную')}</span>
+      <span className="mt-1 block text-xs text-[#525252]">{t(unit)} · {sourceLine(value)}</span>
       {issues.some((issue) => issue.path === field || issue.path === `${field}.value`) && <span className="block text-xs text-[#9b1c1c]">{t('Требуется целое положительное значение')}</span>}
       {draftNumbers[field] !== undefined && parseWholeInput(draftNumbers[field], min) === null &&
         <span className="block text-xs text-[#9b1c1c]">{t(label)}: {t('Допустимо целое число в диапазоне')} {min}…{Number.MAX_SAFE_INTEGER} {t(unit)}</span>}
@@ -281,7 +313,24 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     </header>
     {step === 'room' && <section className="space-y-4">
       <h1 className="text-xl font-semibold">{t('Помещение и стены')}</h1>
-      <p className="text-sm text-[#525252]">{t('Все размеры в целых миллиметрах. Голос и лазер здесь только источник введённого числа.')}</p>
+      <p className="text-sm text-[#525252]">{t('Все размеры в целых миллиметрах. Источник и время сохраняются с каждым числом.')}</p>
+      <fieldset className="space-y-2 border border-[#8c8c8c] bg-white p-3">
+        <legend className="px-1 text-sm font-semibold">{t('Leica DISTO D5 · Bluetooth клавиатура')}</legend>
+        <p className="text-xs text-[#525252]">{t('Подключите D5 в настройках Bluetooth, включите Text Mode (m) и направьте ввод в поле ниже.')}</p>
+        <label className="block text-sm">{t('Куда записать')}
+          <select className={`${input} mt-1`} value={laserTarget}
+            onChange={(event) => setLaserTarget(event.target.value as typeof laserTarget)}>
+            <option value="height">{t('Высота помещения')}</option>
+            {WALL_IDS.map((id) => <option key={id} value={`walls.${id}.length`}>{t(wallLabels[id])}</option>)}
+          </select>
+        </label>
+        <label className="block text-sm">{t('Строка с D5 (например, 1.234m)')}
+          <input className={`${input} mt-1`} type="text" inputMode="text" autoComplete="off" value={laserText}
+            onChange={(event) => setLaserText(event.target.value)}
+            onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); captureLaser() } }} />
+        </label>
+        <button className={`${button} w-full`} type="button" onClick={captureLaser}>{t('Применить измерение')}</button>
+      </fieldset>
       {renderMeasuredField({ field: 'height', label: 'Высота помещения', value: survey.height })}
       {WALL_IDS.map((id) => <div key={id}>{renderMeasuredField({ field: `walls.${id}.length`, label: wallLabels[id], value: survey.walls[id].length })}</div>)}
       <h2 className="font-semibold">{t('Углы, градусы')}</h2>
@@ -299,8 +348,17 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     </section>}
     {step === 'review' && <section className="space-y-3">
       <h1 className="text-xl font-semibold">{t('Проверка замера')}</h1>
-      <p className="text-sm">{t('Высота помещения')}: {survey.height.value} {t('мм')}</p>
-      {WALL_IDS.map((id) => <p className="text-sm" key={id}>{t(wallLabels[id])}: {survey.walls[id].length.value} {t('мм')}</p>)}
+      <p className="text-sm">{t('Высота помещения')}: {survey.height.value} {t('мм')}<span className="block text-xs text-[#525252]">{sourceLine(survey.height)}</span></p>
+      {WALL_IDS.map((id) => <p className="text-sm" key={id}>{t(wallLabels[id])}: {survey.walls[id].length.value} {t('мм')}<span className="block text-xs text-[#525252]">{sourceLine(survey.walls[id].length)}</span></p>)}
+      <section className="space-y-1 border border-[#b8b8b8] bg-white p-3 text-sm">
+        <h2 className="font-semibold">{t('Влияние изменений замера')}</h2>
+        {!impact ? <p>{t('Связанный проект не найден на этом устройстве; влияние на корпуса и КП неизвестно.')}</p>
+          : impact.changedPaths.length === 0 ? <p>{t('Размеры с открытия замера не менялись.')}</p> : <>
+            <p>{t('Изменены')}: {impact.changedPaths.map(issueLabel).join(', ')}</p>
+            <p>{t('Затронутые корпуса')}: {impact.cabinets.length ? impact.cabinets.map((cabinet) => cabinet.name).join(', ') : t('Нет затронутых корпусов')}</p>
+            <p>{t('КП/заказ для пересчёта')}: {impact.quoteReferences.length ? impact.quoteReferences.join(', ') : t('Номер КП/заказа не указан')}</p>
+          </>}
+      </section>
       {issues.length ? <div className="border border-[#9b1c1c] bg-white p-3 text-sm text-[#9b1c1c]">
         <strong>{t('Нужно уточнить')}</strong>
         <ul className="mt-2 list-disc pl-5">{issues.map((issue) => <li key={`${issue.path}:${issue.message}`}>{issueLabel(issue.path)}: {issueCopy(issue.path, survey)}</li>)}</ul>
@@ -330,7 +388,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       </label>
       {WALL_IDS.some((id) => OBSTACLE_KINDS.some((kind) => survey.walls[id].obstacles[kind].status === 'present')) &&
         <p className="border border-[#a46a00] bg-[#fff3d5] p-3 text-sm">{t('Препятствия отмечены в замере. Проверьте положение модулей вручную до изготовления.')}</p>}
-      <button className={`${button} w-full`} type="button" disabled={issues.length > 0 || busy} onClick={() => {
+      {onKitchen && <button className={`${button} w-full`} type="button" disabled={issues.length > 0 || busy} onClick={() => {
         const invalid = toleranceIssue(wallToleranceRaw, cornerToleranceRaw)
         if (invalid) {
           const label = invalid === 'wallMm' ? 'Допуск противоположных стен, мм' : 'Допуск углов, °'
@@ -345,7 +403,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
             reason.includes('opposite walls') ? t('Для кухни противоположные стены должны быть равны') :
               t('Не удалось создать кухню по замеру'))
         }).finally(() => setBusy(false))
-      }}>{t('Создать кухню по замеру')}</button>
+      }}>{t('Создать кухню по замеру')}</button>}
     </section>}
     {message && <p role="status" className="mt-4 border border-[#8c8c8c] bg-white p-3 text-sm">{message}</p>}
   </main>
