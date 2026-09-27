@@ -7,7 +7,7 @@ import { Button, Field, NumberInput, Select, Toggle } from '@/components/ui'
 import { ExportMenu } from '@/components/ExportMenu'
 import { boardDimensions, resizeBoard } from '@/src/core/boardProperties'
 import { parseExactMm } from '@/src/core/exactMm'
-import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT } from '@/src/core/index'
+import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, panelFitWarnings } from '@/src/core/index'
 import type { BoardNode, BoardSpec, Catalog, Orientation, Panel, PanelEdges } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 
@@ -49,6 +49,7 @@ export function BoardProperties({ node, panel, catalog }: { node: BoardNode; pan
   const material = catalog.materials.find((item) => item.id === node.board.materialId)
   if (!material) return <p role="alert">{tr('Материал не найден')}</p>
   const size = boardDimensions(node.board, material)
+  const fitWarning = panel ? panelFitWarnings([panel], catalog)[0] : undefined
   const orientation = orientations.find((item) =>
     JSON.stringify(item.orientation) === JSON.stringify(node.board.orientation))?.value ?? 'front'
   const run = (fn: () => void) => {
@@ -61,6 +62,9 @@ export function BoardProperties({ node, panel, catalog }: { node: BoardNode; pan
     { id: 'reports', label: tr('Отчёты') }, { id: 'production', label: tr('Производство') },
   ]
   return <section data-testid="board-properties" className="space-y-3 text-xs">
+    {fitWarning && <p role="alert" className="border border-amber-500 bg-amber-50 p-2 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+      {fitWarning.message}. {tr('Проверьте материал или закажите деталь отдельно.')}
+    </p>}
     <div role="tablist" aria-label={tr('Свойства детали')} className="flex flex-wrap gap-1 border-b border-neutral-300 pb-2 dark:border-neutral-700">
       {tabs.map((item) => <Button key={item.id} active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</Button>)}
     </div>

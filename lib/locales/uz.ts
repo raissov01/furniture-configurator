@@ -1407,6 +1407,7 @@ export const uz: Record<string, string> = {
   'CSV — активный корпус': 'CSV — faol korpus',
   'DXF — активный корпус': 'DXF — faol korpus',
   'PDF — сборка активного корпуса': 'PDF — faol korpus yig‘ish chizmasi',
+  'Проверьте материал или закажите деталь отдельно.': 'Materialni tekshiring yoki detalga alohida buyurtma bering.',
   'Стена C формируется автоматически; ручная раскладка доступна для A и B.': 'C devori avtomatik tuziladi; A va B qo‘lda tahrirlanadi.',
   'Исправьте поля с ошибками': 'Xato maydonlarni tuzating',
 

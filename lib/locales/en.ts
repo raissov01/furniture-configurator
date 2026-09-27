@@ -1403,6 +1403,7 @@ export const en: Record<string, string> = {
   'CSV — активный корпус': 'CSV — active cabinet',
   'DXF — активный корпус': 'DXF — active cabinet',
   'PDF — сборка активного корпуса': 'PDF — active cabinet assembly',
+  'Проверьте материал или закажите деталь отдельно.': 'Check the material or order the part separately.',
   'Стена C формируется автоматически; ручная раскладка доступна для A и B.': 'Wall C is generated automatically; edit walls A and B manually.',
   'Исправьте поля с ошибками': 'Correct the invalid fields',
 
