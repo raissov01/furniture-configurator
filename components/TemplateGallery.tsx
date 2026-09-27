@@ -16,6 +16,7 @@ import { Button, Field } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import { cn } from '@/lib/cn'
 import { KitchenWizard } from '@/components/KitchenWizard'
+import { matchTemplateId } from '@/lib/templateMatch'
 
 type Filter = TemplateCategory | 'all' | 'sets' | 'standard'
 
@@ -52,11 +53,13 @@ export function TemplateGallery() {
   const loadSet = useConfigurator((s) => s.loadSet)
   const loadKitchen = useConfigurator((s) => s.loadKitchen)
   const runBusy = useConfigurator((s) => s.runBusy)
-  const activeId = useConfigurator((s) => s.templateId)
+  const activeCabinetId = useConfigurator((s) => s.activeId)
+  const cabinets = useConfigurator((s) => s.cabinets)
   const [filter, setFilter] = useState<Filter>('all')
   const [subcategory, setSubcategory] = useState<string | undefined>()
   const [search, setSearch] = useState('')
   const catalog = useConfigurator((s) => s.catalog)
+  const activeTemplateId = useMemo(() => matchTemplateId(cabinets, activeCabinetId, catalog), [cabinets, activeCabinetId, catalog])
   // Жылдам генератордың материал таңдағыштары үшін: корпус/фасад бірдей
   // пулдан (қалыңдығы ≥10 мм), столешница — тек slab деп белгіленгендерден
   // (G5, `KitchenOptions.materials`-пен бірдей ядро — жаңа геометрия жоқ).
@@ -329,7 +332,7 @@ export function TemplateGallery() {
               className={cn(
                 'flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition',
                 'hover:border-neutral-500 hover:shadow-sm',
-                t.id === activeId
+                t.id === activeTemplateId
                   ? 'border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800'
                   : 'border-neutral-200 dark:border-neutral-700',
               )}

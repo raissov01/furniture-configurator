@@ -25,6 +25,7 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
 import { commitPropertiesName } from '@/lib/propertiesSession'
+import { matchTemplateId } from '@/lib/templateMatch'
 import {
   APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
   defaultHandleSpec, defaultMillingSpec, findTemplate, formatCutList, handlePositionName, millingPattern,
@@ -747,8 +748,9 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
   const limits = useConfigurator((s) => s.shop.limits)
   const carcassMaterials = materials.filter(isCarcass)
   const backMaterials = materials.filter((m) => !isCarcass(m))
-  const template = findTemplate(useConfigurator((s) => s.templateId))
   const catalog: Catalog = useConfigurator((s) => s.catalog)
+  const cabinets = useConfigurator((s) => s.cabinets)
+  const template = useMemo(() => findTemplate(matchTemplateId(cabinets, cabinet.id, catalog)), [cabinets, cabinet.id, catalog])
 
   // «Общее» қосымшасындағы модульдің бөлмедегі орны. Бұрын Workspace.tsx-те
   // Configurator-дан ТЫС тұратын, енді — PRO100-дың «бәрі бір терезеде»
