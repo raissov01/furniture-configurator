@@ -19,3 +19,17 @@ describe('share IP лимиті', () => {
     expect(rate.isShareLimited(absent, 'other', now)).toBe(true)
   })
 })
+
+describe('цехтың OpenAI лимиті', () => {
+  it('сағаттық және күндік шекті бөлек ұстайды, мәтін маршруттары бір шекті бөліседі', () => {
+    const day = 1_800_000_000_000
+    for (let hour = 0; hour < 5; hour += 1) {
+      for (let i = 0; i < 4; i += 1) expect(rate.allowAiRequest('render-shop', 'render', day + hour * 3_600_000)).toBe(true)
+      expect(rate.allowAiRequest('render-shop', 'render', day + hour * 3_600_000)).toBe(false)
+    }
+    expect(rate.allowAiRequest('render-shop', 'render', day + 5 * 3_600_000)).toBe(false)
+    expect(rate.allowAiRequest('other-shop', 'render', day)).toBe(true)
+    for (let i = 0; i < 20; i += 1) expect(rate.allowAiRequest('text-shop', 'text', day)).toBe(true)
+    expect(rate.allowAiRequest('text-shop', 'text', day)).toBe(false)
+  })
+})

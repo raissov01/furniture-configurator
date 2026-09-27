@@ -5,7 +5,8 @@ node_modules
 dist
 tests
 *.log
-.env.local
+.env*
+.vercel
 docker/secrets/*
 .codex-runs
 .worktrees

@@ -10,6 +10,7 @@
  */
 
 import OpenAI from 'openai'
+import { aiAccess } from '@/lib/server/aiAccess'
 import {
   BRIEF_LIMITS,
   CabinetBriefSchema,
@@ -279,6 +280,8 @@ function apiErrorResponse(error: unknown): Response {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const denied = await aiAccess('text')
+  if (denied) return denied
   let prompt: string
   let constraints: Constraints
   try {

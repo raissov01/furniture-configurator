@@ -156,6 +156,12 @@ export function migrateLegacyProjectMaterials<T extends ProjectWithMaterials>(
     for (const [key, item] of Object.entries(value)) {
       if ((key === 'materialId' || key.endsWith('MaterialId')) &&
         typeof item === 'string' && active[item]) out[key] = active[item]
+      else if (key === 'lineDiscounts' && item !== null && typeof item === 'object' && !Array.isArray(item)) {
+        out[key] = Object.fromEntries(Object.entries(item).map(([line, discount]) => {
+          const oldId = line.startsWith('materials:') ? line.slice('materials:'.length) : ''
+          return [active[oldId] ? `materials:${active[oldId]}` : line, rewrite(discount)]
+        }))
+      }
       else out[key] = rewrite(item)
     }
     return out
