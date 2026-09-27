@@ -13,7 +13,8 @@ import { describe, expect, it } from 'vitest'
 import {
   METAL_BOX_SYSTEMS, defaultShopProfile, findMetalBoxSystem, generateCabinet,
   generateHardware, isMetalBoxSystem, metalBoxParts, nestPanels, priceProject,
-  cabinetToDxfFiles, panelToDxf,
+  cabinetToDxfFiles, panelToDxf, cncFiles, basisScriptData, ORIGIN_POSE, ConfigValidationError,
+  drillingToCsv, basisDrillingCsv,
 } from '../src/core/index'
 import type { CabinetConfig, MetalBoxSystemId, Panel } from '../src/core/index'
 import { catalog, withCabinet } from './fixtures'
@@ -35,6 +36,23 @@ const cabinet = (drawerSystem: MetalBoxSystemId, extra: Partial<CabinetConfig> =
 
 const gen = (id: MetalBoxSystemId, extra = {}) => generateCabinet(cabinet(id, extra), catalog)
 const role = (panels: Panel[], r: string) => panels.filter((p) => p.role === r)
+
+it('растаусыз металл жәшік панелі барлық өндірістік присадка экспортын бұғаттайды', () => {
+  const blocked = gen('tandembox').find((panel) => panel.cncBlockReason)!
+  expect(blocked.cncBlockReason).toBeTruthy()
+  const failure = (fn: () => unknown) => {
+    try { fn(); throw new Error('Бұғат күтілді') }
+    catch (error) {
+      expect(error).toBeInstanceOf(ConfigValidationError)
+      expect((error as ConfigValidationError).field).toContain(blocked.id)
+    }
+  }
+  failure(() => panelToDxf(blocked))
+  failure(() => cncFiles([blocked], catalog, { projectName: 'Тест' }))
+  failure(() => basisScriptData({ nodes: [{ nodeId: 'n', name: 'Тест', panels: [blocked], pose: ORIGIN_POSE }] }, catalog))
+  failure(() => drillingToCsv([blocked]))
+  failure(() => basisDrillingCsv([blocked], { projectName: 'Тест' }))
+})
 
 describe('Blum каталогының номинал ұзындықтары және METABOX M', () => {
   it('M профильдерінде 250 жоқ, 270 пен 600 бар; TANDEMBOX 576-да 650 бар', () => {
