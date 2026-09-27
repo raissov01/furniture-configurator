@@ -9,6 +9,7 @@ import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
 import type { JsonValue } from '@/src/core/sync/types'
 import type { EnqueueResult } from './measurementSync'
 import { canAdvanceWall, roomIssues, wallIssues, setObstacleLocation, updateMeasure, updateObstacle, updateObstacleDimension, type CaptureSource, type ObstacleDimension, type SurveyField } from './measurementModel'
+import { locationIssue, parseWholeInput, toleranceIssue } from './measurementUiLogic'
 
 const wallLabels: Record<WallId, string> = { north: 'Северная стена', east: 'Восточная стена', south: 'Южная стена', west: 'Западная стена' }
 const cornerLabels: Record<typeof CORNER_IDS[number], string> = {
@@ -39,10 +40,22 @@ const issueLabel = (path: string): string => {
   }
   return t('Проверьте обязательное поле')
 }
-const issueCopy = (path: string): string => {
+const issueCopy = (path: string, survey: MeasurementSurvey): string => {
   if (path.endsWith('.photoRef')) return t('Добавьте фото')
   if (path.endsWith('.status')) return t('Ответьте «есть» или «нет»')
   if (path.endsWith('.thickness')) return t('Укажите толщину плитки')
+  if (path.endsWith('.location')) {
+    const [, wallId, , kind] = path.split('.')
+    if (wallId && kind && wallId in survey.walls && kind in survey.walls[wallId as WallId].obstacles) {
+      const location = survey.walls[wallId as WallId].obstacles[kind as ObstacleKind].location
+      if (location) {
+        const overflow = locationIssue({ offset: location.offset.value, width: location.width.value,
+          elevation: location.elevation.value, height: location.height.value },
+          survey.walls[wallId as WallId].length.value, survey.height.value)
+        if (overflow) return `${overflow.axis === 'wall' ? t('Длина стены') : t('Высота помещения')}: ${overflow.actual} > ${overflow.limit} ${t('мм')}`
+      }
+    }
+  }
   return t('Уточните целое положительное значение')
 }
 
@@ -66,6 +79,9 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   const [kitchenWall, setKitchenWall] = useState<WallId>('north')
   const [wallTolerance, setWallTolerance] = useState(0)
   const [cornerTolerance, setCornerTolerance] = useState(0)
+  const [wallToleranceRaw, setWallToleranceRaw] = useState('0')
+  const [cornerToleranceRaw, setCornerToleranceRaw] = useState('0')
+  const [draftNumbers, setDraftNumbers] = useState<Record<string, string>>({})
   const wall = WALL_IDS[wallIndex] ?? 'north'
   const issues = validateMeasurement(survey)
   const saveChain = useRef<Promise<void>>(Promise.resolve())
@@ -75,11 +91,9 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   }, [store, survey])
 
   const changeNumber = (field: SurveyField, value: string, source: CaptureSource) => {
-    const numeric = value === '' ? 0 : Number(value)
-    if (!Number.isSafeInteger(numeric) || numeric < 0) {
-      setMessage(t('Введите целое число миллиметров'))
-      return
-    }
+    setDraftNumbers((current) => ({ ...current, [field]: value }))
+    const numeric = parseWholeInput(value, 1)
+    if (numeric === null) return
     setSurvey((current) => updateMeasure(current, field, numeric, source, Date.now()))
     setMessage('')
   }
@@ -124,6 +138,9 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   }
 
   const nextFromRoom = () => {
+    const badInput = Object.entries(draftNumbers).find(([field, raw]) =>
+      (field === 'height' || field.startsWith('walls.') && field.endsWith('.length') || field.startsWith('corners.')) && parseWholeInput(raw, 1) === null)
+    if (badInput) { setMessage(`${issueLabel(badInput[0])}: ${t('Допустимо целое число в диапазоне')} 1…${Number.MAX_SAFE_INTEGER}`); return }
     const invalid = roomIssues(survey)
     if (invalid.length) {
       setMessage(`${t('Проверьте поле')}: ${issueLabel(invalid[0] ?? '')}. ${t('Введите целое положительное значение')}`)
@@ -133,6 +150,13 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     setStep('wall')
   }
   const nextFromWall = () => {
+    const badInput = Object.entries(draftNumbers).find(([field, raw]) => field.startsWith(`walls.${wall}.obstacles.`) &&
+      parseWholeInput(raw, field.endsWith('.width') || field.endsWith('.height') || field.endsWith('.thickness') ? 1 : 0) === null)
+    if (badInput) {
+      const minimum = badInput[0].endsWith('.width') || badInput[0].endsWith('.height') || badInput[0].endsWith('.thickness') ? 1 : 0
+      setMessage(`${issueLabel(badInput[0])}: ${t('Допустимо целое число в диапазоне')} ${minimum}…${Number.MAX_SAFE_INTEGER}`)
+      return
+    }
     if (!canAdvanceWall(survey, wall)) {
       setMessage(t('Для каждого препятствия выберите «есть» или «нет» и добавьте фото'))
       return
@@ -147,8 +171,10 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   }) => <label className="block min-w-0 text-sm font-medium">
       <span className="mb-1 block">{t(label)}</span>
       <span className="flex min-w-0 gap-2">
-        <input aria-label={`${t(label)}, ${t(unit)}`} className={input} inputMode="numeric" min={min} step="1" type="number"
-          value={value.value || ''} onChange={(event) => changeNumber(field, event.target.value, value.source)} />
+        <input aria-label={`${t(label)}, ${t(unit)}`} aria-invalid={draftNumbers[field] !== undefined && parseWholeInput(draftNumbers[field], min) === null}
+          className={`${input} ${draftNumbers[field] !== undefined && parseWholeInput(draftNumbers[field], min) === null ? '!border-[#9b1c1c]' : ''}`}
+          inputMode="numeric" type="text" value={draftNumbers[field] ?? (value.value || '')}
+          onChange={(event) => changeNumber(field, event.target.value, value.source)} />
         <select aria-label={`${t(label)}: ${t('Источник')}`} className={`${input} !w-28 shrink-0`}
           value={value.source} onChange={(event) => changeNumber(field, String(value.value), event.target.value as CaptureSource)}>
           <option value="manual">{t('Вручную')}</option><option value="voice">{t('Голос')}</option><option value="laser">{t('Лазер')}</option>
@@ -156,6 +182,8 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       </span>
       <span className="mt-1 block text-xs text-[#525252]">{t(unit)} · {t('Источник отмечается вручную')}</span>
       {issues.some((issue) => issue.path === field || issue.path === `${field}.value`) && <span className="block text-xs text-[#9b1c1c]">{t('Требуется целое положительное значение')}</span>}
+      {draftNumbers[field] !== undefined && parseWholeInput(draftNumbers[field], min) === null &&
+        <span className="block text-xs text-[#9b1c1c]">{t(label)}: {t('Допустимо целое число в диапазоне')} {min}…{Number.MAX_SAFE_INTEGER} {t(unit)}</span>}
     </label>
 
   const answerCard = (kind: ObstacleKind) => {
@@ -166,9 +194,11 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       <legend className="px-1 text-sm font-semibold">{t(obstacleLabels[kind])}</legend>
       <div className="grid grid-cols-2 gap-2">
         <button type="button" aria-pressed={answer.status === 'present'} className={`${button} ${answer.status === 'present' ? '!border-[#005a9e] !bg-[#dceeff]' : ''}`}
-          onClick={() => setSurvey((current) => updateObstacle(current, wall, kind, { status: 'present' }))}>{t('Есть')}</button>
+          onClick={() => { setDraftNumbers((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${path}.`))));
+            setSurvey((current) => updateObstacle(current, wall, kind, { status: 'present' })) }}>{t('Есть')}</button>
         <button type="button" aria-pressed={answer.status === 'absent'} className={`${button} ${answer.status === 'absent' ? '!border-[#005a9e] !bg-[#dceeff]' : ''}`}
-          onClick={() => setSurvey((current) => updateObstacle(current, wall, kind, { status: 'absent' }))}>{t('Нет')}</button>
+          onClick={() => { setDraftNumbers((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${path}.`))));
+            setSurvey((current) => updateObstacle(current, wall, kind, { status: 'absent' })) }}>{t('Нет')}</button>
       </div>
       <label className="mt-2 block text-sm">
         <span className="mb-1 block">{t('Фото обязательно даже при ответе «нет»')}</span>
@@ -179,17 +209,24 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       {answer.status === 'present' && <div className="mt-2 border-t border-[#b8b8b8] pt-2">
         <label className="flex min-h-11 items-center gap-2 text-sm">
           <input type="checkbox" checked={answer.location !== null}
-            onChange={(event) => setSurvey((current) => setObstacleLocation(current, wall, kind, event.target.checked, Date.now()))} />
+            onChange={(event) => {
+              setDraftNumbers((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${path}.location.`))))
+              setSurvey((current) => setObstacleLocation(current, wall, kind, event.target.checked, Date.now()))
+            }} />
           {t('Указать положение препятствия')}
         </label>
         {answer.location && <div className="space-y-2">
           {obstacleDimensions.map(({ field, label }) => <label className="block text-sm" key={field}>
             <span className="mb-1 block">{t(label)}</span>
             <span className="flex gap-2">
-              <input className={input} type="number" inputMode="numeric" min="0" step="1" value={answer.location?.[field].value || ''}
+              <input aria-label={t(label)} aria-invalid={draftNumbers[`${path}.location.${field}`] !== undefined && parseWholeInput(draftNumbers[`${path}.location.${field}`], field === 'width' || field === 'height' ? 1 : 0) === null}
+                className={`${input} ${draftNumbers[`${path}.location.${field}`] !== undefined && parseWholeInput(draftNumbers[`${path}.location.${field}`], field === 'width' || field === 'height' ? 1 : 0) === null ? '!border-[#9b1c1c]' : ''}`}
+                type="text" inputMode="numeric" value={draftNumbers[`${path}.location.${field}`] ?? (answer.location?.[field].value || '')}
                 onChange={(event) => {
-                  const value = Number(event.target.value)
-                  if (!Number.isSafeInteger(value) || value < 0) { setMessage(t('Введите целое число миллиметров')); return }
+                  const raw = event.target.value
+                  setDraftNumbers((current) => ({ ...current, [`${path}.location.${field}`]: raw }))
+                  const value = parseWholeInput(raw, field === 'width' || field === 'height' ? 1 : 0)
+                  if (value === null) return
                   setSurvey((current) => updateObstacleDimension(current, wall, kind, field, value,
                     answer.location?.[field].source ?? 'manual', Date.now()))
                 }} />
@@ -200,16 +237,22 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
                 <option value="manual">{t('Вручную')}</option><option value="voice">{t('Голос')}</option><option value="laser">{t('Лазер')}</option>
               </select>
             </span>
+            {draftNumbers[`${path}.location.${field}`] !== undefined && parseWholeInput(draftNumbers[`${path}.location.${field}`], field === 'width' || field === 'height' ? 1 : 0) === null &&
+              <span className="text-xs text-[#9b1c1c]">{t(label)}: {t('Допустимо целое число в диапазоне')} {field === 'width' || field === 'height' ? 1 : 0}…{Number.MAX_SAFE_INTEGER} {t('мм')}</span>}
           </label>)}
         </div>}
       </div>}
       {kind === 'tileThickness' && answer.status === 'present' && <label className="mt-2 block text-sm">
         <span className="mb-1 block">{t('Толщина плитки, мм')}</span>
         <span className="flex gap-2">
-          <input className={input} inputMode="numeric" min="1" step="1" type="number" value={answer.thickness?.value || ''}
+          <input className={`${input} ${draftNumbers[`${path}.thickness`] !== undefined && parseWholeInput(draftNumbers[`${path}.thickness`], 1) === null ? '!border-[#9b1c1c]' : ''}`}
+            aria-label={t('Толщина плитки, мм')} aria-invalid={draftNumbers[`${path}.thickness`] !== undefined && parseWholeInput(draftNumbers[`${path}.thickness`], 1) === null}
+            inputMode="numeric" type="text" value={draftNumbers[`${path}.thickness`] ?? (answer.thickness?.value || '')}
             onChange={(event) => {
-              const value = Number(event.target.value)
-              if (!Number.isSafeInteger(value) || value < 0) return
+              const raw = event.target.value
+              setDraftNumbers((current) => ({ ...current, [`${path}.thickness`]: raw }))
+              const value = parseWholeInput(raw, 1)
+              if (value === null) return
               setSurvey((current) => updateObstacle(current, wall, kind, { thickness: {
                 value, source: answer.thickness?.source ?? 'manual', capturedAt: Date.now(),
               } }))
@@ -221,8 +264,10 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
             <option value="manual">{t('Вручную')}</option><option value="voice">{t('Голос')}</option><option value="laser">{t('Лазер')}</option>
           </select>
         </span>
+        {draftNumbers[`${path}.thickness`] !== undefined && parseWholeInput(draftNumbers[`${path}.thickness`], 1) === null &&
+          <span className="text-xs text-[#9b1c1c]">{t('Толщина плитки, мм')}: {t('Допустимо целое число в диапазоне')} 1…{Number.MAX_SAFE_INTEGER} {t('мм')}</span>}
       </label>}
-      {invalid.length > 0 && <p className="mt-2 text-xs text-[#9b1c1c]">{invalid.map(issueCopy).join('; ')}</p>}
+      {invalid.length > 0 && <p className="mt-2 text-xs text-[#9b1c1c]">{invalid.map((issue) => issueCopy(issue, survey)).join('; ')}</p>}
     </fieldset>
   }
 
@@ -258,7 +303,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       {WALL_IDS.map((id) => <p className="text-sm" key={id}>{t(wallLabels[id])}: {survey.walls[id].length.value} {t('мм')}</p>)}
       {issues.length ? <div className="border border-[#9b1c1c] bg-white p-3 text-sm text-[#9b1c1c]">
         <strong>{t('Нужно уточнить')}</strong>
-        <ul className="mt-2 list-disc pl-5">{issues.map((issue) => <li key={`${issue.path}:${issue.message}`}>{issueLabel(issue.path)}: {issueCopy(issue.path)}</li>)}</ul>
+        <ul className="mt-2 list-disc pl-5">{issues.map((issue) => <li key={`${issue.path}:${issue.message}`}>{issueLabel(issue.path)}: {issueCopy(issue.path, survey)}</li>)}</ul>
       </div> : <p className="border border-[#247333] bg-white p-3 text-sm">{t('Все обязательные ответы и фото есть')}</p>}
       <button className={`${button} w-full`} type="button" onClick={() => { setStep('wall'); setWallIndex(0) }}>{t('Исправить замер')}</button>
       <button className={`${button} w-full !border-[#005a9e] !bg-[#005a9e] !text-white`} type="button" disabled={busy || issues.length > 0} onClick={() => void save()}>{t('Сохранить замер')}</button>
@@ -268,16 +313,30 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
         </select>
       </label>
       <label className="block text-sm">{t('Допуск противоположных стен, мм')}
-        <input className={`${input} mt-1`} type="number" min="0" step="1" value={wallTolerance}
-          onChange={(event) => setWallTolerance(Number(event.target.value))} />
+        <input aria-invalid={parseWholeInput(wallToleranceRaw, 0) === null} className={`${input} mt-1 ${parseWholeInput(wallToleranceRaw, 0) === null ? '!border-[#9b1c1c]' : ''}`}
+          type="text" inputMode="numeric" value={wallToleranceRaw} onChange={(event) => {
+            const raw = event.target.value; setWallToleranceRaw(raw)
+            const parsed = parseWholeInput(raw, 0); if (parsed !== null) setWallTolerance(parsed)
+          }} />
+        {parseWholeInput(wallToleranceRaw, 0) === null && <span className="block text-xs text-[#9b1c1c]">{t('Допуск противоположных стен, мм')}: {t('Допустимо целое число в диапазоне')} 0…{Number.MAX_SAFE_INTEGER} {t('мм')}</span>}
       </label>
       <label className="block text-sm">{t('Допуск углов, °')}
-        <input className={`${input} mt-1`} type="number" min="0" step="1" value={cornerTolerance}
-          onChange={(event) => setCornerTolerance(Number(event.target.value))} />
+        <input aria-invalid={parseWholeInput(cornerToleranceRaw, 0) === null} className={`${input} mt-1 ${parseWholeInput(cornerToleranceRaw, 0) === null ? '!border-[#9b1c1c]' : ''}`}
+          type="text" inputMode="numeric" value={cornerToleranceRaw} onChange={(event) => {
+            const raw = event.target.value; setCornerToleranceRaw(raw)
+            const parsed = parseWholeInput(raw, 0); if (parsed !== null) setCornerTolerance(parsed)
+          }} />
+        {parseWholeInput(cornerToleranceRaw, 0) === null && <span className="block text-xs text-[#9b1c1c]">{t('Допуск углов, °')}: {t('Допустимо целое число в диапазоне')} 0…{Number.MAX_SAFE_INTEGER} °</span>}
       </label>
       {WALL_IDS.some((id) => OBSTACLE_KINDS.some((kind) => survey.walls[id].obstacles[kind].status === 'present')) &&
         <p className="border border-[#a46a00] bg-[#fff3d5] p-3 text-sm">{t('Препятствия отмечены в замере. Проверьте положение модулей вручную до изготовления.')}</p>}
       <button className={`${button} w-full`} type="button" disabled={issues.length > 0 || busy} onClick={() => {
+        const invalid = toleranceIssue(wallToleranceRaw, cornerToleranceRaw)
+        if (invalid) {
+          const label = invalid === 'wallMm' ? 'Допуск противоположных стен, мм' : 'Допуск углов, °'
+          setMessage(`${t(label)}: ${t('Допустимо целое число в диапазоне')} 0…${Number.MAX_SAFE_INTEGER}`)
+          return
+        }
         setBusy(true)
         void saveChain.current.then(() => onKitchen(survey, kitchenWall,
           { wallMm: wallTolerance, cornerDeg: cornerTolerance })).catch((error: unknown) => {
