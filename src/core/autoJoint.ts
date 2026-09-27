@@ -3,6 +3,7 @@ import { mergeSettings } from './constants'
 import { confirmatJoint, minifixJoint } from './drilling'
 import { ConfigValidationError } from './errors'
 import { panelBox } from './geometry'
+import { circleWithinPolygon } from './polygon'
 import type { FlatNode, FlatScene } from './flatten'
 import type { Catalog, Drill, Panel, SettingsOverride } from './types'
 
@@ -71,6 +72,10 @@ export function validateJointDrill(panel: Panel, hole: Drill, thickness: number,
   if (!face && hole.y !== thickness / 2) {
     throw new ConfigValidationError(`${field}.position`, `${panel.id}: торц тесігі қалыңдық ортасында емес`,
       `y = ${thickness / 2} мм`)
+  }
+  if (face && panel.contour && !circleWithinPolygon(panel.contour.cutPoints, hole.x, hole.y, radius)) {
+    throw new ConfigValidationError(`${field}.position`, `${panel.id}: тесік рез контурынан шықты`,
+      'тесік шеңбері түгел материал ішінде болуы керек')
   }
 }
 

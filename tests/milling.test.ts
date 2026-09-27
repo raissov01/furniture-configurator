@@ -99,6 +99,18 @@ describe('өрнектер', () => {
   })
 })
 
+describe('F32 CNC қауіпсіздігі', () => {
+  it('SVG доғасын қате сынық жолға айналдырмай, өріс қатесін береді', () => {
+    expect(() => parseSvgPaths('<svg><path d="M0 0 A10 10 0 0 1 20 20"/></svg>'))
+      .toThrow(/milling\.svg.*A/)
+  })
+
+  it('фасадқа сыймайтын шегіністі өндіріс моделіне өткізбейді', () => {
+    expect(() => generateCabinet(withMilling(spec({ patternId: 'frame', inset: 200 })), catalog))
+      .toThrow(/milling\.inset/)
+  })
+})
+
 // ── Тексеру ──────────────────────────────────────────────────────────────────
 
 describe('қауіпсіздік тексерулері', () => {

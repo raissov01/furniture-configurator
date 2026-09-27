@@ -11,6 +11,20 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Выбор — щёлкните по модулю в сцене, Esc — снять выделение': 'Tanlash — sahnadagi korpusni bosing, Esc — tanlovni bekor qilish',
+  'Выйти': 'Chiqish',
+  'Переместить — перетащите выбранный модуль по стене прямо в 3D-сцене': 'Ko‘chirish — tanlangan korpusni 3D sahnada devor bo‘ylab sudrang',
+  'Привязка': 'Bog‘lash',
+  'Общее': 'Umumiy',
+  'Производство': 'Ishlab chiqarish',
+  '— Нет —': '— Yo‘q —',
+  'есть': 'bor',
+  'Деталировка — кратко': 'Detallar ro‘yxati — qisqacha',
+  'Открыть смету': 'Smetani ochish',
+  'и ещё': 'va yana',
+  'Цена, услуги цеха и полный список фурнитуры — в смете. Здесь только деталировка для ориентира.': 'Narxlar, sex xizmatlari va furnituraning to‘liq ro‘yxati smetada. Bu yerda detallar ro‘yxati qisqacha berilgan.',
+  'Открыть присадку': 'Teshiklar chizmasini ochish',
+  'Открыть раскрой': 'Raskroyni ochish',
   'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
     '“{name}” faylida JSON xatosi bor. .json loyiha faylini tanlang yoki sintaksisini tuzating.',
   'История изменений': 'O‘zgarishlar tarixi',

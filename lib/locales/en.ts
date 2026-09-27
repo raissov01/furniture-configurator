@@ -10,6 +10,20 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Выбор — щёлкните по модулю в сцене, Esc — снять выделение': 'Select — click a cabinet in the scene, Esc to clear selection',
+  'Выйти': 'Sign out',
+  'Переместить — перетащите выбранный модуль по стене прямо в 3D-сцене': 'Move — drag the selected cabinet along the wall in the 3D scene',
+  'Привязка': 'Snap',
+  'Общее': 'General',
+  'Производство': 'Production',
+  '— Нет —': '— None —',
+  'есть': 'yes',
+  'Деталировка — кратко': 'Cut list — summary',
+  'Открыть смету': 'Open estimate',
+  'и ещё': 'and another',
+  'Цена, услуги цеха и полный список фурнитуры — в смете. Здесь только деталировка для ориентира.': 'Prices, shop services and the full hardware list are in the estimate. This cut list is a brief preview.',
+  'Открыть присадку': 'Open drilling',
+  'Открыть раскрой': 'Open nesting',
   'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
     'Invalid JSON in “{name}”. Choose a .json project file or correct its syntax.',
   'История изменений': 'Change history',
