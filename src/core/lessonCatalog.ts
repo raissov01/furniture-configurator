@@ -26,8 +26,15 @@ export function nextAvailableLessonStep(
 
 export function parseCompletedLessons(raw: string | null): string[] {
   if (raw === null) return []
-  const parsed: unknown = JSON.parse(raw)
-  if (!Array.isArray(parsed)) throw new Error('lesson progress: invalid data')
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch (cause) {
+    // Malformed local progress is recoverable; the next completed lesson rewrites it.
+    if (cause instanceof SyntaxError) return []
+    throw cause
+  }
+  if (!Array.isArray(parsed)) return []
   const known = new Set(LESSONS.map((lesson) => lesson.id))
   return [...new Set(parsed.filter((id): id is string => typeof id === 'string' && known.has(id)))]
 }
