@@ -25,6 +25,7 @@ import {
   templateToCabinet,
 } from '../src/core/index'
 import type { Material, ShopProfile } from '../src/core/index'
+import { migrateBandThreshold } from '../src/core/migrateBandThreshold'
 
 const shop = defaultShopProfile()
 
@@ -123,10 +124,20 @@ describe('профильді сақтау', () => {
   })
 
   it('minBandSubtract профильде кемінде 1 бүтін мм болуы керек', () => {
-    for (const invalid of [0, 0.4, 1.5]) {
+    for (const invalid of [0.4, 1.5]) {
       expect(() => parseShopProfile({ ...shop, settings: { ...shop.settings, minBandSubtract: invalid } }))
         .toThrow(/minBandSubtract/)
     }
+  })
+
+  it('ескі профильдегі 0 мм шекті 1 мм-ге көшіреді, каталогты сақтайды', () => {
+    const old = { ...shop, settings: { ...shop.settings, minBandSubtract: 0 } }
+    const migrated = parseShopProfile(old)
+    expect(migrated.settings.minBandSubtract).toBe(1)
+    expect(migrated.materials).toEqual(shop.materials)
+    expect(migrateBandThreshold(old).warnings).toEqual([
+      'settings.minBandSubtract: ескі 0 мм шегі 1 мм-ге көшірілді; кесу өлшемін тексеріңіз',
+    ])
   })
 
   it('баға бүтін тиын болуы керек, float емес', () => {
