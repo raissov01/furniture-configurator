@@ -37,7 +37,7 @@ export function buildCanonicalRows(root: GroupNode, scene: FlatScene, layers: La
       ownLocked: node.locked === true, layerColor: layer.color,
       selectId: node.kind === 'board' && flat?.panels[0]
         ? projectPanelId(node.id, flat.panels[0].id, count)
-        : node.kind === 'solid' ? node.id : null,
+        : node.kind === 'solid' || node.kind === 'annotation' ? node.id : null,
       roleLabel: null,
       hasChildren: node.kind === 'group' ? node.children.length > 0 : Boolean(flat?.panels.length),
     })

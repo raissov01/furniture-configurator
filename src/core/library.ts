@@ -72,6 +72,11 @@ function visitMaterialIds(value: unknown, collect: (id: string) => void): void {
 function sizeHint(node: SceneNode, catalog: Catalog): Vec3 {
   if (node.kind === 'cabinet') return { x: node.config.width, y: node.config.height, z: node.config.depth }
   if (node.kind === 'solid') return { ...node.solid.size }
+  // Кітапхана нобайына шамамен мәтін орны; өндірістік өлшем емес.
+  if (node.kind === 'annotation') return {
+    x: Math.round(node.annotation.fontSize * node.annotation.text.length / 2),
+    y: node.annotation.fontSize, z: 0,
+  }
   if (node.kind === 'board') {
     const material = catalog.materials.find((item) => item.id === node.board.materialId)
     if (!material) throw new ConfigValidationError('materialId', `материал табылмады: ${node.board.materialId}`)
