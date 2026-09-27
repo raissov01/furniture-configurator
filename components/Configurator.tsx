@@ -27,6 +27,7 @@ import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
 import { commitPropertiesName } from '@/lib/propertiesSession'
 import { sectionWidths } from '@/lib/sectionWidths'
+import { parseShelfHeights, shelfCountChange, shelfHeightsChange } from '@/lib/shelfDraft'
 import { matchTemplateId } from '@/lib/templateMatch'
 import {
   APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
@@ -62,8 +63,14 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
   const canRemove = useConfigurator((s) => activeCabinet(s).sections.length > 1)
 
   const shopGap = useConfigurator((s) => s.shop.settings.frontGap ?? DEFAULT_SETTINGS.frontGap)
+  const cabinetHeight = useConfigurator((s) => activeCabinet(s).height)
 
   const shelves = section.contents.find((c) => c.kind === 'shelves')
+  const shelfContentIndex = section.contents.findIndex((c) => c.kind === 'shelves')
+  const shelfAtField = `sections[${index}].contents[${shelfContentIndex}].at`
+  const [heightsDraft, setHeightsDraft] = useState((shelves?.at ?? []).join(', '))
+  const [heightsError, setHeightsError] = useState(false)
+  useEffect(() => { setHeightsDraft((shelves?.at ?? []).join(', ')) }, [shelves?.at])
   const stand = section.contents.find((c) => c.kind === 'stand')
   const drawers = section.contents.find((c) => c.kind === 'drawers')
   const rod = section.contents.find((c) => c.kind === 'rod')
@@ -85,7 +92,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
     filling?: FillingKind | null
     appliance?: ApplianceKind | null
   }) => {
-    const shelfCount = next.shelfCount ?? shelves?.count ?? 0
+    const shelfCount = next.shelfCount ?? shelves?.at?.length ?? shelves?.count ?? 0
     const shelfKind = next.shelfKind ?? shelves?.shelfKind ?? 'adjustable'
     // Шегіністер мен нақты биіктіктер ҚАЙТА ҚҰРУДА жоғалмауы керек: бұл
     // тізім әр өзгеріс сайын нөлден жиналады.
@@ -109,7 +116,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
     if (drawerCount > 0) contents.push({ kind: 'drawers', count: drawerCount })
     if (shelfCount > 0) {
       contents.push({
-        kind: 'shelves', count: shelfCount, shelfKind,
+        kind: 'shelves', count: shelfAt?.length ?? shelfCount, shelfKind,
         ...(shelfInsets ? { insets: shelfInsets } : {}),
         ...(shelfAt && shelfAt.length > 0 ? { at: shelfAt } : {}),
       })
@@ -190,18 +197,24 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
             */}
           <Field label={tr('Высоты полок, мм')} hint={tr('через запятую; пусто — поровну')}>
             <input
-              value={(shelves.at ?? []).join(', ')}
+              value={heightsDraft}
+              aria-invalid={heightsError || undefined}
+              aria-describedby={heightsError ? `shelf-at-error-${section.id}` : undefined}
               onChange={(e) => {
-                const list = e.target.value
-                  .split(/[,;\s]+/)
-                  .map((part) => Number(part))
-                  .filter((n) => Number.isFinite(n) && n > 0)
-                  .map((n) => Math.round(n))
-                setFill({ shelfAt: list.length > 0 ? list : null })
+                const raw = e.target.value
+                setHeightsDraft(raw)
+                const parsed = parseShelfHeights(raw, cabinetHeight)
+                setHeightsError(Boolean(parsed.error))
+                onDraftValidityChange?.(shelfAtField, Boolean(parsed.error))
+                const change = shelfHeightsChange(raw, shelves.at?.length ?? shelves.count, cabinetHeight)
+                if (change) setFill({ shelfCount: change.count, shelfAt: change.at ?? null })
               }}
               placeholder="320, 700, 1150"
-              className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm tabular-nums outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
+              className={cn('w-full rounded-md border bg-white px-2 py-1.5 text-sm tabular-nums outline-none focus:border-neutral-900 dark:bg-neutral-900', heightsError ? 'border-red-500 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-700')}
             />
+            {heightsError ? <span id={`shelf-at-error-${section.id}`} role="alert" className="mt-1 block text-[11px] text-red-700 dark:text-red-400">
+              {shelfAtField}: {tr('Введите целые высоты полок')} — {tr('допустимо')} 1..{cabinetHeight} {tr('мм')}, 1..20 {tr('значений')}
+            </span> : null}
           </Field>
         </div>
       ) : null}
@@ -209,10 +222,18 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Полок')}>
           <NumberInput
-            value={shelves?.count ?? 0}
+            value={shelves?.at?.length ?? shelves?.count ?? 0}
             min={0}
             max={20}
-            onChange={(shelfCount) => setFill({ shelfCount })}
+            field={`sections[${index}].contents[${Math.max(shelfContentIndex, 0)}].count`}
+            onDraftValidityChange={onDraftValidityChange}
+            onChange={(count) => {
+              const change = shelfCountChange(count, shelves?.at?.length ?? shelves?.count ?? 0, shelves?.at)
+              setHeightsDraft((change.at ?? []).join(', '))
+              setHeightsError(false)
+              onDraftValidityChange?.(shelfAtField, false)
+              setFill({ shelfCount: change.count, shelfAt: change.at ?? null })
+            }}
           />
         </Field>
         <Field label={tr('Тип полки')}>
