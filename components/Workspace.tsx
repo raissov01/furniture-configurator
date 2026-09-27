@@ -24,6 +24,7 @@ import { ProjectPanel } from '@/components/ProjectPanel'
 import { HelpPanel } from '@/components/HelpPanel'
 import { HistoryPanel } from '@/components/HistoryPanel'
 import { ShareCodeDialog } from '@/components/ShareCodeDialog'
+import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
@@ -186,6 +187,7 @@ export function Workspace() {
   const syncShare = useConfigurator((s) => s.syncShare)
   const setShareCodeOpen = useConfigurator((s) => s.setShareCodeOpen)
   const startShare = useConfigurator((s) => s.startShare)
+  const shareCode = useConfigurator((s) => s.shareSession?.code ?? null)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
   const setRenderOpen = useConfigurator((s) => s.setRenderOpen)
   const assemblyStep = useConfigurator((s) => s.assemblyStep)
@@ -594,6 +596,8 @@ export function Workspace() {
         </Menu>)}
 
       </nav>
+
+      {cloudEnabled && <ApprovalBanner code={shareCode} />}
 
       {classic && <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
         {classicToolRows.map((row, index) => <div className="p100-toolbar-row" key={index}>

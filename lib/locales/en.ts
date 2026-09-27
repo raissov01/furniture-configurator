@@ -1357,4 +1357,12 @@ export const en: Record<string, string> = {
   'Ориентир цеха': 'Workshop guidance',
   'Обязательный диапазон габаритов': 'Required dimension range',
 
+  'Код клиента истёк': 'The client code has expired',
+  'Код клиента изменился': 'The client code has changed',
+  'Не удалось обновить проект для клиента': 'Could not update the client project',
+  'Цена согласования': 'Approval price',
+  'Клиент согласовал версию': 'Client approved version',
+  'Текущий проект изменён после согласования': 'The current project changed after approval',
+  'Скачать подписанный PDF': 'Download stamped PDF',
+
 }
