@@ -106,7 +106,7 @@ export function PersonalLibraryPanel() {
     if (userId === null) return libraryUploadOutcome(503, null)
     const response = await fetch('/api/library', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ item }) })
-    const body = response.ok ? null : await response.json().catch(() => null) as { error?: string } | null
+    const body = response.ok ? null : await response.json() as { error?: string }
     const outcome = libraryUploadOutcome(response.status, body?.error ?? null)
     if (outcome.savedToAccount) setRemote((current) => [...current.filter((entry) => entry.id !== item.id), item])
     return outcome
