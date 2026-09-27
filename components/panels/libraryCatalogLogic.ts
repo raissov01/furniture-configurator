@@ -6,6 +6,11 @@
 import { findTemplate } from '../../src/core/index'
 import type { TemplateSize } from '../../src/core/index'
 import type { ParsedCabinetInfo, Pro100LibraryItem } from '../../src/core/data/pro100Catalog'
+import { BASIS_MODULES } from '../../src/core/data/basisModules'
+import type { BasisModule } from '../../src/core/data/basisModules'
+import { BASIS_FITTINGS } from '../../src/core/data/basisFittings'
+import type { BasisFitting } from '../../src/core/data/basisFittings'
+import type { BasisFittingKind } from '../../src/core/data/basisFittings'
 
 export type LibraryTabId = 'mebel' | 'elementy' | 'raznoe' | 'materialy'
 
@@ -126,4 +131,43 @@ export function cabinetImportChoice(item: Pick<Pro100LibraryItem, 'name' | 'path
 
 export function isCabinetItem(item: Pro100LibraryItem): boolean {
   return item.group === 'cabinet'
+}
+
+export type BasisModuleItem = { id: string; name: string; path: string[]; module: BasisModule }
+export type BasisFittingItem = { id: string; name: string; path: string[]; fitting: BasisFitting }
+
+export const BASIS_FITTING_KIND_LABELS: Record<BasisFittingKind, string> = {
+  handle: 'Ручка', runner: 'Направляющая', 'drawer-box': 'Короб ящика', profile: 'Профиль',
+  lighting: 'Освещение', support: 'Опора', lock: 'Замок', latch: 'Защёлка',
+  'shelf-support': 'Полкодержатель', accessory: 'Аксессуар',
+}
+
+export const BASIS_MODULE_ITEMS: BasisModuleItem[] = BASIS_MODULES.map((module, index) => ({
+  id: `basis-module-${index}`, name: module.raw,
+  path: ['Мебель', module.system === 'gola' ? 'Базис: Gola' : 'Базис: Кухня'], module,
+}))
+export const BASIS_FITTING_ITEMS: BasisFittingItem[] = BASIS_FITTINGS.map((fitting, index) => ({
+  id: `basis-fitting-${index}`, name: fitting.raw,
+  path: ['Элементы', 'Базис: Фурнитура', BASIS_FITTING_KIND_LABELS[fitting.kind]], fitting,
+}))
+
+export type BasisModuleChoice =
+  | { allowed: false; reason: 'unmatched' | 'gola' | 'unsupportedDetail' | 'range'; range?: string }
+  | { allowed: true; templateId: string; size: Required<TemplateSize>; frontCount: number }
+
+/** Атаудағы тек 1Д/2Д ғана бір секциялы қарапайым фасадқа дәл көшіріледі. */
+export function basisModuleChoice(module: BasisModule): BasisModuleChoice {
+  if (module.kind === null || module.height === null || module.width === null || module.depth === null) return { allowed: false, reason: 'unmatched' }
+  if (module.system === 'gola') return { allowed: false, reason: 'gola' }
+  if (module.hand !== null || module.drawers !== 0 || module.tokens.length !== 1 || !/^[12]Д$/iu.test(module.tokens[0]!)) {
+    return { allowed: false, reason: 'unsupportedDetail' }
+  }
+  const frontCount = Number(module.tokens[0]![0])
+  const templateId = module.kind === 'wall' ? 'kitchen-wall-600' : module.kind === 'base' ? 'kitchen-base-600' : 'kitchen-tall-600'
+  const template = findTemplate(templateId)
+  if (!template) return { allowed: false, reason: 'unsupportedDetail' }
+  const size = { height: module.height, width: module.width, depth: module.depth }
+  const outOfRange = (['height', 'width', 'depth'] as const).find((axis) => size[axis] < template.range[axis].min || size[axis] > template.range[axis].max)
+  if (outOfRange) return { allowed: false, reason: 'range', range: `${outOfRange}: ${template.range[outOfRange].min}–${template.range[outOfRange].max}` }
+  return { allowed: true, templateId, size, frontCount }
 }
