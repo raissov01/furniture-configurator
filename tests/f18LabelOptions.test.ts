@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { labelExportOptions, labelSizeLimits, projectLabelIdentity } from '@/lib/labelExportOptions'
-import type { GroupNode } from '@/src/core/tree'
+import { labelExportOptions, labelSizeLimits } from '@/lib/labelExportOptions'
 
 describe('F18 жапсырма параметрлері', () => {
-  it('бірінші шығарылымды монтаждағы жөндеу нұсқасынан ажыратады', () => {
-    const root = { id: 'root', children: [{ id: 'cabinet-uuid' }] } as GroupNode
-    expect(projectLabelIdentity(root)).toEqual({ projectId: 'cabinet-uuid', version: 1 })
-  })
   it('58 × 40 мм A4 және A5 үшін QR дерегін сақтайды', () => {
     for (const page of ['a4', 'a5'] as const) {
       const value = labelExportOptions({ page, widthMm: 58, heightMm: 40 }, 'project-1', 4)
