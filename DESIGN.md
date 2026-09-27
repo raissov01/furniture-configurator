@@ -38,9 +38,16 @@ typography:
     fontFamily: "Segoe UI, Tahoma, Arial, sans-serif"
     fontSize: "12px"
     lineHeight: 1.2
+  p100-small:
+    fontFamily: "Segoe UI, Tahoma, Arial, sans-serif"
+    fontSize: "11px"
+  p100-touch:
+    fontFamily: "Segoe UI, Tahoma, Arial, sans-serif"
+    fontSize: "14px"
 rounded:
   none: "0px"
   p100: "1px"
+  p100-dialog: "2px"
 spacing:
   gutter-mobile: "20px"
   gutter-desktop: "32px"

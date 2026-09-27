@@ -155,7 +155,7 @@ function LandingContent() {
                     <dd>{formatTenge(demoPrice.total)}</dd>
                   </div>
                 </dl>
-                <p className="mt-3 text-[11px]" style={{ color: 'var(--ink-soft)' }}>
+                <p className="mt-3 text-xs" style={{ color: 'var(--ink-soft)' }}>
                   {tr('Цены здесь — пример. Материал считается по числу листов, а не по площади: цех покупает целый лист, а остаток оплачивает сам.')}
                 </p>
               </figure>

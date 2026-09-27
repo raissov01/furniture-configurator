@@ -185,7 +185,7 @@ export function SheetFigure({
         className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs"
         style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}
       >
-        <span>{materialName} · {sheet.sheetHeight} (H) × {sheet.sheetWidth} (W)</span>
+        <span>{materialName} · <span className="whitespace-nowrap">{sheet.sheetHeight} (H) × {sheet.sheetWidth} (W)</span></span>
         <span>
           {t('деталей')} {sheet.parts.length} · {t('резов')}{' '}
           <span className="tabular-nums" style={{ display: 'inline-block', minWidth: '2ch', textAlign: 'right' }}>

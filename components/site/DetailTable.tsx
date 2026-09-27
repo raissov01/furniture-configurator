@@ -65,8 +65,8 @@ export function DetailTable({ rows }: { rows: CutListRow[] }) {
               <tr key={`${r.name}-${r.finishedLength}-${r.finishedWidth}`} className="border-t" style={{ borderColor: 'var(--rule)' }}>
                 <td className="px-4 py-1.5" style={{ fontFamily: 'var(--font-body)' }}>{tr(r.name)}</td>
                 <td className="px-2 py-1.5 text-right">{r.qty}</td>
-                <td className="px-2 py-1.5 text-right" style={{ color: 'var(--blueprint)' }}>{r.finishedLength}</td>
-                <td className="px-2 py-1.5 text-right" style={{ color: 'var(--blueprint)' }}>{r.finishedWidth}</td>
+                <td className="px-2 py-1.5 text-right" style={{ color: 'var(--ink-soft)' }}>{r.finishedLength}</td>
+                <td className="px-2 py-1.5 text-right" style={{ color: 'var(--ink-soft)' }}>{r.finishedWidth}</td>
                 <td className="px-2 py-1.5 text-right font-semibold"><CutCell from={r.finishedLength} to={r.cutLength} phase={phaseOf(i)} /></td>
                 <td className="px-2 py-1.5 text-right font-semibold"><CutCell from={r.finishedWidth} to={r.cutWidth} phase={phaseOf(i)} /></td>
               </tr>
