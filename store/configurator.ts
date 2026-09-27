@@ -78,6 +78,7 @@ import type { Axis } from '@/src/core/types'
 import type { BoxAlignment } from '@/src/core/align'
 import { arrangeTreeSelection } from '@/src/core/treeArrange'
 import { cabinetsFromTree, reconcileCabinetsInTree, wallAttachedPlacements } from './treeAdapters'
+import { readShareSession, saveShareSession } from '@/lib/shareSessionStorage'
 
 /** Цех профилі браузерде осы кілтпен жатады. Сервер қосылғанда осы жерден синхрондалады. */
 const SHOP_KEY = 'furniture-configurator:shop'
@@ -1132,6 +1133,7 @@ export const useConfigurator = create<State>((set, get) => ({
   loadProject(file) {
     const s = get()
     const project = parseProjectV4(file, { migrateMaterials: false })
+    saveShareSession(null)
     const known = new Set(s.shop.materials.map((m) => m.id))
     const shopMaterials = new Map(s.shop.materials.map((m) => [m.id, m]))
     const missing = project.materials.filter((m) => !known.has(m.id)).map((m) => ({ ...m,
@@ -1179,6 +1181,7 @@ export const useConfigurator = create<State>((set, get) => ({
       templateId: '',
       projectInfo: project.info ?? {},
       priceOverrides: project.priceOverrides ?? {},
+      shareSession: null,
       projectLoadError: null,
       historyRestoreError: null,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
@@ -1269,6 +1272,7 @@ export const useConfigurator = create<State>((set, get) => ({
         activeId: cabinetsFromTree(file.root, file.room, file.layers).cabinets[0]?.id ?? firstBoardId(file.root) ?? '',
         projectInfo: file.info ?? {},
         priceOverrides: file.priceOverrides ?? {},
+        shareSession: readShareSession(),
         // Жұмыс табылды — бастау экранын көрсетудің қажеті жоқ.
         firstRun: false,
         projectLoadError: null,
@@ -1447,6 +1451,11 @@ export const useConfigurator = create<State>((set, get) => ({
    */
   setShareCodeOpen: (shareCodeOpen) => set({ shareCodeOpen }),
   startShare: async () => {
+    const previous = get().shareSession
+    if (previous && previous.expiresAt > Date.now()) {
+      const synced = await get().syncShare()
+      return synced.ok ? { ok: true, code: previous.code, expiresAt: previous.expiresAt } : synced
+    }
     const res = await fetch('/api/share', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1459,7 +1468,9 @@ export const useConfigurator = create<State>((set, get) => ({
     if (!res.ok || !data.code || !data.key || !data.expiresAt) {
       return { ok: false, error: data.error ?? 'Не удалось создать код' }
     }
-    set({ shareSession: { code: data.code, key: data.key, expiresAt: data.expiresAt } })
+    const session = { code: data.code, key: data.key, expiresAt: data.expiresAt }
+    saveShareSession(session)
+    set({ shareSession: session })
     return { ok: true, code: data.code, expiresAt: data.expiresAt }
   },
   syncShare: () => {
@@ -1863,12 +1874,14 @@ export const useConfigurator = create<State>((set, get) => ({
 
   reset() {
     const s = get()
+    saveShareSession(null)
     set({
       ...initial,
       ...cabinetsFromTree(initial.root, initial.room, initial.layers),
       catalog: projectCatalog(s.shop),
       projectInfo: {},
       priceOverrides: {},
+      shareSession: null,
       projectLoadError: null,
       historyRestoreError: null,
       templateId: defaultTemplateId,
