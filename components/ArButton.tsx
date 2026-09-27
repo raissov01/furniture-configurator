@@ -13,6 +13,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
+import { ClassicIcon } from '@/components/ClassicIcon'
 import { cloudEnabled } from '@/lib/cloud'
 import { useConfigurator } from '@/store/configurator'
 
@@ -67,7 +68,7 @@ export function ArButton() {
   }
 
   // Бұлт сөндірулі құрастыруда (Vercel демосы) файлды сақтайтын жер жоқ.
-  if (!cloudEnabled) return <Button disabled title={tr('AR недоступен без облачного хранения')}>AR</Button>
+  if (!cloudEnabled) return <Button disabled title={tr('AR недоступен без облачного хранения')}><ClassicIcon name="ar" /><span className="sr-only">AR</span></Button>
 
   return (
     <>
@@ -76,7 +77,7 @@ export function ArButton() {
         disabled={ar.busy}
         title={tr('Посмотреть в комнате через камеру')}
       >
-        {ar.busy ? '…' : 'AR'}
+        <ClassicIcon name="ar" /><span className="sr-only">AR</span>
       </Button>
       {ar.link ? (
         <input

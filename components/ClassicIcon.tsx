@@ -1,12 +1,14 @@
 'use client'
 
 /** Original 18 px line drawings for the classic desktop controls. */
-export type ClassicIconName = 'new' | 'open' | 'save' | 'print' | 'cut' | 'copy' | 'delete' | 'undo' | 'redo' | 'settings' | 'properties' | 'shop' | 'view' | 'box' | 'decor' | 'board' | 'text' | 'wire' | 'eye' | 'magnet' | 'light' | 'fit' | 'structure' | 'library' | 'layers' | 'measure' | 'render' | 'room' | 'help' | 'duplicate' | 'mirror' | 'quote' | 'drill' | 'assembly' | 'walk' | 'doors' | 'ghost' | 'door' | 'find' | 'replace'
+import { classicIconTone, type ClassicIconName } from '@/lib/classicIconPalette'
+export type { ClassicIconName } from '@/lib/classicIconPalette'
 
 export function ClassicIcon({ name }: { name: ClassicIconName }) {
-  const blue = 'var(--p100-icon-blue)'
-  const red = 'var(--p100-icon-red)'
-  const yellow = 'var(--p100-icon-yellow)'
+  const tone = classicIconTone(name)
+  const blue = tone === 'blue' ? 'var(--p100-icon-blue)' : 'currentColor'
+  const red = tone === 'red' ? 'var(--p100-icon-red)' : 'currentColor'
+  const yellow = tone === 'yellow' ? 'var(--p100-icon-yellow)' : 'none'
   const shape: Record<ClassicIconName, React.ReactNode> = {
     new: <><path d="M4 2.5h7l3 3V16H4z"/><path d="M11 2.5V6h3"/></>,
     open: <><path d="M2 6h5l1.5 2H16l-2 7H2z" fill={yellow}/><path d="M3 6V4h5l1.5 2"/></>,
@@ -23,14 +25,14 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     view: <><path d="M1 9q8-9 16 0-8 9-16 0z"/><circle cx="9" cy="9" r="2.5" fill={blue}/></>,
     box: <><path d="m2 5 7-3 7 3v9l-7 3-7-3zM2 5l7 3 7-3M9 8v9"/></>,
     decor: <><path d="M3 15h12M5 12h8v3H5zM6 5l3-3 3 3-3 5zM9 10v2M13 3v3m-1.5-1.5h3"/></>,
-    board: <><path d="m2 5 9-3 5 3-9 3zM2 5v9l5 3V8m0 9 9-3V5" fill={blue}/></>,
+    board: <><path d="m2 5 9-3 5 3-9 3zM2 5v9l5 3V8m0 9 9-3V5" fill="none"/></>,
     text: <><path d="M2 3h14v3M9 3v12m-3 0h6"/></>,
     wire: <><path d="m2 5 7-3 7 3v9l-7 3-7-3zM2 5l7 3 7-3M9 8v9" strokeDasharray="2 1"/></>,
     eye: <><path d="M1 9q8-8 16 0-8 8-16 0z"/><circle cx="9" cy="9" r="2.5" fill={blue}/></>,
-    magnet: <path d="M3 3v8a6 6 0 0 0 12 0V3h-4v8a2 2 0 0 1-4 0V3z" fill={red}/>,
-    light: <><path d="M5 7a4 4 0 1 1 8 0c0 2-2 3-2 5H7c0-2-2-3-2-5zM7 14h4M8 16h2" fill={yellow}/></>,
+    magnet: <path d="M3 3v8a6 6 0 0 0 12 0V3h-4v8a2 2 0 0 1-4 0V3z"/>,
+    light: <><path d="M5 7a4 4 0 1 1 8 0c0 2-2 3-2 5H7c0-2-2-3-2-5zM7 14h4M8 16h2" fill="none"/></>,
     fit: <path d="M2 7V2h5M11 2h5v5M16 11v5h-5M7 16H2v-5M2 2l5 5m9-5-5 5m5 9-5-5m-9 5 5-5" stroke={blue}/>,
-    structure: <><path d="M9 2v4M3 8h12M3 8v4m6-4v4m6-4v4"/><rect x="1" y="12" width="4" height="4" fill={blue}/><rect x="7" y="12" width="4" height="4" fill={blue}/><rect x="13" y="12" width="4" height="4" fill={blue}/><rect x="7" y="2" width="4" height="4"/></>,
+    structure: <><path d="M9 2v4M3 8h12M3 8v4m6-4v4m6-4v4"/><rect x="1" y="12" width="4" height="4"/><rect x="7" y="12" width="4" height="4"/><rect x="13" y="12" width="4" height="4"/><rect x="7" y="2" width="4" height="4"/></>,
     library: <><path d="M2 3h4v12H2zM7 2h4v13H7zM12 4h4v11h-4zM2 16h14"/><path d="M9 4v2" stroke={blue}/></>,
     layers: <><path d="m2 5 7-3 7 3-7 3zM2 9l7 3 7-3M2 13l7 3 7-3" stroke={blue}/></>,
     measure: <><path d="M2 3h14v5H2zM4 3v3m3-3v2m3-2v3m3-3v2M4 12v4m0-2h10m0-2v4"/></>,
@@ -48,6 +50,8 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     door: <><path d="M3 2h12v14H3zM6 3l6 2v10l-6 2z"/><circle cx="10" cy="10" r="1" fill={blue}/></>,
     find: <><circle cx="7" cy="7" r="5"/><path d="m11 11 5 5" stroke={blue}/></>,
     replace: <><path d="M3 6a6 6 0 0 1 10-2m0-2v3h-3M15 12a6 6 0 0 1-10 2m0 2v-3h3"/><path d="M7 8h4m-2-2v4" stroke={blue}/></>,
+    ar: <><path d="M3 5h3l1.5-2h3L12 5h3v10H3z"/><circle cx="9" cy="10" r="2.5"/><path d="M1 8V5a2 2 0 0 1 2-2m14 5V5a2 2 0 0 0-2-2"/></>,
+    vr: <><path d="M2 6h14v7H2zM2 9H1m15 0h1M5 13l2-2h4l2 2"/><path d="M5 9h2m4 0h2"/></>,
   }
   return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round">{shape[name]}</svg>
 }

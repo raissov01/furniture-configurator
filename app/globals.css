@@ -162,7 +162,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-toolbar-row { display: flex; align-items: center; height: 31px; gap: 1px; padding-left: 3px; }
 .p100-toolbar-row + .p100-toolbar-row { border-top: 1px solid var(--p100-divider); }
 .p100-xr-tools { display: inline-flex; align-items: flex-start; gap: 3px; margin-left: 6px; }
-.p100-xr-tools button { border: 1px solid var(--p100-divider); border-radius: 1px; background: var(--p100-field); min-height: 25px; }
+.p100-xr-tools button { display: inline-flex; width: 27px; height: 25px; align-items: center; justify-content: center; padding: 2px; border: 1px solid var(--p100-divider); border-radius: 1px; background: var(--p100-field); }
 .p100-icon-button { display: inline-flex; width: 27px; height: 25px; align-items: center; justify-content: center; flex: none; padding: 2px; border: 1px solid transparent; border-radius: 1px; background: var(--p100-chrome); color: var(--p100-text); }
 @media (max-width: 1023px) {
   [data-workspace-style] :is(button, a, select, input[type="range"], input[type="checkbox"]) { min-width: 44px; min-height: 44px; }
