@@ -929,8 +929,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
   const addSection = useConfigurator((s) => s.addSection)
   const [sectionAddError, setSectionAddError] = useState<string | null>(null)
   useEffect(() => setSectionAddError(null), [cabinet])
-  const showDimensions = useConfigurator((s) => s.showDimensions)
-  const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
   // Материалдар тізімі цехтың профилінен келеді, кодтан емес.
   const materials = useConfigurator((s) => s.shop.materials)
@@ -1888,8 +1886,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
         ))}
       </div>
 
-      <SectionTitle>{tr('Вид')}</SectionTitle>
-      <Toggle checked={showDimensions} onChange={setShowDimensions} label={tr('Показывать габариты')} />
       </div>
       </fieldset>
     </div>
