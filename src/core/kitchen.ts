@@ -522,6 +522,16 @@ function dressLower(cabinet: CabinetConfig, opts: KitchenOptions): CabinetConfig
  */
 export function generateKitchen(options: KitchenOptions, catalog: Catalog): KitchenResult {
   validateKitchenWalls(options)
+  const requestedWorktopId = options.materials?.worktopId
+  if (requestedWorktopId) {
+    const worktop = catalog.materials.find((m) => m.id === requestedWorktopId)
+    if (!worktop?.slab) {
+      throw new ConfigValidationError(
+        'materials.worktopId', requestedWorktopId,
+        'каталогтағы дайын тақта (slab) материалы',
+      )
+    }
+  }
   const wallTpl = findTemplate('kitchen-wall-600')!
   const tplOf = (kind: ModuleKind) => findTemplate(TEMPLATE_OF[kind])!
 

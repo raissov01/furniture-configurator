@@ -76,6 +76,23 @@ const entriesOf = (r: ReturnType<typeof generateKitchen>) =>
   }))
 
 describe('generateKitchen', () => {
+  it('столешницаға тек slab санатты материал қабылдайды', () => {
+    const options = { layout: 'straight' as const, lengthA: 1200, upper: false,
+      sink: false, appliances: false, hob: 'none' as const }
+    for (const worktopId of ['hdf3-white', 'ldsp16-w980', 'missing']) {
+      let caught: unknown
+      try {
+        generateKitchen({ ...options, materials: { worktopId } }, SEED_CATALOG)
+      } catch (error) {
+        caught = error
+      }
+      expect(caught).toBeInstanceOf(ConfigValidationError)
+      expect((caught as ConfigValidationError).field).toBe('materials.worktopId')
+    }
+    expect(() => generateKitchen({ ...options, materials: { worktopId: 'pf38-stone' } }, SEED_CATALOG))
+      .not.toThrow()
+  })
+
   it('ортақ цокольдің резі парақтың жиектелген пайдалы аймағына сияды', () => {
     const result = generateKitchen({ layout: 'straight', lengthA: 2800, upper: false,
       sink: false, appliances: false, hob: 'none' }, SEED_CATALOG)
