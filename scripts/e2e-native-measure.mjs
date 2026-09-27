@@ -66,9 +66,17 @@ try {
     input.dispatchEvent(new Event('input', { bubbles: true }))
     return true
   })()`)
+  assert(await h.evaluate(`(() => {
+    const input = [...document.querySelectorAll('label')].find((item) => item.textContent.includes('Высота помещения') && item.querySelector('input[inputmode=numeric]'))?.querySelector('input[inputmode=numeric]')
+    if (!input) return false
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '1200')
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    return true
+  })()`), 'manual height input missing')
+  assert(await h.until("[...document.querySelectorAll('label')].some((item) => item.textContent.includes('Высота помещения') && item.querySelector('input[inputmode=numeric]')?.value === '1200')", 5000), 'manual height draft missing')
   assert(await setReading('1.234m'), 'D5 input missing')
   assert(await h.clickText('Применить измерение', 300), 'D5 apply button missing')
-  assert(await h.until("[...document.querySelectorAll('label')].some((item) => item.textContent.includes('Высота помещения') && item.querySelector('input[type=number]')?.value === '1234')", 5000), 'D5 integer mm missing')
+  assert(await h.until("[...document.querySelectorAll('label')].some((item) => item.textContent.includes('Высота помещения') && item.querySelector('input[inputmode=numeric]')?.value === '1234')", 5000), 'D5 integer mm missing')
   assert((await h.text()).includes('Источник: Лазер'), 'laser provenance missing')
   assert(await setReading('1.234'), 'D5 invalid input missing')
   assert(await h.clickText('Применить измерение', 300), 'D5 validation button missing')

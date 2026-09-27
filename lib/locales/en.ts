@@ -1873,4 +1873,5 @@ export const en: Record<string, string> = {
   'Kaspi Pay открывается только по ссылке, которую ввёл продавец. Оплата и чек обрабатываются в Kaspi Pay; AisMebel не получает реквизиты банковской карты и не подтверждает оплату автоматически. Запрос на повторное изготовление детали отправляет сам пользователь через меню телефона.': 'Kaspi Pay opens only through a link entered by the merchant. Payment and receipts are handled in Kaspi Pay; AisMebel does not receive bank card details or confirm payment automatically. The user shares part remake requests through the phone menu.',
   'Удаление и связь': 'Deletion and contact',
   'Локальные данные можно удалить через настройки устройства. По синхронизированным данным обратитесь к администратору своей мастерской. Контакт оператора и срок хранения серверных данных должны быть опубликованы до выхода в магазин приложений.': 'Local data can be removed in device settings. For synced data, contact your workshop administrator. The operator contact and server retention period must be published before store release.',
+
 }

@@ -1,7 +1,7 @@
 import { copyFileSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterAll, beforeEach, expect, it } from 'vitest'
+import { afterAll, beforeEach, expect, it, vi } from 'vitest'
 import { PostgresCompat } from '../lib/server/postgres'
 
 const root = mkdtempSync(join(tmpdir(), 'pg-bridge-'))
@@ -53,9 +53,10 @@ it('нақты worker алғашқы connect қатесінен және client 
   copyFileSync(join(process.cwd(), 'lib/server/pgWorker.cjs'), join(mockRoot, 'lib/server/pgWorker.cjs'))
   writeFileSync(join(mockRoot, 'node_modules/pg/index.js'), `
 const { EventEmitter } = require('node:events')
-let connects = 0
+const { existsSync } = require('node:fs')
+const { join } = require('node:path')
 class Client extends EventEmitter {
-  async connect() { if (++connects === 1) throw new Error('database starting') }
+  async connect() { if (!existsSync(join(__dirname, 'allow-connect'))) throw new Error('database starting') }
   async query(sql) {
     if (sql === 'DISCONNECT') { this.emit('error', new Error('connection lost')); throw new Error('connection lost') }
     return { rows: [{ sql }], rowCount: 1 }
@@ -67,12 +68,12 @@ module.exports = { Client, types: { setTypeParser() {} } }
   process.env['PLATFORM_ROOT'] = mockRoot
   const db = new PostgresCompat('postgres://fake', undefined, 2000)
   try {
-    await new Promise((resolve) => setTimeout(resolve, 150))
+    // Keep the fake database unavailable until the real worker's failure is observed.
+    // A wall-clock sleep could miss the failure under scheduler/GC load.
     expect(() => db.prepare('FIRST').get()).toThrow(/unavailable|starting/)
-    await new Promise((resolve) => setTimeout(resolve, 1200))
-    expect(db.prepare('SECOND').get()).toEqual({ sql: 'SECOND' })
+    writeFileSync(join(mockRoot, 'node_modules/pg/allow-connect'), '')
+    await vi.waitFor(() => expect(db.prepare('SECOND').get()).toEqual({ sql: 'SECOND' }), { timeout: 5000, interval: 25 })
     expect(() => db.prepare('DISCONNECT').get()).toThrow(/unavailable|lost/)
-    await new Promise((resolve) => setTimeout(resolve, 1200))
-    expect(db.prepare('RECOVERED').get()).toEqual({ sql: 'RECOVERED' })
+    await vi.waitFor(() => expect(db.prepare('RECOVERED').get()).toEqual({ sql: 'RECOVERED' }), { timeout: 5000, interval: 25 })
   } finally { db.close(); rmSync(mockRoot, { recursive: true, force: true }) }
-})
+}, 15000)

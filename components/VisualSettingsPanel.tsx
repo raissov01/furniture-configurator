@@ -5,10 +5,12 @@ import { t as tr } from '@/lib/i18n'
 import { useConfigurator } from '@/store/configurator'
 import type { MaterialPbr, SceneLight, Vec3 } from '@/src/core/index'
 import { parseNormalUrl, parseVisualNumber } from '@/lib/visualSettingsInput'
-import type { PbrDraft } from '@/lib/f28VisualUi'
 
 const inputStyle = 'w-full border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-950'
 const buttonStyle = 'border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700'
+
+type PbrDraft = { roughness: string; metalness: string; reflection: string; opacity: string;
+  normalUrl: string; normalX: string; normalY: string; normalStrength: string }
 
 function draftFromPbr(pbr?: MaterialPbr): PbrDraft {
   const show = (value?: number) => value === undefined ? '' : String(value)
@@ -50,8 +52,6 @@ export function MaterialAppearanceEditor() {
     setMessage(null)
   }
   const save = () => {
-    setMessage(null)
-    setError(null)
     if (!material) return
     setMessage(null)
     const errors: Partial<Record<keyof PbrDraft, string>> = {}
@@ -134,7 +134,7 @@ function NumberField({ label, value, onChange, min, max, step = 1, integer = fal
   const [error, setError] = useState<string | null>(null)
   useEffect(() => { setDraft(String(value)); setError(null) }, [value])
   return <label className="text-xs">{label}
-    <input className={`${inputStyle} mt-1`} type="number" step={step} min={min} max={max} value={draft} aria-invalid={!!error}
+    <input className={`${inputStyle} mt-1`} type="text" inputMode="decimal" value={draft} aria-invalid={!!error}
       aria-describedby={error ? errorId : undefined}
       onChange={(event) => {
         const raw = event.target.value

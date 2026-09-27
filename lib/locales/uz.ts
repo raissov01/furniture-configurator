@@ -1877,4 +1877,5 @@ export const uz: Record<string, string> = {
   'Kaspi Pay открывается только по ссылке, которую ввёл продавец. Оплата и чек обрабатываются в Kaspi Pay; AisMebel не получает реквизиты банковской карты и не подтверждает оплату автоматически. Запрос на повторное изготовление детали отправляет сам пользователь через меню телефона.': 'Kaspi Pay faqat sotuvchi kiritgan havola orqali ochiladi. To‘lov va chek Kaspi Pay da bajariladi; AisMebel bank karta ma’lumotlarini olmaydi va to‘lovni avtomatik tasdiqlamaydi. Detalni qayta tayyorlash so‘rovini foydalanuvchi telefon menyusidan yuboradi.',
   'Удаление и связь': 'O‘chirish va aloqa',
   'Локальные данные можно удалить через настройки устройства. По синхронизированным данным обратитесь к администратору своей мастерской. Контакт оператора и срок хранения серверных данных должны быть опубликованы до выхода в магазин приложений.': 'Mahalliy ma’lumotlarni qurilma sozlamalarida o‘chirish mumkin. Sinxronlangan ma’lumotlar uchun sex administratoriga murojaat qiling. Operator aloqasi va server saqlash muddati do‘konga chiqishdan oldin e’lon qilinishi kerak.',
+
 }
