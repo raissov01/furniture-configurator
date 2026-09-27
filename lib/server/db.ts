@@ -320,6 +320,18 @@ function migrate(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS render_history_owner ON render_history (user_id, project_id, created_at DESC);
   `)
+
+  // 14-қадам: құпиясөзді қалпына келтіру. Сілтеменің өзі ешқашан базада сақталмайды.
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL,
+      used_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS password_resets_user ON password_resets (user_id, expires_at);
+  `)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */

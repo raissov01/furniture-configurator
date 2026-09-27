@@ -5,7 +5,7 @@ export type AuditEvent = {
   shopId: string
   actorId?: string | null | undefined
   action: string
-  entityType: 'project' | 'price' | 'role' | 'approval'
+  entityType: 'project' | 'price' | 'role' | 'approval' | 'password'
   entityId?: string | null
   detail?: unknown
 }
