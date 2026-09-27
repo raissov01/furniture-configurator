@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { safeCutPlan } from '@/lib/safeCutPlan'
+import { cutExportAllowed, safeCutPlan } from '@/lib/safeCutPlan'
 import type { NestingResult } from '@/src/core/nesting'
 
 describe('F18 сақталған пропил UI қорғанысы', () => {
@@ -13,5 +13,11 @@ describe('F18 сақталған пропил UI қорғанысы', () => {
   it('өзектің қатесін де экранға қайтаруға мүмкіндік береді', () => {
     expect(safeCutPlan({} as NestingResult, 4).error).toBeTruthy()
     expect(safeCutPlan(null, 4)).toEqual({ plan: null, error: null })
+  })
+
+  it('редакцияланып жатқан жарамсыз мәтін экспортты жабады', () => {
+    expect(cutExportAllowed(null, true)).toBe(false)
+    expect(cutExportAllowed(null, false)).toBe(true)
+    expect(cutExportAllowed('Пропил: 0–20 мм рұқсат', false)).toBe(false)
   })
 })

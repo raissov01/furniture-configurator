@@ -23,6 +23,7 @@ import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import { materialUsedInTree } from '@/lib/materialUsedInTree'
+import { validateProjectShopInputs, validatedShopEdit } from '@/lib/validatedShopEdit'
 import {
   DEFAULT_ROOM,
   IDENTITY_TRANSFORM,
@@ -152,6 +153,7 @@ type State = Snapshot & {
   projectEpoch: number
   setProjectLights(lights: SceneLight[]): void
   setMaterialPbr(materialId: string, pbr: MaterialPbr | undefined): void
+  setMaterialDecor(materialId: string, decor: Material['decor']): void
   /** Invalid local backup stays untouched until explicit recovery/load/reset. */
   projectLoadError: string | null
   /**
@@ -738,6 +740,17 @@ export const useConfigurator = create<State>((set, get) => ({
     if (!material) throw new ConfigValidationError('materialId', `материал табылмады: ${materialId}`)
     if (JSON.stringify(material.pbr) === JSON.stringify(pbr)) return
     const changed = MaterialSchema.parse({ ...material, pbr })
+    const projectMaterials = state.catalog.materials.map((entry) => entry.id === materialId ? changed : entry)
+    set({ projectMaterials, catalog: { ...state.catalog, materials: projectMaterials },
+      past: [...state.past, snapshot(state)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null })
+    get().saveProjectLocally()
+  },
+  setMaterialDecor(materialId, decor) {
+    const state = get()
+    const material = state.catalog.materials.find((entry) => entry.id === materialId)
+    if (!material) throw new ConfigValidationError('materialId', `материал табылмады: ${materialId}`)
+    if (JSON.stringify(material.decor) === JSON.stringify(decor)) return
+    const changed = MaterialSchema.parse({ ...material, decor })
     const projectMaterials = state.catalog.materials.map((entry) => entry.id === materialId ? changed : entry)
     set({ projectMaterials, catalog: { ...state.catalog, materials: projectMaterials },
       past: [...state.past, snapshot(state)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null })
@@ -1366,13 +1379,14 @@ export const useConfigurator = create<State>((set, get) => ({
   editShop(patch) {
     const s = get()
     const changesJointInputs = Boolean(patch.settings || patch.materials || patch.edgeBands)
-    const nextShop = syncActivePriceList({ ...s.shop, ...patch })
+    const nextShop = validatedShopEdit(s.shop, patch)
     const projectSettings = patch.settings
       ? projectSettingsAfterShopEdit(s.projectSettings, s.shop.settings, patch.settings) : s.projectSettings
     const projectMaterials = patch.materials
       ? projectMaterialsAfterShopEdit(s.projectMaterials, s.shop.materials, patch.materials) : s.projectMaterials
     const projectEdgeBands = patch.edgeBands
       ? projectBandsAfterShopEdit(s.projectEdgeBands, s.shop.edgeBands, patch.edgeBands) : s.projectEdgeBands
+    if (patch.materials || patch.edgeBands) validateProjectShopInputs(projectMaterials ?? nextShop.materials, projectEdgeBands ?? nextShop.edgeBands)
     const nextCatalog = projectCatalog(nextShop, projectMaterials, projectEdgeBands)
     // Check the whole geometry before mutating either project overrides or undo.
     const autoJoints = s.autoJoints.length > 0 && changesJointInputs
