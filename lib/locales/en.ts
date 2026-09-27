@@ -59,6 +59,15 @@ export const en: Record<string, string> = {
   'Стена В': 'East wall',
   'Сортировать': 'Sort',
   'Допустимо целое число в диапазоне': 'Allowed whole-number range',
+  'Сохранено в аккаунте': 'Saved to account',
+  'Библиотека импортирована в аккаунт': 'Library imported to account',
+  'Библиотека импортирована на устройство; в аккаунт загружено {saved} из {total}': 'Library imported on this device; {saved} of {total} uploaded to account',
+  'Библиотека импортирована только на этом устройстве': 'Library imported on this device only',
+  'Перенести гостевую библиотеку в аккаунт': 'Move guest library to account',
+  'Вернуться к коэффициенту цеха': 'Use shop coefficient',
+  'разрешено': 'allowed:',
+  'Ссылка на проект повреждена или устарела. Попросите новую ссылку.': 'The project link is damaged or outdated. Ask for a new link.',
+
   'Текстуры PRO100': 'PRO100 textures',
   'Обновить список': 'Refresh list',
   'Для импорта нужен вход в аккаунт': 'Sign in to use imported textures',
@@ -96,6 +105,8 @@ export const en: Record<string, string> = {
   'Все материалы': 'All materials',
   'Только видимые карты': 'Visible sheets only',
   'Только предпросмотр: откройте импорт в проекте': 'Preview only: open import in a project',
+  'Не удалось открыть проект: {reason}': 'Could not open project: {reason}',
+
   'Текст': 'Text',
   'Добавить текст': 'Add text',
   '+ текст': '+ text',
@@ -1533,6 +1544,7 @@ export const en: Record<string, string> = {
   'Открыть настройки цеха': 'Open shop settings',
   'значений': 'values',
 
+
   "Импорт прайса CSV/XLSX": "Import CSV/XLSX price list",
   "Файл прайса": "Price file",
   "Выберите CSV или XLSX файл": "Choose a CSV or XLSX file",
@@ -1569,11 +1581,10 @@ export const en: Record<string, string> = {
   'От пола проёма': 'Opening height from floor',
   '+ окно': '+ window',
   '+ дверь': '+ door',
-  'Добавить подтверждённый артикул петли': 'Add a verified hinge article',
-  'Профиль цеха: зазор {gap} мм с каждой стороны, схема отверстий Blum TANDEM. Артикул фурнитуры не определён; проверьте направляющие перед изготовлением.': 'Shop profile: {gap} mm clearance per side and a Blum TANDEM hole pattern. The hardware article is unknown; check the runners before manufacturing.',
   'Рез': 'Cut',
   'У материала нет направления текстуры': 'This material has no grain direction',
   'DXF деталей и торцевая присадка CSV в одном архиве': 'Part DXFs and edge drilling CSV in one archive',
+
   'Автоотверстие задаётся соединением. Измените соединение; удалить можно только ручное отверстие.': 'Automatic holes come from the joint. Change the joint; only manual holes can be deleted.',
   'Удалить только ручные отверстия; автоматические задаются соединением': 'Delete manual holes only; automatic holes come from the joint',
   'Удалить ручные отверстия': 'Delete manual holes',
@@ -1583,6 +1594,8 @@ export const en: Record<string, string> = {
   'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF sheet cutting maps; drilling is in the shop bundle or CNC per part',
   'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Bundle: face DXFs, EDGE-DRILLING.csv for edges, cutting map, cut list and labels. Full CNC CSV has a separate button.',
   'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Sheet DXFs are cutting maps. The shop bundle includes EDGE-DRILLING.csv for edges; full drilling CSV is under CNC per part.',
+  // F30 — help and guided lessons.,
+
   'Тематические уроки': 'Guided lessons',
   'Начать урок': 'Start lesson',
   'Пройдено · повторить': 'Completed · repeat',
@@ -1663,15 +1676,6 @@ export const en: Record<string, string> = {
   'Новая бирка после ремонта': 'New label after repair',
   'QR новой бирки': 'New label QR',
   'Напечатать бирку': 'Print label',
-  'Сохранено в аккаунте': 'Saved to account',
-  'Библиотека импортирована в аккаунт': 'Library imported to account',
-  'Библиотека импортирована на устройство; в аккаунт загружено {saved} из {total}': 'Library imported on this device; {saved} of {total} uploaded to account',
-  'Библиотека импортирована только на этом устройстве': 'Library imported on this device only',
-  'Перенести гостевую библиотеку в аккаунт': 'Move guest library to account',
-  'Вернуться к коэффициенту цеха': 'Use shop coefficient',
-  'разрешено': 'allowed:',
-  'Ссылка на проект повреждена или устарела. Попросите новую ссылку.': 'The project link is damaged or outdated. Ask for a new link.',
-  'Не удалось открыть проект: {reason}': 'Could not open project: {reason}',
   'Допустимо число в диапазоне': 'Allowed numeric range',
   'Допустим URL с http:// или https://': 'Use an http:// or https:// URL',
   'Корпус, раскрой и цена — из одной модели': 'Cabinet, cutting and price from one model',
@@ -1814,6 +1818,7 @@ export const en: Record<string, string> = {
   'дет.': 'parts',
   'шт.': 'pcs',
   '{name}: {qty} {unit} × {price}': '{name}: {qty} {unit} × {price}',
+
   'Измерение Leica DISTO D5 записано': 'Leica DISTO D5 measurement saved',
   'Не удалось прочитать измерение': 'Could not read the measurement',
   'Время': 'Time',
@@ -1874,4 +1879,15 @@ export const en: Record<string, string> = {
   'Удаление и связь': 'Deletion and contact',
   'Локальные данные можно удалить через настройки устройства. По синхронизированным данным обратитесь к администратору своей мастерской. Контакт оператора и срок хранения серверных данных должны быть опубликованы до выхода в магазин приложений.': 'Local data can be removed in device settings. For synced data, contact your workshop administrator. The operator contact and server retention period must be published before store release.',
   'Панели': 'Panels',
+
+  // Бұтақтарды біріктіруде сақталған аудармалар.
+
+
+
+
+
+
+
+
+
 }

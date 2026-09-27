@@ -61,6 +61,15 @@ export const uz: Record<string, string> = {
   'Стена В': 'Sharqiy devor',
   'Сортировать': 'Saralash',
   'Допустимо целое число в диапазоне': 'Ruxsat etilgan butun son oralig‘i',
+  'Сохранено в аккаунте': 'Hisobda saqlandi',
+  'Библиотека импортирована в аккаунт': 'Kutubxona hisobga import qilindi',
+  'Библиотека импортирована на устройство; в аккаунт загружено {saved} из {total}': 'Kutubxona qurilmaga import qilindi; hisobga {total} tadan {saved} tasi yuklandi',
+  'Библиотека импортирована только на этом устройстве': 'Kutubxona faqat shu qurilmaga import qilindi',
+  'Перенести гостевую библиотеку в аккаунт': 'Mehmon kutubxonasini hisobga ko‘chirish',
+  'Вернуться к коэффициенту цеха': 'Sex koeffitsiyentiga qaytish',
+  'разрешено': 'ruxsat etilgan:',
+  'Ссылка на проект повреждена или устарела. Попросите новую ссылку.': 'Loyiha havolasi buzilgan yoki eskirgan. Yangi havola so‘rang.',
+
   'Текстуры PRO100': 'PRO100 teksturalari',
   'Обновить список': 'Ro‘yxatni yangilash',
   'Для импорта нужен вход в аккаунт': 'Import teksturalari uchun hisobga kiring',
@@ -98,6 +107,8 @@ export const uz: Record<string, string> = {
   'Все материалы': 'Barcha materiallar',
   'Только видимые карты': 'Faqat ko‘rsatiladigan xaritalar',
   'Только предпросмотр: откройте импорт в проекте': 'Faqat oldindan ko‘rish: importni loyihada oching',
+  'Не удалось открыть проект: {reason}': 'Loyihani ochib bo‘lmadi: {reason}',
+
   'Текст': 'Matn',
   'Добавить текст': 'Matn qo‘shish',
   '+ текст': '+ matn',
@@ -1442,6 +1453,7 @@ export const uz: Record<string, string> = {
   'Выбранный элемент, его положение и размеры H × W × D. Двойной щелчок по детали открывает «Свойства».': 'Tanlangan element, uning joylashuvi va H × W × D o‘lchamlari. Detalni ikki marta bosish «Xususiyatlar»ni ochadi.',
   'допустимо': 'ruxsat etilgan',
 
+
   'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Parmalash, bichish va stanokka eksport — to‘g‘ridan-to‘g‘ri AisMebel’da, Bazisga o‘tkazmasdan.',
 
 
@@ -1527,15 +1539,6 @@ export const uz: Record<string, string> = {
   'Закройте свойства через OK перед экспортом': 'Eksportdan oldin Xususiyatlarni OK orqali yoping',
   'Свойства нескольких объектов не редактируются вместе. Выберите один объект перед открытием свойств.': 'Bir nechta obyekt xususiyatlari birga tahrirlanmaydi. Xususiyatlarni ochishdan oldin bitta obyektni tanlang.',
   'Найти': 'Topish',
-  'В каталоге цеха нет петли для этого типа фасада. Добавьте артикул в настройках цеха.': 'Sex katalogida bu fasad turi uchun ilmoq yo‘q. Sex sozlamalariga artikul qo‘shing.',
-  'Введите целые высоты полок': 'Tokcha balandligini butun millimetrda kiriting',
-  'Выберите подходящую петлю': 'Mos ilmoqni tanlang',
-  'Деталировка временно недоступна. Экспорт заблокирован.': 'Kesim ro‘yxati vaqtincha mavjud emas. Eksport bloklangan.',
-  'Добавьте отдельную секцию для каждой двери.': 'Har bir eshik uchun alohida bo‘lim qo‘shing.',
-  'Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.': 'Maydonni tuzating. Oxirgi to‘g‘ri model ko‘rsatilgan. Kesim ro‘yxati vaqtincha mavjud emas. Eksport bloklangan.',
-  'Материал корпуса не найден': 'Korpus materiali topilmadi',
-  'Открыть настройки цеха': 'Sex sozlamalarini ochish',
-  'значений': 'qiymat',
 
   "Импорт прайса CSV/XLSX": "CSV/XLSX narxlar ro‘yxatini import qilish",
   "Файл прайса": "Narxlar fayli",
@@ -1573,11 +1576,10 @@ export const uz: Record<string, string> = {
   'От пола проёма': 'Poldan balandligi',
   '+ окно': '+ deraza',
   '+ дверь': '+ eshik',
-  'Добавить подтверждённый артикул петли': 'Tasdiqlangan petlya artikulini qo\'shish',
-  'Профиль цеха: зазор {gap} мм с каждой стороны, схема отверстий Blum TANDEM. Артикул фурнитуры не определён; проверьте направляющие перед изготовлением.': 'Sex profili: har tomonda {gap} mm bo‘shliq, teshik sxemasi Blum TANDEM. Furnitura artikuli noma’lum; ishlab chiqarishdan oldin yo‘naltirgichlarni tekshiring.',
   'Рез': 'Kesim',
   'У материала нет направления текстуры': "Bu materialda tekstura yo'nalishi yo'q",
   'DXF деталей и торцевая присадка CSV в одном архиве': 'Detallar DXF va qirra teshiklarining CSV fayli bitta arxivda',
+
   'Автоотверстие задаётся соединением. Измените соединение; удалить можно только ручное отверстие.': 'Avto teshik birikmadan olinadi. Birikmani o\'zgartiring; faqat qo\'lda qo\'yilgan teshikni o\'chirish mumkin.',
   'Удалить только ручные отверстия; автоматические задаются соединением': 'Faqat qo\'lda qo\'yilgan teshiklarni o\'chirish; avto teshiklar birikmadan olinadi',
   'Удалить ручные отверстия': 'Qo\'lda qo\'yilgan teshiklarni o\'chirish',
@@ -1587,6 +1589,8 @@ export const uz: Record<string, string> = {
   'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF varaq bichish xaritasi; teshiklar sex paketida yoki detallar bo‘yicha CNC da',
   'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Paket: yuzalar DXF, qirralar uchun EDGE-DRILLING.csv, bichish xaritasi, detallar ro‘yxati va yorliqlar. To‘liq CNC CSV alohida tugmada.',
   'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Varaq DXF — bichish xaritasi. Sex paketida qirralar uchun EDGE-DRILLING.csv bor; to‘liq teshiklar CSV — detallar bo‘yicha CNC.',
+  // F30 — yordam va mavzuli darslar.,
+
   'Тематические уроки': 'Mavzuli darslar',
   'Начать урок': 'Darsni boshlash',
   'Пройдено · повторить': "O'tildi · takrorlash",
@@ -1667,15 +1671,6 @@ export const uz: Record<string, string> = {
   'Новая бирка после ремонта': 'Ta’mirdan keyingi yangi yorliq',
   'QR новой бирки': 'Yangi yorliq QR kodi',
   'Напечатать бирку': 'Yorliqni chop etish',
-  'Сохранено в аккаунте': 'Hisobda saqlandi',
-  'Библиотека импортирована в аккаунт': 'Kutubxona hisobga import qilindi',
-  'Библиотека импортирована на устройство; в аккаунт загружено {saved} из {total}': 'Kutubxona qurilmaga import qilindi; hisobga {total} tadan {saved} tasi yuklandi',
-  'Библиотека импортирована только на этом устройстве': 'Kutubxona faqat shu qurilmaga import qilindi',
-  'Перенести гостевую библиотеку в аккаунт': 'Mehmon kutubxonasini hisobga ko‘chirish',
-  'Вернуться к коэффициенту цеха': 'Sex koeffitsiyentiga qaytish',
-  'разрешено': 'ruxsat etilgan:',
-  'Ссылка на проект повреждена или устарела. Попросите новую ссылку.': 'Loyiha havolasi buzilgan yoki eskirgan. Yangi havola so‘rang.',
-  'Не удалось открыть проект: {reason}': 'Loyihani ochib bo‘lmadi: {reason}',
   'Допустимо число в диапазоне': 'Ruxsat etilgan son oralig‘i',
   'Допустим URL с http:// или https://': 'http:// yoki https:// manzilini kiriting',
   'Корпус, раскрой и цена — из одной модели': 'Korpus, bichish va narx — bitta modeldan',
@@ -1818,6 +1813,7 @@ export const uz: Record<string, string> = {
   'дет.': 'detal',
   'шт.': 'dona',
   '{name}: {qty} {unit} × {price}': '{name}: {qty} {unit} × {price}',
+
   'Измерение Leica DISTO D5 записано': 'Leica DISTO D5 o‘lchovi saqlandi',
   'Не удалось прочитать измерение': 'O‘lchovni o‘qib bo‘lmadi',
   'Время': 'Vaqti',
@@ -1878,4 +1874,15 @@ export const uz: Record<string, string> = {
   'Удаление и связь': 'O‘chirish va aloqa',
   'Локальные данные можно удалить через настройки устройства. По синхронизированным данным обратитесь к администратору своей мастерской. Контакт оператора и срок хранения серверных данных должны быть опубликованы до выхода в магазин приложений.': 'Mahalliy ma’lumotlarni qurilma sozlamalarida o‘chirish mumkin. Sinxronlangan ma’lumotlar uchun sex administratoriga murojaat qiling. Operator aloqasi va server saqlash muddati do‘konga chiqishdan oldin e’lon qilinishi kerak.',
   'Панели': 'Panellar',
+
+  // Бұтақтарды біріктіруде сақталған аудармалар.
+
+
+
+
+
+
+
+
+
 }
