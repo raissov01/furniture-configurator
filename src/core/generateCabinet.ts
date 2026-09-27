@@ -1695,7 +1695,7 @@ export function generateCabinet(
     const [left, right] = boundsOf(group.sectionIndex)
     const last = group.fronts.length - 1
     const spec = layouts[group.sectionIndex]?.section.fronts
-    const hingeSystem = resolveHingeSystem(catalog, spec?.hingeSystemId)
+    const hingeSystem = resolveHingeSystem(catalog, spec?.hingeSystemId, spec?.mount)
     if (spec?.opening !== 'up' && hingeSystem && hingeSystem.mount !== spec?.mount) {
       throw new ConfigValidationError(
         `sections[${group.sectionIndex}].fronts.hingeSystemId`,
@@ -1834,10 +1834,10 @@ export function generateCabinet(
  * Секцияның ілгек жүйесі. Каталогта жүйе болмаса (ескі шақыру) —
  * `undefined`, ол кезде `hingeHoles` §4.9 константаларымен жүреді.
  */
-function resolveHingeSystem(catalog: Catalog, id: string | undefined): HingeSystem | undefined {
+function resolveHingeSystem(catalog: Catalog, id: string | undefined, mount?: 'overlay' | 'inset'): HingeSystem | undefined {
   const list = catalog.hingeSystems
   if (!list || list.length === 0) return undefined
-  if (!id) return list[0]
+  if (!id) return list.find((h) => h.mount === mount) ?? list[0]
   const found = list.find((h) => h.id === id)
   if (!found) {
     throw new ConfigValidationError('fronts.hingeSystemId', `жүйе табылмады: "${id}"`)

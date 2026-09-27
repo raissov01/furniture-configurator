@@ -135,6 +135,34 @@ describe('тұтқа тесіктерінің орны', () => {
 // ── Ілгектің бренді присадкаға әсер етеді ────────────────────────────────────
 
 describe('ілгек жүйесі присадкаға түседі', () => {
+  it('Blum 71B3750 inset жүйесі 3 мм саңылауға ресми чашка және планка орнын қолданады', () => {
+    const system = defaultHingeSystems().find((s) => s.id === 'hinge-blum-71b3750-inset')!
+    expect(system).toMatchObject({ mount: 'inset', cupDiameter: 35, cupDepth: 13,
+      cupFromEdge: 21.5, plateFromFront: 37, plateFrontThicknessOffset: 1.5,
+      fixingSpacing: 45, fixingOffset: 9.5 })
+    const cabinet = { ...withFronts({ mount: 'inset', hingeSystemId: system.id, handle: null }),
+      settings: { shelfSetback: 20, hingeCupMount: 'screw' as const,
+        hingeScrewPilotDiameter: 2.8, hingeScrewPilotDepth: 11.5 } }
+    const panels = generateCabinet(cabinet, fullCatalog)
+    const front = fronts(panels)[0]!
+    const cup = holes(front, 'hinge').find((d) => d.diameter === 35)!
+    // Координата кесілген детальдан: 2 мм жиек таспасы алынады (§4.9).
+    expect(cup).toMatchObject({ y: 19.5, depth: 13 })
+    const fixing = holes(front, 'hinge').filter((d) => d.diameter !== 35)
+    expect(Math.abs(fixing[1]!.x - fixing[0]!.x)).toBe(45)
+    expect(fixing[0]!.y).toBe(29)
+    const plate = panels.find((p) => p.id === 'side-left')!.drilling.find((d) => d.purpose === 'hinge')!
+    expect(plate.y).toBe(52.5)
+  })
+
+  it('BOYARD H305 inset каталогы өз 48/6 үлгісін және 37+FD планкасын сақтайды', () => {
+    const system = defaultHingeSystems().find((s) => s.id === 'hinge-boyard-h305-inset')!
+    expect(system).toMatchObject({ mount: 'inset', cupDepth: 12, cupFromEdge: 20.5,
+      plateFromFront: 37, plateFrontThicknessOffset: 0,
+      fixingSpacing: 48, fixingOffset: 6 })
+    expect(system.source).toContain('BOYARD')
+  })
+
   it('чашканың орны жүйенің cupFromEdge-інен алынады', () => {
     const systems = defaultHingeSystems()
     const blum = systems.find((s) => s.id === 'hinge-blum-soft-cross-overlay')!
@@ -175,7 +203,7 @@ describe('ілгек жүйесі присадкаға түседі', () => {
   it('әр бренд каталогта екі жабылу түрімен тұр', () => {
     const systems = defaultHingeSystems()
     for (const brand of HINGE_BRANDS) {
-      const mine = systems.filter((s) => s.brand === brand)
+      const mine = systems.filter((s) => s.brand === brand && s.mount === 'overlay')
       expect(mine.map((s) => s.closing).sort(), brand).toEqual(['none', 'soft'])
     }
   })

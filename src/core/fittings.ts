@@ -59,6 +59,13 @@ export type HingeSystem = {
   plateHoleSpacing: number
   /** Планка тесіктері бүйірдің алдыңғы жиегінен, мм. */
   plateFromFront: number
+  /** Inset планкасына фасад қалыңдығымен бірге қосылатын ығысу, мм. */
+  plateFrontThicknessOffset?: number
+  /** Артикулдың 45/9.5 сияқты бекіту үлгісі; жоқ болса цех параметрлері. */
+  fixingSpacing?: number
+  fixingOffset?: number
+  /** Өндірушінің құжаты және беті. */
+  source?: string
   /** Сметадағы позиция (`ShopProfile.hardware[].id`). */
   hardwareId: string
   /** Жауап планкасының сметадағы позициясы. */
@@ -127,6 +134,24 @@ export function defaultHingeSystems(): HingeSystem[] {
     out.push(makeHingeSystem(brand, 'soft'))
     out.push(makeHingeSystem(brand, 'none'))
   }
+  // Blum Catalogue 2027/2028, б.70–71: 71B3750 inset, Ø35 × min 13,
+  // TB=4 => 3 мм саңылауда ортасы 17.5+4=21.5; 45/9.5 бекіту.
+  // Б.71: inset планкасы 37 + FD + 1.5 мм, FD — нақты фасад қалыңдығы.
+  out.push({ ...makeHingeSystem('blum', 'soft', 'cross', 'inset'),
+    id: 'hinge-blum-71b3750-inset', name: 'Blum CLIP top BLUMOTION 71B3750, вкладная',
+    cupDepth: 13, cupFromEdge: 21.5, plateFrontThicknessOffset: 1.5,
+    fixingSpacing: 45, fixingOffset: 9.5,
+    source: 'Blum Catalogue 2027/2028, б.70–71: https://publications.blum.com/2026/catalogue/en/71/',
+  })
+  // BOYARD 2024 функционалдық фурнитура каталогы, б.20–21: H305,
+  // H=0 планкада 3 мм саңылау үшін чашка ортасы 20.5 мм; Ø35 × 12,
+  // бекіту 48/6, планка 37 + B (B — нақты фасад қалыңдығы).
+  out.push({ ...makeHingeSystem('boyard', 'soft', 'cross', 'inset'),
+    id: 'hinge-boyard-h305-inset', name: 'BOYARD CASUAL H305, вкладная',
+    cupDepth: 12, cupFromEdge: 20.5, plateFrontThicknessOffset: 0,
+    fixingSpacing: 48, fixingOffset: 6,
+    source: 'BOYARD 2024, б.20–21: https://www.boyard.biz/storage/docs/Каталог-функциональной-фурнитуры-BOYARD-2024.pdf/19/',
+  })
   return out
 }
 
@@ -484,6 +509,10 @@ export const HingeSystemSchema = z.object({
   endOffset: z.number().nonnegative(),
   plateHoleSpacing: z.number().positive(),
   plateFromFront: z.number().nonnegative(),
+  plateFrontThicknessOffset: z.number().nonnegative().optional(),
+  fixingSpacing: z.number().positive().optional(),
+  fixingOffset: z.number().nonnegative().optional(),
+  source: z.string().optional(),
   hardwareId: z.string().min(1),
   plateHardwareId: z.string().min(1),
 })
