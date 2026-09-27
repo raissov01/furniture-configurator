@@ -35,7 +35,7 @@ import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
 import { cutDisplay, visibleMaterials } from '@/lib/cutView'
 import { playbackStep } from '@/src/core/cutPlayback'
-import { labelExportOptions, labelSizeLimits } from '@/lib/labelExportOptions'
+import { labelExportOptions, labelSizeLimits, projectLabelIdentity } from '@/lib/labelExportOptions'
 import { safeCutPlan } from '@/lib/safeCutPlan'
 import type { LabelPage } from '@/src/core/export/labelLayout'
 
@@ -107,11 +107,10 @@ export function CutPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const labelOptions = useMemo(() => {
     try {
-      // Ағаштың түбір ID-і барлық жобада "root"; бірінші өндіріс түйінінің
-      // ID-і сақталған файлда тұрақты және жобаларды ажыратады.
+      const identity = projectLabelIdentity(root)
       return { value: labelExportOptions(
         { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
-        root.children[0]?.id ?? root.id, 4,
+        identity.projectId, identity.version,
       ), error: null }
     } catch (error) {
       return { value: null, error: error instanceof Error ? error.message : String(error) }
