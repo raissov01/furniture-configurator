@@ -153,6 +153,23 @@ describe('жоспарды тексеру', () => {
     expect(validatePlacements(room, [deep]).some((i) => i.field === 'depth')).toBe(true)
   })
 
+  it('еденнен көтерілген шкафтың жоғарғы шетін тірегімен бірге төбемен салыстырады', () => {
+    const raised = entry('raised', 'north', 0)
+    const testRoom = { ...room, height: 2800 }
+    raised.cabinet.height = 2000
+    expect(validatePlacements(testRoom, [{ ...raised, placement: { ...raised.placement, elevation: 800 } }])).toEqual([])
+    expect(validatePlacements(testRoom, [{ ...raised, placement: { ...raised.placement, elevation: 801 } }]))
+      .toContainEqual({ cabinetId: 'raised', field: 'elevation', message: 'верх шкафа 2801 мм выше потолка 2800 мм' })
+    const withBase = { ...raised, cabinet: { ...raised.cabinet, base: { kind: 'legs' as const, height: 100 } } }
+    const at = (elevation: number) => ({ ...withBase, placement: { ...withBase.placement, elevation } })
+
+    expect(validatePlacements(testRoom, [at(700)])).toEqual([])
+    expect(validatePlacements(testRoom, [at(701)])).toEqual([{
+      cabinetId: 'raised', field: 'elevation',
+      message: 'верх шкафа 2801 мм выше потолка 2800 мм',
+    }])
+  })
+
   it('теріс offset-ті ұстайды', () => {
     expect(validatePlacements(room, [entry('a', 'south', -50)]).some((i) => i.field === 'offset')).toBe(true)
   })

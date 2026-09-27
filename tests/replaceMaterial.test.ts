@@ -12,9 +12,18 @@ import {
   findTemplate,
   generateCabinet,
   previewMaterialReplace,
+  previewTreeMaterialReplace,
+  flattenTree,
+  scenePanels,
+  replaceTreeMaterial,
+  nestPanels,
+  nestingOptionsOf,
+  priceProject,
+  IDENTITY_TRANSFORM,
+  createDefaultLayer,
   templateToCabinet,
 } from '../src/core/index'
-import type { CabinetConfig, ShopProfile } from '../src/core/index'
+import type { CabinetConfig, GroupNode, ShopProfile } from '../src/core/index'
 
 const shop: ShopProfile = defaultShopProfile()
 const catalog = catalogOf(shop)
@@ -157,5 +166,63 @@ describe('жобада жоқ материалға ауыстыру', () => {
       const e = err as InstanceType<typeof ConfigValidationError>
       expect(e.field).toBe('oldMaterialId')
     }
+  })
+})
+
+describe('канондық ағаштағы материал ауыстырудың алдын ала есебі', () => {
+  const projectMaterial = { ...catalog.materials.find((m) => m.id === OLD_MATERIAL)!, id: 'project-only', pricePerSheet: 9900000 }
+  const projectCatalog = { ...catalog, materials: [...catalog.materials, projectMaterial] }
+  const cabinet = baseCabinet('a')
+  const root: GroupNode = {
+    kind: 'group', id: 'root', name: 'Жоба', transform: IDENTITY_TRANSFORM,
+    children: [
+      { kind: 'cabinet', id: 'a', name: 'Шкаф', transform: IDENTITY_TRANSFORM, config: cabinet },
+      { kind: 'board', id: 'board', name: 'Еркін тақта', transform: IDENTITY_TRANSFORM,
+        board: { materialId: OLD_MATERIAL, length: 500, width: 300, role: 'shelf',
+          orientation: { length: 'x', width: 'z', thickness: 'y' },
+          edges: { L1: null, L2: null, W1: null, W2: null }, grainAlongLength: false } },
+    ],
+  }
+
+  it('жоба каталогындағы материалды қабылдайды және еркін тақтаны санайды', () => {
+    const preview = previewTreeMaterialReplace(root, projectCatalog, shop,
+      OLD_MATERIAL, projectMaterial.id, { kind: 'all' }, { shelfGap: 10 })
+    const before = scenePanels(flattenTree(root, projectCatalog, { shelfGap: 10 }))
+    expect(preview.totalPanels).toBe(before.length)
+    expect(preview.affectedBoardIds).toEqual(['board'])
+    expect(preview.changedPanels).toBeGreaterThan(0)
+    const afterRoot = replaceTreeMaterial(root, OLD_MATERIAL, projectMaterial.id)
+    const after = scenePanels(flattenTree(afterRoot, projectCatalog, { shelfGap: 10 }))
+    expect(after.find((p) => p.id === 'board')?.materialId).toBe(projectMaterial.id)
+    const pricedShop = { ...shop, materials: projectCatalog.materials, edgeBands: projectCatalog.edgeBands }
+    expect(preview.priceAfter).toBe(priceProject(after,
+      nestPanels(after, projectCatalog, nestingOptionsOf(shop)), pricedShop).total)
+  })
+
+  it('жоба параметрімен генерацияланған деталь санын қолданады', () => {
+    const preview = previewTreeMaterialReplace(root, projectCatalog, shop,
+      OLD_MATERIAL, projectMaterial.id, { kind: 'all' }, { shelfGap: 10 })
+    const expected = scenePanels(flattenTree(root, projectCatalog, { shelfGap: 10 }))
+    expect(preview.totalPanels).toBe(expected.length)
+    expect(() => previewTreeMaterialReplace(root, catalog, shop,
+      OLD_MATERIAL, projectMaterial.id, { kind: 'all' })).toThrow(ConfigValidationError)
+  })
+
+  it('таңдалған шкаф ауқымында еркін тақтаны өзгертпейді', () => {
+    const preview = previewTreeMaterialReplace(root, projectCatalog, shop,
+      OLD_MATERIAL, projectMaterial.id, { kind: 'cabinets', cabinetIds: ['a'] })
+    expect(preview.affectedCabinetIds).toEqual(['a'])
+    expect(preview.affectedBoardIds).toEqual([])
+    expect(preview.totalPanels).toBe(flattenTree(root, projectCatalog).nodes.find((node) => node.nodeId === 'a')!.panels.length)
+  })
+
+  it('жасырын қабаттағы детальдарды өндірістік санаққа қоспайды', () => {
+    const layeredRoot: GroupNode = { ...root, children: root.children.map((node) =>
+      node.id === 'board' ? { ...node, layerId: 'hidden' } : node) }
+    const layers = [createDefaultLayer(), { id: 'hidden', name: 'Жасырын', visible: false, locked: false, color: '#000000' }]
+    const preview = previewTreeMaterialReplace(layeredRoot, projectCatalog, shop,
+      OLD_MATERIAL, projectMaterial.id, { kind: 'all' }, shop.settings, layers)
+    expect(preview.affectedBoardIds).toEqual([])
+    expect(preview.totalPanels).toBe(flattenTree(layeredRoot, projectCatalog, shop.settings, layers).nodes[0]!.panels.length)
   })
 })

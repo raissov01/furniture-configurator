@@ -22,7 +22,7 @@ export function cutListToCsv(panels: Panel[], catalog: Catalog): string {
     lines.push([
       r.name, r.cutLength, r.cutWidth, r.qty, r.material,
       r.edgeL1, r.edgeL2, r.edgeW1, r.edgeW2,
-      r.grain === 'нет' ? 'none' : 'along-length',
+      r.grain === 'нет' ? 'none' : r.grain === 'вдоль длины' ? 'along-length' : 'across-length',
     ].map(escape).join(','))
   }
   return lines.join('\n') + '\n'

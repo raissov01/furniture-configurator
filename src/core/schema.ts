@@ -82,7 +82,7 @@ export const ConstructionSettingsSchema = z.object({
   backThickness: z.number().positive(),
   grooveDepth: z.number().int().nonnegative(),
   grooveInset: z.number().int().nonnegative(),
-  minBandSubtract: z.number().nonnegative(),
+  minBandSubtract: z.number().int().min(1),
   confirmatSpanForThird: mm.nullable(),
   shelfPinDatum: z.number().int().nonnegative(),
   shelfPinFrontOffset: z.number().int().nonnegative(),

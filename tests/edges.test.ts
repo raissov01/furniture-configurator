@@ -1,6 +1,7 @@
 /** CLAUDE.md §8.1 — кромканы шегеру ережесі. Доменнің ең қымбат багы. */
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS, calculateCutDimensions } from '../src/core/index'
+import { ConstructionSettingsSchema } from '../src/core/schema'
 import type { EdgeBand, PanelEdges } from '../src/core/index'
 import { PVC04, PVC2, catalog } from './fixtures'
 
@@ -37,12 +38,20 @@ describe('calculateCutDimensions', () => {
     expect(r.cutWidth).toBe(445)
   })
 
-  it('minBandSubtract түсірілсе 0.4 мм да алынады', () => {
-    const r = calculateCutDimensions(2000, 447, edges(null, null, PVC04, PVC04), bands, {
-      ...DEFAULT_SETTINGS,
-      minBandSubtract: 0.4,
-    })
-    expect(r.cutLength).toBeCloseTo(1999.2, 5)
+  it('minBandSubtract 1 мм-ден төмен не бөлшек болмауы керек', () => {
+    for (const invalid of [0, 0.4, 1.5]) {
+      const settings = { ...DEFAULT_SETTINGS, minBandSubtract: invalid }
+      expect(() => ConstructionSettingsSchema.parse(settings)).toThrow()
+      expect(() => calculateCutDimensions(2000, 447, edges(null, null, PVC04, PVC04), bands, settings))
+        .toThrow(/minBandSubtract.*≥ 1 мм/)
+    }
+  })
+
+  it('рез өлшемі бөлшек болса қате көрсетеді', () => {
+    const fractionalBands = new Map(bands)
+    fractionalBands.set('fractional', { ...bands.get(PVC2)!, id: 'fractional', thickness: 1.5 })
+    expect(() => calculateCutDimensions(600, 400, edges(null, null, 'fractional', null), fractionalBands, DEFAULT_SETTINGS))
+      .toThrow(/cutLength.*бүтін мм/)
   })
 
   it('белгісіз кромка — үнсіз жұтылмай, қате лақтырады', () => {
