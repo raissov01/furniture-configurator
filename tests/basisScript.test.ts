@@ -469,6 +469,28 @@ describe('AUDIT: скрипт өзін тексеріп, файл жазады',
     expect(summary.missing).toBeGreaterThan(0)
   })
 
+  it('координатасы жоқ тесіктер OK емес, аралас нәтиже TXT есебінде де көрінеді', () => {
+    let removed = false
+    const fake = runInFakeBazis(script, {
+      mapped: allKinds,
+      corruptHoles: (_panel, holes) => holes.map((hole) => {
+        if (removed) return hole
+        removed = true
+        const withoutPosition = { ...hole }
+        Reflect.deleteProperty(withoutPosition, 'Position')
+        return withoutPosition
+      }),
+    })
+    const comparison = fake.audit!.comparison as {
+      summary: Record<string, number>
+      holes: { status: string }[]
+    }
+    expect(comparison.summary.positionUnverified).toBe(1)
+    expect(comparison.holes.filter((hole) => hole.status === 'POSITION_UNVERIFIED')).toHaveLength(1)
+    expect(comparison.holes.some((hole) => hole.status === 'OK')).toBe(true)
+    expect([...fake.files.values()].find((value) => value.includes('POSITION_UNVERIFIED'))).toBeDefined()
+  })
+
   it('тесік API-і жоқ (ескі Базис): audit бәрібір жазылады, себебі көрсетілген', () => {
     const fake = runInFakeBazis(script, { mapped: allKinds, holeApi: false })
     const holes = fake.audit!.holes as { available: boolean; error: string }

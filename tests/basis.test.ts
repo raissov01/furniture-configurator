@@ -147,6 +147,16 @@ describe('бума', () => {
     expect(readme).not.toContain('prisadka.csv')
   })
 
+  it('README 0,4 мм рез ережесін және бірінші рез алдындағы тексеруді түсіндіреді', () => {
+    const readme = new TextDecoder('windows-1251').decode(files.get('README.txt')!)
+    expect(readme).toContain('0,4 мм')
+    expect(readme).toContain('600')
+    expect(readme).toContain('596')
+    expect(readme).toContain('сравните')
+    expect(readme).toContain('пробную деталь')
+    expect(readme).toContain('не проверен в реальном Базисе')
+  })
+
   it('detali.xlsx: сол жолдар, ГОТОВЫЙ өлшем САН болып', () => {
     const zip = unzipSync(files.get('detali.xlsx')!)
     const sheet = strFromU8(zip['xl/worksheets/sheet1.xml']!)
