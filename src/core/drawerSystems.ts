@@ -54,6 +54,8 @@ export type MetalBoxSystem = {
   /** Сметадағы артикул: бір ЖИЫНТЫҚ (бүйірлері + направляющасы). */
   hardwareId: string
   source: string
+  /** Корпус тесіктерінің торы. Ұзындыққа қарай қолданылатын нақты ұялар бөлек таңдалады. */
+  mountingGrid?: { firstFromFront: number; pitch: number }
 }
 
 const MEASURED = 'qdesign раскройы, 2026-09-04, NB = 868 / NL = 450'
@@ -109,6 +111,10 @@ export const METAL_BOX_SYSTEMS: Record<MetalBoxSystemId, MetalBoxSystem> = {
     backWidthSub: 31,
     backHeight: 71,
     hardwareId: 'box-metabox',
+    // Blum Catalogue 2027/2028 б.369: METABOX 320, 37 мм бастап 32 мм тор.
+    // Бетте NL-ге қарай 165/229/261/... тесіктері берілген; барлық торды
+    // автоматты бұрғылау жарамайды, сондықтан CNC блок әлі күшінде.
+    mountingGrid: { firstFromFront: 37, pitch: 32 },
     source: 'Blum Catalogue 2027/2028 б.352–353: https://publications.blum.com/2026/catalogue/en/353/',
   },
 }
