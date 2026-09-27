@@ -1378,5 +1378,14 @@ export const en: Record<string, string> = {
   'Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.': 'Correct the field. The last valid model is shown. Cut list temporarily unavailable. Export is blocked.',
   'DXF деталей и торцевая присадка CSV в одном архиве': 'Part DXFs and edge drilling CSV in one archive',
   'Увеличьте ширину корпуса или уменьшите число фасадов.': 'Increase the cabinet width or reduce the number of fronts.',
+  'Удалить технику': 'Remove appliance',
+  'Тип техники': 'Appliance type',
+  'Артикул': 'Article',
+  'Не указан': 'Not specified',
+  'Высота ниши': 'Niche height',
+  'Требование к нише': 'Niche requirements',
+  'Размеры техники без артикула не подтверждены': 'Appliance dimensions without an article are unverified',
+  'Добавить технику': 'Add appliance',
+  'Выберите тип': 'Choose type',
 
 }

@@ -1382,5 +1382,14 @@ export const uz: Record<string, string> = {
   'Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.': 'Maydonni tuzating. Oxirgi toʻgʻri model koʻrsatilgan. Detallar roʻyxati vaqtincha mavjud emas. Eksport bloklangan.',
   'DXF деталей и торцевая присадка CSV в одном архиве': 'Detallar DXF va qirra teshiklarining CSV fayli bitta arxivda',
   'Увеличьте ширину корпуса или уменьшите число фасадов.': 'Korpus enini oshiring yoki fasadlar sonini kamaytiring.',
+  'Удалить технику': 'Texnikani olib tashlash',
+  'Тип техники': 'Texnika turi',
+  'Артикул': 'Artikul',
+  'Не указан': 'Ko‘rsatilmagan',
+  'Высота ниши': 'Uya balandligi',
+  'Требование к нише': 'Uya talabi',
+  'Размеры техники без артикула не подтверждены': 'Artikulsiz texnika o‘lchamlari tasdiqlanmagan',
+  'Добавить технику': 'Texnika qo‘shish',
+  'Выберите тип': 'Turini tanlang',
 
 }

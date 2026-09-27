@@ -27,6 +27,7 @@ import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
 import { drawerFillerStep } from '@/lib/drawerFillerStep'
 import { drawerContentWithCount } from '@/lib/drawerContent'
+import { removeSectionContentAt, replaceSectionContent, updateSectionContentAt } from '@/lib/f07SectionContents'
 import { showLegacyDrawerProfileWarning } from '@/lib/legacyDrawerProfile'
 import { compatibleHinges, previewFrontEdit } from '@/lib/frontEdit'
 import { commitPropertiesName } from '@/lib/propertiesSession'
@@ -34,7 +35,7 @@ import { sectionWidths } from '@/lib/sectionWidths'
 import { parseShelfHeights, shelfCountChange, shelfHeightsChange } from '@/lib/shelfDraft'
 import { matchTemplateId } from '@/lib/templateMatch'
 import {
-  APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
+  APPLIANCES, APPLIANCE_NICHE_MODELS, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
   ConfigValidationError,
   defaultHandleSpec, defaultMillingSpec, findTemplate, formatCutList, handlePositionName, millingPattern,
   roomWalls, wallById, walkTree,
@@ -129,33 +130,23 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
     const standCount = next.standCount ?? (stand?.kind === 'stand' ? stand.count : 0)
     const drawerCount = next.drawerCount ?? drawers?.count ?? 0
     const hasRod = next.hasRod ?? rod !== undefined
-    const fillingKind = next.filling === undefined
-      ? (filling?.kind === 'filling' ? filling.filling : null)
-      : next.filling
-    const applianceKind = next.appliance === undefined
-      ? (appliance?.kind === 'appliance' ? appliance.appliance : null)
-      : next.appliance
-
-    const contents: SectionContent[] = []
-    // Техника ең ТӨМЕНДЕ: духовка мен посудомойка еденге жақын тұрады.
-    if (applianceKind) contents.push({ kind: 'appliance', appliance: applianceKind })
-    const nextDrawers = drawerContentWithCount(drawers, drawerCount)
-    if (nextDrawers) contents.push(nextDrawers)
-    if (shelfCount > 0) {
-      contents.push({
+    let contents: SectionContent[] = section.contents
+    const replace = (kind: SectionContent['kind'], value: SectionContent | null) => {
+      contents = replaceSectionContent(contents, kind, value)
+    }
+    if (next.appliance !== undefined) replace('appliance', next.appliance
+      ? { kind: 'appliance', appliance: next.appliance, ...(appliance?.height ? { height: appliance.height } : {}) } : null)
+    if (next.drawerCount !== undefined) replace('drawers', drawerContentWithCount(drawers, drawerCount))
+    if (next.shelfCount !== undefined || next.shelfKind !== undefined || next.shelfInsets !== undefined || next.shelfAt !== undefined) {
+      replace('shelves', shelfCount > 0 ? {
         kind: 'shelves', count: shelfAt?.length ?? shelfCount, shelfKind,
         ...(shelfInsets ? { insets: shelfInsets } : {}),
         ...(shelfAt && shelfAt.length > 0 ? { at: shelfAt } : {}),
-      })
+      } : null)
     }
-    // Стойка сөренің ҮСТІНДЕ бөлек жолақ болып тұрады: солай ғана «төменде
-    // сөре, жоғарыда екі бөлік» деген тор шығады.
-    if (standCount > 0) contents.push({ kind: 'stand', count: standCount })
-    // Механизм сөренің үстінде, штанганың астында.
-    if (fillingKind) contents.push({ kind: 'filling', filling: fillingKind })
-    // Штанга ең ҮСТІНДЕ: киім ілінетін жер жоғарыда болады.
-    if (hasRod) contents.push({ kind: 'rod' })
-    if (contents.length === 0) contents.push({ kind: 'empty' })
+    if (next.standCount !== undefined) replace('stand', standCount > 0 ? { kind: 'stand', count: standCount } : null)
+    if (next.filling !== undefined) replace('filling', next.filling ? { kind: 'filling', filling: next.filling } : null)
+    if (next.hasRod !== undefined) replace('rod', hasRod ? { kind: 'rod' } : null)
 
     editSection(index, { contents }, 'section.fill')
   }
@@ -420,6 +411,51 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
           />
         </Field>
       </div>
+
+      {section.contents.map((content, contentIndex) => {
+        if (content.kind !== 'appliance') return null
+        const model = APPLIANCE_NICHE_MODELS.find((candidate) => candidate.id === content.modelId)
+        const models = APPLIANCE_NICHE_MODELS.filter((candidate) => candidate.appliance === content.appliance)
+        const change = (replacement: SectionContent) => editSection(index,
+          { contents: updateSectionContentAt(section.contents, contentIndex, replacement) }, 'section.appliance')
+        return <div key={`${section.id}-appliance-${contentIndex}`} className="space-y-2 border border-neutral-200 p-2 dark:border-neutral-800">
+          <div className="flex items-center justify-between gap-2 text-xs font-medium">
+            <span>{tr('Техника')} {contentIndex + 1}: {tr(APPLIANCES.find((item) => item.id === content.appliance)?.name ?? content.appliance)}</span>
+            {section.contents.filter((item) => item.kind === 'appliance').length > 1 &&
+              <Button size="sm" onClick={() => editSection(index,
+                { contents: removeSectionContentAt(section.contents, contentIndex) }, 'section.appliance')}>
+                {tr('Удалить технику')}
+              </Button>}
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Field label={tr('Тип техники')}>
+              <Select value={content.appliance} onChange={(appliance) => change({ kind: 'appliance', appliance, height: content.height })}
+                options={APPLIANCES.map((item) => ({ value: item.id, label: tr(item.name) }))} />
+            </Field>
+            <Field label={tr('Артикул')}>
+              <Select value={content.modelId ?? ''} onChange={(modelId) => change({ ...content, modelId: modelId || undefined })}
+                options={[{ value: '', label: tr('Не указан') }, ...models.map((item) => ({ value: item.id, label: item.article }))]} />
+            </Field>
+            <Field label={`${tr('Высота ниши')} (H), ${tr('мм')}`}>
+              <NumberInput value={content.height ?? 0} min={0} max={cabinetHeight} step={1}
+                field={`sections[${index}].contents[${contentIndex}].height`}
+                onDraftValidityChange={onDraftValidityChange}
+                onChange={(height) => change({ ...content, height: height || undefined })} />
+            </Field>
+          </div>
+          {model && <p className="text-[11px] text-neutral-600 dark:text-neutral-300">
+            {tr('Требование к нише')}: {model.height.min}{model.height.max !== undefined ? `..${model.height.max}` : '+'} (H) ×{' '}
+            {model.width.min}{model.width.max !== undefined ? `..${model.width.max}` : '+'} (W) × ≥{model.depthMin} (D) {tr('мм')}
+          </p>}
+          {!model && <p className="text-[11px] text-amber-700 dark:text-amber-300">{tr('Размеры техники без артикула не подтверждены')}</p>}
+        </div>
+      })}
+      {appliance && <Field label={tr('Добавить технику')}>
+        <Select value="" onChange={(kind) => {
+          if (!kind) return
+          editSection(index, { contents: [...section.contents, { kind: 'appliance', appliance: kind as ApplianceKind }] }, 'section.appliance')
+        }} options={[{ value: '', label: tr('Выберите тип') }, ...APPLIANCES.map((item) => ({ value: item.id, label: tr(item.name) }))]} />
+      </Field>}
 
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Фасадов')}>
