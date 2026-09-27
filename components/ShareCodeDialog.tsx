@@ -9,7 +9,7 @@
  * автосақтау оны кодқа қайта жібереді, клиенттің экраны өзі жаңарады.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getLang, t as tr } from '@/lib/i18n'
 import { cloudEnabled } from '@/lib/cloud'
 import { Button } from '@/components/ui'
@@ -19,6 +19,8 @@ import { CommentsInbox } from '@/components/CommentsInbox'
 import { InternetRequirement } from '@/components/InternetRequirement'
 import { approvalWhatsAppUrl } from '@/lib/mobile/approvalShare'
 import { formatTengeExact } from '@/src/core/pricing'
+import { useProjectProduction } from '@/lib/useProjectProduction'
+import { approvalPrice } from '@/lib/f22ShareUi'
 
 function approvalPreview(): string {
   const scene = document.querySelector<HTMLCanvasElement>('[data-tour="scene"] canvas')
@@ -41,7 +43,18 @@ export function ShareCodeDialog() {
   const syncShare = useConfigurator((s) => s.syncShare)
   const session = useConfigurator((s) => s.shareSession)
   const projectName = useConfigurator((s) => s.projectName)
-  const priceMinor = useConfigurator((s) => s.priceOverrides.salePrice)
+  const overrides = useConfigurator((s) => s.priceOverrides)
+  const shop = useConfigurator((s) => s.shop)
+  const production = useProjectProduction()
+  const finalPrice = useMemo(() => {
+    if (production.error) return { kind: 'invalid' as const, reason: production.error }
+    try {
+      return approvalPrice(production.panels, production.catalog, shop,
+        production.hardware, production.moduleWidths, overrides)
+    } catch (cause) {
+      return { kind: 'invalid' as const, reason: cause instanceof Error ? cause.message : String(cause) }
+    }
+  }, [production, shop, overrides])
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [online, setOnline] = useState(true)
@@ -81,7 +94,7 @@ export function ShareCodeDialog() {
 
   const startApproval = async () => {
     if (!session || !online || busy) return
-    if (!Number.isSafeInteger(priceMinor) || priceMinor === undefined || priceMinor < 0) {
+    if (finalPrice.kind !== 'ready') {
       setError(tr('Для согласования укажите точную итоговую цену в тиынах.'))
       return
     }
@@ -168,10 +181,9 @@ export function ShareCodeDialog() {
             </p>
             <section className="mt-4 border-t border-[var(--p100-divider)] pt-3" data-testid="share-approval">
               <h3 className="text-sm font-semibold">{tr('Согласование версии')}</h3>
-              {priceMinor === undefined ? <p className="mt-2 text-xs text-[var(--p100-muted)]">
-                {tr('Для согласования укажите точную итоговую цену в тиынах.')}
-              </p> : <p className="mt-2 text-sm">{tr('Цена')}: {formatTengeExact(priceMinor)}</p>}
-              <button type="button" disabled={!online || busy || priceMinor === undefined}
+              {finalPrice.kind === 'ready' ? <p className="mt-2 text-sm">{tr('Цена')}: {formatTengeExact(finalPrice.total)}</p>
+                : <p className="mt-2 text-xs text-red-700" role="alert">{finalPrice.kind === 'invalid' ? finalPrice.reason : tr('Для согласования укажите точную итоговую цену в тиынах.')}</p>}
+              <button type="button" disabled={!online || busy || finalPrice.kind !== 'ready'}
                 className="mt-2 min-h-11 w-full border border-neutral-400 bg-white px-3 py-2 text-sm text-black disabled:bg-neutral-200 disabled:text-neutral-600"
                 onClick={() => void startApproval()}>{busy ? tr('Подождите…') : tr('Отправить версию на согласование')}</button>
               <InternetRequirement feature="publishShare" online={online} />
