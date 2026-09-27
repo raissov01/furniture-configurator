@@ -31,7 +31,7 @@ import { ShareCodeDialog } from '@/components/ShareCodeDialog'
 import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
-import { uniqueToolbarRows } from '@/lib/classicToolbar'
+import { compactToolbarRows } from '@/lib/classicToolbar'
 import { classicToolStatus } from '@/lib/classicStatus'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
@@ -602,7 +602,7 @@ export function Workspace() {
     cloud: cloudEnabled, classic,
   })
 
-  const classicToolRows: ClassicToolSpec[][] = classic ? uniqueToolbarRows<ClassicToolSpec>([
+  const classicToolRows: ClassicToolSpec[][] = classic ? compactToolbarRows<ClassicToolSpec>([
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
       { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
@@ -710,7 +710,13 @@ export function Workspace() {
           })}
         </Menu>)}
 
-        {classic && <Link href="/mobile" className="ml-auto inline-flex min-h-6 items-center border border-neutral-300 px-2 text-xs dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>}
+        <label className="p100-toolbar-style ml-auto hidden items-center gap-1 text-xs lg:flex" data-testid="workspace-style-menu">
+          <span>{tr('Рабочее место')}</span>
+          <select aria-label={tr('Стиль рабочего места')} value={classic ? 'classic' : 'ours'} onChange={(event) => changeStyle(event.target.value === 'classic')}>
+            <option value="classic">{tr('Классический')}</option><option value="ours">{tr('Наш')}</option>
+          </select>
+        </label>
+        {classic && <Link href="/mobile" className="inline-flex min-h-6 items-center border border-neutral-300 px-2 text-xs dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>}
       </nav>
 
       {cloudEnabled && <ApprovalBanner code={shareCode} />}
@@ -725,11 +731,6 @@ export function Workspace() {
               value={assemblyStepView(assemblyStep, projectPanels.length).value}
               onChange={(event) => setAssemblyStep(Number(event.target.value))} />
             <span className="tabular-nums">{assemblyStepView(assemblyStep, projectPanels.length).label}</span>
-          </label>}
-          {index === 3 && <label className="p100-toolbar-style">{tr('Рабочее место')}
-            <select aria-label={tr('Стиль рабочего места')} value="classic" onChange={(event) => changeStyle(event.target.value === 'classic')}>
-              <option value="classic">{tr('Классический')}</option><option value="ours">{tr('Наш')}</option>
-            </select>
           </label>}
         </div>)}
       </div>}
@@ -786,6 +787,50 @@ export function Workspace() {
         </div>
 
         <ProjectMenu />
+        <div data-testid="workspace-view-menu"><Menu label={tr('Вид')} size="sm" title={tr('Прозрачность, фасады, проекция, масштаб')}>
+          <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+            {tr('Разнести')}
+            <Slider value={exploded} onChange={setExploded} />
+          </label>
+          <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
+            {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
+          </MenuItem>
+          <MenuItem
+            active={projection === 'ortho'}
+            onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
+          >
+            {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
+          </MenuItem>
+          <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
+            {tr('Размеры на сцене')}
+          </MenuItem>
+          <MenuItem active={!showDrilling && !showFittings} onClick={() => { setShowDrilling(false); setShowFittings(false) }}>
+            {tr('Фурнитура: скрыть')}
+          </MenuItem>
+          <MenuItem active={showDrilling} onClick={() => setShowDrilling(true)}>{tr('Фурнитура: отверстия')}</MenuItem>
+          <MenuItem active={showFittings} onClick={() => setShowFittings(true)}>{tr('Фурнитура: крепёж')}</MenuItem>
+          <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
+          <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
+            {tr('Человек для масштаба')}
+          </MenuItem>
+        </Menu></div>
+        {silhouette.on ? <div className="flex flex-col gap-0.5">
+          <input type="text" inputMode="numeric" aria-label={tr('Рост человека, мм')}
+            aria-invalid={Boolean(silhouetteError)} aria-describedby={silhouetteError ? 'silhouette-height-error' : undefined}
+            className={cn('w-20 border bg-white px-1.5 py-1 text-xs tabular-nums dark:bg-neutral-900',
+              silhouetteError ? 'border-red-600 text-red-700' : 'border-neutral-300 dark:border-neutral-700')}
+            value={silhouetteDraft} title={tr('Рост человека, мм')}
+            onChange={(event) => {
+              const raw = event.target.value
+              setSilhouetteDraft(raw)
+              const parsed = parseSilhouetteHeight(raw)
+              if (parsed.value !== undefined) setSilhouette({ height: parsed.value })
+            }} />
+          {silhouetteError ? <span id="silhouette-height-error" role="alert" className="text-xs text-red-700">
+            {tr('Рост человека, мм')}: {tr('Допустимо целое число в диапазоне')} {MIN_SILHOUETTE_HEIGHT}…{MAX_SILHOUETTE_HEIGHT} мм
+          </span> : null}
+        </div> : null}
+        <Button size="sm" onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
 
         {/* Сирек керегі оң жақта; көрініс құралдары 3D-нің өз үстіне көшті. */}
         <div className="flex min-w-0 w-full flex-wrap items-center gap-1 sm:ml-auto sm:w-auto">
@@ -953,54 +998,6 @@ export function Workspace() {
             </span>
           </span>
         ) : null}
-      </div>
-
-      {/* Екінші қатар: сирек баптаулар («Вид»), силуэт биіктігі, анықтама. */}
-      <div className="legacy-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
-        <Menu label={tr('Вид')} size="sm" title={tr('Прозрачность, фасады, проекция, масштаб')}>
-          <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
-            {tr('Разнести')}
-            <Slider value={exploded} onChange={setExploded} />
-          </label>
-          <MenuItem active={!showFronts} onClick={() => setShowFronts(!showFronts)}>
-            {showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}
-          </MenuItem>
-          <MenuItem
-            active={projection === 'ortho'}
-            onClick={() => setProjection(projection === 'perspective' ? 'ortho' : 'perspective')}
-          >
-            {projection === 'perspective' ? tr('Ортогональная проекция') : tr('Перспектива')}
-          </MenuItem>
-          <MenuItem active={showDimensions} onClick={() => setShowDimensions(!showDimensions)}>
-            {tr('Размеры на сцене')}
-          </MenuItem>
-          <MenuItem active={!showDrilling && !showFittings} onClick={() => { setShowDrilling(false); setShowFittings(false) }}>
-            {tr('Фурнитура: скрыть')}
-          </MenuItem>
-          <MenuItem active={showDrilling} onClick={() => setShowDrilling(true)}>{tr('Фурнитура: отверстия')}</MenuItem>
-          <MenuItem active={showFittings} onClick={() => setShowFittings(true)}>{tr('Фурнитура: крепёж')}</MenuItem>
-          <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
-          <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
-            {tr('Человек для масштаба')}
-          </MenuItem>
-        </Menu>
-        {silhouette.on ? <div className="flex flex-col gap-0.5">
-          <input type="text" inputMode="numeric" aria-label={tr('Рост человека, мм')}
-            aria-invalid={Boolean(silhouetteError)} aria-describedby={silhouetteError ? 'silhouette-height-error' : undefined}
-            className={cn('w-20 border bg-white px-1.5 py-1 text-xs tabular-nums dark:bg-neutral-900',
-              silhouetteError ? 'border-red-600 text-red-700' : 'border-neutral-300 dark:border-neutral-700')}
-            value={silhouetteDraft} title={tr('Рост человека, мм')}
-            onChange={(event) => {
-              const raw = event.target.value
-              setSilhouetteDraft(raw)
-              const parsed = parseSilhouetteHeight(raw)
-              if (parsed.value !== undefined) setSilhouette({ height: parsed.value })
-            }} />
-          {silhouetteError ? <span id="silhouette-height-error" role="alert" className="text-xs text-red-700">
-            {tr('Рост человека, мм')}: {tr('Допустимо целое число в диапазоне')} {MIN_SILHOUETTE_HEIGHT}…{MAX_SILHOUETTE_HEIGHT} мм
-          </span> : null}
-        </div> : null}
-        <Button size="sm" onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
       </div>
 
       {production.error ? (
