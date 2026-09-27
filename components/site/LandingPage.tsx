@@ -9,7 +9,8 @@
  * істей алмайтын нәрсені уәде ете алмайды.
  */
 
-import { siteT as tr, siteFormat } from '@/lib/siteLocale'
+import { SiteLanguageProvider, useSiteText } from '@/components/site/SiteLanguage'
+import type { Lang } from '@/lib/i18n'
 import { formatTenge } from '@/src/core/index'
 import { demoNesting, demoPrice, demoRows, demoSheet } from '@/lib/demo'
 import { SITE, TARIFFS } from '@/lib/site'
@@ -20,19 +21,19 @@ import { Cta, Dimension, Eyebrow, H2, Section, Titled } from '@/components/site/
 
 const steps = () => [
   {
-    title: tr('Опишите задачу или возьмите шаблон'),
+    title: 'Опишите задачу или возьмите шаблон',
     text: 'Пишете словами: «прихожая 1800, шкаф под верхнюю одежду». Получаете три готовых варианта корпуса. Или берёте шаблон из библиотеки и меняете размеры.',
   },
   {
-    title: tr('Правите корпус'),
+    title: 'Правите корпус',
     text: 'Секции, полки, фасады, задняя стенка внакладку или в паз. Модель и деталировка пересчитываются на каждое изменение.',
   },
   {
-    title: tr('Ставите корпуса в комнату'),
+    title: 'Ставите корпуса в комнату',
     text: 'Задаёте стены, выбираете, на какой стене что стоит. Пересечения и корпуса, которые не влезли, подсвечиваются сразу.',
   },
   {
-    title: tr('Забираете раскрой и смету'),
+    title: 'Забираете раскрой и смету',
     text: 'Карта раскроя на печать, DXF по листу на станок, коммерческое предложение клиенту. Всё по одной кнопке.',
   },
 ]
@@ -65,11 +66,16 @@ const faq = () => [
   },
 ]
 
-export default function LandingPage() {
+export default function LandingPage({ initialLang, explicit }: { initialLang: Lang; explicit: boolean }) {
+  return <SiteLanguageProvider initialLang={initialLang} explicit={explicit}><LandingContent /></SiteLanguageProvider>
+}
+
+function LandingContent() {
+  const { tr, format, lang } = useSiteText()
   const ldsp = demoNesting.byMaterial[0]!
 
   return (
-    <div className="site min-h-full">
+    <div className="site min-h-full" lang={lang}>
       <SiteHeader />
 
       <main>
@@ -117,7 +123,7 @@ export default function LandingPage() {
           <Eyebrow>{tr('01 — на выходе')}</Eyebrow>
           <H2>{tr('Три документа, которые цех правда отдаёт')}</H2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-            {siteFormat('Не «3D-визуализация», а бумаги, по которым режут, сверлят и выставляют счёт. Ниже — настоящий вывод по шкафу из {count} деталей.', { count: demoRows.reduce((sum, row) => sum + row.qty, 0) })}
+            {format('Не «3D-визуализация», а бумаги, по которым режут, сверлят и выставляют счёт. Ниже — настоящий вывод по шкафу из {count} деталей.', { count: demoRows.reduce((sum, row) => sum + row.qty, 0) })}
           </p>
 
           <div className="mt-8 grid items-start gap-6 lg:grid-cols-2">
@@ -210,7 +216,7 @@ export default function LandingPage() {
           <H2>{tr('Четыре шага от разговора до реза')}</H2>
           <div className="mt-8 grid gap-8 sm:grid-cols-2">
             {steps().map((s, i) => (
-              <Titled key={s.title} mark={siteFormat('Шаг {n}', { n: i + 1 })} title={tr(s.title)}>
+              <Titled key={s.title} mark={format('Шаг {n}', { n: i + 1 })} title={tr(s.title)}>
                 {tr(s.text)}
               </Titled>
             ))}
@@ -242,7 +248,7 @@ export default function LandingPage() {
           </div>
         </Section>
 
-        <Section><Dimension label={tr('Раскрой')} value={siteFormat('{count} листа · отход {waste}%', { count: demoNesting.sheetCount, waste: ldsp.wastePercent.toFixed(1) })} /></Section>
+        <Section><Dimension label={tr('Раскрой')} value={format('{count} листа · отход {waste}%', { count: demoNesting.sheetCount, waste: ldsp.wastePercent.toFixed(1) })} /></Section>
 
         {/* ── Тарифы ───────────────────────────────────────────────────────── */}
         <Section id="pricing" className="py-8 sm:py-14">

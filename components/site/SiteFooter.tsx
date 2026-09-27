@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
-import { siteT as t } from '@/lib/siteLocale'
+import { useSiteText } from '@/components/site/SiteLanguage'
 
 export function SiteFooter() {
+  const { tr: t } = useSiteText()
   return (
     <footer className="border-t" style={{ borderColor: 'var(--rule)' }}>
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-5 py-10 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-8">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { publicOrigin, contactEmail } from '../lib/sitePublic'
+import { publicOrigin, contactEmail, siteAlternates } from '../lib/sitePublic'
 
 describe('public site configuration', () => {
   it('uses a confirmed absolute origin for social and sitemap URLs', () => {
@@ -17,5 +17,11 @@ describe('public site configuration', () => {
   it('hides example contacts until a real address is configured', () => {
     expect(contactEmail({ NEXT_PUBLIC_CONTACT_EMAIL: 'hello@example.kz' })).toBeNull()
     expect(contactEmail({ NEXT_PUBLIC_CONTACT_EMAIL: 'sales@aismebel.kz' })).toBe('sales@aismebel.kz')
+  })
+  it('publishes a canonical URL and four distinct language URLs', () => {
+    const alternates = siteAlternates('https://aismebel.example', 'kk')
+    expect(alternates.canonical).toBe('https://aismebel.example/?lang=kk')
+    expect(Object.values(alternates.languages)).toHaveLength(4)
+    expect(new Set(Object.values(alternates.languages)).size).toBe(4)
   })
 })

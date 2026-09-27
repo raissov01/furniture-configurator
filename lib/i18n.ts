@@ -47,6 +47,8 @@ let current: Lang = 'ru'
 
 function readSaved(): Lang {
   try {
+    const requested = new URLSearchParams(window.location.search).get('lang')
+    if (requested !== null && requested in DICTIONARIES) return requested as Lang
     const saved = window.localStorage.getItem(STORAGE_KEY)
     return saved !== null && saved in DICTIONARIES ? (saved as Lang) : 'ru'
   } catch {

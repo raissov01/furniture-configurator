@@ -1,4 +1,6 @@
 /** Only publish origins supplied by deployment configuration. */
+import type { Lang } from '@/lib/i18n'
+
 export function publicOrigin(env: { NEXT_PUBLIC_SITE_URL?: string | undefined; VERCEL_URL?: string | undefined }): string | null {
   for (const raw of [env.NEXT_PUBLIC_SITE_URL, env.VERCEL_URL ? `https://${env.VERCEL_URL}` : undefined]) {
     if (!raw) continue
@@ -13,6 +15,16 @@ export function publicOrigin(env: { NEXT_PUBLIC_SITE_URL?: string | undefined; V
     }
   }
   return null
+}
+
+export function siteAlternates(origin: string, lang: Lang): { canonical: string; languages: Record<Lang, string> } {
+  const languages = {
+    ru: `${origin}/`,
+    kk: `${origin}/?lang=kk`,
+    en: `${origin}/?lang=en`,
+    uz: `${origin}/?lang=uz`,
+  }
+  return { canonical: languages[lang], languages }
 }
 
 /** Do not render a mailto link for placeholder or invalid addresses. */

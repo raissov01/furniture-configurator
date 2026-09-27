@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
-import { getLang, LANGS, setLang } from '@/lib/i18n'
-import { siteT as t } from '@/lib/siteLocale'
+import { LANGS } from '@/lib/i18n'
+import { useSiteText } from '@/components/site/SiteLanguage'
 
 /** Белгі — AisMebel логотипі (`public/brand/`, өзгертпейміз). */
 function Mark() {
@@ -18,6 +18,7 @@ const LINKS = [
 ]
 
 export function SiteHeader() {
+  const { tr: t, lang, chooseLang } = useSiteText()
   return (
     <header
       className="sticky top-0 z-40 border-b"
@@ -44,7 +45,7 @@ export function SiteHeader() {
 
         <label className="ml-auto text-xs sm:ml-auto">
           <span className="sr-only">{t('Язык')}</span>
-          <select aria-label={t('Язык')} value={getLang()} onChange={(event) => setLang(event.target.value as typeof LANGS[number]['value'])}
+          <select aria-label={t('Язык')} value={lang} onChange={(event) => chooseLang(event.target.value as typeof LANGS[number]['value'])}
             className="min-h-11 border bg-transparent px-2 text-sm" style={{ borderColor: 'var(--rule)' }}>
             {LANGS.map((lang) => <option key={lang.value} value={lang.value}>{lang.label}</option>)}
           </select>

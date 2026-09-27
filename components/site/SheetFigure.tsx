@@ -7,7 +7,7 @@
  */
 
 import type { NestedSheet } from '@/src/core/index'
-import { siteT as t } from '@/lib/siteLocale'
+import { useSiteText } from '@/components/site/SiteLanguage'
 
 export function SheetFigure({
   sheet, materialName, waste, compact = false,
@@ -17,6 +17,7 @@ export function SheetFigure({
   waste: number
   compact?: boolean
 }) {
+  const { tr: t } = useSiteText()
   return (
     <figure className="sheet p-3">
       <svg

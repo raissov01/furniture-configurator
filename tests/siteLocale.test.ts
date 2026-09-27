@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { siteTranslate, siteTranslations } from '../lib/siteLocale'
+import { siteLanguageFromQuery, siteTranslate, siteTranslations } from '../lib/siteLocale'
 import { demoRows, demoSheet } from '../lib/demo'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import LandingPage from '../components/site/LandingPage'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 describe('landing translations', () => {
+  it('selects a supported language from the public URL', () => {
+    expect(siteLanguageFromQuery('kk')).toBe('kk')
+    expect(siteLanguageFromQuery('en')).toBe('en')
+    expect(siteLanguageFromQuery('uz')).toBe('uz')
+    expect(siteLanguageFromQuery('bad')).toBe('ru')
+  })
   it('translates the heading, navigation, tariff and FAQ into every supported language', () => {
     for (const lang of ['kk', 'en', 'uz'] as const) {
       for (const text of ['Корпус, раскрой и цена — из одной модели', 'Что получает цех', 'Тарифы', 'Что обычно спрашивают']) {
@@ -12,6 +21,13 @@ describe('landing translations', () => {
         expect(siteTranslate(text, lang)).not.toBe(text)
       }
     }
+  })
+
+  it.each(['ru', 'kk', 'en', 'uz'] as const)('renders actual %s landing text on the server', (lang) => {
+    const html = renderToStaticMarkup(createElement(LandingPage, { initialLang: lang, explicit: true }))
+    expect(html).toContain(`lang="${lang}"`)
+    expect(html).toContain(siteTranslate('Корпус, раскрой и цена — из одной модели', lang))
+    expect(html).toContain(siteTranslate('Что обычно спрашивают', lang))
   })
 
   it('has nonempty translations for every site key', () => {
