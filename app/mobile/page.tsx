@@ -17,6 +17,7 @@ import { emptySurvey, parseSavedMeasurementDraft } from '@/components/mobile/mea
 import { configuratorKitchenTarget, handoffMeasurementToKitchen } from '@/components/mobile/kitchenHandoff'
 import type { WallId } from '@/src/core/types'
 import type { RoomTolerance } from '@/src/core/measure'
+import { nextNetworkMessage } from '@/components/mobile/measurementUiLogic'
 
 const ROLE_CACHE = 'tapsyrys:role' // UI navigation only; projects, measurements and photos are in IndexedDB.
 const roles: Role[] = ['owner', 'designer', 'shop', 'client']
@@ -134,6 +135,7 @@ export default function MobileTodayPage() {
         const response = await fetch('/api/me', { credentials: 'same-origin' })
         if (!response.ok) throw new Error(t('Не удалось проверить роль'))
         const data: unknown = await response.json()
+        if (mounted) setMessage((current) => nextNetworkMessage(current, true, t('Сервер недоступен'), t('Нет сети')))
         if (!data || typeof data !== 'object' || !('account' in data)) return
         const account = data.account
         if (account === null) {
@@ -151,11 +153,14 @@ export default function MobileTodayPage() {
           }
         }
       } catch (error) {
-        if (mounted) setMessage(error instanceof Error ? error.message : t('Не удалось проверить роль'))
+        if (mounted) setMessage(!navigator.onLine ? t('Нет сети') :
+          error instanceof TypeError ? t('Сервер недоступен') :
+            error instanceof Error ? error.message : t('Не удалось проверить роль'))
       }
     }
     void checkRole()
-    return () => { mounted = false; db?.close() }
+    window.addEventListener('online', checkRole)
+    return () => { mounted = false; db?.close(); window.removeEventListener('online', checkRole) }
   }, [reconcile, refresh])
 
   useEffect(() => {
@@ -187,6 +192,7 @@ export default function MobileTodayPage() {
     }
     const change = () => {
       setOnline(navigator.onLine)
+      if (!navigator.onLine) setMessage((current) => nextNetworkMessage(current, false, t('Сервер недоступен'), t('Нет сети')))
       void sendAndSchedule()
     }
     window.addEventListener('online', change)
