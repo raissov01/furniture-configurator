@@ -1,6 +1,13 @@
+import { ConfigValidationError } from '../src/core/index'
+import { shareErrorText } from '../lib/shareLinkError'
+
 /** Public links must not expose parser internals or shop validation text. */
-export function viewerHashError(hash: string, _error: unknown): string {
-  return hash ? 'Не удалось открыть проект по этой ссылке.' : 'В ссылке нет проекта. Попросите отправить её целиком.'
+export function viewerHashError(hash: string, error: unknown): string {
+  if (!hash) return 'В ссылке нет проекта. Попросите отправить её целиком.'
+  if (error instanceof ConfigValidationError && error.field === 'link') {
+    return shareErrorText(error, (message) => message)
+  }
+  return 'Не удалось открыть проект по этой ссылке.'
 }
 
 export function viewerPressedState(

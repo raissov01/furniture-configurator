@@ -19,6 +19,7 @@
 
 import * as React from 'react'
 import { t as tr } from '@/lib/i18n'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { useConfigurator } from '@/store/configurator'
 import { projectPanelId, searchProjectPanels } from '@/src/core/index'
 import { useProjectProduction } from '@/lib/useProjectProduction'
@@ -92,7 +93,7 @@ export function FindPanel() {
                 className={cn(rowBase, isSelected ? 'border-neutral-100 bg-neutral-900' : 'bg-neutral-950')}
               >
                 <span className="flex min-w-0 items-center justify-between gap-2">
-                  <span className="truncate font-medium">{panel.label}</span>
+                  <span className="truncate font-medium">{panelDisplayLabel(panel.label)}</span>
                 </span>
                 <span className="tabular-nums text-neutral-400">{tr('Готовый')}: {sizes.finished}</span>
                 <span className="tabular-nums text-neutral-400">{tr('Рез')}: {sizes.cut}</span>

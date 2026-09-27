@@ -9,6 +9,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { LIBRARY_AUTH_CHANGED_EVENT } from '@/lib/librarySyncUi'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseProjectV4, parseShopProfile } from '@/src/core/index'
 import { addCloudFolder, moveProjectToFolder, organizeProjects, parseCloudOrg } from '@/src/core/cloudProjectOrganize'
@@ -275,6 +276,7 @@ export function AccountPanel() {
       }
       setProfileReady(false)
       setAccount(data.account)
+      window.dispatchEvent(new Event(LIBRARY_AUTH_CHANGED_EVENT))
       setForm({ email: '', password: '', shopName: '' })
       /*
        * Үшеуі ҚАТАР жүреді. Бұрын кезекпен күтетін, ал әрқайсысы бөлек
@@ -357,6 +359,7 @@ export function AccountPanel() {
       // сондықтан терезені кірмеген күйге қайтарамыз.
       if (userId === account?.userId) {
         setAccount(null)
+        window.dispatchEvent(new Event(LIBRARY_AUTH_CHANGED_EVENT))
         setTeam(null)
         setProjects([])
         return
@@ -680,6 +683,7 @@ export function AccountPanel() {
                 onClick={() => void (async () => {
                   await fetch('/api/auth/logout', { method: 'POST' })
                   setAccount(null)
+                  window.dispatchEvent(new Event(LIBRARY_AUTH_CHANGED_EVENT))
                   setProjects([])
                 })()}
               >

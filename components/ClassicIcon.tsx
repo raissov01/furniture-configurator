@@ -12,7 +12,7 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     open: <><path d="M2 6h5l1.5 2H16l-2 7H2z" fill={yellow}/><path d="M3 6V4h5l1.5 2"/></>,
     save: <><path d="M3 2h11l2 2v12H3z" fill={blue}/><path d="M6 2v5h7V2M6 16v-6h7v6" stroke="var(--p100-canvas)"/><path d="M8 3v3" stroke="var(--p100-canvas)"/></>,
     print: <><path d="M5 6V2h8v4M5 13H2V7h14v6h-3M5 11h8v5H5z"/><path d="M13 8h1"/></>,
-    cut: <><circle cx="5" cy="13" r="2"/><circle cx="12" cy="13" r="2"/><path d="M6.5 11.5 14 3M10.5 11.5 4 3"/></>,
+    cut: <><rect x="2" y="2" width="14" height="14"/><path d="M9 2v14M2 9h7M9 12h7"/><path d="M4 4h3M11 4h3" stroke={blue}/></>,
     copy: <><path d="M5 2h10v11H5zM2 5v11h10"/></>,
     delete: <path d="M3 3l12 12M15 3 3 15" stroke={red}/>,
     undo: <path d="M7 4 3 8l4 4M3 8h8a4 4 0 0 1 0 8" stroke={blue}/>,

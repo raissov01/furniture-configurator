@@ -38,16 +38,18 @@ function cncButton(html: string): string {
 describe('/cut reads canonical tree production', () => {
   it('keeps every export action reachable at a 390 px viewport', () => {
     const html = renderToStaticMarkup(createElement(CutPage))
-    const toolbar = html.match(/<div data-testid="cut-export-actions" class="([^"]+)"/)
+    const toolbar = html.match(/<div[^>]*data-testid="cut-export-actions"[^>]*class="([^"]+)"/)
     expect(toolbar?.[1]).toContain('w-full')
     expect(toolbar?.[1]).toContain('flex-wrap')
+    expect(html).toContain('aria-controls="cut-export-actions"')
     expect(html).toContain('>Базис</button>')
 
     const source = readFileSync(new URL('../components/CutPage.tsx', import.meta.url), 'utf8')
     const sheetSvgClass = source.match(/<svg[\s\S]*?className="([^"]+)"/)?.[1]
     expect(sheetSvgClass).toContain('w-full')
-    expect(sheetSvgClass).toContain('max-w-[520px]')
+    expect(sheetSvgClass).toContain('min-w-[520px]')
     expect(sheetSvgClass).toContain('h-auto')
+    expect(source).toContain('max-w-full overflow-x-auto')
   })
 
   it('does not offer a default cabinet export when the saved project cannot be read', () => {
