@@ -72,6 +72,27 @@ describe('MCP құралдары және цех шекарасы', () => {
     if (drilling.ok) expect(drilling.data).toHaveProperty('panels')
   })
 
+  it('MCP присадкасы UI өндіріс жолымен тесік саны және координат бойынша тең', async () => {
+    const { readProject, readShopProfile } = await import('../lib/server/store')
+    const { projectProduction } = await import('../lib/projectProduction')
+    const { catalogOf, flattenTree, parseProjectV4, parseShopProfile, starterShopProfile } = await import('../src/core/index')
+    const project = parseProjectV4(readProject(ownerA.shopId, projectId))
+    const stored = readShopProfile(ownerA.shopId)
+    const shop = stored ? parseShopProfile(stored) : starterShopProfile(ownerA.shopId)
+    const catalog = { ...catalogOf(shop), materials: project.materials, edgeBands: project.edgeBands }
+    const scene = flattenTree(project.root, catalog, project.settings, project.layers, project.autoJoints)
+    const expected = projectProduction(project.root, scene).panels.flatMap((panel) =>
+      panel.drilling.map((hole) => ({ panelId: panel.id, ...hole })))
+    const result = await service.runMcpTool(ownerA, 'get_drilling', { projectId })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const panels = result.data.panels as { panelId: string; holes: import('../src/core/index').Panel['drilling'] }[]
+    const actual = panels.flatMap((panel) => panel.holes.map((hole) => ({ panelId: panel.panelId, ...hole })))
+    expect(actual.length).toBe(expected.length)
+    expect(actual).toEqual(expected)
+    expect(actual.some((hole) => hole.purpose === 'handle')).toBe(true)
+  })
+
   it('материал іздеуі тек өз профилін және тиыннан форматталған бағаны береді', async () => {
     const result = await service.runMcpTool(ownerA, 'search_materials', { query: 'ЛДСП' })
     expect(result.ok).toBe(true)

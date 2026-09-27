@@ -880,7 +880,7 @@ export function parseShopProfile(raw: unknown): ShopProfile {
   // v3+ сақталған цехтарда жаңа inset артикулдары жоқ болуы мүмкін.
   // Тек жоқ ID-лер қосылады; цех өзі түзеткен жүйелер өзгермейді.
   const candidate = migrated as { hingeSystems?: unknown }
-  if (Array.isArray(candidate.hingeSystems)) {
+  if (candidate && Array.isArray(candidate.hingeSystems)) {
     const known = new Set(candidate.hingeSystems.map((system: unknown) =>
       system && typeof system === 'object' ? (system as { id?: unknown }).id : undefined))
     const added = defaultHingeSystems().filter((system) => system.mount === 'inset' && !known.has(system.id))
