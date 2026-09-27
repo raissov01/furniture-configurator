@@ -28,6 +28,7 @@ import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ConfigValidationError } from '@/src/core/errors'
 import { Button, Field, NumberInput, SectionTitle, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { isCeilingIssue } from '@/lib/roomElevationUi'
 
 /** Жоспардың ең үлкен қабырғасы экранда осынша пиксель болады. */
 const PLAN_PX = 420
@@ -190,6 +191,7 @@ export function RoomPlan() {
                   min={0}
                   max={4000}
                   step={10}
+                  invalid={isCeilingIssue(issues, active.id)}
                   onChange={(elevation) => movePlacement(activeId, { elevation })}
                 />
               </Field>
