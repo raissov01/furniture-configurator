@@ -10,6 +10,8 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Вернуться к коэффициенту цеха': 'Use shop coefficient',
+  'разрешено': 'allowed:',
   'Текстуры PRO100': 'PRO100 textures',
   'Обновить список': 'Refresh list',
   'Для импорта нужен вход в аккаунт': 'Sign in to use imported textures',
