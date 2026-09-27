@@ -24,6 +24,14 @@ const cabinet = (extra: Partial<CabinetConfig> = {}): CabinetConfig => withCabin
   ...extra,
 })
 
+it('әдепкі сөресі бар inset фасад нақты шегініс баптауын ұсынады', () => {
+  const base = cabinet()
+  const inset = { ...base, sections: base.sections.map((section) => ({
+    ...section, fronts: { count: 1, mount: 'inset' as const },
+  })) }
+  expect(() => generateCabinet(inset, catalog)).toThrow(/settings\.shelfSetback.*insets\.front/)
+})
+
 const gen = (extra = {}) => generateCabinet(cabinet(extra), catalog)
 const byLabel = (panels: Panel[], label: string) => panels.filter((p) => p.label === label)
 const front = (panels: Panel[]) => panels.find((p) => p.role === 'front' && p.label === 'Фасад')!
