@@ -3,7 +3,7 @@
  * Ендер W − 2t − dividerCount·t-ға ДӘЛ жиналуы керек.
  */
 import { describe, expect, it } from 'vitest'
-import { generateCabinet, layoutSections } from '../src/core/index'
+import { generateCabinet, layoutSections, nextSectionId } from '../src/core/index'
 import type { Panel, Section } from '../src/core/index'
 import { CARCASS_THICKNESS as T, catalog, threeSectionWardrobe, withCabinet } from './fixtures'
 
@@ -67,6 +67,13 @@ describe('ен бөлу', () => {
 })
 
 describe('секция валидациясы', () => {
+  it('жойылған секциядан кейін бос id-ді таңдайды', () => {
+    expect(nextSectionId([section('flex', undefined, 's1'), section('flex', undefined, 's3')])).toBe('s2')
+  })
+  it('қайталанған section id өндірістік панельге өтпейді', () => {
+    expect(() => layout([section('flex', undefined, 's1'), section('flex', undefined, 's1')], 1800))
+      .toThrow(/sections\[1\].id.*бірегей id/)
+  })
   it('fixed секцияда width жоқ → өріс аты бар қате', () => {
     expect(() => layout([{ id: 'a', widthMode: 'fixed', contents: [] }], 1800)).toThrow(/sections\[0\].width/)
   })

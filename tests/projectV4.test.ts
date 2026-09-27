@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   SEED_CATALOG, findTemplate, flattenTree, generateCabinet, migrateV3ToV4,
   parseProject, parseProjectV4, placementPose, scenePanels, templateToCabinet,
+  ProjectFileV4Schema,
 } from '../src/core/index'
 import type { ProjectFile } from '../src/core/index'
 
@@ -35,6 +36,37 @@ const plainBoardNode = () => ({
 })
 
 describe('v3 → v4 root миграциясы', () => {
+  it('ескі файлдағы қайталанған секция id-лерін жоғалтпай түзетеді', () => {
+    const raw = structuredClone(migrateV3ToV4(legacy))
+    const node = raw.root.children[0]
+    if (node?.kind !== 'cabinet') throw new Error('cabinet қажет')
+    node.config.sections = [
+      { id: 's1', widthMode: 'flex', contents: [] },
+      { id: 's3', widthMode: 'flex', contents: [] },
+      { id: 's3', widthMode: 'flex', contents: [] },
+    ]
+    expect(ProjectFileV4Schema.safeParse(raw).success).toBe(false)
+    const fixed = parseProjectV4(raw)
+    const fixedNode = fixed.root.children[0]
+    if (fixedNode?.kind !== 'cabinet') throw new Error('cabinet қажет')
+    expect(fixedNode.config.sections.map((s) => s.id)).toEqual(['s1', 's3', 's2'])
+    expect(node.config.sections.map((s) => s.id)).toEqual(['s1', 's3', 's3'])
+    expect(ProjectFileV4Schema.safeParse(fixed).success).toBe(true)
+  })
+
+  it('v3 файлдан өткенде де қайталанған секция id-лерін түзетеді', () => {
+    const raw = structuredClone(legacy)
+    raw.cabinets[0]!.sections = [
+      { id: 's1', widthMode: 'flex', contents: [] },
+      { id: 's3', widthMode: 'flex', contents: [] },
+      { id: 's3', widthMode: 'flex', contents: [] },
+    ]
+    const fixed = parseProjectV4(raw)
+    const node = fixed.root.children[0]
+    if (node?.kind !== 'cabinet') throw new Error('cabinet қажет')
+    expect(node.config.sections.map((s) => s.id)).toEqual(['s1', 's3', 's2'])
+    expect(raw.cabinets[0]!.sections.map((s) => s.id)).toEqual(['s1', 's3', 's3'])
+  })
   it('орналасқан шкафтың панелі, фурнитурасы және позасы өзгермейді', () => {
     const migrated = migrateV3ToV4(legacy)
     const scene = flattenTree(migrated.root, SEED_CATALOG, migrated.settings)
