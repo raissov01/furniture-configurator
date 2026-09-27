@@ -185,7 +185,7 @@ export function CutPage() {
             </Button>
             <Button
               disabled={busy !== null || !nesting}
-              title={tr('По одному DXF на лист, всё в архиве')}
+              title={tr('DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям')}
               onClick={() => void run('dxf', async () => {
                 const [{ nestingToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
                   import('@/src/core/export/dxf'),
@@ -219,7 +219,7 @@ export function CutPage() {
             </Button>
             <Button
               disabled={busy !== null || !nesting}
-              title={tr('Всё для цеха одним архивом: карта, DXF листов, DXF деталей с присадкой, деталировка и бирки')}
+              title={tr('Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.')}
               onClick={() => void run('bundle', async () => {
                 const [
                   { nestingToDxfFiles, cabinetToDxfArchiveFiles }, { cutListToCsv },
@@ -316,6 +316,9 @@ export function CutPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-4">
+        <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
+          {tr('DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».')}
+        </p>
         {nested.error ? (
           <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{nested.error}</p>
         ) : null}

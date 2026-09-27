@@ -1459,4 +1459,14 @@ export const en: Record<string, string> = {
   'короткий край': 'short edge',
   'Ничего не выбрано — выберите деталь в 3D или панели Структура.': 'Nothing selected — choose a part in 3D or the Structure panel.',
 
+  'Автоотверстие задаётся соединением. Измените соединение; удалить можно только ручное отверстие.': 'Automatic holes come from the joint. Change the joint; only manual holes can be deleted.',
+  'Удалить только ручные отверстия; автоматические задаются соединением': 'Delete manual holes only; automatic holes come from the joint',
+  'Удалить ручные отверстия': 'Delete manual holes',
+  'DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива. Полный ЧПУ CSV — в раскрое.': 'DXF: flat faces; edge holes are in EDGE-DRILLING.csv in this archive. Full CNC CSV is in Cutting.',
+  'DXF — пласти; торец — EDGE-DRILLING.csv. Полный ЧПУ CSV:': 'DXF — flat faces; edges — EDGE-DRILLING.csv. Full CNC CSV:',
+  'DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива': 'DXF: flat faces; edge holes are in EDGE-DRILLING.csv in this archive',
+  'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF sheet cutting maps; drilling is in the shop bundle or CNC per part',
+  'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Bundle: face DXFs, EDGE-DRILLING.csv for edges, cutting map, cut list and labels. Full CNC CSV has a separate button.',
+  'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Sheet DXFs are cutting maps. The shop bundle includes EDGE-DRILLING.csv for edges; full drilling CSV is under CNC per part.',
+
 }

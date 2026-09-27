@@ -1463,4 +1463,14 @@ export const uz: Record<string, string> = {
   'короткий край': 'qisqa chekka',
   'Ничего не выбрано — выберите деталь в 3D или панели Структура.': 'Hech narsa tanlanmagan — 3D yoki Tuzilma panelida detalni tanlang.',
 
+  'Автоотверстие задаётся соединением. Измените соединение; удалить можно только ручное отверстие.': 'Avto teshik birikmadan olinadi. Birikmani o\'zgartiring; faqat qo\'lda qo\'yilgan teshikni o\'chirish mumkin.',
+  'Удалить только ручные отверстия; автоматические задаются соединением': 'Faqat qo\'lda qo\'yilgan teshiklarni o\'chirish; avto teshiklar birikmadan olinadi',
+  'Удалить ручные отверстия': 'Qo\'lda qo\'yilgan teshiklarni o\'chirish',
+  'DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива. Полный ЧПУ CSV — в раскрое.': 'DXF: tekis yuzalar; qirra teshiklari shu arxivdagi EDGE-DRILLING.csv da. To‘liq CNC CSV — bichishda.',
+  'DXF — пласти; торец — EDGE-DRILLING.csv. Полный ЧПУ CSV:': 'DXF — tekis yuzalar; qirra — EDGE-DRILLING.csv. To‘liq CNC CSV:',
+  'DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива': 'DXF: tekis yuzalar; qirra teshiklari shu arxivdagi EDGE-DRILLING.csv da',
+  'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF varaq bichish xaritasi; teshiklar sex paketida yoki detallar bo‘yicha CNC da',
+  'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Paket: yuzalar DXF, qirralar uchun EDGE-DRILLING.csv, bichish xaritasi, detallar ro‘yxati va yorliqlar. To‘liq CNC CSV alohida tugmada.',
+  'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Varaq DXF — bichish xaritasi. Sex paketida qirralar uchun EDGE-DRILLING.csv bor; to‘liq teshiklar CSV — detallar bo‘yicha CNC.',
+
 }
