@@ -140,6 +140,15 @@ describe('профильді сақтау', () => {
     ])
   })
 
+  it('бұрыннан бар цехқа жетіспейтін inset петля жүйелерін қосады', () => {
+    const old = { ...shop, hingeSystems: shop.hingeSystems.filter((system) => system.mount !== 'inset') }
+    const migrated = parseShopProfile(old)
+    expect(migrated.hingeSystems.map((system) => system.id)).toContain('hinge-blum-71b3750-inset')
+    expect(migrated.hingeSystems.map((system) => system.id)).toContain('hinge-boyard-h305-inset')
+    expect(migrated.hingeSystems.filter((system) => system.mount === 'overlay')).toEqual(old.hingeSystems)
+    expect(parseShopProfile(migrated).hingeSystems).toEqual(migrated.hingeSystems)
+  })
+
   it('баға бүтін тиын болуы керек, float емес', () => {
     const broken = { ...shop, materials: shop.materials.map((m) => ({ ...m, pricePerSheet: 1250.5 })) }
     expect(() => parseShopProfile(broken)).toThrow()
