@@ -36,7 +36,10 @@ describe('classic menu', () => {
   it('exports every shop format straight from «Файл», without the hidden header', () => {
     const file = classicMenus(base).find((menu) => menu.id === 'file')!
     const exports = file.items.flatMap((item) => item.kind === 'item' && item.command.type === 'export' ? [item.command.format] : [])
-    expect(exports).toEqual(['xlsx', 'csv', 'dxf', 'pdf'])
+    expect(exports).toEqual(['xlsx', 'csv', 'dxf', 'xlsx', 'csv', 'dxf', 'pdf'])
+    expect(find('file.export.xlsx').command).toEqual({ type: 'export', format: 'xlsx', scope: 'project' })
+    expect(find('file.export.cabinet.xlsx').command).toEqual({ type: 'export', format: 'xlsx', scope: 'cabinet' })
+    expect(find('file.export.pdf').command).toEqual({ type: 'export', format: 'pdf', scope: 'cabinet' })
     expect(find('file.export.xlsx').disabled).toBe(false)
     expect(find('file.export.xlsx', { ...base, canExport: false }).disabled).toBe(true)
     expect(find('file.export.pdf', { ...base, canExportPdf: false }).disabled).toBe(true)

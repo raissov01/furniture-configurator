@@ -35,6 +35,7 @@ import { Tour } from '@/components/Tour'
 import { RenderPanel } from '@/components/RenderPanel'
 import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/classicMenu'
 import { runShopExport } from '@/lib/shopExport'
+import { selectShopExportPanels } from '@/lib/shopExportScope'
 import { downloadProjectFile, pickProjectFile } from '@/lib/projectFile'
 import { cloudEnabled } from '@/lib/cloud'
 import { THEME_EVENT, chooseTheme, readTheme, saveQuality, type Theme } from '@/lib/appearance'
@@ -450,7 +451,13 @@ export function Workspace() {
       case 'export':
         if (draftInvalid) break
         setExportError(null)
-        void runShopExport(command.format, { cabinet, panels: activePanels, catalog, settings, projectInfo })
+        void runShopExport(command.format, {
+          cabinet: command.scope === 'cabinet' ? cabinet : undefined,
+          panels: selectShopExportPanels(command.scope, command.format, activePanels, projectPanels),
+          catalog, settings, projectInfo,
+          exportId: command.scope === 'project' ? 'project' : undefined,
+          exportName: command.scope === 'project' ? projectName : undefined,
+        })
           .catch((cause: unknown) => setExportError(cause instanceof Error ? cause.message : String(cause)))
         break
       case 'clientLink': void copyClientLink(); break
@@ -486,7 +493,7 @@ export function Workspace() {
   const menus = classicMenus({
     canUndo, canRedo, activeEditable, editableBoard: editableBoard && !activeBoardJoint,
     canRemoveCabinet: cabinets.length >= 2 && activeEditable,
-    canExport: hasActiveCabinet && productionState.exportsAvailable,
+    canExport: projectPanels.length > 0 && productionState.exportsAvailable,
     canExportPdf: hasActiveCabinet && productionState.exportsAvailable,
     productionError: Boolean(production.error),
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
@@ -677,7 +684,7 @@ export function Workspace() {
               </Button>
             )
           ) : null}
-          {cabinet && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet} panels={activePanels} /> : null}
+          {projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet ?? undefined} panels={activePanels} projectPanels={projectPanels} projectName={projectName} /> : null}
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}

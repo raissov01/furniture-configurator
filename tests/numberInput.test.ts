@@ -52,8 +52,8 @@ describe('number draft validation', () => {
   it('blocks exports while an uncommitted dimension draft is invalid', () => {
     const workspace = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
     expect(workspace).toContain('productionAvailability(production.error, draftInvalid)')
-    expect(workspace).toContain('canExport: hasActiveCabinet && productionState.exportsAvailable')
+    expect(workspace).toContain('canExport: projectPanels.length > 0 && productionState.exportsAvailable')
     expect(workspace).toContain('canExportPdf: hasActiveCabinet && productionState.exportsAvailable')
-    expect(workspace).toContain('cabinet && productionState.exportsAvailable ? <ExportMenu')
+    expect(workspace).toContain('projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu')
   })
 })

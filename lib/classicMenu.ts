@@ -14,6 +14,7 @@ import type { CameraPreset } from '@/store/configurator'
 import type { Quality, Theme } from '@/lib/appearance'
 import { LANGS, type Lang } from '@/lib/i18n'
 import type { ShopExportFormat } from '@/lib/shopExport'
+import type { ShopExportScope } from '@/lib/shopExportScope'
 
 export type ClassicPanel = 'gallery' | 'ai' | 'sketch' | 'parts' | 'history' | 'shop' | 'project' | 'quote' | 'drill' | 'room' | 'help' | 'shareCode' | 'account'
 
@@ -21,7 +22,7 @@ export type ClassicCommand =
   | { type: 'open'; panel: ClassicPanel }
   | { type: 'saveProject' }
   | { type: 'openProject' }
-  | { type: 'export'; format: ShopExportFormat }
+  | { type: 'export'; format: ShopExportFormat; scope: ShopExportScope }
   | { type: 'clientLink' }
   | { type: 'reset' }
   | { type: 'undo' }
@@ -121,11 +122,15 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('file.save', 'Сохранить проект', { type: 'saveProject' }),
         item('file.open', 'Открыть проект', { type: 'openProject' }),
         SEP,
-        { kind: 'heading', id: 'file.export', label: 'Экспорт для цеха' },
-        item('file.export.xlsx', 'XLSX — деталировка', { type: 'export', format: 'xlsx' }, { disabled: !s.canExport }),
-        item('file.export.csv', 'CSV — на распил', { type: 'export', format: 'csv' }, { disabled: !s.canExport }),
-        item('file.export.dxf', 'DXF — на станок', { type: 'export', format: 'dxf' }, { disabled: !s.canExport }),
-        item('file.export.pdf', 'PDF — сборочный чертёж', { type: 'export', format: 'pdf' }, { disabled: !s.canExport || !s.canExportPdf }),
+        { kind: 'heading', id: 'file.export', label: 'Экспорт для цеха — весь проект' },
+        item('file.export.xlsx', 'XLSX — весь проект', { type: 'export', format: 'xlsx', scope: 'project' }, { disabled: !s.canExport }),
+        item('file.export.csv', 'CSV — весь проект', { type: 'export', format: 'csv', scope: 'project' }, { disabled: !s.canExport }),
+        item('file.export.dxf', 'DXF — весь проект', { type: 'export', format: 'dxf', scope: 'project' }, { disabled: !s.canExport }),
+        { kind: 'heading', id: 'file.export.cabinet', label: 'Активный корпус' },
+        item('file.export.cabinet.xlsx', 'XLSX — активный корпус', { type: 'export', format: 'xlsx', scope: 'cabinet' }, { disabled: !s.canExportPdf }),
+        item('file.export.cabinet.csv', 'CSV — активный корпус', { type: 'export', format: 'csv', scope: 'cabinet' }, { disabled: !s.canExportPdf }),
+        item('file.export.cabinet.dxf', 'DXF — активный корпус', { type: 'export', format: 'dxf', scope: 'cabinet' }, { disabled: !s.canExportPdf }),
+        item('file.export.pdf', 'PDF — сборка активного корпуса', { type: 'export', format: 'pdf', scope: 'cabinet' }, { disabled: !s.canExportPdf }),
         SEP,
         item('file.link', 'Ссылка клиенту', { type: 'clientLink' }),
         item('file.code', 'Код для клиента', { type: 'open', panel: 'shareCode' }),
