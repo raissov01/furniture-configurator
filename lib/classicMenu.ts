@@ -37,6 +37,7 @@ export type ClassicCommand =
   | { type: 'toggleSilhouette' }
   | { type: 'addCabinet' }
   | { type: 'addBoard' }
+  | { type: 'addSolid' }
   | { type: 'removeBoard' }
   | { type: 'duplicate' }
   | { type: 'mirror' }
@@ -172,6 +173,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
       id: 'element', label: 'Элемент', items: [
         item('element.add', 'Новый корпус', { type: 'addCabinet' }),
         item('element.board', 'Добавить свободную доску', { type: 'addBoard' }),
+        item('element.solid', 'Добавить декоративный блок', { type: 'addSolid' }),
         item('element.removeBoard', 'Удалить доску', { type: 'removeBoard' }, { disabled: !s.editableBoard }),
         item('element.duplicate', 'Дублировать', { type: 'duplicate' }, { disabled: !s.activeEditable }),
         item('element.mirror', 'Зеркальная копия', { type: 'mirror' }, { disabled: !(s.canMirrorSelected ?? s.activeEditable) }),

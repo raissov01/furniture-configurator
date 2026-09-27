@@ -11,6 +11,7 @@ import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
+import { SolidProperties } from '@/components/SolidProperties'
 import { PropertiesDialog } from '@/components/PropertiesDialog'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
@@ -151,6 +152,7 @@ export function Workspace() {
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
   const addCabinet = useConfigurator((s) => s.addCabinet)
   const addBoard = useConfigurator((s) => s.addBoard)
+  const addSolid = useConfigurator((s) => s.addSolid)
   const removeBoard = useConfigurator((s) => s.removeBoard)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
@@ -216,6 +218,7 @@ export function Workspace() {
   const activePanels = hasActiveCabinet ? panels : []
   const activeNode = findNode(root, activeId)
   const activeBoard = activeNode?.kind === 'board' ? activeNode : null
+  const activeSolid = activeNode?.kind === 'solid' ? activeNode : null
   const activeBoardJoint = activeBoard ? autoJoints.find((joint) => joint.boardIds.includes(activeId)) : undefined
   const boardPanel = activeBoard ? production.scene.nodes.find((node) => node.nodeId === activeId)?.panels[0] : undefined
   const editableBoard = useMemo(() => {
@@ -223,6 +226,11 @@ export function Workspace() {
     try { assertTreeNodeEditable(root, activeId, layers); return true }
     catch (cause) { if (!(cause instanceof ConfigValidationError)) throw cause; return false }
   }, [root, activeId, layers, activeBoard])
+  const editableSolid = useMemo(() => {
+    if (!activeSolid) return false
+    try { assertTreeNodeEditable(root, activeId, layers); return true }
+    catch (cause) { if (!(cause instanceof ConfigValidationError)) throw cause; return false }
+  }, [root, activeId, layers, activeSolid])
   const activeEditable = useMemo(() => {
     if (!hasActiveCabinet) return false
     try {
@@ -499,6 +507,7 @@ export function Workspace() {
       case 'toggleSilhouette': setSilhouette({ on: !silhouette.on }); break
       case 'addCabinet': addCabinet(); break
       case 'addBoard': addBoard(); break
+      case 'addSolid': addSolid(); break
       case 'removeBoard': if (editableBoard && !activeBoardJoint) removeBoard(activeId); break
       case 'duplicate': duplicateCabinet(activeId); break
       case 'mirror': mirrorSelected(); break
@@ -561,6 +570,7 @@ export function Workspace() {
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
+      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true) },
     ],
     [
@@ -734,9 +744,9 @@ export function Workspace() {
       </header>
 
       {/* 390 px экранда canvas-тан бөлек тұратын тұрақты қасиет батырмасы. */}
-      {(activeBoard || cabinet) && <div data-testid="mobile-properties-trigger"
+      {(activeBoard || activeSolid || cabinet) && <div data-testid="mobile-properties-trigger"
         className="relative z-30 flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
-        <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name}</span>
+        <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
         <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>
       </div>}
 
@@ -1014,6 +1024,7 @@ export function Workspace() {
           {classic ? <>
             <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} />
             <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} />
+            <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} />
             <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} />
             <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" />
           </> : <>
@@ -1041,7 +1052,7 @@ export function Workspace() {
           {walk ? null : classic ? <>
             <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:hidden"><TreeDock /></div>
             {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)}
-              canOpenProperties={Boolean(activeBoard || cabinet)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
+              canOpenProperties={Boolean(activeBoard || activeSolid || cabinet)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
           </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:w-72"><TreeDock /></div>}
           {/*
             КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
@@ -1131,8 +1142,13 @@ export function Workspace() {
                 const size = boardDimensions(activeBoard.board, catalog.materials.find((item) => item.id === activeBoard.board.materialId)!)
                 return <div className="text-[11px] tabular-nums text-neutral-500">{size.height} (H) × {size.width} (W) × {size.depth} (D)</div>
               })()}
+            </> : activeSolid ? <>
+              <div className="truncate text-sm font-semibold" title={activeSolid.name}>{activeSolid.name}</div>
+              <div className="text-[11px] tabular-nums text-neutral-500">
+                {activeSolid.solid.size.y} (H) × {activeSolid.solid.size.x} (W) × {activeSolid.solid.size.z} (D)
+              </div>
             </> : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
-            {classic && (activeBoard || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+            {classic && (activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
           <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && "lg:hidden")}>
             <Dense>
@@ -1150,6 +1166,8 @@ export function Workspace() {
                 <fieldset disabled={!editableBoard}>
                   <BoardProperties key={activeBoard.id} node={activeBoard} panel={boardPanel} catalog={catalog} />
                 </fieldset>
+              ) : activeSolid ? (
+                <fieldset disabled={!editableSolid}><SolidProperties key={activeSolid.id} node={activeSolid} /></fieldset>
               ) : null}
             </Dense>
           </div>
@@ -1160,14 +1178,16 @@ export function Workspace() {
               <Button size="sm" onClick={() => { setCameraPreset('front'); setProjection('ortho') }}>{tr('Фас')}</Button>
               <Button size="sm" onClick={() => setCameraPreset('plan')}>{tr('План')}</Button>
               <Button size="sm" onClick={fitCamera}>{tr('Вписать в кадр')}</Button>
-              {(activeBoard || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+              {(activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
               <Button size="sm" onClick={addBoard}>{tr('+ доска')}</Button>
+              <Button size="sm" onClick={addSolid}>{tr('+ блок')}</Button>
             </div>
           </section>}
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
           <div className={cn("flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800", classic && "lg:hidden")}>
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
+            <Button onClick={addSolid}>{tr('+ блок')}</Button>
             {activeBoard && <Button onClick={() => removeBoard(activeId)}
               disabled={!editableBoard || Boolean(activeBoardJoint)}>{tr('Удалить доску')}</Button>}
             <Button onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>

@@ -66,6 +66,10 @@ describe('classic menu', () => {
     expect(find('tools.quote', { ...base, productionError: true }).disabled).toBe(true)
   })
 
+  it('offers a decorative solid from the classic Element menu', () => {
+    expect(find('element.solid').command).toEqual({ type: 'addSolid' })
+  })
+
   it('Workspace never clicks a hidden DOM button from a menu or toolbar', () => {
     const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
     expect(source).not.toMatch(/(querySelector|getElementById)\b[^\n]*\?\.click\(\)/)

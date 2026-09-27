@@ -14,6 +14,7 @@ import { t as tr } from '@/lib/i18n'
 import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
 import { appendFreeMirror } from '@/lib/freeMirrorAction'
+import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import {
@@ -55,7 +56,7 @@ import {
 import type { Quality } from '@/lib/appearance'
 import type { PanoramaContext } from '@/lib/panorama'
 import type {
-  BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
+  BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr, SolidSpec,
   Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
   SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
@@ -284,6 +285,9 @@ type State = Snapshot & {
 
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
+  addSolid(): string
+  editSolid(id: string, patch: Partial<SolidSpec>): void
+  setSolidPosition(id: string, position: Vec3): void
   mirrorFreeNode(id: string): string
   removeBoard(id: string): void
   editBoard(id: string, patch: Partial<BoardSpec>): void
@@ -767,6 +771,26 @@ export const useConfigurator = create<State>((set, get) => ({
     }] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id
+  },
+
+  addSolid() {
+    const s = get()
+    const id = `solid-${crypto.randomUUID()}`
+    const root: GroupNode = { ...s.root, children: [...s.root.children, createSolidNode(id, tr('Декоративный блок'))] }
+    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
+    return id
+  },
+
+  editSolid(id, patch) {
+    const s = get()
+    const root = editSolidTree(s.root, id, s.layers, { solid: patch })
+    if (root !== s.root) set(treeEdit(s, root))
+  },
+
+  setSolidPosition(id, position) {
+    const s = get()
+    const root = editSolidTree(s.root, id, s.layers, { position })
+    if (root !== s.root) set(treeEdit(s, root))
   },
 
   mirrorFreeNode(id) {

@@ -58,7 +58,7 @@ describe('number draft validation', () => {
     const workspace = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
     expect(workspace).toContain('productionAvailability(production.error, draftInvalid)')
     expect(workspace).toContain('canExport: projectPanels.length > 0 && productionState.exportsAvailable')
-    expect(workspace).toContain('canExportPdf: hasActiveCabinet && productionState.exportsAvailable')
+    expect(workspace).toContain('canExportPdf: Boolean(pdfCabinet) && productionState.exportsAvailable')
     expect(workspace).toContain('projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu')
   })
 })

@@ -10,6 +10,7 @@ import { propertiesDirty, propertiesInvalid, propertiesKeyAction } from '@/lib/p
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
+import { SolidProperties } from '@/components/SolidProperties'
 import { Button } from '@/components/ui'
 
 export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, onClose }: {
@@ -95,7 +96,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
     return () => { window.removeEventListener('keydown', handle, true); window.removeEventListener('pagehide', onPageHide) }
   }, [])
 
-  if (!node || (node.kind !== 'cabinet' && node.kind !== 'board')) return null
+  if (!node || (node.kind !== 'cabinet' && node.kind !== 'board' && node.kind !== 'solid')) return null
   const locked = Boolean(node.locked)
   // Фон — МОДАЛДЫ: сыртқа басу ештеңе істемейді (бұрын өзгерісті ескертусіз жоятын, P0-3).
   return <div className="p100-dialog-backdrop" data-testid="properties-dialog-backdrop">
@@ -114,7 +115,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
       </p>}
       <div className="p100-dialog-body">
         <fieldset disabled={locked}>
-          {node.kind === 'board'
+          {node.kind === 'solid' ? <SolidProperties key={node.id} node={node} /> : node.kind === 'board'
             ? <BoardProperties key={node.id} node={node} panel={boardPanel} catalog={catalog} />
             : <Configurator key={node.id} invalidField={error?.field ?? null} panels={panels}
                 onDraftValidityChange={(field, isInvalid) => setDraftErrors((current) => updateDraftErrors(current, field, isInvalid))} />}
