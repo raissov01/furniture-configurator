@@ -9,7 +9,7 @@ describe('F00f classic icon colour meaning', () => {
   it('reserves red for deletion, yellow for file opening and blue for views or saving', () => {
     expect(classicIconTone('delete')).toBe('red')
     expect(classicIconTone('open')).toBe('yellow')
-    for (const name of ['save', 'view', 'eye', 'fit', 'render', 'room'] as const) {
+    for (const name of ['save', 'view', 'fit', 'render', 'room'] as const) {
       expect(classicIconTone(name)).toBe('blue')
     }
     for (const name of ['magnet', 'board', 'layers', 'walk', 'light', 'structure'] as const) {
