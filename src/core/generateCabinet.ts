@@ -12,7 +12,7 @@ import {
   legPairsFor, legScrewHoles, minifixJoint, runnerHoles, shelfPinHoles,
 } from './drilling'
 import { DEFAULT_HANDLE_ID, defaultHandleSpec, handleShape } from './fittings'
-import { fillingBandHeight } from './filling'
+import { fillingBandHeight, validateFixtureCombination } from './filling'
 import { millingPaths, validateMilling } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import {
@@ -102,6 +102,7 @@ export function generateCabinet(
   validateDimension(H, 'cabinet.height')
   validateDimension(W, 'cabinet.width')
   validateDimension(D, 'cabinet.depth')
+  validateFixtureCombination(config.fixtures)
 
   /** Корпус материалының қалыңдығы. ЕШҚАШАН 16 деп қатырылмайды. */
   const t = carcass.thickness
