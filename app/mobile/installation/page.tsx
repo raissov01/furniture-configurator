@@ -134,7 +134,7 @@ export default function MobileInstallationPage() {
       await queue.setOnline(navigator.onLine, Date.now())
       const record = await queue.enqueue(action)
       await refresh(db)
-      setMessage(installationQueueNotice(record.status, record.error ?? ''))
+      setMessage(installationQueueNotice(record.status, record.error ?? '', t))
     } catch (error) { setMessage(error instanceof Error ? error.message : t('Не удалось сохранить действие')) }
     finally { setBusy(false) }
   }
@@ -176,7 +176,7 @@ export default function MobileInstallationPage() {
     {!online && <p className="border bg-white p-3 text-sm">{t('Нет сети')}: {t('Данные и фото остаются на этом телефоне')}</p>}
     {pending && <p className="border bg-white p-3 text-sm">{t('Ожидает отправки')}: {blockedRecords.length || 1}</p>}
     {blockedRecords.map((record) => <div key={record.action.id} role="alert" className="border border-red-700 bg-white p-3 text-sm">
-      <p>{installationQueueNotice(record.status, record.error ?? '')}</p>
+      <p>{installationQueueNotice(record.status, record.error ?? '', t)}</p>
       <button className="mt-2 min-h-11 border p-2" onClick={() => void discardBlocked(record)}>{t('Удалить действие из очереди')}</button>
     </div>)}
     {online && projects.some((project) => !tasks.some((item) => item.projectId === project.id)) && <section className="space-y-2 border bg-white p-3 text-sm">
@@ -239,7 +239,7 @@ export default function MobileInstallationPage() {
         </Link>)}
       <button className="block border p-2" disabled={busy || pending || closeBlockReason(task) !== null}
         onClick={() => void send('installation.close', {})}>{t('Завершить монтаж')}</button>
-      {closeBlockReason(task) && <p role="status">{closeBlockReason(task)}</p>}
+      {closeBlockReason(task) && <p role="status">{closeBlockReason(task, t)}</p>}
       {task.repairs.some((repair) => repair.status === 'open') && <p>{t('Есть открытые ремонтные задания')}</p>}
     </section>}
     {message && <p role="status" className="border bg-white p-3 text-sm">{message}</p>}
