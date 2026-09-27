@@ -76,6 +76,16 @@ describe('фурнитура присадкадан шығады', () => {
     expect(counts.get('hinge-overlay')).toBe(counts.get('hinge-plate'))
   })
 
+  it('артикулмен берілген ілгектің жауап планкасын да санайды', () => {
+    const branded = panels.map((panel) => ({ ...panel, drilling: panel.drilling.map((hole) =>
+      hole.purpose === 'hinge' && hole.diameter === 35
+        ? { ...hole, hardwareId: 'hettich-sensys-8645i-overlay-press-in' }
+        : hole) }))
+    const brandedCounts = countHardware(branded)
+    expect(brandedCounts.get('hettich-sensys-8645i-overlay-press-in')).toBe(counts.get('hinge-overlay'))
+    expect(brandedCounts.get('hinge-plate')).toBe(counts.get('hinge-overlay'))
+  })
+
   it('полкодержатель сөреге 4 дана — тесік санымен ШАТАСТЫРЫЛМАЙДЫ', () => {
     const shelves = panels.filter((p) => p.role === 'shelf').length
     const pinHoles = panels.reduce(

@@ -205,7 +205,7 @@ export function edgeMetresByBand(panels: Panel[]): Map<string, number> {
 /**
  * Фурнитура саны — присадкадан шығады, қолмен саналмайды.
  *
- * Конфирмат: ТОРЦТАҒЫ Ø7 тесік — бір бұранда. Беттегі Ø5 тесік сол
+ * Конфирмат: ТОРЦТАҒЫ Ø5 пилот тесік — бір бұранда. Беттегі Ø8 өтпелі тесік сол
  * бұранданың екінші ұшы, оны қайта санауға болмайды.
  *
  * Полкодержатель: бір жылжымалы сөреде 4 дана (әр жағында 2). Тесік саны
@@ -221,6 +221,7 @@ export function countHardware(panels: Panel[]): Map<string, number> {
   let minifixes = 0
   let shelves = 0
   let drawerSides = 0
+  let hingeCups = 0
   /** Ілгек пен тұтқа брендке қарай әртүрлі позицияға түседі — id бойынша. */
   const byHardwareId = new Map<string, number>()
   const bump = (id: string, qty: number) => byHardwareId.set(id, (byHardwareId.get(id) ?? 0) + qty)
@@ -242,6 +243,7 @@ export function countHardware(panels: Panel[]): Map<string, number> {
       // оларды қайта санауға болмайды.
       if (d.purpose === 'hinge' && d.diameter === HINGE_CUP_DIAMETER) {
         bump(d.hardwareId ?? 'hinge-overlay', p.qty)
+        hingeCups += p.qty
       }
       // Тұтқа: скобаға екі тесік, кнопкаға бір. Тесік санынан тұтқа санын
       // шығару үшін ұзындығын білу керек, сондықтан ПАНЕЛЬМЕН санаймыз —
@@ -262,11 +264,9 @@ export function countHardware(panels: Panel[]): Map<string, number> {
     add('confirmat-cap', confirmats)
   }
   if (minifixes > 0) add('minifix-15', minifixes)
-  for (const [id, n] of byHardwareId) {
-    add(id, n)
-    // Әр ілгекке бір жауап планка.
-    if (id.startsWith('hinge-')) add('hinge-plate', n)
-  }
+  for (const [id, n] of byHardwareId) add(id, n)
+  // Жауап планка саны ілгек артикулының ID префиксіне тәуелді емес.
+  if (hingeCups > 0) add('hinge-plate', hingeCups)
   if (shelves > 0 && panels.some((p) => p.drilling.some((d) => d.purpose === 'shelfPin'))) {
     add('shelf-pin-5', shelves * 4)
   }
