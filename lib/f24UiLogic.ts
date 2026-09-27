@@ -24,6 +24,22 @@ export function cloudCopyProject<T extends { name: string }>(project: T): T {
   return { ...project, name: `${project.name} (копия)` }
 }
 
+export function cloudSaveOutcome(status: number, data: { id?: unknown; revision?: unknown; error?: unknown }, selected: CloudSelection | null):
+  | { kind: 'saved'; selection: CloudSelection }
+  | { kind: 'conflict'; id: string; revision: number }
+  | { kind: 'error'; message: string } {
+  const revision = Number.isSafeInteger(data.revision) && (data.revision as number) >= 0 ? data.revision as number : null
+  if (status === 409 && selected && revision !== null) return { kind: 'conflict', id: selected.id, revision }
+  if (status >= 200 && status < 300 && typeof data.id === 'string' && data.id && revision !== null) {
+    return { kind: 'saved', selection: { id: data.id, revision } }
+  }
+  return { kind: 'error', message: typeof data.error === 'string' ? data.error : 'Проект не сохранился' }
+}
+
+export function canCreateFolder(name: string): boolean {
+  return name.trim().length >= 1 && name.trim().length <= 80
+}
+
 export function revisionDecision(stored: LocalRevision | null, own: LocalRevision | null): 'save' | 'conflict' {
   return stored && (!own || (stored.tabId !== own.tabId && stored.revision !== own.revision)) ? 'conflict' : 'save'
 }

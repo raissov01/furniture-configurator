@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cloudCopyProject, cloudSavePayload, deleteFolder, renameFolder, revisionDecision, historySummary, nextHistoryId, parseCloudSelection, shouldMigrateCloudOrg } from '../lib/f24UiLogic'
+import { canCreateFolder, cloudCopyProject, cloudSaveOutcome, cloudSavePayload, deleteFolder, renameFolder, revisionDecision, historySummary, nextHistoryId, parseCloudSelection, shouldMigrateCloudOrg } from '../lib/f24UiLogic'
 import { parseCloudOrg } from '../src/core/cloudProjectOrganize'
 
 describe('F24 UI decisions', () => {
@@ -10,6 +10,9 @@ describe('F24 UI decisions', () => {
     expect(parseCloudSelection('{"id":"p1","revision":3}')).toEqual({ id: 'p1', revision: 3 })
     expect(parseCloudSelection('{"id":"p1","revision":-1}')).toBeNull()
     expect(cloudCopyProject(project)).toEqual({ name: 'Шкаф (копия)' })
+    expect(cloudSaveOutcome(200, { id: 'p1', revision: 4 }, { id: 'p1', revision: 3 })).toEqual({ kind: 'saved', selection: { id: 'p1', revision: 4 } })
+    expect(cloudSaveOutcome(409, { revision: 4 }, { id: 'p1', revision: 3 })).toEqual({ kind: 'conflict', id: 'p1', revision: 4 })
+    expect(cloudSaveOutcome(409, { error: 'Лимит' }, null)).toEqual({ kind: 'error', message: 'Лимит' })
   })
 
   it('does not silently overwrite another tab revision', () => {
@@ -22,6 +25,8 @@ describe('F24 UI decisions', () => {
     expect(renameFolder(org, 'A', 'C')).toEqual({ ...org, folders: ['C', 'B'], projectFolders: { p1: 'C' } })
     expect(deleteFolder(org, 'A')).toEqual({ ...org, folders: ['B'], projectFolders: {} })
     expect(() => renameFolder(org, 'A', '')).toThrow(/1–80/)
+    expect(canCreateFolder('  ')).toBe(false)
+    expect(canCreateFolder('Жаңа')).toBe(true)
     expect(shouldMigrateCloudOrg(parseCloudOrg(null), JSON.stringify(org))).toBe(true)
     expect(shouldMigrateCloudOrg(org, JSON.stringify(org))).toBe(false)
   })
