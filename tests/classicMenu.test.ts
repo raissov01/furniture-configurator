@@ -166,7 +166,7 @@ describe('project file helpers', () => {
   it('parses a saved project and rejects garbage with a readable error', () => {
     const text = JSON.stringify(useConfigurator.getState().exportProject())
     expect(parseProjectFileText(text).schemaVersion).toBe(4)
-    expect(() => parseProjectFileText('{nope')).toThrow()
+    expect(() => parseProjectFileText('{nope', 'broken.json')).toThrow(/Неверный JSON.*broken\.json/)
   })
 })
 
