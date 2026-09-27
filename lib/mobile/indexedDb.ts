@@ -13,6 +13,18 @@ type StoredPhoto = { id: string; value: Blob }
 type StoredInstallation = { id: string; value: InstallationTask }
 type StoredInstallationDraft = { id: string; value: Record<string, string> }
 
+function photoRefs(value: JsonValue, refs = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const item of value) photoRefs(item, refs)
+  } else if (value !== null && typeof value === 'object') {
+    for (const [key, item] of Object.entries(value)) {
+      if (key === 'photoRef' && typeof item === 'string' && item.trim()) refs.add(item)
+      else photoRefs(item, refs)
+    }
+  }
+  return refs
+}
+
 function resultOf<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     request.onsuccess = () => resolve(request.result)
@@ -101,11 +113,28 @@ export class IndexedDbMobileStore implements SyncStore {
     if (!value || Array.isArray(value) || typeof value !== 'object' || value.id !== key) {
       throw new Error('survey.id: сақтау кілті мен өлшем ID-і бірдей болуы керек')
     }
-    const transaction = this.database.transaction('surveys', 'readwrite')
-    await Promise.all([
-      resultOf(transaction.objectStore('surveys').put({ id: key, value } satisfies StoredSurvey)),
-      completed(transaction),
+    // Compare only photos referenced by the previous version. A newly captured
+    // photo may be written just before React persists the updated draft.
+    const transaction = this.database.transaction(['surveys', 'actions', 'photos'], 'readwrite')
+    const done = completed(transaction)
+    const surveys = transaction.objectStore('surveys')
+    const [savedSurveys, actions] = await Promise.all([
+      resultOf(surveys.getAll() as IDBRequest<StoredSurvey[]>),
+      resultOf(transaction.objectStore('actions').getAll() as IDBRequest<StoredRecord[]>),
     ])
+    const previous = savedSurveys.find((row) => row.id === key)
+    const removed = previous ? photoRefs(previous.value) : new Set<string>()
+    const retained = photoRefs(value)
+    for (const row of savedSurveys) if (row.id !== key) photoRefs(row.value, retained)
+    for (const row of actions) {
+      if (row.record.status !== 'sent' && row.record.status !== 'superseded') {
+        photoRefs(row.record.action.payload, retained)
+      }
+    }
+    surveys.put({ id: key, value } satisfies StoredSurvey)
+    const photos = transaction.objectStore('photos')
+    for (const ref of removed) if (!retained.has(ref)) photos.delete(ref)
+    await done
   }
 
   async getSurvey(id: string): Promise<JsonValue | undefined> {

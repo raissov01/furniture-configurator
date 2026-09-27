@@ -75,6 +75,29 @@ describe('телефон IndexedDB сақтау қабаты', () => {
     reopened.close()
   })
 
+  it('жауап ауысқанда сілтемесі жойылған фотоны тазалайды', async () => {
+    const store = await IndexedDbMobileStore.open('mobile-orphan-photo-test')
+    await store.putPhoto('old-photo', new Blob(['old'], { type: 'image/jpeg' }))
+    await store.putSurvey('survey-1', { id: 'survey-1', walls: { north: { obstacles: { socket: { photoRef: 'old-photo' } } } } })
+    await store.putSurvey('survey-1', { id: 'survey-1', walls: { north: { obstacles: { socket: { photoRef: null } } } } })
+    expect(await store.getPhoto('old-photo')).toBeUndefined()
+    store.close()
+  })
+
+  it('басқа замерге не кезектегі әрекетке қажет фотоны сақтайды', async () => {
+    const store = await IndexedDbMobileStore.open('mobile-shared-photo-test')
+    for (const id of ['shared-photo', 'pending-photo']) {
+      await store.putPhoto(id, new Blob([id], { type: 'image/jpeg' }))
+    }
+    await store.putSurvey('survey-1', { id: 'survey-1', refs: [{ photoRef: 'shared-photo' }, { photoRef: 'pending-photo' }] })
+    await store.putSurvey('survey-2', { id: 'survey-2', ref: { photoRef: 'shared-photo' } })
+    await store.insert({ ...record, action: { ...record.action, payload: { id: 'survey-1', ref: { photoRef: 'pending-photo' } } } })
+    await store.putSurvey('survey-1', { id: 'survey-1', refs: [] })
+    expect(await store.getPhoto('shared-photo')).toBeDefined()
+    expect(await store.getPhoto('pending-photo')).toBeDefined()
+    store.close()
+  })
+
   it('офлайн кезектегі әрекетті қайта ашқанда бір рет жібереді', async () => {
     const first = await IndexedDbMobileStore.open('mobile-reconnect-test')
     const offline = new SyncQueue(first, { send: async () => { throw new Error('unexpected send') } })
