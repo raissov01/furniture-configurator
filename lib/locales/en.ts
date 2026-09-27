@@ -1060,6 +1060,7 @@ export const en: Record<string, string> = {
   'Библиотека': 'Library',
   'Моя библиотека': 'My library',
   'Структура': 'Structure',
+  'Найти': 'Find',
   'Замена': 'Replace',
   'Дерево, слои и библиотека': 'Tree, layers and library',
   'Предпросмотр элемента': 'Item preview',
