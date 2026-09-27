@@ -24,6 +24,7 @@ import { cn } from '@/lib/cn'
 import { useConfigurator } from '@/store/configurator'
 import { findTemplate, templateToCabinet } from '@/src/core/index'
 import { BASIS_EDGE_BANDS, BASIS_MATERIALS } from '@/src/core/data/basisCatalog'
+import { addBasisCatalogItem } from './basisLibrarySelect'
 import type { EdgeBand, Material } from '@/src/core/types'
 import {
   PRO100_ACCESSORY_ITEMS,
@@ -66,8 +67,10 @@ export function LibraryPanel() {
   const [placedDraft, setPlacedDraft] = React.useState<Record<string, string>>({})
   const [coordErrors, setCoordErrors] = React.useState<Record<string, string>>({})
   const [propError, setPropError] = React.useState<string | null>(null)
+  const [catalogError, setCatalogError] = React.useState<string | null>(null)
 
   const catalog = useConfigurator((s) => s.catalog)
+  const shop = useConfigurator((s) => s.shop)
   const root = useConfigurator((s) => s.root)
   const placed = React.useMemo(() => placedProps(root), [root])
   const propItems = React.useMemo(() => PROP_CATALOG.filter((prop) =>
@@ -190,6 +193,15 @@ export function LibraryPanel() {
     })
     setLastAdded(item.name)
     setPendingBasis(null)
+  }
+
+  const addBasisToShop = (item: Material | EdgeBand) => {
+    try {
+      const state = useConfigurator.getState()
+      state.setShop(addBasisCatalogItem(state.shop, item))
+      setLastAdded(item.name)
+      setCatalogError(null)
+    } catch (cause) { setCatalogError(cause instanceof Error ? cause.message : String(cause)) }
   }
 
   return (
@@ -318,8 +330,12 @@ export function LibraryPanel() {
           <p className="p-2 text-[11px] text-neutral-500">Табылмады.</p>
         ) : tab === 'materialy' ? (
           <div className="grid grid-cols-2 gap-1.5">
+            {catalogError && <p role="alert" className="col-span-2 border border-red-700 p-1 text-red-300">{catalogError}</p>}
             {(pageItems as (Material | EdgeBand)[]).map((m) => (
-              'sheetWidth' in m ? <MaterialTile key={m.id} material={m} /> : <EdgeBandTile key={m.id} edge={m} />
+              'sheetWidth' in m ? <MaterialTile key={m.id} material={m}
+                selected={shop.materials.some((entry) => entry.id === m.id)} onSelect={() => addBasisToShop(m)} />
+                : <EdgeBandTile key={m.id} edge={m}
+                  selected={shop.edgeBands.some((entry) => entry.id === m.id)} onSelect={() => addBasisToShop(m)} />
             ))}
           </div>
         ) : (
@@ -405,7 +421,7 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
 
 // ── Бір материал ұяшығы («Материалы» табы) ──────────────────────────────────
 
-function MaterialTile({ material }: { material: Material }) {
+function MaterialTile({ material, selected, onSelect }: { material: Material; selected: boolean; onSelect: () => void }) {
   return (
     <div className="flex flex-col items-center gap-1 border border-neutral-800 bg-neutral-900 p-1.5 text-left">
       {/* Түс/декор дерегі БАЗИСТЕ импортталмаған (basisCatalog.ts §комментарий) —
@@ -414,20 +430,26 @@ function MaterialTile({ material }: { material: Material }) {
         <span className="text-[10px] text-neutral-500">{material.thickness} мм</span>
       </div>
       <div className="w-full truncate text-[10px] text-neutral-300">{material.name}</div>
-      <div className="w-full truncate text-[9px] tabular-nums text-neutral-500">
-        {material.pricePerSheet > 0 ? `${(material.pricePerSheet / 100).toLocaleString('ru-RU')} ₸/лист` : 'баға белгісіз'}
-      </div>
+      <div className="w-full text-[9px] text-neutral-500">{tr('Цена задаётся в прайсе цеха')}</div>
+      <button type="button" disabled={selected} onClick={onSelect}
+        className="w-full border border-neutral-700 px-1 py-0.5 text-[10px] disabled:opacity-50">
+        {tr(selected ? 'Уже в цехе' : 'Добавить в цех')}
+      </button>
     </div>
   )
 }
 
-function EdgeBandTile({ edge }: { edge: EdgeBand }) {
+function EdgeBandTile({ edge, selected, onSelect }: { edge: EdgeBand; selected: boolean; onSelect: () => void }) {
   return <div className="flex flex-col gap-1 border border-neutral-800 bg-neutral-900 p-1.5 text-left text-[10px]">
     <div className="flex h-16 items-center justify-center border border-neutral-800 bg-neutral-950 text-neutral-500">
       {edge.thickness} × {edge.widthMm ?? '—'} {tr('мм')}
     </div>
     <div className="truncate text-neutral-300" title={edge.name}>{edge.name}</div>
     <div className="text-neutral-500">{tr('Ширина кромки')}: {edge.widthMm ?? tr('неизвестно')} {tr('мм')}</div>
+    <button type="button" disabled={selected} onClick={onSelect}
+      className="border border-neutral-700 px-1 py-0.5 disabled:opacity-50">
+      {tr(selected ? 'Уже в цехе' : 'Добавить в цех')}
+    </button>
   </div>
 }
 

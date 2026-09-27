@@ -1032,6 +1032,54 @@ async function run() {
     check(persisted === 1, 'қайта ашқанда жеке кітапхана сақталды')
   })
 
+  await test('Базис кітапханасы: Кухня және Gola санаттары көрінеді', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+    const opened = await h.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[data-testid="tree-dock"] [role="tab"]')]
+        .find((node) => node.textContent.trim() === 'Библиотека')
+      tab?.click()
+      return Boolean(tab)
+    })()`)
+    check(opened, 'кітапхана ашылды')
+    await h.wait(250)
+    const categories = await h.evaluate(`(() => {
+      const selects = [...document.querySelectorAll('[data-testid="tree-dock"] select')]
+      const category = selects.find((select) => [...select.options].some((option) => option.value === 'Базис: Кухня'))
+      return category ? [...category.options].map((option) => option.value) : []
+    })()`)
+    check(categories.includes('Базис: Кухня') && categories.includes('Базис: Gola'), 'екі Basis санаты бар')
+    const selected = await h.evaluate(`(() => {
+      const category = [...document.querySelectorAll('[data-testid="tree-dock"] select')]
+        .find((select) => [...select.options].some((option) => option.value === 'Базис: Кухня'))
+      if (!category) return false
+      category.value = 'Базис: Кухня'
+      category.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    })()`)
+    check(selected, 'Кухня сүзгісі таңдалды')
+    check(await h.until(`Boolean([...document.querySelectorAll('[data-testid="tree-dock"] button')]
+      .find((button) => button.textContent.includes('(H) ×') && button.textContent.includes('(W) ×')))`, 7000),
+      'модуль өлшемі H × W × D болып көрінді')
+    const materialTab = await h.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[data-testid="tree-dock"] button')]
+        .find((button) => button.textContent.trim() === 'Материалы')
+      tab?.click()
+      return Boolean(tab)
+    })()`)
+    check(materialTab, 'Базис материалдары ашылды')
+    const added = await h.evaluate(`(() => {
+      const button = [...document.querySelectorAll('[data-testid="tree-dock"] button')]
+        .find((entry) => entry.textContent.trim() === 'Добавить в цех' && !entry.disabled)
+      button?.click()
+      return Boolean(button)
+    })()`)
+    check(added, 'материал цех каталогына таңдалды')
+    check(await h.until(`Boolean([...document.querySelectorAll('[data-testid="tree-dock"] button')]
+      .find((button) => button.textContent.trim() === 'Уже в цехе' && button.disabled))`, 7000),
+      'материал қайталап қосылмайды')
+  })
+
   await test('Визуал: PBR, жарық және 360° панорама', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
