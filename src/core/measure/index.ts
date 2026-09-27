@@ -130,13 +130,14 @@ function completeRectangularSurvey(input: unknown, tolerance: RoomTolerance): Me
   return survey
 }
 
-/** Existing Room is rectangular and has no obstacle field. Keep obstacles in the survey. */
+/** A measured room has no inferred openings; keep obstacle details in the survey. */
 export function toRoom(input: unknown, tolerance: RoomTolerance = { wallMm: 0, cornerDeg: 0 }): Room {
   const survey = completeRectangularSurvey(input, tolerance)
   return {
     width: survey.walls.north.length.value,
     depth: survey.walls.east.length.value,
     height: survey.height.value,
+    openings: [],
   }
 }
 

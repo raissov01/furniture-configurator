@@ -30,6 +30,21 @@ describe('цех каталогының таза импорты', () => {
     expect(() => previewBasisTable(table, { articul: 'Code' } as never)).toThrow(/columns.name/)
   })
 
+  it('Базис қазақша Ә және Ө артикулдарын жеке ID ретінде сақтайды', () => {
+    const xlsx = simpleTableXlsx('Sheet1',
+      ['Артикул материала', 'Наименование материала', 'Наименование группы', 'Толщина', 'Длина', 'Ширина', 'Шаг по Х', 'Шаг по Y'], [
+      ['Ә', 'ЛДСП, Ә', '01/ЛДСП/Цех', 16, 2800, 2070, 0, 0],
+      ['Ө', 'ЛДСП, Ө', '01/ЛДСП/Цех', 16, 2800, 2070, 0, 0],
+      ['Ә1', 'ЛДСП, Ә1', '01/ЛДСП/Цех', 16, 2800, 2070, 0, 0],
+      ['Ө1', 'ЛДСП, Ө1', '01/ЛДСП/Цех', 16, 2800, 2070, 0, 0],
+    ])
+    const result = parseBasisExcel(xlsx)
+    expect(result.errors).toEqual([])
+    expect(result.materials.map((item) => item.id)).toEqual([
+      'shop-basis-ldsp-Ә', 'shop-basis-ldsp-Ө', 'shop-basis-ldsp-Ә1', 'shop-basis-ldsp-Ө1',
+    ])
+  })
+
   it('PRO100 секцияларын физикалық масштабымен және жарық өрістерімен оқиды', () => {
     const result = parsePro100Textures('[Oak]\r\nxmm=1200\r\nymm=600\r\ndiffuse=0.7\r\nspecular=0.2\r\nfile=wood.jpg\r\n[Bad]\r\nxmm=0\r\nymm=30\r\n')
     expect(result.textures).toEqual([{ name: 'Oak', mapSizeMm: { x: 1200, y: 600 }, diffuse: 0.7, specular: 0.2, imageFile: 'wood.jpg' }])

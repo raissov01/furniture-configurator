@@ -21,6 +21,7 @@
 import { groupPanels } from '../cutList'
 import type { Catalog, Drill, EdgeSpec, Panel, SettingsOverride } from '../types'
 import { basisScriptBytes } from './basisScript'
+import { requireCncReadyPanels } from './cncGuard'
 import type { BasisScriptScene } from './basisScript'
 import { simpleTableXlsx } from './xlsx'
 
@@ -220,6 +221,7 @@ const DRILL_FACE_RU: Record<Drill['face'], string> = {
  * өзін сипаттайды, екіншісі — бұрғының жолын.
  */
 export function basisDrillingCsv(panels: Panel[], options: BasisExportOptions): string {
+  requireCncReadyPanels(panels)
   const header = ['Заказ', 'Деталь', 'Сторона', 'X', 'Y', 'Диаметр', 'Глубина', 'Назначение']
   const rows: string[] = []
   for (const panel of panels) {

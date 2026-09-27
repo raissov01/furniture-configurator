@@ -17,6 +17,7 @@ import { appendFreeMirror } from '@/lib/freeMirrorAction'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
+import { materialUsedInTree } from '@/lib/materialUsedInTree'
 import {
   DEFAULT_ROOM,
   IDENTITY_TRANSFORM,
@@ -665,7 +666,7 @@ const cleanPriceOverrides = (overrides: PriceOverrides): PriceOverrides | undefi
 }
 
 const withOpenings = (room: Room): Room =>
-  (room.openings && room.openings.length > 0
+  (room.openings !== undefined
     ? { ...room, openings: fitOpenings(room) }
     : { ...room, openings: defaultOpenings(room) })
 
@@ -1374,9 +1375,7 @@ export const useConfigurator = create<State>((set, get) => ({
    */
   removeMaterial(id) {
     const s = get()
-    const used = s.cabinets.some(
-      (c) => c.carcassMaterialId === id || c.frontMaterialId === id || c.backMaterialId === id,
-    )
+    const used = materialUsedInTree(s.root, id)
     if (used || s.shop.materials.length <= 1) return
     get().setShop({ ...s.shop, materials: s.shop.materials.filter((m) => m.id !== id) })
   },

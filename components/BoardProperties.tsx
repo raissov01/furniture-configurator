@@ -7,6 +7,7 @@ import { Button, Field, NumberInput, Select, Toggle } from '@/components/ui'
 import { ExportMenu } from '@/components/ExportMenu'
 import { boardDimensions, resizeBoard } from '@/src/core/boardProperties'
 import { exactInputDraft } from '@/lib/exactInputDraft'
+import { grainDirectionUi } from '@/lib/grainDirectionUi'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, panelFitWarnings } from '@/src/core/index'
 import type { BoardNode, BoardSpec, Catalog, Orientation, Panel, PanelEdges } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -59,6 +60,7 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
   const material = catalog.materials.find((item) => item.id === node.board.materialId)
   if (!material) return <p role="alert">{tr('Материал не найден')}</p>
+  const grainUi = grainDirectionUi(material.hasGrain)
   const size = boardDimensions(node.board, material)
   const fitWarning = panel ? panelFitWarnings([panel], catalog)[0] : undefined
   const orientation = orientations.find((item) =>
@@ -118,7 +120,9 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
           })} options={[{ value: '', label: tr('Нет') }, ...catalog.edgeBands.map((band) => ({ value: band.id, label: band.name }))]} />
         </Field>)}
       </div>
-      <Toggle checked={node.board.grainAlongLength} onChange={(grainAlongLength) => edit({ grainAlongLength })} label={tr('Текстура вдоль длины')} />
+      <Toggle checked={node.board.grainAlongLength} disabled={grainUi.disabled}
+        onChange={(grainAlongLength) => edit({ grainAlongLength })} label={tr('Текстура вдоль длины')} />
+      {grainUi.reason && <p className="text-[11px] text-neutral-500">{tr(grainUi.reason)}</p>}
     </fieldset>
     <div className={tab === 'reports' ? 'space-y-2' : 'hidden'}>
       <p>{tr('Готовый')}: {panel ? `${panel.finishedLength} × ${panel.finishedWidth} мм` : '—'}</p>

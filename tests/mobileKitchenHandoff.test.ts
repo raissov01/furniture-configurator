@@ -3,7 +3,7 @@ import { IDBFactory } from 'fake-indexeddb'
 import { describe, expect, it, vi } from 'vitest'
 import { emptySurvey, updateMeasure, updateObstacle } from '../components/mobile/measurementModel'
 import { configuratorKitchenTarget, handoffMeasurementToKitchen } from '../components/mobile/kitchenHandoff'
-import { OBSTACLE_KINDS } from '../src/core/measure'
+import { OBSTACLE_KINDS, toRoom } from '../src/core/measure'
 import type { ProjectFileV4 } from '../src/core/index'
 import { useConfigurator } from '../store/configurator'
 import { IndexedDbMobileStore } from '../lib/mobile/indexedDb'
@@ -32,7 +32,7 @@ describe('measured kitchen handoff', () => {
       putProject: async (id, value) => { saved.push({ id, value }) },
     })
     expect(loaded).toEqual([{ options: { layout: 'straight', lengthA: 3100 },
-      room: { width: 3100, depth: 2200, height: 2670 } }])
+      room: { width: 3100, depth: 2200, height: 2670, openings: [] } }])
     expect(saved).toEqual([{ id: 'survey-kitchen-1', value: project }])
   })
   it('таңдалған кез келген қабырғадан ас үй қатарын құрады', async () => {
@@ -67,9 +67,11 @@ describe('measured kitchen handoff', () => {
   it('stores measured H, W and D in the generated project room', () => {
     const before = useConfigurator.getState()
     try {
-      before.loadKitchen({ layout: 'straight', lengthA: 3100 }, { width: 3100, depth: 2200, height: 2670 })
+      before.loadKitchen({ layout: 'straight', lengthA: 3100 }, toRoom(completeSurvey()))
       expect(useConfigurator.getState().room).toMatchObject({ width: 3100, depth: 2200, height: 2670 })
       expect(useConfigurator.getState().exportProject().room).toMatchObject({ width: 3100, depth: 2200, height: 2670 })
+      expect(useConfigurator.getState().room.openings).toEqual([])
+      expect(useConfigurator.getState().exportProject().room.openings).toEqual([])
     } finally {
       useConfigurator.setState(before)
     }
@@ -87,6 +89,7 @@ describe('measured kitchen handoff', () => {
         putProject: (id, project) => db.putProject(id, project),
       })
       expect((await db.getProject(survey.id))?.room).toMatchObject({ width: 3100, depth: 2200, height: 2670 })
+      expect((await db.getProject(survey.id))?.room.openings).toEqual([])
     } finally {
       db.close()
       useConfigurator.setState(before)
