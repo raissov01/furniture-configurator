@@ -43,7 +43,7 @@ import { RenderPanel } from '@/components/RenderPanel'
 import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/classicMenu'
 import { runShopExport } from '@/lib/shopExport'
 import { selectShopExportPanels } from '@/lib/shopExportScope'
-import { downloadProjectFile, pickProjectFile } from '@/lib/projectFile'
+import { downloadProjectFile, pickProjectFile, projectFileErrorMessage } from '@/lib/projectFile'
 import { approvalPrice } from '@/lib/f22ShareUi'
 import { cloudEnabled } from '@/lib/cloud'
 import { THEME_EVENT, chooseTheme, readTheme, saveQuality, type Theme } from '@/lib/appearance'
@@ -296,6 +296,11 @@ export function Workspace() {
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
   const [classic, setClassic] = useState(true)
   const [structureOpen, setStructureOpen] = useState(false)
+  const [fileOpenError, setFileOpenError] = useState<string | null>(null)
+  const openProjectPicker = () => {
+    setFileOpenError(null)
+    pickProjectFile(loadProject, (error) => setFileOpenError(projectFileErrorMessage(error)))
+  }
   const [dockRequest, setDockRequest] = useState<DockRequest>({ tab: 'structure', revision: 0 })
   const openDockTab = (tab: DockRequest['tab']) => {
     setDockRequest((current) => nextDockRequest(current, tab))
@@ -491,7 +496,7 @@ export function Workspace() {
         case 'redo': redo(); break
         case 'delete': deleteSelected(); break
         case 'newCabinet': addCabinet(); break
-        case 'openProject': pickProjectFile(loadProject); break
+        case 'openProject': openProjectPicker(); break
         case 'saveProject': downloadProjectFile(exportProject()); break
         case 'printProject':
           if (pdfCabinet && productionState.exportsAvailable) runClassicCommand({ type: 'export', format: 'pdf', scope: 'project' })
@@ -524,7 +529,7 @@ export function Workspace() {
     switch (command.type) {
       case 'open': openPanel(command.panel); break
       case 'saveProject': downloadProjectFile(exportProject()); break
-      case 'openProject': pickProjectFile(loadProject); break
+      case 'openProject': openProjectPicker(); break
       case 'export':
         if (draftInvalid) break
         setExportError(null)
@@ -587,7 +592,7 @@ export function Workspace() {
   const classicToolRows: ClassicToolSpec[][] = classic ? uniqueToolbarRows<ClassicToolSpec>([
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
-      { icon: 'open', label: tr('Открыть проект'), action: () => pickProjectFile(loadProject) },
+      { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
       { icon: 'print', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
       { icon: 'cut', label: tr('Раскрой'), action: () => { window.location.href = '/cut' } },
@@ -822,6 +827,10 @@ export function Workspace() {
           <Button size="sm" onClick={reset}>{tr('Начать новый проект')}</Button>
         </div>
       )}
+      {fileOpenError && <div role="alert" className="flex items-center gap-2 border-b border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
+        <span className="flex-1">{fileOpenError}</span>
+        <Button size="sm" onClick={() => setFileOpenError(null)}>{tr('Закрыть')}</Button>
+      </div>}
       {historyRestoreError && (
         <div role="alert" className="flex items-center gap-2 border-b border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
           <span className="flex-1">{historyRestoreError}</span>

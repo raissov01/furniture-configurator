@@ -62,6 +62,7 @@ export const uz: Record<string, string> = {
   'Только предпросмотр: откройте импорт в проекте': 'Faqat oldindan ko‘rish: importni loyihada oching',
   'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
     '“{name}” faylida JSON xatosi bor. .json loyiha faylini tanlang yoki sintaksisini tuzating.',
+  'Не удалось открыть проект: {reason}': 'Loyihani ochib bo‘lmadi: {reason}',
   'История изменений': 'O‘zgarishlar tarixi',
   'Раскрой (отдельный экран)': 'Bichish (alohida ekran)',
   'Файл': 'Fayl',

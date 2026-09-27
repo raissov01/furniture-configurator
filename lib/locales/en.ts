@@ -61,6 +61,7 @@ export const en: Record<string, string> = {
   'Только предпросмотр: откройте импорт в проекте': 'Preview only: open import in a project',
   'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
     'Invalid JSON in “{name}”. Choose a .json project file or correct its syntax.',
+  'Не удалось открыть проект: {reason}': 'Could not open project: {reason}',
   'История изменений': 'Change history',
   'Раскрой (отдельный экран)': 'Nesting (separate screen)',
   'Файл': 'File',
