@@ -21,6 +21,7 @@ import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import { materialUsedInTree } from '@/lib/materialUsedInTree'
+import { validateProjectShopInputs, validatedShopEdit } from '@/lib/validatedShopEdit'
 import {
   DEFAULT_ROOM,
   IDENTITY_TRANSFORM,
@@ -1305,13 +1306,14 @@ export const useConfigurator = create<State>((set, get) => ({
   editShop(patch) {
     const s = get()
     const changesJointInputs = Boolean(patch.settings || patch.materials || patch.edgeBands)
-    const nextShop = syncActivePriceList({ ...s.shop, ...patch })
+    const nextShop = validatedShopEdit(s.shop, patch)
     const projectSettings = patch.settings
       ? projectSettingsAfterShopEdit(s.projectSettings, s.shop.settings, patch.settings) : s.projectSettings
     const projectMaterials = patch.materials
       ? projectMaterialsAfterShopEdit(s.projectMaterials, s.shop.materials, patch.materials) : s.projectMaterials
     const projectEdgeBands = patch.edgeBands
       ? projectBandsAfterShopEdit(s.projectEdgeBands, s.shop.edgeBands, patch.edgeBands) : s.projectEdgeBands
+    if (patch.materials || patch.edgeBands) validateProjectShopInputs(projectMaterials ?? nextShop.materials, projectEdgeBands ?? nextShop.edgeBands)
     const nextCatalog = projectCatalog(nextShop, projectMaterials, projectEdgeBands)
     // Check the whole geometry before mutating either project overrides or undo.
     const autoJoints = s.autoJoints.length > 0 && changesJointInputs

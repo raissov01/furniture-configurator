@@ -35,8 +35,8 @@ import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
 import { cutDisplay, visibleMaterials } from '@/lib/cutView'
 import { playbackStep } from '@/src/core/cutPlayback'
-import { labelExportOptions, labelSizeLimits } from '@/lib/labelExportOptions'
-import { safeCutPlan } from '@/lib/safeCutPlan'
+import { labelExportOptions, labelSizeLimits, projectLabelIdentity } from '@/lib/labelExportOptions'
+import { cutExportAllowed, safeCutPlan } from '@/lib/safeCutPlan'
 import type { LabelPage } from '@/src/core/export/labelLayout'
 
 /**
@@ -103,15 +103,15 @@ export function CutPage() {
   const [labelWidth, setLabelWidth] = useState(58)
   const [labelHeight, setLabelHeight] = useState(40)
   const [labelDraftInvalid, setLabelDraftInvalid] = useState<Record<string, boolean>>({})
+  const [kerfDraftInvalid, setKerfDraftInvalid] = useState(false)
   /** Экспорттың ескертуі (мыс. Базис қазақ әріптерін оқымайды). */
   const [notice, setNotice] = useState<string | null>(null)
   const labelOptions = useMemo(() => {
     try {
-      // Ағаштың түбір ID-і барлық жобада "root"; бірінші өндіріс түйінінің
-      // ID-і сақталған файлда тұрақты және жобаларды ажыратады.
+      const identity = projectLabelIdentity(root)
       return { value: labelExportOptions(
         { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
-        root.children[0]?.id ?? root.id, 4,
+        identity.projectId, identity.version,
       ), error: null }
     } catch (error) {
       return { value: null, error: error instanceof Error ? error.message : String(error) }
@@ -156,6 +156,7 @@ export function CutPage() {
     [nesting, cutting.kerf],
   )
   const plan = planned.plan
+  const cutExportReady = cutExportAllowed(planned.error, kerfDraftInvalid)
   const advice = useMemo(
     () => (nesting ? unplacedAdvice(nesting, panels, catalog, options) : []),
     [nesting, panels, catalog, options],
@@ -193,7 +194,7 @@ export function CutPage() {
               {tr('Показать резы')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting || planned.error !== null}
+              disabled={busy !== null || !nesting || !cutExportReady}
               title={tr('Карта раскроя для цеха, по листу на страницу')}
               onClick={() => void run('map', async () => {
                 const { nestingPdf } = await import('@/src/core/export/nestingPdf')
@@ -204,7 +205,7 @@ export function CutPage() {
               {busy === 'map' ? '…' : tr('PDF карты')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting || planned.error !== null}
+              disabled={busy !== null || !nesting || !cutExportReady}
               title={tr('DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям')}
               onClick={() => void run('dxf', async () => {
                 const [{ nestingToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -223,7 +224,7 @@ export function CutPage() {
               {busy === 'dxf' ? '…' : 'DXF'}
             </Button>
             <Button
-              disabled={busy !== null || !nesting || planned.error !== null || !labelsReady}
+              disabled={busy !== null || !nesting || !cutExportReady || !labelsReady}
               title={tr('Бирки на детали: позиция, размер реза, кромка по кромкам')}
               onClick={() => void run('labels', async () => {
                 const { labelsPdf } = await import('@/src/core/export/labels')
@@ -239,7 +240,7 @@ export function CutPage() {
               {busy === 'labels' ? '…' : tr('Бирки')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting || planned.error !== null || !labelsReady}
+              disabled={busy !== null || !nesting || !cutExportReady || !labelsReady}
               title={tr('Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.')}
               onClick={() => void run('bundle', async () => {
                 const [
@@ -276,7 +277,7 @@ export function CutPage() {
               {busy === 'bundle' ? '…' : tr('Пакет для цеха')}
             </Button>
             <Button
-              disabled={busy !== null || panels.length === 0 || production.error !== null || planned.error !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null || !cutExportReady}
               title={tr('Присадка для станка: на каждую деталь свой файл, плюс index.csv')}
               onClick={() => void run('cnc', async () => {
                 const [{ cncFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -297,7 +298,7 @@ export function CutPage() {
               {busy === 'cnc' ? '…' : tr('ЧПУ по деталям')}
             </Button>
             <Button
-              disabled={busy !== null || panels.length === 0 || production.error !== null || planned.error !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null || !cutExportReady}
               title={tr('Для Базиса: список деталей для Раскроя (CSV, XLSX), скрипт для Мебельщика — детали и присадка как крепёж, DXF деталей')}
               onClick={() => void run('basis', async () => {
                 const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfArchiveFiles }, { zipSync, strToU8 }] =
@@ -398,6 +399,8 @@ export function CutPage() {
                   value={cutting.kerf}
                   min={0}
                   max={20}
+                  field="kerf"
+                  onDraftValidityChange={(_field, invalid) => setKerfDraftInvalid(invalid)}
                   onChange={(kerf) => setCutting({ kerf })}
                 />
               </Field>
