@@ -448,7 +448,16 @@ export function generateCabinet(
     note = '',
     edgesOverride?: PanelEdges,
   ): Panel => {
-    const edges = edgesOverride ?? resolveEdges(role, config.construction, config.edging, orientation)
+    // Фасад бөлек декордан жасалса, оның кромкасы да сол материалдың каталогтағы
+    // саясатын қолданады. Бір декорлы шкафта жобаның қолмен бапталған edging-і қалады.
+    let policy = config.edging
+    if (role === 'front' && material.id !== carcass.id) {
+      if (!material.defaultEdging) {
+        throw new ConfigValidationError('frontMaterialId', material.id, 'фасад материалының defaultEdging кромкасы қажет')
+      }
+      policy = material.defaultEdging
+    }
+    const edges = edgesOverride ?? resolveEdges(role, config.construction, policy, orientation)
     const { cutLength, cutWidth } = calculateCutDimensions(
       finishedLength, finishedWidth, edges, bands, settings,
     )
