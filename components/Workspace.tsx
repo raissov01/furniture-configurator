@@ -526,6 +526,7 @@ export function Workspace() {
     canRemoveCabinet: cabinets.length >= 2 && activeEditable,
     canExport: projectPanels.length > 0 && productionState.exportsAvailable,
     canExportPdf: Boolean(pdfCabinet) && productionState.exportsAvailable,
+    canExportActiveCabinet: hasActiveCabinet && productionState.exportsAvailable,
     productionError: Boolean(production.error),
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
     silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,

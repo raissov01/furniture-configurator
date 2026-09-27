@@ -70,6 +70,13 @@ describe('classic menu', () => {
     expect(find('element.solid').command).toEqual({ type: 'addSolid' })
   })
 
+  it('allows project PDF with a board selected but disables active-cabinet exports', () => {
+    const state = { ...base, activeEditable: false, canExportPdf: true, canExportActiveCabinet: false }
+    expect(find('file.export.project.pdf', state).disabled).toBe(false)
+    expect(find('file.export.cabinet.xlsx', state).disabled).toBe(true)
+    expect(find('file.export.pdf', state).disabled).toBe(true)
+  })
+
   it('Workspace never clicks a hidden DOM button from a menu or toolbar', () => {
     const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
     expect(source).not.toMatch(/(querySelector|getElementById)\b[^\n]*\?\.click\(\)/)
