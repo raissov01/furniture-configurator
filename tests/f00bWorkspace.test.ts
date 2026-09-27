@@ -13,6 +13,7 @@ describe('F00b жұмыс кеңістігінің жоғарғы бөлігі',
     expect(rows).toEqual([[{ label: 'А' }], [{ label: 'Б' }], [{ label: 'В' }, { label: 'Г' }]])
     expect(workspace).toContain('compactToolbarRows<ClassicToolSpec>')
     expect(workspace).not.toContain('index === 3 && <label className="p100-toolbar-style"')
+    expect(css).toMatch(/\.p100-toolbar-row\s*\{[^}]*height:\s*31px/)
     expect(css).not.toMatch(/\.p100-toolbar\s*\{[^}]*height:\s*196px/)
     expect(css).not.toMatch(/\.p100-toolbar-row:last-child\s*\{[^}]*height:\s*70px/)
   })
