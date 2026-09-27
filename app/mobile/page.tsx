@@ -301,7 +301,7 @@ export default function MobileTodayPage() {
     </div>}
     {(role === 'owner' || role === 'designer') && <section className="space-y-3">
       <h2 className="text-base font-semibold">{t('Следующее действие')}</h2>
-      <button className={`${button} !border-[#005a9e] !bg-[#005a9e] !font-semibold !text-white`} type="button" disabled={!store}
+      <button className={`${button} !border-[var(--brand-graphite)] !bg-[var(--brand-graphite)] !font-semibold !text-white`} type="button" disabled={!store}
         onClick={() => setActive(emptySurvey(crypto.randomUUID(), Date.now()))}>{t('Новый замер')}</button>
       <Link className={button} href="/configurator">{t('Новая КП')}</Link>
       {role === 'owner' && <Link className={button} href="/mobile/installation">{t('Монтаж')}</Link>}

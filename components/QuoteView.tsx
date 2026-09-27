@@ -361,12 +361,12 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
         {sheet.parts.map((p) => (
           <g key={p.panelId}>
             <rect x={p.x} y={p.y} width={p.width} height={p.height}
-              fill="#e3c76a" stroke="#7c5f14" strokeWidth={4} />
+              fill="var(--brand-amber)" stroke="var(--brand-graphite)" strokeWidth={4} />
             <text
               x={p.x + p.width / 2} y={p.y + p.height / 2}
               textAnchor="middle" dominantBaseline="middle"
               fontSize={Math.max(34, Math.min(p.width, p.height) * 0.16)}
-              fill="#3f3108"
+              fill="var(--brand-graphite)"
             >
               {p.label} {p.width}×{p.height}
             </text>
@@ -670,10 +670,10 @@ function PriceTable({ price, shopName, overrides, onChange }: {
         {price.salePriceOverride !== undefined ? (
           <Row label={tr('Сату бағасы (қолмен)')} value={formatTengeExact(price.salePriceOverride)} />
         ) : null}
-        <Row label="ВСЕГО" value={formatTengeExact(price.grossTotal)} />
-        <Row label="СКИДКА" value={`−${formatTengeExact(price.discountTotal)}`} />
+        <Row label={tr('Всего')} value={formatTengeExact(price.grossTotal)} />
+        <Row label={tr('Скидка')} value={`−${formatTengeExact(price.discountTotal)}`} />
         <div className="flex items-baseline justify-between border-t border-neutral-200 pt-1.5 text-sm font-semibold dark:border-neutral-700">
-          <span>К ОПЛАТЕ</span>
+          <span>{tr('К оплате')}</span>
           <span className="tabular-nums">{formatTengeExact(price.total)}</span>
         </div>
         {shopName ? <p className="pt-1 text-[11px] text-neutral-400">{shopName}</p> : null}
