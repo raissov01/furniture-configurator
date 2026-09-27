@@ -8,8 +8,8 @@ import type { LibraryItem, SceneNode } from '@/src/core/index'
 import { exportLibraryJson, importLibraryJson, readLocalLibrary, writeLocalLibrary } from '@/lib/libraryLocal'
 import { importUploadSummary, LIBRARY_AUTH_CHANGED_EVENT, libraryUploadOutcome } from '@/lib/librarySyncUi'
 
-const inputStyle = 'min-w-0 border border-neutral-700 bg-neutral-950 px-1.5 py-1 text-xs text-neutral-100'
-const buttonStyle = 'border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-40'
+const inputStyle = 'min-w-0 border border-neutral-700 bg-[var(--p100-dialog-content)] px-1.5 py-1 text-xs text-neutral-100'
+const buttonStyle = 'border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-[var(--p100-tool-hover)] disabled:opacity-40'
 
 /** JSON өлшемдерінен жасалған нобай; бөгде өндірушінің суреті қолданылмайды. */
 function ItemPreview({ item }: { item: LibraryItem }) {
@@ -20,7 +20,7 @@ function ItemPreview({ item }: { item: LibraryItem }) {
   const h = Math.max(3, Math.round(height * scale))
   const x = Math.round((80 - w) / 2)
   const y = Math.round((48 - h) / 2)
-  return <svg className="h-12 w-full border border-neutral-800 bg-neutral-900" viewBox="0 0 80 48" role="img" aria-label={tr('Предпросмотр элемента')}>
+  return <svg className="h-12 w-full border border-neutral-800 bg-[var(--p100-dialog)]" viewBox="0 0 80 48" role="img" aria-label={tr('Предпросмотр элемента')}>
     <rect x={x} y={y} width={w} height={h} fill="#404040" stroke="#a3a3a3" strokeWidth="1" />
     {item.node.kind === 'cabinet' || item.node.kind === 'group' ? <>
       <line x1={x + Math.round(w / 2)} y1={y} x2={x + Math.round(w / 2)} y2={y + h} stroke="#737373" />
@@ -190,7 +190,7 @@ export function PersonalLibraryPanel() {
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось заменить материал')) }
   }
 
-  return <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto bg-neutral-950 p-2 text-neutral-100">
+  return <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto bg-[var(--p100-dialog-content)] p-2 text-neutral-100">
     <label className="text-xs">{tr('Элемент проекта')}
       <select className={`mt-1 w-full ${inputStyle}`} value={nodeId} onChange={(event) => setNodeId(event.target.value)}>
         {nodes.map((node) => <option key={node.id} value={node.id}>{node.name}</option>)}
@@ -252,7 +252,7 @@ export function PersonalLibraryPanel() {
       </div>
       <button type="button" className={`mt-1 ${buttonStyle}`} disabled={!oldMaterialId || !newMaterialId || oldMaterialId === newMaterialId} onClick={() => void replaceAll()}>{tr('Заменить во всей библиотеке')}</button>
     </section>}
-    {error && <p role="alert" className="border border-red-700 p-1 text-xs text-red-300">{error}</p>}
+    {error && <p role="alert" className="border border-[var(--p100-invalid)] p-1 text-xs text-[var(--p100-invalid)]">{error}</p>}
     {message && <p role="status" className="text-xs text-neutral-400">{message}</p>}
   </div>
 }

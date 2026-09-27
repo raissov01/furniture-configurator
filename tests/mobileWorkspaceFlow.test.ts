@@ -4,12 +4,13 @@ import { describe, expect, it } from 'vitest'
 const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
 
 describe('390 × 844 workspace flow', () => {
-  it('keeps the scene compact and gives the properties pane its own mobile scroll area', () => {
-    expect(source).toMatch(/grid[^"\n]*overflow-y-auto[^"\n]*lg:overflow-hidden/)
-    expect(source).toMatch(/<main className="[^"\n]*isolate[^"\n]*h-\[28dvh\][^"\n]*max-h-\[28dvh\][^"\n]*overflow-hidden/)
-    expect(source).toMatch(/<aside className="[^"\n]*min-h-\[360px\][^"\n]*lg:hidden/)
+  it('reserves 40 percent of the screen for the scene and docks properties at the bottom', () => {
+    expect(source).toMatch(/grid[^"\n]*grid-rows-\[minmax\(0,1fr\)_30dvh\][^"\n]*overflow-hidden/)
+    expect(source).toMatch(/<main className="[^"\n]*isolate[^"\n]*min-h-\[40dvh\][^"\n]*overflow-hidden/)
+    expect(source).toMatch(/<aside className="[^"\n]*h-\[30dvh\][^"\n]*lg:hidden/)
     expect(source).toContain('data-testid="mobile-tree-dock"')
-    expect(source).toContain('className="compact-tools')
+    expect(source).not.toContain('max-h-[35dvh] overflow-y-auto')
+    expect(source).not.toContain('>⧉</Button>')
   })
 
   it('puts a touch button above the canvas and opens the full-screen mobile properties panel', () => {

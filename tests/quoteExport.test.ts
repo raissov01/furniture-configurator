@@ -24,7 +24,6 @@ import {
   templateToCabinet,
 } from '../src/core/index'
 import type { ShopProfile } from '../src/core/index'
-import { quoteSheetRows } from '../src/core/export/quotePdf'
 
 const font = (name: string) =>
   new Uint8Array(readFileSync(fileURLToPath(new URL(`../public/fonts/${name}`, import.meta.url))))
@@ -102,6 +101,23 @@ describe('раскрой DXF', () => {
 })
 
 describe('раскрой PDF', () => {
+  it('37-ден көп белгі болса аңыздың жалғасын жоғалтпайды', async () => {
+    const smallPanels = Array.from({ length: 38 }, (_, index) => ({ ...panels[0]!, id: `legend-${index + 1}`,
+      label: `Деталь ${index + 1}`, cutLength: 100, cutWidth: 100,
+      finishedLength: 100, finishedWidth: 100 }))
+    const crowded = nestPanels(smallPanels, catalog)
+    expect(crowded.sheetCount).toBe(1)
+    const bytes = await nestingPdf({ nesting: crowded, projectName: 'Тест', fonts })
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(crowded.sheetCount + 1)
+  })
+  it('картадағы нөмір мен жазу кемінде 7.5 pt', async () => {
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText')
+    try {
+      await nestingPdf({ nesting, projectName: 'Шкаф 3 секции', fonts })
+      const sizes = drawText.mock.calls.map(([, options]) => options?.size ?? 0)
+      expect(Math.min(...sizes)).toBeGreaterThanOrEqual(7.5)
+    } finally { drawText.mockRestore() }
+  })
   it('әр резді картаға ретімен сызады', async () => {
     const drawLine = vi.spyOn(PDFPage.prototype, 'drawLine')
     try {
@@ -113,10 +129,10 @@ describe('раскрой PDF', () => {
     }
   })
 
-  it('қорытынды беті + әр параққа бір бет', async () => {
+  it('бос қорытынды бетсіз әр параққа бір бет', async () => {
     const bytes = await nestingPdf({ nesting, projectName: 'Шкаф 3 секции', fonts })
     const doc = await PDFDocument.load(bytes)
-    expect(doc.getPageCount()).toBe(1 + nesting.sheetCount)
+    expect(doc.getPageCount()).toBe(nesting.sheetCount)
   })
 
   it('нағыз PDF файлы шығады', async () => {
@@ -127,17 +143,31 @@ describe('раскрой PDF', () => {
 })
 
 describe('КП PDF', () => {
-  it('клиентке материал бойынша раскройдағы нақты парақ санын шығарады', () => {
-    const price = priceProject(panels, nesting, pricedShop, [], [], { salePrice: 12_345_67 })
-    const rows = quoteSheetRows(price)
-    expect(rows).toEqual(nesting.byMaterial.filter((group) => group.sheets.length > 0).map((group) => ({
-      materialId: group.materialId,
-      materialName: pricedShop.materials.find((material) => material.id === group.materialId)?.name,
-      sheets: group.sheets.length,
-    })).sort((a, b) => a.materialId.localeCompare(b.materialId)))
-    expect(rows.reduce((sum, row) => sum + row.sheets, 0)).toBe(nesting.sheetCount)
+  it('клиентке тек соңғы баға, реквизиттер және ₸ шығады', async () => {
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText')
+    try {
+      const shop = { ...pricedShop, bin: '123456789012', address: 'Астана, Абай 1' }
+      await quotePdf({ price: priceProject(panels, nesting, shop), shop,
+        projectName: 'Шкаф', date: '27.09.2026', fonts })
+      const lines = drawText.mock.calls.map(([value]) => value)
+      expect(lines).toContain('БИН: 123456789012')
+      expect(lines).toContain('Адрес: Астана, Абай 1')
+      expect(lines).toContain('К оплате')
+      expect(lines.join(' ')).toContain('₸')
+      expect(lines.join(' ')).not.toMatch(/Себестоимость|Наценка|СКИДКА|−0 ₸|тг/)
+    } finally { drawText.mockRestore() }
   })
 
+  it('цех логотипі болса PDF сурет ретінде қояды', async () => {
+    const drawImage = vi.spyOn(PDFPage.prototype, 'drawImage')
+    try {
+      const logoDataUrl = `data:image/png;base64,${readFileSync('public/brand/favicon-32.png').toString('base64')}`
+      const shop = { ...pricedShop, logoDataUrl }
+      await quotePdf({ price: priceProject(panels, nesting, shop), shop,
+        projectName: 'Шкаф', date: '27.09.2026', fonts })
+      expect(drawImage).toHaveBeenCalled()
+    } finally { drawImage.mockRestore() }
+  })
   it('бағасы толтырылмаса ҚҰЖАТ ШЫҚПАЙДЫ', async () => {
     const price = priceProject(panels, nesting, base)
     await expect(
@@ -202,10 +232,10 @@ describe('қаріп жиынтығы', () => {
     }
   })
 
-  it('₸ таңбасы қаріпте ЖОҚ — сондықтан PDF-те «тг» жазылады', async () => {
+  it('₸ таңбасы қаріпте бар — PDF пен экранда бір валюта', async () => {
     const fontkit = (await import('@pdf-lib/fontkit')).default
     const font = fontkit.create(Buffer.from(fonts.regular))
-    expect(font.glyphsForString('₸')[0]?.id).toBe(0)
+    expect(font.glyphsForString('₸')[0]?.id).not.toBe(0)
     expect(formatTenge(100)).toContain('₸')
     expect(formatTenge(100, 'тг')).toContain('тг')
   })

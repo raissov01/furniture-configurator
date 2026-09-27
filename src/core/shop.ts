@@ -13,6 +13,7 @@
  */
 
 import { z } from 'zod'
+import { nextCopyName } from './copyName'
 import { migrateBandThreshold } from './migrateBandThreshold'
 import { KERF, MAX_KERF } from './constants'
 import { fillingHardware } from './filling'
@@ -187,6 +188,11 @@ export type ShopProfile = {
   name: string
   city: string
   phone: string
+  /** Клиенттік КП реквизиттері мен безендіруі; ескі профильдерде болмауы мүмкін. */
+  bin?: string
+  address?: string
+  logoDataUrl?: string | undefined
+  brandColor?: string
 
   /** Цех константалары. DEFAULT_SETTINGS үстіне жабылады (mergeSettings). */
   settings: SettingsOverride
@@ -400,7 +406,7 @@ export function makeMaterial(input: {
  * Бағасы, парақ/тақта өлшемі, кромка саясаты және декор сілтемесі дәл сақталады;
  * жаңа бағаны ойдан шығармаймыз. Ішкі объектілер де тәуелсіз көшіріледі.
  */
-export function cloneMaterial(source: Material, existingIds: Iterable<string>): Material {
+export function cloneMaterial(source: Material, existingIds: Iterable<string>, existingNames: Iterable<string> = []): Material {
   const used = new Set(existingIds)
   const baseId = `${source.id}-copy`
   let id = baseId
@@ -410,7 +416,8 @@ export function cloneMaterial(source: Material, existingIds: Iterable<string>): 
     number += 1
   }
 
-  return { ...structuredClone(source), id, name: `${source.name} (копия)` }
+  const copyNumber = id === baseId ? 1 : Number(id.slice(baseId.length + 1))
+  return { ...structuredClone(source), id, name: nextCopyName(source.name, existingNames, copyNumber) }
 }
 
 export function defaultHardware(): HardwareItem[] {
@@ -782,6 +789,10 @@ export const ShopProfileSchema = z.object({
   name: z.string(),
   city: z.string(),
   phone: z.string(),
+  bin: z.string().regex(/^\d{12}$/).optional(),
+  address: z.string().max(240).optional(),
+  logoDataUrl: z.string().regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/).max(1_500_000).optional(),
+  brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   settings: SettingsOverrideSchema,
   materials: z.array(MaterialSchema).min(1),
   edgeBands: z.array(EdgeBandSchema),

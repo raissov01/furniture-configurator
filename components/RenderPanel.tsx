@@ -14,6 +14,7 @@ import { Button, Field } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
 import { capturePanorama } from '@/lib/panorama'
 import { MaterialAppearanceEditor, ProjectLightsEditor } from '@/components/VisualSettingsPanel'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 function buttonStyleForTab(selected: boolean): string {
   return 'border px-2 py-1 text-xs ' + (selected
@@ -24,6 +25,7 @@ function buttonStyleForTab(selected: boolean): string {
 export function RenderPanel() {
   const open = useConfigurator((s) => s.renderOpen)
   const setOpen = useConfigurator((s) => s.setRenderOpen)
+  const { zIndex } = useModalLayer(open, 'render')
   const [busy, setBusy] = useState(false)
   const [hint, setHint] = useState('')
   const [style, setStyle] = useState('scandinavian')
@@ -80,7 +82,8 @@ export function RenderPanel() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div
@@ -104,7 +107,7 @@ export function RenderPanel() {
         {tab === 'lights' ? <ProjectLightsEditor /> : null}
         {tab === 'render' ? <>
 
-        <p className="mb-3 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+        <p className="mb-3 text-[11px] leading-snug text-amber-900 dark:text-amber-400">
           {tr('Рендер — картинка, а не размер: модель может слегка изменить пропорции и цвет. Перед отправкой клиенту сверьте с деталировкой.')}
         </p>
 

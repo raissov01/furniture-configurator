@@ -5,8 +5,7 @@
  * тұрақты уақытпен. Сессия — кездейсоқ 32 байт, httpOnly cookie ішінде;
  * браузердегі JS оны оқи алмайды.
  *
- * Мұнда пошта растау да, құпиясөзді қалпына келтіру де ЖОҚ — олар бөлек
- * жұмыс, ал жоқ нәрсені бар деп көрсетпейміз.
+ * Құпиясөзді қалпына келтіру токендері passwordReset модулінде.
  */
 
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
@@ -30,7 +29,7 @@ export type Account = {
   role: Role
 }
 
-function hashPassword(password: string): string {
+export function hashPassword(password: string): string {
   const salt = randomBytes(16)
   const derived = scryptSync(password, salt, 64)
   return `${salt.toString('hex')}:${derived.toString('hex')}`

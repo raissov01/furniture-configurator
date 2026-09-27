@@ -226,10 +226,10 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     return <fieldset key={kind} className="min-w-0 border border-[#b8b8b8] bg-white p-3">
       <legend className="px-1 text-sm font-semibold">{t(obstacleLabels[kind])}</legend>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" aria-pressed={answer.status === 'present'} className={`${button} ${answer.status === 'present' ? '!border-[#005a9e] !bg-[#dceeff]' : ''}`}
+        <button type="button" aria-pressed={answer.status === 'present'} className={`${button} ${answer.status === 'present' ? '!border-[var(--brand-graphite)] !bg-[var(--brand-amber)]' : ''}`}
           onClick={() => { setDraftNumbers((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${path}.`))));
             setSurvey((current) => updateObstacle(current, wall, kind, { status: 'present' })) }}>{t('Есть')}</button>
-        <button type="button" aria-pressed={answer.status === 'absent'} className={`${button} ${answer.status === 'absent' ? '!border-[#005a9e] !bg-[#dceeff]' : ''}`}
+        <button type="button" aria-pressed={answer.status === 'absent'} className={`${button} ${answer.status === 'absent' ? '!border-[var(--brand-graphite)] !bg-[var(--brand-amber)]' : ''}`}
           onClick={() => { setDraftNumbers((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${path}.`))));
             setSurvey((current) => updateObstacle(current, wall, kind, { status: 'absent' })) }}>{t('Нет')}</button>
       </div>
@@ -336,7 +336,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       {WALL_IDS.map((id) => <div key={id}>{renderMeasuredField({ field: `walls.${id}.length`, label: wallLabels[id], value: survey.walls[id].length })}</div>)}
       <h2 className="font-semibold">{t('Углы, градусы')}</h2>
       {CORNER_IDS.map((id) => <div key={id}>{renderMeasuredField({ field: `corners.${id}`, label: cornerLabels[id], value: survey.corners[id], unit: '°' })}</div>)}
-      <button className={`${button} w-full !border-[#005a9e] !bg-[#005a9e] !text-white`} type="button" onClick={nextFromRoom}>{t('К препятствиям')}</button>
+      <button className={`${button} w-full !border-[var(--brand-graphite)] !bg-[var(--brand-graphite)] !text-white`} type="button" onClick={nextFromRoom}>{t('К препятствиям')}</button>
     </section>}
     {step === 'wall' && <section className="space-y-3">
       <h1 className="text-xl font-semibold">{t(wallLabels[wall])} · {wallIndex + 1}/4</h1>
@@ -344,7 +344,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       {OBSTACLE_KINDS.map(answerCard)}
       <div className="grid grid-cols-2 gap-2">
         <button className={button} type="button" onClick={() => wallIndex ? setWallIndex(wallIndex - 1) : setStep('room')}>{t('Назад')}</button>
-        <button className={`${button} !border-[#005a9e] !bg-[#005a9e] !text-white`} type="button" onClick={nextFromWall}>{wallIndex < 3 ? t('Следующая стена') : t('Проверить')}</button>
+        <button className={`${button} !border-[var(--brand-graphite)] !bg-[var(--brand-graphite)] !text-white`} type="button" onClick={nextFromWall}>{wallIndex < 3 ? t('Следующая стена') : t('Проверить')}</button>
       </div>
     </section>}
     {step === 'review' && <section className="space-y-3">
@@ -365,7 +365,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
         <ul className="mt-2 list-disc pl-5">{issues.map((issue) => <li key={`${issue.path}:${issue.message}`}>{issueLabel(issue.path)}: {issueCopy(issue.path, survey)}</li>)}</ul>
       </div> : <p className="border border-[#247333] bg-white p-3 text-sm">{t('Все обязательные ответы и фото есть')}</p>}
       <button className={`${button} w-full`} type="button" onClick={() => { setStep('wall'); setWallIndex(0) }}>{t('Исправить замер')}</button>
-      <button className={`${button} w-full !border-[#005a9e] !bg-[#005a9e] !text-white`} type="button" disabled={busy || issues.length > 0} onClick={() => void save()}>{t('Сохранить замер')}</button>
+      <button className={`${button} w-full !border-[var(--brand-graphite)] !bg-[var(--brand-graphite)] !text-white`} type="button" disabled={busy || issues.length > 0} onClick={() => void save()}>{t('Сохранить замер')}</button>
       <label className="block text-sm">{t('Стена первого ряда кухни')}
         <select className={`${input} mt-1`} value={kitchenWall} onChange={(event) => setKitchenWall(event.target.value as WallId)}>
           {WALL_IDS.map((id) => <option key={id} value={id}>{t(wallLabels[id])}</option>)}
