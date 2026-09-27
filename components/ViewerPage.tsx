@@ -23,7 +23,7 @@ import { TouchJoystick } from '@/components/TouchJoystick'
 import { isTouchDevice } from '@/lib/walkInput'
 import { ClientComments } from '@/components/ClientComments'
 import { ApprovalPanel } from '@/components/ApprovalPanel'
-import { formatTenge } from '@/src/core/index'
+import { formatTengeExact } from '@/src/core/index'
 import { viewerHashError, viewerPressedState } from '@/components/viewerPublicError'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
@@ -237,7 +237,7 @@ function Viewer({
             </p>
           ))}
           <p className="ml-auto font-medium">{project.priceOverrides?.salePrice !== undefined
-            ? formatTenge(project.priceOverrides.salePrice) : tr('Цена по запросу')}</p>
+            ? formatTengeExact(project.priceOverrides.salePrice) : tr('Цена по запросу')}</p>
         </div>
       </section>
       {code ? <ApprovalPanel code={code} project={project} /> : null}

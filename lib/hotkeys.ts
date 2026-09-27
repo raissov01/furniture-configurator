@@ -24,6 +24,10 @@ export type HotkeyAction =
   | { kind: 'undo' }
   | { kind: 'redo' }
   | { kind: 'delete' }
+  | { kind: 'newCabinet' }
+  | { kind: 'openProject' }
+  | { kind: 'saveProject' }
+  | { kind: 'printProject' }
 
 export type Hotkey = {
   /** Анықтамада көрінетін жазу. */
@@ -38,6 +42,10 @@ export type Hotkey = {
 }
 
 export const HOTKEYS: Hotkey[] = [
+  { keys: 'Ctrl+N', match: ['n'], ctrl: true, description: 'Новый корпус', action: { kind: 'newCabinet' } },
+  { keys: 'Ctrl+O', match: ['o'], ctrl: true, description: 'Открыть проект', action: { kind: 'openProject' } },
+  { keys: 'Ctrl+S', match: ['s'], ctrl: true, description: 'Сохранить проект', action: { kind: 'saveProject' } },
+  { keys: 'Ctrl+P', match: ['p'], ctrl: true, description: 'PDF — весь проект', action: { kind: 'printProject' } },
   { keys: '1', match: ['1'], description: 'Вид: фас', action: { kind: 'preset', preset: 'front' } },
   { keys: '2', match: ['2'], description: 'Вид: 3/4', action: { kind: 'preset', preset: 'three-quarter' } },
   { keys: '3', match: ['3'], description: 'Вид: внутри', action: { kind: 'preset', preset: 'inside' } },
@@ -55,6 +63,12 @@ export const HOTKEYS: Hotkey[] = [
   { keys: 'Ctrl+Y', match: ['y'], ctrl: true, shift: false, description: 'Вернуть', action: { kind: 'redo' } },
   { keys: 'Delete', match: ['delete'], description: 'Удалить выбранный объект', action: { kind: 'delete' } },
 ]
+
+export function classicFileHint(kind: 'newCabinet' | 'openProject' | 'saveProject' | 'printProject'): string {
+  const keys = HOTKEYS.find((hotkey) => hotkey.action.kind === kind && hotkey.ctrl)?.keys
+  if (!keys) throw new Error(`Missing classic file shortcut: ${kind}`)
+  return keys
+}
 
 /** Мәтін теріліп жатыр ма: сонда хоткейлер ұйықтайды. */
 export function isTyping(target: EventTarget | null): boolean {

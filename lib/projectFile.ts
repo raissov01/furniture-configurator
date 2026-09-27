@@ -32,26 +32,28 @@ export function downloadProjectFile(file: ProjectFileV4): void {
   downloadFile(projectFileName(file), JSON.stringify(file, null, 2), 'application/json')
 }
 
-/** Файлды оқып, жүктейді; бүлінген файл ҮНСІЗ жұтылмайды. */
+export function projectFileErrorMessage(error: unknown): string {
+  return tf('Не удалось открыть проект: {reason}', {
+    reason: error instanceof Error ? error.message : String(error),
+  })
+}
+
+/** Файлды оқып, жүктейді; қатені шақырушы бетте көрсетеді. */
 export async function loadProjectFromFile(file: File, load: (project: ProjectFileV4) => void): Promise<void> {
-  try {
-    load(parseProjectFileText(await file.text(), file.name))
-  } catch (error) {
-    window.alert(`Не удалось открыть проект: ${error instanceof Error ? error.message : 'файл не распознан'}`)
-  }
+  load(parseProjectFileText(await file.text(), file.name))
 }
 
 /**
  * Файл таңдау терезесі. Уақытша input DOM-ға тіркелмейді: `click()` пайдаланушы
  * басқан оқиғаның ішінде шақырылады, сондықтан браузер терезені ашады.
  */
-export function pickProjectFile(load: (project: ProjectFileV4) => void): void {
+export function pickProjectFile(load: (project: ProjectFileV4) => void, onError: (error: unknown) => void): void {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'application/json,.json'
   input.addEventListener('change', () => {
     const file = input.files?.[0]
-    if (file) void loadProjectFromFile(file, load)
+    if (file) void loadProjectFromFile(file, load).catch(onError)
   }, { once: true })
   input.click()
 }

@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { TreeDock } from '@/components/panels/TreeDock'
+import type { DockRequest } from '@/lib/treeDockUi'
 
 /** Small movable desktop window. Pointer capture keeps the drag inside the title bar. */
-export function ClassicStructureWindow({ onClose, onProperties, canOpenProperties }: {
-  onClose: () => void; onProperties: () => void; canOpenProperties: boolean
+export function ClassicStructureWindow({ onClose, onProperties, canOpenProperties, dockRequest }: {
+  onClose: () => void; onProperties: () => void; canOpenProperties: boolean; dockRequest?: DockRequest
 }) {
   const [position, setPosition] = useState({ x: 200, y: 160 })
   const [start, setStart] = useState<{ x: number; y: number; left: number; top: number } | null>(null)
@@ -26,6 +27,6 @@ export function ClassicStructureWindow({ onClose, onProperties, canOpenPropertie
       <button type="button" disabled={!canOpenProperties} onClick={onProperties}>{tr('Свойства')}</button>
       <button type="button" aria-label={tr('Закрыть')} title={tr('Закрыть')} onClick={onClose}>×</button>
     </div>
-    <TreeDock />
+    <TreeDock request={dockRequest} />
   </div>
 }

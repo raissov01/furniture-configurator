@@ -1098,6 +1098,31 @@ async function run() {
     check(reloaded.roughness === 0.34 && reloaded.lightCount === 1, 'қайта ашқанда PBR мен жарық сақталды')
   })
 
+  await test('Мобильді раскрой: экспорт тобы ашылып жабылады', async () => {
+    await session.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
+    await h.goto('/cut', 7000)
+    check(await h.until("Boolean(document.querySelector('button[aria-controls=\"cut-export-actions\"]'))", 15000), 'экспорт батырмасы бар')
+    const state = () => h.evaluate(`(() => {
+      const toggle = document.querySelector('button[aria-controls="cut-export-actions"]')
+      const actions = document.getElementById('cut-export-actions')
+      const basis = [...(actions?.querySelectorAll('button') ?? [])].find((button) => button.textContent.trim() === 'Базис')
+      const rect = basis?.getBoundingClientRect()
+      return { expanded: toggle?.getAttribute('aria-expanded'), visible: Boolean(actions && getComputedStyle(actions).display !== 'none'),
+        reachable: Boolean(rect && rect.width > 0 && rect.left >= 0 && rect.right <= innerWidth + 1),
+        pageFits: document.documentElement.scrollWidth <= innerWidth + 1 }
+    })()`)
+    const initial = await state()
+    check(initial.expanded === 'false' && !initial.visible, 'экспорт бастапқыда жиналған')
+    await h.evaluate(`document.querySelector('button[aria-controls="cut-export-actions"]')?.click()`)
+    check(await h.until("document.querySelector('button[aria-controls=\"cut-export-actions\"]')?.getAttribute('aria-expanded') === 'true'", 5000), 'экспорт ашылды')
+    const opened = await state()
+    check(opened.visible && opened.reachable && opened.pageFits, 'Базис батырмасы 390 px экранда қолжетімді')
+    await h.evaluate(`document.querySelector('button[aria-controls="cut-export-actions"]')?.click()`)
+    check(await h.until("document.querySelector('button[aria-controls=\"cut-export-actions\"]')?.getAttribute('aria-expanded') === 'false'", 5000), 'экспорт қайта жиналды')
+    check(!(await state()).visible, 'жиналған топ көрінбейді')
+    await session.send('Emulation.setDeviceMetricsOverride', { width: 1500, height: 1000, deviceScaleFactor: 1, mobile: false })
+  })
+
   await test('Консольде қате жоқ', async () => {
     const real = session.consoleErrors.filter((e) => !/DevTools|favicon|THREE.Clock/.test(e))
     check(real.length === 0, `қате жоқ (${real.slice(0, 2).join(' | ') || 'таза'})`)

@@ -5,7 +5,7 @@
  * шекараны әрі 3D-нің «үнемді» режимінің шынымен жеңілдететінін күзетеді.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { QUALITIES, THEMES, canvasSettings, readQuality } from '../lib/appearance'
+import { QUALITIES, THEMES, canvasSettings, readQuality, initializeSavedTheme } from '../lib/appearance'
 
 /** Node ортасында `window` жоқ — әр тестке керегінше өзіміз қоямыз. */
 function stubWindow(opts: { saved?: string | null; coarsePointer?: boolean }): void {
@@ -38,6 +38,16 @@ describe('3D сапасы', () => {
 describe('тема', () => {
   it('үш күй бар әрі «жүйедегідей» солардың бірі', () => {
     expect(THEMES).toEqual(['system', 'light', 'dark'])
+  })
+
+  it('маршрут ашылғанда сақталған ашық теманы түбірге қолданады', () => {
+    const root = { dataset: {} as Record<string, string>, style: { colorScheme: '' } }
+    vi.stubGlobal('window', { localStorage: { getItem: () => 'light' } })
+    vi.stubGlobal('document', { documentElement: root })
+    initializeSavedTheme()
+    expect(root.dataset.theme).toBe('light')
+    expect(root.style.colorScheme).toBe('light')
+    vi.unstubAllGlobals()
   })
 })
 

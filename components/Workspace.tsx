@@ -1,6 +1,7 @@
 'use client'
 
 import { getLang, setLang, t as tr, tf } from '@/lib/i18n'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
@@ -40,20 +41,25 @@ import { VrButton } from '@/components/VrButton'
 import { Tour } from '@/components/Tour'
 import { RenderPanel } from '@/components/RenderPanel'
 import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/classicMenu'
+import { classicMenuItemTitle } from '@/lib/classicMenuUi'
+import { classicShopTools } from '@/lib/classicShopTools'
+import { classicDockTools } from '@/lib/classicDockTools'
 import { runShopExport } from '@/lib/shopExport'
 import { selectShopExportPanels } from '@/lib/shopExportScope'
-import { downloadProjectFile, pickProjectFile } from '@/lib/projectFile'
+import { downloadProjectFile, pickProjectFile, projectFileErrorMessage } from '@/lib/projectFile'
+import { approvalPrice } from '@/lib/f22ShareUi'
 import { cloudEnabled } from '@/lib/cloud'
 import { THEME_EVENT, chooseTheme, readTheme, saveQuality, type Theme } from '@/lib/appearance'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
-  ConfigValidationError, canMirror, formatTenge, nestPanels, nestingOptionsOf, priceProject,
+  ConfigValidationError, canMirror, formatTengeExact,
   boardDimensions, findNode,
 } from '@/src/core/index'
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { TreeDock } from '@/components/panels/TreeDock'
+import { nextDockRequest, type DockRequest } from '@/lib/treeDockUi'
 import { WorkspaceDock } from '@/components/dock/WorkspaceDock'
 import { ClassicStructureWindow } from '@/components/ClassicStructureWindow'
 import { ClassicIcon, type ClassicIconName } from '@/components/ClassicIcon'
@@ -167,6 +173,7 @@ export function Workspace() {
   const removeAnnotation = useConfigurator((s) => s.removeAnnotation)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
+  const priceOverrides = useConfigurator((s) => s.priceOverrides)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
   const hydrateShop = useConfigurator((s) => s.hydrateShop)
   const hydrateProject = useConfigurator((s) => s.hydrateProject)
@@ -206,6 +213,7 @@ export function Workspace() {
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const syncShare = useConfigurator((s) => s.syncShare)
   const setShareCodeOpen = useConfigurator((s) => s.setShareCodeOpen)
+  const shareCodeOpen = useConfigurator((s) => s.shareCodeOpen)
   const startShare = useConfigurator((s) => s.startShare)
   const shareCode = useConfigurator((s) => s.shareSession?.code ?? null)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
@@ -291,6 +299,16 @@ export function Workspace() {
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
   const [classic, setClassic] = useState(true)
   const [structureOpen, setStructureOpen] = useState(false)
+  const [fileOpenError, setFileOpenError] = useState<string | null>(null)
+  const openProjectPicker = () => {
+    setFileOpenError(null)
+    pickProjectFile(loadProject, (error) => setFileOpenError(projectFileErrorMessage(error)))
+  }
+  const [dockRequest, setDockRequest] = useState<DockRequest>({ tab: 'structure', revision: 0 })
+  const openDockTab = (tab: DockRequest['tab']) => {
+    setDockRequest((current) => nextDockRequest(current, tab))
+    if (classic && window.matchMedia('(min-width: 1024px)').matches) setStructureOpen(true)
+  }
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
   const [draftState, setDraftState] = useState<{ id: string; errors: Record<string, boolean> }>({ id: activeId, errors: {} })
   const draftInvalid = draftState.id === activeId && hasDraftErrors(draftState.errors)
@@ -396,16 +414,15 @@ export function Workspace() {
   const liveTotal = useMemo((): { total: number } | { missing: true } | null => {
     if (production.error) return null
     try {
-      const nesting = nestPanels(deferredPanels, catalog, nestingOptionsOf(shop))
-      const price = priceProject(deferredPanels, nesting, shop, projectHardware, moduleWidths)
-      return price.missingPrices.length > 0 ? { missing: true } : { total: price.total }
+      const price = approvalPrice(deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides)
+      return price.kind === 'missing' ? { missing: true } : { total: price.total }
     } catch (error) {
       // Жарамсыз конфиг кезінде (теріп жатқанда) баға уақытша көрінбейді — бұл
       // қате емес: қатенің өзін тақтаның астындағы қызыл жолақ айтады.
       console.debug('Цена в тулбаре не посчитана', error)
       return null
     }
-  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths, production.error])
+  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides, production.error])
   const [shared, setShared] = useState<string | null>(null)
   const copyClientLink = async () => {
     let link: string
@@ -481,6 +498,12 @@ export function Workspace() {
         case 'undo': undo(); break
         case 'redo': redo(); break
         case 'delete': deleteSelected(); break
+        case 'newCabinet': addCabinet(); break
+        case 'openProject': openProjectPicker(); break
+        case 'saveProject': downloadProjectFile(exportProject()); break
+        case 'printProject':
+          if (pdfCabinet && productionState.exportsAvailable) runClassicCommand({ type: 'export', format: 'pdf', scope: 'project' })
+          break
       }
     }
     window.addEventListener('keydown', onKey)
@@ -509,7 +532,7 @@ export function Workspace() {
     switch (command.type) {
       case 'open': openPanel(command.panel); break
       case 'saveProject': downloadProjectFile(exportProject()); break
-      case 'openProject': pickProjectFile(loadProject); break
+      case 'openProject': openProjectPicker(); break
       case 'export':
         if (draftInvalid) break
         setExportError(null)
@@ -565,17 +588,17 @@ export function Workspace() {
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
     silhouetteOn: silhouette.on, walk, open: openness > 0, assembly: assemblyStep !== null,
     theme, quality, lang: getLang(),
-    price: liveTotal === null ? null : 'total' in liveTotal ? { total: formatTenge(liveTotal.total) } : { missing: true },
+    price: liveTotal === null ? null : 'total' in liveTotal ? { total: formatTengeExact(liveTotal.total) } : { missing: true },
     cloud: cloudEnabled, classic,
   })
 
   const classicToolRows: ClassicToolSpec[][] = classic ? uniqueToolbarRows<ClassicToolSpec>([
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
-      { icon: 'open', label: tr('Открыть проект'), action: () => pickProjectFile(loadProject) },
+      { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
-      { icon: 'print', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
-      { icon: 'cut', label: tr('Раскрой'), action: () => { window.location.href = '/cut' } },
+      { icon: classicShopTools.quote.icon, label: tr(classicShopTools.quote.label), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
+      { icon: classicShopTools.nesting.icon, label: tr(classicShopTools.nesting.label), action: () => { window.location.href = '/cut' } },
       { icon: 'copy', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable },
       { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, id: 'undo' },
@@ -598,7 +621,9 @@ export function Workspace() {
       { icon: 'view', label: tr('Перспектива'), action: () => { setCameraPreset('three-quarter'); setProjection('perspective') } },
     ],
     [
-      { icon: 'structure', label: tr('Структура'), action: () => setStructureOpen(true), active: structureOpen, id: 'structure' },
+      { icon: classicDockTools.structure.icon, label: tr(classicDockTools.structure.label), action: () => openDockTab('structure'), active: structureOpen && dockRequest.tab === 'structure', id: 'structure' },
+      { icon: classicDockTools.layers.icon, label: tr(classicDockTools.layers.label), action: () => openDockTab('layers'), active: structureOpen && dockRequest.tab === 'layers', id: 'layers' },
+      { icon: classicDockTools.library.icon, label: tr(classicDockTools.library.label), action: () => openDockTab('library'), active: structureOpen && dockRequest.tab === 'library', id: 'library' },
       { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
@@ -629,7 +654,7 @@ export function Workspace() {
       <ProjectPanel panels={projectPanels} catalog={catalog} />
       <HelpPanel />
       <HistoryPanel />
-      <ShareCodeDialog />
+      {shareCodeOpen && <ShareCodeDialog />}
       {cloudEnabled && <AccountPanel />}
       {!production.error ? <QuoteView
         propertiesOpen={propertiesNodeId !== null}
@@ -662,7 +687,9 @@ export function Workspace() {
               {tr(entry.label)}
               <Slider value={exploded} onChange={setExploded} />
             </label>
-            return <MenuItem key={entry.id} active={entry.active ?? false} disabled={entry.disabled ?? false} onClick={() => runClassicCommand(entry.command)}>
+            return <MenuItem key={entry.id} active={entry.active ?? false} disabled={entry.disabled ?? false}
+              title={classicMenuItemTitle(entry.raw ? entry.label : tr(entry.label), entry.hint)}
+              onClick={() => runClassicCommand(entry.command)}>
               <span data-menu-item={entry.id}>{entry.raw ? entry.label : tr(entry.label)}</span>
               {entry.detail ? <span className="tabular-nums font-semibold">{entry.detail}</span> : null}
               {entry.hint ? <span className="ml-auto text-neutral-400">{entry.hint}</span> : null}
@@ -734,6 +761,7 @@ export function Workspace() {
             <MenuItem onClick={requestReset}>{tr('Сброс')}</MenuItem>
           </Menu>
           <Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
+          <Button onClick={() => openDockTab('library')}>{tr('Библиотека')}</Button>
           {/* Раскрой — БӨЛЕК бет (цех станогы қасында ашады), сондықтан тікелей. */}
           <Link
             href="/cut"
@@ -754,7 +782,7 @@ export function Workspace() {
           {liveTotal ? (
             'total' in liveTotal ? (
               <Button onClick={() => setQuoteOpen(true)} title={tr('Итого клиенту — открыть смету')}>
-                <span className="tabular-nums font-semibold">{formatTenge(liveTotal.total)}</span>
+                <span className="tabular-nums font-semibold">{formatTengeExact(liveTotal.total)}</span>
               </Button>
             ) : (
               <Button onClick={() => setShopOpen(true)} title={tr('Задайте цены материалов в профиле цеха')}>
@@ -807,6 +835,10 @@ export function Workspace() {
           <Button size="sm" onClick={reset}>{tr('Начать новый проект')}</Button>
         </div>
       )}
+      {fileOpenError && <div role="alert" className="flex items-center gap-2 border-b border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
+        <span className="flex-1">{fileOpenError}</span>
+        <Button size="sm" onClick={() => setFileOpenError(null)}>{tr('Закрыть')}</Button>
+      </div>}
       {historyRestoreError && (
         <div role="alert" className="flex items-center gap-2 border-b border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
           <span className="flex-1">{historyRestoreError}</span>
@@ -1005,7 +1037,7 @@ export function Workspace() {
         if (!part) return null
         return (
           <div className="flex items-center gap-3 border-b border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs dark:border-neutral-800 dark:bg-neutral-900">
-            <b>{part.label}</b>
+            <b>{panelDisplayLabel(part.label)}</b>
             <span className="tabular-nums text-neutral-500">
               {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
             </span>
@@ -1074,7 +1106,8 @@ export function Workspace() {
             <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} onHover={setHoveredToolLabel} />
             <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" onHover={setHoveredToolLabel} />
             <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" onHover={setHoveredToolLabel} />
+            <ClassicTool icon="structure" label={tr('Структура')} action={() => openDockTab('structure')} id="structure-side" onHover={setHoveredToolLabel} />
+            <ClassicTool icon="library" label={tr('Библиотека')} action={() => openDockTab('library')} id="library-side" onHover={setHoveredToolLabel} />
           </> : <>
           <Button
             size="sm"
@@ -1091,6 +1124,7 @@ export function Workspace() {
         </div>
         <div className="flex min-h-0 flex-col">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
+        {!walk && <div data-testid="mobile-tree-dock" className="relative z-20 shrink-0 px-2 pt-1 lg:hidden"><TreeDock request={dockRequest} /></div>}
         <main className="relative isolate h-[28dvh] min-h-[240px] max-h-[28dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
@@ -1099,10 +1133,9 @@ export function Workspace() {
           </div>
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
           {walk ? null : classic ? <>
-            <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:hidden"><TreeDock /></div>
-            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)}
+            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} dockRequest={dockRequest}
               canOpenProperties={Boolean(activeBoard || activeSolid || cabinet)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
-          </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:w-72"><TreeDock /></div>}
+          </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 hidden w-72 lg:block"><TreeDock request={dockRequest} /></div>}
           {/*
             КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
             §2): PRO100-де олар сахнаның үстінде қалқымайды, тар белгіше
@@ -1258,7 +1291,7 @@ export function Workspace() {
         {liveTotal && <button type="button" data-testid="p100-status-price" className={cn('p100-status-price', !(selected && activeNode) && 'ml-auto')}
           onClick={() => ('total' in liveTotal ? setQuoteOpen(true) : setShopOpen(true))}
           title={'total' in liveTotal ? tr('Итого клиенту — открыть смету') : tr('Задайте цены материалов в профиле цеха')}>
-          {'total' in liveTotal ? <span className="tabular-nums">{tr('Итого клиенту')}: <b>{formatTenge(liveTotal.total)}</b></span> : tr('Цены не заданы')}
+          {'total' in liveTotal ? <span className="tabular-nums">{tr('Итого клиенту')}: <b>{formatTengeExact(liveTotal.total)}</b></span> : tr('Цены не заданы')}
         </button>}
       </footer>}
     </div>
