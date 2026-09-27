@@ -42,4 +42,10 @@ describe('цех каталогының таза импорты', () => {
     expect(result.textures).toEqual([{ name: 'Дуб.jpg', imageFile: 'Дуб.jpg', mapSizeMm: { x: 600, y: 300 },
       diffuseRgb: { r: 0.6, g: 0.7, b: 0.8 }, specularRgb: { r: 0.2, g: 0.3, b: 0.4 }, specExponent: 0.59 }])
   })
+
+  it('PRO100 қайталанған секция атауын екінші жолымен қате етеді', () => {
+    const result = parsePro100Textures('[X]\nxmm=10\nymm=10\n[x]\nxmm=20\nymm=20')
+    expect(result.textures).toEqual([{ name: 'X', mapSizeMm: { x: 10, y: 10 } }])
+    expect(result.errors).toEqual([{ lineNumber: 4, reason: expect.stringMatching(/қайталан/) }])
+  })
 })
