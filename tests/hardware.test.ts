@@ -64,6 +64,29 @@ describe('штанга сметада', () => {
     }
   })()
 
+  it('568 мм штанганың көрсетілген метражы сомамен сәйкес', () => {
+    const shortRod = {
+      ...noRod,
+      sections: noRod.sections.map((section) => ({
+        ...section,
+        contents: [...section.contents, { kind: 'rod' as const }],
+      })),
+    }
+    const priced = {
+      ...shop,
+      hardware: shop.hardware.map((item) => item.id === 'rod-25'
+        ? { ...item, pricePerUnit: 100000 }
+        : item),
+    }
+    const parts = generateCabinet(shortRod, catalog)
+    const price = priceProject(parts, nestPanels(parts, catalog), priced, generateHardware(shortRod, catalog))
+    const rod = price.hardware.find((line) => line.id === 'rod-25')!
+    expect(rod.qty).toBe(0.568)
+    expect(rod.unitPrice).toBe(100000)
+    expect(rod.cost).toBe(56800)
+    expect(Math.round(rod.qty * rod.unitPrice)).toBe(rod.cost)
+  })
+
   it('штанга МЕТРМЕН, ұстағыш данамен есептеледі', () => {
     const panels = generateCabinet(withRod, catalog)
     const price = priceProject(panels, nestPanels(panels, catalog), shop, generateHardware(withRod, catalog))
