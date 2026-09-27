@@ -20,7 +20,9 @@
  */
 
 import { ConfigValidationError } from './errors'
-import type { Panel, PanelCorners } from './types'
+import { subtractedThickness } from './edges'
+import { materialWidthRangeAt } from './bevelBounds'
+import type { ConstructionSettings, EdgeBand, Panel, PanelCorners } from './types'
 
 /** Өлшем қай бұрыштан саналады. */
 export type CutoutCorner = 'bottomLeft' | 'bottomRight' | 'topLeft' | 'topRight'
@@ -48,6 +50,39 @@ export type PanelCutouts = Record<string, Cutout[]>
  */
 export type CutoutBounds = { x: number; y: number; width: number; height: number }
 
+export type CutoutPoint = { x: number; y: number }
+export type RoundedCutoutPath = {
+  lines: { from: CutoutPoint; to: CutoutPoint }[]
+  arcs: { center: CutoutPoint; radius: number; startDeg: number; endDeg: number }[]
+}
+
+/** 3D және DXF қолданатын R-бұрышты ойықтың бірдей төрт түзуі мен доғасы. */
+export function roundedCutoutPath(bounds: CutoutBounds, radius: number): RoundedCutoutPath {
+  const { x, y, width: w, height: h } = bounds
+  const r = radius
+  const lines = [
+    { from: { x: x + r, y }, to: { x: x + w - r, y } },
+    { from: { x: x + w, y: y + r }, to: { x: x + w, y: y + h - r } },
+    { from: { x: x + w - r, y: y + h }, to: { x: x + r, y: y + h } },
+    { from: { x, y: y + h - r }, to: { x, y: y + r } },
+  ].filter(({ from, to }) => from.x !== to.x || from.y !== to.y)
+  const arcs = [
+    { center: { x: x + r, y: y + r }, radius: r, startDeg: 180, endDeg: 270 },
+    { center: { x: x + w - r, y: y + r }, radius: r, startDeg: 270, endDeg: 360 },
+    { center: { x: x + w - r, y: y + h - r }, radius: r, startDeg: 0, endDeg: 90 },
+    { center: { x: x + r, y: y + h - r }, radius: r, startDeg: 90, endDeg: 180 },
+  ]
+  return { lines, arcs }
+}
+
+/** Дайын бұрыштан рез бұрышына жылжу; присадка мен DXF осы datum-ды қолданады. */
+export function cutoutCutOrigin(panel: Panel, bands: Map<string, EdgeBand>, settings: ConstructionSettings): { x: number; y: number } {
+  return {
+    x: subtractedThickness(panel.edges.W1, bands, settings),
+    y: subtractedThickness(panel.edges.L1, bands, settings),
+  }
+}
+
 export function cutoutBounds(cutout: Cutout, panelLength: number, panelWidth: number): CutoutBounds {
   const size = cutout.shape === 'rect'
     ? { width: cutout.width, height: cutout.height }
@@ -74,8 +109,10 @@ export function cutoutBounds(cutout: Cutout, panelLength: number, panelWidth: nu
  */
 export function validateCutout(
   cutout: Cutout,
-  panel: { finishedLength: number; finishedWidth: number; id: string },
+  panel: Panel,
   field: string,
+  bands: Map<string, EdgeBand>,
+  settings: ConstructionSettings,
 ): void {
   const ints: [string, number][] = cutout.shape === 'rect'
     ? [['x', cutout.x], ['y', cutout.y], ['width', cutout.width], ['height', cutout.height]]
@@ -94,7 +131,7 @@ export function validateCutout(
   }
   if (cutout.shape === 'rect' && cutout.radius !== undefined) {
     const max = Math.min(cutout.width, cutout.height) / 2
-    if (cutout.radius < 0 || cutout.radius > max) {
+    if (!Number.isInteger(cutout.radius) || cutout.radius < 0 || cutout.radius > max) {
       throw new ConfigValidationError(`${field}.radius`, `${cutout.radius}`, `0..${Math.floor(max)} мм`)
     }
   }
@@ -111,6 +148,20 @@ export function validateCutout(
       'вырез должен целиком лежать внутри детали',
     )
   }
+  const origin = cutoutCutOrigin(panel, bands, settings)
+  const x0 = bounds.x - origin.x
+  const y0 = bounds.y - origin.y
+  const x1 = x0 + bounds.width
+  const y1 = y0 + bounds.height
+  const withinBlank = x0 >= 0 && y0 >= 0 && x1 <= panel.cutLength && y1 <= panel.cutWidth
+  const withinBevel = [x0, x1].every((x) => {
+    const [low, high] = materialWidthRangeAt(panel, x)
+    return y0 >= low && y1 <= high
+  })
+  if (!withinBlank || !withinBevel) {
+    throw new ConfigValidationError(field, 'ойма рез контурынан шығып кетті',
+      'ойма түгел рез детальдің материалында болуы керек')
+  }
 }
 
 /**
@@ -118,7 +169,10 @@ export function validateCutout(
  * `generateCabinet`-тің ішінде, панельдер әлі ешкімге берілмей тұрып
  * шақырылады.
  */
-export function applyCutouts(panels: Panel[], cutouts: PanelCutouts | undefined): void {
+export function applyCutouts(
+  panels: Panel[], cutouts: PanelCutouts | undefined,
+  bands: Map<string, EdgeBand>, settings: ConstructionSettings,
+): void {
   if (!cutouts) return
   for (const panel of panels) {
     const list = cutouts[panel.id]
@@ -131,7 +185,7 @@ export function applyCutouts(panels: Panel[], cutouts: PanelCutouts | undefined)
         throw new ConfigValidationError(`${field}.id`, `id қайталанды: "${cutout.id}"`, 'бірегей id')
       }
       seen.add(cutout.id)
-      validateCutout(cutout, panel, field)
+      validateCutout(cutout, panel, field, bands, settings)
     })
 
     // Көшірме: конфигтегі объект панельге СІЛТЕМЕМЕН кетпеуі керек.

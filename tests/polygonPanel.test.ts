@@ -105,7 +105,9 @@ describe('polygon panel manufacturing', () => {
     const shop = defaultShopProfile()
     shop.edgeBands.find((item) => item.id === band.bandId)!.pricePerMeter = 1000
     const quote = priceProject([p], nestPanels([p], SEED_CATALOG), shop)
-    expect(quote.edges.find((line) => line.id === band.bandId)?.cost).toBe(Math.round(Math.hypot(600, 200)))
+    // Қиғаш кесінді: hypot(600, 200) мм × 1000 тиын/м = 632 тиын.
+    expect(quote.edges.find((line) => line.id === band.bandId)?.cost)
+      .toBe(Math.round(Math.hypot(600, 200)))
     const rows = formatCutList([p, panel()], SEED_CATALOG)
     expect(rows).toHaveLength(2)
     expect(rows[0]?.note).toContain('кромка: 3=2.0 мм')
