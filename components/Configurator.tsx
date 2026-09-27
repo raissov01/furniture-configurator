@@ -286,6 +286,8 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
             value={drawers?.count ?? 0}
             min={0}
             max={8}
+            field={`sections[${index}].contents[${Math.max(drawerContentIndex, 0)}].count`}
+            onDraftValidityChange={onDraftValidityChange}
             onChange={(drawerCount) => setFill({ drawerCount })}
           />
         </Field>
@@ -303,6 +305,8 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
             value={drawers?.height ?? 0}
             min={0}
             step={10}
+            field={`sections[${index}].contents[${Math.max(drawerContentIndex, 0)}].height`}
+            onDraftValidityChange={onDraftValidityChange}
             onChange={(height) => {
               if (!drawers) return
               const contents = section.contents.map((c) =>
@@ -331,6 +335,8 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
                   value={drawers.gaps?.[key] ?? shopGap}
                   min={0}
                   max={50}
+                  field={`sections[${index}].contents[${drawerContentIndex}].gaps.${key}`}
+                  onDraftValidityChange={onDraftValidityChange}
                   onChange={(value) => {
                     const contents = section.contents.map((c) =>
                       c.kind === 'drawers'
@@ -1159,6 +1165,9 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
               value={cabinet.metalBoxBackHeight ?? 0}
               min={0}
               max={400}
+              invalid={invalid('metalBoxBackHeight')}
+              field="metalBoxBackHeight"
+              onDraftValidityChange={onDraftValidityChange}
               onChange={(value) => edit('metalBoxBackHeight', {
                 metalBoxBackHeight: value > 0 ? value : undefined,
               })}
