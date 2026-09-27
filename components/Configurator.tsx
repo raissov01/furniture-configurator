@@ -26,9 +26,11 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
 import { commitPropertiesName } from '@/lib/propertiesSession'
+import { sectionWidths } from '@/lib/sectionWidths'
 import { matchTemplateId } from '@/lib/templateMatch'
 import {
   APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
+  ConfigValidationError,
   defaultHandleSpec, defaultMillingSpec, findTemplate, formatCutList, handlePositionName, millingPattern,
   roomWalls, wallById, walkTree,
 } from '@/src/core/index'
@@ -47,7 +49,9 @@ const METAL_BOX_IDS: string[] = ['legrabox', 'tandembox', 'merivobox']
 /** Корпус пен фасадқа — қалың плита, арт қабырғаға — жұқа. */
 const isCarcass = (m: Material) => m.thickness >= 10
 
-function SectionEditor({ section, index }: { section: Section; index: number }) {
+function SectionEditor({ section, index, computedWidth }: {
+  section: Section; index: number; computedWidth: number | undefined
+}) {
   const editSection = useConfigurator((s) => s.editSection)
   const removeSection = useConfigurator((s) => s.removeSection)
   const catalog = useConfigurator((s) => s.catalog)
@@ -138,7 +142,7 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
               editSection(
                 index,
                 widthMode === 'fixed'
-                  ? { widthMode, width: section.width ?? 400 }
+                  ? { widthMode, width: computedWidth ?? section.width ?? 400 }
                   : { widthMode, width: undefined },
                 'section.widthMode',
               )
@@ -149,13 +153,15 @@ function SectionEditor({ section, index }: { section: Section; index: number }) 
             ]}
           />
         </Field>
-        <Field label={tr('мм')} hint={section.widthMode === 'flex' ? 'считается' : undefined}>
-          <NumberInput
-            value={section.width ?? 0}
-            min={100}
-            step={10}
-            onChange={(width) => editSection(index, { width }, 'section.width')}
-          />
+        <Field label={`${tr('Ширина')} (W), ${tr('мм')}`} hint={section.widthMode === 'flex' ? tr('Рассчитывается') : undefined}>
+          {section.widthMode === 'flex' ? (
+            <input type="text" readOnly aria-label={`${tr('Ширина')} (W), ${tr('мм')}`}
+              value={computedWidth ?? '—'}
+              className="w-full rounded-md border border-neutral-300 bg-neutral-50 px-1.5 py-1 text-center text-xs tabular-nums text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300" />
+          ) : (
+            <NumberInput value={section.width ?? 0} min={100} step={10}
+              onChange={(width) => editSection(index, { width }, 'section.width')} />
+          )}
         </Field>
       </div>
 
@@ -751,6 +757,13 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
   const carcassMaterials = materials.filter(isCarcass)
   const backMaterials = materials.filter((m) => !isCarcass(m))
   const catalog: Catalog = useConfigurator((s) => s.catalog)
+  const computedSectionWidths = useMemo(() => {
+    try { return sectionWidths(cabinet, catalog) }
+    catch (cause) {
+      if (!(cause instanceof ConfigValidationError)) throw cause
+      return []
+    }
+  }, [cabinet, catalog])
   const cabinets = useConfigurator((s) => s.cabinets)
   const template = useMemo(() => findTemplate(matchTemplateId(cabinets, cabinet.id, catalog)), [cabinets, cabinet.id, catalog])
 
@@ -1678,7 +1691,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
       </p> : null}
       <div className="space-y-2">
         {cabinet.sections.map((section, i) => (
-          <SectionEditor key={section.id} section={section} index={i} />
+          <SectionEditor key={section.id} section={section} index={i} computedWidth={computedSectionWidths[i]} />
         ))}
       </div>
 
