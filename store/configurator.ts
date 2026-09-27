@@ -15,15 +15,20 @@ import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
 import { appendFreeMirror } from '@/lib/freeMirrorAction'
 import { roomDimensionIssue } from '@/lib/roomDimensions'
+import { projectionForPreset } from '@/lib/viewProjection'
+import { validSilhouetteHeight } from '@/lib/silhouetteInput'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import { materialUsedInTree } from '@/lib/materialUsedInTree'
+import { validateProjectShopInputs, validatedShopEdit } from '@/lib/validatedShopEdit'
 import {
   DEFAULT_ROOM,
   IDENTITY_TRANSFORM,
   ORIENT_FACING,
   DEFAULT_SILHOUETTE_HEIGHT,
+  MIN_SILHOUETTE_HEIGHT,
+  MAX_SILHOUETTE_HEIGHT,
   ConfigValidationError,
   applyAutoJointChange,
   canMirror,
@@ -1317,13 +1322,14 @@ export const useConfigurator = create<State>((set, get) => ({
   editShop(patch) {
     const s = get()
     const changesJointInputs = Boolean(patch.settings || patch.materials || patch.edgeBands)
-    const nextShop = syncActivePriceList({ ...s.shop, ...patch })
+    const nextShop = validatedShopEdit(s.shop, patch)
     const projectSettings = patch.settings
       ? projectSettingsAfterShopEdit(s.projectSettings, s.shop.settings, patch.settings) : s.projectSettings
     const projectMaterials = patch.materials
       ? projectMaterialsAfterShopEdit(s.projectMaterials, s.shop.materials, patch.materials) : s.projectMaterials
     const projectEdgeBands = patch.edgeBands
       ? projectBandsAfterShopEdit(s.projectEdgeBands, s.shop.edgeBands, patch.edgeBands) : s.projectEdgeBands
+    if (patch.materials || patch.edgeBands) validateProjectShopInputs(projectMaterials ?? nextShop.materials, projectEdgeBands ?? nextShop.edgeBands)
     const nextCatalog = projectCatalog(nextShop, projectMaterials, projectEdgeBands)
     // Check the whole geometry before mutating either project overrides or undo.
     const autoJoints = s.autoJoints.length > 0 && changesJointInputs
@@ -1427,7 +1433,12 @@ export const useConfigurator = create<State>((set, get) => ({
   setHistoryOpen: (historyOpen) => set({ historyOpen }),
   setViewMode: (viewMode) => set({ viewMode }),
   setQuality: (quality) => set({ quality }),
-  setSilhouette: (patch) => set((s) => ({ silhouette: { ...s.silhouette, ...patch } })),
+  setSilhouette: (patch) => {
+    if (patch.height !== undefined && !validSilhouetteHeight(patch.height)) {
+      throw new RangeError(`Рост человека, мм: ${MIN_SILHOUETTE_HEIGHT}…${MAX_SILHOUETTE_HEIGHT}`)
+    }
+    set((s) => ({ silhouette: { ...s.silhouette, ...patch } }))
+  },
   setWalk: (walk) => set({ walk }),
   setVr: (vr) => set({ vr }),
   toggleCabinetOpen: (id) => set((s) => ({ openCabinets: { ...s.openCabinets, [id]: !s.openCabinets[id] } })),
@@ -1898,7 +1909,10 @@ export const useConfigurator = create<State>((set, get) => ({
 
   setExploded: (exploded) => set({ exploded }),
   setShowDimensions: (showDimensions) => set({ showDimensions }),
-  setCameraPreset: (cameraPreset) => set({ cameraPreset }),
+  setCameraPreset: (cameraPreset) => set((s) => ({
+    cameraPreset,
+    projection: projectionForPreset(cameraPreset, s.projection),
+  })),
   setHovered: (hovered) => set({ hovered }),
   setSelected: (selected) => set({ selected }),
   setAssemblyStep: (assemblyStep) => set({ assemblyStep }),

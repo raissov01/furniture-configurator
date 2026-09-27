@@ -1022,7 +1022,7 @@ export const uz: Record<string, string> = {
   'как у корпуса': 'korpusdagidek',
   'Вернуть декор корпуса': 'Korpus dekoriga qaytarish',
 
-  // ── «Almashtirish» — materialni ommaviy almashtirish (dok paneli) ──────────
+  // ── «Almashtirish» — materialni ommaviy almashtirish (dok paneli) ──────────,
   'Заменить один материал на другой одним действием — по всему проекту или по выбранным корпусам (Ctrl+Z отменяет).':
     'Bitta materialni boshqasiga bir amal bilan almashtirish — butun loyiha yoki tanlangan korpuslar bo\'yicha (Ctrl+Z qaytaradi).',
   'Материалы в проекте': 'Loyihadagi materiallar',
@@ -1039,7 +1039,7 @@ export const uz: Record<string, string> = {
   'Заменить': 'Almashtirish',
   'Заменено.': 'Almashtirildi.',
 
-  // ── «Qidirish» — loyiha bo'yicha qidiruv (dok paneli) ───────────────────────
+  // ── «Qidirish» — loyiha bo'yicha qidiruv (dok paneli) ───────────────────────,
   'Поиск по названию, материалу или размеру детали.': 'Detal nomi, materiali yoki o\'lchami bo\'yicha qidiruv.',
   'Например: полка, 600, Дуб': 'Masalan: polka, 600, Dub',
   'Ничего не найдено': 'Hech narsa topilmadi',
@@ -1073,7 +1073,7 @@ export const uz: Record<string, string> = {
   'Профиль не загрузился': 'Sex profili yuklanmadi',
   'Профиль на сервере повреждён': 'Serverdagi sex profili shikastlangan',
   'Профиль не сохранился': 'Sex profili saqlanmadi',
-  // ── Shop drilling / Цех присадкасы ──────────────────────────────────────
+  // ── Shop drilling / Цех присадкасы ──────────────────────────────────────,
   'Проверьте размеры по чертежам вашей фурнитуры. Значения без общего стандарта оставлены как в прежнем шаблоне.': 'O‘lchamlarni furniturangiz chizmasi bilan tekshiring. Umumiy standarti yo‘q qiymatlar avvalgi andozada qoldi.',
   'Первый полкодержатель от дна': 'Pastki paneldan birinchi tokcha tayanchi',
   'мм от верхней пласти дна; стандартного начала сетки нет': 'pastki panel ustki yuzasidan mm; umumiy boshlanish nuqtasi yo‘q',
@@ -1143,7 +1143,6 @@ export const uz: Record<string, string> = {
   'Сначала укажите диаметр пилота петли по чертежу артикула': 'Avval artikul chizmasidagi ilmoq piloti diametrini kiriting',
   'Значение вне допустимого диапазона присадки': 'Prisadka qiymati ruxsat etilgan oraliqdan tashqarida',
   'Зенковка требует ручной операции: глубина и угол не заданы': 'Zenkerlash qo‘lda bajariladi: chuqurlik va burchak ko‘rsatilmagan',
-
   'Структура проекта': 'Loyiha tuzilishi',
   'Выделение': 'Tanlanganlar',
   'Группа': 'Guruh',
@@ -1432,8 +1431,6 @@ export const uz: Record<string, string> = {
   'Создать ремонтное задание': 'Ta’mir vazifasini yaratish',
   'Ремонт завершён': 'Ta’mir tugadi',
   'Постоянное хранение разрешено.': 'Doimiy saqlashga ruxsat berildi.',
-
-
   'XLSX — деталировка': 'XLSX — detallar ro‘yxati',
   'CSV — на распил': 'CSV — arralash uchun',
   'DXF — на станок': 'DXF — dastgoh uchun',
@@ -1449,11 +1446,10 @@ export const uz: Record<string, string> = {
   'Выбранный элемент, его положение и размеры H × W × D. Двойной щелчок по детали открывает «Свойства».': 'Tanlangan element, uning joylashuvi va H × W × D o‘lchamlari. Detalni ikki marta bosish «Xususiyatlar»ni ochadi.',
   'допустимо': 'ruxsat etilgan',
   'Сервис': 'Servis',
-
   'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Parmalash, bichish va stanokka eksport — to‘g‘ridan-to‘g‘ri AisMebel’da, Bazisga o‘tkazmasdan.',
 
 
-  // Нарық бағасы (marketPrices.ts)
+  // Нарық бағасы (marketPrices.ts),
   'Цены — рыночная медиана ({date}). Введите свои цены.': 'Narxlar — bozor medianasi ({date}). O‘z narxlaringizni kiriting.',
   'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.': 'Bozor narxidagi pozitsiyalar: {n}. O‘zgartirgan narxingiz o‘zingizniki bo‘ladi va bozor ma’lumotlari yangilanganda qayta yozilmaydi.',
   'Вернуть все рыночные цены': 'Barchasini bozor narxiga qaytarish',
@@ -1472,7 +1468,6 @@ export const uz: Record<string, string> = {
   'Рекомендуется': 'Tavsiya etiladi',
   'Ориентир цеха': 'Sex mo‘ljali',
   'Обязательный диапазон габаритов': 'O‘lchamlarning majburiy oralig‘i',
-
   'Код клиента истёк': 'Mijoz kodining muddati tugadi',
   'Код клиента изменился': 'Mijoz kodi o‘zgardi',
   'Не удалось обновить проект для клиента': 'Mijoz loyihasini yangilab bo‘lmadi',
@@ -1517,7 +1512,6 @@ export const uz: Record<string, string> = {
   'Вырез': 'Kesma',
   'Без артикула вырез мойки не создаётся': 'Artikulsiz rakovina kesmasi yaratilmaydi',
   'Для мойки или плиты добавьте столешницу': 'Rakovina yoki plita uchun stol ustini qo‘shing',
-
   'Весь проект': 'Butun loyiha',
   'Активный корпус': 'Faol korpus',
   'Экспорт для цеха — весь проект': 'Sexga eksport — butun loyiha',
@@ -1548,7 +1542,7 @@ export const uz: Record<string, string> = {
   'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF varaq bichish xaritasi; teshiklar sex paketida yoki detallar bo‘yicha CNC da',
   'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Paket: yuzalar DXF, qirralar uchun EDGE-DRILLING.csv, bichish xaritasi, detallar ro‘yxati va yorliqlar. To‘liq CNC CSV alohida tugmada.',
   'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Varaq DXF — bichish xaritasi. Sex paketida qirralar uchun EDGE-DRILLING.csv bor; to‘liq teshiklar CSV — detallar bo‘yicha CNC.',
-  // F30 — yordam va mavzuli darslar.
+  // F30 — yordam va mavzuli darslar.,
   'Тематические уроки': 'Mavzuli darslar',
   'Начать урок': 'Darsni boshlash',
   'Пройдено · повторить': "O'tildi · takrorlash",
@@ -1583,5 +1577,15 @@ export const uz: Record<string, string> = {
   'Здесь доступны файлы для цеха и клиента.': 'Sex va mijoz uchun fayllar shu yerda.',
   'Откройте мастер': 'Ustani oching',
   'В меню «Создать» откройте готовые шаблоны и выберите мастер.': 'Yaratish menyusida tayyor shablonlarni ochib, ustani tanlang.',
+  'Сбросить текущий проект?': 'Joriy loyihani tozalaysizmi?',
+  'Стена С': 'Shimoliy devor',
+  'Стена З': "G'arbiy devor",
+  'Стена Ю': 'Janubiy devor',
+  'Стена В': 'Sharqiy devor',
+  'Сортировать': 'Saralash',
+  'Допустимо целое число в диапазоне': 'Ruxsat etilgan butun son oralig‘i',
+  'Источники сметы': 'Smeta manbalari',
+  'до 2 знаков после запятой': 'verguldan keyin ko‘pi bilan 2 raqam',
 
+  // Бұтақтарды біріктіруде сақталған аудармалар.
 }

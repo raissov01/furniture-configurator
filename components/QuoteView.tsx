@@ -12,7 +12,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { MarketPriceNotice } from './MarketPrice'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
   SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
@@ -21,8 +21,11 @@ import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { visibleMaterials } from '@/lib/cutView'
 import { parseCoefficientInput, parsePercentInput, parseTengeInput } from '@/lib/f22ShareUi'
+import { MoneyInput } from './MoneyInput'
+import { priceSourceRows } from '@/lib/priceSourceUi'
 
 type Tab = 'nesting' | 'price'
 
@@ -64,6 +67,7 @@ export function QuoteView({
   propertiesOpen?: boolean
 }) {
   const open = useConfigurator((s) => s.quoteOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'quote')
   const setOpen = useConfigurator((s) => s.setQuoteOpen)
   const shop = useConfigurator((s) => s.shop)
   const catalog = useConfigurator((s) => s.catalog)
@@ -77,9 +81,21 @@ export function QuoteView({
   const [tab, setTab] = useState<Tab>('nesting')
   const [materialFilter, setMaterialFilter] = useState('all')
   const [busy, setBusy] = useState<string | null>(null)
+  const [salePriceDraftValid, setSalePriceDraftValid] = useState(true)
   const exportAllowed = childExportAllowed(propertiesOpen)
   const dialogRef = useRef<HTMLDivElement>(null)
   useEffect(() => { if (open) dialogRef.current?.focus() }, [open])
+  useEffect(() => {
+    if (!open || !isTop) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, isTop, setOpen])
 
   const nesting = useMemo(() => {
     try {
@@ -113,11 +129,12 @@ export function QuoteView({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Смета по проекту')}
-        className="w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        className="min-w-0 w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-2 sm:p-4 dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -127,7 +144,7 @@ export function QuoteView({
           <span className="text-[11px] text-neutral-400">
             {panels.length > 0 ? `деталей в проекте: ${panels.length}` : null}
           </span>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="flex w-full flex-wrap items-center justify-start gap-1 sm:ml-auto sm:w-auto sm:justify-end">
             {!exportAllowed && <span role="status" className="text-xs">{tr('Закройте свойства через OK перед экспортом')}</span>}
             <Button
               disabled={!exportAllowed || busy !== null || !nesting}
@@ -156,7 +173,7 @@ export function QuoteView({
               {busy === 'dxf' ? '…' : 'DXF'}
             </Button>
             <Button
-              disabled={!exportAllowed || busy !== null || !price || price.missingPrices.length > 0}
+              disabled={!exportAllowed || !salePriceDraftValid || busy !== null || !price || price.missingPrices.length > 0}
               title={
                 priceError
                   ? priceError
@@ -276,7 +293,8 @@ export function QuoteView({
                 {projectInfo.designer ? ` · ${tr('Дизайнер')} ${projectInfo.designer}` : ''}
               </p>
             ) : null}
-            <PriceOverridesEditor overrides={priceOverrides} onChange={editPriceOverrides} shopCoefficient={shop.coefficient} />
+            <PriceOverridesEditor overrides={priceOverrides} onChange={editPriceOverrides}
+              shopCoefficient={shop.coefficient} onSalePriceValidityChange={setSalePriceDraftValid} />
             {priceError ? (
               <div className="rounded-md border border-red-300 bg-red-50 px-2.5 py-2 text-[11px] text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
                 {priceError}
@@ -367,11 +385,12 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
  * коэффициенттен шыққан сомамен есептеледі.
  */
 function PriceOverridesEditor({
-  overrides, onChange, shopCoefficient,
+  overrides, onChange, shopCoefficient, onSalePriceValidityChange,
 }: {
   overrides: PriceOverrides
   onChange: (patch: Partial<PriceOverrides>) => void
   shopCoefficient: number
+  onSalePriceValidityChange: (valid: boolean) => void
 }) {
   // Экранда теңгемен көрсетеді, сақтауда тиынмен (§0.2: ақша бүтін минор бірлік).
   return (
@@ -387,8 +406,8 @@ function PriceOverridesEditor({
       </Button>}
       <label className="flex flex-col gap-1">
         <span className="text-neutral-500">{tr('Цена продажи, ₸ (вручную)')}</span>
-        <MoneyField label={tr('Цена продажи, ₸ (вручную)')} value={overrides.salePrice}
-          onValid={(minor) => onChange({ salePrice: minor })} placeholder={tr('из коэффициента')} />
+        <MoneyInput value={overrides.salePrice} label={tr('Цена продажи, ₸ (вручную)')}
+          onChange={(salePrice) => onChange({ salePrice })} onValidityChange={onSalePriceValidityChange} />
       </label>
       {overrides.salePrice !== undefined ? (
         <Button onClick={() => onChange({ salePrice: undefined })}>
@@ -573,7 +592,8 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                     <tbody>
                       {g.lines.map((l) => {
                         const key = `${g.key}:${l.id}`
-                        return <tr key={key} className="border-t border-neutral-100 dark:border-neutral-800">
+                        const sources = priceSourceRows(l)
+                        return <Fragment key={key}><tr className="border-t border-neutral-100 dark:border-neutral-800">
                           <td className="py-1">{l.name}</td>
                           <td className="w-24 py-1 text-right tabular-nums text-neutral-500">
                             {l.qty} {l.unit}
@@ -598,6 +618,18 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                             />
                           </td>
                         </tr>
+                        {sources.length > 0 && <tr><td colSpan={5} className="pb-1">
+                          <details className="border-l border-neutral-300 pl-2 dark:border-neutral-700">
+                            <summary className="cursor-pointer text-[11px] text-neutral-600 dark:text-neutral-300">{tr('Источники сметы')} · {sources.length}</summary>
+                            <div className="max-h-40 overflow-auto text-[11px]">
+                              {sources.map((source, index) => <div key={`${source.id}:${index}`} className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-t border-neutral-100 py-0.5 dark:border-neutral-800">
+                                <span className="break-all">{source.id}</span>
+                                <span className="tabular-nums">{source.qty} {l.unit}</span>
+                                <span className="tabular-nums">{formatTengeExact(source.cost)}</span>
+                              </div>)}
+                            </div>
+                          </details>
+                        </td></tr>}</Fragment>
                       })}
                     </tbody>
                   </table>

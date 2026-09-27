@@ -90,6 +90,8 @@ describe('properties dialog state', () => {
     expect(propertiesChildModalActive(false, false)).toBe(false)
     expect(propertiesChildModalActive(true, false)).toBe(true)
     expect(propertiesChildModalActive(false, true)).toBe(true)
+    expect(propertiesChildModalActive(false, false, true, false)).toBe(true)
+    expect(propertiesChildModalActive(false, false, false, true)).toBe(true)
     expect(childExportAllowed(true)).toBe(false)
     expect(childExportAllowed(false)).toBe(true)
   })
@@ -102,6 +104,11 @@ describe('properties dialog state', () => {
 })
 
 describe('properties dialog rendering', () => {
+  it('keeps a stable desktop height across tabs while the body scrolls', () => {
+    const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+    expect(css).toMatch(/\.p100-dialog \{[^}]*; height: min\(760px, calc\(100dvh - 24px\)\)/)
+    expect(css).toMatch(/\.p100-dialog-body \{[^}]*overflow: auto/)
+  })
   it('updates reactive baseline after Apply so the button can become disabled again', () => {
     const source = readFileSync(new URL('../components/PropertiesDialog.tsx', import.meta.url), 'utf8')
     expect(source).toMatch(/^\s+setBaseline\(savedBaseline\)/m)

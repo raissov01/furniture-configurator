@@ -1017,7 +1017,7 @@ export const en: Record<string, string> = {
   'как у корпуса': 'as carcass',
   'Вернуть декор корпуса': 'Reset to carcass decor',
 
-  // ── "Replace" — bulk material swap (dock panel) ─────────────────────────────
+  // ── "Replace" — bulk material swap (dock panel) ─────────────────────────────,
   'Заменить один материал на другой одним действием — по всему проекту или по выбранным корпусам (Ctrl+Z отменяет).':
     'Replace one material with another in a single action — across the whole project or selected cabinets (Ctrl+Z undoes it).',
   'Материалы в проекте': 'Materials in project',
@@ -1033,7 +1033,7 @@ export const en: Record<string, string> = {
   'Заменить': 'Replace',
   'Заменено.': 'Replaced.',
 
-  // ── "Find" — project search (dock panel) ────────────────────────────────────
+  // ── "Find" — project search (dock panel) ────────────────────────────────────,
   'Поиск по названию, материалу или размеру детали.': 'Search by part name, material or size.',
   'Например: полка, 600, Дуб': 'e.g. shelf, 600, Oak',
   'Ничего не найдено': 'Nothing found',
@@ -1067,7 +1067,7 @@ export const en: Record<string, string> = {
   'Профиль не загрузился': 'Shop profile could not be loaded',
   'Профиль на сервере повреждён': 'Shop profile on the server is damaged',
   'Профиль не сохранился': 'Shop profile was not saved',
-  // ── Shop drilling / Цех присадкасы ──────────────────────────────────────
+  // ── Shop drilling / Цех присадкасы ──────────────────────────────────────,
   'Проверьте размеры по чертежам вашей фурнитуры. Значения без общего стандарта оставлены как в прежнем шаблоне.': 'Check dimensions against your hardware drawings. Values with no common standard retain the previous template.',
   'Первый полкодержатель от дна': 'First shelf pin above the bottom',
   'мм от верхней пласти дна; стандартного начала сетки нет': 'mm above the top face of the bottom; no universal grid datum',
@@ -1137,7 +1137,6 @@ export const en: Record<string, string> = {
   'Сначала укажите диаметр пилота петли по чертежу артикула': 'Enter the hinge pilot diameter from the part drawing first',
   'Значение вне допустимого диапазона присадки': 'Drilling value is outside the allowed range',
   'Зенковка требует ручной операции: глубина и угол не заданы': 'Countersinking requires a manual operation: depth and angle are not defined',
-
   'Структура проекта': 'Project structure',
   'Выделение': 'Selection',
   'Группа': 'Group',
@@ -1428,8 +1427,6 @@ export const en: Record<string, string> = {
   'Создать ремонтное задание': 'Create repair task',
   'Ремонт завершён': 'Repair completed',
   'Постоянное хранение разрешено.': 'Persistent storage granted.',
-
-
   'XLSX — деталировка': 'XLSX — cut list',
   'CSV — на распил': 'CSV — for sawing',
   'DXF — на станок': 'DXF — for the CNC',
@@ -1445,11 +1442,10 @@ export const en: Record<string, string> = {
   'Выбранный элемент, его положение и размеры H × W × D. Двойной щелчок по детали открывает «Свойства».': 'The selected item, its position and H × W × D size. Double-click a part to open Properties.',
   'допустимо': 'allowed',
   'Сервис': 'Service',
-
   'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Drilling, cutting layouts and machine export — right in AisMebel, no hand-off to Bazis.',
 
 
-  // Нарық бағасы (marketPrices.ts)
+  // Нарық бағасы (marketPrices.ts),
   'Цены — рыночная медиана ({date}). Введите свои цены.': 'Prices are the market median ({date}). Enter your own prices.',
   'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.': 'Market-priced items: {n}. A price you change becomes your own and is never overwritten by market updates.',
   'Вернуть все рыночные цены': 'Restore all market prices',
@@ -1468,7 +1464,6 @@ export const en: Record<string, string> = {
   'Рекомендуется': 'Recommended',
   'Ориентир цеха': 'Workshop guidance',
   'Обязательный диапазон габаритов': 'Required dimension range',
-
   'Код клиента истёк': 'The client code has expired',
   'Код клиента изменился': 'The client code has changed',
   'Не удалось обновить проект для клиента': 'Could not update the client project',
@@ -1513,7 +1508,6 @@ export const en: Record<string, string> = {
   'Вырез': 'Cutout',
   'Без артикула вырез мойки не создаётся': 'A sink cutout requires an article',
   'Для мойки или плиты добавьте столешницу': 'Add a worktop for a sink or hob',
-
   'Весь проект': 'Entire project',
   'Активный корпус': 'Active cabinet',
   'Экспорт для цеха — весь проект': 'Shop export — entire project',
@@ -1544,7 +1538,7 @@ export const en: Record<string, string> = {
   'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF sheet cutting maps; drilling is in the shop bundle or CNC per part',
   'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Bundle: face DXFs, EDGE-DRILLING.csv for edges, cutting map, cut list and labels. Full CNC CSV has a separate button.',
   'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Sheet DXFs are cutting maps. The shop bundle includes EDGE-DRILLING.csv for edges; full drilling CSV is under CNC per part.',
-  // F30 — help and guided lessons.
+  // F30 — help and guided lessons.,
   'Тематические уроки': 'Guided lessons',
   'Начать урок': 'Start lesson',
   'Пройдено · повторить': 'Completed · repeat',
@@ -1579,5 +1573,15 @@ export const en: Record<string, string> = {
   'Здесь доступны файлы для цеха и клиента.': 'Files for the workshop and customer are available here.',
   'Откройте мастер': 'Open the wizard',
   'В меню «Создать» откройте готовые шаблоны и выберите мастер.': 'Open ready made templates from the Create menu and select a wizard.',
+  'Сбросить текущий проект?': 'Reset the current project?',
+  'Стена С': 'North wall',
+  'Стена З': 'West wall',
+  'Стена Ю': 'South wall',
+  'Стена В': 'East wall',
+  'Сортировать': 'Sort',
+  'Допустимо целое число в диапазоне': 'Allowed whole-number range',
+  'Источники сметы': 'Estimate sources',
+  'до 2 знаков после запятой': 'up to 2 decimal places',
 
+  // Бұтақтарды біріктіруде сақталған аудармалар.
 }
