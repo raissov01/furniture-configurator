@@ -53,6 +53,19 @@ describe('сөздіктер', () => {
     }
   })
 
+  it('F29: конфигуратор мен раскройдың тікелей аударылатын жолдары сөздікте бар', () => {
+    const sources = ['Workspace.tsx', 'CutPage.tsx']
+    const keys = new Set<string>(['Файл', 'Правка', 'Вид', 'Элемент', 'Инструменты', 'Справка'])
+    for (const source of sources) {
+      const code = readFileSync(new URL(`../components/${source}`, import.meta.url), 'utf8')
+      for (const match of code.matchAll(/\btr\((['"])(.*?)\1\)/g)) keys.add(match[2]!)
+    }
+    for (const [name, dict] of Object.entries(dicts)) {
+      const missing = [...keys].filter((key) => dict[key] === undefined).sort()
+      expect(missing, name).toEqual([])
+    }
+  })
+
   it('орындары бар жолдарда орындар САҚТАЛҒАН', () => {
     for (const [name, dict] of Object.entries(dicts)) {
       for (const [key, value] of Object.entries(dict)) {

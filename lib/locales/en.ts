@@ -10,6 +10,22 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Файл': 'File',
+  'Правка': 'Edit',
+  'Инструменты': 'Tools',
+  'Элемент': 'Element',
+  'Справка': 'Help',
+  'Выбор': 'Select',
+  'Выбор — щёлкните по модулю в сцене, Esc — снять выделение': 'Select — click a cabinet in the scene, Esc to clear selection',
+  'Выйти': 'Sign out',
+  'Новый корпус': 'New cabinet',
+  'Открыть проект': 'Open project',
+  'Переместить — перетащите выбранный модуль по стене прямо в 3D-сцене': 'Move — drag the selected cabinet along the wall in the 3D scene',
+  'Повторить': 'Redo',
+  'Привязка': 'Snap',
+  'Сохранить проект': 'Save project',
+  'Ссылка клиенту': 'Client link',
+  'Цех: материалы и цены': 'Shop: materials and prices',
   'Текст': 'Text',
   'Добавить текст': 'Add text',
   '+ текст': '+ text',

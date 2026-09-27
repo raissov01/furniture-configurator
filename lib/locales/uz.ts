@@ -11,6 +11,22 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Файл': 'Fayl',
+  'Правка': 'Tahrirlash',
+  'Инструменты': 'Asboblar',
+  'Элемент': 'Element',
+  'Справка': 'Yordam',
+  'Выбор': 'Tanlash',
+  'Выбор — щёлкните по модулю в сцене, Esc — снять выделение': 'Tanlash — sahnadagi korpusni bosing, Esc — tanlovni bekor qilish',
+  'Выйти': 'Chiqish',
+  'Новый корпус': 'Yangi korpus',
+  'Открыть проект': 'Loyihani ochish',
+  'Переместить — перетащите выбранный модуль по стене прямо в 3D-сцене': 'Ko‘chirish — tanlangan korpusni 3D sahnada devor bo‘ylab sudrang',
+  'Повторить': 'Qaytarish',
+  'Привязка': 'Bog‘lash',
+  'Сохранить проект': 'Loyihani saqlash',
+  'Ссылка клиенту': 'Mijozga havola',
+  'Цех: материалы и цены': 'Sex: materiallar va narxlar',
   'Текст': 'Matn',
   'Добавить текст': 'Matn qo‘shish',
   '+ текст': '+ matn',
