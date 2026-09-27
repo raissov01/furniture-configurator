@@ -15,7 +15,7 @@ export const DEFAULT_BASIS_COLUMNS: BasisColumnMap = {
 export type ImportError = { rowNumber: number; reason: string }
 export type BasisPreview = { materials: Material[]; edgeBands: EdgeBand[]; errors: ImportError[]; skipped: number }
 
-const slug = (value: string) => value.replace(/[^a-zA-Z0-9а-яА-ЯёЁ]+/gu, '-').replace(/^-|-+$/g, '')
+const slug = (value: string) => value.normalize('NFC').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-+$/g, '')
 const integer = (value: string) => /^\d+$/.test(value.trim()) ? Number(value.trim()) : NaN
 const thicknessOf = (value: string) => Number(value.trim().replace(',', '.'))
 const wood = /(?:^|[^\p{L}])(дуб|ясень|сосна|орех|вяз|бук|кл[её]н|бер[её]за|каштан|тик|палисандр|венге|дерево|вуд|кедр|вишня)[\p{L}]*/iu
