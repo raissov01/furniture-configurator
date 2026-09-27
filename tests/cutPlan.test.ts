@@ -54,6 +54,11 @@ describe('рез жоспары — қасиеттер', () => {
     }
   })
 
+  it('жоспар раскрой жасаған пропилді өздігінен қолданады', () => {
+    const custom = nestPanels(projectPanels(), SEED_CATALOG, { kerf: 12 })
+    expect(cutPlan(custom)).toEqual(cutPlan(custom, { kerf: 12 }))
+  })
+
   it('бірде-бір рез детальді ҚАҚ ЖАРМАЙДЫ', () => {
     for (const m of plan.byMaterial) {
       const material = nesting.byMaterial.find((x) => x.materialId === m.materialId)!

@@ -12,6 +12,8 @@ import fontkit from '@pdf-lib/fontkit'
 import { PDFDocument, rgb } from 'pdf-lib'
 import type { PDFFont, PDFPage } from 'pdf-lib'
 import type { NestedSheet, NestingResult } from '../nesting'
+import { cutPlan } from '../cutPlan'
+import type { CutLine } from '../cutPlan'
 import type { PdfFonts } from './pdf'
 import { stampPdfBrand } from '../brand'
 
@@ -89,9 +91,11 @@ export async function nestingPdf(input: NestingPdfInput): Promise<Uint8Array> {
   }
 
   // ── Әр параққа бір бет ─────────────────────────────────────────────────────
-  for (const group of input.nesting.byMaterial) {
-    for (const sheet of group.sheets) {
-      drawSheetPage(doc.addPage([PAGE.w, PAGE.h]), { regular, bold }, sheet, group.materialName)
+  const plan = cutPlan(input.nesting)
+  for (const [groupIndex, group] of input.nesting.byMaterial.entries()) {
+    for (const [sheetIndex, sheet] of group.sheets.entries()) {
+      drawSheetPage(doc.addPage([PAGE.w, PAGE.h]), { regular, bold }, sheet,
+        group.materialName, plan.byMaterial[groupIndex]!.sheets[sheetIndex]!.cuts)
     }
   }
 
@@ -104,6 +108,7 @@ function drawSheetPage(
   fonts: { regular: PDFFont; bold: PDFFont },
   sheet: NestedSheet,
   materialName: string,
+  cuts: readonly CutLine[],
 ): void {
   const ctx: Ctx = { page, ...fonts }
   const headerHeight = 46
@@ -115,6 +120,7 @@ function drawSheetPage(
       (sheet.offcuts.length > 0 ? ` · деловой отход: ${sheet.offcuts.length}` : ''),
     9, false, MUTED,
   )
+  label(ctx, MARGIN, PAGE.h - MARGIN - 28, 'Красные линии и номера — порядок резов', 8, false, MUTED)
 
   // Парақ бетке сыятындай масштаб. Пропорция САҚТАЛАДЫ: бұрмаланған карта
   // бойынша цех қате шешім қабылдайды.
@@ -163,5 +169,15 @@ function drawSheetPage(
     const size = Math.max(5, Math.min(9, box / 5))
     centred(ctx, cx, cy + size * 0.7, part.label, size)
     centred(ctx, cx, cy - size * 0.7, `${part.width}×${part.height}`, size, MUTED)
+  }
+
+  for (const cut of cuts) {
+    const x1 = cut.axis === 'v' ? cut.at : cut.from
+    const y1 = cut.axis === 'v' ? cut.from : cut.at
+    const x2 = cut.axis === 'v' ? cut.at : cut.to
+    const y2 = cut.axis === 'v' ? cut.to : cut.at
+    page.drawLine({ start: { x: px(x1), y: py(y1) }, end: { x: px(x2), y: py(y2) },
+      color: rgb(0.7, 0.12, 0.08), thickness: 0.6, opacity: 0.75 })
+    centred(ctx, px((x1 + x2) / 2), py((y1 + y2) / 2), String(cut.order), 5, rgb(0.7, 0.12, 0.08))
   }
 }
