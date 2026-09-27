@@ -7,6 +7,7 @@ import { projectPanelId } from '../src/core/generateCabinet'
 import { cabinetsFromTree } from '../store/treeAdapters'
 import type { FlatNode, FlatScene, PlacedSolid } from '../src/core/flatten'
 import type { GroupNode, SceneNode } from '../src/core/tree'
+import type { PlacedAnnotation } from '../src/core/annotations'
 import type { Catalog, Layer, Panel, Room } from '../src/core/index'
 import type { SceneItem } from '../components/Scene'
 
@@ -40,7 +41,7 @@ export function wallBoundItems(items: SceneItem[]): SceneItem[] {
 }
 
 /** Visible geometry bounds for camera fitting, including board-only projects. */
-export function treeSceneBounds(view: TreeSceneItems, catalog: Catalog) {
+export function treeSceneBounds(view: TreeSceneItems, catalog: Catalog, annotations: readonly PlacedAnnotation[] = []) {
   const bounds: { x0: number; x1: number; y0: number; y1: number; z0: number; z1: number } = {
     x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity, z0: Infinity, z1: -Infinity,
   }
@@ -64,18 +65,24 @@ export function treeSceneBounds(view: TreeSceneItems, catalog: Catalog) {
     add(board.pose, size)
   }
   for (const solid of view.solids) add(solid.pose, solid.spec.size)
+  for (const note of annotations) add(note.pose, {
+    x: Math.max(note.fontSize, note.text.length * note.fontSize / 2),
+    y: note.fontSize, z: note.fontSize,
+  })
   return bounds.x0 === Infinity ? null : bounds
 }
 
 /** Camera refits when visible geometry changes, including a resized free board. */
-export function treeSceneLayoutKey(room: Room, activeId: string, view: TreeSceneItems, catalog: Catalog): string {
-  const bounds = treeSceneBounds(view, catalog)
+export function treeSceneLayoutKey(room: Room, activeId: string, view: TreeSceneItems, catalog: Catalog,
+  annotations: readonly PlacedAnnotation[] = []): string {
+  const bounds = treeSceneBounds(view, catalog, annotations)
   const pose = (id: string, value: SceneItem['pose']) =>
     `${id}:${value.position.x},${value.position.y},${value.position.z},${value.rotationY}`
   return [room.width, room.depth, room.height, activeId,
     ...view.items.map((item) => `${pose(item.cabinet.id, item.pose)}:${item.cabinet.width},${item.cabinet.height},${item.cabinet.depth}`),
     ...view.boards.map((board) => pose(board.nodeId, board.pose)),
     ...view.solids.map((solid) => pose(solid.nodeId, solid.pose)),
+    ...annotations.map((note) => `${pose(note.nodeId, note.pose)}:${note.text},${note.fontSize}`),
     bounds ? `${bounds.x0},${bounds.x1},${bounds.y0},${bounds.y1},${bounds.z0},${bounds.z1}` : '',
   ].join('|')
 }

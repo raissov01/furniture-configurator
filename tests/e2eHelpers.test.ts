@@ -1,7 +1,7 @@
 /** CDP boundary fixtures run the real browser expressions, including exceptions. */
 import { createContext, runInContext } from 'node:vm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { captureFailureSnapshot, makeHelpers } from '../scripts/e2eHelpers.mjs'
+import { captureFailureSnapshot, makeHelpers, serializeCapture } from '../scripts/e2eHelpers.mjs'
 
 function browser() {
   const state = {
@@ -52,6 +52,22 @@ function browser() {
 afterEach(() => vi.useRealTimers())
 
 describe('e2e browser readiness and evidence', () => {
+  it('serializes simultaneous screenshots on one CDP session', async () => {
+    const releases: ((value: string) => void)[] = []
+    const capture = vi.fn((name: string) => new Promise<string>((resolve) => { releases.push(resolve) }))
+    const safe = serializeCapture(capture)
+    const first = safe('first')
+    const second = safe('second')
+    await Promise.resolve()
+    expect(capture).toHaveBeenCalledTimes(1)
+    releases[0]!('first.png')
+    expect(await first).toBe('first.png')
+    await Promise.resolve()
+    expect(capture).toHaveBeenCalledTimes(2)
+    releases[1]!('second.png')
+    expect(await second).toBe('second.png')
+  })
+
   it('keeps the failed check visible when Chrome cannot capture a screenshot', async () => {
     const result = await captureFailureSnapshot(() => Promise.reject(new Error('CDP Page.captureScreenshot не ответил за 60 с')))
     expect(result).toEqual({ error: 'CDP Page.captureScreenshot не ответил за 60 с' })

@@ -58,7 +58,7 @@ export function FindPanel() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-2 bg-neutral-950 text-neutral-100">
+    <div data-panel="find" className="flex h-full flex-col gap-2 bg-neutral-950 text-neutral-100">
       <p className="text-[10px] leading-snug text-neutral-500">
         {tr('Поиск по названию, материалу или размеру детали.')}
       </p>

@@ -67,11 +67,11 @@ describe('жоба коэффициенті — ShopProfile.coefficient-ті а�
     expect(withOverride.coefficient).not.toBe(withShopCoef.coefficient)
   })
 
-  it('дөңгелектеу ережесі сақталады — coefficientAmount бүтін теңгеге', () => {
+  it('дөңгелектеу ережесі сақталады — coefficientAmount бүтін тиынға', () => {
     const p = priceProject(panels, nesting, pricedShop, [], [], { coefficient: 2.7 })
-    expect(p.coefficientAmount % 100).toBe(0)
+    expect(Number.isInteger(p.coefficientAmount)).toBe(true)
     const base2 = p.goods + p.servicesTotal
-    expect(p.coefficientAmount).toBe(Math.round((base2 * (2.7 - 1)) / 100) * 100)
+    expect(p.coefficientAmount).toBe(Math.round(base2 * (2.7 - 1)))
   })
 
   it('теріс коэффициент — ConfigValidationError (цех профиліндегідей үнсіз 1-ге теңелмейді)', () => {

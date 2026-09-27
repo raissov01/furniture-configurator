@@ -12,6 +12,8 @@ import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
 import { SolidProperties } from '@/components/SolidProperties'
+import { AnnotationProperties } from '@/components/AnnotationProperties'
+
 import { PropertiesDialog } from '@/components/PropertiesDialog'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
@@ -50,6 +52,7 @@ import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { TreeDock } from '@/components/panels/TreeDock'
+import { WorkspaceDock } from '@/components/dock/WorkspaceDock'
 import { ClassicStructureWindow } from '@/components/ClassicStructureWindow'
 import { ClassicIcon, type ClassicIconName } from '@/components/ClassicIcon'
 import { BusyOverlay, Spinner } from '@/components/BusyOverlay'
@@ -153,6 +156,8 @@ export function Workspace() {
   const addCabinet = useConfigurator((s) => s.addCabinet)
   const addBoard = useConfigurator((s) => s.addBoard)
   const addSolid = useConfigurator((s) => s.addSolid)
+  const addAnnotation = useConfigurator((s) => s.addAnnotation)
+
   const removeBoard = useConfigurator((s) => s.removeBoard)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
@@ -219,6 +224,8 @@ export function Workspace() {
   const activeNode = findNode(root, activeId)
   const activeBoard = activeNode?.kind === 'board' ? activeNode : null
   const activeSolid = activeNode?.kind === 'solid' ? activeNode : null
+  const activeAnnotation = activeNode?.kind === 'annotation' ? activeNode : null
+
   const activeBoardJoint = activeBoard ? autoJoints.find((joint) => joint.boardIds.includes(activeId)) : undefined
   const boardPanel = activeBoard ? production.scene.nodes.find((node) => node.nodeId === activeId)?.panels[0] : undefined
   const editableBoard = useMemo(() => {
@@ -573,6 +580,9 @@ export function Workspace() {
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
       { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true) },
+      { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
+      { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
+
     ],
     [
       { icon: 'render', label: tr('Рендер'), action: () => setRenderOpen(true) },
@@ -1027,6 +1037,8 @@ export function Workspace() {
             <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} />
             <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} />
             <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} />
+            <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" />
+
             <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} />
             <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" />
           </> : <>
@@ -1044,8 +1056,10 @@ export function Workspace() {
           </>}
         </div>
         <div className="flex min-h-0 flex-col">
-        {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
+        {/* Телефонда сахна өрістерді жаппайды. */}
         <main className="relative isolate h-[32dvh] min-h-[240px] max-h-[32dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+          <WorkspaceDock>
+
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
@@ -1082,6 +1096,7 @@ export function Workspace() {
           ) : null}
           {/* Телефонда прогулканың жүрісі — джойстик (перне жоқ). */}
           {walk && touch ? <TouchJoystick /> : null}
+          </WorkspaceDock>
         </main>
         {/*
           АСТЫҢҒЫ КӨРІНІС ҚОЙЫНДЫЛАРЫ (docs/pro100/ui-design.md, §4 — «ЕҢ
@@ -1126,7 +1141,7 @@ export function Workspace() {
         </div>
         <aside className="relative z-10 flex h-[60dvh] min-h-[360px] max-h-[60dvh] flex-col overflow-hidden border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:static lg:z-auto lg:h-auto lg:min-h-0 lg:max-h-none">
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
-          <div className={cn("border-b border-neutral-200 px-3 py-2 dark:border-neutral-800", classic && "lg:hidden")}>
+          <div className={cn("border-b border-neutral-200 px-3 py-2 dark:border-neutral-800", classic && !activeAnnotation && "lg:hidden")}>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
               {tr('Модуль')}
               {cabinet && cabinets.length > 1
@@ -1149,10 +1164,11 @@ export function Workspace() {
               <div className="text-[11px] tabular-nums text-neutral-500">
                 {activeSolid.solid.size.y} (H) × {activeSolid.solid.size.x} (W) × {activeSolid.solid.size.z} (D)
               </div>
-            </> : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
+            </> : activeAnnotation ? <div className="truncate text-sm font-semibold" title={activeAnnotation.name}>{activeAnnotation.name}</div> : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
             {classic && (activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
-          <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && "lg:hidden")}>
+          <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && !activeAnnotation && "lg:hidden")}>
+
             <Dense>
               {/*
                 МОДУЛЬДІҢ ОРНЫ (qdesign «Модуль орны, мм»: X/Y/Z, Бұрылыс) енді
@@ -1170,6 +1186,9 @@ export function Workspace() {
                 </fieldset>
               ) : activeSolid ? (
                 <fieldset disabled={!editableSolid}><SolidProperties key={activeSolid.id} node={activeSolid} /></fieldset>
+              ) : activeAnnotation ? (
+                <AnnotationProperties node={activeAnnotation} />
+
               ) : null}
             </Dense>
           </div>
@@ -1183,6 +1202,8 @@ export function Workspace() {
               {(activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
               <Button size="sm" onClick={addBoard}>{tr('+ доска')}</Button>
               <Button size="sm" onClick={addSolid}>{tr('+ блок')}</Button>
+              <Button size="sm" onClick={addAnnotation}>{tr('+ текст')}</Button>
+
             </div>
           </section>}
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
@@ -1190,6 +1211,8 @@ export function Workspace() {
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
             <Button onClick={addSolid}>{tr('+ блок')}</Button>
+            <Button onClick={addAnnotation} testId="add-annotation">{tr('+ текст')}</Button>
+
             {activeBoard && <Button onClick={() => removeBoard(activeId)}
               disabled={!editableBoard || Boolean(activeBoardJoint)}>{tr('Удалить доску')}</Button>}
             <Button onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
