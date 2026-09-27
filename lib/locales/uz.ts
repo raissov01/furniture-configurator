@@ -11,6 +11,9 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Страница не найдена': 'Sahifa topilmadi',
+  'Запрошенной страницы нет.': "So‘ralgan sahifa mavjud emas.",
+  'Вернуться на главную': 'Bosh sahifaga qaytish',
   'Лист для бирок': 'Birka varag‘i',
   'Ширина бирки, мм': 'Birka eni, mm',
   'Высота бирки, мм': 'Birka balandligi, mm',

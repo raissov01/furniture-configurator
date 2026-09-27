@@ -10,6 +10,9 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Страница не найдена': 'Page not found',
+  'Запрошенной страницы нет.': 'The requested page does not exist.',
+  'Вернуться на главную': 'Back to home',
   'Лист для бирок': 'Label sheet',
   'Ширина бирки, мм': 'Label width, mm',
   'Высота бирки, мм': 'Label height, mm',
