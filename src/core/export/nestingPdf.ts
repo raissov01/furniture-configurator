@@ -16,7 +16,7 @@ import { cutPlan } from '../cutPlan'
 import type { CutLine } from '../cutPlan'
 import type { PdfFonts } from './pdf'
 import { stampPdfBrand } from '../brand'
-import { partCaption, sheetPageCount } from './nestingPresentation'
+import { mapLegendCapacity, partCaption, sheetPageCount } from './nestingPresentation'
 
 /** A4 альбом, пункт. */
 const PAGE = { w: 842, h: 595 }
@@ -56,9 +56,19 @@ export async function nestingPdf(input: NestingPdfInput): Promise<Uint8Array> {
   for (const [groupIndex, group] of input.nesting.byMaterial.entries()) {
     for (const [sheetIndex, sheet] of group.sheets.entries()) {
       pageCount += 1
-      drawSheetPage(doc.addPage([PAGE.w, PAGE.h]), { regular, bold }, sheet,
+      const legendShown = drawSheetPage(doc.addPage([PAGE.w, PAGE.h]), { regular, bold }, sheet,
         group.materialName, plan.byMaterial[groupIndex]!.sheets[sheetIndex]!.cuts,
         input.projectName, input.nesting.sheetCount, group.wastePercent)
+      for (let start = legendShown; start < sheet.parts.length; start += 40) {
+        const page = doc.addPage([PAGE.w, PAGE.h])
+        const continuation: Ctx = { page, regular, bold }
+        label(continuation, MARGIN, PAGE.h - MARGIN,
+          `${group.materialName} · лист ${sheet.index} · обозначения (продолжение)`, 12, true)
+        for (const [offset, part] of sheet.parts.slice(start, start + 40).entries()) {
+          label(continuation, MARGIN, PAGE.h - MARGIN - 25 - offset * 12,
+            `${start + offset + 1}. ${part.label} · ${part.width} × ${part.height} мм`, 8)
+        }
+      }
     }
   }
   if (pageCount < sheetPageCount(input.nesting.sheetCount)) {
@@ -80,9 +90,10 @@ function drawSheetPage(
   projectName: string,
   totalSheets: number,
   wastePercent: number,
-): void {
+): number {
   const ctx: Ctx = { page, ...fonts }
   const headerHeight = 54
+  const legendCapacity = mapLegendCapacity(PAGE.h, MARGIN, headerHeight)
 
   label(ctx, MARGIN, PAGE.h - MARGIN, `Карта раскроя · ${projectName}`, 14, true)
   label(ctx, MARGIN, PAGE.h - MARGIN - 17, `${materialName} · лист ${sheet.index} / ${totalSheets}`, 10, true)
@@ -146,7 +157,7 @@ function drawSheetPage(
       centred(ctx, cx, cy, caption.lines[0]!, caption.size)
     }
     const legendY = PAGE.h - MARGIN - headerHeight - 9 - index * 13
-    if (legendY >= MARGIN) label(ctx, MARGIN + availW + 10, legendY,
+    if (index < legendCapacity) label(ctx, MARGIN + availW + 10, legendY,
       `${index + 1}. ${part.label} ${part.width} × ${part.height}`, 7.5)
   }
 
@@ -159,4 +170,5 @@ function drawSheetPage(
       color: rgb(0.7, 0.12, 0.08), thickness: 0.6, opacity: 0.75 })
     centred(ctx, px((x1 + x2) / 2), py((y1 + y2) / 2), String(cut.order), 8, rgb(0.55, 0.08, 0.06))
   }
+  return legendCapacity
 }

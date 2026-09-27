@@ -102,6 +102,15 @@ describe('раскрой DXF', () => {
 })
 
 describe('раскрой PDF', () => {
+  it('37-ден көп белгі болса аңыздың жалғасын жоғалтпайды', async () => {
+    const smallPanels = Array.from({ length: 38 }, (_, index) => ({ ...panels[0]!, id: `legend-${index + 1}`,
+      label: `Деталь ${index + 1}`, cutLength: 100, cutWidth: 100,
+      finishedLength: 100, finishedWidth: 100 }))
+    const crowded = nestPanels(smallPanels, catalog)
+    expect(crowded.sheetCount).toBe(1)
+    const bytes = await nestingPdf({ nesting: crowded, projectName: 'Тест', fonts })
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(crowded.sheetCount + 1)
+  })
   it('картадағы нөмір мен жазу кемінде 7.5 pt', async () => {
     const drawText = vi.spyOn(PDFPage.prototype, 'drawText')
     try {

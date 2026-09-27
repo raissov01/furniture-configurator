@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { partCaption, sheetPageCount } from '../src/core/export/nestingPresentation'
+import { mapLegendCapacity, partCaption, sheetPageCount } from '../src/core/export/nestingPresentation'
 
 describe('раскрой картасының оқылуы', () => {
   it('бос қорытынды бет шығармайды', () => {
@@ -13,5 +13,9 @@ describe('раскрой картасының оқылуы', () => {
       .toEqual({ lines: ['Фасад', '1990 × 291'], size: 8 })
     expect(partCaption('Фасад', 1990, 291, 30, 10, 7, (s, pt) => s.length * pt * 0.6))
       .toEqual({ lines: ['7'], size: 8 })
+  })
+
+  it('аңыз толық сыймаса жалғасы үшін шекті есептейді', () => {
+    expect(mapLegendCapacity(595, 32, 54)).toBe(37)
   })
 })
