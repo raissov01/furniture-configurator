@@ -18,4 +18,10 @@ describe('390 × 844 workspace flow', () => {
     const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
     expect(css).toMatch(/@media \(max-width: 1023px\)[\s\S]*?\.p100-dialog \{[^}]*width: 100vw;[^}]*height: 100dvh;/)
   })
+
+  it('hides the classic menu on phone and keeps controls at least 44 px with 14 px text', () => {
+    expect(source).toMatch(/data-testid="classic-menubar"[^\n]*hidden lg:flex/)
+    const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+    expect(css).toMatch(/@media \(max-width: 1023px\)[\s\S]*?\[data-workspace-style\][^{}]*\{[^}]*min-height:\s*44px;[^}]*font-size:\s*14px;/)
+  })
 })

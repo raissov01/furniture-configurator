@@ -646,7 +646,7 @@ export function Workspace() {
         «Наш» режимі мен e2e үшін өзгеріссіз қалды.
       */}
 
-      <nav role="menubar" aria-label={tr('Главное меню')} data-tour="menubar" data-testid="classic-menubar" className="flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+      <nav role="menubar" aria-label={tr('Главное меню')} data-tour="menubar" data-testid="classic-menubar" className="hidden lg:flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
         {classic && <Link href="/" title={`${SITE.name} — ${tr('На главную')}`} className="mr-1 hidden items-center lg:inline-flex" data-testid="classic-brand">
           <img src="/brand/aismebel-mark.svg" width={16} height={16} alt={SITE.name} />
         </Link>}

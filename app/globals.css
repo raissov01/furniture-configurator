@@ -185,6 +185,8 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-dialog :where(input, select, button):focus-visible { outline: 1px solid var(--p100-focus); }
 
 @media (max-width: 1023px) {
+  [data-workspace-style] :is(button, input:not([type="checkbox"]), select, textarea) { min-height: 44px; font-size: 14px; }
+  [data-workspace-style] :is(label, .text-xs, [class*="text-[11px]"], [class*="text-[10px]"]) { font-size: 14px; }
   .p100-dialog-backdrop { background: var(--p100-dialog); }
   .p100-dialog { width: 100vw; height: 100dvh; max-height: none; border: 1px solid var(--p100-fieldset-border); }
   .p100-dialog-body { flex: 1; overscroll-behavior: contain; }
