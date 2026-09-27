@@ -37,9 +37,6 @@ import { cn } from '@/lib/cn'
 import { cutDisplay, visibleMaterials } from '@/lib/cutView'
 import { playbackStep } from '@/src/core/cutPlayback'
 
-/** Парақ сызбасының экрандағы ені, пиксель. */
-const SHEET_PX = 520
-
 /**
  * ⚠ Тізім ФУНКЦИЯ, тұрақты емес. Модуль деңгейіндегі `tr()` тіл сақтаудан
  * оқылғанға ДЕЙІН орындалады да, экранда әрқашан орысша қалып қояды.
@@ -169,9 +166,9 @@ export function CutPage() {
             ← {tr('Конфигуратор')}
           </Link>
           <h1 className="text-sm font-semibold">{tr('Раскрой')}</h1>
-          <span className="text-[11px] text-neutral-500">{projectName}</span>
+          <span className="min-w-0 max-w-full truncate text-[11px] text-neutral-500">{projectName}</span>
 
-          <div className="ml-auto flex flex-wrap items-center gap-1">
+          <div className="ml-auto flex w-full min-w-0 flex-wrap items-center gap-1 sm:w-auto">
             <Button active={showCuts} ariaPressed={showCuts} onClick={() => setShowCuts(!showCuts)}>
               {tr('Показать резы')}
             </Button>
@@ -469,14 +466,11 @@ function SheetCard({
   useEffect(() => {
     if (display.step >= display.total) setPlaying(false)
   }, [display.step, display.total])
-  const scale = SHEET_PX / sheet.sheetWidth
   return (
     <figure className="w-full max-w-[520px] min-w-0 space-y-1">
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
-        width={SHEET_PX}
-        height={sheet.sheetHeight * scale}
-        className="rounded border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
+        className="block h-auto w-full max-w-[520px] rounded border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
         role="img"
         aria-label={`Лист ${sheet.index}`}
       >

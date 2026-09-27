@@ -25,9 +25,6 @@ import { visibleMaterials } from '@/lib/cutView'
 
 type Tab = 'nesting' | 'price'
 
-/** Парақ сызбасының экрандағы ені, пиксель. */
-const SHEET_PX = 460
-
 /** Қаріп pdf-lib-ке сырттан беріледі: стандарт қаріптері кириллицаны білмейді. */
 async function loadFonts(): Promise<{ regular: Uint8Array; bold: Uint8Array }> {
   const [regular, bold] = await Promise.all([
@@ -320,14 +317,11 @@ function Chip({ label, value }: { label: string; value: string }) {
 
 /** Бір парақтың сызбасы. Подрезка нүктелі сызықпен, деталь аты мен өлшемімен. */
 function SheetPlan({ sheet }: { sheet: NestedSheet }) {
-  const scale = SHEET_PX / sheet.sheetWidth
   return (
-    <figure className="space-y-1">
+    <figure className="w-full max-w-[460px] min-w-0 space-y-1">
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
-        width={SHEET_PX}
-        height={sheet.sheetHeight * scale}
-        className="rounded border border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-950"
+        className="block h-auto w-full max-w-[460px] rounded border border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-950"
         role="img"
         aria-label={`Лист ${sheet.index}`}
       >
