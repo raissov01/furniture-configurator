@@ -39,11 +39,19 @@ describe('ілмелі есік', () => {
     expect(right!.opening).toEqual({ kind: 'door', side: 'right' })
   })
 
-  it('цех жағын нақты таңдаса, ол сақталады', () => {
+  it('бір есіктің жағын нақты таңдаса, ол сақталады', () => {
     for (const side of ['left', 'right'] as const) {
-      for (const front of fronts(doors(side))) {
+      const cabinet = doors(side)
+      cabinet.sections[0]!.fronts!.count = 1
+      for (const front of fronts(cabinet)) {
         expect(front.opening).toEqual({ kind: 'door', side })
       }
+    }
+  })
+
+  it('екі фасадты бір жаққа ілсе, ортасында тірек панелі болмаса тоқтайды', () => {
+    for (const side of ['left', 'right'] as const) {
+      expect(() => fronts(doors(side))).toThrow(/fronts\.opening/)
     }
   })
 
