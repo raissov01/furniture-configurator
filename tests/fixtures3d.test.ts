@@ -26,10 +26,10 @@ const surfaceOf = (c: CabinetConfig) => {
 
 describe('столешницадағы техника', () => {
   it('мойка мен плита столешницаның ҮСТІНДЕ, әрі сметаға кірмейді', () => {
-    const cab = base([{ kind: 'sink' }, { kind: 'hob', fuel: 'gas' }])
-    const hw = generateHardware(cab, SEED_CATALOG)
-    for (const id of ['sink', 'hobGas'] as const) {
-      const item = hw.find((h) => h.appliance === id)!
+    for (const fixture of [{ kind: 'sink' as const }, { kind: 'hob' as const, fuel: 'gas' as const }]) {
+      const cab = base([fixture])
+      const item = generateHardware(cab, SEED_CATALOG).find((h) =>
+        h.appliance === (fixture.kind === 'sink' ? 'sink' : 'hobGas'))!
       expect(item.priced).toBe(false)
       expect(item.position.y - item.size!.y / 2).toBe(surfaceOf(cab))
     }
@@ -101,12 +101,13 @@ describe('ас үй генераторы: плита, сорғыш, мойка',
     expect(hood.sections[0]!.contents.some((c) => c.kind === 'stand')).toBe(true)
   })
 
-  it('негізгі қабырғаға сыймаса, плита КЕЛЕСІ қабырғаға көшеді (бұрыш 3000 × 2400)', () => {
+  it('600 мм плитаға негізгі қабырғада орын сақталады (бұрыш 3000 × 2400)', () => {
     const r = generateKitchen({ layout: 'corner', lengthA: 3000, lengthB: 2400 }, SEED_CATALOG)
     const hobs = r.cabinets.filter((c) => c.fixtures?.some((f) => f.kind === 'hob'))
     expect(hobs).toHaveLength(1)
     const wall = r.placements.find((p) => p.cabinetId === hobs[0]!.id)!.wall
-    expect(wall).toBe('east')
+    expect(wall).toBe('north')
+    expect(hobs[0]!.width).toBeGreaterThanOrEqual(600)
     // Плитаның үстінде сорғыш ШКАФЫ (qdesign сияқты), бөлек «труба» жоқ.
     expect(hobs[0]!.fixtures?.some((f) => f.kind === 'hood')).toBe(false)
     /*

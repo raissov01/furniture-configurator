@@ -163,6 +163,14 @@ describe('ілгек жүйесі присадкаға түседі', () => {
     expect(system.source).toContain('BOYARD')
   })
 
+  it('inset фасад петля id-і берілмесе inset жүйесін өзі таңдайды', () => {
+    const cabinet = { ...withFronts({ mount: 'inset', hingeSystemId: undefined, handle: null }),
+      settings: { shelfSetback: 20 } }
+    const panels = generateCabinet(cabinet, fullCatalog)
+    const cup = fronts(panels)[0]!.drilling.find((d) => d.purpose === 'hinge' && d.diameter === 35)!
+    expect(cup).toMatchObject({ depth: 13, y: 19.5 })
+  })
+
   it('чашканың орны жүйенің cupFromEdge-інен алынады', () => {
     const systems = defaultHingeSystems()
     const blum = systems.find((s) => s.id === 'hinge-blum-soft-cross-overlay')!
