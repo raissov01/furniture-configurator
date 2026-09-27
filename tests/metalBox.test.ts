@@ -55,6 +55,15 @@ describe('Blum каталогының номинал ұзындықтары жә
     expect(box.source).toContain('Blum')
     expect(box.mountingGrid).toEqual({ firstFromFront: 37, pitch: 32 })
   })
+
+  it('METABOX N-нің арт қабырғасы сол енде 39 мм', () => {
+    const box = METAL_BOX_SYSTEMS.metaboxN
+    expect(box.nominalLengths).toEqual([270, 350, 400, 450, 500, 550])
+    expect(metalBoxParts(box, 868, 450)).toEqual({
+      bottom: { width: 837, depth: 448 }, back: { width: 837, height: 39 },
+    })
+    expect(box.source).toContain('Blum')
+  })
 })
 
 describe('парақтан не кесіледі', () => {
@@ -88,6 +97,7 @@ describe('өлшемдер — qdesign-нен ӨЛШЕНГЕН', () => {
     tandembox: { bottom: [793, 426], back: [781, 84] },
     merivobox: { bottom: [817, 424], back: [817, 83] },
     metabox: { bottom: [837, 448], back: [837, 71] },
+    metaboxN: { bottom: [837, 448], back: [837, 39] },
   }
 
   for (const id of Object.keys(expected) as MetalBoxSystemId[]) {
