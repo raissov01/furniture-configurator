@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { useConfigurator } from '@/store/configurator'
 import type { MaterialPbr, SceneLight, Vec3 } from '@/src/core/index'
+import { parseNormalUrl, parseVisualNumber } from '@/lib/visualSettingsInput'
 
 const inputStyle = 'w-full border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-950'
 const buttonStyle = 'border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700'
@@ -19,12 +20,16 @@ function draftFromPbr(pbr?: MaterialPbr): PbrDraft {
     normalY: show(pbr?.normal?.sizeMm.y), normalStrength: show(pbr?.normal?.strength) }
 }
 
-function OptionalNumber({ label, value, setValue, max }: {
-  label: string; value: string; setValue: (value: string) => void; max: number
+function OptionalNumber({ label, value, setValue, max, error }: {
+  label: string; value: string; setValue: (value: string) => void; max: number; error?: string | undefined
 }) {
+  const errorId = useId()
   return <label className="text-xs">{label}
     <input className={`${inputStyle} mt-1`} type="number" min={0} max={max} step={0.05}
-      value={value} onChange={(event) => setValue(event.target.value)} placeholder={tr('По умолчанию')} />
+      value={value} onChange={(event) => setValue(event.target.value)} aria-invalid={!!error}
+      aria-describedby={error ? errorId : undefined}
+      placeholder={tr('По умолчанию')} />
+    {error && <span id={errorId} className="block text-red-600">{error}</span>}
   </label>
 }
 
@@ -35,51 +40,78 @@ export function MaterialAppearanceEditor() {
   const material = materials.find((entry) => entry.id === materialId)
   const [draft, setDraft] = useState<PbrDraft>(() => draftFromPbr(material?.pbr))
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof PbrDraft, string>>>({})
   const [message, setMessage] = useState<string | null>(null)
   useEffect(() => { setDraft(draftFromPbr(material?.pbr)) }, [materialId, material?.pbr])
-  const field = (key: keyof PbrDraft, value: string) => setDraft((current) => ({ ...current, [key]: value }))
+  const field = (key: keyof PbrDraft, value: string) => {
+    setDraft((current) => ({ ...current, [key]: value }))
+    setFieldErrors((current) => ({ ...current, [key]: undefined }))
+    setMessage(null)
+  }
   const save = () => {
     if (!material) return
+    setMessage(null)
+    const errors: Partial<Record<keyof PbrDraft, string>> = {}
+    const optional = (key: keyof PbrDraft, label: string, max: number) => {
+      const parsed = parseVisualNumber(draft[key], label, 0, max, false, true)
+      if (parsed.error) errors[key] = parsed.error
+      return parsed.value === null ? undefined : parsed.value
+    }
+    const roughness = optional('roughness', tr('Шероховатость'), 1)
+    const metalness = optional('metalness', tr('Металличность'), 1)
+    const reflection = optional('reflection', tr('Отражение'), 2)
+    const opacity = optional('opacity', tr('Прозрачность'), 1)
+    const normalStrength = optional('normalStrength', tr('Сила рельефа'), 2)
+    let normal: MaterialPbr['normal']
+    if (draft.normalUrl.trim()) {
+      const url = parseNormalUrl(draft.normalUrl)
+      const x = parseVisualNumber(draft.normalX, tr('Размер карты X, мм'), 1, 100000, true)
+      const y = parseVisualNumber(draft.normalY, tr('Размер карты Y, мм'), 1, 100000, true)
+      if (url.error) errors.normalUrl = url.error
+      if (x.error) errors.normalX = x.error
+      if (y.error) errors.normalY = y.error
+      if (url.value && x.value !== null && y.value !== null) {
+        normal = { url: url.value, sizeMm: { x: x.value!, y: y.value! }, strength: normalStrength ?? 1 }
+      }
+    }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) { setError(null); return }
     try {
-      const optional = (value: string) => value.trim() ? Number(value) : undefined
       const pbr: MaterialPbr = {
-        roughness: optional(draft.roughness), metalness: optional(draft.metalness),
-        reflection: optional(draft.reflection), opacity: optional(draft.opacity),
-        normal: draft.normalUrl.trim() ? {
-          url: draft.normalUrl.trim(),
-          sizeMm: { x: Number(draft.normalX), y: Number(draft.normalY) },
-          strength: Number(draft.normalStrength || '1'),
-        } : undefined,
+        roughness, metalness, reflection, opacity, normal,
       }
       setMaterialPbr(material.id, Object.values(pbr).every((value) => value === undefined) ? undefined : pbr)
       setError(null); setMessage(tr('Вид материала сохранён'))
-    } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить вид материала')) }
+    } catch { setError(tr('Не удалось сохранить вид материала')) }
   }
   return <div className="space-y-3 text-neutral-900 dark:text-neutral-100">
     <p className="text-xs text-neutral-500">{tr('PBR меняет только вид, без изменения раскроя и цены.')}</p>
     <select className={inputStyle} aria-label={tr('Материал для PBR')} value={materialId}
-      onChange={(event) => { setMaterialId(event.target.value); setError(null); setMessage(null) }}>
+      onChange={(event) => { setMaterialId(event.target.value); setError(null); setMessage(null); setFieldErrors({}) }}>
       {materials.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
     </select>
     <div className="grid grid-cols-2 gap-2">
-      <OptionalNumber label={tr('Шероховатость')} value={draft.roughness} setValue={(value) => field('roughness', value)} max={1} />
-      <OptionalNumber label={tr('Металличность')} value={draft.metalness} setValue={(value) => field('metalness', value)} max={1} />
-      <OptionalNumber label={tr('Отражение')} value={draft.reflection} setValue={(value) => field('reflection', value)} max={2} />
-      <OptionalNumber label={tr('Прозрачность')} value={draft.opacity} setValue={(value) => field('opacity', value)} max={1} />
+      <OptionalNumber label={tr('Шероховатость')} value={draft.roughness} setValue={(value) => field('roughness', value)} max={1} error={fieldErrors.roughness} />
+      <OptionalNumber label={tr('Металличность')} value={draft.metalness} setValue={(value) => field('metalness', value)} max={1} error={fieldErrors.metalness} />
+      <OptionalNumber label={tr('Отражение')} value={draft.reflection} setValue={(value) => field('reflection', value)} max={2} error={fieldErrors.reflection} />
+      <OptionalNumber label={tr('Прозрачность')} value={draft.opacity} setValue={(value) => field('opacity', value)} max={1} error={fieldErrors.opacity} />
     </div>
     <label className="block text-xs">{tr('Карта нормалей (URL)')}
-      <input className={`${inputStyle} mt-1`} type="url" value={draft.normalUrl}
+      <input className={`${inputStyle} mt-1`} type="url" value={draft.normalUrl} aria-invalid={!!fieldErrors.normalUrl}
         onChange={(event) => field('normalUrl', event.target.value)} placeholder="https://…" />
+      {fieldErrors.normalUrl && <span className="block text-red-600">{fieldErrors.normalUrl}</span>}
     </label>
     {draft.normalUrl.trim() && <div className="grid grid-cols-3 gap-2">
       <label className="text-xs">{tr('Размер карты X, мм')} ({tr('Обязательно')})
         <input className={`${inputStyle} mt-1`} type="number" min={1} step={1} required value={draft.normalX}
-          onChange={(event) => field('normalX', event.target.value)} /></label>
+          aria-invalid={!!fieldErrors.normalX} onChange={(event) => field('normalX', event.target.value)} />
+        {fieldErrors.normalX && <span className="block text-red-600">{fieldErrors.normalX}</span>}</label>
       <label className="text-xs">{tr('Размер карты Y, мм')} ({tr('Обязательно')})
         <input className={`${inputStyle} mt-1`} type="number" min={1} step={1} required value={draft.normalY}
-          onChange={(event) => field('normalY', event.target.value)} /></label>
+          aria-invalid={!!fieldErrors.normalY} onChange={(event) => field('normalY', event.target.value)} />
+        {fieldErrors.normalY && <span className="block text-red-600">{fieldErrors.normalY}</span>}</label>
       <OptionalNumber label={tr('Сила рельефа')} value={draft.normalStrength}
-        setValue={(value) => field('normalStrength', value)} max={2} />
+        setValue={(value) => field('normalStrength', value)} max={2} error={fieldErrors.normalStrength} />
     </div>}
     <button type="button" className={buttonStyle} onClick={save}>{tr('Сохранить вид материала')}</button>
     {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
@@ -87,15 +119,24 @@ export function MaterialAppearanceEditor() {
   </div>
 }
 
-function NumberField({ label, value, onChange, step = 1 }: {
-  label: string; value: number; onChange: (value: number) => void; step?: number
+function NumberField({ label, value, onChange, min, max, step = 1, integer = false }: {
+  label: string; value: number; onChange: (value: number) => void; min: number; max: number; step?: number; integer?: boolean
 }) {
+  const errorId = useId()
+  const [draft, setDraft] = useState(String(value))
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => { setDraft(String(value)); setError(null) }, [value])
   return <label className="text-xs">{label}
-    <input className={`${inputStyle} mt-1`} type="number" step={step} value={value}
+    <input className={`${inputStyle} mt-1`} type="number" step={step} min={min} max={max} value={draft} aria-invalid={!!error}
+      aria-describedby={error ? errorId : undefined}
       onChange={(event) => {
-        const number = Number(event.target.value)
-        if (Number.isFinite(number)) onChange(number)
+        const raw = event.target.value
+        setDraft(raw)
+        const parsed = parseVisualNumber(raw, label, min, max, integer)
+        setError(parsed.error)
+        if (parsed.value !== null && parsed.value !== undefined) onChange(parsed.value)
       }} />
+    {error && <span id={errorId} className="block text-red-600">{error}</span>}
   </label>
 }
 
@@ -106,7 +147,7 @@ export function ProjectLightsEditor() {
   const [error, setError] = useState<string | null>(null)
   const apply = (next: SceneLight[]) => {
     try { setProjectLights(next); setError(null) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось изменить свет')) }
+    catch { setError(tr('Не удалось изменить свет')) }
   }
   const update = (changed: SceneLight) => apply(lights.map((light) => light.id === changed.id ? changed : light))
   const add = (kind: SceneLight['kind']) => {
@@ -125,7 +166,7 @@ export function ProjectLightsEditor() {
   const vectorFields = (label: string, value: Vec3, change: (value: Vec3) => void) =>
     <div className="grid grid-cols-3 gap-2">
       {(['x', 'y', 'z'] as const).map((axis) => <NumberField key={axis}
-        label={`${label} ${axis.toUpperCase()}, мм`} value={value[axis]}
+        label={`${label} ${axis.toUpperCase()}, мм`} value={value[axis]} min={-100000} max={100000} integer
         onChange={(number) => change({ ...value, [axis]: number })} />)}
     </div>
   return <div className="space-y-3 text-neutral-900 dark:text-neutral-100">
@@ -142,19 +183,19 @@ export function ProjectLightsEditor() {
         <label className="text-xs">{tr('Цвет')}
           <input className={`${inputStyle} mt-1 h-8`} type="color" value={light.color}
             onChange={(event) => update({ ...light, color: event.target.value })} /></label>
-        <NumberField label={tr('Интенсивность')} value={light.intensity} step={0.1}
+        <NumberField label={tr('Интенсивность')} value={light.intensity} min={0} max={100} step={0.1}
           onChange={(value) => update({ ...light, intensity: value })} />
       </div>
       {light.kind !== 'sun' && vectorFields(tr('Позиция'), light.position,
         (position) => update({ ...light, position }))}
       {light.kind === 'spot' && <>
         {vectorFields(tr('Цель'), light.target, (target) => update({ ...light, target }))}
-        <NumberField label={tr('Угол, °')} value={light.angleDegrees} onChange={(angleDegrees) => update({ ...light, angleDegrees })} />
+        <NumberField label={tr('Угол, °')} value={light.angleDegrees} min={1} max={89} onChange={(angleDegrees) => update({ ...light, angleDegrees })} />
       </>}
       {light.kind === 'sun' && <div className="grid grid-cols-2 gap-2">
-        <NumberField label={tr('Азимут, °')} value={light.azimuthDegrees}
+        <NumberField label={tr('Азимут, °')} value={light.azimuthDegrees} min={-180} max={180}
           onChange={(azimuthDegrees) => update({ ...light, azimuthDegrees })} />
-        <NumberField label={tr('Высота солнца, °')} value={light.elevationDegrees}
+        <NumberField label={tr('Высота солнца, °')} value={light.elevationDegrees} min={-90} max={90}
           onChange={(elevationDegrees) => update({ ...light, elevationDegrees })} />
       </div>}
     </section>)}

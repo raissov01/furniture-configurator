@@ -1591,4 +1591,7 @@ export const en: Record<string, string> = {
   // Бұтақтарды біріктіруде сақталған аудармалар.
 
 
+
+  'Допустимо число в диапазоне': 'Allowed numeric range',
+  'Допустим URL с http:// или https://': 'Use an http:// or https:// URL',
 }

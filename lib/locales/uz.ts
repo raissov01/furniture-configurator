@@ -1595,4 +1595,7 @@ export const uz: Record<string, string> = {
   // Бұтақтарды біріктіруде сақталған аудармалар.
 
 
+
+  'Допустимо число в диапазоне': 'Ruxsat etilgan son oralig‘i',
+  'Допустим URL с http:// или https://': 'http:// yoki https:// manzilini kiriting',
 }
