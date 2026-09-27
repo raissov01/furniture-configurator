@@ -1067,11 +1067,6 @@ export function Workspace() {
         <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
           {classic ? <>
             <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" onHover={setHoveredToolLabel} />
-            <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" onHover={setHoveredToolLabel} />
           </> : <>
           <Button
             size="sm"
