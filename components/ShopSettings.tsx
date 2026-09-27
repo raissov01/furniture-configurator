@@ -8,6 +8,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { nextCopyName } from '@/src/core/copyName'
 import { useEffect, useMemo, useState } from 'react'
 import { useModalLayer } from '@/lib/useModalLayer'
 import {
@@ -580,7 +581,7 @@ function PriceListManager({ shop }: { shop: ShopProfile }) {
         <Button onClick={() => createPriceList(`Прайс ${shop.priceLists.length + 1}`, 'blank')}>
           {tr('+ Новый прайс')}
         </Button>
-        <Button onClick={() => createPriceList(`${active.name} (копия)`, 'copy')}>
+        <Button onClick={() => createPriceList(nextCopyName(active.name, shop.priceLists.map((list) => list.name)), 'copy')}>
           {tr('Копировать текущий')}
         </Button>
       </div>

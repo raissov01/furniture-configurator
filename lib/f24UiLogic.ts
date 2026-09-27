@@ -1,4 +1,5 @@
 import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
+import { nextCopyName } from '@/src/core/copyName'
 
 export type CloudSelection = { id: string; revision: number }
 export const CLOUD_SELECTION_KEY = 'furniture-configurator:cloud-selection'
@@ -20,8 +21,8 @@ export function cloudSavePayload(project: unknown, selected: CloudSelection | nu
     : { project }
 }
 
-export function cloudCopyProject<T extends { name: string }>(project: T): T {
-  return { ...project, name: `${project.name} (копия)` }
+export function cloudCopyProject<T extends { name: string }>(project: T, existingNames: Iterable<string> = []): T {
+  return { ...project, name: nextCopyName(project.name, existingNames) }
 }
 
 export function cloudSaveOutcome(status: number, data: { id?: unknown; revision?: unknown; error?: unknown }, selected: CloudSelection | null):

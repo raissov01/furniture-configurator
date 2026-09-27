@@ -17,6 +17,7 @@ import { cn } from '@/lib/cn'
 import { ASSEMBLY_STAGE_NAMES, assemblySteps, projectUsage, rolesLabel } from '@/src/core/index'
 import type { AssemblyStage, Catalog, Panel, ProjectInfo } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 type Tab = 'materials' | 'assembly' | 'info'
 
@@ -42,6 +43,7 @@ const STAGE_COLOR: Record<AssemblyStage, string> = {
 export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Catalog }) {
   const open = useConfigurator((s) => s.projectOpen)
   const setOpen = useConfigurator((s) => s.setProjectOpen)
+  const { zIndex } = useModalLayer(open, 'project')
   const setHovered = useConfigurator((s) => s.setHovered)
   // Тізімдегі жол мен 3D бір-бірін БІЛЕДІ: жолды бассаң, сахна сол қадамға
   // тұрады да, деталь бөлектеледі. Цехтағы адам «мынау қайсысы» дегенді
@@ -67,7 +69,8 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div

@@ -8,6 +8,8 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { modalBlocksHotkeys } from '@/lib/modalStack'
+import { getModalStack } from '@/lib/useModalLayer'
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
@@ -478,8 +480,7 @@ export function Workspace() {
    */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const dialogState = useConfigurator.getState()
-      if (propertiesNodeId || dialogState.galleryOpen || dialogState.shopOpen || dialogState.quoteOpen || dialogState.drillOpen || dialogState.roomOpen) return
+      if (propertiesNodeId || modalBlocksHotkeys(getModalStack())) return
       if (isTyping(e.target)) return
       // Escape — 3D-дегі таңдауды алу. Хоткейлер тізіміне кірмейді: бұл
       // «әрекет» емес, кез келген жерден шығудың әдеттегі жолы.
@@ -743,7 +744,7 @@ export function Workspace() {
           </div>}
         </div>)}
       </div>
-      <header className="compact-tools flex max-h-[35dvh] flex-wrap items-center gap-3 overflow-y-auto border-b border-neutral-200 px-3 py-2 lg:max-h-none lg:overflow-visible dark:border-neutral-800">
+      <header className="compact-tools flex shrink-0 flex-wrap items-center gap-1 overflow-visible border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
         <Link
           href="/"
           title={tr('На главную')}
@@ -755,15 +756,14 @@ export function Workspace() {
         </Link>
 
         {/* Тақырыпта ЖОБА; таңдалған модуль мен оның габариті — оң панельде. */}
-        <h1 className="max-w-72 truncate text-sm font-semibold" title={projectName}>{projectName}</h1>
-        <Link href="/mobile" className="inline-flex min-h-11 items-center border border-neutral-300 px-2 text-xs lg:min-h-0 dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>
+        <h1 className="ml-auto max-w-[55vw] truncate text-sm font-semibold" title={projectName}>{projectName}</h1>
 
         {/*
           ТОПТАЛҒАН ТАҚТА: бұрын 30+ батырма қатар тұрып «каша» болатын. Енді
           жасау мен жоба құралдары ашылмалы мәзірге жиналды — тек жиі керегі
           көзде. Клиентке сілтеме де осында.
         */}
-        <div className="flex items-center gap-1">
+        <div className="flex w-full flex-wrap items-center gap-1">
           <Menu label={tr('Создать')} title={tr('С чего начать корпус')}>
             <MenuItem onClick={() => setGalleryOpen(true)}>{tr('Готовые шаблоны')}</MenuItem>
             <MenuItem onClick={() => setAiOpen(true)}>{tr('Техзадание (словами)')}</MenuItem>
@@ -771,7 +771,11 @@ export function Workspace() {
             <MenuItem onClick={() => setPartsOpen(true)} disabled={!activeEditable}>{tr('Своя деталь')}</MenuItem>
           </Menu>
           <Menu label={tr('Проект')} title={tr('Материалы, раскрой, присадка, смета')}>
+            <MenuItem onClick={() => downloadProjectFile(exportProject())}>{tr('Сохранить')}</MenuItem>
+            <MenuItem onClick={openProjectPicker}>{tr('Открыть')}</MenuItem>
             <MenuItem onClick={() => setProjectOpen(true)}>{tr('Материалы и сборка')}</MenuItem>
+            <MenuItem onClick={() => setShopOpen(true)}>{tr('Цех')}</MenuItem>
+            <MenuItem onClick={() => openDockTab('library')}>{tr('Библиотека')}</MenuItem>
             <MenuItem onClick={() => setQuoteOpen(true)} disabled={Boolean(production.error)}>{tr('Смета и раскрой')}</MenuItem>
             <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable && !editableBoard}>{tr('Присадка')}</MenuItem>
             <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
@@ -779,23 +783,15 @@ export function Workspace() {
             <MenuItem onClick={() => void copyClientLink()}>{tr('Ссылка клиенту')}</MenuItem>
             {/* qdesign «3D-көріністе ашу» сияқты: 6 таңбалы код, 24 сағат, автожаңарту. */}
             <MenuItem onClick={() => setShareCodeOpen(true)}>{tr('Код для клиента')}</MenuItem>
+            <MenuItem onClick={() => { window.location.assign('/cut') }}>{tr('Раскрой')}</MenuItem>
             <MenuItem onClick={requestReset}>{tr('Сброс')}</MenuItem>
           </Menu>
-          <Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
-          <Button onClick={() => openDockTab('library')}>{tr('Библиотека')}</Button>
-          {/* Раскрой — БӨЛЕК бет (цех станогы қасында ашады), сондықтан тікелей. */}
-          <Link
-            href="/cut"
-            title={tr('Отдельный экран раскроя: КИМ, резы, бирки')}
-            className="rounded-md border border-neutral-300 px-2 py-1 text-xs transition hover:border-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-300"
-          >
-            {tr('Раскрой')}
-          </Link>
+          <Button onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
           <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
           <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
         </div>
 
-        <ProjectMenu />
+        <div className="hidden"><ProjectMenu /></div>
         <div data-testid="workspace-view-menu"><Menu label={tr('Вид')} size="sm" title={tr('Прозрачность, фасады, проекция, масштаб')}>
           <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
             {tr('Разнести')}
@@ -822,6 +818,24 @@ export function Workspace() {
           <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
             {tr('Человек для масштаба')}
           </MenuItem>
+          <MenuItem onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}>
+            {viewMode === 'solid' ? tr('Тело') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
+          </MenuItem>
+          <MenuItem onClick={() => setRenderOpen(true)}>{tr('Рендер')}</MenuItem>
+          <MenuItem onClick={() => setWalk(!walk)}>{tr('Прогулка')}</MenuItem>
+          <MenuItem onClick={() => setOpenness(openness > 0 ? 0 : 1)}>{openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}</MenuItem>
+          <MenuItem onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}>{tr('Сборка')}</MenuItem>
+          {assemblyStep !== null ? <label className="flex items-center gap-2 px-2 py-1 text-sm">
+            {tr('Показать сборку по шагам')}
+            <input type="range" min={1} max={Math.max(1, projectPanels.length)}
+              value={Math.min(assemblyStep, projectPanels.length)}
+              onChange={(event) => setAssemblyStep(Number(event.target.value))} />
+            <span>{Math.min(assemblyStep, projectPanels.length)} / {projectPanels.length}</span>
+          </label> : null}
+          <div className="flex gap-1 border-t border-neutral-200 px-2 py-1">
+            {hasActiveCabinet && !sceneError && !projectLoadError ? <ArButton /> : null}
+            <VrButton />
+          </div>
         </Menu></div>
         {silhouette.on ? <div className="flex flex-col gap-0.5">
           <input type="text" inputMode="numeric" aria-label={tr('Рост человека, мм')}
@@ -839,22 +853,8 @@ export function Workspace() {
             {tr('Рост человека, мм')}: {tr('Допустимо целое число в диапазоне')} {MIN_SILHOUETTE_HEIGHT}…{MAX_SILHOUETTE_HEIGHT} мм
           </span> : null}
         </div> : null}
-        <Button size="sm" onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
-
         {/* Сирек керегі оң жақта; көрініс құралдары 3D-нің өз үстіне көшті. */}
-        <div className="flex min-w-0 w-full flex-wrap items-center gap-1 sm:ml-auto sm:w-auto">
-          {/* БАҒА (qdesign сияқты): басу — смета; баға қойылмаса — цех профилі. */}
-          {liveTotal ? (
-            'total' in liveTotal ? (
-              <Button onClick={() => setQuoteOpen(true)} title={tr('Итого клиенту — открыть смету')}>
-                <span className="tabular-nums font-semibold">{formatTengeExact(liveTotal.total)}</span>
-              </Button>
-            ) : (
-              <Button onClick={() => setShopOpen(true)} title={tr('Задайте цены материалов в профиле цеха')}>
-                <span className="whitespace-nowrap">{tr('Цены не заданы')}</span>
-              </Button>
-            )
-          ) : null}
+        <div className="flex min-w-0 flex-wrap items-center gap-1 sm:ml-auto">
           {projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet ?? undefined} pdfCabinet={pdfCabinet} pdfAssembly={pdfAssembly} panels={activePanels} projectPanels={projectPanels} projectName={projectName} /> : null}
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
@@ -863,12 +863,11 @@ export function Workspace() {
           <LangSwitch />
         </div>
 
-        <span
-          className={
+        <span className={cn('hidden',
             mounted && ms > BUDGET_MS
               ? 'rounded bg-red-100 px-1.5 py-0.5 text-[10px] tabular-nums text-red-800 dark:bg-red-950 dark:text-red-300'
               : 'rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] tabular-nums text-neutral-600 dark:bg-neutral-800'
-          }
+          )}
           title={`Бюджет: ${BUDGET_MS} мс`}
         >
           {projectPanels.length} панелей{cabinets.length > 1 ? ` · корпусов: ${cabinets.length}` : ''}{mounted ? ` · ${ms.toFixed(1)} мс` : ''}
@@ -879,15 +878,7 @@ export function Workspace() {
       {(activeBoard || activeSolid || cabinet) && <div data-testid="mobile-properties-trigger"
         className="relative z-30 flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
         <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
-        {cabinet && <div className="flex shrink-0 gap-1">
-          <Button tour="mobile-size" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Габариты')}</Button>
-          <Button tour="mobile-sections" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Секции модуля')}</Button>
-          <Button tour="mobile-cutlist" size="sm" onClick={() => {
-            if (!cutOpen) toggleCut()
-            document.querySelector('[data-tour="cutlist"]')?.scrollIntoView({ block: 'nearest' })
-          }}>{tr('Деталировка')}</Button>
-        </div>}
-        {!cabinet && <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+        <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>
       </div>}
 
       {projectLoadError && (
@@ -922,85 +913,6 @@ export function Workspace() {
         <Button size="sm" onClick={() => downloadProjectFile(exportProject())}>{tr('Скачать копию JSON')}</Button>
         <Button size="sm" onClick={() => saveProjectLocally()}>{tr('Повторить сохранение')}</Button>
       </div>}
-
-      {/*
-        PRO100-ДЕГІ ЕКІ ҰСАҚ БЕЛГІШЕ ҚАТАРЫ (docs/pro100/ui-design.md, §2).
-        Бұрын «Рендер · Прогулка · AR · VR · Распахнуть · Сборка · Вид»
-        3D көрінісінің ҮСТІНДЕ қалқып тұратын (`absolute bottom-3/top-3`) —
-        енді осында, PRO100-дегідей тұрақты қатарда. Модуль КРУД-ы
-        (жаңа/дубль/айна/өшіру) — аяста да қалды (астыңғы «Модуль» тобы),
-        мұнда тек ЖЫЛДАМ белгіше нұсқасы.
-      */}
-      <div className="compact-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
-        <Button size="sm" onClick={addCabinet} title={tr('Новый корпус')}>+</Button>
-        <Button size="sm" onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>⧉</Button>
-        <Button size="sm" onClick={mirrorSelected} disabled={!canMirrorSelected} title={freeMirrorCheck?.reason ?? tr('Зеркальная копия')}>⇋</Button>
-        <Button
-          size="sm"
-          onClick={() => { removeCabinet(activeId); setSelected(null) }}
-          disabled={cabinets.length < 2 || !activeEditable}
-          title={tr('Удалить корпус')}
-        >
-          ✕
-        </Button>
-        <span className="mx-1 h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
-        <Button size="sm" onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
-        <Button size="sm" onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
-        <Button
-          size="sm"
-          active={viewMode !== 'solid'}
-          onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
-          title={`${tr('Прозрачность')} (T)`}
-        >
-          {viewMode === 'solid' ? tr('Тело') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
-        </Button>
-        <span className="mx-1 h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
-        <Button size="sm" onClick={() => setRenderOpen(true)} title={tr('Фотореалистичная картинка для клиента')}>
-          {tr('Рендер')}
-        </Button>
-        <Button
-          size="sm"
-          active={walk}
-          title={tr('Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы')}
-          onClick={() => setWalk(!walk)}
-        >
-          {tr('Прогулка')}
-        </Button>
-        {hasActiveCabinet && !sceneError && !projectLoadError ? <ArButton /> : null}
-        <VrButton />
-        <Button
-          size="sm"
-          active={openness > 0}
-          title={`${tr('Открыть или закрыть двери и ящики')} (E)`}
-          onClick={() => setOpenness(openness > 0 ? 0 : 1)}
-        >
-          {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
-        </Button>
-        <Button
-          size="sm"
-          active={assemblyStep !== null}
-          title={tr('Показать сборку по шагам')}
-          onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}
-        >
-          {tr('Сборка')}
-        </Button>
-        {assemblyStep !== null ? (
-          <span className="flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2 py-0.5 dark:border-neutral-700 dark:bg-neutral-900">
-            <input
-              type="range"
-              aria-label={tr('Показать сборку по шагам')}
-              className="w-20 accent-neutral-900 dark:accent-neutral-100"
-              min={1}
-              max={Math.max(1, projectPanels.length)}
-              value={Math.min(assemblyStep, projectPanels.length)}
-              onChange={(e) => setAssemblyStep(Number(e.target.value))}
-            />
-            <span className="text-[10px] tabular-nums text-neutral-500">
-              {Math.min(assemblyStep, projectPanels.length)} / {projectPanels.length}
-            </span>
-          </span>
-        ) : null}
-      </div>
 
       {production.error ? (
         <div role="alert" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
@@ -1083,7 +995,7 @@ export function Workspace() {
         жақта таңдалған модульдің қасиеттері мен әрекеттері. Бұрын: сол жақта
         ұзын форма, оң жақта 460 px деталировка — 3D тарылып, тақта екі қатар.
       */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_auto] overflow-y-auto overscroll-contain lg:grid-cols-[28px_minmax(0,1fr)_340px] lg:grid-rows-none lg:overflow-hidden">
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_30dvh] overflow-hidden lg:grid-cols-[28px_minmax(0,1fr)_340px] lg:grid-rows-none">
         {/*
           СОЛ ЖАҚТАҒЫ ТАР ТІК ҚҰРАЛДАР ЖОЛАҒЫ (docs/pro100/ui-design.md, §3).
           Бізде PRO100-дегідей БӨЛЕК режим жүйесі (таңдау/жылжыту курсоры)
@@ -1097,10 +1009,10 @@ export function Workspace() {
         <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
           <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
         </div>
-        <div className="flex min-h-0 flex-col">
+        <div className="flex min-h-0 flex-col overflow-y-auto lg:overflow-hidden">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
         {!walk && <div data-testid="mobile-tree-dock" className="relative z-20 shrink-0 px-2 pt-1 lg:hidden"><TreeDock request={dockRequest} /></div>}
-        <main className="relative isolate h-[28dvh] min-h-[240px] max-h-[28dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+        <main className="relative isolate h-[40dvh] min-h-[40dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
@@ -1209,7 +1121,7 @@ export function Workspace() {
             </div>}
         </section>
         </div>
-        <aside className="relative z-10 flex h-[60dvh] min-h-[360px] max-h-[60dvh] flex-col overflow-hidden border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
+        <aside className="relative z-10 flex h-[30dvh] min-h-0 flex-col overflow-hidden border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
           <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-800 lg:hidden">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
@@ -1262,7 +1174,7 @@ export function Workspace() {
             </Dense>
           </div>
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
-          <div className="flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800 lg:hidden">
+          <div className="flex shrink-0 flex-nowrap gap-1 overflow-x-auto whitespace-nowrap border-t border-neutral-200 p-2 dark:border-neutral-800 lg:hidden">
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
             <Button onClick={addSolid}>{tr('+ блок')}</Button>
