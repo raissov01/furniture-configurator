@@ -7,7 +7,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  MARKET_DEFAULTS, MARKET_GROUPS, applyMarketDefaults, MARKET_PRICE_DATE, MARKET_PRICE_DATE_0927, createPriceList, defaultShopProfile,
+  MARKET_DEFAULTS, MARKET_GROUPS, RECOMMENDED_PRICES, RECOMMENDED_PRICE_DATE, RECOMMENDED_PRICE_SOURCE,
+  MARKET_MEDIAN_SOURCE, marketQuote, applyMarketDefaults, MARKET_PRICE_DATE, MARKET_PRICE_DATE_0927, createPriceList, defaultShopProfile,
   hasNoPrices, marketGroup, marketMedianTiyn, parseShopProfile, priceOrigin, priceProject,
   nestPanels, generateCabinet, findTemplate, templateToCabinet, catalogOf, nestingOptionsOf,
   refreshMarketPrices, resetAllToMarket, resetToMarket, starterShopProfile, switchPriceList,
@@ -81,22 +82,21 @@ describe('нарық медианасы', () => {
 describe('жаңа цех нарық бағасымен толады', () => {
   const shop = starterShopProfile('new')
 
-  it('ЛДСП 16 мм 2800×2070 — Egger медианасы, белгісі бар', () => {
-    expect(material(shop, 'ldsp16-w980').pricePerSheet).toBe(2_687_000)
+  it('ЛДСП Egger 16 мм 2800×2070 — ұсынылған баға, нарық медианасы белгіде салыстыруға қалады', () => {
+    expect(material(shop, 'ldsp16-w980').pricePerSheet).toBe(3_400_000)
     expect(priceOrigin(shop, 'material:ldsp16-w980')).toBe('market')
     expect(shop.marketPrices['material:ldsp16-w980']).toEqual({
-      group: 'ldsp-egger-16-2800x2070', priceTiyn: 2_687_000, dateSeen: '2026-09-24', offers: 7,
+      source: RECOMMENDED_PRICE_SOURCE, priceTiyn: 3_400_000, dateSeen: '2026-09-26',
+      group: 'ldsp-egger-16-2800x2070', marketMedianTiyn: 2_687_000, offers: 7,
     })
   })
 
-  it('ХДФ, МДФ, кромка, фурнитура, қызмет толады', () => {
+  it('ұсынылған бағасы жоқ позициялар нарық медианасында қалады (ХДФ, МДФ, кромка, т.б.)', () => {
     expect(material(shop, 'hdf3-white').pricePerSheet).toBe(750_000)
     expect(material(shop, 'mdf16-paint').pricePerSheet).toBe(2_095_000)
     expect(band(shop, 'pvc04-w980').pricePerMeter).toBe(3300)
     expect(band(shop, 'pvc2-h1145').pricePerMeter).toBe(14_100)
-    expect(hardware(shop, 'confirmat-7x50').pricePerUnit).toBe(2000)
-    expect(hardware(shop, 'hinge-blum-soft').pricePerUnit).toBe(213_600)
-    expect(hardware(shop, 'runner-tandem').pricePerUnit).toBe(968_450)
+    expect(shop.marketPrices['edgeBand:pvc04-w980']).toMatchObject({ source: MARKET_MEDIAN_SOURCE, priceTiyn: 3300 })
     expect(shop.services.cutting).toEqual({ basis: 'sheet', rate: 200_000 })
     expect(shop.services.drilling).toEqual({ basis: 'hole', rate: 3500 })
     expect(shop.services.edging).toEqual({ basis: 'edgeMetre', rate: 17_250 })
@@ -108,12 +108,8 @@ describe('жаңа цех нарық бағасымен толады', () => {
       ['hinge-plate', 14_300, 2],
       ['handle-bar', 96_000, 2],
       ['handle-rail', 73_700, 5],
-      ['shelf-pin-5', 600, 1],
-      ['dowel-8x30', 400, 2],
       ['minifix-15', 5800, 1],
       ['runner-ball-400', 100_400, 1],
-      ['box-tandembox', 3_212_200, 1],
-      ['box-legrabox', 5_579_700, 1],
     ]
     for (const [id, price, n] of cases) {
       expect(hardware(shop, id).pricePerUnit, id).toBe(price)
@@ -136,11 +132,11 @@ describe('жаңа цех нарық бағасымен толады', () => {
     expect(band(shop, 'abs2-paint').pricePerMeter).toBe(0)
     // Бірлігі/түрі сәйкес ұсыныс жоқ немесе расталмаған (SUMMARY 2026-09-27):
     for (const id of [
-      'hinge-overlay', 'hinge-boyard-none', 'hinge-hafele-soft', 'hinge-hafele-none', 'hinge-dtc-soft',
-      'hinge-dtc-none', 'runner-roller-400', 'lift-flap', 'leg-100', 'rod-25', 'rod-bracket',
-      'sliding-track', 'sliding-kit', 'handle-bracket', 'handle-rail-thin', 'box-merivobox',
+      'hinge-overlay', 'hinge-boyard-none', 'hinge-hafele-none', 'hinge-blum-none', 'hinge-dtc-none',
+      'runner-roller-400', 'lift-flap', 'leg-100', 'leg-cone', 'rod-bracket', 'sliding-track', 'sliding-kit',
+      'handle-bracket', 'handle-rail-thin', 'filling-pantograph', 'filling-rotary-shelf', 'filling-pullout-hanger',
+      'filling-rail-profile',
     ]) expect(hardware(shop, id).pricePerUnit, id).toBe(0)
-    expect(shop.services.packing.rate).toBe(0)
     expect(shop.services.assembly.rate).toBe(0)
     expect(shop.installation.ratePerMetreWidth).toBe(0)
     expect(priceOrigin(shop, 'material:ldsp18-w980')).toBe('empty')
@@ -154,7 +150,7 @@ describe('жаңа цех нарық бағасымен толады', () => {
 
   it('белсенді прайс-парақ та сол бағаны және белгіні сақтайды', () => {
     const list = shop.priceLists.find((l) => l.id === shop.activePriceListId)!
-    expect(list.materialPrices['ldsp16-w980']!.pricePerSheet).toBe(2_687_000)
+    expect(list.materialPrices['ldsp16-w980']!.pricePerSheet).toBe(3_400_000)
     expect(list.marketPrices['material:ldsp16-w980']).toBeDefined()
   })
 
@@ -166,7 +162,7 @@ describe('жаңа цех нарық бағасымен толады', () => {
     const price = priceProject(panels, nesting, shop, [])
     const row = price.byMaterial.find((m) => m.materialId === 'ldsp16-w980')!
     expect(row.sheets).toBeGreaterThan(0)
-    expect(row.materialCost).toBe(row.sheets * 2_687_000)
+    expect(row.materialCost).toBe(row.sheets * 3_400_000)
     expect(price.missingPrices.some((s) => s.includes('ЛДСП Белый платиновый W980 16 мм'))).toBe(false)
   })
 })
@@ -206,8 +202,8 @@ describe('өз бағасы', () => {
     })
     const fresh = refreshMarketPrices(stale)
     expect(material(fresh, 'ldsp16-w980').pricePerSheet).toBe(2_500_000)
-    expect(material(fresh, 'ldsp16-u104').pricePerSheet).toBe(2_687_000)
-    expect(fresh.marketPrices['material:ldsp16-u104']!.dateSeen).toBe('2026-09-24')
+    expect(material(fresh, 'ldsp16-u104').pricePerSheet).toBe(3_400_000)
+    expect(fresh.marketPrices['material:ldsp16-u104']).toMatchObject({ source: RECOMMENDED_PRICE_SOURCE, dateSeen: '2026-09-26' })
   })
 
   it('жаңа топтағы позиция: өз бағасы нарық жаңарғанда да ӨЗГЕРМЕЙДІ', () => {
@@ -242,7 +238,7 @@ describe('нарық әдепкісі тек БОС позицияны толт�
     const filled = applyMarketDefaults(mixed)
     expect(material(filled, 'ldsp16-w980').pricePerSheet).toBe(1_111_100)
     expect(filled.marketPrices['material:ldsp16-w980']).toBeUndefined()
-    expect(material(filled, 'ldsp16-u104').pricePerSheet).toBe(2_687_000)
+    expect(material(filled, 'ldsp16-u104').pricePerSheet).toBe(3_400_000)
   })
 
   it('негізі басқа қызметке тимейді', () => {
@@ -259,10 +255,10 @@ describe('нарық бағасына қайтару', () => {
       ...shop, hardware: shop.hardware.map((h) => h.id === 'confirmat-7x50' ? { ...h, pricePerUnit: 3500 } : h),
     })
     const back = resetToMarket(own, 'hardware:confirmat-7x50')
-    expect(hardware(back, 'confirmat-7x50').pricePerUnit).toBe(2000)
+    expect(hardware(back, 'confirmat-7x50').pricePerUnit).toBe(800)
     expect(priceOrigin(back, 'hardware:confirmat-7x50')).toBe('market')
     const list = back.priceLists.find((l) => l.id === back.activePriceListId)!
-    expect(list.hardwarePrices['confirmat-7x50']).toBe(2000)
+    expect(list.hardwarePrices['confirmat-7x50']).toBe(800)
   })
 
   it('нарық дерегі жоқ позицияны қайтару ештеңені өзгертпейді', () => {
@@ -279,7 +275,7 @@ describe('нарық бағасына қайтару', () => {
       services: { ...shop.services, drilling: { basis: 'panel', rate: 777 } },
     })
     const back = resetAllToMarket(own)
-    expect(material(back, 'ldsp16-w980').pricePerSheet).toBe(2_687_000)
+    expect(material(back, 'ldsp16-w980').pricePerSheet).toBe(3_400_000)
     expect(material(back, 'ldsp18-w980').pricePerSheet).toBe(3_000_000)
     expect(back.services.drilling).toEqual({ basis: 'hole', rate: 3500 })
     expect(priceOrigin(back, 'service:drilling')).toBe('market')
@@ -290,7 +286,7 @@ describe('миграция v8 → v9', () => {
   it('бағасы мүлде бос ескі цех нарық бағасымен толады', () => {
     const loaded = parseShopProfile(legacyV8(defaultShopProfile('old-empty')))
     expect(loaded.schemaVersion).toBe(9)
-    expect(material(loaded, 'ldsp16-w980').pricePerSheet).toBe(2_687_000)
+    expect(material(loaded, 'ldsp16-w980').pricePerSheet).toBe(3_400_000)
     expect(priceOrigin(loaded, 'material:ldsp16-w980')).toBe('market')
   })
 
@@ -346,5 +342,124 @@ describe('прайс-парақтар мен өндіріс профилі', () 
     const production = toProductionShopProfile(starterShopProfile())
     expect(production.marketPrices).toEqual({})
     for (const list of production.priceLists) expect(list.marketPrices).toEqual({})
+  })
+})
+
+describe('ұсынылған баға (26.09.2026): біздің позицияларға ғана, тек сан', () => {
+  const shop = starterShopProfile('rec')
+
+  it('дереккөзі мен күні тұрақты', () => {
+    expect(RECOMMENDED_PRICE_SOURCE).toBe('qdesign-2026-09-26')
+    expect(RECOMMENDED_PRICE_DATE).toBe('2026-09-26')
+  })
+
+  it('әр ұсыныс бар позицияға нұсқайды және бүтін тиын', () => {
+    const base = defaultShopProfile()
+    for (const [key, entry] of Object.entries(RECOMMENDED_PRICES)) {
+      expect(Number.isInteger(entry.priceTiyn) && entry.priceTiyn > 0, key).toBe(true)
+      const [kind, id] = key.split(':')
+      const exists = kind === 'material' ? base.materials.some((m) => m.id === id)
+        : kind === 'hardware' ? base.hardware.some((h) => h.id === id)
+          : kind === 'service' ? id! in base.services : false
+      expect(exists, key).toBe(true)
+    }
+  })
+
+  it('сәйкес позиция ұсынылған бағамен толады, нарық медианасы (бар болса) белгіде', () => {
+    const cases: [string, number, number | undefined][] = [
+      ['material:ldsp16-u104', 3_400_000, 2_687_000],
+      ['material:ldsp16-h1145', 3_400_000, 2_687_000],
+      ['material:ldsp16-h3303', 3_400_000, 2_687_000],
+      ['hardware:hinge-blum-soft', 290_000, 213_600],
+      ['hardware:hinge-hettich-soft', 160_000, 158_100],
+      ['hardware:hinge-hafele-soft', 140_000, undefined],
+      ['hardware:hinge-gtv-soft', 90_000, 55_700],
+      ['hardware:hinge-dtc-soft', 65_000, undefined],
+      ['hardware:hinge-boyard-soft', 45_000, 43_200],
+      ['hardware:runner-tandem', 1_200_000, 968_450],
+      ['hardware:box-merivobox', 2_800_000, undefined],
+      ['hardware:box-tandembox', 3_200_000, 3_212_200],
+      ['hardware:box-legrabox', 4_500_000, 5_579_700],
+      ['hardware:confirmat-7x50', 800, 2000],
+      ['hardware:dowel-8x30', 400, 400],
+      ['hardware:shelf-pin-5', 1200, 600],
+      ['hardware:rod-25', 70_000, undefined],
+      ['hardware:filling-trousers', 2_800_000, undefined],
+      ['service:cutting', 200_000, 200_000],
+      ['service:packing', 200_000, undefined],
+    ]
+    for (const [key, price, median] of cases) {
+      const mark = shop.marketPrices[key]
+      expect(mark, key).toMatchObject({ source: RECOMMENDED_PRICE_SOURCE, priceTiyn: price, dateSeen: '2026-09-26' })
+      expect(mark?.marketMedianTiyn, key).toBe(median)
+      expect(priceOrigin(shop, key), key).toBe('market')
+    }
+    expect(shop.services.packing).toEqual({ basis: 'sheet', rate: 200_000 })
+    expect(hardware(shop, 'rod-25').pricePerUnit).toBe(70_000)
+  })
+
+  it('сәйкестігі жоқтар ұсынылған бағаны АЛМАЙДЫ: кромка, ЛДСП 18, Kronospan 2750, ХДФ 3, МДФ, тұтқа, ножка, минификс, брендсіз бағыттағыш', () => {
+    for (const key of [
+      'edgeBand:pvc04-w980', 'edgeBand:pvc1-u104', 'edgeBand:pvc2-h3303', 'edgeBand:abs2-paint',
+      'material:ldsp18-w980', 'material:ldsp16-kr-w980', 'material:hdf3-white', 'material:mdf16-paint',
+      'material:mdf19-paint', 'hardware:handle-bar', 'hardware:handle-rail', 'hardware:leg-100',
+      'hardware:minifix-15', 'hardware:runner-ball', 'hardware:runner-ball-400', 'hardware:hinge-overlay',
+      'hardware:hinge-blum-none', 'hardware:filling-rail-profile', 'service:edging', 'service:assembly',
+    ]) {
+      expect(RECOMMENDED_PRICES[key], key).toBeUndefined()
+      expect(shop.marketPrices[key]?.source ?? MARKET_MEDIAN_SOURCE, key).toBe(MARKET_MEDIAN_SOURCE)
+    }
+  })
+
+  it('кесте ұсыныстың бірлігі біздікімен сәйкес: қызмет негізі бірдей', () => {
+    expect(RECOMMENDED_PRICES['service:cutting']!.basis).toBe('sheet')
+    expect(RECOMMENDED_PRICES['service:packing']!.basis).toBe('sheet')
+  })
+
+  it('квота: ұсынылған баға мен нарық медианасы бөлек көрінеді', () => {
+    const q = marketQuote('hardware:hinge-blum-soft')!
+    expect(q.source).toBe(RECOMMENDED_PRICE_SOURCE)
+    expect(q.priceTiyn).toBe(290_000)
+    expect(q.market).toMatchObject({ priceTiyn: 213_600, offers: 1, dateSeen: '2026-09-24' })
+    expect(marketQuote('hardware:box-merivobox')!.market).toBeNull()
+    expect(marketQuote('edgeBand:pvc04-w980')!.source).toBe(MARKET_MEDIAN_SOURCE)
+  })
+
+  it('«своя» баға ұсынылған баға келгенде де ӨЗГЕРМЕЙДІ, ↺ жаңа әдепкіге қайтарады', () => {
+    const own = syncActivePriceList({
+      ...shop, hardware: shop.hardware.map((h) => h.id === 'hinge-blum-soft' ? { ...h, pricePerUnit: 250_000 } : h),
+    })
+    const loaded = parseShopProfile(JSON.parse(JSON.stringify(own)))
+    expect(hardware(loaded, 'hinge-blum-soft').pricePerUnit).toBe(250_000)
+    expect(priceOrigin(loaded, 'hardware:hinge-blum-soft')).toBe('own')
+    const back = resetToMarket(loaded, 'hardware:hinge-blum-soft')
+    expect(hardware(back, 'hinge-blum-soft').pricePerUnit).toBe(290_000)
+    expect(back.marketPrices['hardware:hinge-blum-soft']!.source).toBe(RECOMMENDED_PRICE_SOURCE)
+  })
+
+  it('ескі нарық белгісі (source жоқ) профиль оқылғанда ұсынылған бағаға көшеді', () => {
+    const legacyMark = syncActivePriceList({
+      ...shop,
+      materials: shop.materials.map((m) => m.id === 'ldsp16-w980' ? { ...m, pricePerSheet: 2_687_000 } : m),
+      marketPrices: { ...shop.marketPrices,
+        'material:ldsp16-w980': { group: 'ldsp-egger-16-2800x2070', priceTiyn: 2_687_000, dateSeen: '2026-09-24', offers: 7 } },
+    })
+    const loaded = parseShopProfile(JSON.parse(JSON.stringify(legacyMark)))
+    expect(material(loaded, 'ldsp16-w980').pricePerSheet).toBe(3_400_000)
+    expect(loaded.marketPrices['material:ldsp16-w980']!.source).toBe(RECOMMENDED_PRICE_SOURCE)
+  })
+
+  it('ескі нарық белгісі (кромка) бағасы сол күйі қалып, дереккөз бен медианамен толығады', () => {
+    const legacy = syncActivePriceList({
+      ...shop,
+      marketPrices: { ...shop.marketPrices,
+        'edgeBand:pvc04-w980': { group: 'edge-pvc-04-19', priceTiyn: 3300, dateSeen: '2026-09-24', offers: 2 } },
+    })
+    const loaded = parseShopProfile(JSON.parse(JSON.stringify(legacy)))
+    expect(band(loaded, 'pvc04-w980').pricePerMeter).toBe(3300)
+    expect(loaded.marketPrices['edgeBand:pvc04-w980']).toEqual({
+      source: MARKET_MEDIAN_SOURCE, group: 'edge-pvc-04-19', priceTiyn: 3300, dateSeen: '2026-09-24', offers: 2,
+      marketMedianTiyn: 3300,
+    })
   })
 })

@@ -15,6 +15,14 @@
  *
  * АҚША — бүтін тиын. Ұсыныстар бүтін теңге; медиана тиынмен есептеледі
  * (жұп санда ортаңғы екеуінің ортасы — 50 тиынға дейін дәл).
+ *
+ * ҰСЫНЫЛҒАН БАҒА (пайдаланушы шешімі, 2026-09-27). Әдепкі баға енді бірінші
+ * кезекте — `RECOMMENDED_PRICES` (дереккөзі `qdesign-2026-09-26`, ішкі
+ * `.codex-runs/qdesign-prices/`). Тек БІЗДІҢ позицияларымызға дәл сәйкес
+ * келген сан алынды; бөтен каталог, атау, құрылым көшірілмеді. Сәйкесі жоқ
+ * позицияда — бұрынғы нарық медианасы, екеуі де жоқ болса — бос. Нарық
+ * медианасы белгіде салыстыру үшін сақталады. UI-да дереккөздің аты
+ * КӨРСЕТІЛМЕЙДІ: белгі — «Рекомендуемая цена (26.09.2026)».
  */
 import type { ServiceBasis, ServiceId, ShopProfile } from './shop'
 
@@ -280,6 +288,15 @@ export function marketMedianTiyn(group: MarketGroup): number {
 }
 
 /**
+/**
+ * Әдепкі бағаның дереккөзі. `source` жоқ ескі белгі — нарық медианасы.
+ */
+export const RECOMMENDED_PRICE_SOURCE = 'qdesign-2026-09-26'
+export const RECOMMENDED_PRICE_DATE = '2026-09-26'
+export const MARKET_MEDIAN_SOURCE = 'market-median'
+export type PriceSource = typeof RECOMMENDED_PRICE_SOURCE | typeof MARKET_MEDIAN_SOURCE
+
+/**
  * Позицияның кілті: `material:<id>`, `edgeBand:<id>`, `hardware:<id>`,
  * `service:<ServiceId>`. Тақта (постформинг) кілті жоқ — оның нарық бағасы
  * метрге келтірілмеген.
@@ -343,36 +360,151 @@ export const MARKET_DEFAULTS: Record<PriceKey, MarketDefault> = {
   'service:edging': { group: 'service-edging-metre', basis: 'edgeMetre' },
 }
 
-/** Позицияның бағасы нарықтан алынғанының белгісі (профильде сақталады). */
-export type MarketPriceMark = {
-  group: string
-  /** Қойылған нарық бағасы, тиын. Қазіргі баға одан өзгерсе — «өз бағасы». */
+export type RecommendedPrice = {
+  /** Бір бірліктің бағасы, тиын (дереккөздегі бүтін теңге × 100). */
   priceTiyn: number
-  dateSeen: string
-  /** Медиана неше ұсыныстан. */
-  offers: number
+  /** Қызметте — бірлігі біздің негізбен бірдей болғаны тексерілген. */
+  basis?: ServiceBasis
 }
 
-export type MarketQuote = MarketPriceMark & { label: string; suppliers: number; basis?: ServiceBasis }
+/**
+ * Ұсынылған баға: БІЗДІҢ позиция → сан. Сәйкестік қатаң (2026-09-27 ережесі):
+ * - материал: түрі, қалыңдығы, парақ форматы, бренді, декор коды бірдей —
+ *   тек Egger W980/U104/H1145/H3303, 16 мм, 2800×2070 (34 000 ₸/парақ).
+ *   18 мм ЛДСП, 2750×1830 Kronospan, ХДФ 3 мм, МДФ 16/19 — сәйкесі жоқ
+ *   (дереккөзде 18 мм ЛДСП жоқ, ХДФ 4/6 мм 2500×2080, МДФ 16 бағасыз);
+ * - кромка — АЛЫНБАДЫ: дереккөзде ол материалға байланған, ені мен қалыңдығы жоқ;
+ * - ілгек: бренд + дана. Дереккөзде жабылу түрі бөлінбейді, сондықтан тек
+ *   «с доводчиком» позициясына; серіппесіз мен брендсізге — жоқ;
+ * - бағыттағыш/ящик: Blum TANDEM, MERIVOBOX, TANDEMBOX, LEGRABOX — бренд +
+ *   комплект. Брендсіз роликті/шарикті бағыттағыштар — жоқ;
+ * - бекіткіш: конфирмат, шкант, полкодержатель — брендсіз, дана, бізде әр
+ *   түрдің ЖАЛҒЫЗ позициясы. Минификс — біздікі жиынтық, дереккөзде дана: жоқ;
+ * - тұтқа, ножка — дереккөзде бір жалпы баға, бізде бірнеше түр: жоқ;
+ * - штанга (дөңгелек, метр), брючница (дана) — бірлігі мен түрі бірдей;
+ *   голопрофиль — дереккөзде метр, бізде дана: жоқ;
+ * - қызмет: распил мен упаковка — ₸/парақ, біздің негіз де парақ.
+ *   Присадка (₸/парақ ↔ біздің ₸/тесік), нөл мәндер (облицовка, работа,
+ *   монтаж) және сату коэффициенті (цехтың маржа саясаты) — алынбады.
+ */
+export const RECOMMENDED_PRICES: Record<PriceKey, RecommendedPrice> = {
+  ...Object.fromEntries(SEED_DECORS.map((d) => [`material:ldsp16-${d}`, { priceTiyn: 3_400_000 }])),
+  'hardware:hinge-blum-soft': { priceTiyn: 290_000 },
+  'hardware:hinge-hettich-soft': { priceTiyn: 160_000 },
+  'hardware:hinge-hafele-soft': { priceTiyn: 140_000 },
+  'hardware:hinge-gtv-soft': { priceTiyn: 90_000 },
+  'hardware:hinge-dtc-soft': { priceTiyn: 65_000 },
+  'hardware:hinge-boyard-soft': { priceTiyn: 45_000 },
+  'hardware:runner-tandem': { priceTiyn: 1_200_000 },
+  'hardware:box-merivobox': { priceTiyn: 2_800_000 },
+  'hardware:box-tandembox': { priceTiyn: 3_200_000 },
+  'hardware:box-legrabox': { priceTiyn: 4_500_000 },
+  'hardware:confirmat-7x50': { priceTiyn: 800 },
+  'hardware:dowel-8x30': { priceTiyn: 400 },
+  'hardware:shelf-pin-5': { priceTiyn: 1200 },
+  'hardware:rod-25': { priceTiyn: 70_000 },
+  'hardware:filling-trousers': { priceTiyn: 2_800_000 },
+  'service:cutting': { priceTiyn: 200_000, basis: 'sheet' },
+  'service:packing': { priceTiyn: 200_000, basis: 'sheet' },
+}
 
-/** Позицияның ағымдағы нарық бағасы; дерек жоқ болса null. */
-export function marketQuote(key: PriceKey): MarketQuote | null {
+/** Әдепкі бағасы бар барлық позиция (ұсынылған не нарық). */
+const DEFAULT_KEYS: PriceKey[] = [...new Set([...Object.keys(RECOMMENDED_PRICES), ...Object.keys(MARKET_DEFAULTS)])]
+
+/** Позицияның бағасы әдепкіден алынғанының белгісі (профильде сақталады). */
+export type MarketPriceMark = {
+  /** Нарық тобы — салыстыру үшін; ұсынылған бағаның нарықта баламасы болмауы мүмкін. */
+  group?: string
+  /** Жоқ болса — нарық медианасы (ескі белгілер). */
+  source?: PriceSource
+  /** Қойылған әдепкі баға, тиын. Қазіргі баға одан өзгерсе — «өз бағасы». */
+  priceTiyn: number
+  dateSeen: string
+  /** Нарық медианасы неше ұсыныстан (нарық тобы жоқ болса 0). */
+  offers: number
+  /** Салыстыру үшін нарық медианасы, тиын (топ бар болса). */
+  marketMedianTiyn?: number
+}
+
+/** Нарық тобының көрінісі — салыстыру үшін. */
+export type MarketInfo = {
+  group: string
+  label: string
+  priceTiyn: number
+  dateSeen: string
+  offers: number
+  suppliers: number
+}
+
+export type MarketQuote = MarketPriceMark & {
+  source: PriceSource
+  market: MarketInfo | null
+  basis?: ServiceBasis
+}
+
+function marketInfo(key: PriceKey): MarketInfo | null {
   const entry = MARKET_DEFAULTS[key]
   const group = entry ? GROUP_BY_ID.get(entry.group) : undefined
-  if (!entry || !group) return null
+  if (!group) return null
   return {
     group: group.id,
+    label: group.label,
     priceTiyn: marketMedianTiyn(group),
     dateSeen: group.dateSeen,
     offers: group.offers.length,
-    label: group.label,
     suppliers: new Set(group.offers.map((o) => o.supplier)).size,
-    ...(entry.basis ? { basis: entry.basis } : {}),
   }
 }
 
-const markOf = (q: MarketQuote): MarketPriceMark =>
-  ({ group: q.group, priceTiyn: q.priceTiyn, dateSeen: q.dateSeen, offers: q.offers })
+/**
+ * Позицияның ағымдағы әдепкі бағасы: ұсынылған баға, болмаса нарық
+ * медианасы; екеуі де жоқ болса null.
+ */
+export function marketQuote(key: PriceKey): MarketQuote | null {
+  const recommended = RECOMMENDED_PRICES[key]
+  const market = marketInfo(key)
+  const comparison = market
+    ? { group: market.group, marketMedianTiyn: market.priceTiyn, offers: market.offers }
+    : { offers: 0 }
+  if (recommended) {
+    return {
+      source: RECOMMENDED_PRICE_SOURCE,
+      priceTiyn: recommended.priceTiyn,
+      dateSeen: RECOMMENDED_PRICE_DATE,
+      ...comparison,
+      market,
+      ...(recommended.basis ? { basis: recommended.basis } : {}),
+    }
+  }
+  if (!market) return null
+  const basis = MARKET_DEFAULTS[key]?.basis
+  return {
+    source: MARKET_MEDIAN_SOURCE,
+    priceTiyn: market.priceTiyn,
+    dateSeen: market.dateSeen,
+    ...comparison,
+    market,
+    ...(basis ? { basis } : {}),
+  }
+}
+
+const markOf = (q: MarketQuote): MarketPriceMark => ({
+  source: q.source,
+  priceTiyn: q.priceTiyn,
+  dateSeen: q.dateSeen,
+  offers: q.offers,
+  ...(q.group !== undefined ? { group: q.group } : {}),
+  ...(q.marketMedianTiyn !== undefined ? { marketMedianTiyn: q.marketMedianTiyn } : {}),
+})
+
+/**
+ * Белгі мен ағымдағы әдепкі бірдей ме (жаңарту керек емес пе). Дереккөздің
+ * күні әртүрлі, сондықтан `source` бөлек салыстырылмайды; салыстыру медианасы
+ * жоқ ескі белгі бір рет толығады.
+ */
+const sameMark = (mark: MarketPriceMark, quote: MarketQuote): boolean =>
+  mark.priceTiyn === quote.priceTiyn && mark.dateSeen === quote.dateSeen && mark.offers === quote.offers &&
+  mark.group === quote.group && mark.marketMedianTiyn === quote.marketMedianTiyn
 
 type Position = { value: number; basis?: ServiceBasis }
 
@@ -425,7 +557,7 @@ function withPosition(shop: ShopProfile, key: PriceKey, value: number, basis?: S
 function markHolds(shop: ShopProfile, key: PriceKey, mark: MarketPriceMark): boolean {
   const pos = positionOf(shop, key)
   if (!pos || pos.value !== mark.priceTiyn) return false
-  const basis = MARKET_DEFAULTS[key]?.basis
+  const basis = marketQuote(key)?.basis
   return basis === undefined || pos.basis === basis
 }
 
@@ -461,7 +593,7 @@ function setMarket(shop: ShopProfile, key: PriceKey, quote: MarketQuote): ShopPr
  */
 export function applyMarketDefaults(shop: ShopProfile): ShopProfile {
   let out = shop
-  for (const key of Object.keys(MARKET_DEFAULTS)) {
+  for (const key of DEFAULT_KEYS) {
     const quote = marketQuote(key)
     const pos = positionOf(out, key)
     if (!quote || !pos || pos.value !== 0) continue
@@ -480,8 +612,7 @@ export function refreshMarketPrices(shop: ShopProfile): ShopProfile {
   for (const key of Object.keys(out.marketPrices)) {
     const quote = marketQuote(key)
     if (!quote) continue
-    const mark = out.marketPrices[key]!
-    if (mark.priceTiyn === quote.priceTiyn && mark.dateSeen === quote.dateSeen && mark.offers === quote.offers) continue
+    if (sameMark(out.marketPrices[key]!, quote)) continue
     out = setMarket(out, key, quote)
   }
   return out
@@ -497,7 +628,7 @@ export function resetPositionToMarket(shop: ShopProfile, key: PriceKey): ShopPro
 /** Нарық дерегі бар барлық позицияны нарыққа қайтару (өз бағасы да). */
 export function resetAllPositionsToMarket(shop: ShopProfile): ShopProfile {
   let out = shop
-  for (const key of Object.keys(MARKET_DEFAULTS)) out = resetPositionToMarket(out, key)
+  for (const key of DEFAULT_KEYS) out = resetPositionToMarket(out, key)
   return out
 }
 

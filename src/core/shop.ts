@@ -25,7 +25,8 @@ import { SEED_EDGE_BANDS, SEED_MATERIALS } from './seed'
 import { EdgeBandSchema, MaterialSchema } from './schema'
 import { capturePriceValues, syncActivePriceList } from './priceLists'
 import {
-  applyMarketDefaults, refreshMarketPrices, resetAllPositionsToMarket, resetPositionToMarket,
+  MARKET_MEDIAN_SOURCE, RECOMMENDED_PRICE_SOURCE, applyMarketDefaults, refreshMarketPrices,
+  resetAllPositionsToMarket, resetPositionToMarket,
 } from './marketPrices'
 import type { MarketPriceMark, PriceKey } from './marketPrices'
 import type { PriceList } from './priceLists'
@@ -442,7 +443,7 @@ export function hasNoPrices(shop: PriceFields): boolean {
   return current && lists
 }
 
-/** «Вернуть рыночную цену» — бір позиция. Белсенді прайс-парақ бірге жаңарады. */
+/** «Вернуть рекомендуемую / рыночную цену» — бір позиция. Белсенді прайс-парақ бірге жаңарады. */
 export function resetToMarket(shop: ShopProfile, key: PriceKey): ShopProfile {
   const next = resetPositionToMarket(shop, key)
   return next === shop ? shop : syncActivePriceList(next)
@@ -690,10 +691,13 @@ const DimensionLimitsSchema = z.object({
 })
 
 const MarketPricesSchema = z.record(z.string(), z.object({
-  group: z.string().min(1),
+  // Ескі (v9 бастапқы) белгіде `source` жоқ — ол нарық медианасы.
+  group: z.string().min(1).optional(),
+  source: z.enum([RECOMMENDED_PRICE_SOURCE, MARKET_MEDIAN_SOURCE]).optional(),
   priceTiyn: minorUnits,
   dateSeen: z.string().min(1),
-  offers: z.number().int().positive(),
+  offers: z.number().int().nonnegative(),
+  marketMedianTiyn: minorUnits.optional(),
 }))
 
 const PriceListSchema = z.object({
