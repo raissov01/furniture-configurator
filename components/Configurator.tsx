@@ -920,7 +920,7 @@ type Tab = 'general' | 'material' | 'reports' | 'production'
 
 const tabButtonCls = 'flex-1 min-w-[5.5rem]'
 
-export function Configurator({ invalidField, panels, onDraftValidityChange }: { invalidField: string | null; panels: Panel[]; onDraftValidityChange?: (field: string, invalid: boolean) => void }) {
+export function Configurator({ invalidField, panels, onDraftValidityChange, locked = false, productionReady = true }: { invalidField: string | null; panels: Panel[]; onDraftValidityChange?: (field: string, invalid: boolean) => void; locked?: boolean; productionReady?: boolean }) {
   const cabinet: CabinetConfig = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
   const [nameError, setNameError] = useState<string | null>(null)
@@ -1014,6 +1014,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
         <Button active={tab === 'production'} onClick={() => setTab('production')}><span className={tabButtonCls}>{tr('Производство')}</span></Button>
       </div>
 
+      <fieldset disabled={locked}>
       {/* ═══ ОБЩЕЕ: аты, шаблон, орны бөлмеде, есік/фасад түрі ═══ */}
       <div className={cn('flex-col gap-3', tab === 'general' ? 'flex' : 'hidden')}>
         <Field label={tr('Название')}>
@@ -1889,6 +1890,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
       <SectionTitle>{tr('Вид')}</SectionTitle>
       <Toggle checked={showDimensions} onChange={setShowDimensions} label={tr('Показывать габариты')} />
       </div>
+      </fieldset>
     </div>
   )
 }

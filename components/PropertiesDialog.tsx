@@ -119,12 +119,13 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
         {tr(invalid.label)}: {invalid.detail}{invalid.allowed ? ` — ${tr('допустимо')} ${invalid.allowed}` : ''}
       </p>}
       <div className="p100-dialog-body">
-        <fieldset disabled={locked}>
-          {node.kind === 'solid' ? <SolidProperties key={node.id} node={node} /> : node.kind === 'board'
-            ? <BoardProperties key={node.id} node={node} panel={boardPanel} catalog={catalog} />
+        <div>
+          {node.kind === 'solid' ? <fieldset disabled={locked}><SolidProperties key={node.id} node={node} /></fieldset> : node.kind === 'board'
+            ? <BoardProperties key={node.id} node={node} panel={boardPanel} catalog={catalog} locked={locked} productionReady={productionReady} />
             : <Configurator key={node.id} invalidField={error?.field ?? null} panels={panels}
+                locked={locked} productionReady={productionReady}
                 onDraftValidityChange={(field, isInvalid) => setDraftErrors((current) => updateDraftErrors(current, field, isInvalid))} />}
-        </fieldset>
+        </div>
         <label className="p100-dialog-dimensions"><input type="checkbox" checked={showDimensions} onChange={(event) => setShowDimensions(event.target.checked)} />{tr('Показывать размеры')}</label>
       </div>
       <div className="p100-dialog-actions">

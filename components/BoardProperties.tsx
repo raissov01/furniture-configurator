@@ -80,7 +80,7 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
       {tabs.map((item) => <Button key={item.id} active={tab === item.id} onClick={() => setTab(item.id)}>{item.label}</Button>)}
     </div>
     {error && <p role="alert" className="border border-red-500 p-2 text-red-700">{error}</p>}
-    <div className={tab === 'general' ? 'space-y-3' : 'hidden'}>
+    <fieldset disabled={locked} className={tab === 'general' ? 'space-y-3' : 'hidden'}>
       <Field label={tr('Название')}><input data-properties-name className="w-full border border-neutral-300 bg-white px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900"
         value={name} onChange={(event) => setName(event.target.value)} onBlur={() => {
           if (name !== node.name) run(() => renameNode(node.id, name))
@@ -106,8 +106,8 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
             onChange={(value) => setBoardPosition(node.id, { ...node.transform.pos, [axis]: value })} />
         </Field>)}
       </div>
-    </div>
-    <div className={tab === 'material' ? 'space-y-3' : 'hidden'}>
+    </fieldset>
+    <fieldset disabled={locked} className={tab === 'material' ? 'space-y-3' : 'hidden'}>
       <Field label={tr('Материал')}><Select value={material.id} onChange={(materialId) => edit({ materialId })}
         options={catalog.materials.map((item) => ({ value: item.id, label: item.name }))} /></Field>
       <p>{tr('Толщина, мм')}: <strong>{material.thickness}</strong></p>
@@ -119,7 +119,7 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
         </Field>)}
       </div>
       <Toggle checked={node.board.grainAlongLength} onChange={(grainAlongLength) => edit({ grainAlongLength })} label={tr('Текстура вдоль длины')} />
-    </div>
+    </fieldset>
     <div className={tab === 'reports' ? 'space-y-2' : 'hidden'}>
       <p>{tr('Готовый')}: {panel ? `${panel.finishedLength} × ${panel.finishedWidth} мм` : '—'}</p>
       <p data-testid="board-cut-size">{tr('Рез')}: {panel ? `${panel.cutLength} × ${panel.cutWidth} мм` : '—'}</p>
