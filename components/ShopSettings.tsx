@@ -32,6 +32,7 @@ import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/comp
 import { cn } from '@/lib/cn'
 import { availableVerifiedHinges } from '@/lib/frontEdit'
 import { materialUsedInTree } from '@/lib/materialUsedInTree'
+import { ruleInputPolicy } from '@/lib/shopRuleInput'
 import { ShopDrillingSettings } from './ShopDrillingSettings'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 
@@ -792,9 +793,10 @@ function Rule({
   // Экранда ол 0 болып көрінеді: 0 қойса, ереже өшіп қалады.
   const value = raw ?? 0
   const fallback = DEFAULT_SETTINGS[k] ?? tr('выключено')
+  const policy = ruleInputPolicy(k)
   return (
     <Field label={label} hint={hint ?? (overridden ? 'своё' : `по умолчанию ${fallback}`)}>
-      <NumberInput value={value} min={0} step={1} onChange={(v) => onChange(k, v)} />
+      <NumberInput value={value} min={policy.min} step={1} label={policy.label} onChange={(v) => onChange(k, v)} />
     </Field>
   )
 }
