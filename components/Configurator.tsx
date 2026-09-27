@@ -751,6 +751,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
   useEffect(() => setName(cabinet.name), [cabinet.id, cabinet.name])
   const addSection = useConfigurator((s) => s.addSection)
   const [sectionAddError, setSectionAddError] = useState<string | null>(null)
+  useEffect(() => setSectionAddError(null), [cabinet])
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
