@@ -34,6 +34,9 @@ function OptionalNumber({ label, value, setValue, max, error }: {
 }
 
 export function MaterialAppearanceEditor() {
+  const normalUrlErrorId = useId()
+  const normalXErrorId = useId()
+  const normalYErrorId = useId()
   const materials = useConfigurator((state) => state.catalog.materials)
   const setMaterialPbr = useConfigurator((state) => state.setMaterialPbr)
   const [materialId, setMaterialId] = useState(materials[0]?.id ?? '')
@@ -61,7 +64,8 @@ export function MaterialAppearanceEditor() {
     const metalness = optional('metalness', tr('Металличность'), 1)
     const reflection = optional('reflection', tr('Отражение'), 2)
     const opacity = optional('opacity', tr('Прозрачность'), 1)
-    const normalStrength = optional('normalStrength', tr('Сила рельефа'), 2)
+    const normalStrength = draft.normalUrl.trim()
+      ? optional('normalStrength', tr('Сила рельефа'), 2) : undefined
     let normal: MaterialPbr['normal']
     if (draft.normalUrl.trim()) {
       const url = parseNormalUrl(draft.normalUrl)
@@ -98,18 +102,21 @@ export function MaterialAppearanceEditor() {
     </div>
     <label className="block text-xs">{tr('Карта нормалей (URL)')}
       <input className={`${inputStyle} mt-1`} type="url" value={draft.normalUrl} aria-invalid={!!fieldErrors.normalUrl}
+        aria-describedby={fieldErrors.normalUrl ? normalUrlErrorId : undefined}
         onChange={(event) => field('normalUrl', event.target.value)} placeholder="https://…" />
-      {fieldErrors.normalUrl && <span className="block text-red-600">{fieldErrors.normalUrl}</span>}
+      {fieldErrors.normalUrl && <span id={normalUrlErrorId} className="block text-red-600">{fieldErrors.normalUrl}</span>}
     </label>
     {draft.normalUrl.trim() && <div className="grid grid-cols-3 gap-2">
       <label className="text-xs">{tr('Размер карты X, мм')} ({tr('Обязательно')})
         <input className={`${inputStyle} mt-1`} type="number" min={1} step={1} required value={draft.normalX}
-          aria-invalid={!!fieldErrors.normalX} onChange={(event) => field('normalX', event.target.value)} />
-        {fieldErrors.normalX && <span className="block text-red-600">{fieldErrors.normalX}</span>}</label>
+          aria-invalid={!!fieldErrors.normalX} aria-describedby={fieldErrors.normalX ? normalXErrorId : undefined}
+          onChange={(event) => field('normalX', event.target.value)} />
+        {fieldErrors.normalX && <span id={normalXErrorId} className="block text-red-600">{fieldErrors.normalX}</span>}</label>
       <label className="text-xs">{tr('Размер карты Y, мм')} ({tr('Обязательно')})
         <input className={`${inputStyle} mt-1`} type="number" min={1} step={1} required value={draft.normalY}
-          aria-invalid={!!fieldErrors.normalY} onChange={(event) => field('normalY', event.target.value)} />
-        {fieldErrors.normalY && <span className="block text-red-600">{fieldErrors.normalY}</span>}</label>
+          aria-invalid={!!fieldErrors.normalY} aria-describedby={fieldErrors.normalY ? normalYErrorId : undefined}
+          onChange={(event) => field('normalY', event.target.value)} />
+        {fieldErrors.normalY && <span id={normalYErrorId} className="block text-red-600">{fieldErrors.normalY}</span>}</label>
       <OptionalNumber label={tr('Сила рельефа')} value={draft.normalStrength}
         setValue={(value) => field('normalStrength', value)} max={2} error={fieldErrors.normalStrength} />
     </div>}
@@ -190,12 +197,12 @@ export function ProjectLightsEditor() {
         (position) => update({ ...light, position }))}
       {light.kind === 'spot' && <>
         {vectorFields(tr('Цель'), light.target, (target) => update({ ...light, target }))}
-        <NumberField label={tr('Угол, °')} value={light.angleDegrees} min={1} max={89} onChange={(angleDegrees) => update({ ...light, angleDegrees })} />
+        <NumberField label={tr('Угол, °')} value={light.angleDegrees} min={1} max={89} integer onChange={(angleDegrees) => update({ ...light, angleDegrees })} />
       </>}
       {light.kind === 'sun' && <div className="grid grid-cols-2 gap-2">
-        <NumberField label={tr('Азимут, °')} value={light.azimuthDegrees} min={-180} max={180}
+        <NumberField label={tr('Азимут, °')} value={light.azimuthDegrees} min={-180} max={180} integer
           onChange={(azimuthDegrees) => update({ ...light, azimuthDegrees })} />
-        <NumberField label={tr('Высота солнца, °')} value={light.elevationDegrees} min={-90} max={90}
+        <NumberField label={tr('Высота солнца, °')} value={light.elevationDegrees} min={-90} max={90} integer
           onChange={(elevationDegrees) => update({ ...light, elevationDegrees })} />
       </div>}
     </section>)}
