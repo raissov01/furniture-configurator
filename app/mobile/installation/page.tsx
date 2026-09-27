@@ -7,6 +7,7 @@ import { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { createMobileSyncTransport } from '@/lib/mobile/syncTransport'
 import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
 import { canEditInstallation, closeBlockReason, installationQueueNotice, signatureHasStroke } from '@/lib/mobile/installationUi'
+import { installationCreateAction } from '@/lib/installationHandoff'
 import { INSTALLATION_CHECKLIST, parseInstallationAction, type ChecklistKey, type InstallationActionKind, type InstallationTask } from '@/src/core/installation'
 import { SyncQueue } from '@/src/core/sync/queue'
 import type { JsonValue } from '@/src/core/sync/types'
@@ -31,6 +32,7 @@ async function imageData(file: File): Promise<string> {
 export default function MobileInstallationPage() {
   const [db, setDb] = useState<IndexedDbMobileStore | null>(null)
   const [tasks, setTasks] = useState<InstallationTask[]>([])
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [pending, setPending] = useState(false)
@@ -48,6 +50,11 @@ export default function MobileInstallationPage() {
 
   const refresh = async (store: IndexedDbMobileStore) => {
     if (navigator.onLine) {
+      const projectsResponse = await fetch('/api/projects', { credentials: 'same-origin', cache: 'no-store' })
+      if (projectsResponse.ok) {
+        const projectBody = await projectsResponse.json() as { projects: { id: string; name: string }[] }
+        setProjects(projectBody.projects)
+      }
       const response = await fetch('/api/installation', { credentials: 'same-origin' })
       if (response.ok) {
         const data = await response.json() as { tasks: { id: string }[] }
@@ -75,6 +82,8 @@ export default function MobileInstallationPage() {
       opened.onVersionChange = () => window.location.reload()
       setDb(opened)
       await refresh(opened)
+      const requestedTask = new URLSearchParams(window.location.search).get('task')
+      if (requestedTask) setSelected(requestedTask)
     }
     void init().catch((error: unknown) => setMessage(error instanceof Error ? error.message : t('Монтаж недоступен')))
     return () => { alive = false; opened?.close() }
@@ -144,6 +153,22 @@ export default function MobileInstallationPage() {
     setMessage(t('Действие удалено из очереди. Исправьте данные и повторите.'))
   }
 
+  const startTask = async (projectId: string) => {
+    if (!db || pending || busy || !navigator.onLine) return
+    setBusy(true)
+    try {
+      const action = installationCreateAction(projectId, crypto.randomUUID(), crypto.randomUUID(), Date.now())
+      const response = await fetch('/api/installation/sync', { method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action) })
+      const body = await response.json() as { kind?: string; error?: string }
+      if (!response.ok || body.kind !== 'applied') throw new Error(body.error ?? t('Не удалось создать монтажное задание'))
+      await refresh(db)
+      setSelected(action.entityId)
+      setMessage(t('Монтажное задание открыто'))
+    } catch (error) { setMessage(error instanceof Error ? error.message : t('Не удалось создать монтажное задание')) }
+    finally { setBusy(false) }
+  }
+
   return <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-[#f5f5f5] p-4 text-black">
     <Link href="/mobile" className="block border bg-white p-3">{t('Назад')}</Link>
     <h1 className="text-xl font-semibold">{t('Монтаж')}</h1>
@@ -153,6 +178,16 @@ export default function MobileInstallationPage() {
       <p>{installationQueueNotice(record.status, record.error ?? '')}</p>
       <button className="mt-2 min-h-11 border p-2" onClick={() => void discardBlocked(record)}>{t('Удалить действие из очереди')}</button>
     </div>)}
+    {online && projects.some((project) => !tasks.some((item) => item.projectId === project.id)) && <section className="space-y-2 border bg-white p-3 text-sm">
+      <h2 className="font-semibold">{t('Сохранённые проекты для монтажа')}</h2>
+      {projects.filter((project) => !tasks.some((item) => item.projectId === project.id)).map((project) =>
+        <div key={project.id} className="flex flex-wrap items-center gap-2 border p-2">
+          <span className="min-w-0 flex-1 break-words">{project.name}</span>
+          <button className="min-h-11 max-w-full border p-2" disabled={busy || pending} onClick={() => void startTask(project.id)}>
+            {t('Отправить в производство → открыть монтаж')}
+          </button>
+        </div>)}
+    </section>}
     <div className="space-y-2">{tasks.map((item) => <button key={item.id} className="block min-h-12 w-full border bg-white p-3 text-left"
       onClick={() => setSelected(item.id)}>{item.id} · {item.status}</button>)}</div>
     {task && <section className="space-y-3 border bg-white p-3 text-sm">

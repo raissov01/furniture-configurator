@@ -298,6 +298,7 @@ export default function MobileTodayPage() {
       <button className={`${button} !border-[#005a9e] !bg-[#005a9e] !font-semibold !text-white`} type="button" disabled={!store}
         onClick={() => setActive(emptySurvey(crypto.randomUUID(), Date.now()))}>{t('Новый замер')}</button>
       <Link className={button} href="/configurator">{t('Новая КП')}</Link>
+      {role === 'owner' && <Link className={button} href="/mobile/installation">{t('Монтаж')}</Link>}
       <h2 className="pt-2 text-base font-semibold">{t('Замеры на этом устройстве')}</h2>
       {surveys.length === 0 && <p className="border border-[#b8b8b8] bg-white p-3 text-sm">{t('Пока нет сохранённых замеров')}</p>}
       {surveys.map((survey) => <button key={survey.id} className={button} type="button" onClick={() => setActive(survey)}>

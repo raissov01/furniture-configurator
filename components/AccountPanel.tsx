@@ -19,6 +19,8 @@ import { CommentsInbox } from '@/components/CommentsInbox'
 import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
 import { useModalLayer } from '@/lib/useModalLayer'
 import { bindCloudProject } from '@/lib/cloudProjectBinding'
+import { installationCreateAction } from '@/lib/installationHandoff'
+import Link from 'next/link'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -36,6 +38,7 @@ type PlanInfo = {
   expired: boolean
 }
 type ProjectRow = { id: string; name: string; updatedAt: number }
+type InstallationRow = { id: string; projectId: string; status: 'open' | 'closed'; updatedAt: number }
 type Member = { userId: string; email: string; joinedAt: number; role: Account['role'] }
 type Invite = { token: string; createdAt: number; expiresAt: number; usedBy: string | null; revoked: boolean; role: 'designer' | 'shop' }
 
@@ -58,6 +61,7 @@ export function AccountPanel() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
   const [projects, setProjects] = useState<ProjectRow[]>([])
+  const [installations, setInstallations] = useState<InstallationRow[]>([])
   const [org, setOrg] = useState<CloudOrg>(() => parseCloudOrg(null))
   const [folderFilter, setFolderFilter] = useState<'all' | 'unfiled' | `folder:${string}`>('all')
   const [newFolder, setNewFolder] = useState('')
@@ -139,6 +143,13 @@ export function AccountPanel() {
     setProjects(data.projects ?? [])
   }, [])
 
+  const refreshInstallations = useCallback(async () => {
+    const response = await fetch('/api/installation', { credentials: 'same-origin', cache: 'no-store' })
+    if (!response.ok) throw new Error(tr('Не удалось загрузить монтажные задания'))
+    const data = await response.json() as { tasks: InstallationRow[] }
+    setInstallations(data.tasks)
+  }, [])
+
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('invite')
     if (!token) return
@@ -173,11 +184,29 @@ export function AccountPanel() {
         setPlan(data.plan ?? null)
         setUsage(data.usage ?? null)
         void refreshProjects()
+        if (data.account.role === 'owner') void refreshInstallations().catch((cause: unknown) =>
+          setError(cause instanceof Error ? cause.message : tr('Не удалось загрузить монтажные задания')))
         void refreshTeam()
         void syncProfile(data.account.role)
       }
     })()
-  }, [refreshProjects, refreshTeam])
+  }, [refreshProjects, refreshTeam, refreshInstallations])
+
+  const startInstallation = async (projectId: string) => {
+    setBusy(true)
+    setError(null)
+    try {
+      const action = installationCreateAction(projectId, crypto.randomUUID(), crypto.randomUUID(), Date.now())
+      const response = await fetch('/api/installation/sync', { method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action) })
+      const body = await response.json() as { kind?: string; error?: string }
+      if (!response.ok || body.kind !== 'applied') throw new Error(body.error ?? tr('Не удалось создать монтажное задание'))
+      await refreshInstallations()
+      setNotice(tr('Монтажное задание открыто'))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : tr('Не удалось создать монтажное задание'))
+    } finally { setBusy(false) }
+  }
 
   /**
    * Кіргеннен кейінгі бірінші синхрондау: серверде профиль бар болса —
@@ -611,7 +640,7 @@ export function AccountPanel() {
                 {visibleProjects.map((p) => (
                   <li
                     key={p.id}
-                    className="flex items-center gap-2 rounded-md border border-neutral-200 px-2 py-1.5 text-xs dark:border-neutral-700"
+                    className="flex flex-wrap items-center gap-2 rounded-md border border-neutral-200 px-2 py-1.5 text-xs dark:border-neutral-700"
                   >
                     <button type="button" className="min-w-0 flex-1 text-left" onClick={() => void openProject(p.id)}>
                       <span className="font-medium">{p.name}</span>
@@ -619,6 +648,14 @@ export function AccountPanel() {
                         {new Date(p.updatedAt).toLocaleDateString('ru-RU')}
                       </span>
                     </button>
+                    {account.role === 'owner' && (() => {
+                      const task = installations.find((item) => item.projectId === p.id)
+                      return task
+                        ? <Link className="min-h-11 border border-neutral-300 bg-white px-2 py-3 dark:bg-neutral-900" href={`/mobile/installation?task=${encodeURIComponent(task.id)}`} onClick={() => setOpen(false)}>
+                          {tr('Монтаж')}: {task.status === 'closed' ? tr('Завершён') : tr('Открыт')}
+                        </Link>
+                        : <Button disabled={busy} onClick={() => void startInstallation(p.id)}>{tr('Отправить в производство → открыть монтаж')}</Button>
+                    })()}
                     <select aria-label={`${tr('Папка')}: ${p.name}`} className="max-w-28 rounded border border-neutral-300 bg-white p-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
                       value={org.projectFolders[p.id] ?? ''} onChange={(event) => saveOrg(moveProjectToFolder(org, p.id, event.target.value || null))}>
                       <option value="">{tr('Без папки')}</option>
