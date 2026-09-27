@@ -1867,7 +1867,8 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
             {tr('Открыть раскрой')}
           </Link>
         </div>
-        <ExportMenu cabinet={cabinet} panels={panels} />
+        {productionReady && !locked ? <ExportMenu cabinet={cabinet} panels={panels} /> : null}
+        {!productionReady ? <p role="status">{tr('Сначала примените изменения для экспорта')}</p> : null}
       </div>
 
       <div className={cn(tab === 'general' ? 'block' : 'hidden')}>

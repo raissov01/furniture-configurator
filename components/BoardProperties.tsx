@@ -128,7 +128,8 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
     </div>
     <div className={tab === 'production' ? 'space-y-2' : 'hidden'}>
       <Button onClick={() => setDrillOpen(true)}>{tr('Открыть присадку')}</Button>
-      {panel ? <ExportMenu panels={[panel]} exportId={node.id} exportName={node.name} /> : null}
+      {panel && productionReady && !locked ? <ExportMenu panels={[panel]} exportId={node.id} exportName={node.name} /> : null}
+      {panel && !productionReady ? <p role="status">{tr('Сначала примените изменения для экспорта')}</p> : null}
     </div>
   </section>
 }

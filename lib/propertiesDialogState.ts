@@ -71,6 +71,11 @@ export function propertiesChildModalActive(quoteOpen: boolean, drillOpen: boolea
   return quoteOpen || drillOpen
 }
 
+/** Child dialogs can show live data, but must not download files while Properties can still Cancel. */
+export function childExportAllowed(propertiesOpen: boolean): boolean {
+  return !propertiesOpen
+}
+
 /** Structure keeps multiple selection locally; state the editing limit at the selection. */
 export function selectionPropertiesNotice(count: number): string | null {
   return count > 1 ? 'Свойства нескольких объектов не редактируются вместе. Выберите один объект перед открытием свойств.' : null

@@ -18,6 +18,7 @@ import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { childExportAllowed } from '@/lib/propertiesDialogState'
 import {
   CUTOUT_PRESETS,
   DRILL_PRESETS,
@@ -100,7 +101,7 @@ function place(drill: Drill, length: number, width: number): { x: number; y: num
   }
 }
 
-export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Catalog }) {
+export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panels: Panel[]; catalog: Catalog; propertiesOpen?: boolean }) {
   const open = useConfigurator((s) => s.drillOpen)
   const setOpen = useConfigurator((s) => s.setDrillOpen)
   const cabinet = useConfigurator((s) => s.cabinets.find((item) => item.id === s.activeId))
@@ -251,9 +252,11 @@ export function DrillEditor({ panels, catalog }: { panels: Panel[]; catalog: Cat
           <b className="tabular-nums">{counts.removed}</b>
         </span>
         <div className="ml-auto flex items-center gap-1">
+          {propertiesOpen && <span role="status" className="text-xs">{tr('Закройте свойства через OK перед экспортом')}</span>}
           {/* Панель бойынша CNC: станоктың бағдарламасы дәл осындай кестені
               оқиды, ал бүкіл жобаның архивін ашудың қажеті жоқ. */}
           <Button
+            disabled={!childExportAllowed(propertiesOpen)}
             title={tr('CSV с отверстиями этой детали — для станка')}
             onClick={() => {
               const rows = [

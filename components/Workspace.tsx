@@ -590,7 +590,7 @@ export function Workspace() {
       <RoomPlan />
       <ShopSettings />
       {activeEditable ? <SketchEditor /> : null}
-      {activeEditable || editableBoard ? <DrillEditor panels={activeBoard ? (boardPanel ? [boardPanel] : []) : activePanels} catalog={catalog} /> : null}
+      {activeEditable || editableBoard ? <DrillEditor panels={activeBoard ? (boardPanel ? [boardPanel] : []) : activePanels} catalog={catalog} propertiesOpen={propertiesNodeId !== null} /> : null}
       {activeEditable ? <CustomParts catalog={catalog} /> : null}
       <ProjectPanel panels={projectPanels} catalog={catalog} />
       <HelpPanel />
@@ -598,6 +598,7 @@ export function Workspace() {
       <ShareCodeDialog />
       {cloudEnabled && <AccountPanel />}
       {!production.error ? <QuoteView
+        propertiesOpen={propertiesNodeId !== null}
         panels={projectPanels}
         hardware={projectHardware}
         projectName={projectName}

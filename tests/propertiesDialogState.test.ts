@@ -9,7 +9,7 @@ import { renderToString } from 'react-dom/server'
 import { readFileSync } from 'node:fs'
 import { PropertiesDialog } from '../components/PropertiesDialog'
 import { capturePropertiesSession } from '../lib/propertiesSession'
-import { propertiesDirty, propertiesInvalid, propertiesKeyAction, propertiesProductionReady, propertiesChildModalActive, selectionPropertiesNotice } from '../lib/propertiesDialogState'
+import { propertiesDirty, propertiesInvalid, propertiesKeyAction, propertiesProductionReady, propertiesChildModalActive, childExportAllowed, selectionPropertiesNotice } from '../lib/propertiesDialogState'
 import { useConfigurator } from '../store/configurator'
 import { referenceProject } from './fixtures'
 
@@ -90,6 +90,8 @@ describe('properties dialog state', () => {
     expect(propertiesChildModalActive(false, false)).toBe(false)
     expect(propertiesChildModalActive(true, false)).toBe(true)
     expect(propertiesChildModalActive(false, true)).toBe(true)
+    expect(childExportAllowed(true)).toBe(false)
+    expect(childExportAllowed(false)).toBe(true)
   })
 
   it('explains that multi selection cannot be edited as one Properties form', () => {
@@ -108,6 +110,35 @@ describe('properties dialog rendering', () => {
     const html = render(null)
     expect(buttonTag(html, 'properties-apply')).toContain(' disabled=""')
     expect(buttonTag(html, 'properties-ok')).not.toContain(' disabled=""')
+  })
+
+  it('keeps cabinet tabs reachable when the node is locked', () => {
+    useConfigurator.getState().loadProject(referenceProject)
+    const state = useConfigurator.getState()
+    Object.assign(initialSnapshot, state)
+    state.setNodeLocked(state.activeId, true)
+    const locked = useConfigurator.getState()
+    Object.assign(initialSnapshot, locked)
+    const html = renderToString(createElement(PropertiesDialog, {
+      nodeId: locked.activeId, catalog: locked.catalog, panels: [], error: null, onClose: () => undefined,
+    }))
+    expect(html).toMatch(/data-tour="tabs"[^>]*>.*?Общее/s)
+    expect(html.indexOf('data-tour="tabs"')).toBeLessThan(html.indexOf('<fieldset'))
+    expect(html).toMatch(/<fieldset[^>]*disabled=""/)
+  })
+
+  it('hides manufacturing exports while the dialog has unapplied edits', () => {
+    useConfigurator.getState().loadProject(referenceProject)
+    const state = useConfigurator.getState()
+    Object.assign(initialSnapshot, state)
+    const cabinet = state.cabinets.find((entry) => entry.id === state.activeId)!
+    state.edit('width', { width: cabinet.width + 100 })
+    const edited = useConfigurator.getState()
+    const html = renderToString(createElement(PropertiesDialog, {
+      nodeId: edited.activeId, catalog: edited.catalog, panels: [], error: null, onClose: () => undefined,
+    }))
+    expect(html).toContain('Сначала примените изменения для экспорта')
+    expect(html).not.toContain('data-tour="export"')
   })
 
   it('marks the invalid field, states the reason and blocks OK', () => {

@@ -1411,5 +1411,8 @@ export const en: Record<string, string> = {
   'Проверьте материал или закажите деталь отдельно.': 'Check the material or order the part separately.',
   'Стена C формируется автоматически; ручная раскладка доступна для A и B.': 'Wall C is generated automatically; edit walls A and B manually.',
   'Исправьте поля с ошибками': 'Correct the invalid fields',
+  'Сначала примените изменения для экспорта': 'Apply changes before exporting',
+  'Закройте свойства через OK перед экспортом': 'Close Properties with OK before exporting',
+  'Свойства нескольких объектов не редактируются вместе. Выберите один объект перед открытием свойств.': 'Multiple objects cannot be edited together in Properties. Select one object before opening Properties.',
 
 }

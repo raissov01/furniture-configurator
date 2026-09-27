@@ -1415,5 +1415,8 @@ export const uz: Record<string, string> = {
   'Проверьте материал или закажите деталь отдельно.': 'Materialni tekshiring yoki detalga alohida buyurtma bering.',
   'Стена C формируется автоматически; ручная раскладка доступна для A и B.': 'C devori avtomatik tuziladi; A va B qo‘lda tahrirlanadi.',
   'Исправьте поля с ошибками': 'Xato maydonlarni tuzating',
+  'Сначала примените изменения для экспорта': 'Eksport qilishdan oldin o‘zgarishlarni qo‘llang',
+  'Закройте свойства через OK перед экспортом': 'Eksportdan oldin Xususiyatlarni OK orqali yoping',
+  'Свойства нескольких объектов не редактируются вместе. Выберите один объект перед открытием свойств.': 'Bir nechta obyekt xususiyatlari birga tahrirlanmaydi. Xususiyatlarni ochishdan oldin bitta obyektni tanlang.',
 
 }
