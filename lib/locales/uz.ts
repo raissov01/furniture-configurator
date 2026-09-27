@@ -11,6 +11,11 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Сохранено в аккаунте': 'Hisobda saqlandi',
+  'Библиотека импортирована в аккаунт': 'Kutubxona hisobga import qilindi',
+  'Библиотека импортирована на устройство; в аккаунт загружено {saved} из {total}': 'Kutubxona qurilmaga import qilindi; hisobga {total} tadan {saved} tasi yuklandi',
+  'Библиотека импортирована только на этом устройстве': 'Kutubxona faqat shu qurilmaga import qilindi',
+  'Перенести гостевую библиотеку в аккаунт': 'Mehmon kutubxonasini hisobga ko‘chirish',
   'Вернуться к коэффициенту цеха': 'Sex koeffitsiyentiga qaytish',
   'разрешено': 'ruxsat etilgan:',
   'Ссылка на проект повреждена или устарела. Попросите новую ссылку.': 'Loyiha havolasi buzilgan yoki eskirgan. Yangi havola so‘rang.',

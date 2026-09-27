@@ -10,6 +10,11 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Сохранено в аккаунте': 'Saved to account',
+  'Библиотека импортирована в аккаунт': 'Library imported to account',
+  'Библиотека импортирована на устройство; в аккаунт загружено {saved} из {total}': 'Library imported on this device; {saved} of {total} uploaded to account',
+  'Библиотека импортирована только на этом устройстве': 'Library imported on this device only',
+  'Перенести гостевую библиотеку в аккаунт': 'Move guest library to account',
   'Вернуться к коэффициенту цеха': 'Use shop coefficient',
   'разрешено': 'allowed:',
   'Ссылка на проект повреждена или устарела. Попросите новую ссылку.': 'The project link is damaged or outdated. Ask for a new link.',
