@@ -136,7 +136,7 @@ describe('есеп', () => {
     const lines = [...p.materials, ...p.edges, ...p.hardware, ...p.services]
     expect(p.subtotal).toBe(lines.reduce((s, l) => s + l.cost, 0))
     // Үстеме де бүтін теңгеге дөңгелектенеді — КП-да тиын болмауы керек.
-    expect(p.markup).toBe(Math.round((p.subtotal * 20) / 100 / 100) * 100)
+    expect(p.markup).toBe(Math.round((p.subtotal * 20) / 100))
     expect(p.total).toBe(p.subtotal + p.markup)
   })
 
@@ -149,6 +149,53 @@ describe('есеп', () => {
     expect(Number.isInteger(p.subtotal)).toBe(true)
     expect(Number.isInteger(p.markup)).toBe(true)
     expect(Number.isInteger(p.total)).toBe(true)
+  })
+
+  it('парақ бағасындағы тиынды сақтайды және көрсетеді', () => {
+    const shop = { ...pricedShop, materials: pricedShop.materials.map((m) => ({ ...m, pricePerSheet: 101 })) }
+    const price = priceProject(panels, nesting, shop)
+    for (const line of price.materials) {
+      expect(line.cost).toBe(line.qty * 101)
+    }
+    expect(formatTenge(101)).toBe('1,01 ₸')
+    expect(formatTenge(-101)).toBe('−1,01 ₸')
+  })
+
+  it('qty екі болса, аудан, тесік, қызмет және фурнитура саны екі еселенеді', () => {
+    const doubled = panels.map((p) => ({ ...p, qty: p.qty * 2 }))
+    const doubledNesting = nestPanels(doubled, catalog)
+    const original = priceProject(panels, nesting, pricedShop)
+    const twice = priceProject(doubled, doubledNesting, pricedShop)
+    expect(countHoles(doubled)).toBe(2 * countHoles(panels))
+    expect([...countHardware(doubled)]).toEqual([...countHardware(panels)].map(([id, qty]) => [id, qty * 2]))
+    for (const row of original.byMaterial) {
+      const other = twice.byMaterial.find((candidate) => candidate.materialId === row.materialId)!
+      expect(other.panels).toBe(row.panels * 2)
+      expect(other.holes).toBe(row.holes * 2)
+      expect(other.areaSquareMetres).toBeCloseTo(row.areaSquareMetres * 2, 1)
+    }
+  })
+
+  it('әр есеп жолы нақты панельге немесе орналастыруға тиынмен бөлінеді', () => {
+    const price = priceProject(panels, nesting, pricedShop)
+    const ids = new Set(panels.map((panel) => panel.id))
+    for (const line of [...price.materials, ...price.edges, ...price.hardware, ...price.services]) {
+      expect(line.sources?.length, line.name).toBeGreaterThan(0)
+      expect(line.sources!.reduce((sum, source) => sum + source.cost, 0), line.name).toBe(line.cost)
+      for (const source of line.sources!) {
+        expect(ids.has(source.panelId!), line.name).toBe(true)
+        expect(Number.isInteger(source.cost)).toBe(true)
+        expect(source.cost).toBeGreaterThanOrEqual(0)
+      }
+    }
+    const holes = price.services.find((line) => line.id === 'service-drilling')
+    if (holes?.unit === 'отв') {
+      expect(holes.sources!.reduce((sum, source) => sum + source.qty, 0)).toBe(countHoles(panels))
+    }
+    const cheap = { ...pricedShop, materials: pricedShop.materials.map((m) => ({ ...m, pricePerSheet: 1 })) }
+    for (const line of priceProject(panels, nesting, cheap).materials) {
+      expect(line.sources!.every((source) => source.cost >= 0)).toBe(true)
+    }
   })
 
   it('үстеме 0 болса қорытынды сомаға тең', () => {
@@ -227,15 +274,9 @@ describe('КП құжат ретінде', () => {
     const p = priceProject(panels, nesting, pricedShop)
     const lines = [...p.materials, ...p.edges, ...p.hardware, ...p.services]
 
-    // Әр жол — бүтін теңге (яғни тиынға еселік 100).
-    for (const l of lines) expect(l.cost % 100, l.name).toBe(0)
-    expect(p.markup % 100).toBe(0)
-    expect(p.subtotal % 100).toBe(0)
-    expect(p.total % 100).toBe(0)
-
-    // Экранда көрсетілетін теңгелердің қосындысы қорытындымен дәл келеді.
-    const shownSum = lines.reduce((s, l) => s + Math.round(l.cost / 100), 0)
-    expect(shownSum).toBe(Math.round(p.subtotal / 100))
-    expect(Math.round(p.subtotal / 100) + Math.round(p.markup / 100)).toBe(Math.round(p.total / 100))
+    // Әр жол бүтін тиын, көрсетілген тиындар қорытындыға дәл қосылады.
+    for (const l of lines) expect(Number.isInteger(l.cost), l.name).toBe(true)
+    expect(lines.reduce((s, l) => s + l.cost, 0)).toBe(p.subtotal)
+    expect(p.subtotal + p.markup).toBe(p.total)
   })
 })
