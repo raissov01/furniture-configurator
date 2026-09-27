@@ -109,14 +109,20 @@ export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult)
 
   const doImport = () => {
     if (!preview) return
-    onImport?.(preview)
-    setImported(true)
+    try {
+      onImport?.(preview)
+      setError(null)
+      setImported(true)
+    } catch (cause) {
+      setImported(false)
+      setError(tr(cause instanceof Error ? cause.message : String(cause)))
+    }
   }
 
   return (
     <div className="flex h-full flex-col gap-3 p-2 text-neutral-100">
       <p className="text-[10px] leading-relaxed text-neutral-500">
-        {tr('DXF-файл плана помещения: импорт создаёт стены, а не мебель.')}
+        {tr('Прямоугольный DXF-план обновит ширину (W) и глубину (D) комнаты; мебель не добавится.')}
       </p>
 
       <div>

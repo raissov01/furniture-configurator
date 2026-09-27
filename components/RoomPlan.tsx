@@ -21,6 +21,7 @@ import {
   validatePlacements,
   validateOpenings,
   wallById,
+  visibleAnnotations,
 } from '@/src/core/index'
 import type { CabinetConfig, Placement, Room, RoomFinish, RoomOpening, WallId } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -50,6 +51,7 @@ export function RoomPlan() {
   const cabinets = useConfigurator((s) => s.cabinets)
   const root = useConfigurator((s) => s.root)
   const layers = useConfigurator((s) => s.layers)
+  const annotations = useMemo(() => visibleAnnotations(root, layers), [root, layers])
   const placements = useConfigurator((s) => s.placements)
   const activeId = useConfigurator((s) => s.activeId)
   const selectedWall = useConfigurator((s) => s.selectedWall)
@@ -145,6 +147,7 @@ export function RoomPlan() {
             onWall={setSelectedWall}
             onCabinet={setActive}
             onMove={(id, offset) => { if (movableIds.has(id)) movePlacement(id, { offset }) }}
+            annotations={annotations}
           />
 
           <div className="min-w-0 space-y-3">
@@ -389,7 +392,7 @@ function OpeningEditor({ room, issues, onChange }: {
 }
 
 function PlanSvg({
-  room, entries, activeId, selectedWall, onWall, onCabinet, onMove,
+  room, entries, activeId, selectedWall, onWall, onCabinet, onMove, annotations,
 }: {
   room: Room
   entries: { cabinet: CabinetConfig; placement: Placement }[]
@@ -398,6 +401,7 @@ function PlanSvg({
   onWall: (w: WallId) => void
   onCabinet: (id: string) => void
   onMove: (id: string, offset: number) => void
+  annotations: ReturnType<typeof visibleAnnotations>
 }) {
   const walls = roomWalls(room)
   const pad = WALL_MM * 2
@@ -495,6 +499,14 @@ function PlanSvg({
           </g>
         )
       })}
+      {annotations.map((annotation) => (
+        <text key={annotation.nodeId} data-testid="room-plan-annotation" x={annotation.pose.position.x} y={annotation.pose.position.z}
+          fontSize={annotation.fontSize} fill={annotation.color} textAnchor="middle"
+          transform={`rotate(${-annotation.pose.rotationY} ${annotation.pose.position.x} ${annotation.pose.position.z})`}
+          onClick={() => onCabinet(annotation.nodeId)} style={{ cursor: 'pointer' }}>
+          {annotation.text}
+        </text>
+      ))}
     </svg>
   )
 }
