@@ -644,6 +644,47 @@ async function run() {
     await h.clickText('Закрыть', 700)
   })
 
+  await test('Өз каталогы: сүзгі, жеке импорт және артикул ескертулері', async () => {
+    await h.closeModals()
+    check(await h.clickText('Цех', 1200), 'цех баптауы ашылды')
+    check(await h.clickText('Материалы', 900), 'материалдар табы ашылды')
+    const filters = await h.evaluate(`(() => ({
+      producer: Boolean(document.querySelector('[aria-label="Производитель"]')),
+      collection: Boolean(document.querySelector('[aria-label="Коллекция"]')),
+      code: Boolean(document.querySelector('[aria-label="Код декора"]')),
+      source: Boolean([...document.querySelectorAll('a')].find((a) => a.textContent.trim() === 'Источник'))
+    }))()`)
+    check(filters.producer && filters.collection && filters.code && filters.source, 'декордың сүзгілері мен дереккөзі көрінді')
+    const addedMaterial = await h.evaluate(`(() => {
+      const button = [...document.querySelectorAll('button')].find((item) => item.textContent.trim() === 'Добавить в цех' && !item.disabled)
+      button?.click()
+      return Boolean(button)
+    })()`)
+    check(addedMaterial, 'ашық каталогтан бір материал таңдалды')
+    check(await h.until(`document.body.innerText.includes('Добавлено')`, 4000), 'материал цех профиліне қосылды')
+    check(await h.clickText('Каталог цеха', 900), 'жеке импорт табы ашылды')
+    const importState = await h.evaluate(`(() => ({
+      formats: document.body.innerText.includes('Базис Excel') && document.body.innerText.includes('PRO100 textures.ini'),
+      rights: Boolean(document.querySelector('input[type="checkbox"]')),
+      saveDisabled: [...document.querySelectorAll('button')].find((button) => button.textContent.trim() === 'Сохранить импорт')?.disabled
+    }))()`)
+    check(importState.formats && importState.rights && importState.saveDisabled, 'импорт құқық растауын талап етеді')
+    check(await h.clickText('Петли', 900), 'топса табы ашылды')
+    const fitting = await h.evaluate(`(() => ({
+      picker: Boolean(document.querySelector('select[aria-label*="Артикул производителя"]')),
+      warning: document.body.innerText.includes('Недостаточно данных для присадки'),
+      source: Boolean([...document.querySelectorAll('a')].find((a) => a.textContent.trim() === 'Официальный чертёж'))
+    }))()`)
+    check(fitting.picker && fitting.warning && fitting.source, 'ресми артикул, сызба және жетпейтін дерек көрсетілді')
+    check(await h.clickText('Фурнитура', 900), 'фурнитура анықтамалығы ашылды')
+    const catalog = await h.evaluate(`(() => ({
+      brands: ['Blum', 'Hettich', 'Boyard', 'GTV', 'AKS'].every((brand) => document.body.innerText.includes(brand)),
+      source: Boolean([...document.querySelectorAll('a')].find((a) => a.textContent.includes('Официальный чертёж')))
+    }))()`)
+    check(catalog.brands && catalog.source, 'барлық бренд пен ресми дереккөз көрінді')
+    await h.clickText('Закрыть', 700)
+  })
+
   await test('Цех профилі: баға сақталады', async () => {
     await h.closeModals()
     check(await h.clickText('Цех', 1200), 'цех терезесі ашылды')

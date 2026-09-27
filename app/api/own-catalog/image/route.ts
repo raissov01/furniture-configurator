@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { NextResponse } from 'next/server'
 import { currentAccount } from '@/lib/server/session'
@@ -8,6 +8,7 @@ import { can } from '@/lib/permissions'
 import { listShopCatalog } from '@/lib/server/ownCatalog'
 import { MAX_CATALOG_IMAGE_BYTES, validateCatalogImage } from '@/lib/server/catalogImage'
 import { pro100TextureImports } from '@/lib/ownTextureUi'
+import { catalogImageForShop, recordCatalogImage } from '@/lib/server/ownCatalogImages'
 
 const imageDir = () => join(process.env['DATA_DIR'] ?? join(process.cwd(), '.data'), 'catalog-images')
 const idPattern = /^[a-f0-9-]{36}$/iu
@@ -54,22 +55,32 @@ export async function POST(request: Request): Promise<Response> {
   catch (cause) { return fail(cause instanceof Error ? cause.message : 'Сурет жарамсыз', 400) }
   const id = randomUUID()
   await mkdir(imageDir(), { recursive: true })
-  await writeFile(join(imageDir(), `${id}.${extension}`), bytes, { flag: 'wx' })
+  const path = join(imageDir(), `${id}.${extension}`)
+  await writeFile(path, bytes, { flag: 'wx' })
+  try { recordCatalogImage(account.shopId, importId, id, extension, bytes.length) }
+  catch (cause) {
+    await unlink(path)
+    return fail(cause instanceof Error ? cause.message : 'Сурет сақталмады', 409)
+  }
   const url = new URL(`/api/own-catalog/image?id=${id}`, request.url).href
   return NextResponse.json({ url }, { status: 201 })
 }
 
-/** Жобаның клиенттік көрінісі суретті URL арқылы аша алады; UUID табылмайынша файл ашылмайды. */
+/** Сурет URL-і құпия кілт емес: әр сұрауда цех иесі тексеріледі. */
 export async function GET(request: Request): Promise<Response> {
+  const off = cloudOff(); if (off) return off
+  const account = await currentAccount()
+  if (!account) return fail('Кіру қажет', 401)
   const id = new URL(request.url).searchParams.get('id') ?? ''
   if (!idPattern.test(id)) return fail('id жарамсыз', 400)
-  for (const [extension, mime] of [['png', 'image/png'], ['jpg', 'image/jpeg'], ['webp', 'image/webp']] as const) {
-    const bytes = await readFile(join(imageDir(), `${id}.${extension}`)).catch((cause: unknown) => {
-      if (cause instanceof Error && 'code' in cause && cause.code === 'ENOENT') return null
-      throw cause
-    })
-    if (bytes) return new Response(bytes, { headers: { 'Content-Type': mime,
-      'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff' } })
-  }
-  return fail('Сурет табылмады', 404)
+  const image = catalogImageForShop(account.shopId, id)
+  if (!image) return fail('Сурет табылмады', 404)
+  const mime = image.extension === 'png' ? 'image/png' : image.extension === 'jpg' ? 'image/jpeg' : 'image/webp'
+  const bytes = await readFile(join(imageDir(), `${id}.${image.extension}`)).catch((cause: unknown) => {
+    if (cause instanceof Error && 'code' in cause && cause.code === 'ENOENT') return null
+    throw cause
+  })
+  if (!bytes) return fail('Сурет табылмады', 404)
+  return new Response(bytes, { headers: { 'Content-Type': mime,
+    'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } })
 }

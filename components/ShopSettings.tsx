@@ -43,14 +43,19 @@ import { MoneyInput } from './MoneyInput'
 import { PriceImportPanel } from './PriceImportPanel'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 import { OwnTextureMapper } from './OwnTextureMapper'
+import { OwnMaterialChooser } from './OwnMaterialChooser'
+import { OwnCatalogImportPanel } from './OwnCatalogImportPanel'
+import { FittingArticlePicker } from './FittingArticlePicker'
+import { FittingsCatalogPanel } from './FittingsCatalogPanel'
 
 type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
 
-type Tab = 'profile' | 'materials' | 'bands' | 'hardware' | 'hinges' | 'rules' | 'drilling'
+type Tab = 'profile' | 'materials' | 'catalog' | 'bands' | 'hardware' | 'hinges' | 'rules' | 'drilling'
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'profile', label: tr('Цех') },
   { value: 'materials', label: tr('Материалы') },
+  { value: 'catalog', label: tr('Каталог цеха') },
   { value: 'bands', label: tr('Кромки') },
   { value: 'hardware', label: tr('Фурнитура') },
   { value: 'hinges', label: tr('Петли') },
@@ -225,6 +230,12 @@ export function ShopSettings() {
 
         {tab === 'materials' ? (
           <div className="space-y-3">
+            <OwnMaterialChooser existingIds={shop.materials.map((material) => material.id)} onAdd={(material) => {
+              const state = useConfigurator.getState()
+              if (!state.shop.materials.some((entry) => entry.id === material.id)) {
+                state.editShop({ materials: [...state.shop.materials, material] })
+              }
+            }} />
             <AddMaterial />
             <OwnTextureMapper />
             <PriceTable
@@ -266,6 +277,19 @@ export function ShopSettings() {
           </div>
         ) : null}
 
+        {tab === 'catalog' ? <OwnCatalogImportPanel onApplyMaterials={(materials, edgeBands) => {
+          const state = useConfigurator.getState()
+          const materialIds = new Set(state.shop.materials.map((item) => item.id))
+          const bandIds = new Set(state.shop.edgeBands.map((item) => item.id))
+          const newMaterials = materials.filter((item) => !materialIds.has(item.id))
+          const newBands = edgeBands.filter((item) => !bandIds.has(item.id))
+          if (newMaterials.length === 0 && newBands.length === 0) throw new Error(tr('Позиция уже добавлена в цех'))
+          state.editShop({
+            materials: [...state.shop.materials, ...newMaterials],
+            edgeBands: [...state.shop.edgeBands, ...newBands],
+          })
+        }} /> : null}
+
         {tab === 'bands' ? (
           <PriceTable
             head={['Кромка', 'Толщина', 'Цена за метр, ₸']}
@@ -286,6 +310,7 @@ export function ShopSettings() {
 
         {tab === 'hardware' ? (
           <div className="space-y-4">
+          <FittingsCatalogPanel />
           <HandleCatalogue
             handles={shop.handles}
             onAdd={addHandle}
@@ -329,7 +354,7 @@ export function ShopSettings() {
               самое частое значение, а не гарантия. Присадка считается по этому числу.
             </p>
             <PriceTable
-              head={['Система', 'K, мм', 'От края фасада, мм']}
+              head={['Система', 'K, мм', 'От края фасада, мм', tr('Артикул производителя')]}
               rows={shop.hingeSystems.map((h) => ({
                 id: h.id,
                 name: h.name,
@@ -338,6 +363,15 @@ export function ShopSettings() {
                     onChange={(v) => setHingeK(h.id, v)} />,
                   <NumberInput key="e" value={h.endOffset} min={0} max={300} step={5}
                     onChange={(v) => setHingeEnd(h.id, v)} />,
+                  <FittingArticlePicker key="article" system={h} onChange={(id) => editShop({
+                    hingeSystems: shop.hingeSystems.map((entry) => {
+                      if (entry.id !== h.id) return entry
+                      if (id) return { ...entry, fittingProductId: id }
+                      const copy = { ...entry }
+                      delete copy.fittingProductId
+                      return copy
+                    }),
+                  })} />,
                 ],
               }))}
             />

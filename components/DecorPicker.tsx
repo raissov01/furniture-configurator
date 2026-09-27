@@ -7,17 +7,17 @@
  * «18 мм-ге ауысайын» дегенде декорын қайта іздеп отырмауы керек.
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Material } from '@/src/core/index'
 import { cn } from '@/lib/cn'
+import { t as tr } from '@/lib/i18n'
+import { ownCatalogBuild } from '@/src/core/data/catalog'
+import { filterOwnMaterials, ownMaterialOptions } from '@/lib/ownCatalogUi'
+import type { OwnMaterialMeta } from '@/src/core/data/catalog/schema'
 
-/** Ағаш декорды біртүстіден ажырату: жеңіл жолақ — текстураның белгісі. */
 function swatchStyle(m: Material): React.CSSProperties {
   const color = m.decor?.color ?? '#b8b4ac'
-  if (m.decor?.kind !== 'wood') return { background: color }
-  return {
-    background: `repeating-linear-gradient(96deg, ${color} 0 5px, color-mix(in srgb, ${color} 84%, #000) 5px 7px)`,
-  }
+  return { background: color }
 }
 
 export function DecorPicker({
@@ -29,17 +29,28 @@ export function DecorPicker({
   showThickness?: boolean
 }) {
   const current = materials.find((m) => m.id === value)
+  const [manufacturer, setManufacturer] = useState('')
+  const [collection, setCollection] = useState('')
+  const [decorCode, setDecorCode] = useState('')
+  const meta: Record<string, OwnMaterialMeta> = useMemo(() => materials.some((material) => material.id.startsWith('own-'))
+    ? ownCatalogBuild().materialMeta : {}, [materials])
+  const ownMaterials = useMemo(() => materials.filter((material) => Boolean(meta[material.id])), [materials, meta])
+  const options = useMemo(() => ownMaterialOptions(ownMaterials, meta), [ownMaterials, meta])
+  const collections = useMemo(() => [...new Set(ownMaterials.map((material) => meta[material.id])
+    .filter((entry) => entry && (!manufacturer || entry.manufacturer === manufacturer) && entry.collection)
+    .map((entry) => entry!.collection!))].sort((a, b) => a.localeCompare(b)), [ownMaterials, meta, manufacturer])
+  const filtering = Boolean(manufacturer || collection || decorCode)
+  const filtered = (pool: Material[]) => filtering
+    ? filterOwnMaterials(pool, meta, { manufacturer, collection, decorCode }) : pool
 
-  const thicknesses = useMemo(
-    () => [...new Set(materials.map((m) => m.thickness))].sort((a, b) => a - b),
-    [materials],
-  )
-  const thickness = current?.thickness ?? thicknesses[0]!
-  const sameThickness = materials.filter((m) => m.thickness === thickness)
+  const filteredMaterials = filtered(materials)
+  const thicknesses = [...new Set(filteredMaterials.map((m) => m.thickness))].sort((a, b) => a - b)
+  const thickness = current && thicknesses.includes(current.thickness) ? current.thickness : thicknesses[0]
+  const sameThickness = filteredMaterials.filter((m) => m.thickness === thickness)
 
   /** Қалыңдықты ауыстырғанда декорды САҚТАП қалуға тырысамыз. */
   const switchThickness = (next: number) => {
-    const pool = materials.filter((m) => m.thickness === next)
+    const pool = filteredMaterials.filter((m) => m.thickness === next)
     const sameDecor = pool.find((m) => m.decor?.color === current?.decor?.color)
     const chosen = sameDecor ?? pool[0]
     if (chosen) onChange(chosen.id)
@@ -47,6 +58,20 @@ export function DecorPicker({
 
   return (
     <div className="space-y-2">
+      {ownMaterials.length > 0 && <div className="grid grid-cols-3 gap-1 text-[11px]">
+        <select aria-label={tr('Производитель')} value={manufacturer} onChange={(event) => { setManufacturer(event.target.value); setCollection('') }}
+          className="min-w-0 border border-neutral-300 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-900">
+          <option value="">{tr('Все производители')}</option>
+          {options.manufacturers.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+        <select aria-label={tr('Коллекция')} value={collection} onChange={(event) => setCollection(event.target.value)}
+          className="min-w-0 border border-neutral-300 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-900">
+          <option value="">{tr('Все коллекции')}</option>
+          {collections.map((value) => <option key={value} value={value}>{value}</option>)}
+        </select>
+        <input aria-label={tr('Код декора')} placeholder={tr('Код декора')} value={decorCode} onChange={(event) => setDecorCode(event.target.value)}
+          className="min-w-0 border border-neutral-300 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-900" />
+      </div>}
       {showThickness && thicknesses.length > 1 ? (
         <div className="flex flex-wrap gap-1">
           {thicknesses.map((t) => (
@@ -88,7 +113,8 @@ export function DecorPicker({
         ))}
       </div>
 
-      <p className="text-[11px] leading-snug text-neutral-500">{current?.name ?? 'Материал не выбран'}</p>
+      <p className="text-[11px] leading-snug text-neutral-500">{filtering && filteredMaterials.length === 0
+        ? `${tr('Найдено')}: 0` : current?.name ?? tr('Материал не выбран')}</p>
     </div>
   )
 }
