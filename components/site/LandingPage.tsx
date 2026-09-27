@@ -253,7 +253,7 @@ export default function LandingPage() {
               <div
                 key={t.id}
                 className="sheet flex flex-col p-5"
-                style={t.highlighted ? { borderColor: 'var(--ink)', borderWidth: 2 } : undefined}
+                style={t.highlighted ? { borderColor: 'var(--ink)', borderWidth: 1 } : undefined}
               >
                 <p className="text-xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{tr(t.name)}</p>
                 <p className="mt-1 text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>
