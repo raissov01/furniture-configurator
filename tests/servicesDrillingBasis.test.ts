@@ -68,6 +68,8 @@ describe('присадка: үш бірліктің есебі', () => {
   it('бөлшекке: тек тесігі бар бөлшектер × 120 ₸', () => {
     const line = drillingLine(drillingOnly('panel', 12_000))
     expect(line).toMatchObject({ qty: drilledPanels, unit: 'дет', unitPrice: 12_000, cost: drilledPanels * 12_000 })
+    expect(line.sources?.every((source) => panels.some((panel) => panel.id === source.panelId && panel.drilling.length > 0))).toBe(true)
+    expect(line.sources?.reduce((sum, source) => sum + source.cost, 0)).toBe(line.cost)
   })
 
   it('бір жазбадағы бірнеше тесілген бөлшекті түгел санайды', () => {
