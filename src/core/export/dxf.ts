@@ -27,6 +27,8 @@
 
 import { pointOnMachinedFace } from '../faceCoordinates'
 import { drillingToCsv } from './csv'
+import { cutPlan } from '../cutPlan'
+import type { CutLine } from '../cutPlan'
 import type { NestedSheet, NestingResult } from '../nesting'
 import { cutoutBounds } from '../cutouts'
 import { subtractedThickness } from '../edges'
@@ -471,6 +473,8 @@ export const LAYER_SHEET = 'SHEET'
 export const LAYER_USABLE = 'USABLE'
 export const LAYER_PART = 'PART'
 export const LAYER_OFFCUT = 'OFFCUT'
+/** Кесу реті анықтамалық қабатта: CAM деталь контуры деп қабылдамауы тиіс. */
+export const LAYER_CUT_ORDER = 'CUT_ORDER_REFERENCE'
 
 /**
  * Бір парақтың раскрой картасы.
@@ -480,8 +484,8 @@ export const LAYER_OFFCUT = 'OFFCUT'
  * әр нәрсе бөлек қабатта: парақ контуры, подрезкадан кейінгі аймақ, детальдар,
  * деловой отход.
  */
-export function nestedSheetToDxf(sheet: NestedSheet, materialName: string): string {
-  const layers = [LAYER_SHEET, LAYER_USABLE, LAYER_PART, LAYER_OFFCUT, LAYER_TEXT]
+export function nestedSheetToDxf(sheet: NestedSheet, materialName: string, cuts: readonly CutLine[] = []): string {
+  const layers = [LAYER_SHEET, LAYER_USABLE, LAYER_PART, LAYER_OFFCUT, LAYER_CUT_ORDER, LAYER_TEXT]
   const entities: Group[] = [g(0, 'SECTION'), g(2, 'ENTITIES')]
 
   const rect = (layer: string, x: number, y: number, w: number, h: number): Group[] =>
@@ -507,6 +511,14 @@ export function nestedSheetToDxf(sheet: NestedSheet, materialName: string): stri
     )
   }
 
+  for (const cut of cuts) {
+    const start: [number, number] = cut.axis === 'v' ? [cut.at, cut.from] : [cut.from, cut.at]
+    const end: [number, number] = cut.axis === 'v' ? [cut.at, cut.to] : [cut.to, cut.at]
+    entities.push(...lwpolyline(LAYER_CUT_ORDER, [start, end], false))
+    entities.push(...text(LAYER_CUT_ORDER, (start[0] + end[0]) / 2, (start[1] + end[1]) / 2,
+      20, `CUT ${cut.order} ${cut.kind.toUpperCase()}`))
+  }
+
   entities.push(
     ...text(LAYER_TEXT, 0, sheet.sheetHeight + 40, 60,
       `${transliterate(materialName)}  LIST ${sheet.index}  ${sheet.sheetWidth}x${sheet.sheetHeight}`),
@@ -519,6 +531,7 @@ export function nestedSheetToDxf(sheet: NestedSheet, materialName: string): stri
 /** Әр параққа бір файл: аты → мазмұны. */
 export function nestingToDxfFiles(nesting: NestingResult): Map<string, string> {
   const files = new Map<string, string>()
+  const plan = cutPlan(nesting)
   const windowsName = (name: string): string => name.toLowerCase()
   const usedNames = new Set<string>()
   // Транслитерация екі бөлек материал id-ін бір атқа айналдыруы мүмкін
@@ -527,8 +540,8 @@ export function nestingToDxfFiles(nesting: NestingResult): Map<string, string> {
   // басқа парақтың атын басып кетпеуін қадағалаймыз.
   const ordinaryNames = new Set(nesting.byMaterial.flatMap((group) =>
     group.sheets.map((sheet) => windowsName(`${transliterate(group.materialId)}-list-${sheet.index}.dxf`))))
-  for (const group of nesting.byMaterial) {
-    for (const sheet of group.sheets) {
+  for (const [groupIndex, group] of nesting.byMaterial.entries()) {
+    for (const [sheetIndex, sheet] of group.sheets.entries()) {
       const ordinaryName = `${transliterate(group.materialId)}-list-${sheet.index}.dxf`
       let name = ordinaryName
       if (usedNames.has(windowsName(name))) {
@@ -539,7 +552,7 @@ export function nestingToDxfFiles(nesting: NestingResult): Map<string, string> {
           suffix += 1
         } while (ordinaryNames.has(windowsName(name)) || usedNames.has(windowsName(name)))
       }
-      files.set(name, nestedSheetToDxf(sheet, group.materialName))
+      files.set(name, nestedSheetToDxf(sheet, group.materialName, plan.byMaterial[groupIndex]!.sheets[sheetIndex]!.cuts))
       usedNames.add(windowsName(name))
     }
   }

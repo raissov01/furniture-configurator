@@ -284,7 +284,8 @@ function materialCutPlan(m: MaterialNesting, options: CutPlanOptions): MaterialC
 
 /** Бүкіл раскройдың рез жоспары: материал бойынша және жалпы. */
 export function cutPlan(nesting: NestingResult, options: CutPlanOptions = {}): CutPlan {
-  const byMaterial = nesting.byMaterial.map((m) => materialCutPlan(m, options))
+  const effectiveOptions = { kerf: options.kerf ?? nesting.kerf ?? KERF }
+  const byMaterial = nesting.byMaterial.map((m) => materialCutPlan(m, effectiveOptions))
   return { byMaterial, stats: sumStats(byMaterial.map((m) => m.stats)) }
 }
 
