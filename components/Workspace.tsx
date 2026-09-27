@@ -31,7 +31,7 @@ import { ShareCodeDialog } from '@/components/ShareCodeDialog'
 import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
-import { compactToolbarRows } from '@/lib/classicToolbar'
+import { assertUniqueToolbarRows, compactToolbarRows } from '@/lib/classicToolbar'
 import { classicToolStatus } from '@/lib/classicStatus'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
@@ -602,30 +602,27 @@ export function Workspace() {
     cloud: cloudEnabled, classic,
   })
 
-  const classicToolRows: ClassicToolSpec[][] = classic ? compactToolbarRows<ClassicToolSpec>([
+  const classicToolRows: ClassicToolSpec[][] = classic ? compactToolbarRows<ClassicToolSpec>(assertUniqueToolbarRows<ClassicToolSpec>([
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
       { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
       { icon: classicShopTools.quote.icon, label: tr(classicShopTools.quote.label), action: () => setQuoteOpen(true), disabled: Boolean(production.error), id: 'quote' },
       { icon: classicShopTools.nesting.icon, label: tr(classicShopTools.nesting.label), action: () => { window.location.href = '/cut' }, id: 'cut' },
-      { icon: 'copy', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable },
       { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, id: 'undo' },
       { icon: 'redo', label: tr('Повторить'), action: redo, disabled: !canRedo, id: 'redo' },
-      { icon: 'settings', label: tr('Цех: материалы и цены'), action: () => setShopOpen(true) },
+      { icon: 'shop', label: tr('Цех: материалы и цены'), action: () => setShopOpen(true) },
     ],
     [
       { icon: 'box', label: tr('Тело'), action: () => setViewMode('solid'), active: viewMode === 'solid' },
       { icon: 'wire', label: tr('Контур'), action: () => setViewMode('wire'), active: viewMode === 'wire' },
-      { icon: 'eye', label: tr('Размеры на сцене'), action: () => setShowDimensions(!showDimensions), active: showDimensions },
       { icon: 'magnet', label: tr('Привязка'), action: () => {
         if (snapOptions.grid > 0 || snapOptions.tolerance > 0) {
           previousSnapOptions.current = snapOptions
           setSnapOptions({ grid: 0, tolerance: 0 })
         } else setSnapOptions(previousSnapOptions.current)
       }, active: snapOptions.grid > 0 || snapOptions.tolerance > 0 },
-      { icon: 'light', label: tr('Рендер'), action: () => setRenderOpen(true) },
       { icon: 'measure', label: tr('Размеры на сцене'), action: () => setShowDimensions(!showDimensions), active: showDimensions },
       { icon: 'fit', label: tr('Вписать в кадр'), action: fitCamera },
       { icon: 'view', label: tr('Перспектива'), action: () => { setCameraPreset('three-quarter'); setProjection('perspective') } },
@@ -638,19 +635,17 @@ export function Workspace() {
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
-      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
-      { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
-      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
+      { icon: 'decor', label: tr('Добавить декоративный блок'), action: addSolid },
+      { icon: 'text', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
     ],
     [
       { icon: 'render', label: tr('Рендер'), action: () => setRenderOpen(true) },
-      { icon: 'quote', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
       { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard, id: 'drill' },
-      { icon: 'settings', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !Boolean(activeBoard || activeSolid || cabinet), id: 'properties' },
+      { icon: 'properties', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !Boolean(activeBoard || activeSolid || cabinet), id: 'properties' },
       { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
     ],
-  ]) : []
+  ])) : []
 
   return (
     <div className={cn("flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100", classic ? "p100-workspace" : "ours-workspace")} data-workspace-style={classic ? "classic" : "ours"}>

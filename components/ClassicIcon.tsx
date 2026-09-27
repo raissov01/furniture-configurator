@@ -1,7 +1,7 @@
 'use client'
 
 /** Original 18 px line drawings for the classic desktop controls. */
-export type ClassicIconName = 'new' | 'open' | 'save' | 'print' | 'cut' | 'copy' | 'delete' | 'undo' | 'redo' | 'settings' | 'view' | 'box' | 'board' | 'wire' | 'eye' | 'magnet' | 'light' | 'fit' | 'structure' | 'library' | 'layers' | 'measure' | 'render' | 'room' | 'help' | 'duplicate' | 'mirror' | 'quote' | 'drill' | 'assembly'
+export type ClassicIconName = 'new' | 'open' | 'save' | 'print' | 'cut' | 'copy' | 'delete' | 'undo' | 'redo' | 'settings' | 'properties' | 'shop' | 'view' | 'box' | 'decor' | 'board' | 'text' | 'wire' | 'eye' | 'magnet' | 'light' | 'fit' | 'structure' | 'library' | 'layers' | 'measure' | 'render' | 'room' | 'help' | 'duplicate' | 'mirror' | 'quote' | 'drill' | 'assembly'
 
 export function ClassicIcon({ name }: { name: ClassicIconName }) {
   const blue = 'var(--p100-icon-blue)'
@@ -18,9 +18,13 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     undo: <path d="M7 4 3 8l4 4M3 8h8a4 4 0 0 1 0 8" stroke={blue}/>,
     redo: <path d="m11 4 4 4-4 4m4-4H7a4 4 0 0 0 0 8" stroke={blue}/>,
     settings: <><circle cx="9" cy="9" r="3"/><path d="M9 1v3m0 10v3M1 9h3m10 0h3M3.4 3.4l2.2 2.2m6.8 6.8 2.2 2.2m0-11.2-2.2 2.2m-6.8 6.8-2.2 2.2"/></>,
+    properties: <><path d="M2 4h14M2 9h14M2 14h14"/><circle cx="6" cy="4" r="1.5" fill="var(--p100-canvas)"/><circle cx="12" cy="9" r="1.5" fill="var(--p100-canvas)"/><circle cx="7" cy="14" r="1.5" fill="var(--p100-canvas)"/></>,
+    shop: <><path d="M2 7h14v9H2zM2 7l2-5h10l2 5M5 2l-1 5m5-5v5m4-5 1 5M6 16v-5h4v5M12 11h2v2h-2z"/></>,
     view: <><path d="M1 9q8-9 16 0-8 9-16 0z"/><circle cx="9" cy="9" r="2.5" fill={blue}/></>,
     box: <><path d="m2 5 7-3 7 3v9l-7 3-7-3zM2 5l7 3 7-3M9 8v9"/></>,
+    decor: <><path d="M3 15h12M5 12h8v3H5zM6 5l3-3 3 3-3 5zM9 10v2M13 3v3m-1.5-1.5h3"/></>,
     board: <><path d="m2 5 9-3 5 3-9 3zM2 5v9l5 3V8m0 9 9-3V5" fill={blue}/></>,
+    text: <><path d="M2 3h14v3M9 3v12m-3 0h6"/></>,
     wire: <><path d="m2 5 7-3 7 3v9l-7 3-7-3zM2 5l7 3 7-3M9 8v9" strokeDasharray="2 1"/></>,
     eye: <><path d="M1 9q8-8 16 0-8 8-16 0z"/><circle cx="9" cy="9" r="2.5" fill={blue}/></>,
     magnet: <path d="M3 3v8a6 6 0 0 0 12 0V3h-4v8a2 2 0 0 1-4 0V3z" fill={red}/>,
