@@ -967,12 +967,17 @@ export function generateCabinet(
           x = explicit ? layout.x + explicit[i]! : x + (openings[i] ?? 0)
           /*
            * K10f / audit C8: тереңдік осы стойканың ӨЗ Х нүктесінен алынады
-           * (стойканың ортасы, `x + t/2`) — жолақтың ортасынан ЕМЕС. Бұрыштық
+           * (стойканың оң шеті, `x + t`) — жолақтың ортасынан ЕМЕС. Бұрыштық
            * корпуста сол жақ стойка терең жерде, оң жақ стойка қиғаш жерде
            * тұрады: екеуінің тереңдігі бірдей болуы МҮМКІН ЕМЕС.
            * Бұрыштық емес корпуста (не slope-та) — бұрынғыдай, х-тен тәуелсіз.
            */
-          const space = corner ? depthAtX(x + Math.round(t / 2)) : shelfSpaceAt(band.y + Math.round(band.height / 2))
+          // Қиғаш жақ оңға қарай тайыздайды: стойканың оң шетіндегі тереңдік
+          // бүкіл тікбұрышты бөлшекке сыятын шек. Рез өлшемі тек бүтін мм.
+          const interpolated = corner ? depthAtX(x + t) : shelfSpaceAt(band.y + Math.round(band.height / 2))
+          const space = corner
+            ? { depth: Math.floor(interpolated.depth), z: carcassDepth - Math.floor(interpolated.depth) }
+            : interpolated
           const standDepth = space.depth - front - back
           if (standDepth < MIN_RAIL_WIDTH) {
             throw new ConfigValidationError(

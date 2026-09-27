@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DragEvent, KeyboardEvent, MouseEvent } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
+import { selectionPropertiesNotice } from '@/lib/propertiesDialogState'
 import { ConfigValidationError, copyNodeProperties, findNode, flattenTree } from '@/src/core/index'
 import type { AutoJointKind, AutoJointRecord, Axis, FlatScene, GroupNode, PropertyClipboard, PropertyGroup, ScalePercent } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -145,6 +146,7 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
     ? autoJoints.find((joint) => selectedBoards.every((id) => joint.boardIds.includes(id)))
     : undefined
   const selectedJointKind = jointKind || selectedJoint?.kind || ''
+  const selectionNotice = selectionPropertiesNotice(selectedNodes.length)
   const collapsedAncestor = (row: CanonicalTreeRow): boolean => {
     let parent = row.parentId
     while (parent) { if (collapsed[parent]) return true; parent = byId.get(parent)?.parentId ?? null }
@@ -301,6 +303,8 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
       </button> : null}
     </div>}
     {error && <p role="alert" className="border border-red-600 p-1 text-red-700">{error}</p>}
+    {selectionNotice && <p role="status" data-testid="multi-properties-notice"
+      className="border border-neutral-400 p-1 text-xs dark:border-neutral-600">{tr(selectionNotice)}</p>}
     <div role="tree" aria-label={tr('Структура проекта')} onKeyDown={onKeyDown} className="min-h-0 overflow-auto">
       {rows.map((row) => {
         const closed = collapsed[row.id] === true

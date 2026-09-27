@@ -18,18 +18,27 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { t as tr } from '@/lib/i18n'
+import { t as tr, tf } from '@/lib/i18n'
 import { CABINET_DIMENSION_MAX, CABINET_DIMENSION_MIN, dimensionRangeHint } from '@/lib/dimensionHint'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
+import { drawerFillerStep } from '@/lib/drawerFillerStep'
+import { drawerContentWithCount } from '@/lib/drawerContent'
+import { fixtureChoiceDisabled } from '@/lib/f07FixtureChoice'
+import { updateFixtureAt } from '@/lib/f07FixtureDetails'
+import { removeSectionContentAt, replaceSectionContent, updateSectionContentAt } from '@/lib/f07SectionContents'
+import { showLegacyDrawerProfileWarning } from '@/lib/legacyDrawerProfile'
+import { compatibleHinges, previewFrontEdit } from '@/lib/frontEdit'
 import { commitPropertiesName } from '@/lib/propertiesSession'
 import { sectionWidths } from '@/lib/sectionWidths'
+import { parseShelfHeights, shelfCountChange, shelfHeightsChange } from '@/lib/shelfDraft'
 import { matchTemplateId } from '@/lib/templateMatch'
 import {
-  APPLIANCES, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
+  APPLIANCES, APPLIANCE_NICHE_MODELS, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
+  WORKTOP_FIXTURE_MODELS,
   ConfigValidationError,
   defaultHandleSpec, defaultMillingSpec, findTemplate, formatCutList, handlePositionName, millingPattern,
   roomWalls, wallById, walkTree,
@@ -49,22 +58,51 @@ const METAL_BOX_IDS: string[] = ['legrabox', 'tandembox', 'merivobox']
 /** Корпус пен фасадқа — қалың плита, арт қабырғаға — жұқа. */
 const isCarcass = (m: Material) => m.thickness >= 10
 
-function SectionEditor({ section, index, computedWidth }: {
-  section: Section; index: number; computedWidth: number | undefined
+function SectionEditor({ section, index, computedWidth, invalidField, onDraftValidityChange }: {
+  section: Section; index: number; computedWidth: number | undefined; invalidField: string | null
+  onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const editSection = useConfigurator((s) => s.editSection)
   const removeSection = useConfigurator((s) => s.removeSection)
   const catalog = useConfigurator((s) => s.catalog)
+  const cabinet = useConfigurator(activeCabinet)
+  const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
+  const setShopOpen = useConfigurator((s) => s.setShopOpen)
+  const [frontError, setFrontError] = useState<{ field: string; message: string; allowed?: string | undefined; control: string } | null>(null)
+  const frontDraftField = `sections[${index}].fronts`
+  useEffect(() => {
+    setFrontError(null)
+    onDraftValidityChange?.(frontDraftField, false)
+  }, [section])
+  const editFronts = (patch: Partial<SectionFronts>, field: string) => {
+    const result = previewFrontEdit(cabinet, index, patch, catalog, settings)
+    if (!result.ok) {
+      setFrontError({ ...result, control: field })
+      onDraftValidityChange?.(frontDraftField, true)
+      return
+    }
+    setFrontError(null)
+    onDraftValidityChange?.(frontDraftField, false)
+    editSection(index, { fronts: result.fronts }, field)
+  }
   const cabFrontMat = useConfigurator((s) => activeCabinet(s).frontMaterialId)
   // Фасадқа жарамды декорлар: ХДФ (3 мм) фасад болмайды.
   const sectionFrontMats = useMemo(() => catalog.materials.filter((m) => m.thickness >= 10), [catalog])
   const canRemove = useConfigurator((s) => activeCabinet(s).sections.length > 1)
 
   const shopGap = useConfigurator((s) => s.shop.settings.frontGap ?? DEFAULT_SETTINGS.frontGap)
+  const cabinetHeight = useConfigurator((s) => activeCabinet(s).height)
 
   const shelves = section.contents.find((c) => c.kind === 'shelves')
+  const shelfContentIndex = section.contents.findIndex((c) => c.kind === 'shelves')
+  const shelfAtField = `sections[${index}].contents[${shelfContentIndex}].at`
+  const [heightsDraft, setHeightsDraft] = useState((shelves?.at ?? []).join(', '))
+  const [heightsError, setHeightsError] = useState(false)
+  useEffect(() => { setHeightsDraft((shelves?.at ?? []).join(', ')) }, [shelves?.at])
   const stand = section.contents.find((c) => c.kind === 'stand')
   const drawers = section.contents.find((c) => c.kind === 'drawers')
+  const drawerContentIndex = section.contents.findIndex((c) => c.kind === 'drawers')
+  const fillerStep = drawerFillerStep(catalog.materials, cabinet.carcassMaterialId)
   const rod = section.contents.find((c) => c.kind === 'rod')
   const filling = section.contents.find((c) => c.kind === 'filling')
   const appliance = section.contents.find((c) => c.kind === 'appliance')
@@ -84,7 +122,7 @@ function SectionEditor({ section, index, computedWidth }: {
     filling?: FillingKind | null
     appliance?: ApplianceKind | null
   }) => {
-    const shelfCount = next.shelfCount ?? shelves?.count ?? 0
+    const shelfCount = next.shelfCount ?? shelves?.at?.length ?? shelves?.count ?? 0
     const shelfKind = next.shelfKind ?? shelves?.shelfKind ?? 'adjustable'
     // Шегіністер мен нақты биіктіктер ҚАЙТА ҚҰРУДА жоғалмауы керек: бұл
     // тізім әр өзгеріс сайын нөлден жиналады.
@@ -95,32 +133,23 @@ function SectionEditor({ section, index, computedWidth }: {
     const standCount = next.standCount ?? (stand?.kind === 'stand' ? stand.count : 0)
     const drawerCount = next.drawerCount ?? drawers?.count ?? 0
     const hasRod = next.hasRod ?? rod !== undefined
-    const fillingKind = next.filling === undefined
-      ? (filling?.kind === 'filling' ? filling.filling : null)
-      : next.filling
-    const applianceKind = next.appliance === undefined
-      ? (appliance?.kind === 'appliance' ? appliance.appliance : null)
-      : next.appliance
-
-    const contents: SectionContent[] = []
-    // Техника ең ТӨМЕНДЕ: духовка мен посудомойка еденге жақын тұрады.
-    if (applianceKind) contents.push({ kind: 'appliance', appliance: applianceKind })
-    if (drawerCount > 0) contents.push({ kind: 'drawers', count: drawerCount })
-    if (shelfCount > 0) {
-      contents.push({
-        kind: 'shelves', count: shelfCount, shelfKind,
+    let contents: SectionContent[] = section.contents
+    const replace = (kind: SectionContent['kind'], value: SectionContent | null) => {
+      contents = replaceSectionContent(contents, kind, value)
+    }
+    if (next.appliance !== undefined) replace('appliance', next.appliance
+      ? { kind: 'appliance', appliance: next.appliance, ...(appliance?.height ? { height: appliance.height } : {}) } : null)
+    if (next.drawerCount !== undefined) replace('drawers', drawerContentWithCount(drawers, drawerCount))
+    if (next.shelfCount !== undefined || next.shelfKind !== undefined || next.shelfInsets !== undefined || next.shelfAt !== undefined) {
+      replace('shelves', shelfCount > 0 ? {
+        kind: 'shelves', count: shelfAt?.length ?? shelfCount, shelfKind,
         ...(shelfInsets ? { insets: shelfInsets } : {}),
         ...(shelfAt && shelfAt.length > 0 ? { at: shelfAt } : {}),
-      })
+      } : null)
     }
-    // Стойка сөренің ҮСТІНДЕ бөлек жолақ болып тұрады: солай ғана «төменде
-    // сөре, жоғарыда екі бөлік» деген тор шығады.
-    if (standCount > 0) contents.push({ kind: 'stand', count: standCount })
-    // Механизм сөренің үстінде, штанганың астында.
-    if (fillingKind) contents.push({ kind: 'filling', filling: fillingKind })
-    // Штанга ең ҮСТІНДЕ: киім ілінетін жер жоғарыда болады.
-    if (hasRod) contents.push({ kind: 'rod' })
-    if (contents.length === 0) contents.push({ kind: 'empty' })
+    if (next.standCount !== undefined) replace('stand', standCount > 0 ? { kind: 'stand', count: standCount } : null)
+    if (next.filling !== undefined) replace('filling', next.filling ? { kind: 'filling', filling: next.filling } : null)
+    if (next.hasRod !== undefined) replace('rod', hasRod ? { kind: 'rod' } : null)
 
     editSection(index, { contents }, 'section.fill')
   }
@@ -159,7 +188,9 @@ function SectionEditor({ section, index, computedWidth }: {
               value={computedWidth ?? '—'}
               className="w-full rounded-md border border-neutral-300 bg-neutral-50 px-1.5 py-1 text-center text-xs tabular-nums text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300" />
           ) : (
-            <NumberInput value={section.width ?? 0} min={100} step={10}
+            <NumberInput value={section.width ?? 0} min={100} step={1} buttonStep={10}
+              invalid={invalidField === `sections[${index}].width` || invalidField === `sections[${index}]`}
+              field={`sections[${index}].width`} onDraftValidityChange={onDraftValidityChange}
               onChange={(width) => editSection(index, { width }, 'section.width')} />
           )}
         </Field>
@@ -187,18 +218,24 @@ function SectionEditor({ section, index, computedWidth }: {
             */}
           <Field label={tr('Высоты полок, мм')} hint={tr('через запятую; пусто — поровну')}>
             <input
-              value={(shelves.at ?? []).join(', ')}
+              value={heightsDraft}
+              aria-invalid={heightsError || undefined}
+              aria-describedby={heightsError ? `shelf-at-error-${section.id}` : undefined}
               onChange={(e) => {
-                const list = e.target.value
-                  .split(/[,;\s]+/)
-                  .map((part) => Number(part))
-                  .filter((n) => Number.isFinite(n) && n > 0)
-                  .map((n) => Math.round(n))
-                setFill({ shelfAt: list.length > 0 ? list : null })
+                const raw = e.target.value
+                setHeightsDraft(raw)
+                const parsed = parseShelfHeights(raw, cabinetHeight)
+                setHeightsError(Boolean(parsed.error))
+                onDraftValidityChange?.(shelfAtField, Boolean(parsed.error))
+                const change = shelfHeightsChange(raw, shelves.at?.length ?? shelves.count, cabinetHeight)
+                if (change) setFill({ shelfCount: change.count, shelfAt: change.at ?? null })
               }}
               placeholder="320, 700, 1150"
-              className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm tabular-nums outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
+              className={cn('w-full rounded-md border bg-white px-2 py-1.5 text-sm tabular-nums outline-none focus:border-neutral-900 dark:bg-neutral-900', heightsError ? 'border-red-500 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-700')}
             />
+            {heightsError ? <span id={`shelf-at-error-${section.id}`} role="alert" className="mt-1 block text-[11px] text-red-700 dark:text-red-400">
+              {shelfAtField}: {tr('Введите целые высоты полок')} — {tr('допустимо')} 1..{cabinetHeight} {tr('мм')}, 1..20 {tr('значений')}
+            </span> : null}
           </Field>
         </div>
       ) : null}
@@ -206,10 +243,18 @@ function SectionEditor({ section, index, computedWidth }: {
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Полок')}>
           <NumberInput
-            value={shelves?.count ?? 0}
+            value={shelves?.at?.length ?? shelves?.count ?? 0}
             min={0}
             max={20}
-            onChange={(shelfCount) => setFill({ shelfCount })}
+            field={`sections[${index}].contents[${Math.max(shelfContentIndex, 0)}].count`}
+            onDraftValidityChange={onDraftValidityChange}
+            onChange={(count) => {
+              const change = shelfCountChange(count, shelves?.at?.length ?? shelves?.count ?? 0, shelves?.at)
+              setHeightsDraft((change.at ?? []).join(', '))
+              setHeightsError(false)
+              onDraftValidityChange?.(shelfAtField, false)
+              setFill({ shelfCount: change.count, shelfAt: change.at ?? null })
+            }}
           />
         </Field>
         <Field label={tr('Тип полки')}>
@@ -235,6 +280,8 @@ function SectionEditor({ section, index, computedWidth }: {
             value={drawers?.count ?? 0}
             min={0}
             max={8}
+            field={`sections[${index}].contents[${Math.max(drawerContentIndex, 0)}].count`}
+            onDraftValidityChange={onDraftValidityChange}
             onChange={(drawerCount) => setFill({ drawerCount })}
           />
         </Field>
@@ -252,6 +299,8 @@ function SectionEditor({ section, index, computedWidth }: {
             value={drawers?.height ?? 0}
             min={0}
             step={10}
+            field={`sections[${index}].contents[${Math.max(drawerContentIndex, 0)}].height`}
+            onDraftValidityChange={onDraftValidityChange}
             onChange={(height) => {
               if (!drawers) return
               const contents = section.contents.map((c) =>
@@ -280,6 +329,8 @@ function SectionEditor({ section, index, computedWidth }: {
                   value={drawers.gaps?.[key] ?? shopGap}
                   min={0}
                   max={50}
+                  field={`sections[${index}].contents[${drawerContentIndex}].gaps.${key}`}
+                  onDraftValidityChange={onDraftValidityChange}
                   onChange={(value) => {
                     const contents = section.contents.map((c) =>
                       c.kind === 'drawers'
@@ -314,14 +365,19 @@ function SectionEditor({ section, index, computedWidth }: {
               editSection(index, { contents }, field)
             }}
           />
-          <div className="grid grid-cols-2 gap-2">
+          {fillerStep === null ? <p role="alert" className="text-xs text-red-700 dark:text-red-400">
+            {tr('Материал корпуса не найден')}: {cabinet.carcassMaterialId}
+          </p> : <div className="grid grid-cols-2 gap-2">
             {([['left', 'Планка слева'], ['right', 'Планка справа']] as const).map(([side, label]) => (
               <Field key={side} label={tr(label)} hint={tr('сужает нишу, мм')}>
                 <NumberInput
                   value={drawers.fillers?.[side] ?? 0}
                   min={0}
                   max={200}
-                  step={16}
+                  step={fillerStep}
+                  invalid={invalidField === `sections[${index}].contents[${drawerContentIndex}].fillers.${side}`}
+                  field={`sections[${index}].contents[${drawerContentIndex}].fillers.${side}`}
+                  onDraftValidityChange={onDraftValidityChange}
                   onChange={(value) => {
                     const contents = section.contents.map((c) =>
                       c.kind === 'drawers'
@@ -332,7 +388,7 @@ function SectionEditor({ section, index, computedWidth }: {
                 />
               </Field>
             ))}
-          </div>
+          </div>}
         </>
       ) : null}
 
@@ -359,33 +415,68 @@ function SectionEditor({ section, index, computedWidth }: {
         </Field>
       </div>
 
+      {section.contents.map((content, contentIndex) => {
+        if (content.kind !== 'appliance') return null
+        const model = APPLIANCE_NICHE_MODELS.find((candidate) => candidate.id === content.modelId)
+        const models = APPLIANCE_NICHE_MODELS.filter((candidate) => candidate.appliance === content.appliance)
+        const change = (replacement: SectionContent) => editSection(index,
+          { contents: updateSectionContentAt(section.contents, contentIndex, replacement) }, 'section.appliance')
+        return <div key={`${section.id}-appliance-${contentIndex}`} className="space-y-2 border border-neutral-200 p-2 dark:border-neutral-800">
+          <div className="flex items-center justify-between gap-2 text-xs font-medium">
+            <span>{tr('Техника')} {contentIndex + 1}: {tr(APPLIANCES.find((item) => item.id === content.appliance)?.name ?? content.appliance)}</span>
+            {section.contents.filter((item) => item.kind === 'appliance').length > 1 &&
+              <Button size="sm" onClick={() => editSection(index,
+                { contents: removeSectionContentAt(section.contents, contentIndex) }, 'section.appliance')}>
+                {tr('Удалить технику')}
+              </Button>}
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Field label={tr('Тип техники')}>
+              <Select value={content.appliance} onChange={(appliance) => change({ kind: 'appliance', appliance, height: content.height })}
+                options={APPLIANCES.map((item) => ({ value: item.id, label: tr(item.name) }))} />
+            </Field>
+            <Field label={tr('Артикул')}>
+              <Select value={content.modelId ?? ''} onChange={(modelId) => change({ ...content, modelId: modelId || undefined })}
+                options={[{ value: '', label: tr('Не указан') }, ...models.map((item) => ({ value: item.id, label: item.article }))]} />
+            </Field>
+            <Field label={`${tr('Высота ниши')} (H), ${tr('мм')}`}>
+              <NumberInput value={content.height ?? 0} min={0} max={cabinetHeight} step={1}
+                field={`sections[${index}].contents[${contentIndex}].height`}
+                onDraftValidityChange={onDraftValidityChange}
+                onChange={(height) => change({ ...content, height: height || undefined })} />
+            </Field>
+          </div>
+          {model && <p className="text-[11px] text-neutral-600 dark:text-neutral-300">
+            {tr('Требование к нише')}: {model.height.min}{model.height.max !== undefined ? `..${model.height.max}` : '+'} (H) ×{' '}
+            {model.width.min}{model.width.max !== undefined ? `..${model.width.max}` : '+'} (W) × ≥{model.depthMin} (D) {tr('мм')}
+          </p>}
+          {!model && <p className="text-[11px] text-amber-700 dark:text-amber-300">{tr('Размеры техники без артикула не подтверждены')}</p>}
+        </div>
+      })}
+      {appliance && <Field label={tr('Добавить технику')}>
+        <Select value="" onChange={(kind) => {
+          if (!kind) return
+          editSection(index, { contents: [...section.contents, { kind: 'appliance', appliance: kind as ApplianceKind }] }, 'section.appliance')
+        }} options={[{ value: '', label: tr('Выберите тип') }, ...APPLIANCES.map((item) => ({ value: item.id, label: tr(item.name) }))]} />
+      </Field>}
+
       <div className="grid grid-cols-2 gap-2">
         <Field label={tr('Фасадов')}>
           <NumberInput
             value={section.fronts?.count ?? 0}
             min={0}
             max={8}
-            onChange={(count) =>
-              editSection(
-                index,
-                // Ілгек пен тұтқа САҚТАЛАДЫ: санды өзгерту оларды тастап
-                // кетсе, баптау үнсіз әдепкіге қайтар еді.
-                { fronts: count > 0 ? { ...(section.fronts ?? { mount: 'overlay' }), count } : null },
-                'section.fronts',
-              )
-            }
+            invalid={frontError?.control === 'section.fronts'}
+            field={`${frontDraftField}.count`}
+            onDraftValidityChange={onDraftValidityChange}
+            onChange={(count) => editFronts({ count }, 'section.fronts')}
           />
         </Field>
         <Field label={tr('Тип фасада')}>
           <Select
             value={section.fronts?.mount ?? 'overlay'}
-            onChange={(mount) =>
-              editSection(
-                index,
-                { fronts: { ...(section.fronts ?? { count: 1 }), mount } },
-                'section.frontMount',
-              )
-            }
+            invalid={frontError?.control === 'section.frontMount'}
+            onChange={(mount) => editFronts({ mount }, 'section.frontMount')}
             options={[
               { value: 'overlay', label: tr('Накладной') },
               { value: 'inset', label: tr('Вкладной') },
@@ -393,6 +484,17 @@ function SectionEditor({ section, index, computedWidth }: {
           />
         </Field>
       </div>
+
+      {frontError ? (
+        <div role="alert" className="border border-red-500 p-2 text-[11px] text-red-700 dark:text-red-400">
+          <b>{frontError.field}</b>: {tr(frontError.message.replace(`${frontError.field}: `, ''))}
+          {frontError.allowed ? ` — ${frontError.allowed}` : null}
+          {frontError.field.endsWith('.opening') ? ` ${tr('Добавьте отдельную секцию для каждой двери.')}` : null}
+          {frontError.field.endsWith('.hingeSystemId') ? (
+            <button type="button" className="ml-1 underline" onClick={() => setShopOpen(true)}>{tr('Открыть настройки цеха')}</button>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* СЕКЦИЯ ФАСАДЫНЫҢ ДЕКОРЫ — корпустан бөлек (qdesign сияқты: бір
           шкафта әр есік әртүрлі түсте). Берілмесе — корпустікі. */}
@@ -407,7 +509,7 @@ function SectionEditor({ section, index, computedWidth }: {
                 materials={sectionFrontMats}
                 value={section.fronts.materialId ?? cabFrontMat}
                 onChange={(materialId) =>
-                  editSection(index, { fronts: { ...section.fronts!, materialId } }, 'section.frontMaterial')
+                  editFronts({ materialId }, 'section.frontMaterial')
                 }
               />
             </div>
@@ -416,7 +518,7 @@ function SectionEditor({ section, index, computedWidth }: {
                 type="button"
                 title={tr('Вернуть декор корпуса')}
                 onClick={() =>
-                  editSection(index, { fronts: { ...section.fronts!, materialId: undefined } }, 'section.frontMaterial')
+                  editFronts({ materialId: undefined }, 'section.frontMaterial')
                 }
                 className="shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
               >
@@ -430,7 +532,10 @@ function SectionEditor({ section, index, computedWidth }: {
       {section.fronts ? (
         <FrontFittings
           fronts={section.fronts}
-          onChange={(patch, field) => editSection(index, { fronts: { ...section.fronts!, ...patch } }, field)}
+          onChange={editFronts}
+          fieldPrefix={frontDraftField}
+          invalidControl={frontError?.control}
+          onDraftValidityChange={onDraftValidityChange}
         />
       ) : null}
     </div>
@@ -444,7 +549,7 @@ function SectionEditor({ section, index, computedWidth }: {
  * екеуі бір ережемен (`handleBorePoints`) бұрғыланады.
  */
 function HandleFields({
-  value, onChange, field, label,
+  value, onChange, field, label, invalidControl, draftPrefix, onDraftValidityChange,
 }: {
   /** undefined — цехтың әдепкісі, null — әдейі тұтқасыз. */
   value: HandleSpec | null | undefined
@@ -452,6 +557,9 @@ function HandleFields({
   /** Өрістің аты (қате жолағы үшін); баптаулары `${field}Bore` т.с.с. */
   field: string
   label: string
+  invalidControl?: string | undefined
+  draftPrefix?: string | undefined
+  onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const handles = useConfigurator((s) => s.shop.handles)
   const handleSpec: HandleSpec | null = value === null ? null : value ?? defaultHandleSpec()
@@ -504,6 +612,9 @@ function HandleFields({
                 <NumberInput
                   value={handleSpec.edgeOffset}
                   min={0}
+                  invalid={invalidControl === `${field}EdgeOffset`}
+                  {...(draftPrefix ? { field: `${draftPrefix}.edgeOffset` } : {})}
+                  onDraftValidityChange={onDraftValidityChange}
                   onChange={(edgeOffset) => setHandle({ edgeOffset }, 'EdgeOffset')}
                 />
               </Field>
@@ -511,6 +622,9 @@ function HandleFields({
                 <NumberInput
                   value={handleSpec.endOffset}
                   min={0}
+                  invalid={invalidControl === `${field}EndOffset`}
+                  {...(draftPrefix ? { field: `${draftPrefix}.endOffset` } : {})}
+                  onDraftValidityChange={onDraftValidityChange}
                   onChange={(endOffset) => setHandle({ endOffset }, 'EndOffset')}
                 />
               </Field>
@@ -531,14 +645,22 @@ function HandleFields({
 function FrontFittings({
   fronts,
   onChange,
+  fieldPrefix,
+  invalidControl,
+  onDraftValidityChange,
 }: {
   fronts: SectionFronts
   onChange: (patch: Partial<SectionFronts>, field: string) => void
+  fieldPrefix: string
+  invalidControl?: string | undefined
+  onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const shop = useConfigurator((s) => s.shop)
+  const setShopOpen = useConfigurator((s) => s.setShopOpen)
   const systems = shop.hingeSystems
-
-  const hingeId = fronts.hingeSystemId ?? systems[0]?.id ?? ''
+  const matchingSystems = compatibleHinges(systems, fronts.mount)
+  const selectedHinge = fronts.hingeSystemId ?? matchingSystems[0]?.id ?? ''
+  const hingeId = matchingSystems.some((system) => system.id === selectedHinge) ? selectedHinge : ''
 
   const milling: MillingSpec | null = fronts.milling ?? null
   const pattern = milling ? millingPattern(milling.patternId) : null
@@ -565,6 +687,7 @@ function FrontFittings({
       <Field label={tr('Открывание')} hint={tr('сторона петель')}>
         <Select
           value={fronts.opening ?? 'auto'}
+          invalid={invalidControl === 'section.opening'}
           onChange={(opening) => onChange({ opening }, 'section.opening')}
           options={[
             { value: 'auto' as const, label: tr('Автоматически') },
@@ -597,6 +720,9 @@ function FrontFittings({
               value={gaps[key] ?? shopGap}
               min={0}
               max={50}
+              invalid={invalidControl === `section.frontGap.${key}`}
+              field={`${fieldPrefix}.gaps.${key}`}
+              onDraftValidityChange={onDraftValidityChange}
               onChange={(v) => setGap(key, v)}
             />
           </Field>
@@ -668,14 +794,28 @@ function FrontFittings({
       <Field label={tr('Петля')}>
         <Select
           value={hingeId}
+          invalid={invalidControl === 'section.hinge'}
+          disabled={matchingSystems.length === 0}
           onChange={(hingeSystemId) => onChange({ hingeSystemId }, 'section.hinge')}
-          options={systems.map((h) => ({ value: h.id, label: h.name }))}
+          options={[
+            ...(hingeId ? [] : [{ value: '', label: tr('Выберите подходящую петлю'), disabled: true }]),
+            ...matchingSystems.map((h) => ({ value: h.id, label: h.name })),
+          ]}
         />
       </Field>
+      {matchingSystems.length === 0 ? (
+        <p role="alert" className="border border-red-500 p-2 text-[11px] text-red-700 dark:text-red-400">
+          {tr('В каталоге цеха нет петли для этого типа фасада. Добавьте артикул в настройках цеха.')}
+          <button type="button" className="ml-1 underline" onClick={() => setShopOpen(true)}>{tr('Открыть настройки цеха')}</button>
+        </p>
+      ) : null}
 
       <HandleFields
         label={tr('Ручка')}
         field="section.handle"
+        invalidControl={invalidControl}
+        draftPrefix={`${fieldPrefix}.handle`}
+        onDraftValidityChange={onDraftValidityChange}
         value={fronts.handle}
         onChange={(handle, field) => onChange({ handle }, field)}
       />
@@ -687,7 +827,9 @@ function FrontFittings({
  * Корпустағы ТЕХНИКА: мойка, варочная панель, сорғыш. Клиенттікі —
  * сметаға кірмейді, тек 3D-де және «техника клиента» тізімінде көрінеді.
  */
-function FixtureFields() {
+function FixtureFields({ onDraftValidityChange }: {
+  onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
+}) {
   const cabinet = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
   const fixtures = cabinet.fixtures ?? []
@@ -696,7 +838,16 @@ function FixtureFields() {
   const without = (kind: CabinetFixture['kind']) => fixtures.filter((f) => f.kind !== kind)
   const has = (kind: CabinetFixture['kind']) => fixtures.some((f) => f.kind === kind)
   const hob = fixtures.find((f) => f.kind === 'hob')
+  const sink = fixtures.find((f) => f.kind === 'sink')
   const yesNo = [{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]
+  const sinkDisabled = fixtureChoiceDisabled(fixtures, 'sink', Boolean(cabinet.worktop))
+  const hobDisabled = fixtureChoiceDisabled(fixtures, 'hob', Boolean(cabinet.worktop))
+  const changeFixture = (kind: 'sink' | 'hob', patch: { modelId?: string | undefined; frontInset?: number | undefined }) => {
+    const fixtureIndex = fixtures.findIndex((fixture) => fixture.kind === kind)
+    const existing = fixtures[fixtureIndex]
+    if (!existing || existing.kind !== kind) return
+    set(updateFixtureAt(fixtures, fixtureIndex, { ...existing, ...patch }), `fixtures.${kind}`)
+  }
 
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -704,17 +855,17 @@ function FixtureFields() {
         <Select
           value={has('sink') ? 'yes' : 'no'}
           onChange={(v) => set(v === 'yes' ? [...without('sink'), { kind: 'sink' }] : without('sink'), 'fixtures.sink')}
-          options={yesNo}
+          options={yesNo.map((option) => ({ ...option, disabled: option.value === 'yes' && sinkDisabled }))}
         />
       </Field>
       <Field label={tr('Варочная панель')}>
         <Select
           value={hob?.kind === 'hob' ? hob.fuel : 'none'}
-          onChange={(v) => set(v === 'none' ? without('hob') : [...without('hob'), { kind: 'hob', fuel: v }], 'fixtures.hob')}
+          onChange={(v) => set(v === 'none' ? without('hob') : [...without('hob'), { ...(hob?.kind === 'hob' ? hob : {}), kind: 'hob', fuel: v }], 'fixtures.hob')}
           options={[
             { value: 'none' as const, label: tr('Нет') },
-            { value: 'gas' as const, label: tr('Газовая') },
-            { value: 'electric' as const, label: tr('Электрическая') },
+            { value: 'gas' as const, label: tr('Газовая'), disabled: hobDisabled },
+            { value: 'electric' as const, label: tr('Электрическая'), disabled: hobDisabled },
           ]}
         />
       </Field>
@@ -725,6 +876,35 @@ function FixtureFields() {
           options={yesNo}
         />
       </Field>
+      {([sink, hob] as const).map((fixture) => {
+        if (!fixture) return null
+        const kind = fixture.kind
+        const selectedId = fixture.modelId ?? (kind === 'hob' ? 'hob-60-default' : '')
+        const model = WORKTOP_FIXTURE_MODELS.find((candidate) => candidate.id === selectedId)
+        const fixtureIndex = fixtures.findIndex((candidate) => candidate.kind === kind)
+        return <div key={kind} className="col-span-3 grid grid-cols-1 gap-2 border border-neutral-200 p-2 dark:border-neutral-800 sm:grid-cols-2">
+          <Field label={`${tr(kind === 'sink' ? 'Мойка' : 'Варочная панель')}: ${tr('Артикул')}`}>
+            <Select value={selectedId} onChange={(modelId) => changeFixture(kind, { modelId: modelId || undefined })}
+              options={[{ value: '', label: tr('Не указан') }, ...WORKTOP_FIXTURE_MODELS.filter((candidate) => candidate.kind === kind)
+                .map((candidate) => ({ value: candidate.id, label: candidate.article }))]} />
+          </Field>
+          <Field label={`${tr('Отступ выреза спереди')}, ${tr('мм')}`} hint={model?.minFront === undefined ? undefined : `≥ ${model.minFront}`}>
+            <NumberInput value={fixture.frontInset ?? model?.minFront ?? 0} min={0} step={1}
+              field={`fixtures[${fixtureIndex}].frontInset`}
+              onDraftValidityChange={onDraftValidityChange}
+              onChange={(frontInset) => changeFixture(kind, { frontInset })} />
+          </Field>
+          {model ? <p className="text-[11px] text-neutral-600 dark:text-neutral-300 sm:col-span-2">
+            {tr('Вырез')}: {model.width} (W) × {model.depth} (D) {tr('мм')}
+            {model.radius === undefined ? '' : ` · R${model.radius}`}
+          </p> : <p className="text-[11px] text-amber-700 dark:text-amber-300 sm:col-span-2">
+            {tr('Без артикула вырез мойки не создаётся')}
+          </p>}
+        </div>
+      })}
+      {(sinkDisabled || hobDisabled) && <p className="col-span-3 text-[11px] text-neutral-600 dark:text-neutral-300">
+        {cabinet.worktop ? tr('Мойка и варочная панель не помещаются в одном модуле') : tr('Для мойки или плиты добавьте столешницу')}
+      </p>}
     </div>
   )
 }
@@ -740,7 +920,7 @@ type Tab = 'general' | 'material' | 'reports' | 'production'
 
 const tabButtonCls = 'flex-1 min-w-[5.5rem]'
 
-export function Configurator({ invalidField, panels, onDraftValidityChange }: { invalidField: string | null; panels: Panel[]; onDraftValidityChange?: (field: string, invalid: boolean) => void }) {
+export function Configurator({ invalidField, panels, onDraftValidityChange, locked = false, productionReady = true }: { invalidField: string | null; panels: Panel[]; onDraftValidityChange?: (field: string, invalid: boolean) => void; locked?: boolean; productionReady?: boolean }) {
   const cabinet: CabinetConfig = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
   const [nameError, setNameError] = useState<string | null>(null)
@@ -748,11 +928,13 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
   useEffect(() => setName(cabinet.name), [cabinet.id, cabinet.name])
   const addSection = useConfigurator((s) => s.addSection)
   const [sectionAddError, setSectionAddError] = useState<string | null>(null)
+  useEffect(() => setSectionAddError(null), [cabinet])
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
   // Материалдар тізімі цехтың профилінен келеді, кодтан емес.
   const materials = useConfigurator((s) => s.shop.materials)
+  const projectSettings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const limits = useConfigurator((s) => s.shop.limits)
   const carcassMaterials = materials.filter(isCarcass)
   const backMaterials = materials.filter((m) => !isCarcass(m))
@@ -832,6 +1014,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
         <Button active={tab === 'production'} onClick={() => setTab('production')}><span className={tabButtonCls}>{tr('Производство')}</span></Button>
       </div>
 
+      <fieldset disabled={locked}>
       {/* ═══ ОБЩЕЕ: аты, шаблон, орны бөлмеде, есік/фасад түрі ═══ */}
       <div className={cn('flex-col gap-3', tab === 'general' ? 'flex' : 'hidden')}>
         <Field label={tr('Название')}>
@@ -1048,6 +1231,11 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
             ]}
           />
         </Field>
+        {showLegacyDrawerProfileWarning(cabinet.drawerSystem, cabinet.sections.some((item) => item.contents.some((content) => content.kind === 'drawers'))) ? (
+          <p role="status" className="border border-amber-500 bg-amber-50 px-2 py-1.5 text-xs text-amber-950 dark:bg-amber-950 dark:text-amber-100">
+            {tf('Профиль цеха: зазор {gap} мм с каждой стороны, схема отверстий Blum TANDEM. Артикул фурнитуры не определён; проверьте направляющие перед изготовлением.', { gap: projectSettings.drawerRunnerGap ?? DEFAULT_SETTINGS.drawerRunnerGap })}
+          </p>
+        ) : null}
 
         {/* Арт қабырғаның биіктігі биіктік класына байланысты, ал бізде әр
             жүйеден бір ғана класс өлшенген — цех оны өз кестесінен қояды. */}
@@ -1057,6 +1245,9 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
               value={cabinet.metalBoxBackHeight ?? 0}
               min={0}
               max={400}
+              invalid={invalid('metalBoxBackHeight')}
+              field="metalBoxBackHeight"
+              onDraftValidityChange={onDraftValidityChange}
               onChange={(value) => edit('metalBoxBackHeight', {
                 metalBoxBackHeight: value > 0 ? value : undefined,
               })}
@@ -1401,7 +1592,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
             />
           </Field>
         </div>
-        <FixtureFields />
+        <FixtureFields onDraftValidityChange={onDraftValidityChange} />
 
         </Collapsible>
         <Collapsible id="rails" title={tr('Планки и фартук')} badge={`${(cabinet.rails ?? []).length + (cabinet.backsplash ? 1 : 0)}`}>
@@ -1676,7 +1867,8 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
             {tr('Открыть раскрой')}
           </Link>
         </div>
-        <ExportMenu cabinet={cabinet} panels={panels} />
+        {productionReady && !locked ? <ExportMenu cabinet={cabinet} panels={panels} /> : null}
+        {!productionReady ? <p role="status">{tr('Сначала примените изменения для экспорта')}</p> : null}
       </div>
 
       <div className={cn(tab === 'general' ? 'block' : 'hidden')}>
@@ -1691,13 +1883,15 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
       </p> : null}
       <div className="space-y-2">
         {cabinet.sections.map((section, i) => (
-          <SectionEditor key={section.id} section={section} index={i} computedWidth={computedSectionWidths[i]} />
+          <SectionEditor key={section.id} section={section} index={i} computedWidth={computedSectionWidths[i]}
+            invalidField={invalidField} onDraftValidityChange={onDraftValidityChange} />
         ))}
       </div>
 
       <SectionTitle>{tr('Вид')}</SectionTitle>
       <Toggle checked={showDimensions} onChange={setShowDimensions} label={tr('Показывать габариты')} />
       </div>
+      </fieldset>
     </div>
   )
 }

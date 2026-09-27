@@ -22,6 +22,7 @@ import type { Group, Mesh } from 'three'
 import { XR, XROrigin, useXRControllerLocomotion } from '@react-three/xr'
 import { getXrStore } from '@/lib/xr'
 import { ApplianceMesh } from '@/components/ApplianceMesh'
+import { FillingMesh } from '@/components/FillingMesh'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { shouldRenderDimensions } from '@/lib/sceneDimensionVisibility'
 import { PanelMesh } from '@/components/PanelMesh'
@@ -791,24 +792,7 @@ function CabinetGroup({
           )
         }
 
-        // Механизм — қорап. Техника ҚОЮ әрі мөлдір емес: клиент
-        // оны плитадан бірден ажыратуы керек. Механизм жеңіл әрі жартылай
-        // мөлдір — ол шкафтың ішін жаппайды.
-        if ((h.kind === 'appliance' || h.kind === 'filling') && h.size) {
-          const appliance = h.kind === 'appliance'
-          return (
-            <mesh key={`${h.kind}-${i}`} position={[h.position.x, h.position.y, h.position.z]}>
-              <boxGeometry args={[h.size.x, h.size.y, h.size.z]} />
-              <meshStandardMaterial
-                color={h.color ?? '#9aa3ad'}
-                roughness={appliance ? 0.35 : 0.5}
-                metalness={appliance ? 0.5 : 0.35}
-                transparent={!appliance}
-                opacity={appliance ? 1 : 0.55}
-              />
-            </mesh>
-          )
-        }
+        if (h.kind === 'filling' && h.size) return <FillingMesh key={`filling-${i}`} placement={h} />
 
         return null
       })}

@@ -5,7 +5,9 @@ import { t as tr } from '@/lib/i18n'
 import { TreeDock } from '@/components/panels/TreeDock'
 
 /** Small movable desktop window. Pointer capture keeps the drag inside the title bar. */
-export function ClassicStructureWindow({ onClose }: { onClose: () => void }) {
+export function ClassicStructureWindow({ onClose, onProperties, canOpenProperties }: {
+  onClose: () => void; onProperties: () => void; canOpenProperties: boolean
+}) {
   const [position, setPosition] = useState({ x: 200, y: 160 })
   const [start, setStart] = useState<{ x: number; y: number; left: number; top: number } | null>(null)
   return <div data-testid="classic-structure-window" className="p100-floating-window" style={{ left: position.x, top: position.y }}>
@@ -21,6 +23,7 @@ export function ClassicStructureWindow({ onClose }: { onClose: () => void }) {
       })
     }} onPointerUp={() => setStart(null)} onLostPointerCapture={() => setStart(null)}>
       <span>{tr('Структура')}</span>
+      <button type="button" disabled={!canOpenProperties} onClick={onProperties}>{tr('Свойства')}</button>
       <button type="button" aria-label={tr('Закрыть')} title={tr('Закрыть')} onClick={onClose}>×</button>
     </div>
     <TreeDock />

@@ -30,6 +30,7 @@ import type {
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { availableVerifiedHinges } from '@/lib/frontEdit'
 import { ShopDrillingSettings } from './ShopDrillingSettings'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 
@@ -74,6 +75,7 @@ export function ShopSettings() {
   const shop = useConfigurator((s) => s.shop)
   const editShop = useConfigurator((s) => s.editShop)
   const [tab, setTab] = useState<Tab>('profile')
+  const verifiedHinges = availableVerifiedHinges(shop.hingeSystems)
 
   const readiness = useMemo(() => shopReadiness(shop), [shop])
 
@@ -147,7 +149,7 @@ export function ShopSettings() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => setOpen(false)}
     >
       <div
@@ -288,6 +290,18 @@ export function ShopSettings() {
 
         {tab === 'hinges' ? (
           <div className="space-y-3">
+            {verifiedHinges.length > 0 ? (
+              <div className="border border-neutral-300 p-2 text-xs dark:border-neutral-700">
+                <p className="mb-2 font-medium">{tr('Добавить подтверждённый артикул петли')}</p>
+                <div className="flex flex-wrap gap-2">
+                  {verifiedHinges.map((hinge) => (
+                    <Button key={hinge.id} onClick={() => editShop({ hingeSystems: [...shop.hingeSystems, hinge] })}>
+                      + {hinge.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
               K — расстояние от центра чашки до края фасада. Оно зависит от бренда и от
               накладки, поэтому <strong>{tr('сверьте его со своим шаблоном')}</strong>: 22 мм здесь —

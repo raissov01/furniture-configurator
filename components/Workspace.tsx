@@ -8,9 +8,11 @@ import dynamic from 'next/dynamic'
 import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
+import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
 import { AnnotationProperties } from '@/components/AnnotationProperties'
+import { SolidProperties } from '@/components/SolidProperties'
 import { PropertiesDialog } from '@/components/PropertiesDialog'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
@@ -36,12 +38,13 @@ import { Tour } from '@/components/Tour'
 import { RenderPanel } from '@/components/RenderPanel'
 import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/classicMenu'
 import { runShopExport } from '@/lib/shopExport'
+import { selectShopExportPanels } from '@/lib/shopExportScope'
 import { downloadProjectFile, pickProjectFile } from '@/lib/projectFile'
 import { cloudEnabled } from '@/lib/cloud'
 import { THEME_EVENT, chooseTheme, readTheme, saveQuality, type Theme } from '@/lib/appearance'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
-  ConfigValidationError, formatTenge, nestPanels, nestingOptionsOf, priceProject,
+  ConfigValidationError, canMirror, formatTenge, nestPanels, nestingOptionsOf, priceProject,
   boardDimensions, findNode,
 } from '@/src/core/index'
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
@@ -57,6 +60,7 @@ import { isTouchDevice } from '@/lib/walkInput'
 import { usePanels } from '@/lib/usePanels'
 import { useTreeSceneItems } from '@/lib/useTreeSceneItems'
 import { useProjectProduction } from '@/lib/useProjectProduction'
+import { productionAvailability } from '@/lib/productionAvailability'
 import {
   DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, shelfSpanWarnings,
 } from '@/src/core/index'
@@ -146,10 +150,12 @@ export function Workspace() {
   const activeId = useConfigurator((s) => s.activeId)
   const duplicateCabinet = useConfigurator((s) => s.duplicateCabinet)
   const mirrorCabinet = useConfigurator((s) => s.mirrorCabinet)
+  const mirrorFreeNode = useConfigurator((s) => s.mirrorFreeNode)
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
   const addCabinet = useConfigurator((s) => s.addCabinet)
   const addBoard = useConfigurator((s) => s.addBoard)
   const addAnnotation = useConfigurator((s) => s.addAnnotation)
+  const addSolid = useConfigurator((s) => s.addSolid)
   const removeBoard = useConfigurator((s) => s.removeBoard)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
@@ -216,6 +222,7 @@ export function Workspace() {
   const activeNode = findNode(root, activeId)
   const activeBoard = activeNode?.kind === 'board' ? activeNode : null
   const activeAnnotation = activeNode?.kind === 'annotation' ? activeNode : null
+  const activeSolid = activeNode?.kind === 'solid' ? activeNode : null
   const activeBoardJoint = activeBoard ? autoJoints.find((joint) => joint.boardIds.includes(activeId)) : undefined
   const boardPanel = activeBoard ? production.scene.nodes.find((node) => node.nodeId === activeId)?.panels[0] : undefined
   const editableBoard = useMemo(() => {
@@ -223,6 +230,11 @@ export function Workspace() {
     try { assertTreeNodeEditable(root, activeId, layers); return true }
     catch (cause) { if (!(cause instanceof ConfigValidationError)) throw cause; return false }
   }, [root, activeId, layers, activeBoard])
+  const editableSolid = useMemo(() => {
+    if (!activeSolid) return false
+    try { assertTreeNodeEditable(root, activeId, layers); return true }
+    catch (cause) { if (!(cause instanceof ConfigValidationError)) throw cause; return false }
+  }, [root, activeId, layers, activeSolid])
   const activeEditable = useMemo(() => {
     if (!hasActiveCabinet) return false
     try {
@@ -233,6 +245,21 @@ export function Workspace() {
       return false
     }
   }, [root, activeId, layers, hasActiveCabinet])
+  const freeMirrorCheck = useMemo(() => activeNode && activeNode.kind !== 'cabinet'
+    ? freeMirrorAvailability(root, activeId, catalog, layers, settings) : null,
+    [activeNode, root, activeId, catalog, layers, settings])
+  const canMirrorSelected = cabinet ? activeEditable && canMirror(cabinet).ok : Boolean(freeMirrorCheck?.ok)
+  const [mirrorError, setMirrorError] = useState<string | null>(null)
+  useEffect(() => setMirrorError(null), [activeId])
+  const mirrorSelected = () => {
+    try {
+      if (cabinet) mirrorCabinet(activeId)
+      else mirrorFreeNode(activeId)
+      setMirrorError(null)
+    } catch (cause) {
+      setMirrorError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
@@ -241,6 +268,7 @@ export function Workspace() {
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
   const [draftState, setDraftState] = useState<{ id: string; errors: Record<string, boolean> }>({ id: activeId, errors: {} })
   const draftInvalid = draftState.id === activeId && hasDraftErrors(draftState.errors)
+  const productionState = productionAvailability(production.error, draftInvalid)
   const onDraftValidityChange = (field: string, invalid: boolean) =>
     setDraftState((current) => ({ id: activeId, errors: updateDraftErrors(current.id === activeId ? current.errors : {}, field, invalid) }))
   useEffect(() => {
@@ -322,6 +350,10 @@ export function Workspace() {
   // id-лер корпустың атауымен префиксталады: бір жобадағы екі шкафта да
   // `side-left` бар, ал экспортта олар бөлек файл болуы керек.
   const projectPanels = production.panels
+  const pdfNode = production.scene.nodes.find((node) => node.nodeId === activeId && findNode(root, node.nodeId)?.kind === 'cabinet')
+    ?? production.scene.nodes.find((node) => findNode(root, node.nodeId)?.kind === 'cabinet')
+  const pdfCabinet = pdfNode ? cabinets.find((entry) => entry.id === pdfNode.nodeId) : undefined
+  const pdfAssembly = pdfNode ? { nodeId: pdfNode.nodeId, panels: pdfNode.panels, nodeCount: production.scene.nodes.length } : undefined
   const projectHardware = production.hardware
   const projectName = exportProject().name
   // Монтаж корпустардың ЕНІНІҢ қосындысымен саналады.
@@ -452,7 +484,14 @@ export function Workspace() {
       case 'export':
         if (draftInvalid) break
         setExportError(null)
-        void runShopExport(command.format, { cabinet, panels: activePanels, catalog, settings, projectInfo })
+        void runShopExport(command.format, {
+          cabinet: command.format === 'pdf' && command.scope === 'project' ? pdfCabinet : command.scope === 'cabinet' ? cabinet : undefined,
+          panels: selectShopExportPanels(command.scope, command.format, activePanels, projectPanels),
+          pdfAssembly: command.scope === 'project' ? pdfAssembly : undefined,
+          catalog, settings, projectInfo,
+          exportId: command.scope === 'project' ? 'project' : undefined,
+          exportName: command.scope === 'project' ? projectName : undefined,
+        })
           .catch((cause: unknown) => setExportError(cause instanceof Error ? cause.message : String(cause)))
         break
       case 'clientLink': void copyClientLink(); break
@@ -472,9 +511,10 @@ export function Workspace() {
       case 'toggleSilhouette': setSilhouette({ on: !silhouette.on }); break
       case 'addCabinet': addCabinet(); break
       case 'addBoard': addBoard(); break
+      case 'addSolid': addSolid(); break
       case 'removeBoard': if (editableBoard && !activeBoardJoint) removeBoard(activeId); break
       case 'duplicate': duplicateCabinet(activeId); break
-      case 'mirror': mirrorCabinet(activeId); break
+      case 'mirror': mirrorSelected(); break
       case 'removeCabinet': removeCabinet(activeId); setSelected(null); break
       case 'toggleOpen': setOpenness(openness > 0 ? 0 : 1); break
       case 'toggleAssembly': setAssemblyStep(assemblyStep === null ? 1 : null); break
@@ -486,10 +526,11 @@ export function Workspace() {
     }
   }
   const menus = classicMenus({
-    canUndo, canRedo, activeEditable, editableBoard: editableBoard && !activeBoardJoint,
+    canUndo, canRedo, activeEditable, canMirrorSelected, editableBoard: editableBoard && !activeBoardJoint,
     canRemoveCabinet: cabinets.length >= 2 && activeEditable,
-    canExport: hasActiveCabinet && !production.error && !draftInvalid,
-    canExportPdf: hasActiveCabinet && !draftInvalid,
+    canExport: projectPanels.length > 0 && productionState.exportsAvailable,
+    canExportPdf: Boolean(pdfCabinet) && productionState.exportsAvailable,
+    canExportActiveCabinet: hasActiveCabinet && productionState.exportsAvailable,
     productionError: Boolean(production.error),
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
     silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,
@@ -531,10 +572,11 @@ export function Workspace() {
       { icon: 'layers', label: tr('Слои'), action: () => setStructureOpen(true) },
       { icon: 'library', label: tr('Библиотека'), action: () => setStructureOpen(true) },
       { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
-      { icon: 'mirror', label: tr('Зеркальная копия'), action: () => mirrorCabinet(activeId), disabled: !activeEditable },
+      { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
       { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
+      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
     ],
     [
@@ -553,7 +595,7 @@ export function Workspace() {
       <RoomPlan />
       <ShopSettings />
       {activeEditable ? <SketchEditor /> : null}
-      {activeEditable || editableBoard ? <DrillEditor panels={activeBoard ? (boardPanel ? [boardPanel] : []) : activePanels} catalog={catalog} /> : null}
+      {activeEditable || editableBoard ? <DrillEditor panels={activeBoard ? (boardPanel ? [boardPanel] : []) : activePanels} catalog={catalog} propertiesOpen={propertiesNodeId !== null} /> : null}
       {activeEditable ? <CustomParts catalog={catalog} /> : null}
       <ProjectPanel panels={projectPanels} catalog={catalog} />
       <HelpPanel />
@@ -561,6 +603,7 @@ export function Workspace() {
       <ShareCodeDialog />
       {cloudEnabled && <AccountPanel />}
       {!production.error ? <QuoteView
+        propertiesOpen={propertiesNodeId !== null}
         panels={projectPanels}
         hardware={projectHardware}
         projectName={projectName}
@@ -680,7 +723,7 @@ export function Workspace() {
               </Button>
             )
           ) : null}
-          {cabinet && !production.error && !draftInvalid ? <ExportMenu cabinet={cabinet} panels={activePanels} /> : null}
+          {projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet ?? undefined} pdfCabinet={pdfCabinet} pdfAssembly={pdfAssembly} panels={activePanels} projectPanels={projectPanels} projectName={projectName} /> : null}
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}
@@ -706,6 +749,13 @@ export function Workspace() {
           {projectPanels.length} панелей{cabinets.length > 1 ? ` · корпусов: ${cabinets.length}` : ''}{mounted ? ` · ${ms.toFixed(1)} мс` : ''}
         </span>
       </header>
+
+      {/* 390 px экранда canvas-тан бөлек тұратын тұрақты қасиет батырмасы. */}
+      {(activeBoard || activeSolid || cabinet) && <div data-testid="mobile-properties-trigger"
+        className="relative z-30 flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
+        <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
+        <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>
+      </div>}
 
       {projectLoadError && (
         <div role="alert" className="flex flex-wrap items-center gap-2 border-b border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
@@ -736,7 +786,7 @@ export function Workspace() {
       <div className="legacy-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
         <Button size="sm" onClick={addCabinet} title={tr('Новый корпус')}>+</Button>
         <Button size="sm" onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>⧉</Button>
-        <Button size="sm" onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable} title={tr('Зеркальная копия')}>⇋</Button>
+        <Button size="sm" onClick={mirrorSelected} disabled={!canMirrorSelected} title={freeMirrorCheck?.reason ?? tr('Зеркальная копия')}>⇋</Button>
         <Button
           size="sm"
           onClick={() => { removeCabinet(activeId); setSelected(null) }}
@@ -853,9 +903,13 @@ export function Workspace() {
 
       {production.error ? (
         <div role="alert" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          {production.error}
+          {production.error} — {tr('Деталировка временно недоступна. Экспорт заблокирован.')}
         </div>
       ) : null}
+
+      {draftInvalid && !production.error ? <div role="status" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        {tr('Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.')}
+      </div> : null}
 
       {activeBoardJoint ? (
         <div role="status" className="border-b border-neutral-300 px-3 py-2 text-xs text-neutral-700 dark:border-neutral-700 dark:text-neutral-300">
@@ -882,6 +936,11 @@ export function Workspace() {
         <div role="alert" className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <span className="flex-1">{tr('Экспорт не удался')}: {exportError}</span>
           <Button size="sm" onClick={() => setExportError(null)}>{tr('Закрыть')}</Button>
+        </div>
+      ) : null}
+      {(mirrorError || (activeNode && activeNode.kind !== 'cabinet' && freeMirrorCheck && !freeMirrorCheck.ok)) ? (
+        <div role="status" className="border-b border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          {tr('Зеркальная копия')}: {mirrorError ?? freeMirrorCheck?.reason}
         </div>
       ) : null}
       {shared ? (
@@ -973,6 +1032,7 @@ export function Workspace() {
             <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} />
             <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} />
             <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" />
+            <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} />
             <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} />
             <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" />
           </> : <>
@@ -990,8 +1050,8 @@ export function Workspace() {
           </>}
         </div>
         <div className="flex min-h-0 flex-col">
-        {/* Телефонда 3D экранның жартысынан астам: 256 px-те ештеңе көрінбейтін. */}
-        <main className="relative h-[55dvh] min-h-[55dvh] max-h-[55dvh] flex-none lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+        {/* Телефонда 3D көрінеді, ал қасиеттердің бөлек scroll аймағына орын қалады. */}
+        <main className="relative isolate h-[32dvh] min-h-[240px] max-h-[32dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
@@ -1000,7 +1060,8 @@ export function Workspace() {
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
           {walk ? null : classic ? <>
             <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:hidden"><TreeDock /></div>
-            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} /> : null}
+            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)}
+              canOpenProperties={Boolean(activeBoard || activeSolid || cabinet)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
           </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:w-72"><TreeDock /></div>}
           {/*
             КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
@@ -1064,10 +1125,14 @@ export function Workspace() {
           className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72')}
           data-tour="cutlist"
         >
-          <CutListTable panels={projectPanels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
+          {productionState.cutListAvailable
+            ? <CutListTable panels={projectPanels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
+            : <div role="status" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+              {tr('Деталировка временно недоступна. Экспорт заблокирован.')}
+            </div>}
         </section>
         </div>
-        <aside className="relative z-10 flex min-h-max flex-col border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:static lg:z-auto lg:min-h-0">
+        <aside className="relative z-10 flex h-[60dvh] min-h-[360px] max-h-[60dvh] flex-col overflow-hidden border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:static lg:z-auto lg:h-auto lg:min-h-0 lg:max-h-none">
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
           <div className={cn("border-b border-neutral-200 px-3 py-2 dark:border-neutral-800", classic && !activeAnnotation && "lg:hidden")}>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
@@ -1087,11 +1152,16 @@ export function Workspace() {
                 const size = boardDimensions(activeBoard.board, catalog.materials.find((item) => item.id === activeBoard.board.materialId)!)
                 return <div className="text-[11px] tabular-nums text-neutral-500">{size.height} (H) × {size.width} (W) × {size.depth} (D)</div>
               })()}
+            </> : activeSolid ? <>
+              <div className="truncate text-sm font-semibold" title={activeSolid.name}>{activeSolid.name}</div>
+              <div className="text-[11px] tabular-nums text-neutral-500">
+                {activeSolid.solid.size.y} (H) × {activeSolid.solid.size.x} (W) × {activeSolid.solid.size.z} (D)
+              </div>
             </> : activeAnnotation ? <div className="truncate text-sm font-semibold" title={activeAnnotation.name}>{activeAnnotation.name}</div>
               : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
-            {classic && (activeBoard || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+            {classic && (activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
-          <div className={cn("min-h-0 flex-1 overflow-visible p-3 lg:overflow-auto", classic && !activeAnnotation && "lg:hidden")}>
+          <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && !activeAnnotation && "lg:hidden")}>
             <Dense>
               {/*
                 МОДУЛЬДІҢ ОРНЫ (qdesign «Модуль орны, мм»: X/Y/Z, Бұрылыс) енді
@@ -1107,6 +1177,8 @@ export function Workspace() {
                 <fieldset disabled={!editableBoard}>
                   <BoardProperties key={activeBoard.id} node={activeBoard} panel={boardPanel} catalog={catalog} />
                 </fieldset>
+              ) : activeSolid ? (
+                <fieldset disabled={!editableSolid}><SolidProperties key={activeSolid.id} node={activeSolid} /></fieldset>
               ) : activeAnnotation ? (
                 <AnnotationProperties node={activeAnnotation} />
               ) : null}
@@ -1119,9 +1191,10 @@ export function Workspace() {
               <Button size="sm" onClick={() => { setCameraPreset('front'); setProjection('ortho') }}>{tr('Фас')}</Button>
               <Button size="sm" onClick={() => setCameraPreset('plan')}>{tr('План')}</Button>
               <Button size="sm" onClick={fitCamera}>{tr('Вписать в кадр')}</Button>
-              {(activeBoard || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+              {(activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
               <Button size="sm" onClick={addBoard}>{tr('+ доска')}</Button>
               <Button size="sm" onClick={addAnnotation}>{tr('+ текст')}</Button>
+              <Button size="sm" onClick={addSolid}>{tr('+ блок')}</Button>
             </div>
           </section>}
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
@@ -1129,10 +1202,11 @@ export function Workspace() {
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
             <Button onClick={addAnnotation} testId="add-annotation">{tr('+ текст')}</Button>
+            <Button onClick={addSolid}>{tr('+ блок')}</Button>
             {activeBoard && <Button onClick={() => removeBoard(activeId)}
               disabled={!editableBoard || Boolean(activeBoardJoint)}>{tr('Удалить доску')}</Button>}
             <Button onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
-            <Button onClick={() => mirrorCabinet(activeId)} disabled={!activeEditable} title={tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
+            <Button onClick={mirrorSelected} disabled={!canMirrorSelected} title={freeMirrorCheck?.reason ?? tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
             <Button
               onClick={() => { removeCabinet(activeId); setSelected(null) }}
               disabled={cabinets.length < 2 || !activeEditable}

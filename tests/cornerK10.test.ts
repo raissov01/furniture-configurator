@@ -141,6 +141,14 @@ describe('K10f: стойка (stand) + бұрыштық корпус — Х нү
     expect(stands).toHaveLength(2)
     const [leftStand, rightStand] = stands
     expect(leftStand!.finishedWidth).toBeGreaterThan(rightStand!.finishedWidth)
+    expect(stands.every((stand) => Number.isInteger(stand.finishedWidth) && Number.isInteger(stand.position.z))).toBe(true)
+    const t = catalog.materials.find((material) => material.id === cfg.carcassMaterialId)!.thickness
+    for (const stand of stands) {
+      // Оң шеттегі трапеция алды: стойка соның ішіне толық сыйсын.
+      expect(stand.position.z).toBeGreaterThanOrEqual(
+        (cfg.depth - cfg.corner!.depthAtRight) * stand.position.x / (cfg.width - 2 * t),
+      )
+    }
     // Сол жақ х=20 — корпустың сол шетіне жақын, тереңдігі толық сол
     // бүйірдің тереңдігіне (600) жуық болуы керек.
     expect(leftStand!.finishedWidth).toBeGreaterThan(560)
