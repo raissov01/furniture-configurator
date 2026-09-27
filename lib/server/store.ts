@@ -61,6 +61,42 @@ export function readProject(shopId: string, id: string): unknown | null {
   }
 }
 
+export function projectRevision(shopId: string, id: string): number | null {
+  const row = db().prepare('SELECT updated_at FROM projects WHERE shop_id = ? AND id = ?')
+    .get(shopId, id) as { updated_at: number } | undefined
+  return row?.updated_at ?? null
+}
+
+/** Екі браузердегі бір жобаның ескі көшірмесі жаңасын баспасын. */
+export function updateProject(
+  shopId: string, id: string, name: string, project: unknown, baseRevision: number, actorId?: string,
+): { kind: 'updated'; revision: number } | { kind: 'conflict'; revision: number } | { kind: 'missing' } {
+  const database = db()
+  database.exec('BEGIN IMMEDIATE')
+  try {
+    const current = database.prepare('SELECT updated_at FROM projects WHERE shop_id = ? AND id = ?')
+      .get(shopId, id) as { updated_at: number } | undefined
+    if (!current) {
+      database.exec('COMMIT')
+      return { kind: 'missing' }
+    }
+    if (current.updated_at !== baseRevision) {
+      database.exec('COMMIT')
+      return { kind: 'conflict', revision: current.updated_at }
+    }
+    // Бір миллисекундтағы екі жазу да әртүрлі ревизия алуы тиіс.
+    const revision = Math.max(Date.now(), current.updated_at + 1)
+    database.prepare('UPDATE projects SET name = ?, json = ?, updated_at = ? WHERE shop_id = ? AND id = ?')
+      .run(name.trim() || 'Проект', JSON.stringify(project), revision, shopId, id)
+    if (actorId) audit({ shopId, actorId, action: 'update', entityType: 'project', entityId: id }, revision)
+    database.exec('COMMIT')
+    return { kind: 'updated', revision }
+  } catch (cause) {
+    database.exec('ROLLBACK')
+    throw cause
+  }
+}
+
 /** Жоба сақтау. `id` берілсе — жаңарту, әйтпесе жаңасы. */
 export function writeProject(shopId: string, name: string, project: unknown, id?: string, actorId?: string): string {
   const projectId = id ?? randomUUID()
