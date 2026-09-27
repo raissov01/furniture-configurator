@@ -18,6 +18,28 @@ function subject(ip: string, code?: string): string {
   return createHash('sha256').update(code ? `${ip}\0${code}` : ip).digest('hex')
 }
 
+const LOGIN_IP_MISSES = 20
+const LOGIN_ACCOUNT_MISSES = 5
+
+/** Бір сағатта IP бойынша 20, email бойынша 5 қате кіруден кейін scrypt-ке өтпейміз. */
+export function isLoginLimited(ip: string, email: string, now = Date.now()): boolean {
+  const start = Math.floor(now / HOUR) * HOUR
+  const database = db()
+  const count = (bucket: string, identity: string): number => {
+    const row = database.prepare('SELECT attempts FROM request_limits WHERE bucket = ? AND subject = ? AND window_start = ?')
+      .get(bucket, identity, start) as { attempts: number } | undefined
+    return row?.attempts ?? 0
+  }
+  return count('login-ip', subject(ip)) >= (ip === 'unknown' ? 5 : LOGIN_IP_MISSES)
+    || count('login-account', subject(email.trim().toLowerCase())) >= LOGIN_ACCOUNT_MISSES
+}
+
+/** Сәтті кіру есептелмейді; тек қате құпиясөз/белгісіз email есептеледі. */
+export function recordLoginMiss(ip: string, email: string, now = Date.now()): void {
+  consume('login-ip', subject(ip), HOUR, ip === 'unknown' ? 5 : LOGIN_IP_MISSES, now)
+  consume('login-account', subject(email.trim().toLowerCase()), HOUR, LOGIN_ACCOUNT_MISSES, now)
+}
+
 /** SQLite бір VPS-та ортақ. BEGIN IMMEDIATE есептегіш жарысын болдырмайды. */
 function consume(bucket: string, identity: string, duration: number, maximum: number, now: number): boolean {
   const database = db()
