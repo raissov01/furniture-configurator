@@ -6,7 +6,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEED_SETS, SEED_TEMPLATES, STANDARD_NOMENCLATURE_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
 import { filterTemplateCatalog } from '@/src/core/templateCatalog'
 import type { Material, TemplateCategory } from '@/src/core/index'
@@ -18,6 +18,7 @@ import { cn } from '@/lib/cn'
 import { KitchenWizard } from '@/components/KitchenWizard'
 import { matchTemplateId } from '@/lib/templateMatch'
 import { parseKitchenWalls } from '@/lib/kitchenWallInput'
+import { shouldCloseGalleryOnKey } from '@/lib/galleryKeyboard'
 
 type Filter = TemplateCategory | 'all' | 'sets' | 'standard'
 
@@ -76,7 +77,29 @@ export function TemplateGallery() {
     worktopId: worktopMaterials[0]?.id ?? '',
   }))
   const [wizardOpen, setWizardOpen] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
   const walls = parseKitchenWalls(kit.lengthA, kit.lengthB, kit.corner)
+
+  useEffect(() => {
+    if (!open) return
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialogRef.current?.focus()
+    return () => { trigger?.focus() }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (!shouldCloseGalleryOnKey(event.key, wizardOpen)) return
+      event.preventDefault()
+      setFirstRun(false)
+      setOpenRaw(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open, wizardOpen, setFirstRun, setOpenRaw])
 
   const counts = useMemo(() => {
     const map = new Map<TemplateCategory, number>()
@@ -103,6 +126,8 @@ export function TemplateGallery() {
       onClick={() => setOpen(false)}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         data-testid="template-gallery-dialog"
         role="dialog"
         aria-modal="true"
