@@ -585,7 +585,7 @@ export function Workspace() {
       { icon: 'open', label: tr('Открыть проект'), action: () => pickProjectFile(loadProject) },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
       { icon: 'print', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
-      { icon: 'cut', label: tr('Раскрой'), action: () => { window.location.href = '/cut' } },
+      { icon: 'cut', label: tr('Раскрой'), action: () => { window.location.href = '/cut' }, id: 'cut' },
       { icon: 'copy', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable },
       { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, id: 'undo' },
@@ -620,8 +620,9 @@ export function Workspace() {
     ],
     [
       { icon: 'render', label: tr('Рендер'), action: () => setRenderOpen(true) },
-      { icon: 'quote', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
-      { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard },
+      { icon: 'quote', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error), id: 'quote' },
+      { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard, id: 'drill' },
+      { icon: 'settings', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !Boolean(activeBoard || activeSolid || cabinet), id: 'properties' },
       { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
     ],
   ]) : []
@@ -637,7 +638,7 @@ export function Workspace() {
       {activeEditable || editableBoard ? <DrillEditor panels={activeBoard ? (boardPanel ? [boardPanel] : []) : activePanels} catalog={catalog} propertiesOpen={propertiesNodeId !== null} /> : null}
       {activeEditable ? <CustomParts catalog={catalog} /> : null}
       <ProjectPanel panels={projectPanels} catalog={catalog} />
-      <HelpPanel />
+      <HelpPanel classic={classic} />
       <HistoryPanel />
       <ShareCodeDialog />
       {cloudEnabled && <AccountPanel />}
