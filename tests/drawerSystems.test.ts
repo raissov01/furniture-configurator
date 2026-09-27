@@ -102,7 +102,7 @@ describe('таңдалған жүйе бәрін өзі шешеді', () => {
 
 describe('номиналды ұзындық', () => {
   it('қалың фасад бағыттағыш ұзындығын шектейді', () => {
-    const thickFront = { ...catalog.materials[0]!, id: 'front-38', thickness: 38 }
+    const thickFront = { ...catalog.materials[0]!, id: 'front-38', thickness: 38, defaultEdging: cabinet('ball').edging }
     const panels = generateCabinet(
       { ...cabinet('ball'), depth: 535, frontMaterialId: thickFront.id },
       { ...catalog, materials: [...catalog.materials, thickFront] },

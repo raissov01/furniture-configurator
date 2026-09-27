@@ -577,6 +577,7 @@ export function Workspace() {
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
       { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
+      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
     ],
     [
