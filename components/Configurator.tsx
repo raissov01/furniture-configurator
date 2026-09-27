@@ -18,13 +18,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { t as tr } from '@/lib/i18n'
+import { t as tr, tf } from '@/lib/i18n'
 import { CABINET_DIMENSION_MAX, CABINET_DIMENSION_MIN, dimensionRangeHint } from '@/lib/dimensionHint'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
+import { showLegacyDrawerProfileWarning } from '@/lib/legacyDrawerProfile'
 import { compatibleHinges, previewFrontEdit } from '@/lib/frontEdit'
 import { commitPropertiesName } from '@/lib/propertiesSession'
 import { sectionWidths } from '@/lib/sectionWidths'
@@ -838,6 +839,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
   // Материалдар тізімі цехтың профилінен келеді, кодтан емес.
   const materials = useConfigurator((s) => s.shop.materials)
+  const projectSettings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const limits = useConfigurator((s) => s.shop.limits)
   const carcassMaterials = materials.filter(isCarcass)
   const backMaterials = materials.filter((m) => !isCarcass(m))
@@ -1133,6 +1135,11 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
             ]}
           />
         </Field>
+        {showLegacyDrawerProfileWarning(cabinet.drawerSystem, cabinet.sections.some((item) => item.contents.some((content) => content.kind === 'drawers'))) ? (
+          <p role="status" className="border border-amber-500 bg-amber-50 px-2 py-1.5 text-xs text-amber-950 dark:bg-amber-950 dark:text-amber-100">
+            {tf('Профиль цеха: зазор {gap} мм с каждой стороны, схема отверстий Blum TANDEM. Артикул фурнитуры не определён; проверьте направляющие перед изготовлением.', { gap: projectSettings.drawerRunnerGap ?? DEFAULT_SETTINGS.drawerRunnerGap })}
+          </p>
+        ) : null}
 
         {/* Арт қабырғаның биіктігі биіктік класына байланысты, ал бізде әр
             жүйеден бір ғана класс өлшенген — цех оны өз кестесінен қояды. */}
