@@ -17,6 +17,7 @@
  */
 
 import { DEFAULT_HANDLE_BORE, DEFAULT_HANDLE_ID, defaultHandleSpec } from './fittings'
+import { ConfigValidationError } from './errors'
 import { defaultMillingSpec } from './milling'
 import type { MillingPatternId } from './milling'
 import { findTemplate, templateToCabinet } from './templates'
@@ -119,7 +120,20 @@ const UPPER_ELEVATION = 1460
 const MODULE_PREFERRED = 600
 const MODULE_MIN = 300
 const MODULE_MAX = 900
+// Генератордағы қабырғаға қойылатын ең аз ұзындық: бір 600 мм ас үй модулі сыяды.
+const KITCHEN_WALL_MIN_LENGTH = 600
 const ROOM_MARGIN = 400
+
+function validateKitchenWalls(options: KitchenOptions): void {
+  const check = (field: 'lengthA' | 'lengthB' | 'lengthC', length: number | undefined): void => {
+    if (length === undefined || !Number.isSafeInteger(length) || length < KITCHEN_WALL_MIN_LENGTH) {
+      throw new ConfigValidationError(field, 'қабырға ұзындығы жарамсыз', `бүтін мм ≥ ${KITCHEN_WALL_MIN_LENGTH}`)
+    }
+  }
+  check('lengthA', options.lengthA)
+  if (options.layout === 'corner' || options.layout === 'u') check('lengthB', options.lengthB)
+  if (options.layout === 'u') check('lengthC', options.lengthC)
+}
 
 /*
  * ЦЕХТЫҢ фасад/направляющая каталогы осы ЖЕТІ ЕНГЕ есептелген (qdesign
@@ -323,6 +337,7 @@ function composeRun(
  * алады, пайдаланушы өзгертеді, сосын `options.modules`-пен қайтарады.
  */
 export function kitchenLayout(options: KitchenOptions): { runA: KitchenModule[]; runB: KitchenModule[] } {
+  validateKitchenWalls(options)
   const uShape = options.layout === 'u'
   const corner = (options.layout === 'corner' || uShape) && (options.lengthB ?? 0) >= MODULE_MIN
   const sink = options.sink ?? true
@@ -506,6 +521,7 @@ function dressLower(cabinet: CabinetConfig, opts: KitchenOptions): CabinetConfig
  * сондықтан оны стордың бар жүктеу жолы қабылдай алады.
  */
 export function generateKitchen(options: KitchenOptions, catalog: Catalog): KitchenResult {
+  validateKitchenWalls(options)
   const wallTpl = findTemplate('kitchen-wall-600')!
   const tplOf = (kind: ModuleKind) => findTemplate(TEMPLATE_OF[kind])!
 

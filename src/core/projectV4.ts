@@ -25,6 +25,7 @@ import { ConfigValidationError } from './errors'
 import type { AutoJointRecord } from './autoJointRebuild'
 import { rebuildAutoJoints, validateManualBoardDrilling } from './autoJointRebuild'
 import { migrateLegacyProjectMaterials } from './data/catalog/materials'
+import { repairSectionIds } from './sections'
 
 /** v4-те корпус конфигінің жалғыз орны — root ішіндегі CabinetNode. */
 export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'placements'> & {
@@ -129,7 +130,7 @@ export const SceneNodeSchema: z.ZodType<SceneNode> = z.lazy(() => z.discriminate
   }),
 ]))
 
-export const ProjectFileV4Schema: z.ZodType<ProjectFileV4> = z.strictObject({
+const ProjectFileV4BaseSchema: z.ZodType<ProjectFileV4> = z.strictObject({
   schemaVersion: z.literal(4),
   name: z.string().min(1),
   materials: z.array(MaterialSchema).min(1),
@@ -185,6 +186,34 @@ export const ProjectFileV4Schema: z.ZodType<ProjectFileV4> = z.strictObject({
   }
 })
 
+/** Жаңа сақталатын жобада әр шкафтың секция ID-і бірегей болуы тиіс. */
+export const ProjectFileV4Schema: z.ZodType<ProjectFileV4> = ProjectFileV4BaseSchema.superRefine((project, context) => {
+  const visit = (node: SceneNode, path: (string | number)[]): void => {
+    if (node.kind === 'cabinet') {
+      const ids = new Set<string>()
+      node.config.sections.forEach((section, index) => {
+        if (ids.has(section.id)) {
+          context.addIssue({ code: 'custom', path: ['root', ...path, 'config', 'sections', index, 'id'],
+            message: `Қайталанған секция id: ${section.id}` })
+        }
+        ids.add(section.id)
+      })
+    } else if (node.kind === 'group') {
+      node.children.forEach((child, index) => visit(child, [...path, 'children', index]))
+    }
+  }
+  visit(project.root, [])
+})
+
+function repairProjectSectionIds(project: ProjectFileV4): ProjectFileV4 {
+  const visit = (node: SceneNode): void => {
+    if (node.kind === 'cabinet') node.config.sections = repairSectionIds(node.config.sections)
+    else if (node.kind === 'group') node.children.forEach(visit)
+  }
+  visit(project.root)
+  return ProjectFileV4Schema.parse(project)
+}
+
 export const CURRENT_TREE_SCHEMA_VERSION = 4
 
 /**
@@ -211,7 +240,7 @@ export function migrateV3ToV4(project: ProjectFile & { layers?: Layer[] }): Proj
 export function parseProjectV4(raw: unknown): ProjectFileV4 {
   const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion
   if (version === 4) {
-    const project = migrateLegacyProjectMaterials(ProjectFileV4Schema.parse(raw))
+    const project = migrateLegacyProjectMaterials(repairProjectSectionIds(ProjectFileV4BaseSchema.parse(raw)))
     validateManualBoardDrilling(project.root, { materials: project.materials, edgeBands: project.edgeBands },
       project.settings, project.layers)
     if (project.autoJoints?.length) project.autoJoints = rebuildAutoJoints(project.root, project.autoJoints,
@@ -219,7 +248,7 @@ export function parseProjectV4(raw: unknown): ProjectFileV4 {
     return project
   }
   const legacy = parseProjectWithLayers(raw)
-  return migrateLegacyProjectMaterials(ProjectFileV4Schema.parse(migrateV3ToV4(legacy)))
+  return migrateLegacyProjectMaterials(repairProjectSectionIds(ProjectFileV4BaseSchema.parse(migrateV3ToV4(legacy))))
 }
 
 /**
