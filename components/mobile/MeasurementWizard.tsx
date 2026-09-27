@@ -118,6 +118,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     try {
       const next = applyDistoText(survey, laserTarget, laserText, Date.now())
       setSurvey(next)
+      setDraftNumbers((current) => { const nextDraft = { ...current }; delete nextDraft[laserTarget]; return nextDraft })
       setLaserText('')
       setMessage(t('Измерение Leica DISTO D5 записано'))
     } catch (error) {
