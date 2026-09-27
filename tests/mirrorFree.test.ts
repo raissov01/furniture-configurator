@@ -20,6 +20,15 @@ const board = (): BoardNode => ({
 })
 
 describe('еркін тақта мен топтың X айнасы', () => {
+  it('топ ішіндегі аннотацияны айнаға көшіреді', () => {
+    const group: GroupNode = { kind: 'group', id: 'g', name: 'Топ', transform: structuredClone(IDENTITY_TRANSFORM),
+      children: [{ kind: 'annotation', id: 'a', name: 'Белгі', transform: structuredClone(IDENTITY_TRANSFORM),
+        annotation: { text: 'A', fontSize: 16, color: '#000000' } }] }
+    const mirrored = mirrorFreeNodeX(group, SEED_CATALOG, 500, '-m')
+    expect(mirrored.kind).toBe('group')
+    if (mirrored.kind !== 'group') return
+    expect(mirrored.children[0]).toMatchObject({ kind: 'annotation', id: 'a-m', annotation: { text: 'A' } })
+  })
   it('кромка, рез тесіктері және 90° топтың әлемдегі X орнын шағылыстырады', () => {
     const group: GroupNode = { kind: 'group', id: 'g', name: 'Топ',
       transform: { pos: { x: 200, y: 0, z: 0 }, rot: { x: 0, y: 90, z: 0 } }, children: [board()] }

@@ -79,6 +79,7 @@ export function mirrorFreeNodeX(node: SceneNode, catalog: Catalog, planeX: numbe
     const common = { ...source, id: `${source.id}${idSuffix}`, name: `${source.name} (зеркало)`, transform }
     if (source.kind === 'board') return { ...common, kind: 'board', board: payload!.board }
     if (source.kind === 'solid') return { ...common, kind: 'solid', solid: structuredClone(source.solid) }
+    if (source.kind === 'annotation') return { ...common, kind: 'annotation', annotation: structuredClone(source.annotation) }
     return { ...common, kind: 'group', children: source.children.map((child) => mirror(child, 0)) }
   }
   return mirror(node, planeX)
