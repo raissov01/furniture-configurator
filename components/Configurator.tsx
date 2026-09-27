@@ -26,6 +26,7 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
 import { drawerFillerStep } from '@/lib/drawerFillerStep'
+import { drawerContentWithCount } from '@/lib/drawerContent'
 import { showLegacyDrawerProfileWarning } from '@/lib/legacyDrawerProfile'
 import { compatibleHinges, previewFrontEdit } from '@/lib/frontEdit'
 import { commitPropertiesName } from '@/lib/propertiesSession'
@@ -138,7 +139,8 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
     const contents: SectionContent[] = []
     // Техника ең ТӨМЕНДЕ: духовка мен посудомойка еденге жақын тұрады.
     if (applianceKind) contents.push({ kind: 'appliance', appliance: applianceKind })
-    if (drawerCount > 0) contents.push({ kind: 'drawers', count: drawerCount })
+    const nextDrawers = drawerContentWithCount(drawers, drawerCount)
+    if (nextDrawers) contents.push(nextDrawers)
     if (shelfCount > 0) {
       contents.push({
         kind: 'shelves', count: shelfAt?.length ?? shelfCount, shelfKind,
