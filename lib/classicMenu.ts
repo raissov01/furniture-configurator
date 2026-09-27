@@ -126,6 +126,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('file.export.xlsx', 'XLSX — весь проект', { type: 'export', format: 'xlsx', scope: 'project' }, { disabled: !s.canExport }),
         item('file.export.csv', 'CSV — весь проект', { type: 'export', format: 'csv', scope: 'project' }, { disabled: !s.canExport }),
         item('file.export.dxf', 'DXF — весь проект', { type: 'export', format: 'dxf', scope: 'project' }, { disabled: !s.canExport }),
+        item('file.export.project.pdf', 'PDF — весь проект', { type: 'export', format: 'pdf', scope: 'project' }, { disabled: !s.canExportPdf }),
         { kind: 'heading', id: 'file.export.cabinet', label: 'Активный корпус' },
         item('file.export.cabinet.xlsx', 'XLSX — активный корпус', { type: 'export', format: 'xlsx', scope: 'cabinet' }, { disabled: !s.canExportPdf }),
         item('file.export.cabinet.csv', 'CSV — активный корпус', { type: 'export', format: 'csv', scope: 'cabinet' }, { disabled: !s.canExportPdf }),

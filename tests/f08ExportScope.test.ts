@@ -9,7 +9,7 @@ describe('F08 shop export scope', () => {
     expect(selectShopExportPanels('project', 'csv', first, all)).toBe(all)
     expect(selectShopExportPanels('cabinet', 'dxf', first, all)).toBe(first)
   })
-  it('does not offer a project PDF assembly drawing', () => {
-    expect(() => selectShopExportPanels('project', 'pdf', first, all)).toThrow(/PDF/)
+  it('passes the full project to PDF so free boards enter its cut list', () => {
+    expect(selectShopExportPanels('project', 'pdf', first, all)).toBe(all)
   })
 })

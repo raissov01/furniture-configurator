@@ -16,8 +16,10 @@ import { runShopExport, type ShopExportFormat } from '@/lib/shopExport'
 import { selectShopExportPanels, type ShopExportScope } from '@/lib/shopExportScope'
 import type { CabinetConfig, Panel } from '@/src/core/index'
 
-export function ExportMenu({ cabinet, panels, projectPanels, projectName, exportId, exportName }: {
-  cabinet?: CabinetConfig | undefined; panels: Panel[]; projectPanels?: Panel[]; projectName?: string; exportId?: string; exportName?: string
+export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPanels, projectName, exportId, exportName }: {
+  cabinet?: CabinetConfig | undefined; pdfCabinet?: CabinetConfig | undefined
+  pdfAssembly?: { nodeId: string; panels: Panel[]; nodeCount: number } | undefined
+  panels: Panel[]; projectPanels?: Panel[]; projectName?: string; exportId?: string; exportName?: string
 }) {
   const catalog = useConfigurator((s) => s.catalog)
   const projectInfo = useConfigurator((s) => s.projectInfo)
@@ -29,8 +31,9 @@ export function ExportMenu({ cabinet, panels, projectPanels, projectName, export
     setBusy(format)
     try {
       await runShopExport(format, {
-        cabinet: scope === 'cabinet' ? cabinet : undefined,
+        cabinet: format === 'pdf' ? (scope === 'project' ? pdfCabinet : cabinet) : scope === 'cabinet' ? cabinet : undefined,
         panels: selectShopExportPanels(scope, format, panels, projectPanels ?? panels),
+        pdfAssembly: scope === 'project' ? pdfAssembly : undefined,
         catalog, settings, projectInfo,
         exportId: scope === 'project' ? 'project' : exportId,
         exportName: scope === 'project' ? projectName : exportName,
@@ -53,6 +56,9 @@ export function ExportMenu({ cabinet, panels, projectPanels, projectName, export
         <MenuItem disabled={busy !== null} title={tr('DXF деталей и торцевая присадка CSV в одном архиве')} onClick={() => void run('dxf', projectPanels ? 'project' : 'cabinet')}>
           DXF — {tr('на станок')}
         </MenuItem>
+        {projectPanels && pdfCabinet && <MenuItem disabled={busy !== null} onClick={() => void run('pdf', 'project')}>
+          PDF — {tr('Весь проект')}
+        </MenuItem>}
         {cabinet && projectPanels ? <div className="border-b border-neutral-200 px-2 py-1 text-xs">{tr('Активный корпус')}</div> : null}
         {cabinet && projectPanels ? (['xlsx', 'csv', 'dxf'] as const).map((format) => <MenuItem key={format} disabled={busy !== null} onClick={() => void run(format, 'cabinet')}>{format.toUpperCase()} — {tr('Активный корпус')}</MenuItem>) : null}
         {cabinet && <MenuItem disabled={busy !== null} title={tr('Проекции, сборка и деталировка')} onClick={() => void run('pdf', 'cabinet')}>

@@ -321,6 +321,10 @@ export function Workspace() {
   // id-лер корпустың атауымен префиксталады: бір жобадағы екі шкафта да
   // `side-left` бар, ал экспортта олар бөлек файл болуы керек.
   const projectPanels = production.panels
+  const pdfNode = production.scene.nodes.find((node) => node.nodeId === activeId && findNode(root, node.nodeId)?.kind === 'cabinet')
+    ?? production.scene.nodes.find((node) => findNode(root, node.nodeId)?.kind === 'cabinet')
+  const pdfCabinet = pdfNode ? cabinets.find((entry) => entry.id === pdfNode.nodeId) : undefined
+  const pdfAssembly = pdfNode ? { nodeId: pdfNode.nodeId, panels: pdfNode.panels, nodeCount: production.scene.nodes.length } : undefined
   const projectHardware = production.hardware
   const projectName = exportProject().name
   // Монтаж корпустардың ЕНІНІҢ қосындысымен саналады.
@@ -452,8 +456,9 @@ export function Workspace() {
         if (draftInvalid) break
         setExportError(null)
         void runShopExport(command.format, {
-          cabinet: command.scope === 'cabinet' ? cabinet : undefined,
+          cabinet: command.format === 'pdf' && command.scope === 'project' ? pdfCabinet : command.scope === 'cabinet' ? cabinet : undefined,
           panels: selectShopExportPanels(command.scope, command.format, activePanels, projectPanels),
+          pdfAssembly: command.scope === 'project' ? pdfAssembly : undefined,
           catalog, settings, projectInfo,
           exportId: command.scope === 'project' ? 'project' : undefined,
           exportName: command.scope === 'project' ? projectName : undefined,
@@ -494,7 +499,7 @@ export function Workspace() {
     canUndo, canRedo, activeEditable, editableBoard: editableBoard && !activeBoardJoint,
     canRemoveCabinet: cabinets.length >= 2 && activeEditable,
     canExport: projectPanels.length > 0 && productionState.exportsAvailable,
-    canExportPdf: hasActiveCabinet && productionState.exportsAvailable,
+    canExportPdf: Boolean(pdfCabinet) && productionState.exportsAvailable,
     productionError: Boolean(production.error),
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
     silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,
@@ -684,7 +689,7 @@ export function Workspace() {
               </Button>
             )
           ) : null}
-          {projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet ?? undefined} panels={activePanels} projectPanels={projectPanels} projectName={projectName} /> : null}
+          {projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet ?? undefined} pdfCabinet={pdfCabinet} pdfAssembly={pdfAssembly} panels={activePanels} projectPanels={projectPanels} projectName={projectName} /> : null}
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}
