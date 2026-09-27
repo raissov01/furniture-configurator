@@ -11,6 +11,11 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Порядок резов': 'Kesish tartibi',
+  'Шаг реза': 'Kesish qadami',
+  'Вперёд': 'Oldinga',
+  'Пауза': 'To‘xtatib turish',
+  'Воспроизвести': 'Ijro etish',
   'Все материалы': 'Barcha materiallar',
   'Только видимые карты': 'Faqat ko‘rsatiladigan xaritalar',
   'Текст': 'Matn',

@@ -229,12 +229,13 @@ export function Slider({
 }
 
 export function Button({
-  children, onClick, disabled, active, title, tour, size = 'md', testId,
+  children, onClick, disabled, active, ariaPressed, title, tour, size = 'md', testId,
 }: {
   children: React.ReactNode
   onClick?: () => void
   disabled?: boolean
   active?: boolean
+  ariaPressed?: boolean
   title?: string
   /** Оқыту көмекшісінің белгісі (`components/Tour.tsx`). */
   tour?: string
@@ -254,6 +255,7 @@ export function Button({
       data-testid={testId}
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={ariaPressed}
       className={cn(
         'rounded-md border font-medium transition',
         size === 'sm' ? 'px-1.5 py-0.5 text-[11px] leading-4' : 'px-2.5 py-1.5 text-xs',

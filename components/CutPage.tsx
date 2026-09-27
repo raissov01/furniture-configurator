@@ -34,7 +34,8 @@ import type {
 } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
-import { visibleMaterials } from '@/lib/cutView'
+import { cutDisplay, visibleMaterials } from '@/lib/cutView'
+import { playbackStep } from '@/src/core/cutPlayback'
 
 /** Парақ сызбасының экрандағы ені, пиксель. */
 const SHEET_PX = 520
@@ -170,8 +171,8 @@ export function CutPage() {
           <h1 className="text-sm font-semibold">{tr('Раскрой')}</h1>
           <span className="text-[11px] text-neutral-500">{projectName}</span>
 
-          <div className="ml-auto flex items-center gap-1">
-            <Button active={showCuts} onClick={() => setShowCuts(!showCuts)}>
+          <div className="ml-auto flex flex-wrap items-center gap-1">
+            <Button active={showCuts} ariaPressed={showCuts} onClick={() => setShowCuts(!showCuts)}>
               {tr('Показать резы')}
             </Button>
             <Button
@@ -456,9 +457,21 @@ const CUT_COLOR: Record<CutLine['kind'], string> = {
 function SheetCard({
   sheet, plan, showCuts,
 }: { sheet: NestedSheet; plan: SheetCutPlan; showCuts: boolean }) {
+  const [playback, setPlayback] = useState(false)
+  const [step, setStep] = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const display = cutDisplay(plan.cuts, showCuts, playback, step)
+  useEffect(() => {
+    if (!playing || !showCuts || display.step >= display.total) return
+    const timer = window.setInterval(() => setStep((current) => playbackStep(current, plan.cuts.length, 1)), 700)
+    return () => window.clearInterval(timer)
+  }, [playing, showCuts, display.step, display.total, plan.cuts.length])
+  useEffect(() => {
+    if (display.step >= display.total) setPlaying(false)
+  }, [display.step, display.total])
   const scale = SHEET_PX / sheet.sheetWidth
   return (
-    <figure className="space-y-1">
+    <figure className="w-full max-w-[520px] min-w-0 space-y-1">
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
         width={SHEET_PX}
@@ -490,7 +503,7 @@ function SheetCard({
             </text>
           </g>
         ))}
-        {showCuts ? plan.cuts.map((c) => {
+        {display.visible.map((c) => {
           const x1 = c.axis === 'v' ? c.at : c.from
           const x2 = c.axis === 'v' ? c.at : c.to
           const y1 = c.axis === 'v' ? c.from : c.at
@@ -499,9 +512,9 @@ function SheetCard({
             <g key={c.order}>
               <line
                 x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke={CUT_COLOR[c.kind]} strokeWidth={6}
+                stroke={CUT_COLOR[c.kind]} strokeWidth={display.active === c ? 12 : 6}
                 strokeDasharray={c.kind === 'trim' ? '24 16' : undefined}
-                strokeOpacity={0.85}
+                strokeOpacity={display.active === c ? 1 : 0.85}
               />
               <circle cx={(x1 + x2) / 2} cy={(y1 + y2) / 2} r={30} fill={CUT_COLOR[c.kind]} />
               <text
@@ -513,8 +526,32 @@ function SheetCard({
               </text>
             </g>
           )
-        }) : null}
+        })}
       </svg>
+      <div className="flex flex-wrap items-center gap-1 text-xs">
+        <Button size="sm" active={playback} disabled={!showCuts} ariaPressed={playback}
+          onClick={() => { setPlayback(!playback); setPlaying(false); setStep(0) }}>
+          {tr('Порядок резов')}
+        </Button>
+        {playback && showCuts ? <>
+          <Button size="sm" disabled={display.step === 0}
+            onClick={() => { setPlaying(false); setStep((current) => playbackStep(current, display.total, -1)) }}>
+            {tr('Назад')}
+          </Button>
+          <input type="range" min={0} max={display.total} value={display.step}
+            aria-label={tr('Шаг реза')} className="min-w-16 flex-1"
+            onChange={(event) => { setPlaying(false); setStep(Number(event.target.value)) }} />
+          <span className="tabular-nums">{display.step}/{display.total}</span>
+          <Button size="sm" disabled={display.step >= display.total}
+            onClick={() => { setPlaying(false); setStep((current) => playbackStep(current, display.total, 1)) }}>
+            {tr('Вперёд')}
+          </Button>
+          <Button size="sm" disabled={display.total === 0}
+            onClick={() => { if (display.step >= display.total) setStep(0); setPlaying(!playing) }}>
+            {playing ? tr('Пауза') : tr('Воспроизвести')}
+          </Button>
+        </> : null}
+      </div>
       <figcaption className="w-[520px] max-w-full text-[11px] text-neutral-500">
         <span className="font-medium text-neutral-700 dark:text-neutral-300">
           {tr('Лист')} {sheet.index}

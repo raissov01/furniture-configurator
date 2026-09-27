@@ -10,6 +10,11 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Порядок резов': 'Cut order',
+  'Шаг реза': 'Cut step',
+  'Вперёд': 'Next',
+  'Пауза': 'Pause',
+  'Воспроизвести': 'Play',
   'Все материалы': 'All materials',
   'Только видимые карты': 'Visible sheets only',
   'Текст': 'Text',
