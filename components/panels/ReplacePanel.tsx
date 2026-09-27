@@ -8,8 +8,7 @@
  * Логиканың бәрі `src/core/replaceMaterial.ts`-те — бұл файл тек соны
  * шақырады және көрсетеді (CLAUDE.md §3).
  *
- * Жобалық материал қолдануы канондық ағаштан есептеледі. Ескі баға болжамы
- * еркін тақтаны есептемейтіндіктен, ондай жобада бағалық айырма көрсетілмейді.
+ * Жобалық материал қолдануы мен болжамы канондық ағаштан есептеледі.
  */
 
 import * as React from 'react'
@@ -20,7 +19,6 @@ import {
   applyMaterialReplace,
   catalogOf,
   formatTenge,
-  previewMaterialReplace,
   projectUsage,
   flattenTree,
   scenePanels,
@@ -30,6 +28,7 @@ import {
 import { DecorPicker } from '@/components/DecorPicker'
 import { Button, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { buildMaterialPreview, canApplyMaterialPreview } from '@/lib/f11ReplacePreview'
 
 const rowBase = 'flex items-center justify-between gap-2 border border-neutral-800 px-2 py-1.5 text-[11px]'
 
@@ -68,14 +67,6 @@ export function ReplacePanel() {
     }
   }, [root, projectCatalog, projectSettings, shop.settings, layers])
 
-  const affectedFreeBoards = React.useMemo(() => {
-    let count = 0
-    if (scopeAll && oldMaterialId) walkTree(root, (node) => {
-      if (node.kind === 'board' && node.board.materialId === oldMaterialId) count += 1
-    })
-    return count
-  }, [root, scopeAll, oldMaterialId])
-
   const scope = React.useMemo(
     () => (scopeAll
       ? { kind: 'all' as const }
@@ -84,16 +75,15 @@ export function ReplacePanel() {
   )
 
   const preview = React.useMemo(() => {
-    if (!oldMaterialId || !newMaterialId) return null
-    if (oldMaterialId === newMaterialId) return null
-    if (scope.kind === 'cabinets' && scope.cabinetIds.length === 0) return null
     try {
-      return { ok: true as const, value: previewMaterialReplace(cabinets, shop, oldMaterialId, newMaterialId, scope, shop.settings) }
+      const value = buildMaterialPreview({ root, catalog: projectCatalog, shop, oldMaterialId,
+        newMaterialId, scope, settings: projectSettings ?? shop.settings, layers })
+      return value ? { ok: true as const, value } : null
     } catch (err) {
       if (err instanceof ConfigValidationError) return { ok: false as const, message: err.message }
       throw err
     }
-  }, [cabinets, shop, oldMaterialId, newMaterialId, scope])
+  }, [root, projectCatalog, shop, oldMaterialId, newMaterialId, scope, projectSettings, layers])
 
   const toggleCabinet = (id: string) => {
     setSelectedCabinetIds((prev) => {
@@ -104,8 +94,7 @@ export function ReplacePanel() {
     })
   }
 
-  const canApply = Boolean(oldMaterialId && newMaterialId && oldMaterialId !== newMaterialId
-    && (scopeAll ? projectCatalog.materials.some((material) => material.id === newMaterialId) : preview?.ok === true))
+  const canApply = preview?.ok === true && canApplyMaterialPreview(preview.value)
 
   const apply = () => {
     if (!canApply || !oldMaterialId || !newMaterialId) return
@@ -186,12 +175,7 @@ export function ReplacePanel() {
           {/* ── 4. Алдын ала көрсету ── */}
           {newMaterialId && oldMaterialId !== newMaterialId ? (
             <div className="flex flex-col gap-1 border border-neutral-800 p-2 text-[11px]">
-              {affectedFreeBoards > 0 ? (
-                <>
-                  {preview?.ok && <p className="text-neutral-400">{tr('Деталей корпуса изменится')}: {preview.value.changedPanels} / {preview.value.totalPanels}</p>}
-                  <p className="text-neutral-400">{tr('Свободных панелей изменится')}: {affectedFreeBoards}. {tr('Итоговая цена пересчитается после замены.')}</p>
-                </>
-              ) : !preview ? (
+              {!preview ? (
                 <p className="text-neutral-600">{tr('Выберите область')}</p>
               ) : !preview.ok ? (
                 <p className="text-amber-500">{preview.message}</p>
@@ -201,6 +185,9 @@ export function ReplacePanel() {
                     <span className="text-neutral-400">{tr('Деталей изменится')}</span>
                     <span className="tabular-nums">{preview.value.changedPanels} / {preview.value.totalPanels}</span>
                   </div>
+                  {preview.value.affectedBoardIds.length > 0 && <p className="text-neutral-400">
+                    {tr('Свободных панелей изменится')}: {preview.value.affectedBoardIds.length}
+                  </p>}
                   <div className="flex items-center justify-between">
                     <span className="text-neutral-400">{tr('Изменение цены')}</span>
                     <span className={cn('tabular-nums', preview.value.priceDiff > 0 ? 'text-amber-500' : preview.value.priceDiff < 0 ? 'text-emerald-500' : 'text-neutral-300')}>
