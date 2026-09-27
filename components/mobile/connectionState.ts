@@ -11,3 +11,7 @@ export function connectionError(error: unknown, browserOnline: boolean): 'Нет
   }
   return null
 }
+
+export function mobileErrorMessage(error: unknown, fallback: string, browserOnline: boolean): string {
+  return connectionError(error, browserOnline) ?? (error instanceof Error ? error.message : fallback)
+}

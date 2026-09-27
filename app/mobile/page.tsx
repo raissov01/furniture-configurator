@@ -18,7 +18,7 @@ import { configuratorKitchenTarget, handoffMeasurementToKitchen } from '@/compon
 import type { WallId } from '@/src/core/types'
 import type { RoomTolerance } from '@/src/core/measure'
 import { nextNetworkMessage } from '@/components/mobile/measurementUiLogic'
-import { connectionError, connectionState } from '@/components/mobile/connectionState'
+import { connectionError, connectionState, mobileErrorMessage } from '@/components/mobile/connectionState'
 
 const ROLE_CACHE = 'tapsyrys:role' // UI navigation only; projects, measurements and photos are in IndexedDB.
 const roles: Role[] = ['owner', 'designer', 'shop', 'client']
@@ -126,7 +126,7 @@ export default function MobileTodayPage() {
         if (mounted) { setNetwork(sync.network); setSending(false) }
         if (mounted) await reconcile(db, sync)
       } catch (error) {
-        if (mounted) setMessage(t(connectionError(error, navigator.onLine) ?? (error instanceof Error ? error.message : 'Локальное хранилище недоступно')))
+        if (mounted) setMessage(t(mobileErrorMessage(error, 'Локальное хранилище недоступно', navigator.onLine)))
       }
     }
     void init()
@@ -189,7 +189,7 @@ export default function MobileTodayPage() {
       } catch (error) {
         if (!disposed) {
           if (connectionError(error, navigator.onLine)) setNetwork(navigator.onLine ? 'unreachable' : 'offline')
-          setMessage(t(connectionError(error, navigator.onLine) ?? (error instanceof Error ? error.message : 'Не удалось отправить очередь')))
+          setMessage(t(mobileErrorMessage(error, 'Не удалось отправить очередь', navigator.onLine)))
         }
       } finally {
         if (!disposed) setSending(false)
@@ -202,7 +202,7 @@ export default function MobileTodayPage() {
     }
     window.addEventListener('online', change)
     window.addEventListener('offline', change)
-    void schedule().catch((error: unknown) => setMessage(error instanceof Error ? error.message : t('Не удалось отправить очередь')))
+    void schedule().catch((error: unknown) => setMessage(t(mobileErrorMessage(error, 'Не удалось отправить очередь', navigator.onLine))))
     return () => {
       disposed = true
       if (retryTimer) clearTimeout(retryTimer)
@@ -238,7 +238,7 @@ export default function MobileTodayPage() {
       await refresh(store)
       setNetwork(queue.network)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t('Не удалось разрешить конфликт'))
+      setMessage(t(mobileErrorMessage(error, 'Не удалось разрешить конфликт', navigator.onLine)))
     }
   }
 
@@ -252,7 +252,7 @@ export default function MobileTodayPage() {
       setNetwork(queue.network)
       await refresh(store)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t('Не удалось повторить отправку'))
+      setMessage(t(mobileErrorMessage(error, 'Не удалось повторить отправку', navigator.onLine)))
     } finally { setSending(false) }
   }
 
