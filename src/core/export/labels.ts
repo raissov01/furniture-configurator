@@ -67,7 +67,8 @@ export type PartLabel = {
 export function labelFooter(label: Pick<PartLabel, 'cabinetId' | 'grain'>, projectName: string): string {
   const grain = label.grain === 'along' ? 'текстура вдоль' :
     label.grain === 'across' ? 'текстура поперёк' : ''
-  return [BRAND.name, projectName, label.cabinetId, grain].filter(Boolean).join(' · ')
+  // Жапсырма PDF-інің шағын қаріп жиынында № glyph-і жоқ; белгі жоғалып кетпесін.
+  return [BRAND.name, projectName, label.cabinetId, grain].filter(Boolean).join(' · ').replaceAll('№', 'No.')
 }
 
 /**
@@ -177,7 +178,8 @@ function draw(
   { bold = false, color = INK, maxWidth }: { bold?: boolean; color?: ReturnType<typeof rgb>; maxWidth?: number } = {},
 ): void {
   const font = bold ? ctx.bold : ctx.regular
-  ctx.page.drawText(maxWidth === undefined ? value : clip(font, value, size, maxWidth), {
+  const printable = value.replaceAll('№', 'No.')
+  ctx.page.drawText(maxWidth === undefined ? printable : clip(font, printable, size, maxWidth), {
     x, y, size, font, color,
   })
 }
