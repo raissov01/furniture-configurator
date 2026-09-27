@@ -17,6 +17,7 @@
 
 import type { CabinetConfig, PanelMount, Section, SectionContent, SectionFronts } from './types'
 import type { HandlePosition } from './fittings'
+import { nextMirrorName } from './mirrorName'
 
 const MIRRORED_MOUNT: Record<PanelMount, PanelMount> = {
   inset: 'inset',
@@ -128,7 +129,7 @@ export function mirrorCabinet(config: CabinetConfig, id: string): CabinetConfig 
   const out: CabinetConfig = {
     ...config,
     id,
-    name: `${config.name} (зеркало)`,
+    name: nextMirrorName(config.name),
     // Секциялар СОЛДАН ОҢҒА тізілген, сондықтан айна — тізімнің кері реті.
     sections: [...config.sections].reverse().map(mirrorSection),
   }
