@@ -7,11 +7,15 @@ describe('390 × 844 workspace flow', () => {
   it('keeps the scene compact and gives the properties pane its own mobile scroll area', () => {
     expect(source).toMatch(/grid[^"\n]*overflow-y-auto[^"\n]*lg:overflow-hidden/)
     expect(source).toMatch(/<main className="[^"\n]*isolate[^"\n]*h-\[32dvh\][^"\n]*max-h-\[32dvh\][^"\n]*overflow-hidden/)
-    expect(source).toMatch(/<aside className="[^"\n]*h-\[60dvh\][^"\n]*max-h-\[60dvh\]/)
+    expect(source).toMatch(/<aside className="[^"\n]*min-h-\[360px\][^"\n]*lg:max-h-none/)
   })
 
-  it('keeps property controls in normal flow above the canvas hit layer', () => {
-    expect(source).toMatch(/<aside className="[^"\n]*relative z-10[^"\n]*lg:static/)
+  it('puts a touch button above the canvas and opens the full-screen mobile properties panel', () => {
+    expect(source).toMatch(/data-testid="mobile-properties-trigger"/)
+    expect(source).toMatch(/z-30[^"\n]*lg:hidden/)
+    expect(source).toMatch(/setPropertiesNodeId\(activeId\)/)
     expect(source).toMatch(/min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto/)
+    const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+    expect(css).toMatch(/@media \(max-width: 1023px\)[\s\S]*?\.p100-dialog \{[^}]*width: 100vw;[^}]*height: 100dvh;/)
   })
 })

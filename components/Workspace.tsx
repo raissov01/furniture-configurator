@@ -704,6 +704,13 @@ export function Workspace() {
         </span>
       </header>
 
+      {/* 390 px экранда canvas-тан бөлек тұратын тұрақты қасиет батырмасы. */}
+      {(activeBoard || cabinet) && <div data-testid="mobile-properties-trigger"
+        className="relative z-30 flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
+        <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name}</span>
+        <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>
+      </div>}
+
       {projectLoadError && (
         <div role="alert" className="flex flex-wrap items-center gap-2 border-b border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100">
           <span className="flex-1">
