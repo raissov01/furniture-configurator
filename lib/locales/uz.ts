@@ -11,6 +11,18 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Подтвердить шаблон': 'Shablonni tasdiqlash',
+  'Будет добавлен приблизительный шаблон': 'Taxminiy shablon qo‘shiladi',
+  'Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.': 'Balandlik, chuqurlik va korpus turi PRO100 dan emas, bizning shablondan olingan.',
+  'Добавить шаблон': 'Shablonni qo‘shish',
+  'Геометрия этого корпуса не поддерживается': 'Bu korpus shakli qo‘llanmaydi',
+  'Ширина (W) не определена из названия': 'Eni (W) nomdan aniqlanmadi',
+  'Ширина (W) вне диапазона': 'Eni (W) ruxsat etilgan oraliqdan tashqarida',
+  'Тип корпуса не определён из названия': 'Korpus turi nomdan aniqlanmadi',
+  'Кухня: нижний 600': 'Oshxona: pastki 600',
+  'Кухня: верхний 600': 'Oshxona: yuqori 600',
+  'Кухня: нижний с ящиками': 'Oshxona: tortmali pastki',
+  'Кухня: под мойку 800': 'Oshxona: yuvish uchun 800',
   'Только предпросмотр: откройте импорт в проекте': 'Faqat oldindan ko‘rish: importni loyihada oching',
   'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
     '“{name}” faylida JSON xatosi bor. .json loyiha faylini tanlang yoki sintaksisini tuzating.',

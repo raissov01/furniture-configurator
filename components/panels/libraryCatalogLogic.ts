@@ -96,6 +96,26 @@ export function pickTemplateForCabinetItem(parsed: ParsedCabinetInfo): { templat
   return { templateId, size }
 }
 
+export type CabinetImportChoice =
+  | { allowed: false; reason: 'unsupportedShape' | 'unknownWidth' | 'unknownType' | 'widthRange' | 'templateMissing'; range?: { min: number; max: number } }
+  | { allowed: true; templateId: string; size: TemplateSize; dimensions: { height: number; width: number; depth: number }; templateName: string }
+
+/** Атауда тек ені белгілі жай корпусқа ғана жуық шаблон ұсыну. */
+export function cabinetImportChoice(item: Pick<Pro100LibraryItem, 'name' | 'path' | 'parsed'>): CabinetImportChoice {
+  const label = `${item.path.join(' ')} ${item.name}`
+  if (/углов|бұрыш|трапец|радиус|corner|angled/iu.test(label)) return { allowed: false, reason: 'unsupportedShape' }
+  const width = item.parsed.widthMm
+  if (width === undefined) return { allowed: false, reason: 'unknownWidth' }
+  if (item.parsed.position !== 'upper' && item.parsed.position !== 'lower') return { allowed: false, reason: 'unknownType' }
+  const { templateId } = pickTemplateForCabinetItem(item.parsed)
+  const template = findTemplate(templateId)
+  if (!template) return { allowed: false, reason: 'templateMissing' }
+  if (width < template.range.width.min || width > template.range.width.max) {
+    return { allowed: false, reason: 'widthRange', range: template.range.width }
+  }
+  return { allowed: true, templateId, size: { width }, dimensions: { height: template.height, width, depth: template.depth }, templateName: template.name }
+}
+
 export function isCabinetItem(item: Pro100LibraryItem): boolean {
   return item.group === 'cabinet'
 }

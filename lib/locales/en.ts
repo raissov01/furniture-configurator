@@ -10,6 +10,18 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Подтвердить шаблон': 'Confirm template',
+  'Будет добавлен приблизительный шаблон': 'Approximate template to add',
+  'Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.': 'Height, depth and cabinet type come from our template, not PRO100.',
+  'Добавить шаблон': 'Add template',
+  'Геометрия этого корпуса не поддерживается': 'This cabinet shape is unsupported',
+  'Ширина (W) не определена из названия': 'Width (W) cannot be read from the name',
+  'Ширина (W) вне диапазона': 'Width (W) is outside the range',
+  'Тип корпуса не определён из названия': 'Cabinet type cannot be read from the name',
+  'Кухня: нижний 600': 'Kitchen: base 600',
+  'Кухня: верхний 600': 'Kitchen: wall 600',
+  'Кухня: нижний с ящиками': 'Kitchen: drawer base',
+  'Кухня: под мойку 800': 'Kitchen: sink base 800',
   'Только предпросмотр: откройте импорт в проекте': 'Preview only: open import in a project',
   'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
     'Invalid JSON in “{name}”. Choose a .json project file or correct its syntax.',
