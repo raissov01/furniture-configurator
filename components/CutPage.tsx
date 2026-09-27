@@ -555,7 +555,7 @@ function SheetCard({
       <div className="max-w-full overflow-x-auto" aria-label={tr('Карта раскроя')}>
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
-        className="block h-auto w-full min-w-[520px] border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950 sm:min-w-0"
+        className="block h-auto max-w-full w-full border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
         role="img"
         aria-label={`Лист ${sheet.index}`}
       >
