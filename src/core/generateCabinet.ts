@@ -19,6 +19,8 @@ import {
   calculateCutDimensions, carcassEdges, customPartEdges, resolveEdges, subtractedThickness,
 } from './edges'
 import { applyCutouts, applyPanelOverrides } from './cutouts'
+import { planWorktopCutout, worktopFixtureModel } from './worktopFixtures'
+import type { Cutout } from './cutouts'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
 import {
@@ -1329,14 +1331,29 @@ export function generateCabinet(
       : carcass
     const overhangFront = config.worktop.overhangFront
     const overhangSides = config.worktop.overhangSides
-    panels.push(
-      make(
+    const worktop = make(
         'worktop', 'top', 'Столешница', worktopMat,
         W + 2 * overhangSides, D + overhangFront,
         { x: -overhangSides, y: H, z: -overhangFront }, ORIENT_HORIZONTAL,
         'Столешница, накладная',
-      ),
-    )
+      )
+    panels.push(worktop)
+    // Плитаға 560 × 490 R5 әдепкі ойық. Мойкаға әмбебап ойық жоқ:
+    // модель артикулы мен алдыңғы орнын нақты таңдағанда ғана қоямыз.
+    const fixtureCutouts: Cutout[] = []
+    for (const fixture of config.fixtures ?? []) {
+      if (fixture.kind === 'hood' || (fixture.kind === 'sink' && !fixture.modelId)) continue
+      const model = worktopFixtureModel(fixture.modelId ?? 'hob-60-default')
+      if (model.kind !== fixture.kind) {
+        throw new ConfigValidationError('fixtures.modelId', fixture.modelId ?? '', `${fixture.kind} моделі`)
+      }
+      fixtureCutouts.push(planWorktopCutout(model, {
+        panelLength: worktop.finishedLength, panelWidth: worktop.finishedWidth,
+        centreX: worktop.finishedLength / 2, cabinetWidth: W,
+        ...(fixture.frontInset === undefined ? {} : { frontInset: fixture.frontInset }),
+      }))
+    }
+    if (fixtureCutouts.length > 0) applyCutouts([worktop], { worktop: fixtureCutouts })
   }
 
   // ── Планкалар мен фальш-панельдер ──────────────────────────────────────────

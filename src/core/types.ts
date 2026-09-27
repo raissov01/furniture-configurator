@@ -815,8 +815,8 @@ export type PanelOpening =
  * панельдің шаблонынан алынады. Цех оны «Вырезы» арқылы өзі қояды.
  */
 export type CabinetFixture =
-  | { kind: 'sink' }
-  | { kind: 'hob'; fuel: 'gas' | 'electric' }
+  | { kind: 'sink'; modelId?: string | undefined; frontInset?: number | undefined }
+  | { kind: 'hob'; fuel: 'gas' | 'electric'; modelId?: string | undefined; frontInset?: number | undefined }
   | { kind: 'hood' }
 
 /** Аяқтың табаны (`CabinetConfig.base.legPlate`). */

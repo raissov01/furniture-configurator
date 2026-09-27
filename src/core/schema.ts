@@ -335,8 +335,9 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
   }).optional(),
   // Техника (мойка, плита, сорғыш). ЕРІКТІ — ескі жобада жоқ.
   fixtures: z.array(z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('sink') }),
-    z.object({ kind: z.literal('hob'), fuel: z.enum(['gas', 'electric']) }),
+    z.object({ kind: z.literal('sink'), modelId: z.string().min(1).optional(), frontInset: mm.optional() }),
+    z.object({ kind: z.literal('hob'), fuel: z.enum(['gas', 'electric']),
+      modelId: z.string().min(1).optional(), frontInset: mm.optional() }),
     z.object({ kind: z.literal('hood') }),
   ])).max(3).optional(),
   /**
