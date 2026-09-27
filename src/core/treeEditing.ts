@@ -173,10 +173,12 @@ export function ungroupNode(root: GroupNode, id: string, layers: Layer[]): Group
 /** Бастапқы түйіннің қасына сызықтық массивті қосады; бұрынғы массивпен id қиылыспайды. */
 export function appendNodeArray(root: GroupNode, id: string, opts: import('./array').ArrayOptions, layers: Layer[]): GroupNode {
   const node = assertTreeNodeEditable(root, id, layers)
+  const parent = parentOf(root, id)!
+  const arrayOptions = { ...opts, parentRotationY: worldPose(root, parent.id).rotationY }
   const existing = new Set<string>()
   walkTree(root, (entry) => existing.add(entry.id))
   let startIndex = 1
-  let copies = arrayNodes(node, { ...opts, startIndex })
+  let copies = arrayNodes(node, { ...arrayOptions, startIndex })
   const collides = (items: SceneNode[]): boolean => {
     const ids: string[] = []
     for (const entry of items) {
@@ -191,9 +193,8 @@ export function appendNodeArray(root: GroupNode, id: string, opts: import('./arr
   while (collides(copies)) {
     startIndex += opts.count
     if (startIndex > 100000) throw new ConfigValidationError('nodeId', 'массив id орны таусылды', 'бірегей id')
-    copies = arrayNodes(node, { ...opts, startIndex })
+    copies = arrayNodes(node, { ...arrayOptions, startIndex })
   }
-  const parent = parentOf(root, id)!
   return mapGroup(root, parent.id, (group) => {
     const children = [...group.children]
     children.splice(children.findIndex((child) => child.id === id) + 1, 0, ...copies)
