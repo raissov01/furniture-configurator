@@ -36,7 +36,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const drillOpen = useConfigurator((s) => s.drillOpen)
   const galleryOpen = useConfigurator((s) => s.galleryOpen)
   const shopOpen = useConfigurator((s) => s.shopOpen)
-  const { zIndex } = useModalLayer(true, 'properties')
+  const { zIndex, isTop } = useModalLayer(true, 'properties')
   const node = findNode(root, nodeId)
   const baseline = useRef<PropertiesSession | null>(null)
   const dialogRef = useRef<HTMLElement | null>(null)
@@ -87,6 +87,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   }
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
+      if (!isTop) return
       const state = useConfigurator.getState()
       if (propertiesChildModalActive(state.quoteOpen, state.drillOpen, state.galleryOpen, state.shopOpen)) return
       const target = event.target instanceof Element ? event.target.tagName.toLowerCase() : ''
@@ -106,7 +107,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
     window.addEventListener('keydown', handle, true)
     window.addEventListener('pagehide', onPageHide)
     return () => { window.removeEventListener('keydown', handle, true); window.removeEventListener('pagehide', onPageHide) }
-  }, [])
+  }, [isTop])
 
   if (!node || !propertiesNodeSupported(node.kind) || node.kind === 'group') return null
   const locked = Boolean(node.locked)

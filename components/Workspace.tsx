@@ -8,6 +8,8 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { modalBlocksHotkeys } from '@/lib/modalStack'
+import { getModalStack } from '@/lib/useModalLayer'
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
@@ -478,8 +480,7 @@ export function Workspace() {
    */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const dialogState = useConfigurator.getState()
-      if (propertiesNodeId || dialogState.galleryOpen || dialogState.shopOpen || dialogState.quoteOpen || dialogState.drillOpen || dialogState.roomOpen) return
+      if (propertiesNodeId || modalBlocksHotkeys(getModalStack())) return
       if (isTyping(e.target)) return
       // Escape — 3D-дегі таңдауды алу. Хоткейлер тізіміне кірмейді: бұл
       // «әрекет» емес, кез келген жерден шығудың әдеттегі жолы.

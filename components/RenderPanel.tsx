@@ -14,6 +14,7 @@ import { Button, Field } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
 import { capturePanorama } from '@/lib/panorama'
 import { MaterialAppearanceEditor, ProjectLightsEditor } from '@/components/VisualSettingsPanel'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 function buttonStyleForTab(selected: boolean): string {
   return 'border px-2 py-1 text-xs ' + (selected
@@ -24,6 +25,7 @@ function buttonStyleForTab(selected: boolean): string {
 export function RenderPanel() {
   const open = useConfigurator((s) => s.renderOpen)
   const setOpen = useConfigurator((s) => s.setRenderOpen)
+  const { zIndex } = useModalLayer(open, 'render')
   const [busy, setBusy] = useState(false)
   const [hint, setHint] = useState('')
   const [style, setStyle] = useState('scandinavian')
@@ -80,7 +82,8 @@ export function RenderPanel() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div
