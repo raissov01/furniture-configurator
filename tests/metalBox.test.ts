@@ -36,6 +36,26 @@ const cabinet = (drawerSystem: MetalBoxSystemId, extra: Partial<CabinetConfig> =
 const gen = (id: MetalBoxSystemId, extra = {}) => generateCabinet(cabinet(id, extra), catalog)
 const role = (panels: Panel[], r: string) => panels.filter((p) => p.role === r)
 
+describe('Blum каталогының номинал ұзындықтары және METABOX M', () => {
+  it('M профильдерінде 250 жоқ, 270 пен 600 бар; TANDEMBOX 576-да 650 бар', () => {
+    for (const id of ['merivobox', 'tandembox'] as const) {
+      expect(METAL_BOX_SYSTEMS[id].nominalLengths).not.toContain(250)
+      expect(METAL_BOX_SYSTEMS[id].nominalLengths).toContain(270)
+      expect(METAL_BOX_SYSTEMS[id].nominalLengths).toContain(600)
+    }
+    expect(METAL_BOX_SYSTEMS.tandembox.nominalLengths).toContain(650)
+  })
+
+  it('METABOX M түбі LW−31 × NL−2, арты LW−31 × 71', () => {
+    const box = METAL_BOX_SYSTEMS.metabox
+    expect(box.nominalLengths).toEqual([270, 350, 400, 450, 500, 550])
+    expect(metalBoxParts(box, 868, 450)).toEqual({
+      bottom: { width: 837, depth: 448 }, back: { width: 837, height: 71 },
+    })
+    expect(box.source).toContain('Blum')
+  })
+})
+
 describe('парақтан не кесіледі', () => {
   const panels = gen('legrabox')
 
@@ -66,6 +86,7 @@ describe('өлшемдер — qdesign-нен ӨЛШЕНГЕН', () => {
     legrabox: { bottom: [833, 440], back: [830, 63] },
     tandembox: { bottom: [793, 426], back: [781, 84] },
     merivobox: { bottom: [817, 424], back: [817, 83] },
+    metabox: { bottom: [837, 448], back: [837, 71] },
   }
 
   for (const id of Object.keys(expected) as MetalBoxSystemId[]) {
@@ -151,7 +172,7 @@ describe('шектер мен қателер', () => {
 
   it('әр жүйеде дереккөзі жазулы — цех санды тексере алады', () => {
     for (const system of Object.values(METAL_BOX_SYSTEMS)) {
-      expect(system.source).toMatch(/qdesign/)
+      expect(system.source).toMatch(/qdesign|Blum/)
     }
   })
 })

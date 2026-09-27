@@ -291,6 +291,7 @@ const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'box-legrabox', kind: 'other', name: 'Ящик Blum LEGRABOX (комплект)' },
   { id: 'box-tandembox', kind: 'other', name: 'Ящик Blum TANDEMBOX (комплект)' },
   { id: 'box-merivobox', kind: 'other', name: 'Ящик Blum MERIVOBOX (комплект)' },
+  { id: 'box-metabox', kind: 'other', name: 'Ящик Blum METABOX M (комплект)' },
   { id: 'rod-25', kind: 'other', name: 'Штанга Ø25 (за метр)' },
   { id: 'rod-bracket', kind: 'other', name: 'Держатель штанги' },
   { id: 'sliding-track', kind: 'other', name: 'Рельс для дверей-купе (за метр)' },
