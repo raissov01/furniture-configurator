@@ -1513,4 +1513,6 @@ export const en: Record<string, string> = {
 
   'Источники сметы': 'Estimate sources',
 
+  'до 2 знаков после запятой': 'up to 2 decimal places',
+
 }

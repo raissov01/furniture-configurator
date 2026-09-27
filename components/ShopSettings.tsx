@@ -219,7 +219,7 @@ export function ShopSettings() {
                     Плита: {m.slab.stockLengths.join(' / ')} мм
                   </span>,
                   <span key="p" className="flex items-center gap-1">
-                    <MoneyInput value={m.slab.pricePerMeter} label={`${m.name}: баға, 0..₸`}
+                    <MoneyInput value={m.slab.pricePerMeter} label={`${m.name}: ${tr('Цена')}`}
                                             onChange={(v) => setPriceMeter(m.id, v)} />
                     <span className="text-[11px] text-neutral-500">/м</span>
                   </span>,
@@ -234,7 +234,7 @@ export function ShopSettings() {
                       onChange={(sheetHeight) => setSheet(m.id, { sheetHeight })} />
                   </span>,
                   <span key="p" className="flex items-center gap-1">
-                    <MoneyInput value={m.pricePerSheet} label={`${m.name}: баға, 0..₸`}
+                    <MoneyInput value={m.pricePerSheet} label={`${m.name}: ${tr('Цена')}`}
                                             onChange={(v) => setPriceSheet(m.id, v)} />
                     <MarketPriceTag shop={shop} priceKey={`material:${m.id}`} editShop={editShop} />
                   </span>,
@@ -254,7 +254,7 @@ export function ShopSettings() {
               cells: [
                 <span key="t" className="tabular-nums text-neutral-500">{b.thickness}</span>,
                 <span key="p" className="flex items-center gap-1">
-                  <MoneyInput value={b.pricePerMeter} label={`${b.name}: баға, 0..₸`}
+                  <MoneyInput value={b.pricePerMeter} label={`${b.name}: ${tr('Цена')}`}
                     onChange={(v) => setBandPrice(b.id, v)} />
                   <MarketPriceTag shop={shop} priceKey={`edgeBand:${b.id}`} editShop={editShop} />
                 </span>,
@@ -278,7 +278,7 @@ export function ShopSettings() {
               name: h.name,
               cells: [
                 <span key="p" className="flex items-center gap-1">
-                  <MoneyInput value={h.pricePerUnit} label={`${h.name}: баға, 0..₸`}
+                  <MoneyInput value={h.pricePerUnit} label={`${h.name}: ${tr('Цена')}`}
                     onChange={(v) => setHardwarePrice(h.id, v)} />
                   <MarketPriceTag shop={shop} priceKey={`hardware:${h.id}`} editShop={editShop} />
                 </span>,
@@ -381,7 +381,7 @@ export function ShopSettings() {
                         <span className="flex items-center gap-1">
                         <MoneyInput
                           value={shop.services[sid].rate}
-                          label={`${SERVICE_NAMES[sid]}: баға, 0..₸`}
+                          label={`${SERVICE_NAMES[sid]}: ${tr('Цена')}`}
                           onChange={(v) =>
                             editShop({
                               services: {
@@ -407,7 +407,7 @@ export function ShopSettings() {
                   onChange={(v) => editShop({ coefficient: v > 0 ? v : 1 })} />
               </Field>
               <Field label={tr('Монтаж, ₸ за 1 м ширины')} hint={tr('в коэффициент не входит')}>
-                <MoneyInput value={shop.installation.ratePerMetreWidth} label="Монтаж бағасы, 0..₸"
+                <MoneyInput value={shop.installation.ratePerMetreWidth} label={tr('Монтаж, ₸ за 1 м ширины')}
                   onChange={(v) => editShop({ installation: { ratePerMetreWidth: v } })} />
               </Field>
               <Field label={tr('Наценка, %')}>

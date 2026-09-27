@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { formatMoneyDraft, parseMoneyDraft } from '@/lib/moneyDraft'
+import { t as tr } from '@/lib/i18n'
 
 export function MoneyInput({ value, label, onChange, onValidityChange }: {
   value: number | undefined
@@ -23,7 +24,9 @@ export function MoneyInput({ value, label, onChange, onValidityChange }: {
       value={draft} onChange={(event) => {
         const raw = event.target.value
         setDraft(raw)
-        const parsed = parseMoneyDraft(raw, label)
+        const parsed = parseMoneyDraft(raw, label, {
+          allowed: tr('допустимо'), decimals: tr('до 2 знаков после запятой'),
+        })
         setError(parsed.error)
         onValidityChange?.(!parsed.error)
         if (parsed.value !== undefined && parsed.value !== value) {

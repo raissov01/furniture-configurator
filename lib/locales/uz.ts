@@ -1517,4 +1517,6 @@ export const uz: Record<string, string> = {
 
   'Источники сметы': 'Smeta manbalari',
 
+  'до 2 знаков после запятой': 'verguldan keyin ko‘pi bilan 2 raqam',
+
 }
