@@ -14,6 +14,7 @@ import { t as tr } from '@/lib/i18n'
 import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
 import { appendFreeMirror } from '@/lib/freeMirrorAction'
+import { roomDimensionIssue } from '@/lib/roomDimensions'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
@@ -1465,6 +1466,8 @@ export const useConfigurator = create<State>((set, get) => ({
   setRenderOpen: (renderOpen) => set({ renderOpen }),
 
   editRoom(patch) {
+    const dimensionIssue = roomDimensionIssue(patch)
+    if (dimensionIssue) throw new ConfigValidationError(dimensionIssue.field, 'бөлме өлшемі жарамсыз', dimensionIssue.allowed)
     const s = get()
     const room = { ...s.room, ...patch }
     // Қабырғамен бірге тек қабырғаға тіреліп тұрған әрі өңделетін шкаф
