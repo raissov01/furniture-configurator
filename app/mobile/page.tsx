@@ -18,6 +18,7 @@ import { configuratorKitchenTarget, handoffMeasurementToKitchen } from '@/compon
 import type { WallId } from '@/src/core/types'
 import type { RoomTolerance } from '@/src/core/measure'
 import { nextNetworkMessage } from '@/components/mobile/measurementUiLogic'
+import { connectionError, connectionState } from '@/components/mobile/connectionState'
 
 const ROLE_CACHE = 'tapsyrys:role' // UI navigation only; projects, measurements and photos are in IndexedDB.
 const roles: Role[] = ['owner', 'designer', 'shop', 'client']
@@ -125,7 +126,7 @@ export default function MobileTodayPage() {
         if (mounted) { setNetwork(sync.network); setSending(false) }
         if (mounted) await reconcile(db, sync)
       } catch (error) {
-        if (mounted) setMessage(error instanceof Error ? error.message : t('Локальное хранилище недоступно'))
+        if (mounted) setMessage(t(connectionError(error, navigator.onLine) ?? (error instanceof Error ? error.message : 'Локальное хранилище недоступно')))
       }
     }
     void init()
@@ -135,7 +136,7 @@ export default function MobileTodayPage() {
         const response = await fetch('/api/me', { credentials: 'same-origin' })
         if (!response.ok) throw new Error(t('Не удалось проверить роль'))
         const data: unknown = await response.json()
-        if (mounted) setMessage((current) => nextNetworkMessage(current, true, t('Сервер недоступен'), t('Нет сети')))
+        if (mounted) { setNetwork('online'); setMessage((current) => nextNetworkMessage(current, true, t('Сервер недоступен'), t('Нет сети'))) }
         if (!data || typeof data !== 'object' || !('account' in data)) return
         const account = data.account
         if (account === null) {
@@ -153,6 +154,7 @@ export default function MobileTodayPage() {
           }
         }
       } catch (error) {
+        if (mounted && connectionError(error, navigator.onLine)) setNetwork(navigator.onLine ? 'unreachable' : 'offline')
         if (mounted) setMessage(!navigator.onLine ? t('Нет сети') :
           error instanceof TypeError ? t('Сервер недоступен') :
             error instanceof Error ? error.message : t('Не удалось проверить роль'))
@@ -185,7 +187,10 @@ export default function MobileTodayPage() {
         await reconcile(store, queue)
         await schedule()
       } catch (error) {
-        if (!disposed) setMessage(error instanceof Error ? error.message : t('Не удалось отправить очередь'))
+        if (!disposed) {
+          if (connectionError(error, navigator.onLine)) setNetwork(navigator.onLine ? 'unreachable' : 'offline')
+          setMessage(t(connectionError(error, navigator.onLine) ?? (error instanceof Error ? error.message : 'Не удалось отправить очередь')))
+        }
       } finally {
         if (!disposed) setSending(false)
       }
@@ -258,9 +263,10 @@ export default function MobileTodayPage() {
     router.push(`/configurator?measurement=${encodeURIComponent(survey.id)}`)
   }
 
-  const networkLabel = !online ? t('Нет сети') : sending ? t('Отправляется') :
-    network === 'unreachable' ? t('Сервер недоступен') : t('В сети')
-  const networkColor = !online || network === 'unreachable' ? 'border-[#8c8c8c] bg-[#ededed]' : 'border-[#28723b] bg-[#e7f4e9]'
+  const connection = connectionState(online, network)
+  const networkLabel = connection === 'offline' ? t('Нет сети') : connection === 'unreachable' ? t('Сервер недоступен') :
+    sending ? t('Отправляется') : t('В сети')
+  const networkColor = connection !== 'online' ? 'border-[#8c8c8c] bg-[#ededed]' : 'border-[#28723b] bg-[#e7f4e9]'
 
   if (active && store) return <MeasurementWizard initial={active} store={store} onBack={() => { setActive(null); void refresh(store) }} onSave={saveSurvey} onKitchen={createKitchen} pending={pending} networkLabel={networkLabel} networkColor={networkColor} />
 

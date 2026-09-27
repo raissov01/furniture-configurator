@@ -35,7 +35,7 @@ self.addEventListener('install', (event) => {
     const html = await (await cache.match('/mobile')).text()
     const assets = [...html.matchAll(/(?:src|href)="(\/_next\/static\/[^"?]+(?:\?[^"\s]*)?)"/g)]
       .map((match) => match[1])
-    await cache.addAll([...new Set(assets)])
+    await cache.addAll([...new Set([...assets, '/brand/aismebel-mark.svg', '/manifest.webmanifest'])])
   })())
 })
 
@@ -59,6 +59,8 @@ self.addEventListener('fetch', (event) => {
   const isAsset = url.pathname.startsWith('/_next/static/')
     || url.pathname.startsWith('/fonts/')
     || url.pathname.endsWith('.png')
+    || url.pathname.endsWith('.svg')
+    || url.pathname.endsWith('.webmanifest')
   if (isAsset) {
     event.respondWith((async () => {
       const hit = await caches.match(request)
