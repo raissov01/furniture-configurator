@@ -36,8 +36,9 @@ function cncButton(html: string): string {
 }
 
 describe('/cut reads canonical tree production', () => {
-  it('keeps every export action reachable at a 390 px viewport', () => {
+  it('links the collapsed mobile export toggle to its action group', () => {
     const html = renderToStaticMarkup(createElement(CutPage))
+
     const toolbar = html.match(/<div[^>]*data-testid="cut-export-actions"[^>]*class="([^"]+)"/)
     expect(toolbar?.[1]).toContain('w-full')
     expect(toolbar?.[1]).toContain('flex-wrap')
@@ -50,6 +51,9 @@ describe('/cut reads canonical tree production', () => {
     expect(sheetSvgClass).toContain('min-w-[520px]')
     expect(sheetSvgClass).toContain('h-auto')
     expect(source).toContain('max-w-full overflow-x-auto')
+
+    expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*aria-controls="cut-export-actions"[^>]*>Экспорт<\/button>/)
+    expect(html).toMatch(/<div[^>]*id="cut-export-actions"[^>]*data-testid="cut-export-actions"/)
   })
 
   it('does not offer a default cabinet export when the saved project cannot be read', () => {
