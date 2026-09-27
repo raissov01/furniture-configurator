@@ -1387,5 +1387,6 @@ export const en: Record<string, string> = {
   'Размеры техники без артикула не подтверждены': 'Appliance dimensions without an article are unverified',
   'Добавить технику': 'Add appliance',
   'Выберите тип': 'Choose type',
+  'Мойка и варочная панель не помещаются в одном модуле': 'A sink and hob cannot share one module',
 
 }

@@ -1391,5 +1391,6 @@ export const uz: Record<string, string> = {
   'Размеры техники без артикула не подтверждены': 'Artikulsiz texnika o‘lchamlari tasdiqlanmagan',
   'Добавить технику': 'Texnika qo‘shish',
   'Выберите тип': 'Turini tanlang',
+  'Мойка и варочная панель не помещаются в одном модуле': 'Rakovina va plita bitta modulga sig‘maydi',
 
 }

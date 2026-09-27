@@ -27,6 +27,7 @@ import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
 import { drawerFillerStep } from '@/lib/drawerFillerStep'
 import { drawerContentWithCount } from '@/lib/drawerContent'
+import { fixtureChoiceDisabled } from '@/lib/f07FixtureChoice'
 import { removeSectionContentAt, replaceSectionContent, updateSectionContentAt } from '@/lib/f07SectionContents'
 import { showLegacyDrawerProfileWarning } from '@/lib/legacyDrawerProfile'
 import { compatibleHinges, previewFrontEdit } from '@/lib/frontEdit'
@@ -834,6 +835,8 @@ function FixtureFields() {
   const has = (kind: CabinetFixture['kind']) => fixtures.some((f) => f.kind === kind)
   const hob = fixtures.find((f) => f.kind === 'hob')
   const yesNo = [{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]
+  const sinkDisabled = fixtureChoiceDisabled(fixtures, 'sink')
+  const hobDisabled = fixtureChoiceDisabled(fixtures, 'hob')
 
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -841,7 +844,7 @@ function FixtureFields() {
         <Select
           value={has('sink') ? 'yes' : 'no'}
           onChange={(v) => set(v === 'yes' ? [...without('sink'), { kind: 'sink' }] : without('sink'), 'fixtures.sink')}
-          options={yesNo}
+          options={yesNo.map((option) => ({ ...option, disabled: option.value === 'yes' && sinkDisabled }))}
         />
       </Field>
       <Field label={tr('Варочная панель')}>
@@ -850,8 +853,8 @@ function FixtureFields() {
           onChange={(v) => set(v === 'none' ? without('hob') : [...without('hob'), { kind: 'hob', fuel: v }], 'fixtures.hob')}
           options={[
             { value: 'none' as const, label: tr('Нет') },
-            { value: 'gas' as const, label: tr('Газовая') },
-            { value: 'electric' as const, label: tr('Электрическая') },
+            { value: 'gas' as const, label: tr('Газовая'), disabled: hobDisabled },
+            { value: 'electric' as const, label: tr('Электрическая'), disabled: hobDisabled },
           ]}
         />
       </Field>
@@ -862,6 +865,9 @@ function FixtureFields() {
           options={yesNo}
         />
       </Field>
+      {(sinkDisabled || hobDisabled) && <p className="col-span-3 text-[11px] text-neutral-600 dark:text-neutral-300">
+        {tr('Мойка и варочная панель не помещаются в одном модуле')}
+      </p>}
     </div>
   )
 }
