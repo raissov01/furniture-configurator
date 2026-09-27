@@ -31,6 +31,7 @@ import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
 import { uniqueToolbarRows } from '@/lib/classicToolbar'
+import { classicToolStatus } from '@/lib/classicStatus'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
@@ -117,11 +118,13 @@ const BUDGET_MS = 100
 const CUT_OPEN_KEY = 'furniture-configurator:cutlist-open'
 const WORKSPACE_STYLE_KEY = 'furniture-configurator:workspace-style'
 
-type ClassicToolSpec = { icon: ClassicIconName; label: string; action: () => void; disabled?: boolean; active?: boolean; id?: string }
+type ClassicToolSpec = { icon: ClassicIconName; label: string; action: () => void; disabled?: boolean; active?: boolean; id?: string; onHover?: (label: string | null) => void }
 
-function ClassicTool({ icon, label, action, disabled, active, id }: ClassicToolSpec) {
+function ClassicTool({ icon, label, action, disabled, active, id, onHover }: ClassicToolSpec) {
   return <button type="button" className="p100-icon-button" title={label} aria-label={label} aria-pressed={active || undefined}
-    data-testid={id ? `classic-tool-${id}` : undefined} disabled={disabled} onClick={action}><ClassicIcon name={icon} /></button>
+    data-testid={id ? `classic-tool-${id}` : undefined} disabled={disabled} onClick={action}
+    onMouseEnter={() => onHover?.(label)} onMouseLeave={() => onHover?.(null)}
+    onFocus={() => onHover?.(label)} onBlur={() => onHover?.(null)}><ClassicIcon name={icon} /></button>
 }
 
 export function Workspace() {
@@ -258,6 +261,7 @@ export function Workspace() {
     [activeNode, root, activeId, catalog, layers, settings])
   const canMirrorSelected = cabinet ? activeEditable && canMirror(cabinet).ok : Boolean(freeMirrorCheck?.ok)
   const [mirrorError, setMirrorError] = useState<string | null>(null)
+  const [hoveredToolLabel, setHoveredToolLabel] = useState<string | null>(null)
   useEffect(() => setMirrorError(null), [activeId])
   const mirrorSelected = () => {
     try {
@@ -673,7 +677,7 @@ export function Workspace() {
 
       {classic && <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
         {classicToolRows.map((row, index) => <div className="p100-toolbar-row" key={index}>
-          {row.map((tool) => <ClassicTool key={`${tool.icon}-${tool.label}`} {...tool} />)}
+          {row.map((tool) => <ClassicTool key={`${tool.icon}-${tool.label}`} {...tool} onHover={setHoveredToolLabel} />)}
           {index === 2 && assemblyStep !== null && <label className="ml-2 flex items-center gap-1 border border-neutral-400 px-1 text-xs" data-testid="classic-assembly-step">
             <span>{tr('Сборка')}</span>
             <input type="range" aria-label={tr('Показать сборку по шагам')} min={1}
@@ -1062,12 +1066,12 @@ export function Workspace() {
         */}
         <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
           {classic ? <>
-            <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} />
-            <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} />
-            <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} />
-            <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" />
-            <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} />
-            <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" />
+            <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" onHover={setHoveredToolLabel} />
+            <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" onHover={setHoveredToolLabel} />
           </> : <>
           <Button
             size="sm"
@@ -1238,7 +1242,7 @@ export function Workspace() {
         </aside>
       </div>
       {classic && <footer className="p100-status hidden lg:flex" role="status" data-testid="p100-status">
-        <span>{selected ? `${tr('Выбран элемент')}: ${activeNode?.name ?? selected}` : tr('Элемент не выбран')}</span>
+        <span>{classicToolStatus(hoveredToolLabel, selected, activeNode?.name, tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
         {selected && activeNode && <span className="ml-auto tabular-nums">
           {tr('Положение')}: X {activeNode.transform.pos.x} · Y {activeNode.transform.pos.y} · Z {activeNode.transform.pos.z} мм
           {' · '}{tr('Размеры')}: {activeNode.kind === 'cabinet'
