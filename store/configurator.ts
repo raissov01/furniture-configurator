@@ -11,6 +11,7 @@
 
 import { create } from 'zustand'
 import { t as tr } from '@/lib/i18n'
+import { changesCabinet } from '@/lib/cabinetEdit'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import {
@@ -735,6 +736,7 @@ export const useConfigurator = create<State>((set, get) => ({
 
   edit(key, patch) {
     const s = get()
+    if (!changesCabinet(s.cabinets.find((cabinet) => cabinet.id === s.activeId), patch)) return
     const now = Date.now()
     // Слайдер сүйрегенде әр миллиметр бөлек undo қадамы болмауы керек.
     const coalesce = s.lastEditKey === key && now - s.lastEditAt < COALESCE_MS
