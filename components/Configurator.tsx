@@ -431,7 +431,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
 
       {frontError ? (
         <div role="alert" className="border border-red-500 p-2 text-[11px] text-red-700 dark:text-red-400">
-          <b>{frontError.field}</b>: {tr(frontError.message)}
+          <b>{frontError.field}</b>: {tr(frontError.message.replace(`${frontError.field}: `, ''))}
           {frontError.allowed ? ` — ${frontError.allowed}` : null}
           {frontError.field.endsWith('.opening') ? ` ${tr('Добавьте отдельную секцию для каждой двери.')}` : null}
           {frontError.field.endsWith('.hingeSystemId') ? (
