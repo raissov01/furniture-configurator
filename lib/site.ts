@@ -5,10 +5,11 @@
  * БАҒАСЫ — ОРЫНБАСАР: тарифті ауыстыру — үш сан.
  */
 import { BRAND } from '@/src/core/brand'
+import { contactEmail } from '@/lib/sitePublic'
 
 export const SITE = {
   name: BRAND.name,
-  email: 'hello@example.kz',
+  email: contactEmail({ NEXT_PUBLIC_CONTACT_EMAIL: process.env.NEXT_PUBLIC_CONTACT_EMAIL }),
 }
 
 export type Tariff = {

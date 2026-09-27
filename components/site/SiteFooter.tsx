@@ -16,7 +16,7 @@ export function SiteFooter() {
         <div className="flex flex-col gap-2 text-sm sm:items-end" style={{ color: 'var(--ink-soft)' }}>
           <Link href="/configurator" className="transition hover:text-[color:var(--ink)]">Конфигуратор</Link>
           <Link href="/#pricing" className="transition hover:text-[color:var(--ink)]">Тарифы</Link>
-          <a href={`mailto:${SITE.email}`} className="transition hover:text-[color:var(--ink)]">{SITE.email}</a>
+          {SITE.email && <a href={`mailto:${SITE.email}`} className="transition hover:text-[color:var(--ink)]">{SITE.email}</a>}
         </div>
       </div>
     </footer>
