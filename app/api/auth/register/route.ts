@@ -14,6 +14,9 @@ export async function POST(request: Request): Promise<Response> {
     | null
   const email = typeof body?.email === 'string' ? body.email : ''
   const password = typeof body?.password === 'string' ? body.password : ''
+  if (body?.shopName !== undefined && typeof body.shopName !== 'string') {
+    return NextResponse.json({ error: 'Название цеха должно быть строкой' }, { status: 400 })
+  }
   const shopName = typeof body?.shopName === 'string' ? body.shopName : ''
   const invite = typeof body?.invite === 'string' && body.invite ? body.invite : null
 

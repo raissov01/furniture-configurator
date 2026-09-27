@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import baseline from './fixtures/shop-drill-seed-baseline.json'
 import {
-  ConfigValidationError, DEFAULT_SETTINGS, SEED_TEMPLATES, catalogOf, defaultShopProfile, generateCabinet,
+  ConfigValidationError, ConstructionSettingsSchema, DEFAULT_SETTINGS, SEED_TEMPLATES, catalogOf, defaultShopProfile, generateCabinet,
   mergeSettings, parseShopProfile, templateToCabinet,
 } from '../src/core/index'
 
@@ -35,6 +35,13 @@ describe('цех присадка профилі', () => {
     expect(() => parseShopProfile({ ...shop, settings: { shelfPinFrontOffset: -1 } })).toThrow()
     expect(() => parseShopProfile({ ...shop, settings: { outerFlipAxis: 'diagonal' } })).toThrow()
     expect(() => parseShopProfile({ ...shop, settings: { runnerRollerHoleOffsets: [0] } })).toThrow()
+  })
+
+  it('нөлдік сөре қатары цех пен жоба дерегіне сақталмайды', () => {
+    for (const key of ['shelfPinFrontOffset', 'shelfPinBackOffset'] as const) {
+      expect(() => parseShopProfile({ ...shop, settings: { [key]: 0 } })).toThrow()
+      expect(ConstructionSettingsSchema.safeParse({ ...DEFAULT_SETTINGS, [key]: 0 }).success).toBe(false)
+    }
   })
 
   it('әдепкі профиль барлық seed шаблонның присадкасын сақтайды', () => {
