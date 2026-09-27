@@ -722,7 +722,6 @@ export function Workspace() {
         </Menu>)}
 
         <span data-testid="classic-project-title" className="ml-3 max-w-64 truncate border-l border-neutral-300 pl-3 font-semibold" title={projectName}>{projectName}</span>
-        <Link href="/mobile" className="ml-auto inline-flex min-h-6 items-center border border-neutral-300 px-2 text-xs dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>
       </nav>
 
       {cloudEnabled && <ApprovalBanner code={shareCode} />}
