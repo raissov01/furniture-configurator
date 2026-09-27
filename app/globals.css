@@ -250,8 +250,10 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: transparent; }
 .p100-dialog { display: flex; flex-direction: column; width: min(520px, calc(100vw - 24px)); height: min(760px, calc(100dvh - 24px)); max-height: min(760px, calc(100dvh - 24px)); border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
 .p100-dialog-title { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid var(--p100-divider); font-size: 12px; }
-.p100-dialog-title button { min-width: 24px; border: 1px solid transparent; }
+.p100-dialog-title button { min-width: 44px; min-height: 44px; border: 1px solid transparent; font-size: 20px; line-height: 1; }
 .p100-dialog-lock, .p100-dialog-dimensions { display: flex; align-items: center; gap: 5px; padding: 6px 10px; font-size: 12px; }
+.p100-dialog-lock, .p100-dialog-dimensions { min-height: 44px; }
+.p100-dialog-lock input[type="checkbox"], .p100-dialog-dimensions input[type="checkbox"] { min-width: 18px; min-height: 18px; width: 18px; height: 18px; flex: none; }
 .p100-dialog-body { min-height: 0; overflow: auto; margin: 0 6px; padding: 10px; border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog-content); }
 .p100-dialog-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 8px; border-top: 1px solid var(--p100-divider); }
 .p100-dialog-error { margin: 4px 10px; color: var(--p100-text); font-size: 12px; }
@@ -259,6 +261,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 
 @media (max-width: 1023px) {
   [data-workspace-style] :is(button, input:not([type="checkbox"]), select, textarea) { min-height: 44px; font-size: 14px; }
+  [data-workspace-style] .p100-dialog :is(.p100-dialog-lock, .p100-dialog-dimensions) input[type="checkbox"] { min-width: 18px; min-height: 18px; }
   [data-workspace-style] :is(label, .text-xs, [class*="text-[11px]"], [class*="text-[10px]"]) { font-size: 14px; }
   .p100-dialog-backdrop { background: var(--p100-dialog); }
   .p100-dialog { width: 100vw; height: 100dvh; max-height: none; border: 1px solid var(--p100-fieldset-border); }
