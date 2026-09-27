@@ -23,7 +23,7 @@ describe('жеке каталог сурет API', () => {
     actor.value = registered.account
     const id = catalog.saveShopCatalog(registered.account.shopId, 'pro100-ini',
       { textures: [{ name: 'Oak', mapSizeMm: { x: 600, y: 450 } }] }, 100, registered.account.userId)
-    const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1])
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==', 'base64')
     const path = `http://localhost/api/own-catalog/image?importId=${id}&textureName=Oak`
     const upload = (rights: string, texturePath = path) => route.POST(new Request(texturePath, {
       method: 'POST', headers: { 'x-rights-confirmed': rights, 'content-type': 'image/png' }, body: png,
@@ -37,6 +37,6 @@ describe('жеке каталог сурет API', () => {
     const fetched = await route.GET(new Request(url))
     expect(fetched.status).toBe(200)
     expect(fetched.headers.get('content-type')).toBe('image/png')
-    expect(new Uint8Array(await fetched.arrayBuffer())).toEqual(png)
+    expect(new Uint8Array(await fetched.arrayBuffer())).toEqual(Uint8Array.from(png))
   })
 })
