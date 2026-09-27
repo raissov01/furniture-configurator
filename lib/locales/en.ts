@@ -10,6 +10,21 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
+    'Invalid JSON in “{name}”. Choose a .json project file or correct its syntax.',
+  'Файл': 'File',
+  'Правка': 'Edit',
+  'Элемент': 'Element',
+  'Инструменты': 'Tools',
+  'Справка': 'Help',
+  'История изменений': 'Change history',
+  'Новый корпус': 'New cabinet',
+  'Открыть проект': 'Open project',
+  'Повторить': 'Redo',
+  'Раскрой (отдельный экран)': 'Nesting (separate screen)',
+  'Сохранить проект': 'Save project',
+  'Ссылка клиенту': 'Client link',
+  'Цех: материалы и цены': 'Shop: materials and prices',
   'Текст': 'Text',
   'Добавить текст': 'Add text',
   '+ текст': '+ text',

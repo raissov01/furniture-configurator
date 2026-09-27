@@ -11,6 +11,21 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
+    '“{name}” faylida JSON xatosi bor. .json loyiha faylini tanlang yoki sintaksisini tuzating.',
+  'Файл': 'Fayl',
+  'Правка': 'Tahrir',
+  'Элемент': 'Element',
+  'Инструменты': 'Asboblar',
+  'Справка': 'Yordam',
+  'История изменений': 'O‘zgarishlar tarixi',
+  'Новый корпус': 'Yangi korpus',
+  'Открыть проект': 'Loyihani ochish',
+  'Повторить': 'Qaytarish',
+  'Раскрой (отдельный экран)': 'Bichish (alohida ekran)',
+  'Сохранить проект': 'Loyihani saqlash',
+  'Ссылка клиенту': 'Mijoz uchun havola',
+  'Цех: материалы и цены': 'Sex: materiallar va narxlar',
   'Текст': 'Matn',
   'Добавить текст': 'Matn qo‘shish',
   '+ текст': '+ matn',
