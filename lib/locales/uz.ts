@@ -11,6 +11,11 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'В ссылке нет проекта. Попросите отправить её целиком.': 'Havolada loyiha yo‘q. To‘liq havolani so‘rang.',
+  'Не удалось открыть проект по этой ссылке.': 'Bu havoladagi loyiha ochilmadi.',
+  'Код не найден или его срок истёк: код действует 24 часа. Попросите у мастера новый.': 'Kod topilmadi yoki muddati tugadi. Kod 24 soat amal qiladi. Ustadan yangi kod so‘rang.',
+  'Не удалось открыть проект по коду. Проверьте интернет.': 'Loyiha kod orqali ochilmadi. Internetni tekshiring.',
+  'Проект по коду не прочитался.': 'Koddagi loyiha o‘qilmadi.',
   'Страница не найдена': 'Sahifa topilmadi',
   'Запрошенной страницы нет.': "So‘ralgan sahifa mavjud emas.",
   'Вернуться на главную': 'Bosh sahifaga qaytish',

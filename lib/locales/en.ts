@@ -10,6 +10,11 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'В ссылке нет проекта. Попросите отправить её целиком.': 'The link contains no project. Ask for the complete link.',
+  'Не удалось открыть проект по этой ссылке.': 'The project could not be opened from this link.',
+  'Код не найден или его срок истёк: код действует 24 часа. Попросите у мастера новый.': 'The code was not found or has expired. Codes last 24 hours. Ask the maker for a new one.',
+  'Не удалось открыть проект по коду. Проверьте интернет.': 'Could not open the project by code. Check your connection.',
+  'Проект по коду не прочитался.': 'The project for this code could not be read.',
   'Страница не найдена': 'Page not found',
   'Запрошенной страницы нет.': 'The requested page does not exist.',
   'Вернуться на главную': 'Back to home',
