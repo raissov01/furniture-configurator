@@ -12,6 +12,7 @@
 import { create } from 'zustand'
 import { t as tr } from '@/lib/i18n'
 import { changesCabinet } from '@/lib/cabinetEdit'
+import { planSectionAddition } from '@/lib/sectionUi'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import {
@@ -41,7 +42,6 @@ import {
   replaceTreeBoardMaterial,
   replaceTreeMaterial,
   nextFreeOffset,
-  nextSectionId,
   parseProjectV4,
   SceneLightsSchema,
   parseShopProfile,
@@ -56,7 +56,7 @@ import type { PanoramaContext } from '@/lib/panorama'
 import type {
   BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
   Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
-  SectionContent, SettingsOverride, ShopProfile, Vec3, WallId,
+  SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
@@ -290,7 +290,7 @@ type State = Snapshot & {
   removeAutoJoint(id: string): void
   setBoardPosition(id: string, position: Vec3): void
   editSection(index: number, patch: Partial<Section>, key: string): void
-  addSection(): void
+  addSection(): string | null
   removeSection(index: number): void
 
   loadTemplate(id: string): void
@@ -844,14 +844,10 @@ export const useConfigurator = create<State>((set, get) => ({
   addSection() {
     const s = get()
     const cabinet = activeCabinet(s)
-    const nextId = nextSectionId(cabinet.sections)
-    const contents: SectionContent[] = [{ kind: 'shelves', count: 3, shelfKind: 'adjustable' }]
-    get().edit('sections:add', {
-      sections: [
-        ...cabinet.sections,
-        { id: nextId, widthMode: 'flex', contents, fronts: { count: 1, mount: 'overlay' } },
-      ],
-    })
+    const result = planSectionAddition(cabinet, s.catalog, s.projectSettings ?? s.shop.settings)
+    if (!result.ok) return result.message
+    get().edit('sections:add', { sections: result.sections })
+    return null
   },
 
   removeSection(index) {

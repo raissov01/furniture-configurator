@@ -1368,5 +1368,7 @@ export const uz: Record<string, string> = {
   'Клиент согласовал версию': 'Mijoz tasdiqlagan versiya',
   'Текущий проект изменён после согласования': 'Joriy loyiha tasdiqdan keyin o‘zgardi',
   'Скачать подписанный PDF': 'Muhrlangan PDF faylni yuklab olish',
+  'Рассчитывается': 'Hisoblanadi',
+  'Увеличьте ширину корпуса или уменьшите число фасадов.': 'Korpus enini oshiring yoki fasadlar sonini kamaytiring.',
 
 }

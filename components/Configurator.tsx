@@ -741,6 +741,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
   const [name, setName] = useState(cabinet.name)
   useEffect(() => setName(cabinet.name), [cabinet.id, cabinet.name])
   const addSection = useConfigurator((s) => s.addSection)
+  const [sectionAddError, setSectionAddError] = useState<string | null>(null)
   const showDimensions = useConfigurator((s) => s.showDimensions)
   const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
@@ -1668,10 +1669,13 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
       <div className={cn(tab === 'general' ? 'block' : 'hidden')}>
       <div className="flex items-center justify-between pt-1">
         <SectionTitle>{tr('Секции')} ({cabinet.sections.length})</SectionTitle>
-        <Button onClick={addSection} disabled={cabinet.sections.length >= 12}>
+        <Button onClick={() => setSectionAddError(addSection())} disabled={cabinet.sections.length >= 12}>
           + секция
         </Button>
       </div>
+      {sectionAddError ? <p role="alert" className="border border-red-300 bg-red-50 p-2 text-xs text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
+        {sectionAddError} {tr('Увеличьте ширину корпуса или уменьшите число фасадов.')}
+      </p> : null}
       <div className="space-y-2">
         {cabinet.sections.map((section, i) => (
           <SectionEditor key={section.id} section={section} index={i} />

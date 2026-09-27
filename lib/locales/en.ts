@@ -1364,5 +1364,7 @@ export const en: Record<string, string> = {
   'Клиент согласовал версию': 'Client approved version',
   'Текущий проект изменён после согласования': 'The current project changed after approval',
   'Скачать подписанный PDF': 'Download stamped PDF',
+  'Рассчитывается': 'Calculated',
+  'Увеличьте ширину корпуса или уменьшите число фасадов.': 'Increase the cabinet width or reduce the number of fronts.',
 
 }
