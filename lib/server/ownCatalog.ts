@@ -30,8 +30,10 @@ export function saveShopCatalog(shopId: string, format: ShopCatalogFormat, data:
   database.exec('BEGIN IMMEDIATE')
   try {
     const used = database.prepare('SELECT COALESCE(SUM(byte_size), 0) AS used FROM shop_catalog_imports WHERE shop_id = ?')
-      .get(shopId) as { used: number }
-    if (used.used + chargedBytes > quota) throw new Error('Цех каталогының квотасы асып кетті')
+      .get(shopId) as { used: number | string }
+    const usedBytes = Number(used.used)
+    if (!Number.isSafeInteger(usedBytes) || usedBytes < 0) throw new Error('Цех каталогының көлемі жарамсыз')
+    if (usedBytes + chargedBytes > quota) throw new Error('Цех каталогының квотасы асып кетті')
     const id = randomUUID(), now = Date.now()
     database.prepare(`INSERT INTO shop_catalog_imports
       (id, shop_id, uploaded_by, format, json, byte_size, rights_confirmed_at, created_at)
