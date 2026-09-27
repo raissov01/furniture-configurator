@@ -1348,5 +1348,13 @@ export const en: Record<string, string> = {
   '{label}: медиана, {date}, {n} предложений': '{label}: median, {date}, {n} offers',
   'Вернуть рыночную цену: {price}': 'Restore market price: {price}',
   'Цена изменена цехом — рыночные обновления её не трогают': 'Price set by the workshop — market updates never touch it',
+  'Поле обязательно': 'Required field',
+  'Введите целое число, мм': 'Enter a whole number of millimetres',
+  'Значение вне диапазона': 'Value is outside the allowed range',
+  'Введите число': 'Enter a number',
+  'Значение': 'Value',
+  'Рекомендуется': 'Recommended',
+  'Ориентир цеха': 'Workshop guidance',
+  'Обязательный диапазон габаритов': 'Required dimension range',
 
 }

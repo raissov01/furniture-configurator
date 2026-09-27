@@ -1352,5 +1352,13 @@ export const uz: Record<string, string> = {
   '{label}: медиана, {date}, {n} предложений': '{label}: mediana, {date}, {n} ta taklif',
   'Вернуть рыночную цену: {price}': 'Bozor narxiga qaytarish: {price}',
   'Цена изменена цехом — рыночные обновления её не трогают': 'Narxni sex o‘zgartirgan — bozor yangilanishlari unga tegmaydi',
+  'Поле обязательно': 'Maydon majburiy',
+  'Введите целое число, мм': 'Butun millimetr kiriting',
+  'Значение вне диапазона': 'Qiymat ruxsat etilgan oraliqdan tashqarida',
+  'Введите число': 'Son kiriting',
+  'Значение': 'Qiymat',
+  'Рекомендуется': 'Tavsiya etiladi',
+  'Ориентир цеха': 'Sex mo‘ljali',
+  'Обязательный диапазон габаритов': 'O‘lchamlarning majburiy oralig‘i',
 
 }
