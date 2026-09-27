@@ -395,8 +395,8 @@ export function priceProject(
     if (!slab && sheets > 0 && sheetPrice <= 0) missingPrices.push(`${name}: цена листа`)
     if (slab && st.lengthMetres > 0 && slab.pricePerMeter <= 0) missingPrices.push(`${name}: цена за метр`)
     const materialCost = slab
-      ? roundTenge(st.lengthMetres * slab.pricePerMeter)
-      : roundTenge(sheets * sheetPrice)
+      ? roundMinor(st.lengthMetres * slab.pricePerMeter)
+      : roundMinor(sheets * sheetPrice)
 
     const cells = new Map<string, number>()
     let edgeCost = 0
@@ -404,7 +404,7 @@ export function priceProject(
       const band = bandById.get(bandId)
       const price = band?.pricePerMeter ?? 0
       if (price <= 0) missingPrices.push(`${band?.name ?? bandId}: цена за метр`)
-      const cell = roundTenge(metres * price)
+      const cell = roundMinor(metres * price)
       cells.set(bandId, cell)
       edgeCost += cell
     }
@@ -413,7 +413,7 @@ export function priceProject(
     const services = {} as Record<ServiceId, number>
     for (const sid of SERVICE_IDS) {
       const rate = shop.services[sid]
-      services[sid] = roundTenge(serviceQty(rate, id, st) * rate.rate)
+      services[sid] = roundMinor(serviceQty(rate, id, st) * rate.rate)
     }
 
     const servicesSum = SERVICE_IDS.reduce((sum, sid) => sum + services[sid], 0)
@@ -518,7 +518,7 @@ export function priceProject(
         qty: unit === 'м' ? Math.round(qty * 1000) / 1000 : Math.round(qty * 100) / 100,
         unit,
         unitPrice,
-        cost: roundTenge(qty * unitPrice),
+        cost: roundMinor(qty * unitPrice),
       }
     })
     .sort((a, b) => b.cost - a.cost)
@@ -553,13 +553,13 @@ export function priceProject(
    */
   validatePriceOverrides(overrides)
   const coefficient = overrides?.coefficient ?? (shop.coefficient > 0 ? shop.coefficient : 1)
-  const coefficientAmount = roundTenge(base * (coefficient - 1))
+  const coefficientAmount = roundMinor(base * (coefficient - 1))
 
   const metres = moduleWidths.reduce((sum, w) => sum + w, 0) / 1000
-  const installationCost = roundTenge(metres * shop.installation.ratePerMetreWidth)
+  const installationCost = roundMinor(metres * shop.installation.ratePerMetreWidth)
 
   const subtotal = base + coefficientAmount + installationCost
-  const markup = roundTenge((subtotal * shop.markupPercent) / 100)
+  const markup = roundMinor((subtotal * shop.markupPercent) / 100)
   /** Коэффициенттен шыққан сома — qdesign-дегі «Алдын ала сату бағасы». */
   const calculatedTotal = subtotal + markup
   /**
@@ -742,14 +742,12 @@ const SERVICE_UNITS: Record<ServiceRate['basis'], PriceLine['unit']> = {
 }
 
 /**
- * Жол сомасын БҮТІН ТЕҢГЕГЕ дөңгелектеу.
+ * Жол сомасын БҮТІН ТИЫНҒА дөңгелектеу.
  *
  * КП — клиент оқитын құжат, ал цех бағанды қолмен қосады. Егер әр жол
- * тиынмен сақталып, көрсету кезінде ғана дөңгелектенсе, баған қосындысы
- * қорытындымен 1–2 ₸ айырмашылық береді де, құжатқа сенім кетеді.
- * Сондықтан дөңгелектеу ЕСЕПТЕУ кезінде, бір рет жүреді.
+ * Есептеу ұяшықтары тиынға дейін сақталады; көрсету де осы дәлдікте болады.
  */
-const roundTenge = (minor: number) => Math.round(minor / 100) * 100
+const roundMinor = (minor: number) => Math.round(minor)
 
 /**
  * Тиынды теңгеге келтіріп, көрсетуге дайын жол қайтарады.
@@ -759,13 +757,14 @@ const roundTenge = (minor: number) => Math.round(minor / 100) * 100
  * экранда «₸», ал PDF-те «тг» жазылады.
  */
 export function formatTenge(minor: number, currency = '₸'): string {
-  const tenge = Math.round(minor / 100)
-  return `${tenge.toLocaleString('ru-RU')} ${currency}`
+  return formatTengeExact(minor, currency)
 }
 
 /** Жеңілдік тиынмен аяқталғанда құжатта сол тиынды жоғалтпай көрсетеді. */
 export function formatTengeExact(minor: number, currency = '₸'): string {
-  const tenge = Math.floor(minor / 100).toLocaleString('ru-RU')
-  const tiyn = minor % 100
-  return `${tenge}${tiyn ? `,${String(tiyn).padStart(2, '0')}` : ''} ${currency}`
+  const sign = minor < 0 ? '−' : ''
+  const absolute = Math.abs(minor)
+  const tenge = Math.floor(absolute / 100).toLocaleString('ru-RU')
+  const tiyn = absolute % 100
+  return `${sign}${tenge}${tiyn ? `,${String(tiyn).padStart(2, '0')}` : ''} ${currency}`
 }
