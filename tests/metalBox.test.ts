@@ -53,6 +53,7 @@ describe('Blum каталогының номинал ұзындықтары жә
       bottom: { width: 837, depth: 448 }, back: { width: 837, height: 71 },
     })
     expect(box.source).toContain('Blum')
+    expect(box.mountingGrid).toEqual({ firstFromFront: 37, pitch: 32 })
   })
 })
 
