@@ -1067,6 +1067,8 @@ export const uz: Record<string, string> = {
   'Моя библиотека': 'Mening kutubxonam',
   'Структура': 'Tuzilma',
   'Найти': 'Topish',
+  'Готовый': 'Tayyor',
+  'Рез': 'Kesim',
   'Замена': 'Almashtirish',
   'Дерево, слои и библиотека': 'Daraxt, qatlamlar va kutubxona',
   'Предпросмотр элемента': 'Element ko‘rinishi',
