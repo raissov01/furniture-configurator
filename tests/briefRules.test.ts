@@ -100,7 +100,7 @@ describe('варианттар', () => {
 
   it('сұралған түрдің шаблондарынан ғана таңдалады', () => {
     for (const kind of ['kitchen', 'desk', 'bed', 'storage'] as const) {
-      const variants = ruleVariants(request({ kind }), SEED_CATALOG)
+      const variants = ruleVariants(request({ kind, ...defaultSizeOf(kind), hanging: false }), SEED_CATALOG)
       expect(variants.length).toBeGreaterThan(0)
       for (const v of variants) {
         expect(SEED_TEMPLATES.find((t) => t.id === v.templateId)!.category, kind).toBe(kind)
@@ -108,14 +108,21 @@ describe('варианттар', () => {
     }
   })
 
-  it('габарит шаблонның аралығына қысылады, шектен АСПАЙДЫ', () => {
-    const variants = ruleVariants(request({ height: 3900, width: 3800, depth: 900 }), SEED_CATALOG)
+  it('тек сұралған нақты өлшемді көтеретін шаблонды ұсынады', () => {
+    const variants = ruleVariants(request({ height: 2000, width: 600, depth: 450 }), SEED_CATALOG)
+    expect(variants.length).toBeGreaterThan(0)
     for (const v of variants) {
       const template = SEED_TEMPLATES.find((t) => t.id === v.templateId)!
-      expect(v.cabinet.height).toBeLessThanOrEqual(template.range.height.max)
-      expect(v.cabinet.width).toBeLessThanOrEqual(template.range.width.max)
-      expect(v.cabinet.depth).toBeLessThanOrEqual(template.range.depth.max)
+      expect(v.cabinet).toMatchObject({ height: 2000, width: 600, depth: 450 })
+      expect(600).toBeGreaterThanOrEqual(template.range.width.min)
+      expect(600).toBeLessThanOrEqual(template.range.width.max)
       expect(() => generateCabinet(v.cabinet, SEED_CATALOG)).not.toThrow()
+    }
+  })
+
+  it('шектен тыс не бөлшек миллиметрді үнсіз дөңгелектемейді', () => {
+    for (const width of [999999, 600.5]) {
+      expect(ruleVariants(request({ width }), SEED_CATALOG)).toEqual([])
     }
   })
 

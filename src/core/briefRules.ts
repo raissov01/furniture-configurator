@@ -19,6 +19,7 @@
  */
 
 import { generateCabinet } from './generateCabinet'
+import { BRIEF_LIMITS } from './brief'
 import { SEED_TEMPLATES, templateToCabinet } from './templates'
 import type { CabinetTemplate, TemplateCategory } from './templates'
 import type { CabinetConfig, Catalog, Section, SectionContent } from './types'
@@ -138,8 +139,18 @@ export function parseBriefRequest(text: string): BriefRequest {
 
 // ── Шаблонды өтінімге келтіру ────────────────────────────────────────────────
 
-const clamp = (value: number, min: number, max: number): number =>
-  Math.min(max, Math.max(min, Math.round(value)))
+const dimensions = ['height', 'width', 'depth'] as const
+
+function validSize(request: BriefRequest): boolean {
+  return dimensions.every((axis) => Number.isSafeInteger(request[axis])
+    && request[axis] >= BRIEF_LIMITS.dimension.min
+    && request[axis] <= BRIEF_LIMITS.dimension.max)
+}
+
+function templateFits(template: CabinetTemplate, request: BriefRequest): boolean {
+  return dimensions.every((axis) => request[axis] >= template.range[axis].min
+    && request[axis] <= template.range[axis].max)
+}
 
 /**
  * Шаблонның өтінімге сәйкестігі. Кіші сан — жақсырақ.
@@ -223,18 +234,14 @@ export function ruleVariants(
   catalog: Catalog,
   count = 3,
 ): RuleVariant[] {
+  if (!validSize(request)) return []
+
   const ranked = [...SEED_TEMPLATES]
-    .filter((t) => t.category === request.kind)
+    .filter((t) => t.category === request.kind && templateFits(t, request))
     .sort((a, b) => scoreTemplate(a, request) - scoreTemplate(b, request))
 
-  // Түрі бойынша ештеңе табылмаса (жаңа санат), бүкіл кітапханадан аламыз —
-  // бос экран көрсеткеннен гөрі, жақын корпус ұсынған дұрыс.
-  const pool = ranked.length > 0
-    ? ranked
-    : [...SEED_TEMPLATES].sort((a, b) => scoreTemplate(a, request) - scoreTemplate(b, request))
-
   const out: RuleVariant[] = []
-  for (const template of pool) {
+  for (const template of ranked) {
     if (out.length >= count) break
 
     const base = templateToCabinet(template, catalog)
@@ -242,12 +249,10 @@ export function ruleVariants(
 
     const cabinet: CabinetConfig = {
       ...base,
-      // Габарит шаблонның ӨЗ аралығына қысылады: шаблон 400 мм-ге де,
-      // 4000 мм-ге де есептелмеген, ал шектен шыққан сан жиналмайтын
-      // корпус береді.
-      height: clamp(request.height, template.range.height.min, template.range.height.max),
-      width: clamp(request.width, template.range.width.min, template.range.width.max),
-      depth: clamp(request.depth, template.range.depth.min, template.range.depth.max),
+      // Өлшемді үнсіз өзгертпейміз: тек сол өлшемді көтеретін шаблондар қалды.
+      height: request.height,
+      width: request.width,
+      depth: request.depth,
       sections,
       name: template.name,
     }
