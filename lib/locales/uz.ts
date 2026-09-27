@@ -11,6 +11,14 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Текст': 'Matn',
+  'Добавить текст': 'Matn qo‘shish',
+  '+ текст': '+ matn',
+  'Текст записи': 'Izoh matni',
+  'Размер текста, мм': 'Matn o‘lchami, mm',
+  'Цвет текста': 'Matn rangi',
+  'Удалить текст': 'Matnni o‘chirish',
+  'Не удалось сохранить текст': 'Matn saqlanmadi',
   'Автоматическая присадка нарушена': 'Avtomatik teshik birikmasi buzildi',
   'Проверьте контакт досок и крепёж': 'Taxtalar tutashuvi va mahkamlagichni tekshiring',
   'Удалить соединение': 'Birikmani o‘chirish',
