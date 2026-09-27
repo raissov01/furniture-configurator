@@ -7,34 +7,61 @@ type Answer = { id: number; ok: true; value: Result } | { id: number; ok: false;
 
 /** Bridge for the existing synchronous service contract. One worker owns one PG connection. */
 export class PostgresCompat {
-  private readonly worker: Worker
-  private readonly port: MessageChannel['port1']
+  private worker!: Worker
+  private port!: MessageChannel['port1']
+  private state!: Int32Array
   private sequence = 0
+  private closed = false
 
-  constructor(url: string, schema?: string) {
+  constructor(private readonly url: string, private readonly schema?: string,
+    private readonly timeoutMs = 30_000) {
+    this.startWorker()
+  }
+
+  private startWorker(): void {
     const root = process.env['PLATFORM_ROOT'] ?? process.cwd()
+    const state = new Int32Array(new SharedArrayBuffer(4))
+    this.state = state
     this.worker = new Worker(join(root, 'lib/server/pgWorker.cjs'), {
-      workerData: { url, schema, migrations: join(root, 'docker/migrations') },
+      workerData: { url: this.url, schema: this.schema, migrations: join(root, 'docker/migrations'), state: state.buffer },
     })
     const channel = new MessageChannel()
     this.port = channel.port1
+    // These callbacks run between synchronous queries. The shared state also
+    // lets a query notice a dropped PG connection while the main thread waits.
+    this.worker.on('error', () => { Atomics.store(state, 0, -1) })
+    this.worker.on('exit', () => { Atomics.store(state, 0, -1) })
     this.worker.postMessage({ port: channel.port2 }, [channel.port2])
   }
 
+  private restartWorker(): void {
+    this.port.close()
+    void this.worker.terminate()
+    if (!this.closed) this.startWorker()
+  }
+
   private query(sql: string, args: unknown[] = []): Result {
+    if (this.closed) throw new Error('PostgreSQL worker closed')
+    if (Atomics.load(this.state, 0) < 0) throw new Error('PostgreSQL connection unavailable')
     const id = ++this.sequence
     this.port.postMessage({ id, sql, args })
     const sleeper = new Int32Array(new SharedArrayBuffer(4))
-    const deadline = Date.now() + 30_000
+    const deadline = Date.now() + this.timeoutMs
     for (;;) {
       const packet = receiveMessageOnPort(this.port)
       if (packet) {
         const answer = packet.message as Answer
+        // A timed-out request can finish after its caller has gone away.
+        if (answer.id < id) continue
         if (answer.id !== id) throw new Error('PostgreSQL response order mismatch')
         if (!answer.ok) throw new Error(answer.error)
         return answer.value
       }
-      if (Date.now() > deadline) throw new Error('PostgreSQL worker timed out')
+      if (Atomics.load(this.state, 0) < 0) throw new Error('PostgreSQL connection unavailable')
+      if (Date.now() > deadline) {
+        this.restartWorker()
+        throw new Error('PostgreSQL worker timed out')
+      }
       Atomics.wait(sleeper, 0, 0, 5)
     }
   }
@@ -50,6 +77,7 @@ export class PostgresCompat {
   }
 
   close(): void {
+    this.closed = true
     this.port.close()
     void this.worker.terminate()
   }
