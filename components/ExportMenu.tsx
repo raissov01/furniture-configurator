@@ -53,14 +53,20 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
         <MenuItem disabled={busy !== null} onClick={() => void run('csv', projectPanels ? 'project' : 'cabinet')}>
           CSV — {tr('на распил')}
         </MenuItem>
-        <MenuItem disabled={busy !== null} title={tr('DXF деталей и торцевая присадка CSV в одном архиве')} onClick={() => void run('dxf', projectPanels ? 'project' : 'cabinet')}>
+        <MenuItem disabled={busy !== null} title={tr('DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива. Полный ЧПУ CSV — в раскрое.')} onClick={() => void run('dxf', projectPanels ? 'project' : 'cabinet')}>
           DXF — {tr('на станок')}
         </MenuItem>
+        <p className="px-2 py-1 text-[11px] text-neutral-500">
+          {tr('DXF — пласти; торец — EDGE-DRILLING.csv. Полный ЧПУ CSV:')}{' '}
+          <a href="/cut" className="underline">{tr('ЧПУ по деталям')}</a>
+        </p>
         {projectPanels && pdfCabinet && <MenuItem disabled={busy !== null} onClick={() => void run('pdf', 'project')}>
           PDF — {tr('Весь проект')}
         </MenuItem>}
         {cabinet && projectPanels ? <div className="border-b border-neutral-200 px-2 py-1 text-xs">{tr('Активный корпус')}</div> : null}
-        {cabinet && projectPanels ? (['xlsx', 'csv', 'dxf'] as const).map((format) => <MenuItem key={format} disabled={busy !== null} onClick={() => void run(format, 'cabinet')}>{format.toUpperCase()} — {tr('Активный корпус')}</MenuItem>) : null}
+        {cabinet && projectPanels ? (['xlsx', 'csv', 'dxf'] as const).map((format) => <MenuItem key={format} disabled={busy !== null}
+          {...(format === 'dxf' ? { title: tr('DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива') } : {})}
+          onClick={() => void run(format, 'cabinet')}>{format.toUpperCase()} — {tr('Активный корпус')}</MenuItem>) : null}
         {cabinet && <MenuItem disabled={busy !== null} title={tr('Проекции, сборка и деталировка')} onClick={() => void run('pdf', 'cabinet')}>
           PDF — {tr('сборочный чертёж')}
         </MenuItem>}

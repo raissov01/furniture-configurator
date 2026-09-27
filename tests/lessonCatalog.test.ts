@@ -14,4 +14,12 @@ describe('interactive lesson catalog', () => {
     expect(nextAvailableLessonStep(steps, 0, () => false)).toBeNull()
     expect(parseCompletedLessons(JSON.stringify(['scene', 'unknown']))).toEqual(['scene'])
   })
+
+  it('recovers from corrupt saved progress so a lesson can be completed again', () => {
+    for (const raw of ['0', '{}', 'null', '{broken']) {
+      const completed = parseCompletedLessons(raw)
+      expect(completed).toEqual([])
+      expect(parseCompletedLessons(JSON.stringify([...completed, 'size']))).toEqual(['size'])
+    }
+  })
 })

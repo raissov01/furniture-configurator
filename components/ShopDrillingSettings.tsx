@@ -1,11 +1,12 @@
 'use client'
 
 import { t as tr } from '@/lib/i18n'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DEFAULT_SETTINGS } from '@/src/core/constants'
 import type { ShopProfile } from '@/src/core/shop'
 import type { ConstructionSettings, SettingsOverride } from '@/src/core/types'
-import { Button, Field, NumberInput, Select } from '@/components/ui'
+import { Button, Field, Select } from '@/components/ui'
+import { drillingSettingMinimum, parseDrillingSettingDraft } from '@/lib/f17ShopDraft'
 
 // Баптау бір профильде сақталады, бірақ әр жоба mergeSettings арқылы алады.
 // Каталогтың артикула тәуелді сандарын әмбебап стандарт ретінде ұсынбаймыз.
@@ -63,12 +64,6 @@ const CHOICES: { key: ChoiceKey; label: string; hint: string; options: { value: 
     { value: 'length', label: 'Вдоль длины (X)' }, { value: 'width', label: 'Вдоль ширины (Y)' },
   ] },
 ]
-
-const POSITIVE_NUMBERS = new Set<NumericKey>([
-  'confirmatFaceDiameter', 'confirmatEdgeDepth', 'confirmatScrewLength',
-  'hingeFixingSpacing',
-  'hingePressFitDiameter', 'minifixPairSpacing',
-])
 
 const ARRAY_PATTERN = /^\s*\d+(?:\s*,\s*\d+)*\s*$/
 
@@ -130,9 +125,9 @@ export function ShopDrillingSettings({ shop, editShop }: {
       change(key, null)
       return
     }
-    const minimum = POSITIVE_NUMBERS.has(key) || nullable ? 0.1 : 0
+    const minimum = drillingSettingMinimum(key, shop)
     if (!Number.isFinite(value) || value < minimum || value > 4000) {
-      setChoiceError(tr('Значение вне допустимого диапазона присадки'))
+      setChoiceError(`${key}: ${tr('Значение вне допустимого диапазона присадки')} ${minimum}..4000 мм`)
       return
     }
     setChoiceError(null)
@@ -146,22 +141,12 @@ export function ShopDrillingSettings({ shop, editShop }: {
       <p className="text-xs text-neutral-500 dark:text-neutral-400">{tr('Проверьте размеры по чертежам вашей фурнитуры. Значения без общего стандарта оставлены как в прежнем шаблоне.')}</p>
       {choiceError ? <p role="alert" className="text-xs text-red-700 dark:text-red-300">{choiceError}</p> : null}
       <div className="grid gap-3 sm:grid-cols-2">
-        {DRILLING_NUMBER_FIELDS.map(({ key, label, hint, step }) => {
+        {DRILLING_NUMBER_FIELDS.map(({ key, label, hint }) => {
           const raw = shop.settings[key] ?? DEFAULT_SETTINGS[key]
           return <Field key={key} label={tr(label)} hint={tr(hint)}>
             <div className="flex gap-1">
-              {step && step < 1 ? (
-                <input type="number" className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-                  value={raw ?? 0} min={POSITIVE_NUMBERS.has(key) ? 0.1 : 0} step={step}
-                  onChange={(event) => {
-                    // 0.1 мм — drilling.ts-тегі roundCoord дәлдігі.
-                    const value = Math.round(Number(event.currentTarget.value) * 10) / 10
-                    setNumber(key, value)
-                  }} />
-              ) : (
-                <NumberInput value={raw ?? 0} min={POSITIVE_NUMBERS.has(key) ? 1 : 0} step={step ?? 1}
-                  onChange={(value) => setNumber(key, value)} />
-              )}
+              <DrillingDraftInput key={key} fieldKey={key} value={raw ?? 0} shop={shop}
+                onValue={(value) => setNumber(key, value)} />
               <Button disabled={shop.settings[key] === undefined} onClick={() => reset(key)}>{tr('Сброс')}</Button>
             </div>
           </Field>
@@ -218,4 +203,28 @@ export function ShopDrillingSettings({ shop, editShop }: {
       </div>
     </div>
   )
+}
+
+function DrillingDraftInput({ fieldKey, value, shop, onValue }: {
+  fieldKey: NumericKey; value: number; shop: ShopProfile; onValue: (value: number) => void
+}) {
+  const [draft, setDraft] = useState(String(value))
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => { setDraft(String(value)); setError(null) }, [value])
+  const minimum = drillingSettingMinimum(fieldKey, shop)
+  return <span className="min-w-0 flex-1">
+    <input type="text" inputMode="decimal" value={draft} aria-invalid={error ? true : undefined}
+      className={`w-full rounded-md border bg-white px-2 py-1 text-sm dark:bg-neutral-900 ${error
+        ? 'border-red-500 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-700'}`}
+      onChange={(event) => {
+        const next = event.currentTarget.value
+        setDraft(next)
+        const result = parseDrillingSettingDraft(fieldKey, next, shop)
+        setError(result.error ?? null)
+        if (result.value !== undefined) onValue(result.value)
+      }} />
+    {error ? <span role="alert" className="block text-[11px] text-red-700 dark:text-red-300">
+      {error} ({minimum}..4000 мм)
+    </span> : null}
+  </span>
 }

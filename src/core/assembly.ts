@@ -58,7 +58,7 @@ const ROLE_ORDER: PanelRole[] = [
   'front',
 ]
 
-function directionOf(panel: Panel): AssemblyStep['direction'] {
+function directionOf(panel: Panel, sideDirections: Map<string, 'слева' | 'справа'>): AssemblyStep['direction'] {
   // Қалыңдық осі — панельдің «жалпақ» бағыты: ол сол ось бойымен қойылады.
   switch (panel.orientation.thickness) {
     case 'y':
@@ -66,7 +66,8 @@ function directionOf(panel: Panel): AssemblyStep['direction'] {
       return panel.role === 'bottom' ? 'снизу' : 'сверху'
     case 'x':
       // Тік деталь: корпустың ортасынан қай жақта тұрғанына қарай.
-      return panel.role === 'side' || panel.role === 'divider' ? 'слева' : 'справа'
+      if (panel.role === 'side') return sideDirections.get(panel.id) ?? 'слева'
+      return panel.role === 'divider' ? 'слева' : 'справа'
     case 'z':
       return panel.role === 'back' ? 'сзади' : 'спереди'
   }
@@ -80,6 +81,17 @@ function directionOf(panel: Panel): AssemblyStep['direction'] {
  * 3D-дегі көрініспен де сәйкес.
  */
 export function assemblySteps(panels: Panel[]): AssemblyStep[] {
+  // Бір жобада бірнеше корпус болуы мүмкін. ID префиксі бүйірлерді өз корпусында жұптайды;
+  // бағытты жұптың нақты X орны анықтайды.
+  const sideDirections = new Map<string, 'слева' | 'справа'>()
+  const byId = new Map(panels.map((panel) => [panel.id, panel]))
+  for (const panel of panels) {
+    if (panel.role !== 'side' || !panel.id.endsWith('side-left')) continue
+    const opposite = byId.get(`${panel.id.slice(0, -'side-left'.length)}side-right`)
+    if (!opposite || opposite.role !== 'side' || opposite.position.x === panel.position.x) continue
+    sideDirections.set(panel.id, panel.position.x < opposite.position.x ? 'слева' : 'справа')
+    sideDirections.set(opposite.id, opposite.position.x > panel.position.x ? 'справа' : 'слева')
+  }
   const ordered = [...panels].sort((a, b) => {
     const stage = STAGE_ORDER.indexOf(STAGE_OF[a.role]) - STAGE_ORDER.indexOf(STAGE_OF[b.role])
     if (stage !== 0) return stage
@@ -93,7 +105,7 @@ export function assemblySteps(panels: Panel[]): AssemblyStep[] {
     panelId: panel.id,
     label: panel.label,
     stage: STAGE_OF[panel.role],
-    direction: directionOf(panel),
+    direction: directionOf(panel, sideDirections),
     holes: panel.drilling.length,
     note: panel.note,
   }))

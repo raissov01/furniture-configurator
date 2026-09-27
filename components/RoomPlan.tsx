@@ -19,19 +19,22 @@ import {
   placementCorners,
   roomWalls,
   validatePlacements,
+  validateOpenings,
   wallById,
   visibleAnnotations,
 } from '@/src/core/index'
-import type { CabinetConfig, Placement, Room, RoomFinish, WallId } from '@/src/core/index'
+import type { CabinetConfig, Placement, Room, RoomFinish, RoomOpening, WallId } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { wallAttachedPlacements } from '@/store/treeAdapters'
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ConfigValidationError } from '@/src/core/errors'
 import { Button, Field, NumberInput, SectionTitle, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { isCeilingIssue } from '@/lib/roomElevationUi'
+import { planDragOffset } from '@/lib/roomPlanDrag'
+import { shouldCloseRoomDialog } from '@/lib/roomDialog'
+import { nextOpening, updateOpening } from '@/lib/roomOpeningsUi'
 
-/** Жоспардың ең үлкен қабырғасы экранда осынша пиксель болады. */
-const PLAN_PX = 420
 /** Қабырға сызығының қалыңдығы, мм (шартты — тек көрініс үшін). */
 const WALL_MM = 60
 
@@ -62,7 +65,6 @@ export function RoomPlan() {
       return []
     }
   })), [root, layers, cabinets])
-  const roomEditable = editableIds.size === cabinets.length
   // Қабырға бойымен тек қабырғаға дәл тірелген шкаф жылжиды: еркін шкафтың
   // placement-і жуықтау, оны өзгерту шкафты қабырғаға секіртеді.
   const movableIds = useMemo(() => new Set(wallAttachedPlacements(root, room)
@@ -89,7 +91,22 @@ export function RoomPlan() {
   )
 
   const issues = useMemo(() => validatePlacements(room, entries), [room, entries])
+  const openingIssues = useMemo(() => validateOpenings(room), [room])
   const issueFor = (id: string) => issues.filter((i) => i.cabinetId === id)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialogRef.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (!shouldCloseRoomDialog(event.key)) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpen(false)
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => { document.removeEventListener('keydown', onKey, true); trigger?.focus() }
+  }, [open, setOpen])
 
   const activePlacement: Placement =
     entries.find((e) => e.cabinet.id === activeId)?.placement ??
@@ -97,20 +114,23 @@ export function RoomPlan() {
 
   if (!open) return null
 
-  const scale = PLAN_PX / Math.max(room.width, room.depth)
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="room-plan-title"
+        tabIndex={-1}
+        className="min-w-0 w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-3 outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-sm font-semibold">{tr('Комната')}</h2>
-          <span className="text-[11px] text-neutral-400">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <h2 id="room-plan-title" className="text-sm font-semibold">{tr('Комната')}</h2>
+          <span className="hidden text-[11px] text-neutral-400 sm:inline">
             выберите стену, поставьте на неё корпус
           </span>
           <div className="ml-auto">
@@ -118,10 +138,9 @@ export function RoomPlan() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <PlanSvg
             room={room}
-            scale={scale}
             entries={entries}
             activeId={activeId}
             selectedWall={selectedWall}
@@ -131,9 +150,9 @@ export function RoomPlan() {
             annotations={annotations}
           />
 
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-3">
             <SectionTitle>{tr('Размеры комнаты, мм')}</SectionTitle>
-            <fieldset disabled={!roomEditable} className="grid grid-cols-3 gap-2">
+            <fieldset className="grid grid-cols-1 gap-2 min-[460px]:grid-cols-3">
               <Field label={tr('Ширина')}>
                 <NumberInput value={room.width} min={500} max={20000} step={50}
                   onChange={(width) => editRoom({ width })} />
@@ -149,9 +168,12 @@ export function RoomPlan() {
             </fieldset>
 
             <SectionTitle>{tr('Отделка')}</SectionTitle>
-            <fieldset disabled={!roomEditable}>
+            <fieldset>
               <FinishEditor room={room} onChange={(finish) => editRoom({ finish })} />
             </fieldset>
+
+            <SectionTitle>{tr('Проёмы')}</SectionTitle>
+            <OpeningEditor room={room} issues={openingIssues} onChange={(openings) => editRoom({ openings })} />
 
             <SectionTitle>{tr('Стена')}</SectionTitle>
             <div className="flex flex-wrap gap-1">
@@ -194,6 +216,7 @@ export function RoomPlan() {
                   min={0}
                   max={4000}
                   step={10}
+                  invalid={isCeilingIssue(issues, active.id)}
                   onChange={(elevation) => movePlacement(activeId, { elevation })}
                 />
               </Field>
@@ -316,11 +339,62 @@ function FinishEditor({ room, onChange }: { room: Room; onChange: (finish: RoomF
   )
 }
 
+function OpeningEditor({ room, issues, onChange }: {
+  room: Room
+  issues: ReturnType<typeof validateOpenings>
+  onChange: (openings: RoomOpening[]) => void
+}) {
+  const openings = room.openings ?? []
+  const patch = (id: string, change: Partial<RoomOpening>) => onChange(updateOpening(openings, id, change))
+  return (
+    <div className="space-y-2">
+      {openings.map((opening) => {
+        const wallLength = wallById(room, opening.wall).length
+        const bad = issues.filter((issue) => issue.openingId === opening.id)
+        return (
+          <div key={opening.id} className={cn('min-w-0 rounded-md border border-neutral-200 p-2 dark:border-neutral-700', bad.length > 0 && 'border-red-500 dark:border-red-500')}>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <strong className="text-xs">{tr(opening.kind === 'window' ? 'Окно' : 'Дверь')}</strong>
+              <Button onClick={() => onChange(openings.filter((item) => item.id !== opening.id))}>{tr('Удалить')}</Button>
+            </div>
+            <div className="grid min-w-0 grid-cols-1 gap-2 min-[460px]:grid-cols-2">
+              <Field label={tr('Стена')}>
+                <Select value={opening.wall} onChange={(wall) => patch(opening.id, { wall })}
+                  options={roomWalls(room).map((wall) => ({ value: wall.id, label: tr(wall.label) }))} />
+              </Field>
+              <Field label={tr('Положение проёма')} hint={`0..${Math.max(0, wallLength - opening.width)} мм`}>
+                <NumberInput value={opening.offset} min={0} max={Math.max(0, wallLength - opening.width)}
+                  label={tr('Положение проёма')} onChange={(offset) => patch(opening.id, { offset })} />
+              </Field>
+              <Field label={tr('Ширина проёма')} hint={`1..${wallLength} мм`}>
+                <NumberInput value={opening.width} min={1} max={wallLength}
+                  onChange={(width) => patch(opening.id, { width })} />
+              </Field>
+              <Field label={tr('Высота проёма')} hint={`1..${room.height} мм`}>
+                <NumberInput value={opening.height} min={1} max={room.height}
+                  onChange={(height) => patch(opening.id, { height })} />
+              </Field>
+              <Field label={tr('От пола проёма')} hint={`0..${room.height} мм`}>
+                <NumberInput value={opening.elevation} min={0} max={room.height}
+                  onChange={(elevation) => patch(opening.id, { elevation })} />
+              </Field>
+            </div>
+            {bad.map((issue, index) => <p role="alert" key={index} className="mt-1 text-[11px] text-red-700 dark:text-red-400">{issue.message}</p>)}
+          </div>
+        )
+      })}
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={openings.length >= 20} onClick={() => onChange([...openings, nextOpening(room, openings, 'window')])}>{tr('+ окно')}</Button>
+        <Button disabled={openings.length >= 20} onClick={() => onChange([...openings, nextOpening(room, openings, 'door')])}>{tr('+ дверь')}</Button>
+      </div>
+    </div>
+  )
+}
+
 function PlanSvg({
-  room, scale, entries, activeId, selectedWall, onWall, onCabinet, onMove, annotations,
+  room, entries, activeId, selectedWall, onWall, onCabinet, onMove, annotations,
 }: {
   room: Room
-  scale: number
   entries: { cabinet: CabinetConfig; placement: Placement }[]
   activeId: string
   selectedWall: WallId
@@ -339,7 +413,7 @@ function PlanSvg({
    * қабырға−ені] аралығында қыселінеді. Дәлдік керек болса — оң жақтағы сан
    * қалады.
    */
-  const drag = useRef<{ id: string; wall: WallId; startX: number; startY: number; startOffset: number } | null>(null)
+  const drag = useRef<{ id: string; wall: WallId; startX: number; startY: number; startOffset: number; pxPerMm: number } | null>(null)
   const [dragging, setDragging] = useState<string | null>(null)
   useEffect(() => {
     if (!dragging) return
@@ -348,25 +422,22 @@ function PlanSvg({
       if (!d) return
       const wall = walls.find((w) => w.id === d.wall)
       if (!wall) return
-      const dxMm = (e.clientX - d.startX) / scale
-      const dzMm = (e.clientY - d.startY) / scale
-      const along = dxMm * wall.direction.x + dzMm * wall.direction.z
+      const alongPx = (e.clientX - d.startX) * wall.direction.x + (e.clientY - d.startY) * wall.direction.z
       const cab = entries.find((en) => en.cabinet.id === d.id)?.cabinet
       const max = Math.max(0, wall.length - (cab?.width ?? 0))
-      onMove(d.id, Math.round(Math.min(max, Math.max(0, d.startOffset + along))))
+      onMove(d.id, planDragOffset(d.startOffset, alongPx, d.pxPerMm, max))
     }
     const up = () => { drag.current = null; setDragging(null) }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
     return () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
-  }, [dragging, walls, scale, entries, onMove])
+  }, [dragging, walls, entries, onMove])
 
   return (
     <svg
       viewBox={`${-pad} ${-pad} ${room.width + pad * 2} ${room.depth + pad * 2}`}
-      width={(room.width + pad * 2) * scale}
-      height={(room.depth + pad * 2) * scale}
-      className="shrink-0 rounded-lg bg-neutral-50 dark:bg-neutral-950"
+      className="block h-auto w-full max-w-[420px] min-w-0 rounded-lg bg-neutral-50 dark:bg-neutral-950"
+      style={{ aspectRatio: `${room.width + pad * 2} / ${room.depth + pad * 2}` }}
       role="img"
       aria-label={tr('План комнаты')}
     >
@@ -413,6 +484,7 @@ function PlanSvg({
               drag.current = {
                 id: cabinet.id, wall: placement.wall,
                 startX: e.clientX, startY: e.clientY, startOffset: placement.offset,
+                pxPerMm: (e.currentTarget.ownerSVGElement?.getBoundingClientRect().width ?? 1) / (room.width + pad * 2),
               }
               setDragging(cabinet.id)
             }}

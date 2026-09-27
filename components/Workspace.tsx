@@ -11,8 +11,8 @@ import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
-import { AnnotationProperties } from '@/components/AnnotationProperties'
 import { SolidProperties } from '@/components/SolidProperties'
+import { AnnotationProperties } from '@/components/AnnotationProperties'
 import { PropertiesDialog } from '@/components/PropertiesDialog'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
@@ -154,8 +154,8 @@ export function Workspace() {
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
   const addCabinet = useConfigurator((s) => s.addCabinet)
   const addBoard = useConfigurator((s) => s.addBoard)
-  const addAnnotation = useConfigurator((s) => s.addAnnotation)
   const addSolid = useConfigurator((s) => s.addSolid)
+  const addAnnotation = useConfigurator((s) => s.addAnnotation)
   const removeBoard = useConfigurator((s) => s.removeBoard)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
@@ -221,8 +221,8 @@ export function Workspace() {
   const activePanels = hasActiveCabinet ? panels : []
   const activeNode = findNode(root, activeId)
   const activeBoard = activeNode?.kind === 'board' ? activeNode : null
-  const activeAnnotation = activeNode?.kind === 'annotation' ? activeNode : null
   const activeSolid = activeNode?.kind === 'solid' ? activeNode : null
+  const activeAnnotation = activeNode?.kind === 'annotation' ? activeNode : null
   const activeBoardJoint = activeBoard ? autoJoints.find((joint) => joint.boardIds.includes(activeId)) : undefined
   const boardPanel = activeBoard ? production.scene.nodes.find((node) => node.nodeId === activeId)?.panels[0] : undefined
   const editableBoard = useMemo(() => {
@@ -575,6 +575,7 @@ export function Workspace() {
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
+      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
       { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
@@ -1031,8 +1032,8 @@ export function Workspace() {
           {classic ? <>
             <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} />
             <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} />
-            <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" />
             <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} />
+            <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" />
             <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} />
             <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" />
           </> : <>
@@ -1050,7 +1051,7 @@ export function Workspace() {
           </>}
         </div>
         <div className="flex min-h-0 flex-col">
-        {/* Телефонда 3D көрінеді, ал қасиеттердің бөлек scroll аймағына орын қалады. */}
+        {/* Телефонда секция редакторына бөлек scroll биіктігі қалады. */}
         <main className="relative isolate h-[32dvh] min-h-[240px] max-h-[32dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
@@ -1159,7 +1160,7 @@ export function Workspace() {
               </div>
             </> : activeAnnotation ? <div className="truncate text-sm font-semibold" title={activeAnnotation.name}>{activeAnnotation.name}</div>
               : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
-            {classic && (activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+            {classic && (activeBoard || activeSolid || activeAnnotation || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
           <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && !activeAnnotation && "lg:hidden")}>
             <Dense>
@@ -1193,16 +1194,16 @@ export function Workspace() {
               <Button size="sm" onClick={fitCamera}>{tr('Вписать в кадр')}</Button>
               {(activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
               <Button size="sm" onClick={addBoard}>{tr('+ доска')}</Button>
-              <Button size="sm" onClick={addAnnotation}>{tr('+ текст')}</Button>
               <Button size="sm" onClick={addSolid}>{tr('+ блок')}</Button>
+              <Button size="sm" onClick={addAnnotation}>{tr('+ текст')}</Button>
             </div>
           </section>}
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
           <div className={cn("flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800", classic && "lg:hidden")}>
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
-            <Button onClick={addAnnotation} testId="add-annotation">{tr('+ текст')}</Button>
             <Button onClick={addSolid}>{tr('+ блок')}</Button>
+            <Button onClick={addAnnotation} testId="add-annotation">{tr('+ текст')}</Button>
             {activeBoard && <Button onClick={() => removeBoard(activeId)}
               disabled={!editableBoard || Boolean(activeBoardJoint)}>{tr('Удалить доску')}</Button>}
             <Button onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>

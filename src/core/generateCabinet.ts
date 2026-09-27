@@ -452,10 +452,9 @@ export function generateCabinet(
     // саясатын қолданады. Бір декорлы шкафта жобаның қолмен бапталған edging-і қалады.
     let policy = config.edging
     if (role === 'front' && material.id !== carcass.id) {
-      if (!material.defaultEdging) {
-        throw new ConfigValidationError('frontMaterialId', material.id, 'фасад материалының defaultEdging кромкасы қажет')
-      }
-      policy = material.defaultEdging
+      if (material.defaultEdging) policy = material.defaultEdging
+      else note = [note, `Ескерту: ${material.id} материалының defaultEdging саясаты жоқ; config.edging қолданылды`]
+        .filter(Boolean).join('; ')
     }
     const edges = edgesOverride ?? resolveEdges(role, config.construction, policy, orientation)
     const { cutLength, cutWidth } = calculateCutDimensions(
@@ -1790,7 +1789,7 @@ export function generateCabinet(
         front.note = [front.note, 'Подъёмный: присадка по шаблону механизма']
           .filter(Boolean).join('; ')
         if (milling) {
-          validateMilling(milling, ctx.thickness(front))
+          validateMilling(milling, ctx.thickness(front), front.finishedWidth, front.finishedLength)
           applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)
         }
         return
@@ -1816,7 +1815,7 @@ export function generateCabinet(
       front.opening = { kind: 'door', side }
       hingeHoles(front, carcassPanel, side, ctx, hingeSystem)
       if (milling) {
-        validateMilling(milling, ctx.thickness(front))
+        validateMilling(milling, ctx.thickness(front), front.finishedWidth, front.finishedLength)
         applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)
       }
     })

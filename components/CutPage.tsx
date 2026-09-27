@@ -188,7 +188,7 @@ export function CutPage() {
           <h1 className="text-sm font-semibold">{tr('Раскрой')}</h1>
           <span className="min-w-0 max-w-full truncate text-[11px] text-neutral-500">{projectName}</span>
 
-          <div className="ml-auto flex w-full min-w-0 flex-wrap items-center gap-1 sm:w-auto">
+          <div data-testid="cut-export-actions" className="ml-auto flex w-full min-w-0 flex-wrap items-center gap-1 sm:w-auto">
             <Button active={showCuts} ariaPressed={showCuts} onClick={() => setShowCuts(!showCuts)}>
               {tr('Показать резы')}
             </Button>
@@ -205,7 +205,7 @@ export function CutPage() {
             </Button>
             <Button
               disabled={busy !== null || !nesting || planned.error !== null}
-              title={tr('По одному DXF на лист, всё в архиве')}
+              title={tr('DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям')}
               onClick={() => void run('dxf', async () => {
                 const [{ nestingToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
                   import('@/src/core/export/dxf'),
@@ -240,7 +240,7 @@ export function CutPage() {
             </Button>
             <Button
               disabled={busy !== null || !nesting || planned.error !== null || !labelsReady}
-              title={tr('Всё для цеха одним архивом: карта, DXF листов, DXF деталей с присадкой, деталировка и бирки')}
+              title={tr('Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.')}
               onClick={() => void run('bundle', async () => {
                 const [
                   { nestingToDxfFiles, cabinetToDxfArchiveFiles }, { cutListToCsv },
@@ -355,6 +355,9 @@ export function CutPage() {
           </Field>
           {labelOptions.error ? <p role="alert" className="text-xs text-red-700 sm:col-span-3">{labelOptions.error}</p> : null}
         </section>
+        <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
+          {tr('DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».')}
+        </p>
         {nested.error ? (
           <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{nested.error}</p>
         ) : null}
@@ -373,7 +376,7 @@ export function CutPage() {
         ) : !nesting || !plan ? (
           <p className="text-xs text-neutral-500">{tr('Нет деталей для раскроя.')}</p>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
             <aside className="space-y-3 self-start rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
                 {tr('Настройки станка')}
@@ -423,7 +426,7 @@ export function CutPage() {
               </p>
             </aside>
 
-            <div className="space-y-5">
+            <div className="min-w-0 space-y-5">
               {advice.length > 0 ? <UnplacedBlock advice={advice} /> : null}
 
               <Totals stats={plan.stats} sheetCount={nesting.sheetCount} />
@@ -440,7 +443,7 @@ export function CutPage() {
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-4">
+                    <div className="flex min-w-0 flex-wrap gap-4">
                       {material.sheets.map((sheet) => (
                         <SheetCard
                           key={sheet.index}

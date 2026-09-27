@@ -23,6 +23,29 @@ export function polygonArea(points: readonly PolygonPoint[]): number {
   return Math.abs(points.reduce((sum, p, i) => sum + cross(p, points[(i + 1) % points.length]!), 0)) / 2
 }
 
+/** Рез контурындағы бұрғы шеңбері түгел материалда жататынын тексереді. */
+export function circleWithinPolygon(points: readonly PolygonPoint[], x: number, y: number, radius: number): boolean {
+  if (points.length < 3 || !Number.isFinite(x) || !Number.isFinite(y) ||
+    !Number.isFinite(radius) || radius < 0) return false
+  let inside = false
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[i]!
+    const b = points[(i + 1) % points.length]!
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    const lengthSquared = dx * dx + dy * dy
+    if (lengthSquared === 0) return false
+    const projection = Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / lengthSquared))
+    const nearX = a.x + projection * dx
+    const nearY = a.y + projection * dy
+    const distanceSquared = (x - nearX) ** 2 + (y - nearY) ** 2
+    if (distanceSquared < radius * radius) return false
+    if (distanceSquared === 0) return radius === 0
+    if ((a.y > y) !== (b.y > y) && x < a.x + (y - a.y) * dx / dy) inside = !inside
+  }
+  return inside
+}
+
 function signedDoubleArea(points: readonly PolygonPoint[]): number {
   return points.reduce((sum, p, i) => sum + cross(p, points[(i + 1) % points.length]!), 0)
 }

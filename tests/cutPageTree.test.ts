@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { IDENTITY_TRANSFORM, ORIENT_HORIZONTAL, parseProjectV4 } from '../src/core/index'
@@ -35,6 +36,20 @@ function cncButton(html: string): string {
 }
 
 describe('/cut reads canonical tree production', () => {
+  it('keeps every export action reachable at a 390 px viewport', () => {
+    const html = renderToStaticMarkup(createElement(CutPage))
+    const toolbar = html.match(/<div data-testid="cut-export-actions" class="([^"]+)"/)
+    expect(toolbar?.[1]).toContain('w-full')
+    expect(toolbar?.[1]).toContain('flex-wrap')
+    expect(html).toContain('>Базис</button>')
+
+    const source = readFileSync(new URL('../components/CutPage.tsx', import.meta.url), 'utf8')
+    const sheetSvgClass = source.match(/<svg[\s\S]*?className="([^"]+)"/)?.[1]
+    expect(sheetSvgClass).toContain('w-full')
+    expect(sheetSvgClass).toContain('max-w-[520px]')
+    expect(sheetSvgClass).toContain('h-auto')
+  })
+
   it('does not offer a default cabinet export when the saved project cannot be read', () => {
     vi.stubGlobal('window', { localStorage: { getItem: () => '{broken json' } })
     useConfigurator.getState().hydrateProject()

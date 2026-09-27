@@ -14,6 +14,7 @@ import { t as tr } from '@/lib/i18n'
 import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
 import { appendFreeMirror } from '@/lib/freeMirrorAction'
+import { roomDimensionIssue } from '@/lib/roomDimensions'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
@@ -289,13 +290,13 @@ type State = Snapshot & {
 
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
-  addAnnotation(): string
-  editAnnotation(id: string, patch: Partial<AnnotationSpec>): void
-  removeAnnotation(id: string): void
   addSolid(): string
   editSolid(id: string, patch: Partial<SolidSpec>): void
   setSolidPosition(id: string, position: Vec3): void
   mirrorFreeNode(id: string): string
+  addAnnotation(): string
+  editAnnotation(id: string, patch: Partial<AnnotationSpec>): void
+  removeAnnotation(id: string): void
   removeBoard(id: string): void
   editBoard(id: string, patch: Partial<BoardSpec>): void
   autoJointBoards(ids: [string, string], kind: AutoJointKind, tolerance: number): void
@@ -808,6 +809,14 @@ export const useConfigurator = create<State>((set, get) => ({
     return id
   },
 
+  addSolid() {
+    const s = get()
+    const id = `solid-${crypto.randomUUID()}`
+    const root: GroupNode = { ...s.root, children: [...s.root.children, createSolidNode(id, tr('Декоративный блок'))] }
+    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
+    return id
+  },
+
   addAnnotation() {
     const s = get()
     const id = `annotation-${crypto.randomUUID()}`
@@ -823,12 +832,24 @@ export const useConfigurator = create<State>((set, get) => ({
     return id
   },
 
-  addSolid() {
+  editSolid(id, patch) {
     const s = get()
-    const id = `solid-${crypto.randomUUID()}`
-    const root: GroupNode = { ...s.root, children: [...s.root.children, createSolidNode(id, tr('Декоративный блок'))] }
-    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
-    return id
+    const root = editSolidTree(s.root, id, s.layers, { solid: patch })
+    if (root !== s.root) set(treeEdit(s, root))
+  },
+
+  setSolidPosition(id, position) {
+    const s = get()
+    const root = editSolidTree(s.root, id, s.layers, { position })
+    if (root !== s.root) set(treeEdit(s, root))
+  },
+
+  mirrorFreeNode(id) {
+    const s = get()
+    const result = appendFreeMirror(s.root, id, s.catalog, s.layers, s.projectSettings ?? s.shop.settings)
+    flattenTree(result.root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
+    set({ ...treeEdit(s, result.root), activeId: result.id, selected: result.id })
+    return result.id
   },
 
   editAnnotation(id, patch) {
@@ -855,26 +876,6 @@ export const useConfigurator = create<State>((set, get) => ({
     set({ ...treeEdit(s, withoutAnnotation(s.root, id)),
       activeId: s.activeId === id ? s.cabinets[0]?.id ?? '' : s.activeId,
       selected: s.selected === id ? null : s.selected })
-  },
-
-  editSolid(id, patch) {
-    const s = get()
-    const root = editSolidTree(s.root, id, s.layers, { solid: patch })
-    if (root !== s.root) set(treeEdit(s, root))
-  },
-
-  setSolidPosition(id, position) {
-    const s = get()
-    const root = editSolidTree(s.root, id, s.layers, { position })
-    if (root !== s.root) set(treeEdit(s, root))
-  },
-
-  mirrorFreeNode(id) {
-    const s = get()
-    const result = appendFreeMirror(s.root, id, s.catalog, s.layers, s.projectSettings ?? s.shop.settings)
-    flattenTree(result.root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
-    set({ ...treeEdit(s, result.root), activeId: result.id, selected: result.id })
-    return result.id
   },
 
   removeBoard(id) {
@@ -1539,6 +1540,8 @@ export const useConfigurator = create<State>((set, get) => ({
   setRenderOpen: (renderOpen) => set({ renderOpen }),
 
   editRoom(patch) {
+    const dimensionIssue = roomDimensionIssue(patch)
+    if (dimensionIssue) throw new ConfigValidationError(dimensionIssue.field, 'бөлме өлшемі жарамсыз', dimensionIssue.allowed)
     const s = get()
     const room = { ...s.room, ...patch }
     // Қабырғамен бірге тек қабырғаға тіреліп тұрған әрі өңделетін шкаф
