@@ -453,7 +453,7 @@ export function AccountPanel() {
           </div>
         ) : null}
         {cloudConflict && activeCloud ? <div role="alert" className="mb-3 flex flex-wrap gap-2 border border-amber-400 p-2 text-xs">
-          <span className="w-full">{tr('Серверная версия новее. Выберите, какую версию оставить.')}</span>
+          <span className="w-full">{tr('Серверная версия новее. Выберите, какую версию оставить.')} {tr('Ревизия сервера')}: {cloudConflict.revision}</span>
           <Button disabled={busy} onClick={() => void openProject(cloudConflict.id)}>{tr('Открыть серверную')}</Button>
           <Button disabled={busy} onClick={() => void saveToCloud(true)}>{tr('Сохранить мою копию')}</Button>
           <Button disabled={busy} onClick={() => void saveToCloud(false, true)}>{tr('Заменить серверную')}</Button>

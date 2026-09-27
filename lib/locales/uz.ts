@@ -1592,4 +1592,5 @@ export const uz: Record<string, string> = {
   "Повторить сохранение": "Saqlashni takrorlash",
   'Копировать': 'Nusxalash',
   'Нет связи с сервером. Локальная копия не сохранена.': 'Server bilan aloqa yoʻq. Mahalliy nusxa saqlanmadi.',
+  'Ревизия сервера': 'Server reviziyasi',
 }

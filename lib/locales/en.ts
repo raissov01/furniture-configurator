@@ -1588,4 +1588,5 @@ export const en: Record<string, string> = {
   "Повторить сохранение": "Retry saving",
   'Копировать': 'Copy',
   'Нет связи с сервером. Локальная копия не сохранена.': 'No server connection. The local copy was not saved.',
+  'Ревизия сервера': 'Server revision',
 }
