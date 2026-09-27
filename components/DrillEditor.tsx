@@ -19,6 +19,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
+import { panelCncAvailable, panelCncCsv } from '@/lib/panelCncExport'
 import {
   CUTOUT_PRESETS,
   DRILL_PRESETS,
@@ -256,24 +257,16 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
           {/* Панель бойынша CNC: станоктың бағдарламасы дәл осындай кестені
               оқиды, ал бүкіл жобаның архивін ашудың қажеті жоқ. */}
           <Button
-            disabled={!childExportAllowed(propertiesOpen)}
-            title={tr('CSV с отверстиями этой детали — для станка')}
+            disabled={!childExportAllowed(propertiesOpen) || !panelCncAvailable(panel)}
+            title={panelCncAvailable(panel) ? tr('CSV с отверстиями этой детали — для станка') : tr('Нет отверстий')}
             onClick={() => {
-              const rows = [
-                ['Деталь', 'Сторона', 'X', 'Y', 'Диаметр', 'Глубина', 'Назначение', 'Источник'],
-                ...panel.drilling.map((d) => [
-                  panel.label, d.face, String(d.x), String(d.y),
-                  String(d.diameter), String(d.depth), d.purpose,
-                  isManualDrill(d, panelEdit) ? 'вручную' : 'авто',
-                ]),
-              ]
-              const csv = rows.map((r) => r.join(';')).join('\r\n')
+              const { name, csv } = panelCncCsv(panel, (drill) => isManualDrill(drill, panelEdit))
               // BOM: Excel онсыз кириллицаны бұзып ашады.
               const blob = new Blob([new TextEncoder().encode(`\ufeff${csv}`)], { type: 'text/csv;charset=utf-8' })
               const url = URL.createObjectURL(blob)
               const a = document.createElement('a')
               a.href = url
-              a.download = `${panel.label}-присадка.csv`
+              a.download = name
               a.click()
               URL.revokeObjectURL(url)
             }}
