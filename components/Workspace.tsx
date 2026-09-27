@@ -1112,18 +1112,18 @@ export function Workspace() {
             const part = projectPanels.find((p) => p.id === selected)
             if (!part) return null
             return (
-              <div data-testid="selected-info-overlay" className="pointer-events-auto absolute inset-x-2 bottom-2 z-20 flex max-h-[45%] flex-wrap items-center gap-2 overflow-y-auto border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
+              <div data-testid="selected-info-overlay" className="p100-selection-bar pointer-events-auto absolute inset-x-2 bottom-2 z-20 flex max-h-[45%] flex-wrap items-center gap-2 overflow-y-auto px-3 py-1.5 text-xs">
                 <b>{panelDisplayLabel(part.label)}</b>
-                <span className="tabular-nums text-neutral-500">
+                <span className="p100-muted tabular-nums">
                   {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
                 </span>
-                <span className="tabular-nums text-amber-600 dark:text-amber-400">
+                <span className="p100-cut tabular-nums">
                   {tr('Рез · цех')}: {part.cutLength}×{part.cutWidth}
                 </span>
-                <span className="tabular-nums text-neutral-500">
+                <span className="p100-muted tabular-nums">
                   {part.drilling.length} {tr('отв.')}
                 </span>
-                {part.note ? <span className="truncate text-neutral-400">{part.note}</span> : null}
+                {part.note ? <span className="p100-muted truncate">{part.note}</span> : null}
                 {/* Корпус әрекеттері (көшіру/айна/өшіру) енді оң панельдің астында — әрқашан көзде. */}
                 <div className="ml-auto flex items-center gap-1">
                   {/* Есік/ящик — осы жерден бір-бірлеп ашылады (екі рет басу да солай). */}

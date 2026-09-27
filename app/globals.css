@@ -134,6 +134,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   --p100-focus: #0078d4;
   --p100-text: #000000;
   --p100-muted: #525252;
+  --p100-cut-accent: #065ba8;
   --p100-icon-blue: #065ba8;
   --p100-icon-red: #d13438;
   --p100-icon-yellow: #ecdb8b;
@@ -205,6 +206,9 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   .p100-workspace .p100-dialog-body input[type="checkbox"] { accent-color: var(--p100-focus); }
 }
 .p100-status-price { padding: 0 6px; font-size: 11px; line-height: 16px; }
+.p100-selection-bar { border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog-content); color: var(--p100-text); }
+.p100-selection-bar .p100-muted { color: var(--p100-muted); }
+.p100-selection-bar .p100-cut { color: var(--p100-cut-accent); }
 .p100-status { min-height: 22px; align-items: center; gap: 12px; padding: 0 8px; border-top: 1px solid var(--p100-divider); background: var(--p100-chrome); font-size: 11px; }
 .p100-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: transparent; }
 .p100-dialog { display: flex; flex-direction: column; width: min(520px, calc(100vw - 24px)); height: min(760px, calc(100dvh - 24px)); max-height: min(760px, calc(100dvh - 24px)); border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }

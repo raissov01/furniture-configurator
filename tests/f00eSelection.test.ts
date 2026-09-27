@@ -12,6 +12,6 @@ describe('F00e таңдау жолағы', () => {
     expect(overlay).toBeGreaterThan(scene)
     expect(overlay).toBeLessThan(sceneEnd)
     expect(workspace.slice(overlay, overlay + 350)).toMatch(/absolute/)
-    expect(workspace.slice(overlay, overlay + 350)).toMatch(/border-neutral-300 bg-white/)
+    expect(workspace.slice(overlay, overlay + 350)).toMatch(/p100-selection-bar/)
   })
 })
