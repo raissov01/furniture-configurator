@@ -39,6 +39,7 @@ import {
   replaceTreeBoardMaterial,
   replaceTreeMaterial,
   nextFreeOffset,
+  nextSectionId,
   parseProjectV4,
   SceneLightsSchema,
   parseShopProfile,
@@ -846,7 +847,7 @@ export const useConfigurator = create<State>((set, get) => ({
   addSection() {
     const s = get()
     const cabinet = activeCabinet(s)
-    const nextId = `s${cabinet.sections.length + 1}`
+    const nextId = nextSectionId(cabinet.sections)
     const contents: SectionContent[] = [{ kind: 'shelves', count: 3, shelfKind: 'adjustable' }]
     get().edit('sections:add', {
       sections: [
