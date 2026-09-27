@@ -36,3 +36,7 @@ export function memberRemovalWarning(self: boolean): string {
 export function revokeError(ok: boolean, serverError: string | null): string | null {
   return ok ? null : serverError || 'Не удалось отозвать приглашение'
 }
+
+export function shouldCloseAccountOnKey(key: string, isTop: boolean, busy: boolean): boolean {
+  return key === 'Escape' && isTop && !busy
+}

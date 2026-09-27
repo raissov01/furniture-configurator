@@ -9,14 +9,15 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseProjectV4, parseShopProfile } from '@/src/core/index'
 import { addCloudFolder, moveProjectToFolder, organizeProjects, parseCloudOrg } from '@/src/core/cloudProjectOrganize'
 import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
-import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError } from '@/lib/accountPanelState'
+import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -44,6 +45,8 @@ const input =
 export function AccountPanel() {
   const open = useConfigurator((s) => s.accountOpen)
   const setOpen = useConfigurator((s) => s.setAccountOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'account')
+  const dialogRef = useRef<HTMLDivElement>(null)
   const shop = useConfigurator((s) => s.shop)
   const setShop = useConfigurator((s) => s.setShop)
   const exportProject = useConfigurator((s) => s.exportProject)
@@ -88,6 +91,19 @@ export function AccountPanel() {
   const formErrors = accountFormErrors(mode, form, Boolean(invite))
   const formReady = canSubmitAccount(mode, form, Boolean(invite)) && (!invite || mode === 'login' || inviteShopName !== null)
   const inviteShop = inviteShopDisplay(invite, inviteShopName)
+
+  useEffect(() => {
+    if (!open) return
+    dialogRef.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (!shouldCloseAccountOnKey(event.key, isTop, busy)) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, isTop, busy, setOpen])
 
   useEffect(() => {
     if (!account) return
@@ -358,17 +374,19 @@ export function AccountPanel() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
-      onClick={() => setOpen(false)}
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
+      style={{ zIndex }}
+      onClick={() => { if (isTop && !busy) setOpen(false) }}
     >
       <div
-        className="w-full max-w-lg rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Аккаунт')}
+        className="min-w-0 w-full max-w-lg border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-sm font-semibold">{account ? account.shopName : 'Вход в аккаунт'}</h2>
           <div className="ml-auto">
-            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
+            <Button onClick={() => setOpen(false)} disabled={busy}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
