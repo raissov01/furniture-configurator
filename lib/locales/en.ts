@@ -1393,4 +1393,17 @@ export const en: Record<string, string> = {
   'Без артикула вырез мойки не создаётся': 'A sink cutout requires an article',
   'Для мойки или плиты добавьте столешницу': 'Add a worktop for a sink or hob',
 
+  'Весь проект': 'Entire project',
+  'Активный корпус': 'Active cabinet',
+  'Экспорт для цеха — весь проект': 'Shop export — entire project',
+  'XLSX — весь проект': 'XLSX — entire project',
+  'CSV — весь проект': 'CSV — entire project',
+  'DXF — весь проект': 'DXF — entire project',
+  'XLSX — активный корпус': 'XLSX — active cabinet',
+  'CSV — активный корпус': 'CSV — active cabinet',
+  'DXF — активный корпус': 'DXF — active cabinet',
+  'PDF — сборка активного корпуса': 'PDF — active cabinet assembly',
+  'Стена C формируется автоматически; ручная раскладка доступна для A и B.': 'Wall C is generated automatically; edit walls A and B manually.',
+  'Исправьте поля с ошибками': 'Correct the invalid fields',
+
 }
