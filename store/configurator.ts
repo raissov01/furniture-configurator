@@ -59,6 +59,7 @@ import type {
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
   setNodeLayer, treeFromProject } from '@/src/core/index'
+import { LEGACY_MATERIAL_ALIASES } from '@/src/core/data/catalog/materials'
 import { appendNodeArray, assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, translateTreeNodes, ungroupNode } from '@/src/core/treeEditing'
 import type { ArrayOptions } from '@/src/core/array'
 import type { AutoJointKind } from '@/src/core/autoJoint'
@@ -1010,9 +1011,11 @@ export const useConfigurator = create<State>((set, get) => ({
    */
   loadProject(file) {
     const s = get()
-    const project = parseProjectV4(file)
+    const project = parseProjectV4(file, { migrateMaterials: false })
     const known = new Set(s.shop.materials.map((m) => m.id))
-    const missing = project.materials.filter((m) => !known.has(m.id)).map((m) => ({ ...m, pricePerSheet: 0 }))
+    const shopMaterials = new Map(s.shop.materials.map((m) => [m.id, m]))
+    const missing = project.materials.filter((m) => !known.has(m.id)).map((m) => ({ ...m,
+      pricePerSheet: shopMaterials.get(LEGACY_MATERIAL_ALIASES[m.id] ?? '')?.pricePerSheet ?? 0 }))
     const knownBands = new Set(s.shop.edgeBands.map((b) => b.id))
     const missingBands = project.edgeBands.filter((b) => !knownBands.has(b.id)).map((b) => ({ ...b, pricePerMeter: 0 }))
 

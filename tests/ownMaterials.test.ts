@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { BASIS_MATERIALS, OWN_CATALOG, ownCatalogBuild, parseProjectV4, SEED_CATALOG } from '../src/core/index'
+import { BASIS_MATERIALS, OWN_CATALOG, ownCatalogBuild, parseProjectV4, projectFingerprint, SEED_CATALOG } from '../src/core/index'
 import {
   buildLegacyMaterialAliases, LEGACY_MATERIAL_ALIASES, migrateLegacyProjectMaterials, validateSupplementalCatalog,
 } from '../src/core/data/catalog/materials'
@@ -73,5 +73,31 @@ describe('ескі материал id көшуі', () => {
     const raw = { materials: [{ ...material, sheetWidth: 2750, pricePerSheet: 12345 }],
       root: { board: { materialId: oldId } } }
     expect(migrateLegacyProjectMaterials(raw, aliases)).toEqual(raw)
+  })
+
+  it('материалға байланған жолдық жеңілдік кілтін бірге көшіреді', () => {
+    const oldId = 'basis-ldsp-LDSP-16-H1145-ST10'
+    const material = BASIS_MATERIALS.find((m) => m.id === oldId)!
+    const raw = { materials: [material], priceOverrides: { lineDiscounts: {
+      [`materials:${oldId}`]: { kind: 'percent', value: 10 },
+    } } }
+    const migrated = migrateLegacyProjectMaterials(raw, aliases)
+    expect(migrated.priceOverrides.lineDiscounts).toEqual({
+      [`materials:${aliases[oldId]}`]: { kind: 'percent', value: 10 },
+    })
+  })
+
+  it('келісімдегі ескі v4 материал ID-ін сақтап, fingerprint-ті өзгертпейді', async () => {
+    const oldId = 'basis-ldsp-LDSP-16-H1145-ST10'
+    const material = BASIS_MATERIALS.find((m) => m.id === oldId)!
+    const raw = { schemaVersion: 4, name: 'Ескі келісім', materials: [material], edgeBands: [],
+      room: { width: 4000, depth: 3000, height: 2700 }, lights: [], autoJoints: [],
+      root: { kind: 'group', id: 'root', name: 'root', transform: { pos: { x: 0, y: 0, z: 0 }, rot: { x: 0, y: 0, z: 0 } }, children: [] },
+      priceOverrides: { salePrice: 100_000, lineDiscounts: { [`materials:${oldId}`]: { kind: 'percent', value: 10 } } },
+    }
+    const before = parseProjectV4(raw, { migrateMaterials: false })
+    const after = parseProjectV4(raw, { migrateMaterials: false })
+    expect(after.materials[0]?.id).toBe(oldId)
+    expect(await projectFingerprint(after)).toBe(await projectFingerprint(before))
   })
 })

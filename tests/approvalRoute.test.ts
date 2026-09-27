@@ -2,7 +2,8 @@ import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { SEED_CATALOG, findTemplate, templateToCabinet } from '../src/core/index'
+import { BASIS_MATERIALS, SEED_CATALOG, findTemplate, parseProjectV4, projectFingerprint, templateToCabinet } from '../src/core/index'
+import { toPublicProject } from '../src/core/publicProject'
 import { isApprovalClockError } from '../lib/server/approvalErrors'
 
 process.env['DATA_DIR'] = mkdtempSync(join(tmpdir(), 'furniture-approval-'))
@@ -33,6 +34,19 @@ beforeAll(async () => {
 })
 
 describe('share келісім API', () => {
+  it('ескі материал ID-і бар келісімнің fingerprint-ін ауыстырмайды', async () => {
+    const owner = auth.register('approval-legacy-material@example.kz', 'password123', 'Цех')
+    if (!owner.ok) throw new Error(owner.error)
+    actor.value = owner.account
+    const raw = { ...project('Ескі материал'), materials: [...SEED_CATALOG.materials,
+      BASIS_MATERIALS.find((m) => m.id === 'basis-ldsp-LDSP-16-H1145-ST10')!] }
+    const expected = await projectFingerprint(toPublicProject(parseProjectV4(raw, { migrateMaterials: false })))
+    const created = share.createShare(JSON.stringify(raw), Date.now(), owner.account.shopId)
+    const started = await route.POST(req('POST', {}), context(created.code))
+    expect(started.status).toBe(201)
+    expect((await started.json() as { hash: string }).hash).toBe(expected)
+  })
+
   it('цех ашады, клиент бөлек кодпен растайды, ескі мөр өзгермейді', async () => {
     const owner = auth.register('approval@example.kz', 'password123', 'Цех')
     if (!owner.ok) throw new Error(owner.error)
