@@ -280,13 +280,16 @@ function composeRun(
 
   // Техника — ТҰРАҚТЫ енді ұялар. Негізгі қабырғада: тоңазытқыш пен духовка
   // мұнарасы шетте, посудомойка мойканың қасында.
-  const wantFridge = opts.appliances && opts.main && remaining >= APP_W + MODULE_MIN
+  // 60 см плитаның ресми ойығы 560 мм: оған кемінде 600 мм база қалсын.
+  // Bosch PIE631BB5E б.1,3; қалған техника осы резервті жұтпауы керек.
+  const baseReserve = opts.hob ? findFixture('hobGas').minWidth : MODULE_MIN
+  const wantFridge = opts.appliances && opts.main && remaining >= APP_W + baseReserve
   if (wantFridge) remaining -= APP_W
-  const wantOven = opts.appliances && opts.main && remaining >= APP_W + MODULE_MIN
+  const wantOven = opts.appliances && opts.main && remaining >= APP_W + baseReserve
   if (wantOven) remaining -= APP_W
-  const wantSink = !cornerSink && opts.sink && opts.main && remaining >= SINK_WIDTH + MODULE_MIN
+  const wantSink = !cornerSink && opts.sink && opts.main && remaining >= SINK_WIDTH + baseReserve
   if (wantSink) remaining -= SINK_WIDTH
-  const wantDish = opts.appliances && opts.main && (wantSink || cornerSink) && remaining >= APP_W + MODULE_MIN
+  const wantDish = opts.appliances && opts.main && (wantSink || cornerSink) && remaining >= APP_W + baseReserve
   if (wantDish) remaining -= APP_W
 
   const bases = splitRun(remaining).map((width, i): { kind: ModuleKind; width: number } => ({

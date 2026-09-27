@@ -253,7 +253,8 @@ export const SectionContentSchema = z.discriminatedUnion('kind', [
   }),
   z.object({ kind: z.literal('rod'), height: bandHeight }),
   z.object({ kind: z.literal('filling'), filling: FillingKindSchema, height: bandHeight }),
-  z.object({ kind: z.literal('appliance'), appliance: ApplianceKindSchema, height: bandHeight }),
+  z.object({ kind: z.literal('appliance'), appliance: ApplianceKindSchema,
+    modelId: z.string().min(1).optional(), height: bandHeight }),
   z.object({ kind: z.literal('empty'), height: bandHeight }),
 ])
 
