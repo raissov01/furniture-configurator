@@ -8,6 +8,29 @@ const baseline = useConfigurator.getState()
 afterEach(() => useConfigurator.setState(baseline, true))
 
 describe('кітапханадан жобаға қою', () => {
+  it('құлыпталған топқа немесе қабатқа элемент қоймайды', () => {
+    const state = useConfigurator.getState()
+    const board: SceneNode = { kind: 'board', id: 'source-locked', name: 'Тақта',
+      transform: state.root.transform,
+      board: { materialId: state.catalog.materials[0]!.id, length: 500, width: 300,
+        orientation: { length: 'x', width: 'z', thickness: 'y' },
+        edges: { L1: null, L2: null, W1: null, W2: null }, grainAlongLength: false, role: 'custom' } }
+    const item = createLibraryItem(board, state.catalog, 'Тақта', '2026-09-27T00:00:00.000Z', 'locked-item')
+    const parent = { kind: 'group' as const, id: 'locked-parent', name: 'Құлыпты топ',
+      transform: state.root.transform, children: [] }
+    for (const [lockedGroup, lockedLayer] of [[true, false], [false, true]] as const) {
+      const root = { ...state.root, children: [...state.root.children, { ...parent, locked: lockedGroup }] }
+      useConfigurator.setState({ root, layers: state.layers.map((layer) =>
+        layer.id === state.layers[0]!.id ? { ...layer, locked: lockedLayer } : layer) })
+      expect(() => useConfigurator.getState().placeLibraryItem(item, parent.id)).toThrow(/құлып/)
+      expect(useConfigurator.getState().root).toBe(root)
+    }
+    const rootLocked = { ...state.root, locked: true }
+    useConfigurator.setState({ root: rootLocked, layers: state.layers })
+    expect(() => useConfigurator.getState().placeLibraryItem(item)).toThrow(/құлып/)
+    expect(useConfigurator.getState().root).toBe(rootLocked)
+  })
+
   it('жаңа материалды жоба каталогына қосып, board-ты өндіріс панеліне жібереді', () => {
     const state = useConfigurator.getState()
     const material = { ...state.catalog.materials[0]!, id: 'my-library-material', name: 'Жеке материал' }

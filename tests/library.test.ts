@@ -42,6 +42,10 @@ describe('өз кітапханасы', () => {
     expect(copy.id).toBe('new-1')
     if (copy.kind !== 'group') throw new Error('group expected')
     expect(copy.children.map((node) => node.id)).toEqual(['new-2', 'new-3'])
+    const copiedCabinet = copy.children[1]
+    expect(copiedCabinet?.kind).toBe('cabinet')
+    if (copiedCabinet?.kind !== 'cabinet') throw new Error('cabinet expected')
+    expect(copiedCabinet.config.id).toBe(copiedCabinet.id)
     expect(item.materials.length).toBeGreaterThan(0)
   })
 
