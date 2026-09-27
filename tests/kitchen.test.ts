@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  SEED_CATALOG, generateCabinet, generateKitchen, kitchenLayout, splitRun, validatePlacements,
+  ConfigValidationError, SEED_CATALOG, generateCabinet, generateKitchen, kitchenLayout, splitRun, validatePlacements,
 } from '../src/core/index'
 
 describe('splitRun', () => {
@@ -76,6 +76,35 @@ const entriesOf = (r: ReturnType<typeof generateKitchen>) =>
   }))
 
 describe('generateKitchen', () => {
+  it('белсенді қабырғалар үшін тек ≥ 600 бүтін мм қабылдайды', () => {
+    const invalid = [
+      { options: { layout: 'straight' as const, lengthA: 0 }, field: 'lengthA' },
+      { options: { layout: 'straight' as const, lengthA: 599 }, field: 'lengthA' },
+      { options: { layout: 'straight' as const, lengthA: 600.5 }, field: 'lengthA' },
+      { options: { layout: 'straight' as const, lengthA: Number.NaN }, field: 'lengthA' },
+      { options: { layout: 'straight' as const, lengthA: Number.POSITIVE_INFINITY }, field: 'lengthA' },
+      { options: { layout: 'corner' as const, lengthA: 2400, lengthB: 0 }, field: 'lengthB' },
+      { options: { layout: 'corner' as const, lengthA: 2400 }, field: 'lengthB' },
+      { options: { layout: 'u' as const, lengthA: 2400, lengthB: 2400, lengthC: 599 }, field: 'lengthC' },
+    ]
+    for (const { options, field } of invalid) {
+      for (const call of [
+        () => kitchenLayout(options),
+        () => generateKitchen(options, SEED_CATALOG),
+      ]) {
+        let caught: unknown
+        try {
+          call()
+        } catch (error) {
+          caught = error
+        }
+        expect(caught, `${field} қабылданды`).toBeInstanceOf(ConfigValidationError)
+        expect((caught as ConfigValidationError).field).toBe(field)
+        expect((caught as ConfigValidationError).allowed).toContain('600')
+      }
+    }
+  })
+
   it('бұрыштағы төменгі және үстіңгі шығыс қатарлар соқыр панель қалыңдығынан кейін басталады', () => {
     const r = generateKitchen({ layout: 'corner', lengthA: 3200, lengthB: 2400, sink: true, upper: true }, SEED_CATALOG)
     const byId = new Map(r.cabinets.map((cab) => [cab.id, cab]))
