@@ -13,6 +13,7 @@
  */
 
 import { z } from 'zod'
+import { migrateBandThreshold } from './migrateBandThreshold'
 import { KERF, MAX_KERF } from './constants'
 import { fillingHardware } from './filling'
 import {
@@ -769,6 +770,7 @@ const ShopProfileV6Schema = z.object(ShopProfileSchema.shape)
  * толтырған бағалары нұсқа ауысқанда жоғалмауы керек (§7).
  */
 export function parseShopProfile(raw: unknown): ShopProfile {
+  raw = migrateBandThreshold(raw).value
   const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion
 
   // v1 → v2: жұмыс ақысы мен үстеме пайда болды.

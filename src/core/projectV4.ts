@@ -22,6 +22,7 @@ import type { CabinetConfig, ProjectFile } from './types'
 import type { SceneLight } from './visual'
 import { validatePolygonContour } from './polygon'
 import { ConfigValidationError } from './errors'
+import { migrateBandThreshold } from './migrateBandThreshold'
 import type { AutoJointRecord } from './autoJointRebuild'
 import { rebuildAutoJoints, validateManualBoardDrilling } from './autoJointRebuild'
 import { migrateLegacyProjectMaterials } from './data/catalog/materials'
@@ -245,6 +246,7 @@ export function migrateV3ToV4(project: ProjectFile & { layers?: Layer[] }): Proj
 
 /** v1–v3 оқығанда бұрынғы миграция тізбегі қолданылады; v4 тура тексеріледі. */
 export function parseProjectV4(raw: unknown, options: { migrateMaterials?: boolean } = {}): ProjectFileV4 {
+  raw = migrateBandThreshold(raw).value
   const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion
   if (version === 4) {
     const parsed = repairProjectSectionIds(ProjectFileV4BaseSchema.parse(raw))
