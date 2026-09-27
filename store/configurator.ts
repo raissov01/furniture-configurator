@@ -447,8 +447,8 @@ function legacyEdit(s: State, cabinets: CabinetConfig[], placements = s.placemen
 }
 
 /** A preset replaces scene content, while order metadata and material choices remain. */
-function replaceProjectScene(s: State, cabinets: CabinetConfig[], placements: Placement[], room: Room) {
-  const root = treeFromProject({ schemaVersion: 3, name: s.root.name, room, cabinets, placements,
+function replaceProjectScene(s: State, cabinets: CabinetConfig[], placements: Placement[], room: Room, name = s.root.name) {
+  const root = treeFromProject({ schemaVersion: 3, name, room, cabinets, placements,
     materials: s.catalog.materials, edgeBands: s.catalog.edgeBands })
   const layers = [createDefaultLayer()]
   // A preset replaces the complete scene. Its undo snapshot keeps old joints,
@@ -923,15 +923,16 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const { cabinets, placements, room } = generateKitchen(options, s.catalog)
     if (cabinets.length === 0) {
-      if (measuredRoom) throw new Error('Өлшенген қабырғаға ас үй модулі сыймады')
-      return
+      throw new Error(measuredRoom ? 'Өлшенген қабырғаға ас үй модулі сыймады' : 'lengthA: ас үй модулі сыймады; 600–20 000 мм')
     }
     const nextRoom = measuredRoom
       ? withOpenings(measuredRoom)
       : withOpenings({ ...s.room, width: room.width, depth: room.depth, height: Math.max(s.room.height, room.height) })
+    const name = tr('Кухня')
     set({
       room: nextRoom,
-      ...replaceProjectScene(s, cabinets, placements, nextRoom),
+      ...replaceProjectScene(s, cabinets, placements, nextRoom, name),
+      projectName: name,
       activeId: cabinets[0]!.id,
       templateId: '',
       galleryOpen: false,
