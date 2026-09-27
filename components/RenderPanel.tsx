@@ -104,7 +104,7 @@ export function RenderPanel() {
         {tab === 'lights' ? <ProjectLightsEditor /> : null}
         {tab === 'render' ? <>
 
-        <p className="mb-3 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+        <p className="mb-3 text-[11px] leading-snug text-amber-900 dark:text-amber-400">
           {tr('Рендер — картинка, а не размер: модель может слегка изменить пропорции и цвет. Перед отправкой клиенту сверьте с деталировкой.')}
         </p>
 

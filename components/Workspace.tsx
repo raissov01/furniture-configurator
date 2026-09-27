@@ -867,7 +867,7 @@ export function Workspace() {
           className={
             mounted && ms > BUDGET_MS
               ? 'rounded bg-red-100 px-1.5 py-0.5 text-[10px] tabular-nums text-red-800 dark:bg-red-950 dark:text-red-300'
-              : 'rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] tabular-nums text-neutral-500 dark:bg-neutral-800'
+              : 'rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] tabular-nums text-neutral-600 dark:bg-neutral-800'
           }
           title={`Бюджет: ${BUDGET_MS} мс`}
         >

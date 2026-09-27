@@ -67,7 +67,7 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => setOpen(false)}
     >
       <div
