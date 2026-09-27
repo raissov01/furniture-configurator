@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { validAnnotationText } from '../lib/annotationDraft'
 import { propertiesNodeSupported } from '../lib/propertiesNodeUi'
+import { PropertiesDialog } from '../components/PropertiesDialog'
+import { useConfigurator } from '../store/configurator'
 
 describe('annotation Properties editor', () => {
   it('accepts annotation nodes and rejects groups', () => {
@@ -23,5 +27,25 @@ describe('annotation Properties editor', () => {
     expect(dialog).toContain('autoApply')
     expect(dialog).toContain("updateDraftErrors(current, 'annotationText', isInvalid)")
     expect(scene).toContain('detail: annotation.nodeId')
+  })
+
+  it('renders the selected annotation editor inside Properties', () => {
+    const original = useConfigurator.getState().exportProject()
+    const serverSnapshot = useConfigurator.getInitialState()
+    const originalServerSnapshot = { ...serverSnapshot }
+    try {
+      const nodeId = useConfigurator.getState().addAnnotation()
+      const state = useConfigurator.getState()
+      Object.assign(serverSnapshot, state)
+      const catalog = state.catalog
+      const html = renderToStaticMarkup(createElement(PropertiesDialog, {
+        nodeId, catalog, panels: [], error: null, onClose: () => undefined,
+      }))
+      expect(html).toContain('data-testid="properties-dialog"')
+      expect(html).toContain('data-testid="annotation-properties"')
+    } finally {
+      Object.assign(serverSnapshot, originalServerSnapshot)
+      useConfigurator.getState().loadProject(original)
+    }
   })
 })
