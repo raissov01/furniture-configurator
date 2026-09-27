@@ -8,11 +8,13 @@ process.env['DATA_DIR'] = mkdtempSync(join(tmpdir(), 'password-reset-'))
 let auth: typeof import('../lib/server/auth')
 let reset: typeof import('../lib/server/passwordReset')
 let db: typeof import('../lib/server/db')
+let rate: typeof import('../lib/server/rateLimit')
 
 beforeAll(async () => {
   auth = await import('../lib/server/auth')
   reset = await import('../lib/server/passwordReset')
   db = await import('../lib/server/db')
+  rate = await import('../lib/server/rateLimit')
 })
 
 describe('құпия сөзді қалпына келтіру', () => {
@@ -54,5 +56,12 @@ describe('құпия сөзді қалпына келтіру', () => {
     if (!issued) throw new Error('issue failed')
     expect(reset.consumePasswordReset(issued.token, 'short')).toBe(false)
     expect(reset.consumePasswordReset(issued.token, 'replacement123')).toBe(true)
+  })
+
+  it('бір аккаунтқа бір сағатта үш қана сұраныс жібереді', () => {
+    for (let i = 0; i < 3; i++) expect(rate.allowPasswordResetRequest('192.0.2.1', 'limit@example.com', 1_000)).toBe(true)
+    expect(rate.allowPasswordResetRequest('192.0.2.1', 'limit@example.com', 1_000)).toBe(false)
+    expect(rate.allowPasswordResetRequest('192.0.2.2', 'limit@example.com', 1_000)).toBe(false)
+    expect(rate.allowPasswordResetRequest('192.0.2.1', 'limit@example.com', 3_600_000)).toBe(true)
   })
 })
