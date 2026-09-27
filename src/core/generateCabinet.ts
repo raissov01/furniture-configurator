@@ -1869,7 +1869,7 @@ export function generateCabinet(
 
   // Қолмен түзетілген присадка — ЕҢ СОҢЫНДА. Осылай 3D те, DXF те, смета да
   // бірдей тесіктерді көреді: панель — жалғыз ақиқат көзі (§3).
-  applyDrillEdits(panels, config.drillEdits)
+  applyDrillEdits(panels, config.drillEdits, catalog, settings)
 
   return panels
 }
