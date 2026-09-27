@@ -6,7 +6,7 @@ const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.u
 describe('390 × 844 workspace flow', () => {
   it('keeps the scene compact and gives the properties pane its own mobile scroll area', () => {
     expect(source).toMatch(/grid[^"\n]*overflow-y-auto[^"\n]*lg:overflow-hidden/)
-    expect(source).toMatch(/<main className="[^"\n]*isolate[^"\n]*h-\[32dvh\][^"\n]*max-h-\[32dvh\][^"\n]*overflow-hidden/)
+    expect(source).toMatch(/<main className="[^"\n]*isolate[^"\n]*h-\[28dvh\][^"\n]*max-h-\[28dvh\][^"\n]*overflow-hidden/)
     expect(source).toMatch(/<aside className="[^"\n]*min-h-\[360px\][^"\n]*lg:max-h-none/)
   })
 

@@ -1060,7 +1060,7 @@ export function Workspace() {
         </div>
         <div className="flex min-h-0 flex-col">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
-        <main className="relative isolate h-[32dvh] min-h-[240px] max-h-[32dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+        <main className="relative isolate h-[28dvh] min-h-[240px] max-h-[28dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
