@@ -8,6 +8,8 @@ import { parseProjectV4 } from '@/src/core/projectV4'
 import { flattenTree } from '@/src/core/flatten'
 import { projectProduction } from '@/lib/projectProduction'
 import { decodePartQr, type PartQr } from '@/src/core/partQr'
+import { scanVersionStatus } from '@/lib/mobile/partScanUi'
+import type { InstallationTask } from '@/src/core/installation'
 import type { Panel } from '@/src/core/types'
 
 type Detector = { detect(video: HTMLVideoElement): Promise<{ rawValue: string }[]> }
@@ -15,6 +17,7 @@ type DetectorClass = new (options: { formats: string[] }) => Detector
 
 export default function MobileScanPage() {
   const video = useRef<HTMLVideoElement>(null)
+  const scanRequest = useRef(0)
   const [raw, setRaw] = useState('')
   const [part, setPart] = useState<PartQr | null>(null)
   const [panel, setPanel] = useState<Panel | null>(null)
@@ -22,32 +25,58 @@ export default function MobileScanPage() {
   const [camera, setCamera] = useState(false)
 
   const openCode = async (value: string) => {
+    const request = ++scanRequest.current
+    setPart(null)
+    setPanel(null)
+    setMessage('')
     try {
       const decoded = decodePartQr(value.trim())
-      setPart(decoded)
-      setPanel(null)
       const db = await IndexedDbMobileStore.open()
       try {
-        let project = await db.getProject(decoded.projectId)
-        if (!project && navigator.onLine) {
-          const response = await fetch(`/api/projects/${encodeURIComponent(decoded.projectId)}`, { credentials: 'same-origin' })
-          if (response.ok) {
-            const body: unknown = await response.json()
-            if (body && typeof body === 'object' && 'project' in body) {
-              project = parseProjectV4(body.project)
-              await db.putProject(decoded.projectId, project)
-            }
+        let tasks = (await db.listInstallations()).filter((task) => task.projectId === decoded.projectId)
+        if (navigator.onLine) {
+          const list = await fetch('/api/installation', { credentials: 'same-origin', cache: 'no-store' })
+          if (!list.ok) throw new Error(t('Монтаж нұсқасы тексерілмеді. Қайта қосылып көріңіз.'))
+          const listing = await list.json() as { tasks: { id: string; projectId: string }[] }
+          const fresh: InstallationTask[] = []
+          for (const item of listing.tasks.filter((entry) => entry.projectId === decoded.projectId)) {
+            const detail = await fetch(`/api/installation/${encodeURIComponent(item.id)}`, { credentials: 'same-origin', cache: 'no-store' })
+            if (!detail.ok) throw new Error(t('Монтаж нұсқасы тексерілмеді. Қайта қосылып көріңіз.'))
+            const body = await detail.json() as { task: InstallationTask }
+            await db.putInstallation(body.task)
+            fresh.push(body.task)
           }
+          tasks = fresh
+        }
+        const version = scanVersionStatus(decoded, tasks)
+        if (request !== scanRequest.current) return
+        setPart(decoded)
+        if (version === 'stale') { setMessage(t('Бұл бирка ескірген. Жөндеуден кейінгі жаңа QR-ді пайдаланыңыз.')); return }
+        if (version === 'unknown' && tasks.some((task) => task.panelIds.includes(decoded.panelId))) {
+          setMessage(t('Бирка нұсқасы монтаж тапсырмасымен сәйкес емес.')); return
+        }
+        let project = await db.getProject(decoded.projectId)
+        if (navigator.onLine) {
+          const response = await fetch(`/api/projects/${encodeURIComponent(decoded.projectId)}`, { credentials: 'same-origin' })
+          if (!response.ok) throw new Error(t('Жобаның жаңа нұсқасы тексерілмеді. Қайта қосылып көріңіз.'))
+          const body: unknown = await response.json()
+          if (!body || typeof body !== 'object' || !('project' in body)) throw new Error(t('Жоба жауабы жарамсыз'))
+          project = parseProjectV4(body.project)
+          await db.putProject(decoded.projectId, project)
         }
         if (!project) { setMessage(t('Проект не загружен на телефон. Откройте его при наличии сети.')); return }
         const scene = flattenTree(project.root, { materials: project.materials, edgeBands: project.edgeBands },
           project.settings, project.layers, project.autoJoints)
         const found = projectProduction(project.root, scene).panels.find((item) => item.id === decoded.panelId)
         if (!found) throw new Error(t('Деталь не найдена в проекте'))
+        if (request !== scanRequest.current) return
         setPanel(found)
-        setMessage('')
+        setMessage(version === 'unknown' ? t('Бұл жобаға монтаж тапсырмасы жоқ: QR нұсқасы расталмады.') :
+          navigator.onLine ? '' : t('Офлайн: соңғы сервер нұсқасы тексерілмеді.'))
       } finally { db.close() }
-    } catch (error) { setMessage(error instanceof Error ? error.message : t('QR не прочитан')) }
+    } catch (error) { if (request === scanRequest.current) {
+      setPart(null); setPanel(null); setMessage(error instanceof Error ? error.message : t('QR не прочитан'))
+    } }
   }
 
   useEffect(() => {
