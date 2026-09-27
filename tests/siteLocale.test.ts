@@ -24,7 +24,7 @@ describe('landing translations', () => {
   })
 
   it('covers every Russian literal in the public landing components', () => {
-    for (const name of ['app/page.tsx', 'components/site/SiteHeader.tsx', 'components/site/SiteFooter.tsx', 'components/site/SheetFigure.tsx', 'lib/site.ts']) {
+    for (const name of ['components/site/LandingPage.tsx', 'components/site/SiteHeader.tsx', 'components/site/SiteFooter.tsx', 'components/site/SheetFigure.tsx', 'lib/site.ts']) {
       const source = readFileSync(join(process.cwd(), name), 'utf8')
       for (const line of source.split('\n')) {
         if (line.trimStart().startsWith('//') || line.trimStart().startsWith('*')) continue

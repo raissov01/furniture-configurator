@@ -36,7 +36,7 @@ const mono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  ...(origin ? { metadataBase: new URL(origin), alternates: { canonical: '/' } } : {}),
+  ...(origin ? { metadataBase: new URL(origin) } : {}),
   // Беттердің өз атауы болса — «Раскрой — … · AisMebel», болмаса толық атау.
   title: { default: BRAND.fullName, template: `%s · ${BRAND.name}` },
   applicationName: BRAND.name,

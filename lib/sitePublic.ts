@@ -1,13 +1,18 @@
 /** Only publish origins supplied by deployment configuration. */
 export function publicOrigin(env: { NEXT_PUBLIC_SITE_URL?: string | undefined; VERCEL_URL?: string | undefined }): string | null {
-  const raw = env.NEXT_PUBLIC_SITE_URL ?? (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : '')
-  try {
-    const url = new URL(raw)
-    if (url.protocol !== 'https:' || url.hostname === 'localhost' || url.hostname.endsWith('.localhost')) return null
-    return url.origin
-  } catch {
-    return null
+  for (const raw of [env.NEXT_PUBLIC_SITE_URL, env.VERCEL_URL ? `https://${env.VERCEL_URL}` : undefined]) {
+    if (!raw) continue
+    try {
+      const url = new URL(raw)
+      if (!['http:', 'https:'].includes(url.protocol)) continue
+      if (url.hostname === 'localhost' || url.hostname.endsWith('.localhost') ||
+        url.hostname.startsWith('127.') || url.hostname === '[::1]' || url.hostname === '0.0.0.0') continue
+      return url.origin
+    } catch {
+      // Try the preview origin when a configured production URL is malformed.
+    }
   }
+  return null
 }
 
 /** Do not render a mailto link for placeholder or invalid addresses. */
