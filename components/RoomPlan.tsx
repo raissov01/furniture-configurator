@@ -60,7 +60,6 @@ export function RoomPlan() {
       return []
     }
   })), [root, layers, cabinets])
-  const roomEditable = editableIds.size === cabinets.length
   // Қабырға бойымен тек қабырғаға дәл тірелген шкаф жылжиды: еркін шкафтың
   // placement-і жуықтау, оны өзгерту шкафты қабырғаға секіртеді.
   const movableIds = useMemo(() => new Set(wallAttachedPlacements(root, room)
@@ -130,7 +129,7 @@ export function RoomPlan() {
 
           <div className="space-y-3">
             <SectionTitle>{tr('Размеры комнаты, мм')}</SectionTitle>
-            <fieldset disabled={!roomEditable} className="grid grid-cols-3 gap-2">
+            <fieldset className="grid grid-cols-3 gap-2">
               <Field label={tr('Ширина')}>
                 <NumberInput value={room.width} min={500} max={20000} step={50}
                   onChange={(width) => editRoom({ width })} />
@@ -146,7 +145,7 @@ export function RoomPlan() {
             </fieldset>
 
             <SectionTitle>{tr('Отделка')}</SectionTitle>
-            <fieldset disabled={!roomEditable}>
+            <fieldset>
               <FinishEditor room={room} onChange={(finish) => editRoom({ finish })} />
             </fieldset>
 
