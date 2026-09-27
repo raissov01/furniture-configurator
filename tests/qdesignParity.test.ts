@@ -42,7 +42,8 @@ describe('конфирмат', () => {
 })
 
 describe('направляющая: Blum Tandem схемасы', () => {
-  const panels = build()
+  // Қалыпты ас үй үлгісі roller жүйесін таңдайды; бұл эталон Tandem артикулына тән.
+  const panels = build({ drawerSystem: 'tandem' })
   const side = panels.find((p) => p.id === 'side-left')!
   const runner = side.drilling.filter((d) => d.purpose === 'runner')
 
