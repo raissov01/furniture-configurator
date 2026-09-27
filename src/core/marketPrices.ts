@@ -190,8 +190,13 @@ export const MARKET_GROUPS: MarketGroup[] = [
     offers: [offer('RoomSet', 'Астана', 'https://roomset.kz/tseny/', 'Стандарт тесікті бұрғылау', 35)],
   },
   {
-    id: 'service-edging-metre', label: 'Облицовка кромкой ПВХ, за метр', unit: 'lm', dateSeen: MARKET_PRICE_DATE,
-    offers: [offer(DAMEN, 'Астана', 'https://damen-mebel.kz/raspil/', 'ПВХ кромка жапсыру', 150)],
+    // Тек «listed», түзу жиек, лента ені 19 мм-ді қамтиды. RoomSet 200 — «от»,
+    // Mebex — лента ені 16/32 мм, Евромаркет — 2024 прайсы: кірмеді.
+    id: 'service-edging-metre', label: 'Облицовка кромкой ПВХ, прямая, за метр', unit: 'lm', dateSeen: D27,
+    offers: [
+      offer(DAMEN, 'Астана', 'https://damen-mebel.kz/raspil/', 'ПВХ кромка жапсыру', 150),
+      offer('ДСП Центр', 'Алматы', 'https://dspc.kz/services', 'ПВХ түзу кромкалау, лента ені 23 мм-ге дейін', 195),
+    ],
   },
 
   // ── 2026-09-27: `.codex-runs/lite/hardware-prices/prices.json` ──

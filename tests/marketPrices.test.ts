@@ -99,7 +99,7 @@ describe('жаңа цех нарық бағасымен толады', () => {
     expect(hardware(shop, 'runner-tandem').pricePerUnit).toBe(968_450)
     expect(shop.services.cutting).toEqual({ basis: 'sheet', rate: 200_000 })
     expect(shop.services.drilling).toEqual({ basis: 'hole', rate: 3500 })
-    expect(shop.services.edging).toEqual({ basis: 'edgeMetre', rate: 15_000 })
+    expect(shop.services.edging).toEqual({ basis: 'edgeMetre', rate: 17_250 })
   })
 
   it('2026-09-27 деректері: бос қалған фурнитура толады (медиана, N)', () => {
@@ -119,6 +119,11 @@ describe('жаңа цех нарық бағасымен толады', () => {
       expect(hardware(shop, id).pricePerUnit, id).toBe(price)
       expect(shop.marketPrices[`hardware:${id}`], id).toMatchObject({ priceTiyn: price, offers: n, dateSeen: '2026-09-27' })
     }
+  })
+
+  it('қызмет: кромкалау 2 ұсыныстан (DAMEN 150, ДСП Центр 195), 2026-09-27', () => {
+    expect(marketMedianTiyn(marketGroup('service-edging-metre')!)).toBe(17_250)
+    expect(shop.marketPrices['service:edging']).toMatchObject({ offers: 2, dateSeen: '2026-09-27' })
   })
 
   it('дерегі жоқ позиция БОС қалады — ойдан баға жоқ', () => {
