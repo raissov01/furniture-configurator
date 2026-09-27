@@ -6,6 +6,7 @@ import { can } from '@/lib/permissions'
 import { allowShareMiss, isShareLimited, requestIp } from '@/lib/server/rateLimit'
 import { ConfigValidationError, parseProjectV4 } from '@/src/core/index'
 import { toPublicProject } from '@/src/core/publicProject'
+import { publicProjectForShare } from '@/lib/server/publicShare'
 
 type Context = { params: Promise<{ code: string }> }
 
@@ -57,7 +58,7 @@ export async function PUT(request: Request, { params }: Context): Promise<Respon
   }
   let publicJson: string
   try {
-    publicJson = JSON.stringify(toPublicProject(parseProjectV4(JSON.parse(text) as unknown)))
+    publicJson = JSON.stringify(publicProjectForShare(parseProjectV4(JSON.parse(text) as unknown), account?.shopId))
   } catch (error) {
     const message = error instanceof ConfigValidationError ? error.message : 'Проект не прочитался'
     return NextResponse.json({ error: message }, { status: 400 })
