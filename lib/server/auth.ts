@@ -18,6 +18,8 @@ export const SESSION_COOKIE = 'furniture_session'
 const SESSION_DAYS = 30
 /** Құпиясөздің ең аз ұзындығы. Қысқасы — бұзылған аккаунт. */
 export const MIN_PASSWORD = 8
+/** Цех атауының ең ұзын көрінетін мәтіні; сақтау мен UI енгізу шегі. */
+export const MAX_SHOP_NAME_LENGTH = 100
 
 export type Account = {
   userId: string
@@ -64,6 +66,9 @@ export function register(
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) return { ok: false, error: 'Неверный адрес почты' }
   if (password.length < MIN_PASSWORD) {
     return { ok: false, error: `Пароль короче ${MIN_PASSWORD} символов` }
+  }
+  if (!joinShopId && shopName.trim().length > MAX_SHOP_NAME_LENGTH) {
+    return { ok: false, error: `Название цеха длиннее ${MAX_SHOP_NAME_LENGTH} символов` }
   }
 
   const database = db()

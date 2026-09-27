@@ -29,6 +29,12 @@ const drill = (f: ProjectFileV4) => flattenTree(f.root,
   .nodes.flatMap((n) => n.panels.flatMap((p) => p.drilling))
 
 describe('сақталған автоматты буын', () => {
+  it('еркін тақтаның қол Ø35 тесігі шеттен асып кетсе, flattenTree экспортқа панель бермейді', () => {
+    const scene = root()
+    ;(scene.children[0] as BoardNode).board.drilling = [{ face: 'inner', x: 0, y: 160,
+      diameter: 35, depth: 12.5, purpose: 'hinge' }]
+    expect(() => flattenTree(scene, SEED_CATALOG)).toThrow(/board\[base\].*position/)
+  })
   it('қалыңдық 16→18 мм ауысқанда өтпелі тереңдік пен торц осі қайта есептеледі; кері қайтса тең', () => {
     const initial = applyAutoJointChange(file(), { create: { id: 'j1', boardIds: ['base', 'upright'], kind: 'confirmat' } })
     const old = drill(initial)
