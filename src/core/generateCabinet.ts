@@ -20,6 +20,8 @@ import {
 } from './edges'
 import { applyCutouts, applyPanelOverrides } from './cutouts'
 import { planWorktopCutout, worktopFixtureModel } from './worktopFixtures'
+import { applianceNicheModel, validateApplianceNiche } from './applianceNiches'
+import { fixtureMinimumWidth } from './filling'
 import type { Cutout } from './cutouts'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
@@ -105,6 +107,12 @@ export function generateCabinet(
   validateDimension(W, 'cabinet.width')
   validateDimension(D, 'cabinet.depth')
   validateFixtureCombination(config.fixtures)
+  config.fixtures?.forEach((fixture, i) => {
+    const minWidth = fixtureMinimumWidth(fixture)
+    if (W < minWidth) {
+      throw new ConfigValidationError(`fixtures[${i}].moduleWidth`, `${W} мм`, `≥ ${minWidth} мм`)
+    }
+  })
 
   /** Корпус материалының қалыңдығы. ЕШҚАШАН 16 деп қатырылмайды. */
   const t = carcass.thickness
@@ -977,6 +985,16 @@ export function generateCabinet(
       }
 
       if (content.kind === 'appliance') {
+        if (content.modelId) {
+          const model = applianceNicheModel(content.modelId)
+          const field = `sections[${sectionIndex}].contents[${bandIndex}]`
+          if (model.appliance !== content.appliance) {
+            throw new ConfigValidationError(`${field}.modelId`, content.modelId,
+              `${content.appliance} артикулы`)
+          }
+          validateApplianceNiche(model,
+            { height: band.height, width: layout.width, depth: shelfDepth }, field)
+        }
         /*
          * G3 (docs/visual/generator-gaps.md). Техника ҰЯСЫНЫҢ өз панелі жоқ
          * (жоғарыдағы «Техниканың ҰЯСЫ» түсіндірмесі), бірақ секцияда одан

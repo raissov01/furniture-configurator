@@ -1,12 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
   SEED_CATALOG, cabinetToDxfFiles, findTemplate, generateCabinet, mergeSettings,
-  planWorktopCutout, templateToCabinet, worktopFixtureModel,
+  planWorktopCutout, templateToCabinet, worktopFixtureModel, fixtureMinimumWidth,
 } from '../src/core/index'
 
 const base = () => templateToCabinet(findTemplate('kitchen-base-full-600')!, SEED_CATALOG)
 
 describe('өндіруші сызбасындағы үстелтақта ойықтары', () => {
+  it('модуль ені нақты құрылғыға байланған; Domino 300 ресми минимум ретінде берілмейді', () => {
+    expect(fixtureMinimumWidth({ kind: 'hob', fuel: 'electric' })).toBe(600)
+    expect(fixtureMinimumWidth({ kind: 'sink', modelId: 'blanco-522201' })).toBe(450)
+    expect(fixtureMinimumWidth({ kind: 'sink', modelId: 'franke-1140067723' })).toBe(600)
+    expect(() => generateCabinet({ ...base(), width: 599,
+      fixtures: [{ kind: 'hob', fuel: 'electric' }] }, SEED_CATALOG)).toThrow(/fixtures\[0\].*≥ 600/)
+  })
+
   it('60 см плита әдепкісі 560 × 490 R5, алдыңғы 55 және артқы 50 мм', () => {
     const model = worktopFixtureModel('hob-60-default')
     expect(model).toMatchObject({ width: 560, depth: 490, radius: 5,

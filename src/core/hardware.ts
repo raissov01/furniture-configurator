@@ -11,7 +11,8 @@
  */
 
 import { LEG_PLATE_ROUND_DIAMETER, LEG_PLATE_SQUARE_SIDE, LEG_STEP, mergeSettings } from './constants'
-import { HOOD_CLEARANCE, findAppliance, findFilling, findFixture, validateFixtureCombination } from './filling'
+import { HOOD_CLEARANCE, findAppliance, findFilling, findFixture, fixtureMinimumWidth, validateFixtureCombination } from './filling'
+import { applianceNicheModel, validateApplianceNiche } from './applianceNiches'
 import type { ApplianceKind, FixtureVisual } from './filling'
 import { ConfigValidationError } from './errors'
 import { carcassDepthAt, layoutBands } from './generateCabinet'
@@ -245,6 +246,16 @@ export function generateHardware(
       // Техниканың ұясы: 3D-де қорап болып көрінеді, сметаға түспейді.
       if (band.content.kind === 'appliance') {
         const model = findAppliance(band.content.appliance)
+        if (band.content.modelId) {
+          const nicheModel = applianceNicheModel(band.content.modelId)
+          const field = `sections[${sectionIndex}].contents[${bandIndex}]`
+          if (nicheModel.appliance !== band.content.appliance) {
+            throw new ConfigValidationError(`${field}.modelId`, band.content.modelId,
+              `${band.content.appliance} артикулы`)
+          }
+          validateApplianceNiche(nicheModel,
+            { height: band.height, width: layout.width, depth: shelfDepth }, field)
+        }
         if (layout.width < model.minWidth) {
           throw new ConfigValidationError(
             `sections[${sectionIndex}].contents[${bandIndex}].appliance`,
@@ -332,9 +343,10 @@ export function generateHardware(
         ? (fixture.fuel === 'gas' ? 'hobGas' : 'hobElectric')
         : fixture.kind
       const model = findFixture(id)
-      if (openWidth < model.minWidth) {
+      const minWidth = fixtureMinimumWidth(fixture)
+      if (openWidth < minWidth) {
         throw new ConfigValidationError(
-          `fixtures[${i}]`, `${model.name}: модуль ${openWidth} мм`, `≥ ${model.minWidth} мм`,
+          `fixtures[${i}]`, `${model.name}: модуль ${openWidth} мм`, `≥ ${minWidth} мм`,
         )
       }
       // Модульге сыйғызамыз: екі жағынан кемінде 20 мм қалады.

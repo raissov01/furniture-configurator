@@ -18,6 +18,8 @@
  */
 
 import { z } from 'zod'
+import { applianceNicheModel } from './applianceNiches'
+import { worktopFixtureModel } from './worktopFixtures'
 import { ConfigValidationError } from './errors'
 import type { CabinetFixture } from './types'
 
@@ -133,9 +135,13 @@ export type FixtureModel = {
 }
 
 export const FIXTURES: FixtureModel[] = [
-  { id: 'sink', name: 'Мойка', minWidth: 400, width: 760, depth: 480, height: 300 },
-  { id: 'hobGas', name: 'Варочная панель (газ)', minWidth: 450, width: 590, depth: 510, height: 40 },
-  { id: 'hobElectric', name: 'Варочная панель (электро)', minWidth: 450, width: 590, depth: 510, height: 6 },
+  // Ең тар тексерілген мойка: BLANCO LEGRA 45 S, min cabinet 450 (S1).
+  { id: 'sink', name: 'Мойка', minWidth: 450, width: 760, depth: 480, height: 300 },
+  // 60 см плита үшін 600 модуль: Bosch PIE631BB5E ойығы 560,
+  // 16 мм екі бүйір арасында 568 қалады (E1 + есеп). Газ моделін
+  // таңдағанда нақты артикулдың нұсқаулығын тексеру керек.
+  { id: 'hobGas', name: 'Варочная панель (газ)', minWidth: 600, width: 590, depth: 510, height: 40 },
+  { id: 'hobElectric', name: 'Варочная панель (электро)', minWidth: 600, width: 590, depth: 510, height: 6 },
   { id: 'hood', name: 'Вытяжка', minWidth: 450, width: 600, depth: 480, height: 800 },
 ]
 
@@ -143,6 +149,20 @@ export function findFixture(id: FixtureVisual): FixtureModel {
   const found = FIXTURES.find((f) => f.id === id)
   if (!found) throw new Error(`техника табылмады: ${id}`)
   return found
+}
+
+/** Нақты модель берілсе, өндірушінің «min cabinet» мәні басым. */
+export function fixtureMinimumWidth(fixture: CabinetFixture): number {
+  if (fixture.kind === 'hood') return findFixture('hood').minWidth
+  if (fixture.modelId) {
+    const model = worktopFixtureModel(fixture.modelId)
+    if (model.kind !== fixture.kind) {
+      throw new ConfigValidationError('fixtures.modelId', fixture.modelId,
+        `${fixture.kind} моделі`)
+    }
+    return model.minCabinetWidth
+  }
+  return fixture.kind === 'sink' ? findFixture('sink').minWidth : findFixture('hobElectric').minWidth
 }
 
 /** Мойка мен плита әдепкіде бір орталыққа қойылады: қабаттасқан өндірістік жоспарға жол бермейміз. */
@@ -170,11 +190,15 @@ export function fillingBandHeight(content: {
   kind: string
   filling?: FillingKind
   appliance?: ApplianceKind
+  modelId?: string | undefined
   height?: number | undefined
 }): number {
   if (content.height && content.height > 0) return content.height
   if (content.kind === 'filling' && content.filling) return findFilling(content.filling).defaultHeight
-  if (content.kind === 'appliance' && content.appliance) return findAppliance(content.appliance).defaultNicheHeight
+  if (content.kind === 'appliance' && content.appliance) {
+    if (content.modelId) return applianceNicheModel(content.modelId).height.min
+    return findAppliance(content.appliance).defaultNicheHeight
+  }
   return 0
 }
 
