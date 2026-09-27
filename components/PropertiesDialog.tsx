@@ -11,6 +11,8 @@ import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
 import { SolidProperties } from '@/components/SolidProperties'
+import { AnnotationProperties } from '@/components/AnnotationProperties'
+import { propertiesNodeSupported } from '@/lib/propertiesNodeUi'
 import { Button } from '@/components/ui'
 import { useModalLayer } from '@/lib/useModalLayer'
 
@@ -106,7 +108,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
     return () => { window.removeEventListener('keydown', handle, true); window.removeEventListener('pagehide', onPageHide) }
   }, [])
 
-  if (!node || (node.kind !== 'cabinet' && node.kind !== 'board' && node.kind !== 'solid')) return null
+  if (!node || !propertiesNodeSupported(node.kind) || node.kind === 'group') return null
   const locked = Boolean(node.locked)
   // Фон — МОДАЛДЫ: сыртқа басу ештеңе істемейді (бұрын өзгерісті ескертусіз жоятын, P0-3).
   return <div className="p100-dialog-backdrop" style={{ zIndex }} data-testid="properties-dialog-backdrop">
@@ -125,7 +127,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
       </p>}
       <div className="p100-dialog-body">
         <div>
-          {node.kind === 'solid' ? <fieldset disabled={locked}><SolidProperties key={node.id} node={node} /></fieldset> : node.kind === 'board'
+          {node.kind === 'annotation' ? <AnnotationProperties key={node.id} node={node} autoApply onDraftValidityChange={(isInvalid) => setDraftErrors((current) => updateDraftErrors(current, 'annotationText', isInvalid))} /> : node.kind === 'solid' ? <fieldset disabled={locked}><SolidProperties key={node.id} node={node} /></fieldset> : node.kind === 'board'
             ? <BoardProperties key={node.id} node={node} panel={boardPanel} catalog={catalog} locked={locked} productionReady={productionReady} />
             : <Configurator key={node.id} invalidField={error?.field ?? null} panels={panels}
                 locked={locked} productionReady={productionReady}

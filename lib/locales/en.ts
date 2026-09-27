@@ -10,6 +10,8 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'AR недоступен без облачного хранения': 'AR requires cloud storage',
+  'Допустимо от 1 до 500 символов': 'Allowed length: 1–500 characters',
   'В ссылке нет проекта. Попросите отправить её целиком.': 'The link contains no project. Ask for the complete link.',
   'Не удалось открыть проект по этой ссылке.': 'The project could not be opened from this link.',
   'Код не найден или его срок истёк: код действует 24 часа. Попросите у мастера новый.': 'The code was not found or has expired. Codes last 24 hours. Ask the maker for a new one.',
