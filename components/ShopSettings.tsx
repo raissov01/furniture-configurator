@@ -33,6 +33,7 @@ import { cn } from '@/lib/cn'
 import { availableVerifiedHinges } from '@/lib/frontEdit'
 import { materialUsedInTree } from '@/lib/materialUsedInTree'
 import { ruleInputPolicy } from '@/lib/shopRuleInput'
+import { updateCatalogMaterialName } from '@/lib/catalogMaterialName'
 import { ShopDrillingSettings } from './ShopDrillingSettings'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 
@@ -618,6 +619,7 @@ function AddMaterial() {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [brand, setBrand] = useState('')
+  const [autoName, setAutoName] = useState<string | null>(null)
   const [draft, setDraft] = useState({
     name: '',
     thickness: 16,
@@ -677,12 +679,14 @@ function AddMaterial() {
                   type="button"
                   className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800"
                   onClick={() => {
+                    const name = `${DECOR_KIND_NAME[d.kind]} ${d.name} ${draft.thickness} мм`
                     setDraft({
                       ...draft,
-                      name: `${DECOR_KIND_NAME[d.kind]} ${d.name} ${draft.thickness} мм`,
+                      name,
                       color: d.color,
                       hasGrain: d.hasGrain,
                     })
+                    setAutoName(name)
                     setSearch('')
                   }}
                 >
@@ -702,11 +706,16 @@ function AddMaterial() {
       <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_7rem_minmax(0,1.4fr)_6rem]">
         <Field label={tr('Название')}>
           <input className={text} value={draft.name} placeholder={tr('ЛДСП Дуб Сонома 16 мм')}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+            onChange={(e) => { setDraft({ ...draft, name: e.target.value }); setAutoName(null) }} />
         </Field>
         <Field label={tr('Толщина, мм')}>
           <select className={text} value={draft.thickness}
-            onChange={(e) => setDraft({ ...draft, thickness: Number(e.target.value) })}>
+            onChange={(e) => {
+              const thickness = Number(e.target.value)
+              const updated = updateCatalogMaterialName(draft.name, autoName, draft.thickness, thickness)
+              setDraft({ ...draft, thickness, name: updated.name })
+              setAutoName(updated.autoName)
+            }}>
             {SHEET_THICKNESSES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </Field>
@@ -744,6 +753,7 @@ function AddMaterial() {
                 edging: { visibleFront: front, visibleSecondary: secondary },
               }))
               setDraft({ ...draft, name: '' })
+              setAutoName(null)
               setOpen(false)
             }}
           >
