@@ -7,6 +7,7 @@ import type { Catalog, Panel } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { capturePropertiesSession, commitPropertiesName, restorePropertiesSession, type PropertiesSession } from '@/lib/propertiesSession'
 import { propertiesDirty, propertiesInvalid, propertiesKeyAction } from '@/lib/propertiesDialogState'
+import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
 import { Button } from '@/components/ui'
@@ -32,9 +33,12 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const dialogRef = useRef<HTMLElement | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   if (baseline.current === null) baseline.current = capturePropertiesSession()
+  const [baselineValue, setBaseline] = useState<PropertiesSession>(() => baseline.current!)
   // «Применить» тек нақты өзгеріс болғанда: store иммутабельді, сілтемелер салыстырылады.
-  const storeDirty = useConfigurator((s) => propertiesDirty(baseline.current!, s))
+  const storeDirty = useConfigurator((s) => propertiesDirty(baselineValue, s))
   const [nameDirty, setNameDirty] = useState(false)
+  const [draftErrors, setDraftErrors] = useState<Record<string, boolean>>({})
+  const draftInvalid = hasDraftErrors(draftErrors)
   const dirty = storeDirty || nameDirty
   const invalid = propertiesInvalid(error)
 
@@ -43,6 +47,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
     onClose()
   }
   const apply = (): boolean => {
+    if (draftInvalid || invalid) return false
     const input = dialogRef.current?.querySelector<HTMLInputElement>('[data-properties-name]')
     const currentName = findNode(useConfigurator.getState().root, nodeId)?.name
     if (input && (!input.value.trim() || input.value !== currentName)) {
@@ -53,7 +58,9 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
     if (saveError) { setActionError(saveError); return false }
     pushHistory()
     syncShare()
-    baseline.current = capturePropertiesSession()
+    const savedBaseline = capturePropertiesSession()
+    baseline.current = savedBaseline
+    setBaseline(savedBaseline)
     setNameDirty(false)
     setActionError(null)
     return true
@@ -65,7 +72,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const latest = useRef({ cancel: () => {}, ok: () => {} })
   latest.current = {
     cancel: () => { if (baseline.current) restorePropertiesSession(baseline.current); onClose() },
-    ok: () => { if (!invalid && apply()) onClose() },
+    ok: () => { if (!invalid && !draftInvalid && apply()) onClose() },
   }
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
@@ -109,14 +116,15 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
         <fieldset disabled={locked}>
           {node.kind === 'board'
             ? <BoardProperties key={node.id} node={node} panel={boardPanel} catalog={catalog} />
-            : <Configurator key={node.id} invalidField={error?.field ?? null} panels={panels} />}
+            : <Configurator key={node.id} invalidField={error?.field ?? null} panels={panels}
+                onDraftValidityChange={(field, isInvalid) => setDraftErrors((current) => updateDraftErrors(current, field, isInvalid))} />}
         </fieldset>
         <label className="p100-dialog-dimensions"><input type="checkbox" checked={showDimensions} onChange={(event) => setShowDimensions(event.target.checked)} />{tr('Показывать размеры')}</label>
       </div>
       <div className="p100-dialog-actions">
-        <Button testId="properties-ok" onClick={() => latest.current.ok()} disabled={Boolean(invalid)} title="Enter">{tr('OK')}</Button>
+        <Button testId="properties-ok" onClick={() => latest.current.ok()} disabled={Boolean(invalid) || draftInvalid} title="Enter">{tr('OK')}</Button>
         <Button testId="properties-cancel" onClick={cancel} title="Esc">{tr('Отмена')}</Button>
-        <Button testId="properties-apply" onClick={apply} disabled={Boolean(invalid) || !dirty}>{tr('Применить')}</Button>
+        <Button testId="properties-apply" onClick={apply} disabled={Boolean(invalid) || draftInvalid || !dirty}>{tr('Применить')}</Button>
       </div>
     </section>
   </div>
