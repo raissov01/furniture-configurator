@@ -31,6 +31,7 @@ import { useConfigurator } from '@/store/configurator'
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { availableVerifiedHinges } from '@/lib/frontEdit'
+import { materialUsedInTree } from '@/lib/materialUsedInTree'
 import { ShopDrillingSettings } from './ShopDrillingSettings'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 
@@ -759,8 +760,7 @@ function AddMaterial() {
 function MaterialActions({ id }: { id: string }) {
   const cloneMaterial = useConfigurator((s) => s.cloneMaterial)
   const removeMaterial = useConfigurator((s) => s.removeMaterial)
-  const used = useConfigurator((s) =>
-    s.cabinets.some((c) => c.carcassMaterialId === id || c.frontMaterialId === id || c.backMaterialId === id))
+  const used = useConfigurator((s) => materialUsedInTree(s.root, id))
   return (
     <span className="flex items-center gap-1">
       <Button onClick={() => cloneMaterial(id)} title={tr('Клонировать материал')}>
