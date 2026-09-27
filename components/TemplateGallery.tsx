@@ -228,7 +228,7 @@ export function TemplateGallery() {
                     onChange={(e) => setKit((k) => ({ ...k, lengthA: e.target.value }))}
                     className={cn('mt-0.5 block w-24 max-[420px]:w-full rounded-md border bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 dark:bg-neutral-900', walls.errorA ? 'border-red-600 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-600')}
                   />
-                  {walls.errorA ? <span id="wall-a-error" role="alert" className="mt-1 block text-red-600 dark:text-red-400">{walls.errorA}</span> : null}
+                  {walls.errorA ? <span id="wall-a-error" role="alert" className="mt-1 block text-red-600 dark:text-red-400">{tr(walls.errorA)}</span> : null}
                 </label>
                 <label className={cn('text-[11px] text-neutral-500', !kit.corner && 'opacity-40')}>
                   {tr('Стена B (угол), мм')}
@@ -240,7 +240,7 @@ export function TemplateGallery() {
                     onChange={(e) => setKit((k) => ({ ...k, lengthB: e.target.value }))}
                     className={cn('mt-0.5 block w-24 max-[420px]:w-full rounded-md border bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 disabled:opacity-50 dark:bg-neutral-900', walls.errorB ? 'border-red-600 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-600')}
                   />
-                  {walls.errorB ? <span id="wall-b-error" role="alert" className="mt-1 block text-red-600 dark:text-red-400">{walls.errorB}</span> : null}
+                  {walls.errorB ? <span id="wall-b-error" role="alert" className="mt-1 block text-red-600 dark:text-red-400">{tr(walls.errorB)}</span> : null}
                 </label>
                 <label className="flex items-center gap-1.5 text-xs">
                   <input type="checkbox" checked={kit.corner} onChange={(e) => setKit((k) => ({ ...k, corner: e.target.checked }))} />

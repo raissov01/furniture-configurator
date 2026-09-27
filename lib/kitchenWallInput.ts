@@ -4,10 +4,13 @@ export const KITCHEN_WALL_UI_MAX = 20_000
 
 export function parseKitchenWalls(rawA: string, rawB: string, corner: boolean) {
   const parse = (raw: string, label: string) => {
-    if (!/^\d+$/.test(raw.trim())) return { value: undefined, error: `${label}: бүтін мм, 600..${KITCHEN_WALL_UI_MAX} мм` }
+    const error = label === 'Стена A'
+      ? 'Стена A: целые мм, 600–20 000 мм'
+      : 'Стена B: целые мм, 600–20 000 мм'
+    if (!/^\d+$/.test(raw.trim())) return { value: undefined, error }
     const value = Number(raw.trim())
     if (!Number.isSafeInteger(value) || value < 600 || value > KITCHEN_WALL_UI_MAX) {
-      return { value: undefined, error: `${label}: бүтін мм, 600..${KITCHEN_WALL_UI_MAX} мм` }
+      return { value: undefined, error }
     }
     return { value, error: null }
   }

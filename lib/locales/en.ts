@@ -795,6 +795,8 @@ export const en: Record<string, string> = {
   'по длине стены': 'by wall length',
   'Стена A, мм': 'Wall A, mm',
   'Стена B (угол), мм': 'Wall B (corner), mm',
+  'Стена A: целые мм, 600–20 000 мм': 'Wall A: whole mm, 600–20,000 mm',
+  'Стена B: целые мм, 600–20 000 мм': 'Wall B: whole mm, 600–20,000 mm',
   'Угол (Г)': 'Corner (L)',
   'Мойка': 'Sink',
   'Верхний ряд': 'Upper row',

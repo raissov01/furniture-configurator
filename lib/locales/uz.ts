@@ -800,6 +800,8 @@ export const uz: Record<string, string> = {
   'по длине стены': 'devor uzunligi bo\'yicha',
   'Стена A, мм': 'A devor, mm',
   'Стена B (угол), мм': 'B devor (burchak), mm',
+  'Стена A: целые мм, 600–20 000 мм': 'A devor: butun mm, 600–20 000 mm',
+  'Стена B: целые мм, 600–20 000 мм': 'B devor: butun mm, 600–20 000 mm',
   'Угол (Г)': 'Burchak (G)',
   'Мойка': 'Rakovina',
   'Верхний ряд': 'Yuqori qator',
