@@ -18,6 +18,7 @@ import { useState } from 'react'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { useConfigurator, activeCabinet } from '@/store/configurator'
 import type { CabinetConfig, Catalog, CustomPart } from '@/src/core/index'
+import { nextCustomPartId, removeCustomPart } from '@/lib/f32CustomParts'
 
 type PresetId = 'worktop' | 'shelf' | 'rail' | 'backPanel' | 'blank'
 
@@ -95,12 +96,11 @@ export function CustomParts({ catalog }: { catalog: Catalog }) {
   const write = (next: CustomPart[], key: string) => edit(`customParts:${key}`, { customParts: next })
 
   const add = (preset: PresetId) => {
-    // id ешқашан қайта пайдаланылмайды: өшірілген детальдің id-і жаңасына
-    // тисе, присадка түзетуі жаңа детальға жабысып қалар еді.
-    const used = new Set(parts.map((p) => p.id))
-    let n = parts.length + 1
-    while (used.has(`custom-${n}`)) n += 1
-    const part: CustomPart = { id: `custom-${n}`, ...presetPart(preset, cabinet, thickness, n) }
+    const id = nextCustomPartId(parts, [
+      ...Object.keys(cabinet.panelCutouts ?? {}), ...Object.keys(cabinet.drillEdits ?? {}),
+      ...Object.keys(cabinet.panelCorners ?? {}), ...Object.keys(cabinet.panelGrain ?? {}),
+    ], crypto.randomUUID())
+    const part: CustomPart = { id, ...presetPart(preset, cabinet, thickness, parts.length + 1) }
     write([...parts, part], `add:${part.id}`)
     setExpanded(part.id)
   }
@@ -110,7 +110,7 @@ export function CustomParts({ catalog }: { catalog: Catalog }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => setOpen(false)}
     >
       <div
@@ -157,7 +157,7 @@ export function CustomParts({ catalog }: { catalog: Catalog }) {
                     <Button onClick={() => setExpanded(expanded === part.id ? null : part.id)}>
                       {expanded === part.id ? tr('Свернуть') : tr('Изменить')}
                     </Button>
-                    <Button onClick={() => write(parts.filter((p) => p.id !== part.id), `remove:${part.id}`)}>
+                    <Button onClick={() => edit(`customParts:remove:${part.id}`, removeCustomPart(cabinet, part.id))}>
                       {tr('Удалить')}
                     </Button>
                   </div>

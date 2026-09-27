@@ -30,4 +30,15 @@ describe('F17 drill editor decisions', () => {
     expect(drillDeleteDecision(true, true)).toBe('delete')
     expect(drillDeleteDecision(false, false)).toBe('delete')
   })
+
+  it('rejects a clicked drill whose diameter crosses the missing L contour', () => {
+    const points = [
+      { x: 0, y: 0 }, { x: 600, y: 0 }, { x: 600, y: 160 },
+      { x: 220, y: 160 }, { x: 220, y: 400 }, { x: 0, y: 400 },
+    ]
+    const polygon = { ...front, cutLength: 600, cutWidth: 400,
+      contour: { points, cutPoints: points, bands: [null, null, null, null, null, null] } }
+    expect(drillClickResult(polygon, 16, 'shelf-pin', {},
+      { face: 'inner', x: 219, y: 200 }).error).toContain('position')
+  })
 })

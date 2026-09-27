@@ -15,6 +15,7 @@ import { t as tr } from '@/lib/i18n'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
+import { historySummary } from '@/lib/f24UiLogic'
 
 type Entry = { at: number; name: string; json: string }
 
@@ -34,22 +35,29 @@ export function HistoryPanel() {
   const setOpen = useConfigurator((s) => s.setHistoryOpen)
   const restore = useConfigurator((s) => s.restoreHistory)
   const [entries, setEntries] = useState<Entry[]>([])
+  const [preview, setPreview] = useState<number | null>(null)
 
   // Тізім терезе АШЫЛҒАНДА оқылады: localStorage-ты үздіксіз бақылаудың
   // қажеті жоқ, ал жабық терезе жадыны да, уақытты да алмауы керек.
   useEffect(() => {
     if (open) setEntries(read())
   }, [open])
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, setOpen])
 
   if (!open) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-lg rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        className="w-full max-w-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
@@ -66,15 +74,20 @@ export function HistoryPanel() {
           <ul className="space-y-1">
             {entries.map((entry, i) => (
               <li
-                key={entry.at}
-                className="flex items-center gap-2 rounded-md border border-neutral-200 px-2 py-1.5 text-xs dark:border-neutral-700"
+                key={`${entry.at}-${i}`}
+                className="flex flex-wrap items-center gap-2 rounded-md border border-neutral-200 px-2 py-1.5 text-xs dark:border-neutral-700"
               >
                 <span className="tabular-nums text-neutral-400">{i + 1}</span>
                 <span className="flex-1 truncate">{entry.name}</span>
+                <span className="text-neutral-500">{(() => { try { const count = historySummary(entry.json); return `${tr('Корпусов')}: ${count.cabinets}, ${tr('Досок')}: ${count.boards}` } catch { return tr('Просмотр недоступен') } })()}</span>
                 <span className="tabular-nums text-[11px] text-neutral-500">
                   {new Date(entry.at).toLocaleString('ru-RU')}
                 </span>
-                <Button onClick={() => { restore(entry.at); setOpen(false) }}>{tr('Вернуть')}</Button>
+                <Button onClick={() => setPreview(preview === i ? null : i)}>{tr('Просмотр')}</Button>
+                {preview === i ? <div className="w-full border-t border-neutral-200 pt-2 dark:border-neutral-700">
+                  <p>{entry.name} · {new Date(entry.at).toLocaleString('ru-RU')}</p>
+                  <Button onClick={() => { restore(entry.at); setOpen(false) }}>{tr('Вернуть')}</Button>
+                </div> : null}
               </li>
             ))}
           </ul>

@@ -5,12 +5,10 @@ import { t as tr } from '@/lib/i18n'
 import { useConfigurator } from '@/store/configurator'
 import type { MaterialPbr, SceneLight, Vec3 } from '@/src/core/index'
 import { parseNormalUrl, parseVisualNumber } from '@/lib/visualSettingsInput'
+import type { PbrDraft } from '@/lib/f28VisualUi'
 
 const inputStyle = 'w-full border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-950'
 const buttonStyle = 'border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700'
-
-type PbrDraft = { roughness: string; metalness: string; reflection: string; opacity: string;
-  normalUrl: string; normalX: string; normalY: string; normalStrength: string }
 
 function draftFromPbr(pbr?: MaterialPbr): PbrDraft {
   const show = (value?: number) => value === undefined ? '' : String(value)
@@ -52,6 +50,8 @@ export function MaterialAppearanceEditor() {
     setMessage(null)
   }
   const save = () => {
+    setMessage(null)
+    setError(null)
     if (!material) return
     setMessage(null)
     const errors: Partial<Record<keyof PbrDraft, string>> = {}

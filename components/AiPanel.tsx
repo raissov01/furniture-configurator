@@ -17,12 +17,13 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
-import { Button, Field, NumberInput } from '@/components/ui'
+import { Button, Field } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import { cn } from '@/lib/cn'
+import { briefDimension, currentBriefRequest, formatBriefDimensions } from '@/lib/f28BriefUi'
 import {
   TEMPLATE_CATEGORIES, generateCabinet, parseBriefRequest, ruleVariants,
 } from '@/src/core/index'
@@ -52,9 +53,6 @@ const KINDS = [
   'Антресоль',
 ]
 
-/** 0 — «не задано»: сан қоймаса, оны модель өзі шешеді. */
-const UNSET = 0
-
 /** Карточкадағы фас суретінің биіктігі, пиксель. */
 const THUMB_PX = 120
 
@@ -71,12 +69,32 @@ export function AiPanel() {
   const [prompt, setPrompt] = useState('')
   const [kind, setKind] = useState<string | null>(null)
   const [category, setCategory] = useState<TemplateCategory | null>(null)
-  const [size, setSize] = useState({ height: UNSET, width: UNSET, depth: UNSET })
+  const [sizeDraft, setSizeDraft] = useState({ height: '', width: '', depth: '' })
+  const [sizeTouched, setSizeTouched] = useState({ height: false, width: false, depth: false })
+  const requestVersion = useRef(0)
   const [materialId, setMaterialId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [variants, setVariants] = useState<Variant[]>([])
   const [dropped, setDropped] = useState<Dropped[]>([])
+
+  const dimensions = {
+    height: briefDimension(sizeDraft.height, sizeTouched.height),
+    width: briefDimension(sizeDraft.width, sizeTouched.width),
+    depth: briefDimension(sizeDraft.depth, sizeTouched.depth),
+  }
+  const sizeInvalid = Object.values(dimensions).some((entry) => Boolean(entry.error))
+  const invalidate = () => { requestVersion.current += 1; setVariants([]); setDropped([]); setError(null) }
+  const changeSize = (axis: keyof typeof sizeDraft, value: string) => {
+    invalidate()
+    setSizeDraft((current) => ({ ...current, [axis]: value }))
+    setSizeTouched((current) => ({ ...current, [axis]: true }))
+  }
+  const requestedSize = {
+    ...(dimensions.height.value !== undefined ? { height: dimensions.height.value } : {}),
+    ...(dimensions.width.value !== undefined ? { width: dimensions.width.value } : {}),
+    ...(dimensions.depth.value !== undefined ? { depth: dimensions.depth.value } : {}),
+  }
 
   if (!open) return null
 
@@ -88,9 +106,7 @@ export function AiPanel() {
     const request = {
       ...parsed,
       ...(category ? { kind: category } : {}),
-      ...(size.height > UNSET ? { height: size.height } : {}),
-      ...(size.width > UNSET ? { width: size.width } : {}),
-      ...(size.depth > UNSET ? { depth: size.depth } : {}),
+      ...requestedSize,
     }
     const found = ruleVariants(request, catalog).map((v) => {
       const cabinet = materialId
@@ -104,12 +120,13 @@ export function AiPanel() {
     })
     setVariants(found)
     if (found.length === 0) {
-      setError('По такому запросу шаблон не нашёлся. Уточните тип мебели или размеры.')
+      setError(tr('Нет шаблона для заданных размеров. Проверьте H, W, D и диапазон 100..4000 мм.'))
     }
   }
 
   const submit = async () => {
-    if (busy) return
+    if (busy || sizeInvalid) return
+    const startedVersion = requestVersion.current
     if (mode === 'rules') {
       submitRules()
       return
@@ -126,14 +143,13 @@ export function AiPanel() {
           prompt,
           constraints: {
             ...(kind ? { kind } : {}),
-            ...(size.height > UNSET ? { height: size.height } : {}),
-            ...(size.width > UNSET ? { width: size.width } : {}),
-            ...(size.depth > UNSET ? { depth: size.depth } : {}),
+            ...requestedSize,
             ...(materialId ? { materialId } : {}),
           },
         }),
       })
       const data: unknown = await res.json()
+      if (!currentBriefRequest(startedVersion, requestVersion.current)) return
       const payload = data as { variants?: Variant[]; dropped?: Dropped[]; error?: string }
       if (!res.ok) {
         setError(payload.error ?? `Ошибка ${res.status}`)
@@ -144,7 +160,7 @@ export function AiPanel() {
       setVariants(payload.variants ?? [])
       setDropped(payload.dropped ?? [])
     } catch {
-      setError('Сервер не ответил. Проверьте, что приложение запущено.')
+      if (currentBriefRequest(startedVersion, requestVersion.current)) setError('Сервер не ответил. Проверьте, что приложение запущено.')
     } finally {
       setBusy(false)
     }
@@ -152,20 +168,20 @@ export function AiPanel() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 "
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-5xl overflow-y-auto rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="text-sm font-semibold">{tr('Техзадание')}</h2>
-          <Button active={mode === 'rules'} onClick={() => setMode('rules')}
+          <Button active={mode === 'rules'} onClick={() => { invalidate(); setMode('rules') }}
             title={tr('Подбор по библиотеке шаблонов: без интернета и без ключа')}>
             {tr('Без интернета')}
           </Button>
-          <Button active={mode === 'ai'} onClick={() => setMode('ai')}
+          <Button active={mode === 'ai'} onClick={() => { invalidate(); setMode('ai') }}
             title={tr('Свободный текст понимает лучше, но нужен ключ и сеть')}>
             {tr('ИИ')}
           </Button>
@@ -188,7 +204,7 @@ export function AiPanel() {
                   <button
                     key={c.value}
                     type="button"
-                    onClick={() => setCategory(category === c.value ? null : c.value)}
+                    onClick={() => { invalidate(); setCategory(category === c.value ? null : c.value) }}
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs transition',
                       category === c.value
@@ -203,7 +219,7 @@ export function AiPanel() {
                   <button
                     key={k}
                     type="button"
-                    onClick={() => setKind(kind === k ? null : k)}
+                    onClick={() => { invalidate(); setKind(kind === k ? null : k) }}
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs transition',
                       kind === k
@@ -217,35 +233,32 @@ export function AiPanel() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-[repeat(3,minmax(0,7rem))_minmax(0,1fr)]">
-            <Field label={tr('Высота (H)')} hint={size.height === UNSET ? 'любая' : undefined}>
-              <NumberInput value={size.height} min={0} step={10}
-                onChange={(height) => setSize((s0) => ({ ...s0, height }))} />
-            </Field>
-            <Field label={tr('Ширина (W)')} hint={size.width === UNSET ? 'любая' : undefined}>
-              <NumberInput value={size.width} min={0} step={10}
-                onChange={(width) => setSize((s0) => ({ ...s0, width }))} />
-            </Field>
-            <Field label={tr('Глубина (D)')} hint={size.depth === UNSET ? 'любая' : undefined}>
-              <NumberInput value={size.depth} min={0} step={10}
-                onChange={(depth) => setSize((s0) => ({ ...s0, depth }))} />
-            </Field>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(3,minmax(0,7rem))_minmax(0,1fr)]">
+            {(['height', 'width', 'depth'] as const).map((axis) => {
+              const label = axis === 'height' ? tr('Высота (H)') : axis === 'width' ? tr('Ширина (W)') : tr('Глубина (D)')
+              return <Field key={axis} label={label} hint={!sizeTouched[axis] ? tr('По умолчанию') : undefined}>
+                <input type="text" inputMode="numeric" value={sizeDraft[axis]} aria-invalid={Boolean(dimensions[axis].error) || undefined}
+                  aria-label={label} onChange={(event) => changeSize(axis, event.target.value)}
+                  className={cn('w-full rounded-md border bg-white px-2 py-1.5 text-sm dark:bg-neutral-900',
+                    dimensions[axis].error ? 'border-red-500' : 'border-neutral-300 dark:border-neutral-700')} />
+                {dimensions[axis].error && <span role="alert" className="block text-[11px] text-red-700 dark:text-red-400">
+                  {label}: {tr('Введите целое число, мм')} — {dimensions[axis].error.split(' ')[0]}
+                </span>}
+              </Field>
+            })}
             <Field label={tr('Декор')} hint={materialId ? undefined : 'на усмотрение'}>
-              <DecorPicker
-                materials={carcassMaterials}
-                value={materialId ?? ''}
-                onChange={setMaterialId}
-              />
+              <DecorPicker materials={carcassMaterials} value={materialId ?? ''}
+                onChange={(id) => { invalidate(); setMaterialId(id) }} />
             </Field>
           </div>
           <p className="text-[11px] text-neutral-400">
-            Заданные размеры и декор соблюдаются точно. Пустое поле — решает бот.
+            {tr('Заданные размеры и декор соблюдаются точно. Не тронутое поле — размер по шаблону.')}
           </p>
         </div>
 
         <textarea
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={(e) => { invalidate(); setPrompt(e.target.value) }}
           onKeyDown={(e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') void submit()
           }}
@@ -257,7 +270,7 @@ export function AiPanel() {
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Button
             onClick={() => void submit()}
-            disabled={busy || (mode === 'ai' && !prompt.trim() && !kind)}
+            disabled={busy || sizeInvalid || (mode === 'ai' && !prompt.trim() && !kind)}
             active
           >
             {busy ? 'Считаю…' : 'Предложить варианты'}
@@ -267,7 +280,7 @@ export function AiPanel() {
             <button
               key={ex}
               type="button"
-              onClick={() => setPrompt(ex)}
+              onClick={() => { invalidate(); setPrompt(ex) }}
               className="rounded-full border border-neutral-200 px-2.5 py-1 text-[11px] text-neutral-500 transition hover:border-neutral-400 dark:border-neutral-700"
             >
               {ex}
@@ -299,7 +312,7 @@ export function AiPanel() {
                 </div>
                 <div className="text-xs font-medium">{v.brief.name}</div>
                 <div className="tabular-nums text-[11px] text-neutral-500">
-                  {v.cabinet.height} × {v.cabinet.width} × {v.cabinet.depth} · секций: {v.cabinet.sections.length} · деталей: {v.panelCount}
+                  {formatBriefDimensions(v.cabinet)} · секций: {v.cabinet.sections.length} · деталей: {v.panelCount}
                 </div>
                 <div className="text-[11px] leading-snug text-neutral-400">{v.brief.rationale}</div>
               </button>
