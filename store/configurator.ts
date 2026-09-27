@@ -380,7 +380,7 @@ type State = Snapshot & {
   editPriceOverrides(patch: Partial<PriceOverrides>): void
   /** `null` on success, otherwise a visible storage error for recovery actions. */
   saveProjectLocally(): string | null
-  hydrateProject(): void
+  hydrateProject(): boolean
 
   setShop(shop: ShopProfile): void
   editShop(patch: Partial<ShopProfile>): void
@@ -774,8 +774,11 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   resolveLocalConflict(choice) {
     if (choice === 'other') {
-      get().hydrateProject()
-      if (!get().projectLoadError) set({ localConflict: false, localSaveError: null })
+      if (get().hydrateProject()) {
+        clearCloudSelection()
+        saveShareSession(null)
+        set((state) => ({ projectEpoch: state.projectEpoch + 1, shareSession: null, localConflict: false, localSaveError: null }))
+      }
       return
     }
     try {
@@ -1329,9 +1332,9 @@ export const useConfigurator = create<State>((set, get) => ({
     } catch (error) {
       set({ firstRun: false,
         projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}; сақтық көшірме жазылмады: бастапқы файл оқылмады` })
-      return
+      return false
     }
-    if (!raw) return
+    if (!raw) return false
     try {
       const file = parseProjectV4(JSON.parse(raw))
       set({
@@ -1357,6 +1360,7 @@ export const useConfigurator = create<State>((set, get) => ({
         localConflict: false,
         localSaveError: null,
       })
+      return true
     } catch (error) {
       // Қате файлды автосақтау басып кетпеуі керек: пайдаланушы басқа жобаны
       // анық ашқанша немесе Reset басқанша түпнұсқа localStorage-та қалады.
@@ -1370,6 +1374,7 @@ export const useConfigurator = create<State>((set, get) => ({
       }
       set({ firstRun: false, unbackedCorruptProject,
         projectLoadError: `Сақталған жоба оқылмады: ${error instanceof Error ? error.message : String(error)}${backupError}` })
+      return false
     }
   },
 
