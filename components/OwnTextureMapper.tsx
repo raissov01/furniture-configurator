@@ -25,7 +25,10 @@ export function OwnTextureMapper() {
     const response = await fetch('/api/own-catalog', signal ? { signal } : {})
     if (!response.ok) throw new Error(response.status === 401 ? tr('Для импорта нужен вход в аккаунт') : tr('Не удалось загрузить текстуры цеха'))
     const body = await response.json() as { imports?: unknown }
-    if (!signal?.aborted) { setEntries(pro100TextureImports(body.imports)); setError(null) }
+    if (!signal?.aborted) {
+      setEntries(pro100TextureImports(body.imports))
+      setSelected(''); setFile(null); setMessage(null); setError(null)
+    }
   }
   useEffect(() => {
     const controller = new AbortController()
@@ -82,7 +85,11 @@ export function OwnTextureMapper() {
     </div>
     {entry?.texture.imageFile && <p className="text-xs text-neutral-500">{tr('Имя файла в INI')}: {entry.texture.imageFile}</p>}
     <label className="block text-xs">{tr('Файл изображения PNG, JPEG или WebP (до 1 МБ)')}
-      <input className={inputClass} type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+      <input className={inputClass} type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => {
+        setFile(event.target.files?.[0] ?? null)
+        event.currentTarget.value = ''
+      }} />
+      {file && <span className="block text-neutral-500">{file.name}</span>}
     </label>
     <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={rights} onChange={(event) => setRights(event.target.checked)} />
       {tr('Подтверждаю право использовать это изображение в проекте')}</label>
