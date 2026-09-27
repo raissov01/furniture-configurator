@@ -3,6 +3,7 @@ import { ZodError } from 'zod'
 import { parseInstallationAction } from '@/src/core/installation'
 import { cloudOff } from '@/lib/server/cloud'
 import { InstallationError, applyInstallationSync } from '@/lib/server/installation'
+import { validateInstallationImage } from '@/lib/server/installationImage'
 import { currentAccount } from '@/lib/server/session'
 
 const error = (message: string, status: number) => NextResponse.json({ error: message }, { status, headers: { 'Cache-Control': 'no-store' } })
@@ -18,6 +19,21 @@ export async function POST(request: Request): Promise<Response> {
     let raw: unknown
     try { raw = JSON.parse(body) as unknown } catch { return error('Некорректный JSON', 400) }
     const action = parseInstallationAction(raw)
+    if (action.kind === 'installation.checklist' && action.payload && typeof action.payload === 'object' &&
+      'photo' in action.payload && action.payload.photo && typeof action.payload.photo === 'object' &&
+      'dataUrl' in action.payload.photo && typeof action.payload.photo.dataUrl === 'string') {
+      await validateInstallationImage(action.payload.photo.dataUrl, 'photo')
+    }
+    if (action.kind === 'installation.defect' && action.payload && typeof action.payload === 'object' &&
+      'photo' in action.payload && action.payload.photo && typeof action.payload.photo === 'object' &&
+      'dataUrl' in action.payload.photo && typeof action.payload.photo.dataUrl === 'string') {
+      await validateInstallationImage(action.payload.photo.dataUrl, 'photo')
+    }
+    if (action.kind === 'installation.signature' && action.payload && typeof action.payload === 'object' &&
+      'signature' in action.payload && action.payload.signature && typeof action.payload.signature === 'object' &&
+      'dataUrl' in action.payload.signature && typeof action.payload.signature.dataUrl === 'string') {
+      await validateInstallationImage(action.payload.signature.dataUrl, 'signature')
+    }
     const result = applyInstallationSync(account.shopId, action, Date.now())
     return NextResponse.json(result, { status: result.kind === 'conflict' ? 409 : 200,
       headers: { 'Cache-Control': 'no-store' } })

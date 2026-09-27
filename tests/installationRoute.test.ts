@@ -2,6 +2,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
+import sharp from 'sharp'
 import { SEED_CATALOG, findTemplate, templateToCabinet } from '../src/core/index'
 import { parseProjectV4 } from '../src/core/projectV4'
 
@@ -16,6 +17,8 @@ let database: typeof import('../lib/server/db')
 let route: typeof import('../app/api/installation/[id]/route')
 let sync: typeof import('../app/api/installation/sync/route')
 let list: typeof import('../app/api/installation/route')
+let validPhoto: string
+let validSignature: string
 const context = (id: string) => ({ params: Promise.resolve({ id }) })
 const request = (body: unknown) => new Request('http://localhost/api/installation/sync', { method: 'POST', body: JSON.stringify(body) })
 const project = () => {
@@ -31,6 +34,11 @@ const action = (id: string, kind: string, entityId: string, payload: unknown, ve
 })
 
 beforeAll(async () => {
+  const pixels = Buffer.alloc(4 * 4 * 4, 255)
+  for (let i = 0; i < 16; i += 4) pixels.fill(0, i, i + 3)
+  const source = () => sharp(pixels, { raw: { width: 4, height: 4, channels: 4 } })
+  validPhoto = `data:image/jpeg;base64,${(await source().jpeg().toBuffer()).toString('base64')}`
+  validSignature = `data:image/png;base64,${(await source().png().toBuffer()).toString('base64')}`
   auth = await import('../lib/server/auth')
   store = await import('../lib/server/store')
   database = await import('../lib/server/db')
@@ -68,7 +76,7 @@ describe('монтаж API және офлайн кезек', () => {
     const task = (await got.json() as { task: { panelIds: string[] } }).task
     expect(task.panelIds.length).toBeGreaterThan(0)
     const badPanel = action('defect-bad', 'installation.defect', 'install-1',
-      { id: 'defect-1', panelId: 'not-a-panel', note: 'Сызат', photo: { id: 'p', dataUrl: 'data:image/jpeg;base64,/9j/2Q==' } }, 1, createdBody.revision.updatedAt)
+      { id: 'defect-1', panelId: 'not-a-panel', note: 'Сызат', photo: { id: 'p', dataUrl: validPhoto } }, 1, createdBody.revision.updatedAt)
     expect((await sync.POST(request(badPanel))).status).toBe(422)
     const defect = { ...badPanel, id: 'defect-good', payload: { ...badPanel.payload as object, panelId: task.panelIds[0] } }
     const applied = await sync.POST(request(defect))
@@ -90,15 +98,22 @@ describe('монтаж API және офлайн кезек', () => {
       { revision: { version: number; updatedAt: number } }).revision
     const premature = await sync.POST(request(action('close-early', 'installation.close', taskId, {}, revision.version, revision.updatedAt)))
     expect(premature.status).toBe(422)
-    const photo = { id: 'photo', dataUrl: 'data:image/jpeg;base64,/9j/2Q==' }
+    const photo = { id: 'photo', dataUrl: validPhoto }
+    expect((await sync.POST(request(action('bad-photo', 'installation.checklist', taskId,
+      { key: 'delivery', checked: true, photo: { id: 'bad', dataUrl: 'data:image/jpeg;base64,/9j/2Q==' } },
+      revision.version, revision.updatedAt)))).status).toBe(422)
     for (const key of ['delivery', 'assembly', 'alignment', 'cleaning', 'acceptance']) {
       const result = await sync.POST(request(action(`check-${key}`, 'installation.checklist', taskId,
         { key, checked: true, photo }, revision.version, revision.updatedAt)))
       expect(result.status).toBe(200)
       revision = (await result.json() as { revision: typeof revision }).revision
     }
+    const blank = Buffer.alloc(4 * 4 * 4)
+    const blankSignature = `data:image/png;base64,${(await sharp(blank, { raw: { width: 4, height: 4, channels: 4 } }).png().toBuffer()).toString('base64')}`
+    expect((await sync.POST(request(action('blank-sign', 'installation.signature', taskId,
+      { signature: { id: 'blank', dataUrl: blankSignature } }, revision.version, revision.updatedAt)))).status).toBe(422)
     const signed = await sync.POST(request(action('sign', 'installation.signature', taskId,
-      { signature: { id: 'sign-image', dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB' } },
+      { signature: { id: 'sign-image', dataUrl: validSignature } },
       revision.version, revision.updatedAt)))
     expect(signed.status).toBe(200)
     revision = (await signed.json() as { revision: typeof revision }).revision
