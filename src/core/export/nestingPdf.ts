@@ -16,14 +16,15 @@ import { cutPlan } from '../cutPlan'
 import type { CutLine } from '../cutPlan'
 import type { PdfFonts } from './pdf'
 import { stampPdfBrand } from '../brand'
+import { partCaption, sheetPageCount } from './nestingPresentation'
 
 /** A4 альбом, пункт. */
 const PAGE = { w: 842, h: 595 }
 const MARGIN = 32
 const INK = rgb(0.12, 0.12, 0.14)
 const MUTED = rgb(0.45, 0.45, 0.5)
-const PART = rgb(0.89, 0.78, 0.42)
-const PART_EDGE = rgb(0.49, 0.37, 0.08)
+const PART = rgb(0.88, 0.91, 0.94)
+const PART_EDGE = rgb(0.20, 0.28, 0.35)
 const OFFCUT = rgb(0.13, 0.77, 0.37)
 
 export type NestingPdfInput = {
@@ -49,54 +50,21 @@ export async function nestingPdf(input: NestingPdfInput): Promise<Uint8Array> {
   const regular = await doc.embedFont(input.fonts.regular, { subset: true })
   const bold = await doc.embedFont(input.fonts.bold, { subset: true })
 
-  // ── Қорытынды беті ─────────────────────────────────────────────────────────
-  {
-    const page = doc.addPage([PAGE.w, PAGE.h])
-    const ctx: Ctx = { page, regular, bold }
-    let y = PAGE.h - MARGIN
-
-    label(ctx, MARGIN, y, 'Карта раскроя', 16, true)
-    y -= 18
-    label(ctx, MARGIN, y, input.projectName, 10, false, MUTED)
-    y -= 26
-
-    label(ctx, MARGIN, y, 'Материал', 9, true)
-    label(ctx, MARGIN + 320, y, 'Листов', 9, true)
-    label(ctx, MARGIN + 400, y, 'Отход', 9, true)
-    y -= 6
-    page.drawLine({
-      start: { x: MARGIN, y }, end: { x: PAGE.w - MARGIN, y },
-      color: MUTED, thickness: 0.5,
-    })
-    y -= 14
-
-    for (const group of input.nesting.byMaterial) {
-      label(ctx, MARGIN, y, group.materialName, 9)
-      label(ctx, MARGIN + 320, y, String(group.sheets.length), 9)
-      label(ctx, MARGIN + 400, y, `${group.wastePercent.toFixed(1)} %`, 9)
-      y -= 14
-    }
-
-    y -= 8
-    label(ctx, MARGIN, y, `Всего листов: ${input.nesting.sheetCount}`, 10, true)
-
-    if (input.nesting.unplaced.length > 0) {
-      y -= 22
-      label(ctx, MARGIN, y, 'Не помещаются на лист:', 9, true, rgb(0.7, 0.1, 0.1))
-      for (const item of input.nesting.unplaced) {
-        y -= 12
-        label(ctx, MARGIN + 10, y, `${item.label} — ${item.reason}`, 8, false, rgb(0.7, 0.1, 0.1))
-      }
-    }
-  }
-
   // ── Әр параққа бір бет ─────────────────────────────────────────────────────
   const plan = cutPlan(input.nesting)
+  let pageCount = 0
   for (const [groupIndex, group] of input.nesting.byMaterial.entries()) {
     for (const [sheetIndex, sheet] of group.sheets.entries()) {
+      pageCount += 1
       drawSheetPage(doc.addPage([PAGE.w, PAGE.h]), { regular, bold }, sheet,
-        group.materialName, plan.byMaterial[groupIndex]!.sheets[sheetIndex]!.cuts)
+        group.materialName, plan.byMaterial[groupIndex]!.sheets[sheetIndex]!.cuts,
+        input.projectName, input.nesting.sheetCount, group.wastePercent)
     }
+  }
+  if (pageCount < sheetPageCount(input.nesting.sheetCount)) {
+    const page = doc.addPage([PAGE.w, PAGE.h])
+    label({ page, regular, bold }, MARGIN, PAGE.h - MARGIN, `Карта раскроя · ${input.projectName}`, 16, true)
+    label({ page, regular, bold }, MARGIN, PAGE.h - MARGIN - 22, 'Листов: 0', 10)
   }
 
   stampPdfBrand(doc)
@@ -109,22 +77,27 @@ function drawSheetPage(
   sheet: NestedSheet,
   materialName: string,
   cuts: readonly CutLine[],
+  projectName: string,
+  totalSheets: number,
+  wastePercent: number,
 ): void {
   const ctx: Ctx = { page, ...fonts }
-  const headerHeight = 46
+  const headerHeight = 54
 
-  label(ctx, MARGIN, PAGE.h - MARGIN, `${materialName} — лист ${sheet.index}`, 12, true)
+  label(ctx, MARGIN, PAGE.h - MARGIN, `Карта раскроя · ${projectName}`, 14, true)
+  label(ctx, MARGIN, PAGE.h - MARGIN - 17, `${materialName} · лист ${sheet.index} / ${totalSheets}`, 10, true)
   label(
-    ctx, MARGIN, PAGE.h - MARGIN - 15,
-    `Лист ${sheet.sheetWidth}×${sheet.sheetHeight} мм · деталей: ${sheet.parts.length}` +
+    ctx, MARGIN, PAGE.h - MARGIN - 32,
+    `Лист ${sheet.sheetHeight} (H) × ${sheet.sheetWidth} (W) мм · деталей: ${sheet.parts.length} · отход: ${wastePercent.toFixed(1)} %` +
       (sheet.offcuts.length > 0 ? ` · деловой отход: ${sheet.offcuts.length}` : ''),
-    9, false, MUTED,
+    8, false, MUTED,
   )
-  label(ctx, MARGIN, PAGE.h - MARGIN - 28, 'Красные линии и номера — порядок резов', 8, false, MUTED)
+  label(ctx, MARGIN, PAGE.h - MARGIN - 44, 'Красные линии и номера — порядок резов', 8, false, MUTED)
 
   // Парақ бетке сыятындай масштаб. Пропорция САҚТАЛАДЫ: бұрмаланған карта
   // бойынша цех қате шешім қабылдайды.
-  const availW = PAGE.w - MARGIN * 2
+  const legendW = 155
+  const availW = PAGE.w - MARGIN * 2 - legendW
   const availH = PAGE.h - MARGIN * 2 - headerHeight
   const scale = Math.min(availW / sheet.sheetWidth, availH / sheet.sheetHeight)
   const originX = MARGIN
@@ -155,7 +128,7 @@ function drawSheetPage(
     })
   }
 
-  for (const part of sheet.parts) {
+  for (const [index, part] of sheet.parts.entries()) {
     page.drawRectangle({
       x: px(part.x), y: py(part.y),
       width: part.width * scale, height: part.height * scale,
@@ -163,12 +136,18 @@ function drawSheetPage(
     })
     const cx = px(part.x + part.width / 2)
     const cy = py(part.y + part.height / 2)
-    const box = Math.min(part.width, part.height) * scale
-    // Деталь тым кішкентай болса жазу оқылмайды әрі көршісіне кіріп кетеді.
-    if (box < 16) continue
-    const size = Math.max(5, Math.min(9, box / 5))
-    centred(ctx, cx, cy + size * 0.7, part.label, size)
-    centred(ctx, cx, cy - size * 0.7, `${part.width}×${part.height}`, size, MUTED)
+    const caption = partCaption(part.label, part.width, part.height,
+      part.width * scale, part.height * scale, index + 1,
+      (value, size) => fonts.regular.widthOfTextAtSize(value, size))
+    if (caption.lines.length === 2) {
+      centred(ctx, cx, cy + 5, caption.lines[0]!, caption.size)
+      centred(ctx, cx, cy - 5, caption.lines[1]!, caption.size, MUTED)
+    } else {
+      centred(ctx, cx, cy, caption.lines[0]!, caption.size)
+    }
+    const legendY = PAGE.h - MARGIN - headerHeight - 9 - index * 13
+    if (legendY >= MARGIN) label(ctx, MARGIN + availW + 10, legendY,
+      `${index + 1}. ${part.label} ${part.width} × ${part.height}`, 7.5)
   }
 
   for (const cut of cuts) {
@@ -178,6 +157,6 @@ function drawSheetPage(
     const y2 = cut.axis === 'v' ? cut.to : cut.at
     page.drawLine({ start: { x: px(x1), y: py(y1) }, end: { x: px(x2), y: py(y2) },
       color: rgb(0.7, 0.12, 0.08), thickness: 0.6, opacity: 0.75 })
-    centred(ctx, px((x1 + x2) / 2), py((y1 + y2) / 2), String(cut.order), 5, rgb(0.7, 0.12, 0.08))
+    centred(ctx, px((x1 + x2) / 2), py((y1 + y2) / 2), String(cut.order), 8, rgb(0.55, 0.08, 0.06))
   }
 }

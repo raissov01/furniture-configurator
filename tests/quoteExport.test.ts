@@ -102,6 +102,14 @@ describe('раскрой DXF', () => {
 })
 
 describe('раскрой PDF', () => {
+  it('картадағы нөмір мен жазу кемінде 7.5 pt', async () => {
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText')
+    try {
+      await nestingPdf({ nesting, projectName: 'Шкаф 3 секции', fonts })
+      const sizes = drawText.mock.calls.map(([, options]) => options?.size ?? 0)
+      expect(Math.min(...sizes)).toBeGreaterThanOrEqual(7.5)
+    } finally { drawText.mockRestore() }
+  })
   it('әр резді картаға ретімен сызады', async () => {
     const drawLine = vi.spyOn(PDFPage.prototype, 'drawLine')
     try {
@@ -113,10 +121,10 @@ describe('раскрой PDF', () => {
     }
   })
 
-  it('қорытынды беті + әр параққа бір бет', async () => {
+  it('бос қорытынды бетсіз әр параққа бір бет', async () => {
     const bytes = await nestingPdf({ nesting, projectName: 'Шкаф 3 секции', fonts })
     const doc = await PDFDocument.load(bytes)
-    expect(doc.getPageCount()).toBe(1 + nesting.sheetCount)
+    expect(doc.getPageCount()).toBe(nesting.sheetCount)
   })
 
   it('нағыз PDF файлы шығады', async () => {
