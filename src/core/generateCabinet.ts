@@ -1906,6 +1906,17 @@ function makeFronts(
   const leftover = slot.width - n * frontWidth - base.reduce((sum, v) => sum + v, 0)
   const extra = distributeMillimetres(leftover, n + 1, gapFillOrder(n + 1))
   const gaps = base.map((v, i) => v + (extra[i] ?? 0))
+  // Бүтін фасадтарға бөлу қалдығы номинал саңылауды ұлғайтады. Шек
+  // кесілетін панельдердің НАҚТЫ арасындағы бос орынға да қолданылады.
+  gaps.forEach((gap, i) => {
+    if (gap > 50) {
+      const side = i === 0 ? 'left' : i === n ? 'right' : 'between'
+      throw new ConfigValidationError(
+        `sections[${sectionIndex}].fronts.gaps.${side}`, `${gap} мм (дөңгелектеуден кейін)`,
+        '0..50 мм, бүтін сан',
+      )
+    }
+  })
   const frontHeight = spanY - gapTop - gapBottom
   const note = fronts.mount === 'inset' ? 'Фасад вкладной' : 'Фасад накладной'
 
