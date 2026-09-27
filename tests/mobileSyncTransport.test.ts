@@ -91,4 +91,13 @@ describe('телефон синхрон тасымалы', () => {
     expect(result).toEqual({ kind: 'rejected', reason: expect.stringContaining('8 МБ') })
     store.close()
   })
+  it('монтаждың 422 жауабындағы себепті жоғалтпайды', async () => {
+    const store = await IndexedDbMobileStore.open('installation-422')
+    const action = { id: 'close-1', kind: 'installation.close', entityId: 'task-1', payload: {},
+      baseRevision: { version: 1, updatedAt: 1000 }, createdAt: 2000 }
+    const result = await createMobileSyncTransport(store, async () =>
+      Response.json({ error: 'Барлық пункт пен фото міндетті' }, { status: 422 })).send(action)
+    expect(result).toEqual({ kind: 'rejected', reason: 'Барлық пункт пен фото міндетті' })
+    store.close()
+  })
 })
