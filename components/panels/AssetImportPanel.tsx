@@ -35,6 +35,8 @@ export function AssetImportPanel({ materials, onImport }: Props) {
       <input type="file" accept=".dxf,.obj,.glb" className="mt-1 block w-full border border-neutral-700 bg-neutral-900 p-1"
         onChange={async (event) => {
           const selected = event.currentTarget.files?.[0]
+          // Allow the same corrected file to be selected again after an import error.
+          event.currentTarget.value = ''
           setSaved(false); setFile(null); setReadError('')
           if (!selected) return
           if (selected.size > 20_000_000) { setReadError(tr('Файл слишком большой (максимум 20 МБ)')); return }
