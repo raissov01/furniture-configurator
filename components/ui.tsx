@@ -219,7 +219,7 @@ export function Menu({
         aria-haspopup="menu"
         aria-expanded={open}
         data-menu-trigger
-        title={title}
+        title={title ?? (typeof label === 'string' ? label : undefined)}
         onClick={() => open ? setOpen(false) : openMenu()}
         className={cn(
           'rounded-md border font-medium transition',
@@ -236,7 +236,7 @@ export function Menu({
           role="menu"
           aria-label={typeof label === 'string' ? label : undefined}
           className={cn(
-            'absolute z-40 mt-1 min-w-44 rounded-lg border border-neutral-200 bg-white p-1 shadow-xl dark:border-neutral-700 dark:bg-neutral-900',
+            'absolute z-40 mt-1 min-w-44 border border-neutral-300 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-900',
             align === 'right' ? 'right-0' : 'left-0',
           )}
         >
@@ -262,12 +262,13 @@ export function MenuItem({
     <button
       type="button"
       role="menuitem"
+      aria-current={active ? 'true' : undefined}
       tabIndex={-1}
       disabled={disabled}
       title={title}
       onClick={() => { onClick?.(); close() }}
       className={cn(
-        'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40',
+        'flex w-full items-center gap-2 border border-transparent px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40',
         active
           ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
           : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800',

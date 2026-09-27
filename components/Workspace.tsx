@@ -41,6 +41,7 @@ import { VrButton } from '@/components/VrButton'
 import { Tour } from '@/components/Tour'
 import { RenderPanel } from '@/components/RenderPanel'
 import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/classicMenu'
+import { classicMenuItemTitle } from '@/lib/classicMenuUi'
 import { runShopExport } from '@/lib/shopExport'
 import { selectShopExportPanels } from '@/lib/shopExportScope'
 import { downloadProjectFile, pickProjectFile, projectFileErrorMessage } from '@/lib/projectFile'
@@ -683,7 +684,9 @@ export function Workspace() {
               {tr(entry.label)}
               <Slider value={exploded} onChange={setExploded} />
             </label>
-            return <MenuItem key={entry.id} active={entry.active ?? false} disabled={entry.disabled ?? false} onClick={() => runClassicCommand(entry.command)}>
+            return <MenuItem key={entry.id} active={entry.active ?? false} disabled={entry.disabled ?? false}
+              title={classicMenuItemTitle(entry.raw ? entry.label : tr(entry.label), entry.hint)}
+              onClick={() => runClassicCommand(entry.command)}>
               <span data-menu-item={entry.id}>{entry.raw ? entry.label : tr(entry.label)}</span>
               {entry.detail ? <span className="tabular-nums font-semibold">{entry.detail}</span> : null}
               {entry.hint ? <span className="ml-auto text-neutral-400">{entry.hint}</span> : null}
