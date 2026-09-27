@@ -36,6 +36,8 @@ import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
 import { cutDisplay, visibleMaterials } from '@/lib/cutView'
 import { playbackStep } from '@/src/core/cutPlayback'
+import { labelExportOptions, labelSizeLimits } from '@/lib/labelExportOptions'
+import type { LabelPage } from '@/src/core/export/labelLayout'
 
 /**
  * ⚠ Тізім ФУНКЦИЯ, тұрақты емес. Модуль деңгейіндегі `tr()` тіл сақтаудан
@@ -97,8 +99,25 @@ export function CutPage() {
   const [showCuts, setShowCuts] = useState(true)
   const [materialFilter, setMaterialFilter] = useState('all')
   const [busy, setBusy] = useState<string | null>(null)
+  const [labelPage, setLabelPage] = useState<LabelPage>('a4')
+  const [labelWidth, setLabelWidth] = useState(58)
+  const [labelHeight, setLabelHeight] = useState(40)
+  const [labelDraftInvalid, setLabelDraftInvalid] = useState<Record<string, boolean>>({})
   /** Экспорттың ескертуі (мыс. Базис қазақ әріптерін оқымайды). */
   const [notice, setNotice] = useState<string | null>(null)
+  const labelOptions = useMemo(() => {
+    try {
+      // Ағаштың түбір ID-і барлық жобада "root"; бірінші өндіріс түйінінің
+      // ID-і сақталған файлда тұрақты және жобаларды ажыратады.
+      return { value: labelExportOptions(
+        { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
+        root.children[0]?.id ?? root.id, 4,
+      ), error: null }
+    } catch (error) {
+      return { value: null, error: error instanceof Error ? error.message : String(error) }
+    }
+  }, [labelPage, labelWidth, labelHeight, root])
+  const labelsReady = labelOptions.value !== null && !Object.values(labelDraftInvalid).some(Boolean)
 
   const production = useMemo(() => {
     if (projectLoadError) return { panels: [], error: projectLoadError }
@@ -203,7 +222,7 @@ export function CutPage() {
               {busy === 'dxf' ? '…' : 'DXF'}
             </Button>
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={busy !== null || !nesting || !labelsReady}
               title={tr('Бирки на детали: позиция, размер реза, кромка по кромкам')}
               onClick={() => void run('labels', async () => {
                 const { labelsPdf } = await import('@/src/core/export/labels')
@@ -211,6 +230,7 @@ export function CutPage() {
                   labels: partLabels(panels, catalog, nesting!),
                   projectName,
                   fonts: await loadFonts(),
+                  ...labelOptions.value!,
                 })
                 download(`${projectName}-бирки.pdf`, bytes, 'application/pdf')
               })}
@@ -218,7 +238,7 @@ export function CutPage() {
               {busy === 'labels' ? '…' : tr('Бирки')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={busy !== null || !nesting || !labelsReady}
               title={tr('Всё для цеха одним архивом: карта, DXF листов, DXF деталей с присадкой, деталировка и бирки')}
               onClick={() => void run('bundle', async () => {
                 const [
@@ -244,7 +264,7 @@ export function CutPage() {
                 entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(panels, catalog)}`)
                 entries['birki.csv'] = strToU8(`\ufeff${labelsToCsv(labels)}`)
                 entries['karta-raskroya.pdf'] = await nestingPdf({ nesting: nesting!, projectName, fonts })
-                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts })
+                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts, ...labelOptions.value! })
                 download(
                   `${projectName}-цех.zip`,
                   zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
@@ -316,6 +336,24 @@ export function CutPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-4">
+        <section className="mb-3 grid gap-2 border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-3" aria-label={tr('Бирки')}>
+          <Field label={tr('Лист для бирок')}>
+            <Select value={labelPage} onChange={(page) => setLabelPage(page as LabelPage)} options={[
+              { value: 'a4', label: 'A4' }, { value: 'a5', label: 'A5' },
+            ]} />
+          </Field>
+          <Field label={tr('Ширина бирки, мм')} hint={`58–${labelSizeLimits(labelPage).width} мм`}>
+            <NumberInput value={labelWidth} min={58} max={labelSizeLimits(labelPage).width}
+              field="labelWidth" onDraftValidityChange={(field, invalid) => setLabelDraftInvalid((state) => ({ ...state, [field]: invalid }))}
+              onChange={setLabelWidth} />
+          </Field>
+          <Field label={tr('Высота бирки, мм')} hint={`40–${labelSizeLimits(labelPage).height} мм`}>
+            <NumberInput value={labelHeight} min={40} max={labelSizeLimits(labelPage).height}
+              field="labelHeight" onDraftValidityChange={(field, invalid) => setLabelDraftInvalid((state) => ({ ...state, [field]: invalid }))}
+              onChange={setLabelHeight} />
+          </Field>
+          {labelOptions.error ? <p role="alert" className="text-xs text-red-700 sm:col-span-3">{labelOptions.error}</p> : null}
+        </section>
         {nested.error ? (
           <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{nested.error}</p>
         ) : null}

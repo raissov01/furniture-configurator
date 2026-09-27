@@ -10,6 +10,10 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Лист для бирок': 'Label sheet',
+  'Ширина бирки, мм': 'Label width, mm',
+  'Высота бирки, мм': 'Label height, mm',
+  'Нет отверстий': 'No holes',
   'Порядок резов': 'Cut order',
   'Шаг реза': 'Cut step',
   'Вперёд': 'Next',
