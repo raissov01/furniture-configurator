@@ -1351,4 +1351,12 @@ export const uz: Record<string, string> = {
   'Вернуть рыночную цену: {price}': 'Bozor narxiga qaytarish: {price}',
   'Цена изменена цехом — рыночные обновления её не трогают': 'Narxni sex o‘zgartirgan — bozor yangilanishlari unga tegmaydi',
 
+  'Код клиента истёк': 'Mijoz kodining muddati tugadi',
+  'Код клиента изменился': 'Mijoz kodi o‘zgardi',
+  'Не удалось обновить проект для клиента': 'Mijoz loyihasini yangilab bo‘lmadi',
+  'Цена согласования': 'Tasdiqlash narxi',
+  'Клиент согласовал версию': 'Mijoz tasdiqlagan versiya',
+  'Текущий проект изменён после согласования': 'Joriy loyiha tasdiqdan keyin o‘zgardi',
+  'Скачать подписанный PDF': 'Muhrlangan PDF faylni yuklab olish',
+
 }
