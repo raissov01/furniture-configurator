@@ -12,7 +12,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { MarketPriceNotice } from './MarketPrice'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
   SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
@@ -23,6 +23,7 @@ import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
 import { visibleMaterials } from '@/lib/cutView'
 import { MoneyInput } from './MoneyInput'
+import { priceSourceRows } from '@/lib/priceSourceUi'
 
 type Tab = 'nesting' | 'price'
 
@@ -534,7 +535,8 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                     <tbody>
                       {g.lines.map((l) => {
                         const key = `${g.key}:${l.id}`
-                        return <tr key={key} className="border-t border-neutral-100 dark:border-neutral-800">
+                        const sources = priceSourceRows(l)
+                        return <Fragment key={key}><tr className="border-t border-neutral-100 dark:border-neutral-800">
                           <td className="py-1">{l.name}</td>
                           <td className="w-24 py-1 text-right tabular-nums text-neutral-500">
                             {l.qty} {l.unit}
@@ -559,6 +561,18 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                             />
                           </td>
                         </tr>
+                        {sources.length > 0 && <tr><td colSpan={5} className="pb-1">
+                          <details className="border-l border-neutral-300 pl-2 dark:border-neutral-700">
+                            <summary className="cursor-pointer text-[11px] text-neutral-600 dark:text-neutral-300">{tr('Источники сметы')} · {sources.length}</summary>
+                            <div className="max-h-40 overflow-auto text-[11px]">
+                              {sources.map((source, index) => <div key={`${source.id}:${index}`} className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-t border-neutral-100 py-0.5 dark:border-neutral-800">
+                                <span className="break-all">{source.id}</span>
+                                <span className="tabular-nums">{source.qty} {l.unit}</span>
+                                <span className="tabular-nums">{formatTengeExact(source.cost)}</span>
+                              </div>)}
+                            </div>
+                          </details>
+                        </td></tr>}</Fragment>
                       })}
                     </tbody>
                   </table>

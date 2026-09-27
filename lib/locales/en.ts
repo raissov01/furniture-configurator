@@ -1511,4 +1511,6 @@ export const en: Record<string, string> = {
   "Прайс применён": "Price list applied",
   "Применить прайс": "Apply price list",
 
+  'Источники сметы': 'Estimate sources',
+
 }

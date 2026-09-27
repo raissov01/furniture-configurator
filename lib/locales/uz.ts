@@ -1515,4 +1515,6 @@ export const uz: Record<string, string> = {
   "Прайс применён": "Narxlar ro‘yxati qo‘llandi",
   "Применить прайс": "Narxlar ro‘yxatini qo‘llash",
 
+  'Источники сметы': 'Smeta manbalari',
+
 }
