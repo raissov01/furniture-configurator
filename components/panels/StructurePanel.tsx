@@ -7,7 +7,6 @@ import { cn } from '@/lib/cn'
 import { selectionPropertiesNotice } from '@/lib/propertiesDialogState'
 import { ConfigValidationError, copyNodeProperties, findNode, flattenTree } from '@/src/core/index'
 import type { AutoJointKind, AutoJointRecord, Axis, FlatScene, GroupNode, PropertyClipboard, PropertyGroup, ScalePercent } from '@/src/core/index'
-
 import { useConfigurator } from '@/store/configurator'
 import { buildCanonicalRows, canDropInto, externalSelectionNodeIds, selectTreeRows } from './canonicalTreeRows'
 import type { CanonicalTreeRow } from './canonicalTreeRows'
