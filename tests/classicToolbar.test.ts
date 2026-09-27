@@ -1,0 +1,19 @@
+import { describe, expect, it } from 'vitest'
+import { uniqueToolbarRows } from '../lib/classicToolbar'
+import { readFileSync } from 'node:fs'
+
+describe('classic toolbar', () => {
+  it('keeps the first occurrence of a command and preserves row order', () => {
+    const rows = uniqueToolbarRows([
+      [{ label: 'Рендер' }, { label: 'Размеры на сцене' }],
+      [{ label: 'Размеры на сцене' }, { label: 'Сборка' }, { label: 'Рендер' }],
+    ])
+    expect(rows).toEqual([[{ label: 'Рендер' }, { label: 'Размеры на сцене' }], [{ label: 'Сборка' }]])
+  })
+  it('does not show a vacant camera pane or aliases that open the same structure window', () => {
+    const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
+    expect(source).not.toContain('className="p100-camera-pane')
+    expect(source).not.toContain("icon: 'layers', label: tr('Слои')")
+    expect(source).not.toContain("icon: 'library', label: tr('Библиотека')")
+  })
+})

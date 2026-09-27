@@ -17,6 +17,7 @@ import {
   Euler, NeutralToneMapping, Object3D, Plane, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3,
 } from 'three'
 import { isTouchDevice, walkInput } from '@/lib/walkInput'
+import { useOrthographicCamera } from '@/lib/viewProjection'
 import { wallElevationOffset, wallElevationTarget } from '@/lib/wallElevation'
 import type { Group, Mesh } from 'three'
 import { XR, XROrigin, useXRControllerLocomotion } from '@react-three/xr'
@@ -247,10 +248,6 @@ function WalkControls({
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       keys.current[e.code] = true
-      if (e.code === 'KeyE') {
-        const st = useConfigurator.getState()
-        st.setOpenness(st.openness > 0 ? 0 : 1)
-      }
     }
     const up = (e: KeyboardEvent) => { keys.current[e.code] = false }
     /*
@@ -1477,7 +1474,7 @@ export default function Scene({
           * `makeDefault` арқылы OrbitControls те, CameraRig те дәл осы камераны
           * көреді — екі камераны қатар ұстаудың қажеті жоқ.
           */}
-        {projection === 'ortho' ? <OrthographicCamera makeDefault near={-100} far={100} /> : null}
+        {useOrthographicCamera(projection, walk) ? <OrthographicCamera makeDefault near={-100} far={100} /> : null}
         {/*
           ФОН ашық әрі бейтарап (qdesign-мен салыстыру, 09-12): қою фонда ақ
           корпус «әзірлеушінің құралы» сияқты көрінетін, ал ашықта — каталогтағы

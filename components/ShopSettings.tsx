@@ -9,6 +9,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
+import { useModalLayer } from '@/lib/useModalLayer'
 import {
   DECOR_BRANDS,
   DECOR_LIBRARY,
@@ -74,6 +75,7 @@ const LIMIT_FIELDS: { key: keyof DimensionLimits; label: string }[] = [
 
 export function ShopSettings() {
   const open = useConfigurator((s) => s.shopOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'shop')
   const setOpen = useConfigurator((s) => s.setShopOpen)
   const shop = useConfigurator((s) => s.shop)
   const editShop = useConfigurator((s) => s.editShop)
@@ -81,6 +83,18 @@ export function ShopSettings() {
   const verifiedHinges = availableVerifiedHinges(shop.hingeSystems)
 
   const readiness = useMemo(() => shopReadiness(shop), [shop])
+
+  useEffect(() => {
+    if (!open || !isTop) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, isTop, setOpen])
 
   if (!open) return null
 
@@ -152,7 +166,8 @@ export function ShopSettings() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div

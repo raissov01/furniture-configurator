@@ -75,6 +75,7 @@ export function DecorPicker({
             title={m.name}
             aria-label={m.name}
             aria-pressed={m.id === value}
+            data-decor-swatch
             onClick={() => onChange(m.id)}
             className={cn(
               'h-8 w-8 rounded-md border transition',

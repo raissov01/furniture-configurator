@@ -21,6 +21,7 @@ import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { visibleMaterials } from '@/lib/cutView'
 
 type Tab = 'nesting' | 'price'
@@ -63,6 +64,7 @@ export function QuoteView({
   propertiesOpen?: boolean
 }) {
   const open = useConfigurator((s) => s.quoteOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'quote')
   const setOpen = useConfigurator((s) => s.setQuoteOpen)
   const shop = useConfigurator((s) => s.shop)
   const catalog = useConfigurator((s) => s.catalog)
@@ -79,6 +81,17 @@ export function QuoteView({
   const exportAllowed = childExportAllowed(propertiesOpen)
   const dialogRef = useRef<HTMLDivElement>(null)
   useEffect(() => { if (open) dialogRef.current?.focus() }, [open])
+  useEffect(() => {
+    if (!open || !isTop) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, isTop, setOpen])
 
   const nesting = useMemo(() => {
     try {
@@ -112,7 +125,8 @@ export function QuoteView({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Смета по проекту')}

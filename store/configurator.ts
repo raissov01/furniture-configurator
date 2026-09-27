@@ -15,6 +15,8 @@ import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
 import { appendFreeMirror } from '@/lib/freeMirrorAction'
 import { roomDimensionIssue } from '@/lib/roomDimensions'
+import { projectionForPreset } from '@/lib/viewProjection'
+import { validSilhouetteHeight } from '@/lib/silhouetteInput'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
@@ -24,6 +26,8 @@ import {
   IDENTITY_TRANSFORM,
   ORIENT_FACING,
   DEFAULT_SILHOUETTE_HEIGHT,
+  MIN_SILHOUETTE_HEIGHT,
+  MAX_SILHOUETTE_HEIGHT,
   ConfigValidationError,
   applyAutoJointChange,
   canMirror,
@@ -1411,7 +1415,12 @@ export const useConfigurator = create<State>((set, get) => ({
   setHistoryOpen: (historyOpen) => set({ historyOpen }),
   setViewMode: (viewMode) => set({ viewMode }),
   setQuality: (quality) => set({ quality }),
-  setSilhouette: (patch) => set((s) => ({ silhouette: { ...s.silhouette, ...patch } })),
+  setSilhouette: (patch) => {
+    if (patch.height !== undefined && !validSilhouetteHeight(patch.height)) {
+      throw new RangeError(`Рост человека, мм: ${MIN_SILHOUETTE_HEIGHT}…${MAX_SILHOUETTE_HEIGHT}`)
+    }
+    set((s) => ({ silhouette: { ...s.silhouette, ...patch } }))
+  },
   setWalk: (walk) => set({ walk }),
   setVr: (vr) => set({ vr }),
   toggleCabinetOpen: (id) => set((s) => ({ openCabinets: { ...s.openCabinets, [id]: !s.openCabinets[id] } })),
@@ -1873,7 +1882,10 @@ export const useConfigurator = create<State>((set, get) => ({
 
   setExploded: (exploded) => set({ exploded }),
   setShowDimensions: (showDimensions) => set({ showDimensions }),
-  setCameraPreset: (cameraPreset) => set({ cameraPreset }),
+  setCameraPreset: (cameraPreset) => set((s) => ({
+    cameraPreset,
+    projection: projectionForPreset(cameraPreset, s.projection),
+  })),
   setHovered: (hovered) => set({ hovered }),
   setSelected: (selected) => set({ selected }),
   setAssemblyStep: (assemblyStep) => set({ assemblyStep }),

@@ -23,6 +23,7 @@ export type HotkeyAction =
   | { kind: 'help' }
   | { kind: 'undo' }
   | { kind: 'redo' }
+  | { kind: 'delete' }
 
 export type Hotkey = {
   /** Анықтамада көрінетін жазу. */
@@ -51,6 +52,8 @@ export const HOTKEYS: Hotkey[] = [
   { keys: '?', match: ['?', '/'], description: 'Эта справка', action: { kind: 'help' } },
   { keys: 'Ctrl+Z', match: ['z'], ctrl: true, description: 'Отменить', action: { kind: 'undo' } },
   { keys: 'Ctrl+Shift+Z', match: ['z'], ctrl: true, shift: true, description: 'Вернуть', action: { kind: 'redo' } },
+  { keys: 'Ctrl+Y', match: ['y'], ctrl: true, shift: false, description: 'Вернуть', action: { kind: 'redo' } },
+  { keys: 'Delete', match: ['delete'], description: 'Удалить выбранный объект', action: { kind: 'delete' } },
 ]
 
 /** Мәтін теріліп жатыр ма: сонда хоткейлер ұйықтайды. */
