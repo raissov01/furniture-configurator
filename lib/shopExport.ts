@@ -68,12 +68,12 @@ export async function runShopExport(format: ShopExportFormat, input: ShopExportI
       // §O6: ойма бар панельдің DXF рез координатасы үшін генерациямен ДӘЛ сол
       // catalog/settings керек (generateCabinet ішінде осылай құрастырылады).
       const dxfOptions = { catalog, settings: mergeSettings(input.settings, cabinet?.settings) }
-      const [{ cabinetToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
+      const [{ cabinetToDxfArchiveFiles }, { zipSync, strToU8 }] = await Promise.all([
         import('@/src/core/export/dxf'),
         import('fflate'),
       ])
       const entries: Record<string, Uint8Array> = {}
-      for (const [file, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) entries[file] = strToU8(content)
+      for (const [file, content] of flatArchiveFiles(cabinetToDxfArchiveFiles(panels, dxfOptions))) entries[file] = strToU8(content)
       save(name, zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }), 'application/zip')
       return
     }

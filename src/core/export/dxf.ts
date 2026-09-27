@@ -26,6 +26,7 @@
  */
 
 import { pointOnMachinedFace } from '../faceCoordinates'
+import { drillingToCsv } from './csv'
 import type { NestedSheet, NestingResult } from '../nesting'
 import { cutoutBounds } from '../cutouts'
 import { subtractedThickness } from '../edges'
@@ -429,6 +430,31 @@ export function cabinetToDxfFiles(panels: Panel[], options?: DxfOptions): Map<st
     }
     files.set(name, panelToDxf(panel, options))
     usedNames.add(name.toLowerCase())
+  }
+  return files
+}
+
+/**
+ * Цехқа берілетін DXF архивінің толық құрамы. Жазық деталь DXF-іне торц
+ * тесігін салуға болмайды: ол басқа физикалық бет. Сондықтан мұндай
+ * операциялар панель ID-і мен РЕЗ координаталары бар бөлек кестеге шығады.
+ */
+export function cabinetToDxfArchiveFiles(panels: Panel[], options?: DxfOptions): Map<string, string> {
+  const files = cabinetToDxfFiles(panels, options)
+  const edgePanels = panels.map((panel) => ({
+    ...panel,
+    drilling: panel.drilling.filter((drill) => isEdgeFace(drill.face)),
+  }))
+  if (edgePanels.some((panel) => panel.drilling.length > 0)) {
+    files.set('EDGE-DRILLING.csv', drillingToCsv(edgePanels))
+    files.set('README.txt', [
+      'DXF файловые контуры и отверстия на пласти детали.',
+      'EDGE-DRILLING.csv — отдельные операции сверления торц панелей.',
+      'Каждая строка содержит идентификатор детали, торц (face), X/Y на РЕЗ детали,',
+      'диаметр, глубину и назначение. Торцовые отверстия отсутствуют в DXF.',
+      'Сверяйте идентификатор детали с именем <id>.dxf и не пропускайте торц.',
+      '',
+    ].join('\n'))
   }
   return files
 }
