@@ -49,8 +49,9 @@ export function PriceImportPanel({ shop }: { shop: ShopProfile }) {
     <h3 className="font-semibold">{tr('Импорт прайса CSV/XLSX')}</h3>
     <div className="grid gap-2 sm:grid-cols-3">
       <label className="block">{tr('Файл прайса')}
+        <span className="mt-1 flex items-center gap-2"><span className="border border-neutral-400 bg-white px-2 py-1 text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">{tr('Выбрать файл')}</span><span className="min-w-0 truncate">{file?.name ?? tr('Файл не выбран')}</span></span>
         <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          className="block w-full min-w-0 border border-neutral-300 p-1 dark:border-neutral-700"
+          className="sr-only"
           onChange={async (event) => {
             const selected = event.currentTarget.files?.[0]
             setFile(null); setMap({}); setApproved([]); setFeedback('')
