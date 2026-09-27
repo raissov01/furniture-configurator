@@ -128,7 +128,7 @@ export function RoomPlan() {
         aria-modal="true"
         aria-labelledby="room-plan-title"
         tabIndex={-1}
-        className="min-w-0 w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-3 outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
+        className="min-w-0 w-full max-w-4xl max-h-[calc(100dvh-16px)] overflow-x-hidden overflow-y-auto border border-neutral-200 bg-white p-3 outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -141,7 +141,7 @@ export function RoomPlan() {
           </div>
         </div>
 
-        <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <PlanSvg
             room={room}
             entries={entries}
