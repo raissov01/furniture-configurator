@@ -14,6 +14,7 @@ import { t as tr } from '@/lib/i18n'
 import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
 import { appendFreeMirror } from '@/lib/freeMirrorAction'
+import { projectionForPreset } from '@/lib/viewProjection'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
@@ -1779,7 +1780,10 @@ export const useConfigurator = create<State>((set, get) => ({
 
   setExploded: (exploded) => set({ exploded }),
   setShowDimensions: (showDimensions) => set({ showDimensions }),
-  setCameraPreset: (cameraPreset) => set({ cameraPreset }),
+  setCameraPreset: (cameraPreset) => set((s) => ({
+    cameraPreset,
+    projection: projectionForPreset(cameraPreset, s.projection),
+  })),
   setHovered: (hovered) => set({ hovered }),
   setSelected: (selected) => set({ selected }),
   setAssemblyStep: (assemblyStep) => set({ assemblyStep }),

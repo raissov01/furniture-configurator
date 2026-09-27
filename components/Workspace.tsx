@@ -93,12 +93,12 @@ const VIEW_TABS: {
   key: string
   ruLabel: string
   preset: CameraPreset
-  /** Көрсетілмесе — қазіргі проекция сол күйі қалады (жоспар, мысалы). */
+  /** Қойындының нақты проекциясы. */
   projection?: 'perspective' | 'ortho'
 }[] = [
   { key: 'perspective', ruLabel: 'Перспектива', preset: 'three-quarter', projection: 'perspective' },
   { key: 'axo', ruLabel: 'Аксонометрия', preset: 'three-quarter', projection: 'ortho' },
-  { key: 'plan', ruLabel: 'План', preset: 'plan' },
+  { key: 'plan', ruLabel: 'План', preset: 'plan', projection: 'ortho' },
   { key: 'wall-north', ruLabel: 'Стена С', preset: 'wall-north', projection: 'ortho' },
   { key: 'wall-west', ruLabel: 'Стена З', preset: 'wall-west', projection: 'ortho' },
   { key: 'wall-south', ruLabel: 'Стена Ю', preset: 'wall-south', projection: 'ortho' },
