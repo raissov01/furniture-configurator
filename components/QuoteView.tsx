@@ -115,11 +115,11 @@ export function QuoteView({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
       onClick={() => setOpen(false)}
     >
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Смета по проекту')}
-        className="w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        className="min-w-0 w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-2 shadow-xl sm:p-4 dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -129,7 +129,7 @@ export function QuoteView({
           <span className="text-[11px] text-neutral-400">
             {panels.length > 0 ? `деталей в проекте: ${panels.length}` : null}
           </span>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="flex w-full flex-wrap items-center justify-start gap-1 sm:ml-auto sm:w-auto sm:justify-end">
             {!exportAllowed && <span role="status" className="text-xs">{tr('Закройте свойства через OK перед экспортом')}</span>}
             <Button
               disabled={!exportAllowed || busy !== null || !nesting}
