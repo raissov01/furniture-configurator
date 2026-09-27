@@ -30,6 +30,7 @@ import { Button, Field, NumberInput, SectionTitle, Select } from '@/components/u
 import { cn } from '@/lib/cn'
 import { isCeilingIssue } from '@/lib/roomElevationUi'
 import { planDragOffset } from '@/lib/roomPlanDrag'
+import { shouldCloseRoomDialog } from '@/lib/roomDialog'
 
 /** Қабырға сызығының қалыңдығы, мм (шартты — тек көрініс үшін). */
 const WALL_MM = 60
@@ -87,6 +88,20 @@ export function RoomPlan() {
 
   const issues = useMemo(() => validatePlacements(room, entries), [room, entries])
   const issueFor = (id: string) => issues.filter((i) => i.cabinetId === id)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialogRef.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (!shouldCloseRoomDialog(event.key)) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpen(false)
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => { document.removeEventListener('keydown', onKey, true); trigger?.focus() }
+  }, [open, setOpen])
 
   const activePlacement: Placement =
     entries.find((e) => e.cabinet.id === activeId)?.placement ??
@@ -100,11 +115,16 @@ export function RoomPlan() {
       onClick={() => setOpen(false)}
     >
       <div
-        className="min-w-0 w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-3 shadow-xl dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="room-plan-title"
+        tabIndex={-1}
+        className="min-w-0 w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-3 shadow-xl outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h2 className="text-sm font-semibold">{tr('Комната')}</h2>
+          <h2 id="room-plan-title" className="text-sm font-semibold">{tr('Комната')}</h2>
           <span className="hidden text-[11px] text-neutral-400 sm:inline">
             выберите стену, поставьте на неё корпус
           </span>
