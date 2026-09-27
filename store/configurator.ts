@@ -659,7 +659,7 @@ const cleanPriceOverrides = (overrides: PriceOverrides): PriceOverrides | undefi
 }
 
 const withOpenings = (room: Room): Room =>
-  (room.openings && room.openings.length > 0
+  (room.openings !== undefined
     ? { ...room, openings: fitOpenings(room) }
     : { ...room, openings: defaultOpenings(room) })
 

@@ -54,7 +54,7 @@ describe('measurement wizard core', () => {
     draft.walls.north.obstacles.socket = { status: 'present', photoRef: 'photo:socket', location: {
       offset: n(500), width: n(100), elevation: n(300), height: n(100), depth: n(20),
     } }
-    expect(toRoom(draft)).toEqual({ width: 3200, depth: 2400, height: 2700 })
+    expect(toRoom(draft)).toEqual({ width: 3200, depth: 2400, height: 2700, openings: [] })
     const input = toKitchenInput(draft, ['north', 'east'])
     expect(input.options).toEqual({ layout: 'corner', lengthA: 3200, lengthB: 2400 })
     expect(input.room.width).toBe(3200)
@@ -75,7 +75,7 @@ describe('measurement wizard core', () => {
     draft.walls.south.length = n(3192)
     draft.corners.northEast = n(91)
     expect(() => toRoom(draft)).toThrow()
-    expect(toRoom(draft, { wallMm: 10, cornerDeg: 1 })).toEqual({ width: 3200, depth: 2400, height: 2700 })
+    expect(toRoom(draft, { wallMm: 10, cornerDeg: 1 })).toEqual({ width: 3200, depth: 2400, height: 2700, openings: [] })
     draft.walls.south.length = n(3189)
     expect(() => toRoom(draft, { wallMm: 10, cornerDeg: 1 })).toThrow(/opposite/i)
   })
