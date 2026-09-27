@@ -1083,7 +1083,7 @@ export function Workspace() {
         жақта таңдалған модульдің қасиеттері мен әрекеттері. Бұрын: сол жақта
         ұзын форма, оң жақта 460 px деталировка — 3D тарылып, тақта екі қатар.
       */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_auto] overflow-y-auto overscroll-contain lg:grid-cols-[28px_minmax(0,1fr)_340px] lg:grid-rows-none lg:overflow-hidden">
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[max-content_max-content] overflow-y-auto overscroll-contain lg:grid-cols-[28px_minmax(0,1fr)_340px] lg:grid-rows-none lg:overflow-hidden">
         {/*
           СОЛ ЖАҚТАҒЫ ТАР ТІК ҚҰРАЛДАР ЖОЛАҒЫ (docs/pro100/ui-design.md, §3).
           Бізде PRO100-дегідей БӨЛЕК режим жүйесі (таңдау/жылжыту курсоры)
