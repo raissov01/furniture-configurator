@@ -1384,7 +1384,7 @@ export function generateCabinet(
         ...(fixture.frontInset === undefined ? {} : { frontInset: fixture.frontInset }),
       }))
     }
-    if (fixtureCutouts.length > 0) applyCutouts([worktop], { worktop: fixtureCutouts })
+    if (fixtureCutouts.length > 0) applyCutouts([worktop], { worktop: fixtureCutouts }, bands, settings)
   }
 
   // ── Планкалар мен фальш-панельдер ──────────────────────────────────────────
@@ -1789,7 +1789,7 @@ export function generateCabinet(
         front.note = [front.note, 'Подъёмный: присадка по шаблону механизма']
           .filter(Boolean).join('; ')
         if (milling) {
-          validateMilling(milling, ctx.thickness(front))
+          validateMilling(milling, ctx.thickness(front), front.finishedWidth, front.finishedLength)
           applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)
         }
         return
@@ -1815,7 +1815,7 @@ export function generateCabinet(
       front.opening = { kind: 'door', side }
       hingeHoles(front, carcassPanel, side, ctx, hingeSystem)
       if (milling) {
-        validateMilling(milling, ctx.thickness(front))
+        validateMilling(milling, ctx.thickness(front), front.finishedWidth, front.finishedLength)
         applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)
       }
     })
@@ -1867,7 +1867,7 @@ export function generateCabinet(
   })
 
   // Оймалар: панельдің ішінен алынатын тесіктер (раковина, розетка, құбыр).
-  applyCutouts(panels, config.panelCutouts)
+  applyCutouts(panels, config.panelCutouts, bands, settings)
   // Жеке детальдің текстурасы мен бұрыштарының радиусы.
   applyPanelOverrides(panels, config.panelGrain, config.panelCorners)
 
