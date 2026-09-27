@@ -32,18 +32,7 @@ function loadBoard(hidden = false, invalid = false) {
     project.root.children[0].board.edges.W1 = { bandId: PVC2 }
   }
   project.layers = [{ id: 'boards', name: 'Тақталар', visible: !hidden, locked: false, color: '#000000' }]
-  const invalidBoard = project.root.children[0]
-  if (invalid && invalidBoard?.kind === 'board') {
-    const invalidRoot = project.root
-    const validRoot = { ...invalidRoot, children: [{ ...invalidBoard,
-      board: { ...invalidBoard.board, length: 600,
-        edges: { ...invalidBoard.board.edges, W1: null } },
-    }] }
-    useConfigurator.getState().loadProject({ ...project, root: validRoot })
-    useConfigurator.setState({ root: invalidRoot })
-  } else {
-    useConfigurator.getState().loadProject(project)
-  }
+  useConfigurator.getState().loadProject(project)
   useConfigurator.getState().setSelected('board')
 }
 const render = (component: typeof PricePanel | typeof InfoPanel | typeof FindPanel) =>

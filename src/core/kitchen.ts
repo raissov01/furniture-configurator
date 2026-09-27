@@ -522,6 +522,16 @@ function dressLower(cabinet: CabinetConfig, opts: KitchenOptions): CabinetConfig
  */
 export function generateKitchen(options: KitchenOptions, catalog: Catalog): KitchenResult {
   validateKitchenWalls(options)
+  const requestedWorktopId = options.materials?.worktopId
+  if (requestedWorktopId) {
+    const worktop = catalog.materials.find((m) => m.id === requestedWorktopId)
+    if (!worktop?.slab) {
+      throw new ConfigValidationError(
+        'materials.worktopId', requestedWorktopId,
+        'каталогтағы дайын тақта (slab) материалы',
+      )
+    }
+  }
   const wallTpl = findTemplate('kitchen-wall-600')!
   const tplOf = (kind: ModuleKind) => findTemplate(TEMPLATE_OF[kind])!
 
@@ -595,11 +605,10 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
   // Қолмен берілген раскладкаға плита ӨЗДІГІНЕН қосылмайды: пайдаланушы
   // оны «Тумба под варочную панель» арқылы өзі қояды.
   const wantHob = hobFuel !== 'none' && !options.modules
-  const runB = options.modules
-    ? options.modules.runB
-    : corner
-      ? composeRun(options.lengthB!, { sink: false, appliances, main: false, hob: wantHob && !hasHob(runA) })
-      : []
+  const runB = corner
+    ? (options.modules?.runB
+      ?? composeRun(options.lengthB!, { sink: false, appliances, main: false, hob: wantHob && !hasHob(runA) }))
+    : []
   // Үшінші қабырға (П-пішін) — әрқашан авто (раскладка редакторы А/B ғана).
   const runC = uShape && (options.lengthC ?? 0) >= MODULE_MIN
     ? composeRun(options.lengthC!, {
@@ -892,7 +901,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
  *   - қабырға (wall) ауысқанда, яғни БҰРЫШТА — біз топтастыруды әр
  *     қабырғаға БӨЛЕК жүргіземіз, сондықтан бұрыш ЕШҚАШАН бірікпейді.
  *     qdesign-нің бұрыштағы мінезі расталмаған — цехпен растау керек;
- *   - бір топ (материал сыятын парақ, `sheetWidth`) ұзындығынан аспайды —
+ *   - бір топ парақтың жиектелген пайдалы аймағына сыяды —
  *     физикалық шектеу: одан ұзын деталь бір парақтан кесілмейді.
  *
  * Биік бағана (пенал/тоңазытқыш/духовка мұнарасы) — ЕНЕДІ: `dressBase`
@@ -913,6 +922,12 @@ export function mergeSharedPlinths(
     const matId = c.base?.plinthMaterialId ?? c.carcassMaterialId
     return catalog.materials.find((m) => m.id === matId)
   }
+  const fitsSheet = (length: number, height: number, mat: Material): boolean => {
+    const usableW = mat.sheetWidth - 2 * mat.trimEdge
+    const usableH = mat.sheetHeight - 2 * mat.trimEdge
+    return (length <= usableW && height <= usableH)
+      || (!mat.hasGrain && length <= usableH && height <= usableW)
+  }
 
   for (const wall of new Set(placements.map((p) => p.wall))) {
     const list = placements
@@ -931,12 +946,18 @@ export function mergeSharedPlinths(
       const c = byId.get(p.cabinetId)!
       const h = c.base!.height
       const mat = plinthMaterial(c)
+      if (mat && !fitsSheet(widthOf(p), h, mat)) {
+        throw new ConfigValidationError(
+          'base.plinthMaterialId', `цоколь ұзындығы ${widthOf(p)} мм параққа сыймайды`,
+          `${mat.sheetWidth - 2 * mat.trimEdge} × ${mat.sheetHeight - 2 * mat.trimEdge} мм пайдалы аймақ`,
+        )
+      }
       const last = groups[groups.length - 1]
       const prev = last?.[last.length - 1]
       // Тура көрші (үзіліссіз), бірдей биіктік/материал, парақтан аспайды.
       const contiguous = !!prev && prev.offset + widthOf(prev) === p.offset
       const sameSpec = !!last && h === groupHeight && !!mat && !!groupMat && mat.id === groupMat.id
-      const fits = !!mat && groupLength + widthOf(p) <= mat.sheetWidth
+      const fits = !!mat && fitsSheet(groupLength + widthOf(p), h, mat)
       if (contiguous && sameSpec && fits) {
         last!.push(p)
         groupLength += widthOf(p)

@@ -508,12 +508,15 @@ export function priceProject(
     .map(([id, qty]) => {
       const item = hardwareById.get(id)
       const unitPrice = item?.pricePerUnit ?? 0
+      const unit: PriceLine['unit'] = id === 'rod-25' || id === 'sliding-track' ? 'м' : 'шт'
       if (unitPrice <= 0) missingPrices.push(`${item?.name ?? id}: цена за штуку`)
       return {
         id,
         name: item?.name ?? id,
-        qty: Math.round(qty * 100) / 100,
-        unit: (id === 'rod-25' || id === 'sliding-track' ? 'м' : 'шт') as 'м' | 'шт',
+        // Ұзындық бүтін миллиметрмен жиналады: метрде 3 таңбаны сақтау
+        // жолдың көрсетілген саны мен дәл есептелген сомасын сәйкестендіреді.
+        qty: unit === 'м' ? Math.round(qty * 1000) / 1000 : Math.round(qty * 100) / 100,
+        unit,
         unitPrice,
         cost: roundTenge(qty * unitPrice),
       }

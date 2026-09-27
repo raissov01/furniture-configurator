@@ -11,7 +11,7 @@
  */
 
 import { LEG_PLATE_ROUND_DIAMETER, LEG_PLATE_SQUARE_SIDE, LEG_STEP, mergeSettings } from './constants'
-import { HOOD_CLEARANCE, findAppliance, findFilling, findFixture } from './filling'
+import { HOOD_CLEARANCE, findAppliance, findFilling, findFixture, validateFixtureCombination } from './filling'
 import type { ApplianceKind, FixtureVisual } from './filling'
 import { ConfigValidationError } from './errors'
 import { carcassDepthAt, layoutBands } from './generateCabinet'
@@ -101,6 +101,7 @@ export function generateHardware(
   catalog: Catalog,
   projectSettings?: SettingsOverride,
 ): HardwarePlacement[] {
+  validateFixtureCombination(config.fixtures)
   const settings = mergeSettings(projectSettings, config.settings)
   const carcass = catalog.materials.find((m) => m.id === config.carcassMaterialId)
   if (!carcass) {

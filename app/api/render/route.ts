@@ -15,6 +15,7 @@
  */
 
 import OpenAI from 'openai'
+import { aiAccess } from '@/lib/server/aiAccess'
 
 const MODEL = process.env['OPENAI_IMAGE_MODEL'] ?? 'gpt-image-1'
 /** Кірістің шегі: 3D скриншоты әдетте 1–3 МБ. */
@@ -40,6 +41,8 @@ const STYLES: Record<string, string> = {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const denied = await aiAccess('render')
+  if (denied) return denied
   const key = process.env['OPENAI_API_KEY']
   if (!key) {
     return Response.json({ error: 'ИИ-рендер не настроен: нет ключа OpenAI' }, { status: 503 })

@@ -12,20 +12,22 @@ import {
   legPairsFor, legScrewHoles, minifixJoint, runnerHoles, shelfPinHoles,
 } from './drilling'
 import { DEFAULT_HANDLE_ID, defaultHandleSpec, handleShape } from './fittings'
-import { fillingBandHeight } from './filling'
+import { fillingBandHeight, validateFixtureCombination } from './filling'
 import { millingPaths, validateMilling } from './milling'
 import type { HandleModel, HandleSpec, HingeSystem } from './fittings'
 import {
   calculateCutDimensions, carcassEdges, customPartEdges, resolveEdges, subtractedThickness,
 } from './edges'
 import { applyCutouts, applyPanelOverrides } from './cutouts'
+import { planWorktopCutout, worktopFixtureModel } from './worktopFixtures'
+import type { Cutout } from './cutouts'
 import { applyDrillEdits } from './drillEdits'
 import { ConfigValidationError } from './errors'
 import {
   findDrawerSystem, findMetalBoxSystem, isMetalBoxSystem, metalBoxParts, nominalRunnerLength,
 } from './drawerSystems'
 import type { DrawerSystem, MetalBoxSystem } from './drawerSystems'
-import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, rotationFor } from './geometry'
+import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, panelExtents, rotationFor } from './geometry'
 import { frontSlots, layoutSections } from './sections'
 import type {
   CabinetConfig, Catalog, ConstructionSettings, Material,
@@ -102,6 +104,7 @@ export function generateCabinet(
   validateDimension(H, 'cabinet.height')
   validateDimension(W, 'cabinet.width')
   validateDimension(D, 'cabinet.depth')
+  validateFixtureCombination(config.fixtures)
 
   /** Корпус материалының қалыңдығы. ЕШҚАШАН 16 деп қатырылмайды. */
   const t = carcass.thickness
@@ -1005,6 +1008,12 @@ export function generateCabinet(
             ? { side: frontPanel.side, width: frontPanel.width }
             : null,
         })
+        if (metalBox) {
+          const [left, right] = boundsOf(sectionIndex)
+          const reason = `${metalBox.name}: корпусқа бекіту координаталары жоқ; артикулдық присадка схемасы қажет`
+          left.cncBlockReason = reason
+          right.cncBlockReason = reason
+        }
         panels.push(...created.panels)
         for (const run of created.runs) {
           drawerRuns.push({ ...run, sectionIndex })
@@ -1129,6 +1138,25 @@ export function generateCabinet(
       inset ? 0 : -secFrontMat.thickness,
       secFrontMat, settings, make,
     )
+    if (inset) {
+      for (const front of created) {
+        const frontSize = panelExtents(front, secFrontMat.thickness)
+        for (const shelf of panels.filter((panel) => panel.role === 'shelf')) {
+          const shelfMaterial = requireMaterial(materials, shelf.materialId, 'shelf.materialId')
+          const shelfSize = panelExtents(shelf, shelfMaterial.thickness)
+          const intersects = (['x', 'y', 'z'] as const).every((axis) =>
+            front.position[axis] < shelf.position[axis] + shelfSize[axis]
+            && shelf.position[axis] < front.position[axis] + frontSize[axis])
+          if (intersects) {
+            throw new ConfigValidationError(
+              `sections[${sectionIndex}].fronts.mount`,
+              `вкладной фасад ${front.id} пен сөре ${shelf.id} физикалық қиылысады`,
+              'settings.shelfSetback немесе сөренің алдыңғы insets.front шегінісін ұлғайтыңыз',
+            )
+          }
+        }
+      }
+    }
     panels.push(...created)
     frontGroups.push({ fronts: created, sectionIndex })
   })
@@ -1303,14 +1331,29 @@ export function generateCabinet(
       : carcass
     const overhangFront = config.worktop.overhangFront
     const overhangSides = config.worktop.overhangSides
-    panels.push(
-      make(
+    const worktop = make(
         'worktop', 'top', 'Столешница', worktopMat,
         W + 2 * overhangSides, D + overhangFront,
         { x: -overhangSides, y: H, z: -overhangFront }, ORIENT_HORIZONTAL,
         'Столешница, накладная',
-      ),
-    )
+      )
+    panels.push(worktop)
+    // Плитаға 560 × 490 R5 әдепкі ойық. Мойкаға әмбебап ойық жоқ:
+    // модель артикулы мен алдыңғы орнын нақты таңдағанда ғана қоямыз.
+    const fixtureCutouts: Cutout[] = []
+    for (const fixture of config.fixtures ?? []) {
+      if (fixture.kind === 'hood' || (fixture.kind === 'sink' && !fixture.modelId)) continue
+      const model = worktopFixtureModel(fixture.modelId ?? 'hob-60-default')
+      if (model.kind !== fixture.kind) {
+        throw new ConfigValidationError('fixtures.modelId', fixture.modelId ?? '', `${fixture.kind} моделі`)
+      }
+      fixtureCutouts.push(planWorktopCutout(model, {
+        panelLength: worktop.finishedLength, panelWidth: worktop.finishedWidth,
+        centreX: worktop.finishedLength / 2, cabinetWidth: W,
+        ...(fixture.frontInset === undefined ? {} : { frontInset: fixture.frontInset }),
+      }))
+    }
+    if (fixtureCutouts.length > 0) applyCutouts([worktop], { worktop: fixtureCutouts })
   }
 
   // ── Планкалар мен фальш-панельдер ──────────────────────────────────────────
@@ -1664,13 +1707,19 @@ export function generateCabinet(
     runnerHoles(right, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, sectionCentreX, ctx, drawerSystem)
   }
 
-  // Ілгектер: шеткі фасадтар секцияның тік панеліне ілінеді.
-  // Ортадағы фасадтардың жанында тік панель жоқ, сондықтан оларға тек чашка.
+  // Ілгектер: әр чашкаға секция шетіндегі НАҚТЫ тік панельде планка қажет.
   for (const group of frontGroups) {
     const [left, right] = boundsOf(group.sectionIndex)
     const last = group.fronts.length - 1
     const spec = layouts[group.sectionIndex]?.section.fronts
-    const hingeSystem = resolveHingeSystem(catalog, spec?.hingeSystemId)
+    const hingeSystem = resolveHingeSystem(catalog, spec?.hingeSystemId, spec?.mount)
+    if (spec?.opening !== 'up' && hingeSystem && hingeSystem.mount !== spec?.mount) {
+      throw new ConfigValidationError(
+        `sections[${group.sectionIndex}].fronts.hingeSystemId`,
+        `петля "${hingeSystem.id}" (${hingeSystem.mount}) фасад түріне ${spec?.mount} сәйкес емес`,
+        `mount=${spec?.mount} петля жүйесін цех каталогынан таңдаңыз`,
+      )
+    }
     const handle = resolveHandle(catalog, spec?.handle)
     const milling = spec?.milling ?? null
 
@@ -1723,6 +1772,13 @@ export function generateCabinet(
       const carcassPanel = side === 'left'
         ? (i === 0 ? (blindLeft ? frontPanelStand ?? undefined : left) : undefined)
         : (i === last ? (blindRight ? frontPanelStand ?? undefined : right) : undefined)
+      if (!carcassPanel) {
+        throw new ConfigValidationError(
+          `sections[${group.sectionIndex}].fronts.opening`,
+          `${i + 1}-фасадтың ${side === 'left' ? 'сол' : 'оң'} жағында петля планкасына тірек панель жоқ`,
+          'әр есіктің ілгек жағында тік тірек панель болуы керек; секцияны бөліңіз',
+        )
+      }
       // 3D-дегі анимация ІЛГЕКТІҢ жағын осы жерден алады: екеуі бір шешімнен
       // шықса, есік ешқашан «басқа жаққа» ашылмайды.
       front.opening = { kind: 'door', side }
@@ -1795,10 +1851,10 @@ export function generateCabinet(
  * Секцияның ілгек жүйесі. Каталогта жүйе болмаса (ескі шақыру) —
  * `undefined`, ол кезде `hingeHoles` §4.9 константаларымен жүреді.
  */
-function resolveHingeSystem(catalog: Catalog, id: string | undefined): HingeSystem | undefined {
+function resolveHingeSystem(catalog: Catalog, id: string | undefined, mount?: 'overlay' | 'inset'): HingeSystem | undefined {
   const list = catalog.hingeSystems
   if (!list || list.length === 0) return undefined
-  if (!id) return list[0]
+  if (!id) return list.find((h) => h.mount === mount) ?? list[0]
   const found = list.find((h) => h.id === id)
   if (!found) {
     throw new ConfigValidationError('fronts.hingeSystemId', `жүйе табылмады: "${id}"`)
@@ -1893,6 +1949,17 @@ function makeFronts(
   const leftover = slot.width - n * frontWidth - base.reduce((sum, v) => sum + v, 0)
   const extra = distributeMillimetres(leftover, n + 1, gapFillOrder(n + 1))
   const gaps = base.map((v, i) => v + (extra[i] ?? 0))
+  // Бүтін фасадтарға бөлу қалдығы номинал саңылауды ұлғайтады. Шек
+  // кесілетін панельдердің НАҚТЫ арасындағы бос орынға да қолданылады.
+  gaps.forEach((gap, i) => {
+    if (gap > 50) {
+      const side = i === 0 ? 'left' : i === n ? 'right' : 'between'
+      throw new ConfigValidationError(
+        `sections[${sectionIndex}].fronts.gaps.${side}`, `${gap} мм (дөңгелектеуден кейін)`,
+        '0..50 мм, бүтін сан',
+      )
+    }
+  })
   const frontHeight = spanY - gapTop - gapBottom
   const note = fronts.mount === 'inset' ? 'Фасад вкладной' : 'Фасад накладной'
 
@@ -2206,7 +2273,11 @@ function makeDrawers(input: {
 
   const clearance = system ? system.sideClearance : settings.drawerRunnerGap
   const boxWidth = Math.floor(openingWidth - 2 * clearance)
-  const available = shelfDepth - settings.drawerBackGap
+  // Фасад қалыңдығы мен артқы саңылаудың екеуі де ұзындықты шектейді (§4.8).
+  const available = Math.min(
+    shelfDepth - settings.drawerBackGap,
+    shelfDepth + settings.shelfSetback - frontMat.thickness,
+  )
   const lengths = system ?? metalBox
   const nominal = lengths ? nominalRunnerLength(lengths, available) : available
   if (nominal === null) {
@@ -2233,6 +2304,13 @@ function makeDrawers(input: {
   const metalParts = metalBox
     ? metalBoxParts(metalBox, openingWidth, nominal, metalBoxBackHeight)
     : null
+  if (metalParts && metalParts.back.height > boxHeight) {
+    throw new ConfigValidationError(
+      'metalBoxBackHeight',
+      `${metalParts.back.height} мм`,
+      `≤ ${boxHeight} мм (фасад биіктігі ${frontHeight} мм − drawerBoxDrop ${settings.drawerBoxDrop} мм)`,
+    )
+  }
   if (metalParts && (metalParts.bottom.width < MIN_DIMENSION || metalParts.bottom.depth < MIN_DIMENSION)) {
     throw new ConfigValidationError(
       `sections[${sectionIndex}].contents[${bandIndex}]`,
@@ -2305,7 +2383,7 @@ function makeDrawers(input: {
 
     if (metalParts) {
       // Металл жәшік: парақтан ТЕК осы екеуі кесіледі.
-      panels.push(make(
+      const metalBottom = make(
         `${id}-bottom`, 'drawerBottom', 'Дно ящика', carcass,
         // ORIENT_HORIZONTAL: ұзындығы X (ен), ені Z (тереңдік).
         metalParts.bottom.width, metalParts.bottom.depth,
@@ -2316,7 +2394,9 @@ function makeDrawers(input: {
         },
         ORIENT_HORIZONTAL,
         `Дно ящика, ${metalBox!.name}`,
-      ))
+      )
+      metalBottom.cncBlockReason = `${metalBox!.name}: корпусқа бекіту координаталары жоқ; артикулдық присадка схемасы қажет`
+      panels.push(metalBottom)
       panels.push(make(
         `${id}-wall-back`, 'drawerBack', 'Задняя стенка ящика', carcass,
         // ORIENT_FACING: ұзындығы Y (биіктік), ені X.

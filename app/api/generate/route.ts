@@ -9,6 +9,7 @@
  */
 
 import OpenAI from 'openai'
+import { aiAccess } from '@/lib/server/aiAccess'
 
 const MODEL = process.env['OPENAI_MODEL'] ?? 'gpt-5.4'
 
@@ -75,6 +76,8 @@ function sanitize(o: GenOptions): GenOptions {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const denied = await aiAccess('text')
+  if (denied) return denied
   let prompt: string
   try {
     const body = (await request.json()) as { prompt?: unknown }

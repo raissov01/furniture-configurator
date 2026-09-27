@@ -457,7 +457,9 @@ export function hingeHoles(
   const cupFromEdge = system?.cupFromEdge ?? HINGE_CUP_FROM_EDGE
   const endOffset = system?.endOffset ?? HINGE_END_OFFSET
   const plateSpacing = system?.plateHoleSpacing ?? HINGE_PLATE_HOLE_SPACING
-  const plateFromFront = system?.plateFromFront ?? HINGE_PLATE_FROM_FRONT
+  const plateFromFront = (system?.plateFromFront ?? HINGE_PLATE_FROM_FRONT)
+    + (system?.plateFrontThicknessOffset === undefined ? 0
+      : ctx.thickness(front) + system.plateFrontThicknessOffset)
 
   const n = hingeCount(front.finishedLength)
   // Шеткі ілгектер фасадтың үсті мен астынан endOffset, қалғаны аралыққа
@@ -469,7 +471,8 @@ export function hingeHoles(
   for (const x of positions) {
     pushFace(front, 'inner', x, cupY, cupDiameter, cupDepth, 'hinge', ctx, system?.hardwareId)
     if (ctx.settings.hingeCupMount !== 'cup-only') {
-      const { hingeFixingSpacing: spacing, hingeFixingOffset: offset } = ctx.settings
+      const spacing = system?.fixingSpacing ?? ctx.settings.hingeFixingSpacing
+      const offset = system?.fixingOffset ?? ctx.settings.hingeFixingOffset
       const diameter = ctx.settings.hingeCupMount === 'screw'
         ? requireScrewPilotDiameter(ctx.settings.hingeScrewPilotDiameter)
         : ctx.settings.hingePressFitDiameter

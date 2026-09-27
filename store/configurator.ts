@@ -39,6 +39,7 @@ import {
   replaceTreeBoardMaterial,
   replaceTreeMaterial,
   nextFreeOffset,
+  nextSectionId,
   parseProjectV4,
   SceneLightsSchema,
   parseShopProfile,
@@ -58,6 +59,7 @@ import type {
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
   setNodeLayer, treeFromProject } from '@/src/core/index'
+import { LEGACY_MATERIAL_ALIASES } from '@/src/core/data/catalog/materials'
 import { appendNodeArray, assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, translateTreeNodes, ungroupNode } from '@/src/core/treeEditing'
 import type { ArrayOptions } from '@/src/core/array'
 import type { AutoJointKind } from '@/src/core/autoJoint'
@@ -849,7 +851,7 @@ export const useConfigurator = create<State>((set, get) => ({
   addSection() {
     const s = get()
     const cabinet = activeCabinet(s)
-    const nextId = `s${cabinet.sections.length + 1}`
+    const nextId = nextSectionId(cabinet.sections)
     const contents: SectionContent[] = [{ kind: 'shelves', count: 3, shelfKind: 'adjustable' }]
     get().edit('sections:add', {
       sections: [
@@ -1012,9 +1014,21 @@ export const useConfigurator = create<State>((set, get) => ({
    */
   loadProject(file) {
     const s = get()
-    const project = parseProjectV4(file)
+    const project = parseProjectV4(file, { migrateMaterials: false })
     const known = new Set(s.shop.materials.map((m) => m.id))
-    const missing = project.materials.filter((m) => !known.has(m.id)).map((m) => ({ ...m, pricePerSheet: 0 }))
+    const shopMaterials = new Map(s.shop.materials.map((m) => [m.id, m]))
+    const missing = project.materials.filter((m) => !known.has(m.id)).map((m) => ({ ...m,
+      pricePerSheet: shopMaterials.get(LEGACY_MATERIAL_ALIASES[m.id] ?? '')?.pricePerSheet ?? 0 }))
+    const aliases = missing.map((m) => [m.id, LEGACY_MATERIAL_ALIASES[m.id]] as const)
+      .filter((pair): pair is readonly [string, string] => pair[1] !== undefined && shopMaterials.has(pair[1]))
+    const withAliases = <T>(values: Record<string, T>, prefix = ''): Record<string, T> => {
+      const next = { ...values }
+      for (const [oldId, targetId] of aliases) {
+        const source = values[`${prefix}${targetId}`]
+        if (source !== undefined && next[`${prefix}${oldId}`] === undefined) next[`${prefix}${oldId}`] = source
+      }
+      return next
+    }
     const knownBands = new Set(s.shop.edgeBands.map((b) => b.id))
     const missingBands = project.edgeBands.filter((b) => !knownBands.has(b.id)).map((b) => ({ ...b, pricePerMeter: 0 }))
 
@@ -1023,6 +1037,11 @@ export const useConfigurator = create<State>((set, get) => ({
           ...s.shop,
           materials: [...s.shop.materials, ...missing],
           edgeBands: [...s.shop.edgeBands, ...missingBands],
+          marketPrices: withAliases(s.shop.marketPrices, 'material:'),
+          priceLists: s.shop.priceLists.map((list) => ({ ...list,
+            materialPrices: withAliases(list.materialPrices),
+            marketPrices: withAliases(list.marketPrices, 'material:'),
+          })),
         }
       : s.shop
 

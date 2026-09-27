@@ -373,6 +373,8 @@ export type Panel = {
 
   /** Деталировкадағы «Примечание» бағаны. Контекстті ядро біледі, кесте емес. */
   note: string
+  /** Артикулдық схема жоқ болса, өндірістік DXF-ті жарамсыз етеді. */
+  cncBlockReason?: string | undefined
   /** Сөре тірегі; генератор қояды, смета мәтіндік note-ті талдамайды. */
   shelfKind?: ShelfKind | undefined
 
@@ -783,7 +785,7 @@ export type PanelMount = 'inset' | 'overlay' | 'overlayLeft' | 'overlayRight'
 export type DrawerSystemId = 'roller' | 'ball' | 'tandem'
 
 /** Металл жәшік жүйесі: қорап дайын, парақтан түбі мен арты ғана кесіледі. */
-export type MetalBoxSystemId = 'tandembox' | 'legrabox' | 'merivobox'
+export type MetalBoxSystemId = 'tandembox' | 'legrabox' | 'merivobox' | 'metabox'
 
 /** Аяқтың тұғыры (`CabinetConfig.base.legType`). */
 export type LegType = 'cylinder' | 'cone' | 'square' | 'vector' | 'none'
@@ -813,8 +815,8 @@ export type PanelOpening =
  * панельдің шаблонынан алынады. Цех оны «Вырезы» арқылы өзі қояды.
  */
 export type CabinetFixture =
-  | { kind: 'sink' }
-  | { kind: 'hob'; fuel: 'gas' | 'electric' }
+  | { kind: 'sink'; modelId?: string | undefined; frontInset?: number | undefined }
+  | { kind: 'hob'; fuel: 'gas' | 'electric'; modelId?: string | undefined; frontInset?: number | undefined }
   | { kind: 'hood' }
 
 /** Аяқтың табаны (`CabinetConfig.base.legPlate`). */

@@ -237,10 +237,11 @@ export function migrateV3ToV4(project: ProjectFile & { layers?: Layer[] }): Proj
 }
 
 /** v1–v3 оқығанда бұрынғы миграция тізбегі қолданылады; v4 тура тексеріледі. */
-export function parseProjectV4(raw: unknown): ProjectFileV4 {
+export function parseProjectV4(raw: unknown, options: { migrateMaterials?: boolean } = {}): ProjectFileV4 {
   const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion
   if (version === 4) {
-    const project = migrateLegacyProjectMaterials(repairProjectSectionIds(ProjectFileV4BaseSchema.parse(raw)))
+    const parsed = repairProjectSectionIds(ProjectFileV4BaseSchema.parse(raw))
+    const project = options.migrateMaterials === false ? parsed : migrateLegacyProjectMaterials(parsed)
     validateManualBoardDrilling(project.root, { materials: project.materials, edgeBands: project.edgeBands },
       project.settings, project.layers)
     if (project.autoJoints?.length) project.autoJoints = rebuildAutoJoints(project.root, project.autoJoints,
@@ -248,7 +249,8 @@ export function parseProjectV4(raw: unknown): ProjectFileV4 {
     return project
   }
   const legacy = parseProjectWithLayers(raw)
-  return migrateLegacyProjectMaterials(repairProjectSectionIds(ProjectFileV4BaseSchema.parse(migrateV3ToV4(legacy))))
+  const parsed = repairProjectSectionIds(ProjectFileV4BaseSchema.parse(migrateV3ToV4(legacy)))
+  return options.migrateMaterials === false ? parsed : migrateLegacyProjectMaterials(parsed)
 }
 
 /**

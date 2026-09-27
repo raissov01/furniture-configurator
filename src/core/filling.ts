@@ -18,6 +18,8 @@
  */
 
 import { z } from 'zod'
+import { ConfigValidationError } from './errors'
+import type { CabinetFixture } from './types'
 
 // ── Фурнитура ────────────────────────────────────────────────────────────────
 
@@ -141,6 +143,16 @@ export function findFixture(id: FixtureVisual): FixtureModel {
   const found = FIXTURES.find((f) => f.id === id)
   if (!found) throw new Error(`техника табылмады: ${id}`)
   return found
+}
+
+/** Мойка мен плита әдепкіде бір орталыққа қойылады: қабаттасқан өндірістік жоспарға жол бермейміз. */
+export function validateFixtureCombination(fixtures: CabinetFixture[] | undefined): void {
+  if (fixtures?.some((f) => f.kind === 'sink') && fixtures.some((f) => f.kind === 'hob')) {
+    throw new ConfigValidationError(
+      'fixtures', 'мойка мен плита бір модульде қабаттасады',
+      'бір модульге біреуі ғана; екіншісін бөлек модульге қойыңыз',
+    )
+  }
 }
 
 /**

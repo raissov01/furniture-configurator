@@ -171,6 +171,9 @@ export type DxfOptions = {
 
 /** Бір панельдің DXF мазмұны. */
 export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
+  if (panel.cncBlockReason) {
+    throw new Error(`panelToDxf: «${panel.id}» — ${panel.cncBlockReason}`)
+  }
   const requestedFace = options.face ?? 'both'
   const faces: ('inner' | 'outer')[] = requestedFace === 'both' ? ['inner', 'outer'] : [requestedFace]
   const textHeight = options.textHeight ?? 12

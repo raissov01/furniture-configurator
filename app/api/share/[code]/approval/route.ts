@@ -69,7 +69,7 @@ function revision(row: Stored): ApprovalRevision<ProjectFileV4> {
 }
 
 function publicProject(json: string): ProjectFileV4 {
-  return toPublicProject(parseProjectV4(JSON.parse(json) as unknown))
+  return toPublicProject(parseProjectV4(JSON.parse(json) as unknown, { migrateMaterials: false }))
 }
 
 function codeHash(id: string, code: string): string {

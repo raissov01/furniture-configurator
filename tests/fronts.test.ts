@@ -3,7 +3,7 @@
  * дөңгелектеу дрейфі болмауы тиіс, фасадтар әрқашан БІРДЕЙ.
  */
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETTINGS, generateCabinet } from '../src/core/index'
+import { DEFAULT_SETTINGS, distributeMillimetres, gapFillOrder, generateCabinet } from '../src/core/index'
 import { CARCASS_THICKNESS as T, catalog, oneSection, threeSectionWardrobe, withCabinet } from './fixtures'
 
 const gap = DEFAULT_SETTINGS.frontGap
@@ -17,6 +17,18 @@ function fronts(width: number, count: number, mount: 'overlay' | 'inset' = 'over
 }
 
 describe('накладной фасад', () => {
+  it.each([1, 2, 3, 4])('n=%i: §4.7 қалдығы алдымен сыртқы, кейін ішкі саңылауға түседі', (n) => {
+    const width = 610
+    const frontWidth = Math.floor((width - (n + 1) * gap) / n)
+    const leftover = width - n * frontWidth - (n + 1) * gap
+    const extra = distributeMillimetres(leftover, n + 1, gapFillOrder(n + 1))
+    const gaps = extra.map((value) => value + gap)
+    expect(gaps.reduce((sum, value) => sum + value, 0) + n * frontWidth).toBe(width)
+    expect(gaps[0]).toBeGreaterThanOrEqual(gaps.at(-1)!)
+    expect(gaps.at(-1)).toBeGreaterThanOrEqual(Math.max(...gaps.slice(1, -1)))
+    if (n === 4) expect(gaps[1]).toBe(gap + 1)
+  })
+
   it('эталон 600 мм / 2 фасад → 295 мм, сол саңылау 4 мм', () => {
     const f = fronts(600, 2)
     expect(f.map((p) => p.finishedWidth)).toEqual([295, 295])
@@ -28,7 +40,8 @@ describe('накладной фасад', () => {
   it.each([400, 450, 600, 601, 900, 1197, 1200, 1801, 2400])(
     'W=%i: кез келген фасад саны үшін ені + саңылау = W дәл',
     (width) => {
-      for (let n = 1; n <= 4; n += 1) {
+      // Бір секцияда тек екі қарсы жаққа ілінетін есікке тік тірек бар.
+      for (let n = 1; n <= 2; n += 1) {
         const f = fronts(width, n)
         const widths = new Set(f.map((p) => p.finishedWidth))
         expect(widths.size, `n=${n}: фасадтар бірдей емес`).toBe(1)
@@ -61,7 +74,11 @@ describe('накладной фасад', () => {
 
 describe('вкладной фасад', () => {
   it('ішкі саңылауға сыяды және корпустан шықпайды', () => {
-    const f = fronts(600, 1, 'inset')[0]!
+    const f = generateCabinet(withCabinet({
+      width: 600,
+      settings: { shelfSetback: 20 },
+      sections: oneSection({ fronts: { count: 1, mount: 'inset' } }),
+    }), catalog).find((panel) => panel.role === 'front')!
     expect(f.finishedWidth).toBe(600 - 2 * T - 2 * gap)
     expect(f.finishedLength).toBe(2000 - 2 * T - 2 * gap)
     expect(f.position.z).toBe(0)

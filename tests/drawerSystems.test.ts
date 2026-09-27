@@ -101,6 +101,15 @@ describe('таңдалған жүйе бәрін өзі шешеді', () => {
 })
 
 describe('номиналды ұзындық', () => {
+  it('қалың фасад бағыттағыш ұзындығын шектейді', () => {
+    const thickFront = { ...catalog.materials[0]!, id: 'front-38', thickness: 38 }
+    const panels = generateCabinet(
+      { ...cabinet('ball'), depth: 535, frontMaterialId: thickFront.id },
+      { ...catalog, materials: [...catalog.materials, thickFront] },
+    )
+    expect(boxSide(panels).finishedWidth).toBe(450)
+  })
+
   it('сыятын ЕҢ ҰЗЫНЫ таңдалады', () => {
     const roller = DRAWER_SYSTEMS.roller
     expect(nominalRunnerLength(roller, 460)).toBe(450)
