@@ -254,7 +254,9 @@ function clampCount(n: number): number {
  * Фрезеровканы тексеру. Тереңдік панельдің қалыңдығынан асса, фреза детальді
  * ТЕСІП ӨТЕДІ — оны экранда байқау мүмкін емес, тек цехта шығады.
  */
-export function validateMilling(spec: MillingSpec, panelThickness: number): void {
+export function validateMilling(
+  spec: MillingSpec, panelThickness: number, panelWidth?: number, panelHeight?: number,
+): void {
   if (spec.depth <= 0) {
     throw new ConfigValidationError('milling.depth', String(spec.depth), '0-ден үлкен')
   }
@@ -266,6 +268,12 @@ export function validateMilling(spec: MillingSpec, panelThickness: number): void
   }
   if (spec.patternId === 'custom' && !spec.svg) {
     throw new ConfigValidationError('milling.svg', 'бос', 'SVG файлы таңдалуы керек')
+  }
+  if (panelWidth !== undefined && panelHeight !== undefined &&
+    spec.patternId !== 'plain' && spec.patternId !== 'custom' &&
+    millingPaths(spec, panelWidth, panelHeight).length === 0) {
+    throw new ConfigValidationError('milling.inset', `${spec.inset} мм: өрнек фасадқа сыймайды`,
+      `ені ${panelWidth} мм, биіктігі ${panelHeight} мм фасадта өрнек шығуы керек`)
   }
 }
 
@@ -374,7 +382,11 @@ function parsePathData(d: string): MillingPath[] {
     closed = false
   }
 
-  const tokens = d.match(/[MmLlHhVvCcQqZz]|-?\d*\.?\d+(?:e[-+]?\d+)?/gi) ?? []
+  const tokens = d.match(/[A-Za-z]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g) ?? []
+  const unsupported = tokens.find((token) => /^[A-Za-z]$/.test(token) && !/^[MmLlHhVvCcQqZz]$/.test(token))
+  if (unsupported) {
+    throw new ConfigValidationError('milling.svg', `SVG ${unsupported} командасы қолдау таппайды`, 'M/L/H/V/C/Q/Z')
+  }
   let i = 0
   let cmd = ''
 

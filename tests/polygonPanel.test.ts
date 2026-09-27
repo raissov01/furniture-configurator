@@ -11,6 +11,8 @@ import { formatCutList } from '../src/core/cutList'
 import { defaultShopProfile } from '../src/core/shop'
 import { parseProjectV4 } from '../src/core/projectV4'
 import { referenceProject } from './fixtures'
+import { isDrillWithinMaterial } from '../src/core/drillEdits'
+import { validateJointDrill } from '../src/core/autoJoint'
 import type { BoardNode, GroupNode } from '../src/core/tree'
 
 const none = { L1: null, L2: null, W1: null, W2: null }
@@ -37,6 +39,18 @@ function panel(contour = rectangle) {
 }
 
 describe('polygon panel manufacturing', () => {
+  it(' rejects holes in the missing L corner and holes whose radius crosses the cut contour', () => {
+    const l = panel({ points: [
+      { x: 0, y: 0 }, { x: 600, y: 0 }, { x: 600, y: 160 },
+      { x: 220, y: 160 }, { x: 220, y: 400 }, { x: 0, y: 400 },
+    ], bands: [null, null, null, null, null, null] })
+    expect(isDrillWithinMaterial(l, 'inner', 400, 300, 10)).toBe(false)
+    expect(isDrillWithinMaterial(l, 'inner', 210, 200, 30)).toBe(false)
+    expect(isDrillWithinMaterial(l, 'inner', 100, 100, 10)).toBe(true)
+    expect(() => validateJointDrill(l, {
+      face: 'inner', x: 400, y: 300, diameter: 10, depth: 8, purpose: 'shelfPin',
+    }, 16, 'drilling[0]')).toThrow(/position/)
+  })
   it('subtracts thick bands from the cut contour and blank, preserving integer mm', () => {
     const p = panel()
     expect([p.cutLength, p.cutWidth]).toEqual([596, 400])

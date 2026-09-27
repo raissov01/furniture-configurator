@@ -24,6 +24,7 @@ import {
   SHELF_PIN_PITCH,
 } from './constants'
 import { materialWidthRangeAt } from './bevelBounds'
+import { circleWithinPolygon } from './polygon'
 import { validateJointDrill } from './autoJoint'
 import { ConfigValidationError } from './errors'
 import type { Catalog, ConstructionSettings, Drill, DrillPurpose, Panel, SettingsOverride } from './types'
@@ -46,9 +47,10 @@ import type { Catalog, ConstructionSettings, Drill, DrillPurpose, Panel, Setting
  * 2D жаймасы оларды әрдайым тікбұрышты жолақ ретінде салады, ескі
  * (тікбұрыш) тексеру сол жерде дұрыс.
  */
-export function isDrillWithinMaterial(panel: Panel, face: Drill['face'], x: number, y: number): boolean {
+export function isDrillWithinMaterial(panel: Panel, face: Drill['face'], x: number, y: number, diameter = 0): boolean {
   if (x < 0 || x > panel.cutLength) return false
   if (face !== 'inner' && face !== 'outer') return y >= 0 && y <= panel.cutWidth
+  if (panel.contour) return circleWithinPolygon(panel.contour.cutPoints, x, y, diameter / 2)
   const [yMin, yMax] = materialWidthRangeAt(panel, x)
   return y >= yMin && y <= yMax
 }
