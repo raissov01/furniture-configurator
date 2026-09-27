@@ -18,6 +18,7 @@ import type { CloudSelection } from '@/lib/f24UiLogic'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
+import { can } from '@/lib/permissions'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -52,6 +53,7 @@ export function AccountPanel() {
   const projectEpoch = useConfigurator((s) => s.projectEpoch)
 
   const [account, setAccount] = useState<Account | null>(null)
+  const canEditProjects = account ? can(account.role, 'editProject') : false
   const [profileReady, setProfileReady] = useState(false)
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
@@ -618,7 +620,7 @@ export function AccountPanel() {
               <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400">
                 {tr('Проекты в облаке')}
               </span>
-              {account.role !== 'shop' ? <span className="flex flex-wrap gap-2">
+              {canEditProjects ? <span className="flex flex-wrap gap-2">
                 <Button onClick={() => void saveToCloud()} disabled={busy} active>{tr('Сохранить текущий')}</Button>
                 <Button onClick={() => void saveToCloud(true)} disabled={busy}>{tr('Сохранить копию')}</Button>
               </span> : null}
@@ -634,23 +636,23 @@ export function AccountPanel() {
                 </select>
               </label>
               <label>{tr('Сортировка')}
-                <select className={input} value={org.sort} onChange={(event) => void saveOrg({ ...org, sort: event.target.value as CloudOrg['sort'] })}>
+                <select className={input} disabled={!canEditProjects} value={org.sort} onChange={(event) => void saveOrg({ ...org, sort: event.target.value as CloudOrg['sort'] })}>
                   <option value="date">{tr('По дате')}</option>
                   <option value="name">{tr('По названию')}</option>
                 </select>
               </label>
               <label className="sm:col-span-2">{tr('Новая папка')}
                 <span className="flex gap-2">
-                  <input className={input} value={newFolder} maxLength={80} onChange={(event) => setNewFolder(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && canCreateFolder(newFolder)) { event.preventDefault(); try { void saveOrg(addCloudFolder(org, newFolder)).then((saved) => { if (saved) setNewFolder('') }) } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } } }} />
+                  <input className={input} disabled={!canEditProjects} value={newFolder} maxLength={80} onChange={(event) => setNewFolder(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && canCreateFolder(newFolder)) { event.preventDefault(); try { void saveOrg(addCloudFolder(org, newFolder)).then((saved) => { if (saved) setNewFolder('') }) } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) } } }} />
                   <Button onClick={() => {
                     try {
                       const next = addCloudFolder(org, newFolder)
                       void saveOrg(next).then((saved) => { if (saved) setNewFolder('') })
                     } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) }
-                  }} disabled={!canCreateFolder(newFolder)}>{tr('Добавить')}</Button>
+                  }} disabled={!canEditProjects || !canCreateFolder(newFolder)}>{tr('Добавить')}</Button>
                 </span>
               </label>
-              {folderFilter.startsWith('folder:') ? <div className="sm:col-span-2 flex flex-wrap items-end gap-2">
+              {canEditProjects && folderFilter.startsWith('folder:') ? <div className="sm:col-span-2 flex flex-wrap items-end gap-2">
                 <label className="min-w-0 flex-1">{tr('Переименовать папку')}
                   <input className={input} value={renameDraft} maxLength={80} onChange={(event) => setRenameDraft(event.target.value)} placeholder={folderFilter.slice(7)} />
                 </label>
@@ -678,13 +680,13 @@ export function AccountPanel() {
                         {new Date(p.updatedAt).toLocaleDateString('ru-RU')}
                       </span>
                     </button>
-                    <select aria-label={`${tr('Папка')}: ${p.name}`} className="max-w-28 rounded border border-neutral-300 bg-white p-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                    <select aria-label={`${tr('Папка')}: ${p.name}`} disabled={!canEditProjects} className="max-w-28 rounded border border-neutral-300 bg-white p-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
                       value={org.projectFolders[p.id] ?? ''} onChange={(event) => void saveOrg(moveProjectToFolder(org, p.id, event.target.value || null))}>
                       <option value="">{tr('Без папки')}</option>
                       {org.folders.map((folder) => <option key={folder} value={folder}>{folder}</option>)}
                     </select>
-                    {account.role !== 'shop' ? <Button disabled={busy} onClick={() => void copyCloudProject(p)}>{tr('Копировать')}</Button> : null}
-                    {account.role !== 'shop' ? <Button
+                    {canEditProjects ? <Button disabled={busy} onClick={() => void copyCloudProject(p)}>{tr('Копировать')}</Button> : null}
+                    {canEditProjects ? <Button
                       disabled={busy} title={`${tr('Удалить проект')}: ${p.name}`} onClick={() => setConfirmDelete(p)}
                     >
                       {tr('Удалить')}
