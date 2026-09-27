@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
+import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { IDENTITY_TRANSFORM, ORIENT_HORIZONTAL, parseProjectV4 } from '../src/core/index'
 import { useConfigurator } from '../store/configurator'
@@ -40,6 +41,18 @@ describe('/cut reads canonical tree production', () => {
     expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*aria-controls="cut-export-actions"[^>]*>Экспорт<\/button>/)
     expect(html).toMatch(/<div[^>]*id="cut-export-actions"[^>]*data-testid="cut-export-actions"/)
     expect(html).toContain('>Базис</button>')
+    const toolbar = html.match(/<div[^>]*data-testid="cut-export-actions"[^>]*class="([^"]+)"/)
+    expect(toolbar?.[1]).toContain('w-full')
+    expect(toolbar?.[1]).toContain('flex-wrap')
+    expect(html).toContain('aria-controls="cut-export-actions"')
+    expect(html).toContain('>Базис</button>')
+
+    const source = readFileSync(new URL('../components/CutPage.tsx', import.meta.url), 'utf8')
+    const sheetSvgClass = source.match(/<svg[\s\S]*?className="([^"]+)"/)?.[1]
+    expect(sheetSvgClass).toContain('w-full')
+    expect(sheetSvgClass).toContain('min-w-[520px]')
+    expect(sheetSvgClass).toContain('h-auto')
+    expect(source).toContain('max-w-full overflow-x-auto')
   })
 
   it('does not offer a default cabinet export when the saved project cannot be read', () => {

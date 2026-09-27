@@ -431,10 +431,10 @@ export function AccountPanel() {
     setCloudRetry(false)
     const localCopyError = useConfigurator.getState().saveProjectLocally()
     try {
-      const project = exportProject()
       const selection = useConflictRevision && cloudConflict && activeCloud
         ? { id: cloudConflict.id, revision: cloudConflict.revision }
         : activeCloud
+      const project = exportProject()
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -449,6 +449,7 @@ export function AccountPanel() {
         setError(outcome.message)
       } else {
         rememberCloud(outcome.selection)
+        await bindCloudProject(outcome.selection.id, project)
         setCloudConflict(null)
         await bindCloudProject(outcome.selection.id, project)
         await refreshProjects()
@@ -473,6 +474,7 @@ export function AccountPanel() {
       const parsed = parseProjectV4(data.project)
       loadProject(parsed)
       rememberCloud({ id, revision: data.revision! })
+      await bindCloudProject(id, exportProject())
       setCloudConflict(null)
       await bindCloudProject(id, parsed)
       setError(null)
