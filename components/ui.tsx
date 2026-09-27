@@ -46,13 +46,14 @@ const controlDense = `${controlBase} px-1.5 py-1 text-xs`
 const useControl = () => (React.useContext(DenseCtx) ? controlDense : control)
 
 export function NumberInput({
-  value, onChange, min, max, step = 1, invalid, field, onDraftValidityChange,
+  value, onChange, min, max, step = 1, buttonStep = step, invalid, field, onDraftValidityChange,
 }: {
   value: number
   onChange: (v: number) => void
   min?: number
   max?: number
   step?: number
+  buttonStep?: number
   invalid?: boolean
   field?: string
   onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
@@ -93,14 +94,14 @@ export function NumberInput({
    * элементі» — оның ішіндегі БІРІНШІ labelable элемент; батырма алда тұрса,
    * жазуды басқан адам «−»-ті басып қояр еді. Солға «−» тек CSS `order`-мен.
    */
-  const bump = (dir: 1 | -1) => { onChange(steppedValue(value, dir, step, min, max)) }
+  const bump = (dir: 1 | -1) => { onChange(steppedValue(value, dir, buttonStep, min, max)) }
   const stepper = 'order-1 w-5 shrink-0 border border-neutral-300 bg-white text-xs text-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:text-neutral-100'
   return (
     <span className="block">
       <span className="flex items-stretch">
         {input}
-        <button type="button" tabIndex={-1} aria-label={tr('Уменьшить')} title={tr('Уменьшить')} disabled={Boolean(draftError) || !stepAvailable(value, -1, step, min, max)} onClick={() => bump(-1)} className={cn(stepper, 'rounded-l-md')}>‹</button>
-        <button type="button" tabIndex={-1} aria-label={tr('Увеличить')} title={tr('Увеличить')} disabled={Boolean(draftError) || !stepAvailable(value, 1, step, min, max)} onClick={() => bump(1)} className={cn(stepper, 'order-3 rounded-r-md')}>›</button>
+        <button type="button" tabIndex={-1} aria-label={tr('Уменьшить')} title={tr('Уменьшить')} disabled={Boolean(draftError) || !stepAvailable(value, -1, buttonStep, min, max)} onClick={() => bump(-1)} className={cn(stepper, 'rounded-l-md')}>‹</button>
+        <button type="button" tabIndex={-1} aria-label={tr('Увеличить')} title={tr('Увеличить')} disabled={Boolean(draftError) || !stepAvailable(value, 1, buttonStep, min, max)} onClick={() => bump(1)} className={cn(stepper, 'order-3 rounded-r-md')}>›</button>
       </span>
       {error}
     </span>

@@ -49,8 +49,9 @@ const METAL_BOX_IDS: string[] = ['legrabox', 'tandembox', 'merivobox']
 /** Корпус пен фасадқа — қалың плита, арт қабырғаға — жұқа. */
 const isCarcass = (m: Material) => m.thickness >= 10
 
-function SectionEditor({ section, index, computedWidth }: {
-  section: Section; index: number; computedWidth: number | undefined
+function SectionEditor({ section, index, computedWidth, invalidField, onDraftValidityChange }: {
+  section: Section; index: number; computedWidth: number | undefined; invalidField: string | null
+  onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const editSection = useConfigurator((s) => s.editSection)
   const removeSection = useConfigurator((s) => s.removeSection)
@@ -159,7 +160,9 @@ function SectionEditor({ section, index, computedWidth }: {
               value={computedWidth ?? '—'}
               className="w-full rounded-md border border-neutral-300 bg-neutral-50 px-1.5 py-1 text-center text-xs tabular-nums text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300" />
           ) : (
-            <NumberInput value={section.width ?? 0} min={100} step={10}
+            <NumberInput value={section.width ?? 0} min={100} step={1} buttonStep={10}
+              invalid={invalidField === `sections[${index}].width` || invalidField === `sections[${index}]`}
+              field={`sections[${index}].width`} onDraftValidityChange={onDraftValidityChange}
               onChange={(width) => editSection(index, { width }, 'section.width')} />
           )}
         </Field>
@@ -1691,7 +1694,8 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
       </p> : null}
       <div className="space-y-2">
         {cabinet.sections.map((section, i) => (
-          <SectionEditor key={section.id} section={section} index={i} computedWidth={computedSectionWidths[i]} />
+          <SectionEditor key={section.id} section={section} index={i} computedWidth={computedSectionWidths[i]}
+            invalidField={invalidField} onDraftValidityChange={onDraftValidityChange} />
         ))}
       </div>
 

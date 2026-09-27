@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { readFileSync } from 'node:fs'
 import { Dense, Field, NumberInput } from '../components/ui'
-import { hasDraftErrors, parseNumberDraft, stepAvailable, updateDraftErrors } from '../lib/numberDraft'
+import { hasDraftErrors, parseNumberDraft, stepAvailable, steppedValue, updateDraftErrors } from '../lib/numberDraft'
 
 describe('number draft validation', () => {
   it('keeps empty, fractional, text and out-of-range drafts out of the model', () => {
@@ -21,6 +21,14 @@ describe('number draft validation', () => {
     expect(stepAvailable(4000, 1, 10, 100, 4000)).toBe(false)
     expect(stepAvailable(105, -1, 10, 100, 4000)).toBe(true)
     expect(stepAvailable(100, 1, 10, 100, 4000)).toBe(true)
+  })
+
+  it('accepts a 1 mm section width but keeps the arrow action at 10 mm', () => {
+    expect(parseNumberDraft('401', { min: 100, integer: true })).toEqual({ value: 401 })
+    expect(parseNumberDraft('401.7', { min: 100, integer: true })).toEqual({ error: 'integer' })
+    expect(parseNumberDraft('', { min: 100, integer: true })).toEqual({ error: 'required' })
+    expect(parseNumberDraft('қазақ', { min: 100, integer: true })).toEqual({ error: 'number' })
+    expect(steppedValue(401, 1, 10, 100)).toBe(411)
   })
 
   it('does not clear another field error when one field is corrected', () => {
