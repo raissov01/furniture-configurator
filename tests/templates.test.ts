@@ -15,6 +15,11 @@ import {
 } from '../src/core/index'
 
 describe('шаблон кітапханасы', () => {
+  it('роликті жәшік шаблоны нақты roller жүйесін таңдайды', () => {
+    const cabinet = templateToCabinet(findTemplate('kitchen-base-drawers-600')!, SEED_CATALOG)
+    expect(cabinet.drawerSystem).toBe('roller')
+  })
+
   it('id-лер бірегей', () => {
     const ids = SEED_TEMPLATES.map((t) => t.id)
     expect(new Set(ids).size).toBe(ids.length)

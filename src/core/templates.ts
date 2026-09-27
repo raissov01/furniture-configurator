@@ -32,6 +32,7 @@ import type {
   SectionContent,
   SettingsOverride,
   ShelfKind,
+  DrawerSystemId,
 } from './types'
 
 export type TemplateCategory = 'kitchen' | 'wardrobe' | 'living' | 'desk' | 'bed' | 'storage' | 'entry' | 'bathroom'
@@ -69,6 +70,8 @@ export type CabinetTemplate = {
   carcassMaterialId: string
   frontMaterialId: string
   backMaterialId: string
+  /** Шаблон таңдаған нақты бағыттағыш; ескі шаблондарда берілмейді. */
+  drawerSystem?: DrawerSystemId | undefined
   sections: Section[]
   /** Купе есіктері (болса, ілмелі фасад болмайды) */
   sliding?: { count: number } | undefined
@@ -226,6 +229,7 @@ const EXISTING_TEMPLATES: CabinetTemplate[] = [
     back: 'overlay',
     carcassMaterialId: LDSP_WHITE, frontMaterialId: LDSP_WHITE, backMaterialId: HDF_WHITE,
     sections: [drawerSection(1, 3)],
+    drawerSystem: 'roller',
   },
   {
     id: 'kitchen-sink-800',
@@ -706,6 +710,7 @@ export function templateToCabinet(
     carcassMaterialId: template.carcassMaterialId,
     frontMaterialId: template.frontMaterialId,
     backMaterialId: template.backMaterialId,
+    ...(template.drawerSystem ? { drawerSystem: template.drawerSystem } : {}),
     back: { mode: template.back },
     ...(template.openTop ? { openTop: true } : {}),
     ...(template.slope ? { slope: { ...template.slope } } : {}),
