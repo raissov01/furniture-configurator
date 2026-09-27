@@ -15,7 +15,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import {
@@ -639,12 +639,14 @@ function SelectedInfo({ panel, keyOf }: { panel: Panel; keyOf: string }) {
 }
 
 function Shell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => { dialogRef.current?.focus() }, [])
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={onClose}
     >
-      <div
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Присадка')}
         className={cn(
           'w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl',
           'dark:border-neutral-700 dark:bg-neutral-900',

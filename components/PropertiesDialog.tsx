@@ -6,7 +6,7 @@ import { findNode } from '@/src/core/index'
 import type { Catalog, Panel } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { capturePropertiesSession, commitPropertiesName, restorePropertiesSession, type PropertiesSession } from '@/lib/propertiesSession'
-import { propertiesDirty, propertiesInvalid, propertiesKeyAction } from '@/lib/propertiesDialogState'
+import { propertiesDirty, propertiesInvalid, propertiesKeyAction, propertiesProductionReady, propertiesChildModalActive } from '@/lib/propertiesDialogState'
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
@@ -29,6 +29,8 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const saveProjectLocally = useConfigurator((s) => s.saveProjectLocally)
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const syncShare = useConfigurator((s) => s.syncShare)
+  const quoteOpen = useConfigurator((s) => s.quoteOpen)
+  const drillOpen = useConfigurator((s) => s.drillOpen)
   const node = findNode(root, nodeId)
   const baseline = useRef<PropertiesSession | null>(null)
   const dialogRef = useRef<HTMLElement | null>(null)
@@ -42,6 +44,8 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const draftInvalid = hasDraftErrors(draftErrors)
   const dirty = storeDirty || nameDirty
   const invalid = propertiesInvalid(error)
+  const productionReady = propertiesProductionReady(dirty, Boolean(invalid), draftInvalid)
+  const childModalActive = propertiesChildModalActive(quoteOpen, drillOpen)
 
   const cancel = () => {
     if (baseline.current) restorePropertiesSession(baseline.current)
@@ -77,6 +81,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   }
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
+      if (propertiesChildModalActive(useConfigurator.getState().quoteOpen, useConfigurator.getState().drillOpen)) return
       const target = event.target instanceof Element ? event.target.tagName.toLowerCase() : ''
       const action = propertiesKeyAction({
         key: event.key, target, exactInput: event.target instanceof Element && event.target.hasAttribute('data-exact-mm'), isComposing: event.isComposing,
@@ -100,7 +105,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const locked = Boolean(node.locked)
   // Фон — МОДАЛДЫ: сыртқа басу ештеңе істемейді (бұрын өзгерісті ескертусіз жоятын, P0-3).
   return <div className="p100-dialog-backdrop" data-testid="properties-dialog-backdrop">
-    <section ref={dialogRef} onInput={(event) => {
+    <section ref={dialogRef} aria-hidden={childModalActive} onInput={(event) => {
       const target = event.target
       if (target instanceof HTMLInputElement && target.hasAttribute('data-properties-name')) setNameDirty(target.value !== node.name)
     }} role="dialog" aria-modal="true" aria-label={tr('Свойства')} data-testid="properties-dialog" className="p100-dialog">

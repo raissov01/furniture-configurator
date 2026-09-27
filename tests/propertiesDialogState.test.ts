@@ -9,7 +9,7 @@ import { renderToString } from 'react-dom/server'
 import { readFileSync } from 'node:fs'
 import { PropertiesDialog } from '../components/PropertiesDialog'
 import { capturePropertiesSession } from '../lib/propertiesSession'
-import { propertiesDirty, propertiesInvalid, propertiesKeyAction } from '../lib/propertiesDialogState'
+import { propertiesDirty, propertiesInvalid, propertiesKeyAction, propertiesProductionReady, propertiesChildModalActive, selectionPropertiesNotice } from '../lib/propertiesDialogState'
 import { useConfigurator } from '../store/configurator'
 import { referenceProject } from './fixtures'
 
@@ -78,6 +78,24 @@ describe('properties dialog state', () => {
     expect(propertiesKeyAction({ key: 'Enter', target: 'input', isComposing: true })).toBeNull()
     expect(propertiesKeyAction({ key: 'Enter', target: 'input', shiftKey: true })).toBeNull()
     expect(propertiesKeyAction({ key: 'a', target: 'input' })).toBeNull()
+    expect(propertiesKeyAction({ key: 'Enter', target: 'input', exactInput: true })).toBeNull()
+    expect(propertiesKeyAction({ key: 'Escape', target: 'input', exactInput: true })).toBe('cancel')
+  })
+
+  it('blocks every production export until Apply and ignores parent keys while a child modal is open', () => {
+    expect(propertiesProductionReady(false, false, false)).toBe(true)
+    expect(propertiesProductionReady(true, false, false)).toBe(false)
+    expect(propertiesProductionReady(false, true, false)).toBe(false)
+    expect(propertiesProductionReady(false, false, true)).toBe(false)
+    expect(propertiesChildModalActive(false, false)).toBe(false)
+    expect(propertiesChildModalActive(true, false)).toBe(true)
+    expect(propertiesChildModalActive(false, true)).toBe(true)
+  })
+
+  it('explains that multi selection cannot be edited as one Properties form', () => {
+    expect(selectionPropertiesNotice(0)).toBeNull()
+    expect(selectionPropertiesNotice(1)).toBeNull()
+    expect(selectionPropertiesNotice(2)).toContain('Выберите один объект')
   })
 })
 

@@ -12,7 +12,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { MarketPriceNotice } from './MarketPrice'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
@@ -75,6 +75,8 @@ export function QuoteView({
   const [tab, setTab] = useState<Tab>('nesting')
   const [customer, setCustomer] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => { if (open) dialogRef.current?.focus() }, [open])
 
   const nesting = useMemo(() => {
     try {
@@ -108,10 +110,10 @@ export function QuoteView({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => setOpen(false)}
     >
-      <div
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Смета по проекту')}
         className="w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
