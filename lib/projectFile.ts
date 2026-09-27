@@ -10,13 +10,22 @@
 import { parseProjectV4 } from '@/src/core/index'
 import type { ProjectFileV4 } from '@/src/core/index'
 import { downloadFile } from '@/lib/shopExport'
+import { tf } from '@/lib/i18n'
 
 export function projectFileName(file: { name?: string | undefined }): string {
   return `${file.name || 'проект'}.json`
 }
 
-export function parseProjectFileText(text: string): ProjectFileV4 {
-  return parseProjectV4(JSON.parse(text))
+export function parseProjectFileText(text: string, filename = 'проект.json'): ProjectFileV4 {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    throw new Error(tf('Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.',
+      { name: filename }), { cause: error })
+  }
+  return parseProjectV4(parsed)
 }
 
 export function downloadProjectFile(file: ProjectFileV4): void {
@@ -26,7 +35,7 @@ export function downloadProjectFile(file: ProjectFileV4): void {
 /** Файлды оқып, жүктейді; бүлінген файл ҮНСІЗ жұтылмайды. */
 export async function loadProjectFromFile(file: File, load: (project: ProjectFileV4) => void): Promise<void> {
   try {
-    load(parseProjectFileText(await file.text()))
+    load(parseProjectFileText(await file.text(), file.name))
   } catch (error) {
     window.alert(`Не удалось открыть проект: ${error instanceof Error ? error.message : 'файл не распознан'}`)
   }
