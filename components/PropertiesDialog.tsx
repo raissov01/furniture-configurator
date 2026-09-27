@@ -6,10 +6,11 @@ import { findNode } from '@/src/core/index'
 import type { Catalog, Panel } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { capturePropertiesSession, commitPropertiesName, restorePropertiesSession, type PropertiesSession } from '@/lib/propertiesSession'
-import { propertiesDirty, propertiesInvalid, propertiesKeyAction } from '@/lib/propertiesDialogState'
+import { propertiesDirty, propertiesInvalid, propertiesKeyAction, propertiesProductionReady, propertiesChildModalActive } from '@/lib/propertiesDialogState'
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
+import { SolidProperties } from '@/components/SolidProperties'
 import { Button } from '@/components/ui'
 
 export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, onClose }: {
@@ -28,6 +29,8 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const saveProjectLocally = useConfigurator((s) => s.saveProjectLocally)
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const syncShare = useConfigurator((s) => s.syncShare)
+  const quoteOpen = useConfigurator((s) => s.quoteOpen)
+  const drillOpen = useConfigurator((s) => s.drillOpen)
   const node = findNode(root, nodeId)
   const baseline = useRef<PropertiesSession | null>(null)
   const dialogRef = useRef<HTMLElement | null>(null)
@@ -41,6 +44,8 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const draftInvalid = hasDraftErrors(draftErrors)
   const dirty = storeDirty || nameDirty
   const invalid = propertiesInvalid(error)
+  const productionReady = propertiesProductionReady(dirty, Boolean(invalid), draftInvalid)
+  const childModalActive = propertiesChildModalActive(quoteOpen, drillOpen)
 
   const cancel = () => {
     if (baseline.current) restorePropertiesSession(baseline.current)
@@ -76,9 +81,10 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   }
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
+      if (propertiesChildModalActive(useConfigurator.getState().quoteOpen, useConfigurator.getState().drillOpen)) return
       const target = event.target instanceof Element ? event.target.tagName.toLowerCase() : ''
       const action = propertiesKeyAction({
-        key: event.key, target, isComposing: event.isComposing,
+        key: event.key, target, exactInput: event.target instanceof Element && event.target.hasAttribute('data-exact-mm'), isComposing: event.isComposing,
         shiftKey: event.shiftKey, ctrlKey: event.ctrlKey, altKey: event.altKey, metaKey: event.metaKey,
       })
       if (!action) return
@@ -95,11 +101,11 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
     return () => { window.removeEventListener('keydown', handle, true); window.removeEventListener('pagehide', onPageHide) }
   }, [])
 
-  if (!node || (node.kind !== 'cabinet' && node.kind !== 'board')) return null
+  if (!node || (node.kind !== 'cabinet' && node.kind !== 'board' && node.kind !== 'solid')) return null
   const locked = Boolean(node.locked)
   // Фон — МОДАЛДЫ: сыртқа басу ештеңе істемейді (бұрын өзгерісті ескертусіз жоятын, P0-3).
   return <div className="p100-dialog-backdrop" data-testid="properties-dialog-backdrop">
-    <section ref={dialogRef} onInput={(event) => {
+    <section ref={dialogRef} aria-hidden={childModalActive} onInput={(event) => {
       const target = event.target
       if (target instanceof HTMLInputElement && target.hasAttribute('data-properties-name')) setNameDirty(target.value !== node.name)
     }} role="dialog" aria-modal="true" aria-label={tr('Свойства')} data-testid="properties-dialog" className="p100-dialog">
@@ -113,12 +119,13 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
         {tr(invalid.label)}: {invalid.detail}{invalid.allowed ? ` — ${tr('допустимо')} ${invalid.allowed}` : ''}
       </p>}
       <div className="p100-dialog-body">
-        <fieldset disabled={locked}>
-          {node.kind === 'board'
-            ? <BoardProperties key={node.id} node={node} panel={boardPanel} catalog={catalog} />
+        <div>
+          {node.kind === 'solid' ? <fieldset disabled={locked}><SolidProperties key={node.id} node={node} /></fieldset> : node.kind === 'board'
+            ? <BoardProperties key={node.id} node={node} panel={boardPanel} catalog={catalog} locked={locked} productionReady={productionReady} />
             : <Configurator key={node.id} invalidField={error?.field ?? null} panels={panels}
+                locked={locked} productionReady={productionReady}
                 onDraftValidityChange={(field, isInvalid) => setDraftErrors((current) => updateDraftErrors(current, field, isInvalid))} />}
-        </fieldset>
+        </div>
         <label className="p100-dialog-dimensions"><input type="checkbox" checked={showDimensions} onChange={(event) => setShowDimensions(event.target.checked)} />{tr('Показывать размеры')}</label>
       </div>
       <div className="p100-dialog-actions">
