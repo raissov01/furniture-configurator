@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AisMebel</string>
+    <string name="title_activity_main">AisMebel</string>
+    <string name="package_name">kz.aismebel.app</string>
+    <string name="custom_url_scheme">kz.aismebel.app</string>
+</resources>

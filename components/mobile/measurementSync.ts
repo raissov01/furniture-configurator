@@ -23,7 +23,7 @@ function latestServerState(records: SyncRecord[], surveyId: string): { payload: 
   return undefined
 }
 
-export type EnqueueResult = 'queued' | 'pending' | 'conflict' | 'rejected' | 'unchanged'
+export type EnqueueResult = 'queued' | 'pending' | 'conflict' | 'rejected' | 'unchanged' | 'local'
 
 /** Keep a single in-flight revision per survey. The latest local draft stays in IndexedDB. */
 export async function enqueueLatestMeasurement(
