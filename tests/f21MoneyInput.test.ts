@@ -15,4 +15,8 @@ describe('F21 ақша өрістері', () => {
       expect(result.error).toContain('0..')
     }
   })
+  it('safe integer тиын шегін дәл жазады', () => {
+    expect(parseMoneyDraft('90071992547409.91', 'Баға').value).toBe(Number.MAX_SAFE_INTEGER)
+    expect(parseMoneyDraft('90071992547409.92', 'Баға').error).toContain('90071992547409.91')
+  })
 })
