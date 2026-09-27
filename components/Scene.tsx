@@ -6,7 +6,7 @@
  * сахна метрге келтіріледі (scale 0.001).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentRef, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import {
@@ -1601,7 +1601,7 @@ export default function Scene({
               </mesh>
             </group>
           ))}
-          {annotations.map((annotation) => (
+          <Suspense fallback={null}>{annotations.map((annotation) => (
             <group key={annotation.nodeId} position={[annotation.pose.position.x, annotation.pose.position.y, annotation.pose.position.z]}
               rotation={[0, annotation.pose.rotationY * Math.PI / 180, 0]}>
               <Billboard>
@@ -1616,7 +1616,7 @@ export default function Scene({
                 </Text>
               </Billboard>
             </group>
-          ))}
+          ))}</Suspense>
         </group>
         {/* Силуэт белсенді шкафтың СОЛ ЖАҒЫНА, еденге қойылады. */}
         {silhouette.on && active ? (

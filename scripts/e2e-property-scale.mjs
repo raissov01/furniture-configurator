@@ -93,6 +93,9 @@ try {
     await h.goto('/configurator', 6000)
     await session.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: injection.identifier })
     assert(await h.until(`document.querySelector('[data-workspace-style]')?.dataset.workspaceStyle === '${mode}'`, 15000), `${mode}: style missing`)
+    if (await h.until("[...document.querySelectorAll('button')].some((button) => button.textContent.trim()==='Пропустить')", 3000)) {
+      assert(await h.clickText('Пропустить', 300), `${mode}: tour skip failed`)
+    }
     if (mode === 'classic') await click('[data-testid=classic-tool-structure-side]')
     scope = mode === 'classic' ? '[data-testid=classic-structure-window]' : '[data-testid=tree-dock]'
     assert(await h.until(`Boolean(document.querySelector(${JSON.stringify(`${scope} [data-panel=structure] [data-tree-node=board-a]`)}))`, 15000), `${mode}: tree missing`)

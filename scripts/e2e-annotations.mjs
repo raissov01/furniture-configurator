@@ -29,8 +29,11 @@ async function connect() {
       await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject })
       let id = 0
       const pending = new Map()
+      const browserErrors = []
       ws.onmessage = (event) => {
         const message = JSON.parse(event.data)
+        if (message.method === 'Runtime.exceptionThrown') browserErrors.push(message.params.exceptionDetails.exception?.description ?? message.params.exceptionDetails.text)
+        if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') browserErrors.push(message.params.args.map((item) => item.value ?? item.description ?? '').join(' '))
         const callback = pending.get(message.id)
         if (callback) { pending.delete(message.id); callback(message) }
       }
@@ -47,7 +50,7 @@ async function connect() {
       await send('Runtime.enable')
       await send('Page.enable')
       await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false })
-      return { ws, send }
+      return { ws, send, browserErrors }
     } catch (error) { lastError = error; await wait(500) }
   }
   throw new Error('Chrome CDP unavailable', { cause: lastError })
@@ -75,10 +78,13 @@ try {
   })
   await h.goto('/configurator', 7000)
   await session.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: injection.identifier })
-  assert(await h.until("document.querySelector('[data-workspace-style=classic]') && document.querySelector('canvas')", 20000), 'classic 3D missing')
+  if (await h.until("[...document.querySelectorAll('button')].some((button) => button.textContent.trim()==='Пропустить')", 3000)) {
+    assert(await h.clickText('Пропустить', 300), 'tour skip failed')
+  }
+  assert(await h.until("Boolean(document.querySelector('[data-workspace-style=classic]') && document.querySelector('canvas'))", 20000), 'classic 3D missing')
   const before = await h.cutListRows()
   assert(before.length > 0, 'fixture cut list missing')
-  assert(await h.evaluate("(() => { const b=document.querySelector('[data-testid=classic-tool-annotation]'); if (!b) return false; b.click(); return true })()"), 'classic add text missing')
+  assert(await h.evaluate("(() => { const b=document.querySelector('[data-testid=classic-tool-annotation-side]'); if (!b) return false; b.click(); return true })()"), 'classic add text missing')
   assert(await h.until("Boolean(document.querySelector('[data-testid=annotation-properties]'))", 10000), 'annotation editor missing')
   assert(await h.evaluate(`(() => {
     const area=document.querySelector('[data-testid=annotation-properties] textarea')
@@ -91,9 +97,12 @@ try {
   assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children.some(n=>n.kind==='annotation' && n.annotation.text==='Розетка орны')", 10000), 'annotation did not persist')
   const after = await h.cutListRows()
   assert(JSON.stringify(after) === JSON.stringify(before), 'annotation entered manufacturing cut list')
-  await wait(1200)
+  await wait(4000)
   const shot3d = await session.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
   writeFileSync(join(screenshots, 'annotation-3d.png'), Buffer.from(shot3d.data, 'base64'))
+  const canvasState = await h.evaluate("(() => { const c=document.querySelector('canvas'); return { count:document.querySelectorAll('canvas').length, width:c?.width, height:c?.height, dataLength:c?.toDataURL().length, fallback:document.querySelector('[role=alert]')?.textContent } })()")
+  assert(canvasState?.dataLength > 100000,
+    `annotation 3D canvas blank: ${JSON.stringify({ canvasState, errors: session.browserErrors.slice(-5) })}`)
 
   assert(await h.evaluate("(() => { const b=document.querySelector('[data-testid=classic-tool-room]'); if (!b) return false; b.click(); return true })()"), 'room plan action missing')
   assert(await h.until("document.querySelector('[data-testid=room-plan-annotation]')?.textContent==='Розетка орны'", 10000), 'room plan annotation missing')
@@ -111,10 +120,14 @@ try {
   // Our mode uses the same store and renderer; create a second text through its own control.
   assert(await h.evaluate(`(() => { const select=document.querySelector('select[aria-label="Стиль рабочего места"]'); if (!select) return false;
     Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'ours'); select.dispatchEvent(new Event('change',{bubbles:true})); return true })()`), 'mode switch missing')
-  assert(await h.until("document.querySelector('[data-workspace-style=ours]')", 5000), 'our mode missing')
+  assert(await h.until("Boolean(document.querySelector('[data-workspace-style=ours]'))", 5000), 'our mode missing')
   assert(await h.evaluate("(() => { const b=document.querySelector('[data-testid=add-annotation]'); if (!b) return false; b.click(); return true })()"), 'our mode add text missing')
   assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children.filter(n=>n.kind==='annotation').length===2", 10000), 'our mode annotation did not persist')
   assert(JSON.stringify(await h.cutListRows()) === JSON.stringify(before), 'our mode text entered manufacturing cut list')
+  await wait(1200)
+  assert(await h.evaluate("document.querySelector('canvas')?.toDataURL().length > 100000"), 'our mode 3D canvas blank')
+  const shotOurs = await session.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+  writeFileSync(join(screenshots, 'annotation-ours.png'), Buffer.from(shotOurs.data, 'base64'))
   console.log(`annotation e2e: PASS; screenshots: ${screenshots}`)
 } catch (error) {
   console.error('annotation e2e: FAIL', error)

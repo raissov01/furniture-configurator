@@ -62,14 +62,20 @@ async function run() {
   const h = makeHelpers(session, base)
   mkdirSync(shots, { recursive: true })
   await h.goto('/configurator', 6000)
-  await h.evaluate('localStorage.clear()')
+  assert(await h.until("Boolean(localStorage.getItem('furniture-configurator:project'))", 10000), 'бастапқы жоба сақталмады')
+  const project = await h.evaluate("JSON.parse(localStorage.getItem('furniture-configurator:project'))")
+  project.room = { ...project.room, width: 5000, depth: 4500 }
 
   for (const style of ['classic', 'ours']) {
-    await h.evaluate(`localStorage.setItem('furniture-configurator:workspace-style', ${JSON.stringify(style)})`)
-    await h.evaluate("localStorage.removeItem('furniture-configurator:workspace-dock')")
+    // Inject on the next document: the outgoing Workspace saves on pagehide.
+    const injection = await session.send('Page.addScriptToEvaluateOnNewDocument', { source:
+      `localStorage.setItem('furniture-configurator:workspace-style', ${JSON.stringify(style)}); localStorage.setItem('furniture-configurator:project', ${JSON.stringify(JSON.stringify(project))}); localStorage.removeItem('furniture-configurator:workspace-dock')`,
+    })
     await h.goto('/configurator', 7000)
+    await session.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: injection.identifier })
     await h.clickText('Пропустить', 100)
     assert(await h.until(`document.querySelector('[data-workspace-style="${style}"]') !== null`, 10000), `${style}: режим ашылмады`)
+    assert(await h.until("(() => { const r=JSON.parse(localStorage.getItem('furniture-configurator:project')).room; return r.width===5000 && r.depth===4500 })()", 10000), `${style}: импорт алдындағы өлшем қате`)
 
     for (const [id, title] of [
       ['find', 'Найти'], ['price', 'Прайс-лист'], ['dimensions', 'Размеры'],
@@ -88,9 +94,14 @@ async function run() {
       return true
     })()`)
     assert(searchReady, `${style}: Find іздеу өрісі жоқ`)
-    assert(await h.until(`document.querySelector('[data-dock-panel="find"] button') !== null`, 10000), `${style}: Find нәтиже жоқ`)
+    const findHasResult = await h.until(`document.querySelector('[data-panel="find"] button') !== null`, 10000)
+    if (!findHasResult) {
+      const findText = await h.evaluate("document.querySelector('[data-panel=find]')?.textContent ?? 'panel missing'")
+      const findValue = await h.evaluate("document.querySelector('[data-panel=find] input')?.value ?? 'input missing'")
+      throw new Error(`${style}: Find нәтиже жоқ; input=${findValue}; panel=${findText}`)
+    }
     const selected = await h.evaluate(`(() => {
-      const button = document.querySelector('[data-dock-panel="find"] button')
+      const button = document.querySelector('[data-panel="find"] button')
       if (!button) return false
       button.click()
       return true

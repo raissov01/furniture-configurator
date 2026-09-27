@@ -57,6 +57,9 @@ describe('мәтін редакторы', () => {
     const before = useConfigurator.getState()
     try {
       const id = useConfigurator.getState().addAnnotation()
+      const created = useConfigurator.getState().root.children.find((node) => node.id === id)
+      expect(created?.kind).toBe('annotation')
+      if (created?.kind === 'annotation') expect(created.transform.pos.y).toBeGreaterThanOrEqual(created.annotation.fontSize)
       useConfigurator.getState().editAnnotation(id, { text: 'Клиент ескертпесі', fontSize: 120 })
       const file = useConfigurator.getState().exportProject()
       const saved = parseProjectV4(JSON.parse(JSON.stringify(file)))

@@ -804,11 +804,13 @@ export const useConfigurator = create<State>((set, get) => ({
   addAnnotation() {
     const s = get()
     const id = `annotation-${crypto.randomUUID()}`
+    const fontSize = 80
     const root: GroupNode = { ...s.root, children: [...s.root.children, {
       kind: 'annotation', id, name: tr('Текст'),
-      transform: { pos: { x: Math.round(s.room.width / 2), y: 10, z: Math.round(s.room.depth / 2) },
+      // Text is centred vertically; start a full font height above the floor.
+      transform: { pos: { x: Math.round(s.room.width / 2), y: fontSize, z: Math.round(s.room.depth / 2) },
         rot: { x: 0, y: 0, z: 0 } },
-      annotation: { text: tr('Текст'), fontSize: 80, color: '#262626' },
+      annotation: { text: tr('Текст'), fontSize, color: '#262626' },
     }] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id

@@ -76,6 +76,9 @@ export function scaleTreeNode(root: GroupNode, id: string, factors: ScalePercent
       y: scaledMm(node.solid.size.y, local.y, 'solid.size.y', true),
       z: scaledMm(node.solid.size.z, local.z, 'solid.size.z', true),
     } } }
+    if (node.kind === 'annotation') return { ...node, annotation: { ...node.annotation,
+      fontSize: scaledMm(node.annotation.fontSize, local.y, 'annotation.fontSize', true),
+    } }
     return node
   }
   const replace = (group: GroupNode): GroupNode => ({ ...group, children: group.children.map((child) => {

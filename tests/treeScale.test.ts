@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { defaultCabinet } from '../lib/defaults'
 import { createDefaultLayer } from '../src/core/layers'
 import { findNode, IDENTITY_TRANSFORM } from '../src/core/tree'
-import type { BoardNode, CabinetNode, GroupNode, SolidNode } from '../src/core/tree'
+import type { AnnotationNode, BoardNode, CabinetNode, GroupNode, SolidNode } from '../src/core/tree'
 import { scaleTreeNode } from '../src/core/treeScale'
 
 const transform = (x: number, y = 0, z = 0, rotationY = 0) => ({
@@ -39,6 +39,17 @@ describe('Scale tool', () => {
     expect(solid.transform.pos.x).toBe(20)
     expect(solid.solid.size).toEqual({ x: 20, y: 50, z: 120 })
     expect((findNode(next, 'cab') as CabinetNode).config).toMatchObject({ height: 2000, width: 1200, depth: 225 })
+  })
+
+  it('scales the position and font size of text inside a selected group', () => {
+    const original = scene()
+    const group = original.children[0] as GroupNode
+    const note: AnnotationNode = { kind: 'annotation', id: 'note', name: 'Note', transform: transform(40, 20, 10),
+      annotation: { text: 'Socket', fontSize: 80, color: '#262626' } }
+    const withText: GroupNode = { ...original, children: [{ ...group, children: [...group.children, note] }] }
+    const scaled = scaleTreeNode(withText, 'g', { x: 125, y: 125, z: 125 }, layers)
+    expect((findNode(scaled, 'note') as AnnotationNode).transform.pos).toEqual({ x: 50, y: 25, z: 13 })
+    expect((findNode(scaled, 'note') as AnnotationNode).annotation.fontSize).toBe(100)
   })
 
   it('keeps sheet thickness physical, rejects invalid percentages and a locked descendant', () => {
