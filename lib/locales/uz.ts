@@ -1888,4 +1888,12 @@ export const uz: Record<string, string> = {
   'Удаление и связь': 'O‘chirish va aloqa',
   'Локальные данные можно удалить через настройки устройства. По синхронизированным данным обратитесь к администратору своей мастерской. Контакт оператора и срок хранения серверных данных должны быть опубликованы до выхода в магазин приложений.': 'Mahalliy ma’lumotlarni qurilma sozlamalarida o‘chirish mumkin. Sinxronlangan ma’lumotlar uchun sex administratoriga murojaat qiling. Operator aloqasi va server saqlash muddati do‘konga chiqishdan oldin e’lon qilinishi kerak.',
   'Панели': 'Panellar',
+  'Адрес': 'Manzil',
+  'Цвет бренда': 'Brend rangi',
+  'Логотип': 'Logotip',
+  'Удалить логотип': 'Logotipni olib tashlash',
+  'БИН: требуется 12 цифр': 'BIN: 12 ta raqam kiriting',
+  'Логотип: PNG или JPEG': 'Logotip: PNG yoki JPEG ishlating',
+  'Логотип: не больше 750 КБ': 'Logotip: 750 KB dan oshmasin',
+  'Логотип: файл не прочитан': 'Logotip: fayl o‘qilmadi',
 }

@@ -72,13 +72,13 @@ function ShopBinField({ value, onChange }: { value: string; onChange: (value: st
         setDraft(next)
         if (!validateBin(next)) onChange(next)
       }} />
-    {error ? <span id="shop-bin-error" className="text-xs text-red-700" role="alert">{error}</span> : null}
+    {error ? <span id="shop-bin-error" className="text-xs text-red-700" role="alert">{tr(error)}</span> : null}
   </Field>
 }
 
 function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => void }) {
   const [error, setError] = useState<string | null>(null)
-  return <Field label="Логотип / Logo">
+  return <Field label={tr('Логотип')}>
     <input type="file" accept="image/png,image/jpeg" className={`${text} ${error ? 'border-red-600' : ''}`}
       aria-invalid={Boolean(error)} onChange={(event) => {
         const file = event.target.files?.[0]
@@ -89,13 +89,13 @@ function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => 
         const reader = new FileReader()
         reader.onload = () => {
           if (typeof reader.result === 'string') onChange(reader.result)
-          else setError('Логотип: файл оқылмады')
+          else setError('Логотип: файл не прочитан')
         }
-        reader.onerror = () => setError('Логотип: файл оқылмады')
+        reader.onerror = () => setError('Логотип: файл не прочитан')
         reader.readAsDataURL(file)
       }} />
-    {error ? <span className="text-xs text-red-700" role="alert">{error}</span> : null}
-    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null) }}>Логотипті өшіру</button>
+    {error ? <span className="text-xs text-red-700" role="alert">{tr(error)}</span> : null}
+    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null) }}>{tr('Удалить логотип')}</button>
   </Field>
 }
 
@@ -251,11 +251,11 @@ export function ShopSettings() {
                   onChange={(e) => editShop({ phone: e.target.value })} />
               </Field>
               <ShopBinField value={shop.bin ?? ''} onChange={(bin) => editShop({ bin })} />
-              <Field label="Мекенжай / Адрес">
+              <Field label={tr('Адрес')}>
                 <input className={text} value={shop.address ?? ''} maxLength={240}
                   onChange={(e) => editShop({ address: e.target.value })} />
               </Field>
-              <Field label="Бренд түсі / Цвет бренда">
+              <Field label={tr('Цвет бренда')}>
                 <input type="color" className="h-9 w-full border border-neutral-300 bg-white p-1"
                   value={shop.brandColor ?? '#1F2A37'} onChange={(e) => editShop({ brandColor: e.target.value })} />
               </Field>

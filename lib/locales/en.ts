@@ -1884,4 +1884,12 @@ export const en: Record<string, string> = {
   'Удаление и связь': 'Deletion and contact',
   'Локальные данные можно удалить через настройки устройства. По синхронизированным данным обратитесь к администратору своей мастерской. Контакт оператора и срок хранения серверных данных должны быть опубликованы до выхода в магазин приложений.': 'Local data can be removed in device settings. For synced data, contact your workshop administrator. The operator contact and server retention period must be published before store release.',
   'Панели': 'Panels',
+  'Адрес': 'Address',
+  'Цвет бренда': 'Brand color',
+  'Логотип': 'Logo',
+  'Удалить логотип': 'Remove logo',
+  'БИН: требуется 12 цифр': 'BIN: enter 12 digits',
+  'Логотип: PNG или JPEG': 'Logo: use PNG or JPEG',
+  'Логотип: не больше 750 КБ': 'Logo: maximum 750 KB',
+  'Логотип: файл не прочитан': 'Logo: file could not be read',
 }
