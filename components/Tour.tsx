@@ -22,6 +22,7 @@ import type { LessonStep } from '@/src/core/lessonCatalog'
 import { tourStepsFor, visibleTourSteps } from '@/lib/tourSteps'
 import { lessonStepFor } from '@/lib/lessonTargets'
 import { findTourTarget } from '@/lib/tourTarget'
+import { tourCardPosition } from '@/lib/f32TourPosition'
 
 const DONE_KEY = 'furniture-configurator:tour-done'
 export const LESSON_DONE_KEY = 'furniture-configurator:lessons-done'
@@ -30,6 +31,8 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
   const [step, setStep] = useState<number | null>(null)
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [rect, setRect] = useState<DOMRect | null>(null)
+  const [cardHeight, setCardHeight] = useState(220)
+  const cardRef = useRef<HTMLDivElement>(null)
   const [tourSteps, setTourSteps] = useState<readonly LessonStep[]>([])
   const [lessonSteps, setLessonSteps] = useState<readonly LessonStep[]>([])
   const lesson = LESSONS.find((item) => item.id === lessonId)
@@ -123,14 +126,22 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
     return () => window.removeEventListener('resize', measure)
   }, [step, close, lessonId, activeSteps, lesson])
 
+  useEffect(() => {
+    if (step === null || !cardRef.current) return undefined
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setCardHeight(entry.target.getBoundingClientRect().height)
+    })
+    observer.observe(cardRef.current)
+    return () => observer.disconnect()
+  }, [step])
+
   if (step === null || !rect || !activeSteps[step]) return null
   const current = activeSteps[step]!
   const last = step === activeSteps.length - 1
 
   // Карточка элементтің АСТЫНА қойылады, ал орын жетпесе — үстіне.
-  const below = rect.bottom + 180 < window.innerHeight
-  const top = below ? rect.bottom + 12 : Math.max(12, rect.top - 172)
-  const left = Math.min(Math.max(12, rect.left), window.innerWidth - 340)
+  const { top, left } = tourCardPosition(rect, window.innerWidth, window.innerHeight,
+    cardHeight, Math.min(320, window.innerWidth - 24))
 
   return (
     /*
@@ -155,7 +166,8 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
         }}
       />
       <div
-        className="pointer-events-auto absolute w-80 rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900"
+        ref={cardRef}
+        className="pointer-events-auto absolute w-80 max-w-[calc(100vw-24px)] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900"
         style={{ top, left }}
       >
         <p className="text-[10px] uppercase tracking-wider text-neutral-400">
