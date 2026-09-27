@@ -26,7 +26,7 @@ export type PriceLine = {
   name: string
   /** Саны: парақ / метр / дана / м² */
   qty: number
-  unit: 'лист' | 'м' | 'шт' | 'м²' | 'отв'
+  unit: 'лист' | 'м' | 'шт' | 'м²' | 'отв' | 'дет'
   /** Бір бірліктің бағасы, тиын */
   unitPrice: number
   /** Жол сомасы, тиын */
@@ -50,6 +50,8 @@ export type MaterialRow = {
   sheets: number
   panels: number
   holes: number
+  /** Тесігі бар детальдер — «бөлшекке» присадканың саны. */
+  drilledPanels: number
   edgeMetres: number
   /** Парақтардың құны, тиын */
   materialCost: number
@@ -317,6 +319,8 @@ export function priceProject(
     area: number
     panels: number
     holes: number
+    /** Тесігі бар детальдер (присадка «за деталь» тек соларға). */
+    drilledPanels: number
     /** bandId → метр */
     edges: Map<string, number>
     /** Детальдердің ұзындығының қосындысы, м — ТАҚТА (постформинг) метрмен сатылады. */
@@ -326,7 +330,7 @@ export function priceProject(
   const statFor = (id: string): Stats => {
     let v = stats.get(id)
     if (!v) {
-      v = { area: 0, panels: 0, holes: 0, edges: new Map(), lengthMetres: 0 }
+      v = { area: 0, panels: 0, holes: 0, drilledPanels: 0, edges: new Map(), lengthMetres: 0 }
       stats.set(id, v)
     }
     return v
@@ -338,6 +342,7 @@ export function priceProject(
     st.lengthMetres += Math.max(p.finishedLength, p.finishedWidth) / 1000
     st.panels += 1
     st.holes += p.drilling.length
+    if (p.drilling.length > 0) st.drilledPanels += 1
     if (p.contour) {
       for (const [i, start] of p.contour.points.entries()) {
         const spec = p.contour.bands[i]
@@ -362,13 +367,16 @@ export function priceProject(
   const sheetsByMaterial = new Map(nesting.byMaterial.map((g) => [g.materialId, g.sheets.length]))
   const nameByMaterial = new Map(nesting.byMaterial.map((g) => [g.materialId, g.materialName]))
 
-  /** Қызметтің осы материалдағы саны — негізіне қарай. */
-  const serviceQty = (rate: ServiceRate, id: string, st: Stats): number => {
+  /**
+   * Қызметтің осы материалдағы саны — негізіне қарай. Присадка «за деталь» —
+   * тек тесігі бар детальдер: тесіксіз деталь (задняя стенка) станокқа түспейді.
+   */
+  const serviceQty = (sid: ServiceId, rate: ServiceRate, id: string, st: Stats): number => {
     switch (rate.basis) {
       case 'sheet': return sheetsByMaterial.get(id) ?? 0
       case 'squareMetre': return st.area
       case 'hole': return st.holes
-      case 'panel': return st.panels
+      case 'panel': return sid === 'drilling' ? st.drilledPanels : st.panels
       case 'edgeMetre': return [...st.edges.values()].reduce((sum, m) => sum + m, 0)
     }
   }
@@ -413,7 +421,7 @@ export function priceProject(
     const services = {} as Record<ServiceId, number>
     for (const sid of SERVICE_IDS) {
       const rate = shop.services[sid]
-      services[sid] = roundTenge(serviceQty(rate, id, st) * rate.rate)
+      services[sid] = roundTenge(serviceQty(sid, rate, id, st) * rate.rate)
     }
 
     const servicesSum = SERVICE_IDS.reduce((sum, sid) => sum + services[sid], 0)
@@ -424,6 +432,7 @@ export function priceProject(
       sheets,
       panels: st.panels,
       holes: st.holes,
+      drilledPanels: st.drilledPanels,
       edgeMetres: Math.round([...st.edges.values()].reduce((s2, m) => s2 + m, 0) * 100) / 100,
       materialCost,
       edgeCost,
@@ -479,7 +488,7 @@ export function priceProject(
   const services: PriceLine[] = SERVICE_IDS
     .map((sid) => {
       const rate = shop.services[sid]
-      const qty = materialIds.reduce((sum, id) => sum + serviceQty(rate, id, statFor(id)), 0)
+      const qty = materialIds.reduce((sum, id) => sum + serviceQty(sid, rate, id, statFor(id)), 0)
       const cost = materialRows.reduce((sum, r) => sum + r.services[sid], 0)
       return {
         id: `service-${sid}`,
@@ -735,7 +744,7 @@ const SERVICE_UNITS: Record<ServiceRate['basis'], PriceLine['unit']> = {
   squareMetre: 'м²',
   hole: 'отв',
   edgeMetre: 'м',
-  panel: 'шт',
+  panel: 'дет',
 }
 
 /**

@@ -12,6 +12,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { MarketPriceNotice } from './MarketPrice'
+import { serviceLineText, unitLabel } from '@/lib/priceUnits'
 import { useMemo, useState } from 'react'
 import {
   SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
@@ -533,10 +534,11 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                     <tbody>
                       {g.lines.map((l) => {
                         const key = `${g.key}:${l.id}`
-                        return <tr key={key} className="border-t border-neutral-100 dark:border-neutral-800">
+                        return <tr key={key} className="border-t border-neutral-100 dark:border-neutral-800"
+                          title={g.key === 'services' ? serviceLineText(l) : undefined}>
                           <td className="py-1">{l.name}</td>
                           <td className="w-24 py-1 text-right tabular-nums text-neutral-500">
-                            {l.qty} {l.unit}
+                            {l.qty} {unitLabel(l.unit)}
                           </td>
                           <td className={cn('w-28 py-1 text-right tabular-nums', l.unitPrice <= 0 && 'text-amber-600')}>
                             {formatTenge(l.unitPrice)}

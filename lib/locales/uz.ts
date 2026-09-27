@@ -1355,4 +1355,10 @@ export const uz: Record<string, string> = {
   'Вернуть рекомендуемую цену': 'Tavsiya etilgan narxga qaytarish',
   'Вернуть рекомендуемую цену: {price}': 'Tavsiya etilgan narxga qaytarish: {price}',
 
+  // Смета жолының бірлігі (lib/priceUnits.ts)
+  'лист.': 'varaq',
+  'дет.': 'detal',
+  'шт.': 'dona',
+  '{name}: {qty} {unit} × {price}': '{name}: {qty} {unit} × {price}',
+
 }
