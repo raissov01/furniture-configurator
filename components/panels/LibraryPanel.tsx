@@ -23,8 +23,9 @@ import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
 import { useConfigurator } from '@/store/configurator'
 import { findTemplate, templateToCabinet } from '@/src/core/index'
-import { BASIS_MATERIALS } from '@/src/core/data/basisCatalog'
-import type { Material } from '@/src/core/types'
+import { BASIS_EDGE_BANDS, BASIS_MATERIALS } from '@/src/core/data/basisCatalog'
+import { addBasisCatalogItem } from './basisLibrarySelect'
+import type { EdgeBand, Material } from '@/src/core/types'
 import {
   PRO100_ACCESSORY_ITEMS,
   PRO100_CABINET_ITEMS,
@@ -38,8 +39,12 @@ import {
   LIBRARY_TABS,
   paginate,
   visibleCategoryOptions,
+  BASIS_MODULE_ITEMS,
+  BASIS_FITTING_ITEMS,
+  basisModuleChoice,
+  BASIS_FITTING_KIND_LABELS,
 } from './libraryCatalogLogic'
-import type { LibraryTabId } from './libraryCatalogLogic'
+import type { BasisFittingItem, BasisModuleItem, LibraryTabId } from './libraryCatalogLogic'
 import { CatalogThumb } from './CatalogThumb'
 import { PersonalLibraryPanel } from './PersonalLibraryPanel'
 import { parsePropCoordinate } from '@/lib/propCoordinateUi'
@@ -56,13 +61,16 @@ export function LibraryPanel() {
   const [page, setPage] = React.useState(0)
   const [lastAdded, setLastAdded] = React.useState<string | null>(null)
   const [pendingCabinet, setPendingCabinet] = React.useState<Pro100LibraryItem | null>(null)
+  const [pendingBasis, setPendingBasis] = React.useState<BasisModuleItem | null>(null)
   const [propPosition, setPropPosition] = React.useState<Vec3>({ x: 0, y: 0, z: 0 })
   const [propDraft, setPropDraft] = React.useState<Record<keyof Vec3, string>>({ x: '0', y: '0', z: '0' })
   const [placedDraft, setPlacedDraft] = React.useState<Record<string, string>>({})
   const [coordErrors, setCoordErrors] = React.useState<Record<string, string>>({})
   const [propError, setPropError] = React.useState<string | null>(null)
+  const [catalogError, setCatalogError] = React.useState<string | null>(null)
 
   const catalog = useConfigurator((s) => s.catalog)
+  const shop = useConfigurator((s) => s.shop)
   const root = useConfigurator((s) => s.root)
   const placed = React.useMemo(() => placedProps(root), [root])
   const propItems = React.useMemo(() => PROP_CATALOG.filter((prop) =>
@@ -129,26 +137,27 @@ export function LibraryPanel() {
     setCategorySearch('')
     setPage(0)
     setPendingCabinet(null)
+    setPendingBasis(null)
   }
 
   const cabinetItems = React.useMemo(
-    () => filterItems(PRO100_CABINET_ITEMS, { search, categoryPath }),
+    () => filterItems([...PRO100_CABINET_ITEMS, ...BASIS_MODULE_ITEMS], { search, categoryPath }),
     [search, categoryPath],
   )
   const accessoryItems = React.useMemo(
-    () => filterItems(PRO100_ACCESSORY_ITEMS, { search, categoryPath }),
+    () => filterItems([...PRO100_ACCESSORY_ITEMS, ...BASIS_FITTING_ITEMS], { search, categoryPath }),
     [search, categoryPath],
   )
   const materialItems = React.useMemo(
-    () => filterItems(BASIS_MATERIALS, { search, categoryPath: null }),
+    () => filterItems([...BASIS_MATERIALS, ...BASIS_EDGE_BANDS], { search, categoryPath: null }),
     [search],
   )
 
-  const activeItems: (Pro100LibraryItem | Material)[] =
+  const activeItems: (Pro100LibraryItem | BasisModuleItem | BasisFittingItem | Material | EdgeBand)[] =
     tab === 'mebel' ? cabinetItems : tab === 'elementy' ? accessoryItems : tab === 'materialy' ? materialItems : []
 
   const categoryChoices = React.useMemo(() => {
-    const source = tab === 'mebel' ? PRO100_CABINET_ITEMS : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS : []
+    const source = tab === 'mebel' ? [...PRO100_CABINET_ITEMS, ...BASIS_MODULE_ITEMS] : tab === 'elementy' ? [...PRO100_ACCESSORY_ITEMS, ...BASIS_FITTING_ITEMS] : []
     return categoryOptions(source)
   }, [tab])
   const visibleCategories = React.useMemo(() => visibleCategoryOptions(categoryChoices, categorySearch, categoryPath),
@@ -170,6 +179,29 @@ export function LibraryPanel() {
     })
     setLastAdded(item.name)
     setPendingCabinet(null)
+  }
+
+  const addBasisToProject = (item: BasisModuleItem) => {
+    const choice = basisModuleChoice(item.module)
+    if (!choice.allowed) return
+    const template = findTemplate(choice.templateId)
+    if (!template) return
+    const cabinet = templateToCabinet(template, catalog, choice.size)
+    useConfigurator.getState().appendCabinet({
+      ...cabinet, id: `cabinet-${crypto.randomUUID()}`, name: `${item.name} (Базис)`,
+      sections: cabinet.sections.map((section) => ({ ...section, fronts: { count: choice.frontCount, mount: 'overlay' } })),
+    })
+    setLastAdded(item.name)
+    setPendingBasis(null)
+  }
+
+  const addBasisToShop = (item: Material | EdgeBand) => {
+    try {
+      const state = useConfigurator.getState()
+      state.setShop(addBasisCatalogItem(state.shop, item))
+      setLastAdded(item.name)
+      setCatalogError(null)
+    } catch (cause) { setCatalogError(cause instanceof Error ? cause.message : String(cause)) }
   }
 
   return (
@@ -209,9 +241,9 @@ export function LibraryPanel() {
             }}
             className="w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[10px] text-neutral-300 outline-none"
           >
-            <option value="">{tr('Все категории')} ({tab === 'mebel' ? PRO100_CABINET_ITEMS.length : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS.length : PROP_CATALOG.length})</option>
+            <option value="">{tr('Все категории')} ({tab === 'mebel' ? PRO100_CABINET_ITEMS.length + BASIS_MODULE_ITEMS.length : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS.length + BASIS_FITTING_ITEMS.length : PROP_CATALOG.length})</option>
             {(tab === 'raznoe' ? [...new Set(PROP_CATALOG.map((prop) => prop.category))] : visibleCategories).map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>{c.split(' \\ ').map((part) => tr(part)).join(' \\ ')}</option>
             ))}
           </select>
         </div>
@@ -240,6 +272,18 @@ export function LibraryPanel() {
           <div className="flex gap-1">
             <button type="button" className="border border-neutral-500 px-2 py-1" onClick={() => addCabinetToProject(pendingCabinet)}>{tr('Добавить шаблон')}</button>
             <button type="button" className="border border-neutral-700 px-2 py-1" onClick={() => setPendingCabinet(null)}>{tr('Отмена')}</button>
+          </div>
+        </div>
+      ) : null}
+
+      {pendingBasis && basisModuleChoice(pendingBasis.module).allowed ? (
+        <div className="shrink-0 space-y-1 border-b border-neutral-700 p-2 text-xs" role="region" aria-label={tr('Подтвердить модуль Базис')}>
+          <p className="font-medium">{pendingBasis.name}</p>
+          <p className="tabular-nums">{pendingBasis.module.height} (H) × {pendingBasis.module.width} (W) × {pendingBasis.module.depth} (D) {tr('мм')}</p>
+          <p className="text-amber-300">{tr('Габариты и число фасадов взяты из названия. Полки, материал и конструкция — из шаблона AisMebel; проверьте перед раскроем.')}</p>
+          <div className="flex gap-1">
+            <button type="button" className="border border-neutral-500 px-2 py-1" onClick={() => addBasisToProject(pendingBasis)}>{tr('Добавить шаблон')}</button>
+            <button type="button" className="border border-neutral-700 px-2 py-1" onClick={() => setPendingBasis(null)}>{tr('Отмена')}</button>
           </div>
         </div>
       ) : null}
@@ -286,19 +330,21 @@ export function LibraryPanel() {
           <p className="p-2 text-[11px] text-neutral-500">Табылмады.</p>
         ) : tab === 'materialy' ? (
           <div className="grid grid-cols-2 gap-1.5">
-            {(pageItems as Material[]).map((m) => (
-              <MaterialTile key={m.id} material={m} />
+            {catalogError && <p role="alert" className="col-span-2 border border-red-700 p-1 text-red-300">{catalogError}</p>}
+            {(pageItems as (Material | EdgeBand)[]).map((m) => (
+              'sheetWidth' in m ? <MaterialTile key={m.id} material={m}
+                selected={shop.materials.some((entry) => entry.id === m.id)} onSelect={() => addBasisToShop(m)} />
+                : <EdgeBandTile key={m.id} edge={m}
+                  selected={shop.edgeBands.some((entry) => entry.id === m.id)} onSelect={() => addBasisToShop(m)} />
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-1.5">
-            {(pageItems as Pro100LibraryItem[]).map((item) => (
-              <CabinetTile
-                key={item.id}
-                item={item}
-                onSelect={tab === 'mebel' ? () => setPendingCabinet(item) : undefined}
-              />
-            ))}
+            {(pageItems as (Pro100LibraryItem | BasisModuleItem | BasisFittingItem)[]).map((item) =>
+              'module' in item ? <BasisModuleTile key={item.id} item={item} onSelect={() => setPendingBasis(item)} />
+                : 'fitting' in item ? <BasisFittingTile key={item.id} item={item} />
+                  : <CabinetTile key={item.id} item={item} onSelect={tab === 'mebel' ? () => setPendingCabinet(item) : undefined} />
+            )}
           </div>
         )}
       </div>
@@ -375,7 +421,7 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
 
 // ── Бір материал ұяшығы («Материалы» табы) ──────────────────────────────────
 
-function MaterialTile({ material }: { material: Material }) {
+function MaterialTile({ material, selected, onSelect }: { material: Material; selected: boolean; onSelect: () => void }) {
   return (
     <div className="flex flex-col items-center gap-1 border border-neutral-800 bg-neutral-900 p-1.5 text-left">
       {/* Түс/декор дерегі БАЗИСТЕ импортталмаған (basisCatalog.ts §комментарий) —
@@ -384,9 +430,52 @@ function MaterialTile({ material }: { material: Material }) {
         <span className="text-[10px] text-neutral-500">{material.thickness} мм</span>
       </div>
       <div className="w-full truncate text-[10px] text-neutral-300">{material.name}</div>
-      <div className="w-full truncate text-[9px] tabular-nums text-neutral-500">
-        {material.pricePerSheet > 0 ? `${(material.pricePerSheet / 100).toLocaleString('ru-RU')} ₸/лист` : 'баға белгісіз'}
-      </div>
+      <div className="w-full text-[9px] text-neutral-500">{tr('Цена задаётся в прайсе цеха')}</div>
+      <button type="button" disabled={selected} onClick={onSelect}
+        className="w-full border border-neutral-700 px-1 py-0.5 text-[10px] disabled:opacity-50">
+        {tr(selected ? 'Уже в цехе' : 'Добавить в цех')}
+      </button>
     </div>
   )
+}
+
+function EdgeBandTile({ edge, selected, onSelect }: { edge: EdgeBand; selected: boolean; onSelect: () => void }) {
+  return <div className="flex flex-col gap-1 border border-neutral-800 bg-neutral-900 p-1.5 text-left text-[10px]">
+    <div className="flex h-16 items-center justify-center border border-neutral-800 bg-neutral-950 text-neutral-500">
+      {edge.thickness} × {edge.widthMm ?? '—'} {tr('мм')}
+    </div>
+    <div className="truncate text-neutral-300" title={edge.name}>{edge.name}</div>
+    <div className="text-neutral-500">{tr('Ширина кромки')}: {edge.widthMm ?? tr('неизвестно')} {tr('мм')}</div>
+    <button type="button" disabled={selected} onClick={onSelect}
+      className="border border-neutral-700 px-1 py-0.5 disabled:opacity-50">
+      {tr(selected ? 'Уже в цехе' : 'Добавить в цех')}
+    </button>
+  </div>
+}
+
+function BasisModuleTile({ item, onSelect }: { item: BasisModuleItem; onSelect: () => void }) {
+  const choice = basisModuleChoice(item.module)
+  const reason = choice.allowed ? null : choice.reason === 'gola' ? tr('Gola-профиль не поддерживается генератором')
+    : choice.reason === 'unmatched' ? tr('Тип или размер модуля не определён')
+      : choice.reason === 'range' ? `${tr('Размер вне диапазона шаблона')}: ${choice.range}`
+        : tr('Конструкция или фурнитура модуля не поддерживается')
+  return <button type="button" disabled={!choice.allowed} onClick={onSelect} title={reason ?? undefined}
+    className={cn('flex flex-col gap-1 border border-neutral-800 bg-neutral-900 p-1.5 text-left text-[10px]', choice.allowed ? 'hover:border-neutral-500' : 'cursor-default opacity-70')}>
+    <div className="truncate text-neutral-200" title={item.name}>{item.name}</div>
+    {item.module.height !== null && item.module.width !== null && item.module.depth !== null ?
+      <div className="tabular-nums text-neutral-400">{item.module.height} (H) × {item.module.width} (W) × {item.module.depth} (D) {tr('мм')}</div> : null}
+    {reason ? <div className="text-amber-300">{reason}</div> : <div className="text-neutral-400">{tr('Добавить шаблон')}</div>}
+  </button>
+}
+
+function BasisFittingTile({ item }: { item: BasisFittingItem }) {
+  const { fitting } = item
+  return <div className="flex flex-col gap-1 border border-neutral-800 bg-neutral-900 p-1.5 text-left text-[10px]">
+    <div className="truncate text-neutral-200" title={item.name}>{item.name}</div>
+    <div className="text-neutral-400">{tr('Тип')}: {tr(BASIS_FITTING_KIND_LABELS[fitting.kind])}</div>
+    {fitting.manufacturer ? <div>{tr('Производитель')}: {fitting.manufacturer}</div> : null}
+    {fitting.article ? <div>{tr('Артикул')}: {fitting.article}</div> : null}
+    {fitting.dimensionsMm.length > 0 ? <div>{tr('Размеры')}: {fitting.dimensionsMm.join(', ')} {tr('мм')}</div> : null}
+    <div className="text-neutral-500">{tr('Цена и присадка неизвестны; в проект не добавляется.')}</div>
+  </div>
 }

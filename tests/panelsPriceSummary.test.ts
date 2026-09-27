@@ -38,6 +38,7 @@ describe('priceGroups', () => {
       materials: [line('a', 'Материал А', 100)],
       edges: [],
       hardware: [],
+      manualItems: [],
       services: [line('s', 'Распил', 50)],
       missingPrices: [],
     } as unknown as PriceBreakdown
@@ -47,7 +48,7 @@ describe('priceGroups', () => {
   })
 
   it('бәрі бос болса — бос тізім', () => {
-    const price = { materials: [], edges: [], hardware: [], services: [], missingPrices: [] } as unknown as PriceBreakdown
+    const price = { materials: [], edges: [], hardware: [], manualItems: [], services: [], missingPrices: [] } as unknown as PriceBreakdown
     expect(priceGroups(price, titles)).toEqual([])
   })
 })

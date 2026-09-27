@@ -60,6 +60,10 @@ function boardPanel(
   settings: ConstructionSettings,
 ): Panel {
   const spec = node.board
+  if (spec.veneerGroup !== undefined && (!spec.veneerGroup.trim() || spec.veneerGroup.trim() !== spec.veneerGroup)) {
+    throw new ConfigValidationError(`board[${node.id}].veneerGroup`,
+      'шпон тобы бос емес, шеттерінде бос орынсыз болуы керек', 'бос емес топ атауы')
+  }
   const material = catalog.materials.find((m) => m.id === spec.materialId)
   if (!material) {
     throw new ConfigValidationError(

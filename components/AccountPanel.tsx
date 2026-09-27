@@ -451,7 +451,6 @@ export function AccountPanel() {
         rememberCloud(outcome.selection)
         await bindCloudProject(outcome.selection.id, project)
         setCloudConflict(null)
-        await bindCloudProject(outcome.selection.id, project)
         await refreshProjects()
       }
     } catch {
@@ -474,7 +473,6 @@ export function AccountPanel() {
       const parsed = parseProjectV4(data.project)
       loadProject(parsed)
       rememberCloud({ id, revision: data.revision! })
-      await bindCloudProject(id, exportProject())
       setCloudConflict(null)
       await bindCloudProject(id, parsed)
       setError(null)

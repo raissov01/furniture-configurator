@@ -18,7 +18,7 @@ import {
   SERVICE_IDS, SERVICE_NAMES, SHEET_SERVICE_IDS, SHEET_SERVICE_NAMES, captureSalePriceScaling, financeTotals,
   formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
-import type { Discount, HardwarePlacement, NestedSheet, Panel, PriceLine, PriceOverrides, ShopProfile } from '@/src/core/index'
+import type { Discount, HardwarePlacement, ManualPriceItem, NestedSheet, Panel, PriceLine, PriceOverrides, ShopProfile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -59,11 +59,12 @@ function isoToRu(iso: string): string {
 
 /** `panels` — БҮКІЛ ЖОБАНЫҢ детальдары. Геометрия store-да есептелмейді (§3). */
 export function QuoteView({
-  panels, hardware, projectName, moduleWidths, propertiesOpen = false,
+  panels, hardware, manualItems, projectName, moduleWidths, propertiesOpen = false,
 }: {
   panels: Panel[]
   /** Панель емес фурнитура: штанга мен ұстағыштар. */
   hardware: HardwarePlacement[]
+  manualItems: ManualPriceItem[]
   projectName: string
   /** Корпустардың ені, мм — монтаж мөлшерлемесі осыдан саналады. */
   moduleWidths: number[]
@@ -114,11 +115,11 @@ export function QuoteView({
   const [priceError, price] = useMemo((): [string | null, ReturnType<typeof priceProject> | null] => {
     if (!nesting) return [null, null]
     try {
-      return [null, priceProject(panels, nesting, shop, hardware, moduleWidths, priceOverrides)]
+      return [null, priceProject(panels, nesting, shop, hardware, moduleWidths, priceOverrides, manualItems)]
     } catch (err) {
       return [err instanceof Error ? err.message : String(err), null]
     }
-  }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides])
+  }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides, manualItems])
 
   const run = async (kind: string, action: () => Promise<void>) => {
     setBusy(kind)
@@ -387,8 +388,9 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
         ))}
       </svg>
       <figcaption className="text-[11px] text-neutral-500">
-        Лист {sheet.index} · {sheet.sheetWidth}×{sheet.sheetHeight}
-        {sheet.offcuts.length > 0 ? ` · деловой отход: ${sheet.offcuts.length}` : ''}
+        {tr('Лист')} {sheet.index} · {sheet.sheetWidth}×{sheet.sheetHeight}
+        {sheet.veneerGroup ? ` · ${tr('Группа шпона')}: ${sheet.veneerGroup}` : ''}
+        {sheet.offcuts.length > 0 ? ` · ${tr('деловой отход')}: ${sheet.offcuts.length}` : ''}
       </figcaption>
     </figure>
   )
@@ -570,6 +572,7 @@ function PriceTable({ price, shopName, overrides, onChange }: {
     { key: 'materials', title: tr('Материалы'), lines: price.materials },
     { key: 'edges', title: tr('Кромка'), lines: price.edges },
     { key: 'hardware', title: tr('Фурнитура'), lines: price.hardware },
+    { key: 'manualItems', title: tr('Декор и техника'), lines: price.manualItems },
     { key: 'services', title: tr('Услуги цеха'), lines: price.services },
   ]
 
@@ -705,7 +708,7 @@ function PriceTable({ price, shopName, overrides, onChange }: {
       </table>
 
       <div className="ml-auto w-full max-w-sm space-y-1 border-t border-neutral-200 pt-2 text-xs dark:border-neutral-700">
-        <Row label={tr('Материалы, кромка, фурнитура')} value={formatTenge(price.goods)} />
+        <Row label={tr('Материалы, кромка, фурнитура и декор')} value={formatTenge(price.goods)} />
         <Row label={tr('Услуги цеха')} value={formatTenge(price.servicesTotal)} />
         {price.coefficientAmount !== 0 ? (
           <Row label={`Коэффициент ×${price.coefficient}`} value={formatTenge(price.coefficientAmount)} />

@@ -141,7 +141,7 @@ async function run() {
   await ensureChrome()
   const session = await connect()
   const h = makeHelpers(session, BASE)
-  const { mkdirSync, writeFileSync } = await import('node:fs')
+  const { mkdirSync, readFileSync, writeFileSync } = await import('node:fs')
   snapshot = serializeCapture(async (n) => {
     const shot = await session.send('Page.captureScreenshot', { format: 'png' })
     if (!shot?.data) return null
@@ -1059,6 +1059,54 @@ async function run() {
     check(persisted === 1, 'қайта ашқанда жеке кітапхана сақталды')
   })
 
+  await test('Базис кітапханасы: Кухня және Gola санаттары көрінеді', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+    const opened = await h.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[data-testid="tree-dock"] [role="tab"]')]
+        .find((node) => node.textContent.trim() === 'Библиотека')
+      tab?.click()
+      return Boolean(tab)
+    })()`)
+    check(opened, 'кітапхана ашылды')
+    await h.wait(250)
+    const categories = await h.evaluate(`(() => {
+      const selects = [...document.querySelectorAll('[data-testid="tree-dock"] select')]
+      const category = selects.find((select) => [...select.options].some((option) => option.value === 'Базис: Кухня'))
+      return category ? [...category.options].map((option) => option.value) : []
+    })()`)
+    check(categories.includes('Базис: Кухня') && categories.includes('Базис: Gola'), 'екі Basis санаты бар')
+    const selected = await h.evaluate(`(() => {
+      const category = [...document.querySelectorAll('[data-testid="tree-dock"] select')]
+        .find((select) => [...select.options].some((option) => option.value === 'Базис: Кухня'))
+      if (!category) return false
+      category.value = 'Базис: Кухня'
+      category.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    })()`)
+    check(selected, 'Кухня сүзгісі таңдалды')
+    check(await h.until(`Boolean([...document.querySelectorAll('[data-testid="tree-dock"] button')]
+      .find((button) => button.textContent.includes('(H) ×') && button.textContent.includes('(W) ×')))`, 7000),
+      'модуль өлшемі H × W × D болып көрінді')
+    const materialTab = await h.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[data-testid="tree-dock"] button')]
+        .find((button) => button.textContent.trim() === 'Материалы')
+      tab?.click()
+      return Boolean(tab)
+    })()`)
+    check(materialTab, 'Базис материалдары ашылды')
+    const added = await h.evaluate(`(() => {
+      const button = [...document.querySelectorAll('[data-testid="tree-dock"] button')]
+        .find((entry) => entry.textContent.trim() === 'Добавить в цех' && !entry.disabled)
+      button?.click()
+      return Boolean(button)
+    })()`)
+    check(added, 'материал цех каталогына таңдалды')
+    check(await h.until(`Boolean([...document.querySelectorAll('[data-testid="tree-dock"] button')]
+      .find((button) => button.textContent.trim() === 'Уже в цехе' && button.disabled))`, 7000),
+      'материал қайталап қосылмайды')
+  })
+
   await test('Визуал: PBR, жарық және 360° панорама', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
@@ -1123,6 +1171,43 @@ async function run() {
         lightCount: project.lights?.length }
     })()`)
     check(reloaded.roughness === 0.34 && reloaded.lightCount === 1, 'қайта ашқанда PBR мен жарық сақталды')
+  })
+
+  await test('Импорт докы: қате DXF және өндірістік тақта', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 9000)
+    check(await h.clickText('Открыть Импорт', 500), 'импорт докы ашылды')
+    check(await h.clickText('Деталь / модель', 300), 'деталь импорты ашылды')
+    const attach = async (name, data) => h.evaluate(`(() => {
+      const input = document.querySelector('[data-dock-panel="import"] input[type=file][accept*=".obj"]')
+      if (!input) return false
+      const transfer = new DataTransfer()
+      transfer.items.add(new File([${JSON.stringify(data)}], ${JSON.stringify(name)}, { type: 'text/plain' }))
+      input.files = transfer.files
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    })()`)
+    check(await attach('bad.dxf', 'broken'), 'бұрыс DXF жіберілді')
+    check(await h.until(`Boolean(document.querySelector('[data-dock-panel="import"] [role="alert"]'))`, 5000), 'қате файлдың хабарламасы көрсетілді')
+    const dxf = readFileSync(new URL('../tests/fixtures/dxf-board-rect.dxf', import.meta.url), 'utf8')
+    check(await attach('shelf.dxf', dxf), 'дұрыс DXF жіберілді')
+    check(await h.until(`Boolean(document.querySelector('[data-dock-panel="import"] button:not([disabled])') &&
+      document.querySelector('[data-dock-panel="import"]').innerText.includes('600 мм × 300 мм'))`, 5000), 'тақта габариті алдын ала көрінді')
+    const submit = await h.evaluate(`(() => {
+      const button = [...document.querySelectorAll('[data-dock-panel="import"] button')]
+        .find((entry) => entry.textContent.trim() === 'Добавить в проект' && !entry.disabled)
+      button?.click()
+      return Boolean(button)
+    })()`)
+    check(submit, 'тақта жобаға қосылды')
+    await h.wait(800)
+    const added = await h.evaluate(`(() => {
+      const raw = localStorage.getItem('furniture-configurator:project')
+      if (!raw) return false
+      const root = JSON.parse(raw).root
+      return root?.children?.some((node) => node.kind === 'board' && node.name === 'shelf' && node.board.length === 600)
+    })()`)
+    check(added, 'импортталған тақта v4 ағашта сақталды')
   })
 
   await test('Мобильді раскрой: экспорт тобы ашылып жабылады', async () => {

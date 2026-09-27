@@ -95,6 +95,8 @@ export type SolidSpec = {
   size: Vec3
   color?: string | undefined
   textureId?: string | undefined
+  /** Қолмен қойылған құн, тиын; өндіріске кірмейтін тауар сметада бөлек жол. */
+  manualPriceTiyn?: number | undefined
   /** Модельге сыртқы сілтеме; mesh файлы жобаға енгізілмейді. */
   modelSource?: ManufacturerModelSource | undefined
 }

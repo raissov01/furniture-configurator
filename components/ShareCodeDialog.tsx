@@ -50,7 +50,7 @@ export function ShareCodeDialog() {
     if (production.error) return { kind: 'invalid' as const, reason: production.error }
     try {
       return approvalPrice(production.panels, production.catalog, shop,
-        production.hardware, production.moduleWidths, overrides)
+        production.hardware, production.moduleWidths, overrides, production.manualItems)
     } catch (cause) {
       return { kind: 'invalid' as const, reason: cause instanceof Error ? cause.message : String(cause) }
     }

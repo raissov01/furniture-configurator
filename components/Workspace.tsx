@@ -424,7 +424,7 @@ export function Workspace() {
   const liveTotal = useMemo((): { total: number } | { missing: true } | null => {
     if (production.error) return null
     try {
-      const price = approvalPrice(deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides)
+      const price = approvalPrice(deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides, production.manualItems)
       return price.kind === 'missing' ? { missing: true } : { total: price.total }
     } catch (error) {
       // Жарамсыз конфиг кезінде (теріп жатқанда) баға уақытша көрінбейді — бұл
@@ -432,7 +432,7 @@ export function Workspace() {
       console.debug('Цена в тулбаре не посчитана', error)
       return null
     }
-  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides, production.error])
+  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides, production.manualItems, production.error])
   const [shared, setShared] = useState<string | null>(null)
   const copyClientLink = async () => {
     let link: string
@@ -671,6 +671,7 @@ export function Workspace() {
         propertiesOpen={propertiesNodeId !== null}
         panels={projectPanels}
         hardware={projectHardware}
+        manualItems={production.manualItems}
         projectName={projectName}
         moduleWidths={moduleWidths}
       /> : null}

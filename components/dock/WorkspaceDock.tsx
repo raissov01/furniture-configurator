@@ -18,13 +18,15 @@ const WORKSPACE_DOCK_KEY = 'furniture-configurator:workspace-dock'
 /** Production panels share the live project store in both workspace styles. */
 export function WorkspaceDock({ children }: { children: ReactNode }) {
   const editRoom = useConfigurator((state) => state.editRoom)
+  const importNode = useConfigurator((state) => state.importNode)
+  const materials = useConfigurator((state) => state.catalog.materials)
   const importRoom = (result: DxfImportResult) => editRoom(dxfRoomSize(result))
   const panels = [
     { id: 'find', title: tr('Найти'), content: <FindPanel /> },
     { id: 'price', title: tr('Прайс-лист'), content: <PricePanel /> },
     { id: 'dimensions', title: tr('Размеры'), content: <DimensionsPanel /> },
     { id: 'info', title: tr('Информация'), content: <InfoPanel /> },
-    { id: 'import', title: tr('Импорт'), content: <ImportPanel onImport={importRoom} /> },
+    { id: 'import', title: tr('Импорт'), content: <ImportPanel onImport={importRoom} onImportAsset={importNode} materials={materials} /> },
   ]
   return <DockHost panels={panels} initiallyClosed={PANEL_IDS} storageKey={WORKSPACE_DOCK_KEY}>{children}</DockHost>
 }

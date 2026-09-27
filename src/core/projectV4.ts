@@ -127,6 +127,7 @@ export const SceneNodeSchema: z.ZodType<SceneNode> = z.lazy(() => z.discriminate
   z.strictObject({ kind: z.literal('solid'), ...baseNode,
     solid: z.strictObject({ size: z.strictObject({ x: positiveMm, y: positiveMm, z: positiveMm }),
       color: z.string().optional(), textureId: z.string().optional(),
+      manualPriceTiyn: z.number().int().nonnegative().safe().optional(),
       modelSource: ManufacturerModelSourceSchema.optional() }),
   }),
   z.strictObject({ kind: z.literal('annotation'), ...baseNode,

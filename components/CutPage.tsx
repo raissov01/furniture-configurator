@@ -639,6 +639,7 @@ function SheetCard({
         · {sheet.sheetWidth}×{sheet.sheetHeight} · {tr('КИМ')}{' '}
         <span className="tabular-nums">{plan.stats.kim.toFixed(1)}%</span> · {tr('резов')}{' '}
         <span className="tabular-nums">{plan.stats.cutCount}</span> ({metres(plan.stats.cutLength)} {tr('м')})
+        {sheet.veneerGroup ? ` · ${tr('Группа шпона')}: ${sheet.veneerGroup}` : ''}
         · {tr('поворотов')} <span className="tabular-nums">{plan.stats.turns}</span>
         {sheet.offcuts.length > 0 ? ` · ${tr('деловой отход')}: ${sheet.offcuts.length}` : ''}
       </figcaption>

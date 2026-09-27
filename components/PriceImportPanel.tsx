@@ -96,7 +96,9 @@ export function PriceImportPanel({ shop }: { shop: ShopProfile }) {
           <th className="p-1">#</th><th className="p-1">{tr('Исходная строка')}</th><th className="p-1">{tr('Результат')}</th><th className="p-1">{tr('Подтверждение')}</th>
         </tr></thead><tbody>{value.rows.slice(0, 100).map((row) => <tr key={row.rowNumber} className="border-b border-neutral-200 dark:border-neutral-800">
           <td className="p-1">{row.rowNumber}</td><td className="p-1">{row.source.join(' · ')}</td>
-          <td className="p-1">{row.reason ?? (row.match ? `${row.match.kind}: ${row.match.targetId} · ${row.match.method} · ${row.priceTiyn} тиын` : row.status)}</td>
+          <td className="p-1">{row.reason ?? (row.match
+            ? `${row.match.kind}: ${row.match.targetId} · ${row.match.method} (${Math.round(row.match.confidence * 100)}%) · ${row.priceTiyn} ${tr('тиын')}`
+            : row.status)}</td>
           <td className="p-1">{row.match?.method === 'similar' && <label><input type="checkbox" checked={approved.includes(row.rowNumber)}
             onChange={(event) => setApproved(event.target.checked ? [...approved, row.rowNumber] : approved.filter((n) => n !== row.rowNumber))} /> {tr('Подтвердить похожий код')}</label>}</td>
         </tr>)}</tbody></table>

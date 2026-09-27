@@ -1,6 +1,7 @@
 import { ConfigValidationError } from '@/src/core/errors'
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { IDENTITY_TRANSFORM } from '@/src/core/tree'
+import { ManufacturerModelSourceSchema } from '@/src/core/manufacturerAssets'
 import type { GroupNode, SceneNode, SolidNode, SolidSpec } from '@/src/core/tree'
 import type { Layer, Vec3 } from '@/src/core/index'
 
@@ -28,6 +29,14 @@ export function editSolidTree(root: GroupNode, id: string, layers: Layer[], chan
   const source = assertTreeNodeEditable(root, id, layers)
   if (source.kind !== 'solid') throw new ConfigValidationError('nodeId', 'декоративті блок емес', 'solid id')
   const solid = { ...source.solid, ...change.solid }
+  if (solid.manualPriceTiyn !== undefined && (!Number.isSafeInteger(solid.manualPriceTiyn) || solid.manualPriceTiyn < 0)) {
+    throw new ConfigValidationError('solid.manualPriceTiyn', 'баға жарамсыз', '≥ 0, бүтін тиын')
+  }
+  if (solid.modelSource !== undefined) {
+    const parsed = ManufacturerModelSourceSchema.safeParse(solid.modelSource)
+    if (!parsed.success) throw new ConfigValidationError('solid.modelSource',
+      parsed.error.issues[0]?.message ?? 'өндіруші сілтемесі жарамсыз', 'HTTPS бет және артикул')
+  }
   const position = change.position ?? source.transform.pos
   validVec(solid.size, 'solid.size', true)
   validVec(position, 'transform.pos', false)

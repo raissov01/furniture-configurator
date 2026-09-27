@@ -65,6 +65,7 @@ import {
   templateToCabinet,
 } from '@/src/core/index'
 import type { Quality } from '@/lib/appearance'
+import type { BoardNode, SolidNode } from '@/src/core/tree'
 import type { PanoramaContext } from '@/lib/panorama'
 import type {
   AnnotationSpec, BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
@@ -323,6 +324,7 @@ type State = Snapshot & {
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
   addSolid(): string
+  importNode(node: BoardNode | SolidNode): void
   editSolid(id: string, patch: Partial<SolidSpec>): void
   setSolidPosition(id: string, position: Vec3): void
   mirrorFreeNode(id: string): string
@@ -883,6 +885,17 @@ export const useConfigurator = create<State>((set, get) => ({
     const root: GroupNode = { ...s.root, children: [...s.root.children, createSolidNode(id, tr('Декоративный блок'))] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id
+  },
+
+  importNode(node) {
+    const s = get()
+    if (findNode(s.root, node.id)) {
+      throw new ConfigValidationError('node.id', `түйін id-і қайталанады: ${node.id}`, 'бірегей id')
+    }
+    const root: GroupNode = { ...s.root, children: [...s.root.children, node] }
+    // Парсер тек файл құрылымын тексереді; өндірістік өлшемді жоба каталогымен де тексереміз.
+    flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
+    set({ ...treeEdit(s, root), activeId: node.id, selected: node.id, firstRun: false })
   },
 
   addAnnotation() {
