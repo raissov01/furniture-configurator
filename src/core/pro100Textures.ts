@@ -32,7 +32,14 @@ export function parsePro100Textures(input: string): Pro100TexturePreview {
   })
   finish()
   const defaults = sections.find((item) => item.name.toLowerCase() === 'default')?.fields ?? {}
+  const seenNames = new Set<string>()
   for (const item of sections) {
+    const key = item.name.toLocaleLowerCase()
+    if (seenNames.has(key)) {
+      errors.push({ lineNumber: item.lineNumber, reason: `«${item.name}» секциясының атауы қайталанған` })
+      continue
+    }
+    seenNames.add(key)
     if (item.name.toLowerCase() === 'default') continue
     const { name, lineNumber } = item
     const fields = { ...defaults, ...item.fields }

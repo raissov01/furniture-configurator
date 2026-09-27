@@ -76,4 +76,24 @@ describe('DXF импорты — 2D жоспар', () => {
     // Бірақ қабат тізімі толық қалады — пайдаланушы таңдауы үшін.
     expect(result.layers).toEqual(['WALLS'])
   })
+
+  it('жарамсыз, аса үлкен және нөл ұзындықты DXF геометриясын өткізбейді', () => {
+    const source = fixture('dxf-rect-lines.dxf')
+    const withEndX = (value: string) => source.replace(/(\n11\n)4000/, (_match, prefix: string) => `${prefix}${value}`)
+    const badCoordinate = withEndX('қате')
+    const tooLarge = withEndX('9007199254740992')
+    const zeroLength = withEndX('0')
+    for (const input of [badCoordinate, tooLarge, zeroLength]) {
+      expect(() => importDxfRoomPlan(input)).toThrow(ConfigValidationError)
+    }
+    try { importDxfRoomPlan(badCoordinate) }
+    catch (cause) {
+      expect(cause).toMatchObject({ field: 'dxf.LINE.11', allowed: expect.stringMatching(/мм/) })
+    }
+  })
+
+  it('шеңбердің жарамсыз радиусын өткізбейді', () => {
+    const source = fixture('dxf-rect-lines.dxf').replace('0\nLINE', '0\nCIRCLE\n10\n0\n20\n0\n40\nқате\n0\nLINE')
+    expect(() => importDxfRoomPlan(source)).toThrow(ConfigValidationError)
+  })
 })
