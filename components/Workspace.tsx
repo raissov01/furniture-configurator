@@ -1018,7 +1018,8 @@ export function Workspace() {
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
           {walk ? null : classic ? <>
             <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:hidden"><TreeDock /></div>
-            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} /> : null}
+            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)}
+              canOpenProperties={Boolean(activeBoard || cabinet)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
           </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 w-64 max-w-[calc(100%-1.5rem)] lg:w-72"><TreeDock /></div>}
           {/*
             КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
