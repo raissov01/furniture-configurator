@@ -4,6 +4,7 @@ import {
   type MeasuredNumber, type MeasurementSurvey, type ObstacleKind,
 } from '@/src/core/measure'
 import type { WallId } from '@/src/core/types'
+import { parseDistoD5Text } from '@/src/core/measure/distoD5Text'
 
 export type CaptureSource = MeasuredNumber['source']
 const draftNumber = z.object({
@@ -39,6 +40,15 @@ export function parseSavedMeasurementDraft(value: unknown): MeasurementSurvey | 
 }
 
 export type SurveyField = 'height' | `walls.${WallId}.length` | `corners.${typeof CORNER_IDS[number]}`
+
+/** Bluetooth keyboard Text Mode is a distance; a corner angle cannot consume it. */
+export function applyDistoText(survey: MeasurementSurvey, field: SurveyField, payload: string, capturedAt: number): MeasurementSurvey {
+  if (field !== 'height' && !/^walls\.(north|east|south|west)\.length$/.test(field)) {
+    throw new RangeError('field: Leica DISTO D5 қашықтығы тек биіктікке не қабырға ұзындығына жазылады')
+  }
+  const reading = parseDistoD5Text(payload, capturedAt)
+  return updateMeasure(survey, field, reading.distanceMm, 'laser', reading.capturedAt)
+}
 
 export function measured(value: number, source: CaptureSource, capturedAt: number): MeasuredNumber {
   if (!Number.isSafeInteger(value) || value < 0) throw new Error('Өлшем бүтін мм және теріс емес болуы керек')

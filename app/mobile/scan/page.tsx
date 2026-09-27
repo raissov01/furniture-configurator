@@ -7,7 +7,7 @@ import { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { parseProjectV4 } from '@/src/core/projectV4'
 import { flattenTree } from '@/src/core/flatten'
 import { projectProduction } from '@/lib/projectProduction'
-import { decodePartQr, type PartQr } from '@/src/core/partQr'
+import { decodePartQr, encodePartQr, type PartQr } from '@/src/core/partQr'
 import type { Panel } from '@/src/core/types'
 
 type Detector = { detect(video: HTMLVideoElement): Promise<{ rawValue: string }[]> }
@@ -20,6 +20,30 @@ export default function MobileScanPage() {
   const [panel, setPanel] = useState<Panel | null>(null)
   const [message, setMessage] = useState('')
   const [camera, setCamera] = useState(false)
+
+  const shareReorder = async () => {
+    if (!part) return
+    const code = encodePartQr(part)
+    const detail = panel
+      ? `\n${panel.label}\n${t('Рез')}: ${panel.cutLength} (${t('Длина')}) × ${panel.cutWidth} (${t('Ширина')}) ${t('мм')}`
+      : ''
+    const request = `${t('Запрос на повторное изготовление детали')}\n${code}${detail}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: t('Повторное изготовление детали'), text: request })
+        setMessage(t('Запрос передан через системное меню. Отправьте его в цех для подтверждения.'))
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(request)
+        setMessage(t('Запрос скопирован. Отправьте его в цех для подтверждения.'))
+      } else {
+        setMessage(t('Поделиться не удалось. Скопируйте код бирки вручную и отправьте в цех.'))
+      }
+    } catch (error) {
+      setMessage(error instanceof Error && error.name === 'AbortError'
+        ? t('Отправка отменена')
+        : error instanceof Error ? error.message : t('Не удалось передать запрос'))
+    }
+  }
 
   const openCode = async (value: string) => {
     try {
@@ -93,6 +117,9 @@ export default function MobileScanPage() {
         <p>{t('Кромка')}: {Object.entries(panel.edges).filter(([, edge]) => edge !== null).map(([side]) => side).join(', ') || '—'}</p>
         <p>{t('Присадка')}: {panel.drilling.length}</p>
       </>}
+      <button type="button" className="mt-3 min-h-12 w-full border border-[#8c8c8c] bg-white p-3 text-left"
+        onClick={() => void shareReorder()}>{t('Передать запрос на повторное изготовление')}</button>
+      <p className="mt-1 text-xs">{t('Изготовление начнётся только после подтверждения цехом.')}</p>
     </section>}
     {message && <p role="status" className="border bg-white p-3 text-sm">{message}</p>}
   </main>

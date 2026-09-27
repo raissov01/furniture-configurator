@@ -306,7 +306,8 @@ async function run() {
   })
 
   await test('Габаритті өзгерту деталировканы қайта санайды', async () => {
-    await h.setNumberByLabel('Высота (H)', 2200)
+    check(await h.clickText('Общее', 300), 'жалпы қасиеттер ашылды')
+    check(await h.setNumberByLabel('Высота (H)', 2200), 'биіктік өрісі өзгертілді')
     const rows = await h.cutListRows()
     const side = rows.find((r) => r[0] === 'Боковина')
     check(side && side.includes('2200'), `боковина 2200 болды (${side?.join(' ')})`)

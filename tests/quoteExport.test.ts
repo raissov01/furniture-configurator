@@ -24,6 +24,7 @@ import {
   templateToCabinet,
 } from '../src/core/index'
 import type { ShopProfile } from '../src/core/index'
+import { quoteSheetRows } from '../src/core/export/quotePdf'
 
 const font = (name: string) =>
   new Uint8Array(readFileSync(fileURLToPath(new URL(`../public/fonts/${name}`, import.meta.url))))
@@ -126,6 +127,17 @@ describe('раскрой PDF', () => {
 })
 
 describe('КП PDF', () => {
+  it('клиентке материал бойынша раскройдағы нақты парақ санын шығарады', () => {
+    const price = priceProject(panels, nesting, pricedShop, [], [], { salePrice: 12_345_67 })
+    const rows = quoteSheetRows(price)
+    expect(rows).toEqual(nesting.byMaterial.filter((group) => group.sheets.length > 0).map((group) => ({
+      materialId: group.materialId,
+      materialName: pricedShop.materials.find((material) => material.id === group.materialId)?.name,
+      sheets: group.sheets.length,
+    })).sort((a, b) => a.materialId.localeCompare(b.materialId)))
+    expect(rows.reduce((sum, row) => sum + row.sheets, 0)).toBe(nesting.sheetCount)
+  })
+
   it('бағасы толтырылмаса ҚҰЖАТ ШЫҚПАЙДЫ', async () => {
     const price = priceProject(panels, nesting, base)
     await expect(
@@ -166,6 +178,7 @@ describe('қаріп жиынтығы', () => {
     const strings = [
       'Коммерческое предложение', 'Позиция', 'Кол-во', 'Цена', 'Сумма',
       'Материалы', 'Кромка', 'Фурнитура', 'Работа', 'Себестоимость', 'Итого',
+      'Расход листов по раскрою', `${nesting.sheetCount} л.`,
       'ВСЕГО', 'СКИДКА', 'К ОПЛАТЕ', 'Скидка',
       `Наценка ${price.markupPercent}%`,
       pricedShop.name, pricedShop.city, pricedShop.phone,
