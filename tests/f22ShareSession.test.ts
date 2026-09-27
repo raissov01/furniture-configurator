@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useConfigurator } from '../store/configurator'
+import { parseShareSession } from '../lib/shareSessionStorage'
 
 const before = useConfigurator.getState()
 
@@ -9,6 +10,13 @@ afterEach(() => {
 })
 
 describe('F22 клиент коды reload-тен кейін', () => {
+  it('мерзімі өткен не қате кілтті қалпына келтірмейді', () => {
+    const now = Date.now()
+    expect(parseShareSession(JSON.stringify({ code: '123456', key: 'secret', expiresAt: now }), now)).toBeNull()
+    expect(parseShareSession(JSON.stringify({ code: '123456', key: '', expiresAt: now + 1000 }), now)).toBeNull()
+    expect(parseShareSession('{', now)).toBeNull()
+  })
+
   it('сақталған жобамен бірге сеансты қайтарады және жаңа POST жасамайды', async () => {
     const local = new Map<string, string>()
     const session = new Map<string, string>()
