@@ -19,6 +19,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { t as tr } from '@/lib/i18n'
+import { CABINET_DIMENSION_MAX, CABINET_DIMENSION_MIN, dimensionRangeHint } from '@/lib/dimensionHint'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import { ExportMenu } from '@/components/ExportMenu'
@@ -733,7 +734,7 @@ type Tab = 'general' | 'material' | 'reports' | 'production'
 
 const tabButtonCls = 'flex-1 min-w-[5.5rem]'
 
-export function Configurator({ invalidField, panels }: { invalidField: string | null; panels: Panel[] }) {
+export function Configurator({ invalidField, panels, onDraftValidityChange }: { invalidField: string | null; panels: Panel[]; onDraftValidityChange?: (field: string, invalid: boolean) => void }) {
   const cabinet: CabinetConfig = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
   const [nameError, setNameError] = useState<string | null>(null)
@@ -793,21 +794,12 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
   const CUT_SNIPPET_LIMIT = 6
 
   const invalid = (field: string) => invalidField === field
-  /**
-   * Габариттің үстіндегі кішкене сан.
-   *
-   * ЦЕХТЫҢ ШЕГІ ШАБЛОННЫҢ АРАЛЫҒЫНАН БАСЫМ. Шаблондікі — ұсыныс («пенал
-   * әдетте осындай»), ал цехтікі — станок пен парақтың шындығы. Екеуін қатар
-   * көрсетсек, қайсысы міндетті екені түсініксіз болар еді.
-   *
-   * Бір жағы ғана қойылса, екіншісінің орнына сызықша тұрады: «600–» деген
-   * «600-ден бастап, жоғарғы шегі жоқ» дегенді білдіреді.
-   */
+  const dimensionGuide = (axis: 'height' | 'width' | 'depth') =>
+    dimensionRangeHint(template?.range[axis] ?? null, limits[AXIS_MIN[axis]], limits[AXIS_MAX[axis]])
   const hint = (axis: 'height' | 'width' | 'depth') => {
-    const min = limits[AXIS_MIN[axis]]
-    const max = limits[AXIS_MAX[axis]]
-    if (min !== null || max !== null) return `${min ?? ''}–${max ?? ''}`
-    return template ? `${template.range[axis].min}–${template.range[axis].max}` : undefined
+    const guide = dimensionGuide(axis)
+    return guide.recommended ? `${tr('Рекомендуется')}: ${guide.recommended}`
+      : guide.shop ? `${tr('Ориентир цеха')}: ${guide.shop}` : undefined
   }
 
   return (
@@ -934,26 +926,32 @@ export function Configurator({ invalidField, panels }: { invalidField: string | 
       {/* ═══ РАЗМЕРЫ: H×W×D, конструкция, скос, угловой, фронт. панель, основание ═══ */}
       <div className={cn('flex-col gap-3', tab === 'general' ? 'flex' : 'hidden')}>
         <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
-        <div className="grid grid-cols-3 gap-2" data-tour="size">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-tour="size">
           <Field label={tr('Высота (H)')} hint={hint('height')}>
             <NumberInput
-              value={cabinet.height} min={100} max={4000} step={10} invalid={invalid('cabinet.height')}
+              value={cabinet.height} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.height')} field="cabinet.height" onDraftValidityChange={onDraftValidityChange}
               onChange={(height) => edit('height', { height })}
             />
           </Field>
           <Field label={tr('Ширина (W)')} hint={hint('width')}>
             <NumberInput
-              value={cabinet.width} min={100} max={4000} step={10} invalid={invalid('cabinet.width')}
+              value={cabinet.width} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.width')} field="cabinet.width" onDraftValidityChange={onDraftValidityChange}
               onChange={(width) => edit('width', { width })}
             />
           </Field>
           <Field label={tr('Глубина (D)')} hint={hint('depth')}>
             <NumberInput
-              value={cabinet.depth} min={100} max={4000} step={10} invalid={invalid('cabinet.depth')}
+              value={cabinet.depth} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.depth')} field="cabinet.depth" onDraftValidityChange={onDraftValidityChange}
               onChange={(depth) => edit('depth', { depth })}
             />
           </Field>
         </div>
+        <p className="text-[11px] text-neutral-600 dark:text-neutral-300">
+          {tr('Обязательный диапазон габаритов')}: {dimensionGuide('height').allowed} {tr('мм')}.
+          {(['height', 'width', 'depth'] as const).map((axis) => dimensionGuide(axis).shop
+            ? ` ${tr(axis === 'height' ? 'Высота (H)' : axis === 'width' ? 'Ширина (W)' : 'Глубина (D)')}: ${tr('Ориентир цеха')} ${dimensionGuide(axis).shop}.`
+            : '')}
+        </p>
 
         <Collapsible id="construction" title={tr('Конструкция')} defaultOpen tour="sections">
         <Field label={tr('Метод сборки')} hint={tr('обе панели сразу')}>
