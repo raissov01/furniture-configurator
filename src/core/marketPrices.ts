@@ -18,8 +18,14 @@
  */
 import type { ServiceBasis, ServiceId, ShopProfile } from './shop'
 
-/** Жеткізушілер беттері тексерілген күн. */
+/** Жеткізушілер беттері тексерілген күн (бірінші зерттеу). */
 export const MARKET_PRICE_DATE = '2026-09-24'
+/**
+ * Екінші зерттеу: `.codex-runs/lite/hardware-prices/` пен `lite/shop-rates/`
+ * (бос қалған фурнитура мен цех қызметтері). Топтың күні — оның ұсыныстары
+ * қаралған күн.
+ */
+export const MARKET_PRICE_DATE_0927 = '2026-09-27'
 
 export type MarketOffer = {
   supplier: string
@@ -50,6 +56,12 @@ const TASTAK = 'Тастак'
 const MEB = 'Мебельщик'
 const BLUM_AKTAU = 'Мебельная фурнитура Blum (furnitura7292.kz)'
 const DAMEN = 'DAMEN-Mebel'
+const CONFIRMAT = 'Конфирмат'
+const CONFIRMAT_PRICE = 'https://www.confirmat.kz/pricelist'
+const ORION = 'F.A.ORION'
+const ZHANTIS = 'Zhantis'
+const ZHANTIS_BOXES = 'https://zhantis.kz/product-groups/space-twin'
+const D27 = MARKET_PRICE_DATE_0927
 
 /**
  * Салыстыру топтары: тек «exact» ұсыныстар, қорда бар, ағымдағы тариф
@@ -181,6 +193,69 @@ export const MARKET_GROUPS: MarketGroup[] = [
     id: 'service-edging-metre', label: 'Облицовка кромкой ПВХ, за метр', unit: 'lm', dateSeen: MARKET_PRICE_DATE,
     offers: [offer(DAMEN, 'Астана', 'https://damen-mebel.kz/raspil/', 'ПВХ кромка жапсыру', 150)],
   },
+
+  // ── 2026-09-27: `.codex-runs/lite/hardware-prices/prices.json` ──
+  // Тек дана/жиынтық бағасы жарияланған ұсыныстар; қаптама (10 дана)
+  // данаға бөлінбеді, ҚҚС белгісіз жолдарға салық қосылмады.
+  {
+    id: 'confirmat-cap-single', label: 'Заглушка конфирмата, за штуку', unit: 'pcs', dateSeen: D27,
+    offers: [offer(EM, 'Қарағанды', 'https://em-c.kz/catalog/zaglushki_nakonechniki/', 'Конфирмат заглушкасы, қара', 3)],
+  },
+  {
+    id: 'hinge-mounting-plate', label: 'Планка ответная под петлю', unit: 'pcs', dateSeen: D27,
+    offers: [
+      offer(CONFIRMAT, 'Астана', CONFIRMAT_PRICE, 'Boyard H5010, петляға қарсы планка NEO H0', 110),
+      offer('Häfele Kazakhstan', 'Алматы', 'https://hafeleshop.kz/mebelnye-petli', 'Häfele 311.70.752, монтаж планкасы Metalla 540 SM', 176),
+    ],
+  },
+  {
+    // Каталогтағы «Ручка-скоба» межцентровоесіз — ұзындықтары араласады
+    // (роликті бағыттағыштағыдай); атауында көрінеді.
+    id: 'handle-bar-96-160', label: 'Ручка-скоба, 96 и 160 мм', unit: 'pcs', dateSeen: D27,
+    offers: [
+      offer(EM, 'Қарағанды', 'https://www.em-c.kz/catalog/rossiya/', 'Скоба тұтқа RS-105-96, 96 мм, қара', 560),
+      offer(PROFI, 'Астана', 'https://www.profikz.kz/catalog/litsevaya_furnitura/ruchki/skoby/58354/', 'Скоба тұтқа 608-160, 160 мм, қара', 1360),
+    ],
+  },
+  {
+    id: 'handle-rail-96-160', label: 'Ручка-рейлинг, 96–160 мм', unit: 'pcs', dateSeen: D27,
+    offers: [
+      offer(EM, 'Қарағанды', 'https://www.em-c.kz/catalog/rossiya/', 'Рейлинг тұтқа R-3010-96, 96 мм, хром', 540),
+      offer(PROFI, 'Астана', 'https://www.profikz.kz/catalog/litsevaya_furnitura/ruchki/reylingi/57692/', 'Рейлинг тұтқа RIFF 096-10-096, 96 мм, хром', 365),
+      offer(EM, 'Қарағанды', 'https://em-c.kz/catalog/r_3031_128_ruchka_reyling_128_mm_khrom.html', 'Рейлинг тұтқа R-3031-128, 128 мм, хром', 940),
+      offer(PROFI, 'Астана', 'https://profikz.kz/catalog/litsevaya_furnitura/ruchki/reylingi/57653/', 'Рейлинг тұтқа RIFF 096-12-128, 128 мм', 737),
+      offer(EM, 'Қарағанды', 'https://www.em-c.kz/catalog/rossiya/', 'Рейлинг тұтқа R-3031-160, 160 мм, хром', 1250),
+    ],
+  },
+  {
+    id: 'shelf-pin-metal-5-single', label: 'Полкодержатель металлический Ø5, за штуку', unit: 'pcs', dateSeen: D27,
+    offers: [offer(CONFIRMAT, 'Астана', 'https://confirmat.kz/category/21', 'Металл полкодержатель Ø5 мм, 26.01.144', 6)],
+  },
+  {
+    id: 'dowel-8x30-single', label: 'Шкант 8×30, за штуку', unit: 'pcs', dateSeen: D27,
+    offers: [
+      offer(CONFIRMAT, 'Астана', 'https://confirmat.kz/category/22', 'Шкант ағаш 8×30 мм, насечка', 5),
+      offer(ORION, 'Шымкент', 'https://fa-orion.kz/p93988447-shkant-mebelnyj-830.html', 'Шкант жиһаздық 8×30 мм', 3),
+    ],
+  },
+  {
+    // Жиынтық: эксцентрик + дюбель + футорка; эксцентрик Ø15 — өндіруші
+    // карточкасы (boyard.biz, ST01/47/6/Zn/01, 2026-09-27 қаралды).
+    id: 'minifix-15-set', label: 'Минификс 15 мм, комплект (эксцентрик + дюбель + футорка)', unit: 'pcs', dateSeen: D27,
+    offers: [offer(CONFIRMAT, 'Астана', CONFIRMAT_PRICE, 'Boyard ST01/47/6/Zn/01, толық жиынтық', 58)],
+  },
+  {
+    id: 'runner-ball-400-basic', label: 'Направляющие шариковые 400 мм без доводчика, комплект', unit: 'pcs', dateSeen: D27,
+    offers: [offer(CONFIRMAT, 'Астана', CONFIRMAT_PRICE, 'Boyard DB3501Zn/400, толық шығу, доводчиксіз', 1004)],
+  },
+  {
+    id: 'box-blum-tandembox-450', label: 'Blum TANDEMBOX antaro M, 450 мм, комплект', unit: 'pcs', dateSeen: D27,
+    offers: [offer(ZHANTIS, 'Алматы', ZHANTIS_BOXES, 'TANDEMBOX antaro M+D, 450 мм, ені 250 мм дейін (BS001490)', 32122)],
+  },
+  {
+    id: 'box-blum-legrabox-450', label: 'Blum LEGRABOX pure M, 450 мм, комплект', unit: 'pcs', dateSeen: D27,
+    offers: [offer(ZHANTIS, 'Алматы', ZHANTIS_BOXES, 'LEGRABOX pure M+C, 450 мм, ені 250 мм дейін (BS001214)', 55797)],
+  },
 ]
 
 const GROUP_BY_ID = new Map(MARKET_GROUPS.map((g) => [g.id, g]))
@@ -218,6 +293,17 @@ const SEED_DECORS = ['w980', 'u104', 'h1145', 'h3303'] as const
  *   сондықтан 19 мм бөлшек топ алынды (топ атауында ені көрінеді);
  * - ілгектер: бренді, накладкасы, доводчигі сәйкес ұсыныс; «без пружины» — дерек жоқ;
  * - қызметтер: тек әдепкі негізбен (лист / отверстие / метр кромки).
+ *
+ * 2026-09-27 деректерінен ӘДЕЙІ БОС қалғандар (себебі — есепте):
+ * - Häfele ілгектері — накладкасы карточкада жоқ; Boyard серіппесізі —
+ *   полунакладная/вкладная 90°; брендсіз ілгек, DTC — баға жоқ;
+ * - `lift-flap` — тек Blum AVENTOS HK-S, жалпы көтергіштің орнына жүрмейді;
+ * - `leg-100` — «регулируемая» расталмаған; `rod-25`/`rod-bracket` — ұсыныс
+ *   сопақ штангаға, 3 м бұйымды метрге бөлмейміз; купе — тек тік профиль
+ *   мен ролик, біздің «рельс» пен «профиль + ролик» жиынтығы емес;
+ * - постформинг — толық бұйым бағасы метрге бөлінген (баламасы), алынбайды;
+ * - `assembly`/`installation` — ұсыныс «за модуль», бізде м²/ені метрі;
+ *   `packing` — дерек жоқ.
  */
 export const MARKET_DEFAULTS: Record<PriceKey, MarketDefault> = {
   ...Object.fromEntries(SEED_DECORS.flatMap((d) => [
@@ -237,6 +323,16 @@ export const MARKET_DEFAULTS: Record<PriceKey, MarketDefault> = {
   'hardware:runner-roller': { group: 'runner-roller-pair' },
   'hardware:runner-ball': { group: 'runner-ball-pair' },
   'hardware:runner-tandem': { group: 'runner-blum-tandem-partial' },
+  'hardware:confirmat-cap': { group: 'confirmat-cap-single' },
+  'hardware:hinge-plate': { group: 'hinge-mounting-plate' },
+  'hardware:handle-bar': { group: 'handle-bar-96-160' },
+  'hardware:handle-rail': { group: 'handle-rail-96-160' },
+  'hardware:shelf-pin-5': { group: 'shelf-pin-metal-5-single' },
+  'hardware:dowel-8x30': { group: 'dowel-8x30-single' },
+  'hardware:minifix-15': { group: 'minifix-15-set' },
+  'hardware:runner-ball-400': { group: 'runner-ball-400-basic' },
+  'hardware:box-tandembox': { group: 'box-blum-tandembox-450' },
+  'hardware:box-legrabox': { group: 'box-blum-legrabox-450' },
   'service:cutting': { group: 'service-cutting-ldsp-sheet', basis: 'sheet' },
   'service:drilling': { group: 'service-drilling-hole', basis: 'hole' },
   'service:edging': { group: 'service-edging-metre', basis: 'edgeMetre' },

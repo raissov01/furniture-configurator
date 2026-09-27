@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  MARKET_DEFAULTS, MARKET_GROUPS, applyMarketDefaults, MARKET_PRICE_DATE, createPriceList, defaultShopProfile,
+  MARKET_DEFAULTS, MARKET_GROUPS, applyMarketDefaults, MARKET_PRICE_DATE, MARKET_PRICE_DATE_0927, createPriceList, defaultShopProfile,
   hasNoPrices, marketGroup, marketMedianTiyn, parseShopProfile, priceOrigin, priceProject,
   nestPanels, generateCabinet, findTemplate, templateToCabinet, catalogOf, nestingOptionsOf,
   refreshMarketPrices, resetAllToMarket, resetToMarket, starterShopProfile, switchPriceList,
@@ -53,10 +53,10 @@ describe('нарық медианасы', () => {
     expect(marketMedianTiyn(marketGroup('service-cutting-ldsp-sheet')!)).toBe(200_000)
   })
 
-  it('әр ұсыныс бүтін теңге, сілтемесі бар, күні бір', () => {
+  it('әр ұсыныс бүтін теңге, сілтемесі бар, күні — зерттеу күндерінің бірі', () => {
     for (const group of MARKET_GROUPS) {
       expect(group.offers.length, group.id).toBeGreaterThan(0)
-      expect(group.dateSeen).toBe(MARKET_PRICE_DATE)
+      expect([MARKET_PRICE_DATE, MARKET_PRICE_DATE_0927], group.id).toContain(group.dateSeen)
       for (const offer of group.offers) {
         expect(Number.isInteger(offer.priceKzt), group.id).toBe(true)
         expect(offer.url.startsWith('https://'), group.id).toBe(true)
@@ -102,15 +102,39 @@ describe('жаңа цех нарық бағасымен толады', () => {
     expect(shop.services.edging).toEqual({ basis: 'edgeMetre', rate: 15_000 })
   })
 
+  it('2026-09-27 деректері: бос қалған фурнитура толады (медиана, N)', () => {
+    const cases: [string, number, number][] = [
+      ['confirmat-cap', 300, 1],
+      ['hinge-plate', 14_300, 2],
+      ['handle-bar', 96_000, 2],
+      ['handle-rail', 73_700, 5],
+      ['shelf-pin-5', 600, 1],
+      ['dowel-8x30', 400, 2],
+      ['minifix-15', 5800, 1],
+      ['runner-ball-400', 100_400, 1],
+      ['box-tandembox', 3_212_200, 1],
+      ['box-legrabox', 5_579_700, 1],
+    ]
+    for (const [id, price, n] of cases) {
+      expect(hardware(shop, id).pricePerUnit, id).toBe(price)
+      expect(shop.marketPrices[`hardware:${id}`], id).toMatchObject({ priceTiyn: price, offers: n, dateSeen: '2026-09-27' })
+    }
+  })
+
   it('дерегі жоқ позиция БОС қалады — ойдан баға жоқ', () => {
     expect(material(shop, 'ldsp18-w980').pricePerSheet).toBe(0)
     expect(material(shop, 'ldsp16-kr-w980').pricePerSheet).toBe(0)
     expect(material(shop, 'mdf19-paint').pricePerSheet).toBe(0)
     expect(material(shop, 'pf38-oak').slab!.pricePerMeter).toBe(0)
     expect(band(shop, 'abs2-paint').pricePerMeter).toBe(0)
-    expect(hardware(shop, 'shelf-pin-5').pricePerUnit).toBe(0)
-    expect(hardware(shop, 'minifix-15').pricePerUnit).toBe(0)
-    expect(hardware(shop, 'hinge-overlay').pricePerUnit).toBe(0)
+    expect(material(shop, 'ldsp18-h1145').pricePerSheet).toBe(0)
+    expect(band(shop, 'abs2-paint').pricePerMeter).toBe(0)
+    // Бірлігі/түрі сәйкес ұсыныс жоқ немесе расталмаған (SUMMARY 2026-09-27):
+    for (const id of [
+      'hinge-overlay', 'hinge-boyard-none', 'hinge-hafele-soft', 'hinge-hafele-none', 'hinge-dtc-soft',
+      'hinge-dtc-none', 'runner-roller-400', 'lift-flap', 'leg-100', 'rod-25', 'rod-bracket',
+      'sliding-track', 'sliding-kit', 'handle-bracket', 'handle-rail-thin', 'box-merivobox',
+    ]) expect(hardware(shop, id).pricePerUnit, id).toBe(0)
     expect(shop.services.packing.rate).toBe(0)
     expect(shop.services.assembly.rate).toBe(0)
     expect(shop.installation.ratePerMetreWidth).toBe(0)
@@ -181,6 +205,17 @@ describe('өз бағасы', () => {
     expect(fresh.marketPrices['material:ldsp16-u104']!.dateSeen).toBe('2026-09-24')
   })
 
+  it('жаңа топтағы позиция: өз бағасы нарық жаңарғанда да ӨЗГЕРМЕЙДІ', () => {
+    const shop = starterShopProfile()
+    const own = syncActivePriceList({
+      ...shop, hardware: shop.hardware.map((h) => h.id === 'shelf-pin-5' ? { ...h, pricePerUnit: 1000 } : h),
+    })
+    const fresh = refreshMarketPrices(own)
+    expect(hardware(fresh, 'shelf-pin-5').pricePerUnit).toBe(1000)
+    expect(priceOrigin(fresh, 'hardware:shelf-pin-5')).toBe('own')
+    expect(priceOrigin(fresh, 'hardware:hinge-plate')).toBe('market')
+  })
+
   it('профиль қайта оқылғанда өз бағасы да, нарық белгісі де сақталады', () => {
     const shop = starterShopProfile()
     const own = syncActivePriceList({
@@ -227,7 +262,7 @@ describe('нарық бағасына қайтару', () => {
 
   it('нарық дерегі жоқ позицияны қайтару ештеңені өзгертпейді', () => {
     const shop = starterShopProfile()
-    expect(resetToMarket(shop, 'hardware:shelf-pin-5')).toEqual(shop)
+    expect(resetToMarket(shop, 'hardware:lift-flap')).toEqual(shop)
   })
 
   it('бәрі: барлық өз бағасы нарыққа қайтады, дерегі жоқтар өзгермейді', () => {
