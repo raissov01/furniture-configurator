@@ -25,6 +25,7 @@ describe('F00f PRO100 palette', () => {
     expect(panelMesh).toContain('className="p100-panel-tooltip')
     expect(css).toMatch(/\.p100-panel-tooltip\s*\{[^}]*background:\s*var\(--p100-tooltip\)/)
     expect(contrastRatio(token('tooltip-text'), token('tooltip'))).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(token('cut-accent'), token('tooltip'))).toBeGreaterThanOrEqual(4.5)
     expect(token('tooltip-border')).toBe(token('text'))
   })
 })

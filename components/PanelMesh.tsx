@@ -794,12 +794,12 @@ export function PanelMesh({
       <FittingMeshes fittings={boxFittings} />
       {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>
-          <div className="pointer-events-none whitespace-nowrap rounded bg-neutral-900/90 px-2 py-1 text-[11px] text-white shadow">
+          <div className="p100-panel-tooltip pointer-events-none whitespace-nowrap px-2 py-1 text-[11px]">
             <b>{panelDisplayLabel(panel.label)}</b>
-            <span className="mx-1.5 opacity-50">·</span>
+            <span className="mx-1.5">·</span>
             готовый {panel.finishedLength}×{panel.finishedWidth}
-            <span className="mx-1.5 opacity-50">·</span>
-            <span className="text-amber-300">{tr('рез')} {panel.cutLength}×{panel.cutWidth}</span>
+            <span className="mx-1.5">·</span>
+            <span className="p100-cut">{tr('рез')} {panel.cutLength}×{panel.cutWidth}</span>
           </div>
         </Html>
       ) : null}
