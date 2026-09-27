@@ -11,6 +11,10 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Пока цены не заданы, коммерческое предложение не выпускается: клиент не увидит выдуманную цену.': 'Narxlar belgilanmaguncha taklif chiqarilmaydi; mijoz o‘ylab topilgan narxni ko‘rmaydi.',
+  'Достаточно заполнить материалы, с которыми вы работаете.': 'Ishlatadigan materiallaringizni kiriting.',
+  'Настройки цеха недоступны для этой роли.': 'Sex sozlamalari bu rol uchun mavjud emas.',
+  'Только просмотр: изменения доступны владельцу цеха.': 'Faqat ko‘rish: o‘zgartirishni sex egasi qila oladi.',
   'Новый пароль': 'Yangi parol',
   'Ссылка действует 30 минут и только один раз.': 'Havola 30 daqiqa amal qiladi va bir marta ishlatiladi.',
   'Пароль изменён. Войдите снова.': 'Parol o‘zgartirildi. Qayta kiring.',

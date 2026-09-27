@@ -10,6 +10,10 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Пока цены не заданы, коммерческое предложение не выпускается: клиент не увидит выдуманную цену.': 'A quote cannot be issued until prices are set, so the client will not see an invented price.',
+  'Достаточно заполнить материалы, с которыми вы работаете.': 'Enter only the materials you use.',
+  'Настройки цеха недоступны для этой роли.': 'Shop settings are unavailable for this role.',
+  'Только просмотр: изменения доступны владельцу цеха.': 'View only: the shop owner can make changes.',
   'Новый пароль': 'New password',
   'Ссылка действует 30 минут и только один раз.': 'The link is valid for 30 minutes and can be used once.',
   'Пароль изменён. Войдите снова.': 'Password changed. Sign in again.',
