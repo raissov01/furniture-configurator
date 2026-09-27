@@ -12,6 +12,7 @@ import {
   SEED_CATALOG,
   addDrill,
   cabinetToDxfFiles,
+  cncPanelCsv,
   drillEditCounts,
   drillFromPreset,
   drillKey,
@@ -37,6 +38,16 @@ describe('түзетуді жабу', () => {
     const panels = build(base())
     const withEmpty = build({ ...base(), drillEdits: {} })
     expect(withEmpty.map((p) => p.drilling)).toEqual(panels.map((p) => p.drilling))
+  })
+
+  it('шетке сыймаған қол Ø35 тесік панельге де, станок CSV-іне де өтпейді', () => {
+    const config = base()
+    const front = build(config).find((panel) => panel.label === 'Фасад')!
+    const hole = drillFromPreset(findDrillPreset('hinge-cup')!, 'inner', 0, 160, 16)
+    expect(() => build({ ...config, drillEdits: addDrill({}, front.id, hole) }))
+      .toThrow(/drillEdits.*position/)
+    expect(() => cncPanelCsv({ ...front, drilling: [...front.drilling, hole] }, SEED_CATALOG,
+      { projectName: 'Тест' })).toThrow(/drilling.*position/)
   })
 
   it('қосылған тесік панельге түседі әрі ҚОЛМЕН деп танылады', () => {

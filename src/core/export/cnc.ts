@@ -21,6 +21,7 @@
  * баған тұр да, README оны қайдан алуды айтады.
  */
 import { pointOnMachinedFace } from '../faceCoordinates'
+import { validateJointDrill } from '../autoJoint'
 
 import { transliterate } from './dxf'
 import type { Catalog, Drill, Panel } from '../types'
@@ -135,6 +136,8 @@ export function cncPanelCsv(panel: Panel, catalog: Catalog, options: CncOptions)
 
   const holes = [...panel.drilling].sort((a, b) =>
     FACE_ORDER.indexOf(a.face) - FACE_ORDER.indexOf(b.face) || a.x - b.x || a.y - b.y)
+  holes.forEach((hole, index) => validateJointDrill(panel, hole, material.thickness,
+    `panel[${panel.id}].drilling.${index}`))
 
   const rows = holes.map((d) => {
     const point = pointOnMachinedFace(panel, d, options.outerFlipAxis ?? 'length')

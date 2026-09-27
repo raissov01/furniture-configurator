@@ -24,7 +24,9 @@ import {
   SHELF_PIN_PITCH,
 } from './constants'
 import { materialWidthRangeAt } from './bevelBounds'
-import type { Drill, DrillPurpose, Panel } from './types'
+import { validateJointDrill } from './autoJoint'
+import { ConfigValidationError } from './errors'
+import type { Catalog, Drill, DrillPurpose, Panel } from './types'
 
 /**
  * Қолмен қосылатын тесіктің координатасы панельдің НАҒЫЗ материалы ішінде ме
@@ -85,7 +87,7 @@ export function isManualDrill(drill: Drill, edit: DrillEdit | undefined): boolea
  * `generateCabinet`-тің ішінде, панельдер әлі ешкімге берілмей тұрып
  * шақырылады.
  */
-export function applyDrillEdits(panels: Panel[], edits: DrillEdits | undefined): void {
+export function applyDrillEdits(panels: Panel[], edits: DrillEdits | undefined, catalog: Catalog): void {
   if (!edits) return
   for (const panel of panels) {
     const edit = edits[panel.id]
@@ -95,7 +97,10 @@ export function applyDrillEdits(panels: Panel[], edits: DrillEdits | undefined):
       const removed = new Set(edit.removed)
       panel.drilling = panel.drilling.filter((d) => !removed.has(drillKey(d)))
     }
-    for (const drill of edit.added) {
+    const thickness = catalog.materials.find((material) => material.id === panel.materialId)?.thickness
+    if (thickness === undefined) throw new ConfigValidationError(`panel[${panel.id}].materialId`, 'материал табылмады')
+    for (const [index, drill] of edit.added.entries()) {
+      validateJointDrill(panel, drill, thickness, `drillEdits[${panel.id}].added.${index}`)
       // Көшірме: конфигтегі объект панельге СІЛТЕМЕМЕН кетпеуі керек,
       // әйтпесе экспорт конфигті өзгертіп жіберуі мүмкін.
       panel.drilling.push({ ...drill })
