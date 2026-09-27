@@ -48,6 +48,7 @@ import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ExportMenu } from '@/components/ExportMenu'
 import { CutListTable } from '@/components/CutListTable'
 import { TreeDock } from '@/components/panels/TreeDock'
+import { WorkspaceDock } from '@/components/dock/WorkspaceDock'
 import { ClassicStructureWindow } from '@/components/ClassicStructureWindow'
 import { ClassicIcon, type ClassicIconName } from '@/components/ClassicIcon'
 import { BusyOverlay, Spinner } from '@/components/BusyOverlay'
@@ -991,6 +992,7 @@ export function Workspace() {
         <div className="flex min-h-0 flex-col">
         {/* Телефонда 3D экранның жартысынан астам: 256 px-те ештеңе көрінбейтін. */}
         <main className="relative h-[55dvh] min-h-[55dvh] max-h-[55dvh] flex-none lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+          <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
@@ -1026,6 +1028,7 @@ export function Workspace() {
           ) : null}
           {/* Телефонда прогулканың жүрісі — джойстик (перне жоқ). */}
           {walk && touch ? <TouchJoystick /> : null}
+          </WorkspaceDock>
         </main>
         {/*
           АСТЫҢҒЫ КӨРІНІС ҚОЙЫНДЫЛАРЫ (docs/pro100/ui-design.md, §4 — «ЕҢ
