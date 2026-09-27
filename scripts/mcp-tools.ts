@@ -46,8 +46,8 @@ function ownProject(account: Account, id: string): ProjectFileV4 {
   return parseProjectV4(raw)
 }
 
-function production(project: ProjectFileV4) {
-  const catalog = { materials: project.materials, edgeBands: project.edgeBands }
+function production(project: ProjectFileV4, shop: ShopProfile) {
+  const catalog = { ...catalogOf(shop), materials: project.materials, edgeBands: project.edgeBands }
   const scene = flattenTree(project.root, catalog, project.settings, project.layers, project.autoJoints)
   return { ...projectProduction(project.root, scene), catalog }
 }
@@ -121,7 +121,7 @@ export async function runMcpTool(account: Account, name: McpToolName, raw: unkno
         const brief = fromText((parsed.data as { text: string }).text, shopOf(account))
         const project = makeProject(brief.name, brief.result, shopOf(account))
         // Confirm all generated cabinets can actually be manufactured before saving.
-        production(project)
+        production(project, shopOf(account))
         const id = writeProject(account.shopId, project.name, project, undefined, account.userId)
         return { ok: true, data: { id, name: project.name, cabinets: brief.result.cabinets.length } }
       }
@@ -142,7 +142,7 @@ export async function runMcpTool(account: Account, name: McpToolName, raw: unkno
         const args = parsed.data as { projectId?: string; brief?: z.infer<typeof CabinetBriefSchema> }
         if (args.projectId) {
           const project = ownProject(account, args.projectId)
-          const built = production(project)
+          const built = production(project, shopOf(account))
           return { ok: true, data: { valid: true, panels: built.panels.length } }
         }
         const shop = shopOf(account)
@@ -156,13 +156,13 @@ export async function runMcpTool(account: Account, name: McpToolName, raw: unkno
       case 'get_quote':
       case 'get_drilling': {
         const project = ownProject(account, (parsed.data as { projectId: string }).projectId)
-        const built = production(project)
+        const shop = shopOf(account)
+        const built = production(project, shop)
         if (name === 'get_cut_list') return { ok: true, data: { rows: formatCutList(built.panels, built.catalog) } }
         if (name === 'get_drilling') return { ok: true, data: { panels: built.panels.map((panel) => ({
           panelId: panel.id, name: panel.label, cutLengthMm: panel.cutLength, cutWidthMm: panel.cutWidth,
           holes: panel.drilling,
         })).filter((panel) => panel.holes.length > 0) } }
-        const shop = shopOf(account)
         const nesting = nestPanels(built.panels, built.catalog, nestingOptionsOf(shop))
         if (name === 'compute_nesting') return { ok: true, data: {
           sheetCount: nesting.sheetCount, byMaterial: nesting.byMaterial.map((m) => ({

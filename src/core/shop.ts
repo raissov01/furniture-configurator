@@ -877,6 +877,16 @@ export function parseShopProfile(raw: unknown): ShopProfile {
     }
   }
 
+  // v3+ сақталған цехтарда жаңа inset артикулдары жоқ болуы мүмкін.
+  // Тек жоқ ID-лер қосылады; цех өзі түзеткен жүйелер өзгермейді.
+  const candidate = migrated as { hingeSystems?: unknown }
+  if (candidate && Array.isArray(candidate.hingeSystems)) {
+    const known = new Set(candidate.hingeSystems.map((system: unknown) =>
+      system && typeof system === 'object' ? (system as { id?: unknown }).id : undefined))
+    const added = defaultHingeSystems().filter((system) => system.mount === 'inset' && !known.has(system.id))
+    if (added.length) migrated = { ...(migrated as object), hingeSystems: [...candidate.hingeSystems, ...added] }
+  }
+
   const parsed = syncActivePriceList(ShopProfileSchema.parse(migrated) as ShopProfile)
   if (legacy && hasNoPrices(parsed)) return syncActivePriceList(applyMarketDefaults(parsed))
   // Нарық деректері жаңарса — тек белгісі бар позициялар жаңарады.
