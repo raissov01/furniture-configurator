@@ -42,6 +42,7 @@ import { Tour } from '@/components/Tour'
 import { RenderPanel } from '@/components/RenderPanel'
 import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/classicMenu'
 import { classicMenuItemTitle } from '@/lib/classicMenuUi'
+import { classicShopTools } from '@/lib/classicShopTools'
 import { runShopExport } from '@/lib/shopExport'
 import { selectShopExportPanels } from '@/lib/shopExportScope'
 import { downloadProjectFile, pickProjectFile, projectFileErrorMessage } from '@/lib/projectFile'
@@ -595,8 +596,8 @@ export function Workspace() {
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
       { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
-      { icon: 'print', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
-      { icon: 'cut', label: tr('Раскрой'), action: () => { window.location.href = '/cut' } },
+      { icon: classicShopTools.quote.icon, label: tr(classicShopTools.quote.label), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
+      { icon: classicShopTools.nesting.icon, label: tr(classicShopTools.nesting.label), action: () => { window.location.href = '/cut' } },
       { icon: 'copy', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable },
       { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, id: 'undo' },
