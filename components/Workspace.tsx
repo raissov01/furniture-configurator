@@ -40,11 +40,12 @@ import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/clas
 import { runShopExport } from '@/lib/shopExport'
 import { selectShopExportPanels } from '@/lib/shopExportScope'
 import { downloadProjectFile, pickProjectFile } from '@/lib/projectFile'
+import { approvalPrice } from '@/lib/f22ShareUi'
 import { cloudEnabled } from '@/lib/cloud'
 import { THEME_EVENT, chooseTheme, readTheme, saveQuality, type Theme } from '@/lib/appearance'
 import {
   MAX_SILHOUETTE_HEIGHT, MIN_SILHOUETTE_HEIGHT, SHARE_LINK_WARN_LENGTH, shareLink,
-  ConfigValidationError, canMirror, formatTenge, nestPanels, nestingOptionsOf, priceProject,
+  ConfigValidationError, canMirror, formatTengeExact,
   boardDimensions, findNode,
 } from '@/src/core/index'
 import { assertTreeNodeEditable } from '@/src/core/treeEditing'
@@ -159,6 +160,7 @@ export function Workspace() {
   const removeBoard = useConfigurator((s) => s.removeBoard)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
+  const priceOverrides = useConfigurator((s) => s.priceOverrides)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
   const hydrateShop = useConfigurator((s) => s.hydrateShop)
   const hydrateProject = useConfigurator((s) => s.hydrateProject)
@@ -195,6 +197,7 @@ export function Workspace() {
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const syncShare = useConfigurator((s) => s.syncShare)
   const setShareCodeOpen = useConfigurator((s) => s.setShareCodeOpen)
+  const shareCodeOpen = useConfigurator((s) => s.shareCodeOpen)
   const startShare = useConfigurator((s) => s.startShare)
   const shareCode = useConfigurator((s) => s.shareSession?.code ?? null)
   const setAccountOpen = useConfigurator((s) => s.setAccountOpen)
@@ -370,16 +373,15 @@ export function Workspace() {
   const liveTotal = useMemo((): { total: number } | { missing: true } | null => {
     if (production.error) return null
     try {
-      const nesting = nestPanels(deferredPanels, catalog, nestingOptionsOf(shop))
-      const price = priceProject(deferredPanels, nesting, shop, projectHardware, moduleWidths)
-      return price.missingPrices.length > 0 ? { missing: true } : { total: price.total }
+      const price = approvalPrice(deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides)
+      return price.kind === 'missing' ? { missing: true } : { total: price.total }
     } catch (error) {
       // Жарамсыз конфиг кезінде (теріп жатқанда) баға уақытша көрінбейді — бұл
       // қате емес: қатенің өзін тақтаның астындағы қызыл жолақ айтады.
       console.debug('Цена в тулбаре не посчитана', error)
       return null
     }
-  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths, production.error])
+  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides, production.error])
   const [shared, setShared] = useState<string | null>(null)
   const copyClientLink = async () => {
     let link: string
@@ -535,7 +537,7 @@ export function Workspace() {
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
     silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,
     theme, quality, lang: getLang(),
-    price: liveTotal === null ? null : 'total' in liveTotal ? { total: formatTenge(liveTotal.total) } : { missing: true },
+    price: liveTotal === null ? null : 'total' in liveTotal ? { total: formatTengeExact(liveTotal.total) } : { missing: true },
     cloud: cloudEnabled, classic,
   })
 
@@ -601,7 +603,7 @@ export function Workspace() {
       <ProjectPanel panels={projectPanels} catalog={catalog} />
       <HelpPanel />
       <HistoryPanel />
-      <ShareCodeDialog />
+      {shareCodeOpen && <ShareCodeDialog />}
       {cloudEnabled && <AccountPanel />}
       {!production.error ? <QuoteView
         propertiesOpen={propertiesNodeId !== null}
@@ -716,7 +718,7 @@ export function Workspace() {
           {liveTotal ? (
             'total' in liveTotal ? (
               <Button onClick={() => setQuoteOpen(true)} title={tr('Итого клиенту — открыть смету')}>
-                <span className="tabular-nums font-semibold">{formatTenge(liveTotal.total)}</span>
+                <span className="tabular-nums font-semibold">{formatTengeExact(liveTotal.total)}</span>
               </Button>
             ) : (
               <Button onClick={() => setShopOpen(true)} title={tr('Задайте цены материалов в профиле цеха')}>
@@ -1232,7 +1234,7 @@ export function Workspace() {
         {liveTotal && <button type="button" data-testid="p100-status-price" className={cn('p100-status-price', !(selected && activeNode) && 'ml-auto')}
           onClick={() => ('total' in liveTotal ? setQuoteOpen(true) : setShopOpen(true))}
           title={'total' in liveTotal ? tr('Итого клиенту — открыть смету') : tr('Задайте цены материалов в профиле цеха')}>
-          {'total' in liveTotal ? <span className="tabular-nums">{tr('Итого клиенту')}: <b>{formatTenge(liveTotal.total)}</b></span> : tr('Цены не заданы')}
+          {'total' in liveTotal ? <span className="tabular-nums">{tr('Итого клиенту')}: <b>{formatTengeExact(liveTotal.total)}</b></span> : tr('Цены не заданы')}
         </button>}
       </footer>}
     </div>
