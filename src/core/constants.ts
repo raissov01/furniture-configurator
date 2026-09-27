@@ -214,7 +214,7 @@ export const HINGE_COUNT_BY_HEIGHT: { maxHeight: number; count: number }[] = [
 export const KERF = 4
 /** Цех профиліндегі пропилдің ең үлкен рұқсат етілген ені, мм. */
 export const MAX_KERF = 20
-/** 100×100 мм-ден кіші қалдық — қоқыс, деловой отход есептелмейді. */
+/** Екі жағы да 100 мм-ден асатын қалдық қана пайдалы қалдыққа кіреді. */
 export const MIN_USEFUL_OFFCUT = 100
 
 export const DEFAULT_SETTINGS: ConstructionSettings = {

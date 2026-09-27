@@ -144,11 +144,26 @@ describe('раскрой', () => {
     for (const m of result.byMaterial) {
       for (const sheet of m.sheets) {
         for (const off of sheet.offcuts) {
-          expect(off.width).toBeGreaterThanOrEqual(100)
-          expect(off.height).toBeGreaterThanOrEqual(100)
+          expect(off.width).toBeGreaterThan(100)
+          expect(off.height).toBeGreaterThan(100)
         }
       }
     }
+  })
+
+  it('дәл 100 мм жолақ қалдыққа кірмейді, 101 мм кіреді', () => {
+    const material = {
+      ...SEED_CATALOG.materials[0]!, sheetWidth: 300, sheetHeight: 300,
+      trimEdge: 0, hasGrain: true,
+    }
+    const catalog = { ...SEED_CATALOG, materials: [material] }
+    const base = panelsOf('wardrobe-penal-600')[0]!
+    const offcutsFor = (length: number) => nestPanels([
+      { ...base, materialId: material.id, cutLength: length, cutWidth: 300, grainAlongLength: true },
+    ], catalog, { kerf: 4 }).byMaterial[0]!.sheets[0]!.offcuts
+
+    expect(offcutsFor(196)).toEqual([])
+    expect(offcutsFor(195)).toEqual([{ x: 199, y: 0, width: 101, height: 300 }])
   })
 
   it('параққа сыймайтын деталь ҮНСІЗ ЖОҒАЛМАЙДЫ', () => {

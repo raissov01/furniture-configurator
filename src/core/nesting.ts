@@ -345,7 +345,7 @@ function nestOnce(
         sheetHeight: material.sheetHeight,
         usable: { ...usable },
         parts: s.parts,
-        offcuts: s.frees.filter((f) => f.width >= MIN_USEFUL_OFFCUT && f.height >= MIN_USEFUL_OFFCUT),
+        offcuts: s.frees.filter((f) => f.width > MIN_USEFUL_OFFCUT && f.height > MIN_USEFUL_OFFCUT),
       })),
       partArea,
       usableArea,
