@@ -33,6 +33,7 @@ import type { NestedSheet, NestingResult } from '../nesting'
 import { cutoutBounds } from '../cutouts'
 import { subtractedThickness } from '../edges'
 import { isWidthBevel } from '../types'
+import { requireCncReady } from './cncGuard'
 import type { Catalog, ConstructionSettings, Drill, EdgeBand, Groove, Panel } from '../types'
 
 export const LAYER_OUTLINE = 'OUTLINE'
@@ -173,9 +174,7 @@ export type DxfOptions = {
 
 /** Бір панельдің DXF мазмұны. */
 export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
-  if (panel.cncBlockReason) {
-    throw new Error(`panelToDxf: «${panel.id}» — ${panel.cncBlockReason}`)
-  }
+  requireCncReady(panel)
   const requestedFace = options.face ?? 'both'
   const faces: ('inner' | 'outer')[] = requestedFace === 'both' ? ['inner', 'outer'] : [requestedFace]
   const textHeight = options.textHeight ?? 12
