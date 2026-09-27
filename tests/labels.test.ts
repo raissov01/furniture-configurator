@@ -42,6 +42,10 @@ describe('бирка деректері', () => {
     expect(labelFooter({ cabinetId: null, grain: null }, 'Жоба-7'))
       .toBe('AisMebel · Жоба-7')
   })
+  it('қаріпте жоқ № таңбасын жоба атауында оқылатын түрде алмастырады', () => {
+    expect(labelFooter({ cabinetId: null, grain: null }, 'Қазақ Үй №1'))
+      .toBe('AisMebel · Қазақ Үй No.1')
+  })
   it('әр ФИЗИКАЛЫҚ детальға бір бирка', () => {
     expect(labels).toHaveLength(panels.length)
     expect(new Set(labels.map((l) => l.panelId)).size).toBe(panels.length)
