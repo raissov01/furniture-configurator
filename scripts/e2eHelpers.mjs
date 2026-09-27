@@ -93,10 +93,12 @@ export function makeHelpers({ send }, base) {
 
   const setNumberByLabel = async (label, value, settleMs = 700) => {
     const done = await evaluate(`(() => {
-      const l = [...document.querySelectorAll('label')]
-        .find((x) => x.textContent.includes(${JSON.stringify(label)}))
+      const labels = [...document.querySelectorAll('label')]
+        .filter((x) => x.textContent.includes(${JSON.stringify(label)}))
+      const l = labels.find((x) => x.querySelector('input[type=number]'))
+        ?? labels.find((x) => x.querySelector('input[type=text]'))
       if (!l) return false
-      const i = l.querySelector('input[type=number]')
+      const i = l.querySelector('input[type=number], input[type=text]')
       if (!i) return false
       const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
       setter.call(i, ${JSON.stringify(String(value))})
