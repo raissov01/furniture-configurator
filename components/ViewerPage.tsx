@@ -8,7 +8,8 @@
  * жиһаздың өзін көреді, ал цехтың өзіндік құны оның ісі емес.
  */
 
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
+import { countLabel } from '@/lib/countLabel'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -182,7 +183,7 @@ function Viewer({
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-2">
         <span className="text-sm font-semibold">{project.name}</span>
         <span className="text-xs text-neutral-500">
-          {cabinets.length === 1 ? '1 корпус' : `${cabinets.length} корпуса`}
+          {countLabel(cabinets.length, 'Корпус', getLang())}
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-1">
           <Button active={walk} ariaPressed={viewerPressedState(controls, 'walk')} onClick={() => setWalk(!walk)}>{tr('Прогулка')}</Button>

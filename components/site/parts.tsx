@@ -11,7 +11,7 @@ import type { ReactNode } from 'react'
 
 export function Dimension({ value, label }: { value: string; label?: string }) {
   return (
-    <div className="dimline py-6 text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--font-mono)' }}>
+    <div className="dimline py-6 text-[11px] tracking-[0.18em]" style={{ fontFamily: 'var(--font-mono)' }}>
       <span>{label ?? ''}</span>
       <span className="dimline-track" />
       <span>{value}</span>
@@ -62,7 +62,7 @@ export function Cta({
       className="inline-flex items-center gap-2 border px-5 py-3 text-sm transition"
       style={
         solid
-          ? { background: 'var(--ink)', color: 'var(--paper)', borderColor: 'var(--ink)' }
+          ? { background: 'var(--cta-bg)', color: 'var(--cta-ink)', borderColor: 'var(--cta-bg)' }
           : { background: 'transparent', color: 'var(--ink)', borderColor: 'var(--ink)' }
       }
     >

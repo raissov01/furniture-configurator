@@ -13,6 +13,7 @@
  */
 import * as React from 'react'
 import { cn } from '@/lib/cn'
+import { t as tr } from '@/lib/i18n'
 import type { FloatingRect } from './types'
 
 export function DockPanel({
@@ -48,7 +49,7 @@ export function DockPanel({
       data-dock-hidden={hidden ? 'true' : 'false'}
       onPointerDownCapture={onFocus}
       className={cn(
-        'flex-col overflow-hidden border border-neutral-800 bg-neutral-950 text-neutral-100',
+        'p100-dock-panel flex-col overflow-hidden border',
         hidden ? 'hidden' : 'flex',
         floatingRect ? 'absolute' : 'h-full w-full',
       )}
@@ -59,24 +60,24 @@ export function DockPanel({
       }
     >
       <div
-        className="flex shrink-0 cursor-move touch-none select-none items-center gap-2 border-b border-neutral-800 bg-neutral-900 px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400"
+        className="p100-dock-title flex shrink-0 cursor-move touch-none select-none items-center gap-2 border-b px-2 py-1 text-[11px] font-semibold"
         onPointerDown={onTitlePointerDown}
       >
         <span className="flex-1 truncate">{title}</span>
         <button
           type="button"
-          className="rounded px-1 text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200"
-          aria-label="Жабу"
+          className="p100-dock-close px-1"
+          aria-label={tr('Закрыть')}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={onClose}
         >
           ✕
         </button>
       </div>
-      <div className="flex-1 overflow-auto p-2 text-xs text-neutral-300">{children}</div>
+      <div className="p100-dock-body flex-1 overflow-auto p-2 text-xs">{children}</div>
       {floatingRect && onResizePointerDown ? (
         <div
-          className="absolute bottom-0 right-0 h-3 w-3 cursor-nwse-resize touch-none border-b-2 border-r-2 border-neutral-600"
+          className="p100-dock-resize absolute bottom-0 right-0 h-3 w-3 cursor-nwse-resize touch-none border-b border-r"
           onPointerDown={onResizePointerDown}
           aria-hidden
         />

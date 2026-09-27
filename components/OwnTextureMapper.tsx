@@ -85,7 +85,8 @@ export function OwnTextureMapper() {
     </div>
     {entry?.texture.imageFile && <p className="text-xs text-neutral-500">{tr('Имя файла в INI')}: {entry.texture.imageFile}</p>}
     <label className="block text-xs">{tr('Файл изображения PNG, JPEG или WebP (до 1 МБ)')}
-      <input className={inputClass} type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => {
+      <span className="mt-1 flex items-center gap-2"><span className="border border-neutral-400 bg-white px-2 py-1 text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">{tr('Выбрать файл')}</span><span className="min-w-0 truncate">{file?.name ?? tr('Файл не выбран')}</span></span>
+      <input className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => {
         setFile(event.target.files?.[0] ?? null)
         event.currentTarget.value = ''
       }} />

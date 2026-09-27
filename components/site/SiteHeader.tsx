@@ -55,7 +55,7 @@ export function SiteHeader() {
         <Link
           href="/configurator"
           className="hidden border px-4 py-2 text-sm transition sm:inline-flex sm:min-h-11 sm:items-center"
-          style={{ background: 'var(--ink)', color: 'var(--paper)', borderColor: 'var(--ink)' }}
+          style={{ background: 'var(--cta-bg)', color: 'var(--cta-ink)', borderColor: 'var(--cta-bg)' }}
         >
           {t('Открыть конфигуратор')}
         </Link>

@@ -27,6 +27,7 @@ import type { AutoJointRecord } from './autoJointRebuild'
 import { rebuildAutoJoints, validateManualBoardDrilling } from './autoJointRebuild'
 import { migrateLegacyProjectMaterials } from './data/catalog/materials'
 import { repairSectionIds } from './sections'
+import { normalizeMirrorName } from './mirrorName'
 
 /** v4-те корпус конфигінің жалғыз орны — root ішіндегі CabinetNode. */
 export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'placements'> & {
@@ -215,7 +216,11 @@ export const ProjectFileV4Schema: z.ZodType<ProjectFileV4> = ProjectFileV4BaseSc
 
 function repairProjectSectionIds(project: ProjectFileV4): ProjectFileV4 {
   const visit = (node: SceneNode): void => {
-    if (node.kind === 'cabinet') node.config.sections = repairSectionIds(node.config.sections)
+    node.name = normalizeMirrorName(node.name)
+    if (node.kind === 'cabinet') {
+      node.config.name = normalizeMirrorName(node.config.name)
+      node.config.sections = repairSectionIds(node.config.sections)
+    }
     else if (node.kind === 'group') node.children.forEach(visit)
   }
   visit(project.root)

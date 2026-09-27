@@ -9,8 +9,9 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LIBRARY_AUTH_CHANGED_EVENT } from '@/lib/librarySyncUi'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
 import { parseProjectV4, parseShopProfile } from '@/src/core/index'
 import { addCloudFolder, moveProjectToFolder, organizeProjects, parseCloudOrg } from '@/src/core/cloudProjectOrganize'
 import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
@@ -431,10 +432,10 @@ export function AccountPanel() {
     setCloudRetry(false)
     const localCopyError = useConfigurator.getState().saveProjectLocally()
     try {
-      const project = exportProject()
       const selection = useConflictRevision && cloudConflict && activeCloud
         ? { id: cloudConflict.id, revision: cloudConflict.revision }
         : activeCloud
+      const project = exportProject()
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -449,8 +450,8 @@ export function AccountPanel() {
         setError(outcome.message)
       } else {
         rememberCloud(outcome.selection)
-        setCloudConflict(null)
         await bindCloudProject(outcome.selection.id, project)
+        setCloudConflict(null)
         await refreshProjects()
       }
     } catch {
@@ -473,8 +474,8 @@ export function AccountPanel() {
       const parsed = parseProjectV4(data.project)
       loadProject(parsed)
       rememberCloud({ id, revision: data.revision! })
-      setCloudConflict(null)
       await bindCloudProject(id, parsed)
+      setCloudConflict(null)
       setError(null)
       setOpen(false)
     } catch (e) {
@@ -530,7 +531,7 @@ export function AccountPanel() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-sm font-semibold">{account ? account.shopName : 'Вход в аккаунт'}</h2>
+          <h2 className="text-sm font-semibold">{account ? tr(account.shopName) : tr('Вход в аккаунт')}</h2>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)} disabled={busy}>{tr('Закрыть')}</Button>
           </div>
@@ -814,7 +815,7 @@ export function AccountPanel() {
                   forgetCloud()
                 })()}
               >
-                Выйти
+                {tr('Выйти')}
               </Button>
             </div>
           </div>
@@ -844,7 +845,7 @@ export function AccountPanel() {
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
               {formErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.email)}</span> : null}
             </Field>
-            <Field label={tr('Пароль')} hint={mode === 'register' ? 'от 8 символов' : undefined}>
+            <Field label={tr('Пароль')} hint={mode === 'register' ? tr('от 8 символов') : undefined}>
               <input className={`${input} ${formErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
                 aria-invalid={Boolean(formErrors.password)}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
@@ -855,12 +856,11 @@ export function AccountPanel() {
             </Field>
 
             <Button onClick={() => void submit()} disabled={busy || !formReady} active>
-              {mode === 'login' ? 'Войти' : 'Создать аккаунт'}
+              {mode === 'login' ? tr('Войти') : tr('Создать аккаунт')}
             </Button>
 
             <p className="text-[11px] leading-snug text-neutral-400">
-              Без аккаунта конфигуратор работает полностью — данные лежат в этом браузере.
-              Аккаунт нужен, чтобы профиль цеха и проекты были доступны с другого компьютера.
+              {tr('Без аккаунта конфигуратор работает полностью — данные лежат в этом браузере. Аккаунт нужен, чтобы профиль цеха и проекты были доступны с другого компьютера.')}
             </p>
           </div>
         )}

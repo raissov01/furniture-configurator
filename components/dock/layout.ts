@@ -49,6 +49,11 @@ export function createDockState(panelIds: readonly PanelId[]): DockState {
   return { panels, order: emptyOrder(), activeTab: {} }
 }
 
+/** Сахна жанындағы мәзірге тек көрінбейтін панельдерді шығарады. */
+export function closedPanelIds(state: DockState, panelIds: readonly PanelId[]): PanelId[] {
+  return panelIds.filter((id) => !(state.panels[id]?.visible ?? true))
+}
+
 // ── Пішінді тексеру (localStorage-тен оқығанда қорғау үшін) ─────────────────
 
 function isFiniteNumber(v: unknown): v is number {

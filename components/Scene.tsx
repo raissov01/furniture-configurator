@@ -1592,6 +1592,13 @@ export default function Scene({
                     event.stopPropagation()
                     setActive(annotation.nodeId)
                     setSelected(selected === annotation.nodeId ? null : annotation.nodeId)
+                  }}
+                  onDoubleClick={(event) => {
+                    if (!classic || !window.matchMedia('(min-width: 1024px)').matches) return
+                    event.stopPropagation()
+                    setActive(annotation.nodeId)
+                    setSelected(annotation.nodeId)
+                    window.dispatchEvent(new CustomEvent('furniture:open-properties', { detail: annotation.nodeId }))
                   }}>
                   {annotation.text}
                 </Text>

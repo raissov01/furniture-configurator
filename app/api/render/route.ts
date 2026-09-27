@@ -11,33 +11,37 @@
  *    өзгертуі мүмкін. Клиентке жіберер алдында цех оны деталировкамен
  *    салыстыруы керек — интерфейсте де солай жазылған.
  * 2. **Әр рендер OpenAI-да АҚША тұрады.** Сондықтан ол автоматты түрде
- *    жүрмейді: тек батырма басылғанда.
+ *    жүрмейді: тек батырма басылғанда. Бағасы (баптау болса) жауапта келеді.
+ *
+ * Промпт ЖОБАНЫҢ нақты материалдарынан құралады (`src/core/render/prompt.ts`):
+ * клиент `renderMaterialsFromPanels` пен `renderStagingOf` нәтижесін жібереді,
+ * ал ережелер мәтінін тек сервер жазады.
+ *
+ * Дене (`RenderRequestSchema`): image (PNG data URL), aspect (1:1 | 16:9 |
+ * 3:4 | 9:16), referenceMode (scene | cameraReference) + reference (бөлме
+ * фотосы), style, hint, materials, staging, projectId. Жауап: image, frame
+ * (size + crop), usage, cost (тиын, баптау болса), history (аккаунт пен
+ * projectId болса сақталған жазба).
  */
 
 import OpenAI from 'openai'
 import { aiAccess } from '@/lib/server/aiAccess'
+import { cloudOff } from '@/lib/server/cloud'
+import { addRenderRecord } from '@/lib/server/renderHistory'
+import type { RenderHistoryRecord } from '@/lib/server/renderHistory'
+import { currentAccount } from '@/lib/server/session'
+import { ConfigValidationError } from '@/src/core/errors'
+import { estimateRenderCost, readRenderCostRates } from '@/src/core/render/cost'
+import type { RenderUsage } from '@/src/core/render/cost'
+import { RENDER_HINT_MAX, RenderRequestSchema, buildRenderPrompt } from '@/src/core/render/prompt'
 
 const MODEL = process.env['OPENAI_IMAGE_MODEL'] ?? 'gpt-image-1'
-/** Кірістің шегі: 3D скриншоты әдетте 1–3 МБ. */
+/** Кірістің шегі: 3D скриншоты мен бөлме фотосы әдетте 1–3 МБ. */
 const MAX_BYTES = 8 * 1024 * 1024
 
-const PROMPT = [
-  'Фотореалистичный интерьерный рендер этой мебели, качество студийной визуализации.',
-  'СОХРАНИ в точности пропорции, количество и расположение корпусов, фасадов, полок,',
-  'ящиков и техники — это чертёж реального изделия, а не эскиз, ничего не добавляй и не убирай.',
-  'Убери сетку, размерные подписи и служебные линии.',
-  'Материалы реалистичные: фактура ЛДСП/МДФ, матовые или сатиновые фасады, металлические ручки,',
-  'столешница с лёгким блеском. Мягкий дневной свет из окна сбоку, мягкие контактные тени,',
-  'реалистичные отражения. Нейтральные стены и пол, аккуратная комната.',
-  'Без людей, без текста, без логотипов, без искажений геометрии.',
-].join(' ')
-
-/** Интерьер стилі — пайдаланушы таңдайды, промптқа қосылады. */
-const STYLES: Record<string, string> = {
-  scandinavian: 'Стиль: скандинавский — светлое дерево, белые стены, минимализм, уют.',
-  modern: 'Стиль: современный минимализм — чистые линии, матовые поверхности, нейтральные тона.',
-  loft: 'Стиль: лофт — кирпич, бетон, тёплый свет, тёмный металл.',
-  classic: 'Стиль: классический — тёплое дерево, филёнчатые фасады, мягкий свет.',
+function decode(dataUrl: string): { bytes: Buffer; mime: string } {
+  const comma = dataUrl.indexOf(',')
+  return { bytes: Buffer.from(dataUrl.slice(comma + 1), 'base64'), mime: dataUrl.slice(5, dataUrl.indexOf(';')) }
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -48,35 +52,104 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'ИИ-рендер не настроен: нет ключа OpenAI' }, { status: 503 })
   }
 
-  const body = (await request.json().catch(() => null)) as { image?: unknown; hint?: unknown; style?: unknown } | null
-  const image = typeof body?.image === 'string' ? body.image : ''
-  const hint = typeof body?.hint === 'string' ? body.hint.slice(0, 300) : ''
-  const style = typeof body?.style === 'string' && body.style in STYLES ? STYLES[body.style] : ''
-  if (!image.startsWith('data:image/png;base64,')) {
-    return Response.json({ error: 'Нужен снимок сцены' }, { status: 400 })
+  const raw = (await request.json().catch(() => null)) as unknown
+  const parsed = RenderRequestSchema.safeParse(raw)
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    const field = issue?.path.join('.') || 'body'
+    const message = field === 'image' ? 'Нужен снимок сцены' : `Неверное поле ${field}: ${issue?.message ?? ''}`
+    return Response.json({ error: message, field }, { status: 400 })
+  }
+  const body = parsed.data
+
+  const scene = decode(body.image)
+  const reference = body.reference ? decode(body.reference) : null
+  if (scene.bytes.byteLength > MAX_BYTES || (reference?.bytes.byteLength ?? 0) > MAX_BYTES) {
+    return Response.json({ error: 'Снимок слишком большой', field: reference && reference.bytes.byteLength > MAX_BYTES ? 'reference' : 'image' },
+      { status: 413 })
   }
 
-  const bytes = Buffer.from(image.slice('data:image/png;base64,'.length), 'base64')
-  if (bytes.byteLength > MAX_BYTES) {
-    return Response.json({ error: 'Снимок слишком большой' }, { status: 413 })
+  let rates
+  try {
+    rates = readRenderCostRates(process.env)
+  } catch (cause) {
+    // Баптау қатесі — сервердің қатесі, клиенттің емес; бірақ рендерді тоқтатпаймыз.
+    console.error('render cost rates:', cause)
+    rates = null
   }
 
+  const prompt = buildRenderPrompt({
+    materials: body.materials,
+    staging: body.staging,
+    aspect: body.aspect,
+    reference: body.referenceMode,
+    style: body.style,
+    hint: body.hint?.slice(0, RENDER_HINT_MAX),
+  })
+
+  let b64: string | undefined
+  let usage: RenderUsage | null = null
   try {
     const openai = new OpenAI({ apiKey: key })
+    // `File` — Node 20+ ішінде бар, қосымша тәуелділік керек емес.
+    const sceneFile = new File([scene.bytes as unknown as BlobPart], 'scene.png', { type: 'image/png' })
+    const images = reference
+      ? [sceneFile, new File([reference.bytes as unknown as BlobPart], `room.${reference.mime.split('/')[1]}`, { type: reference.mime })]
+      : sceneFile
     const result = await openai.images.edit({
       model: MODEL,
-      // `File` — Node 20+ ішінде бар, қосымша тәуелділік керек емес.
-      image: new File([bytes as unknown as BlobPart], 'scene.png', { type: 'image/png' }),
-      prompt: [PROMPT, style, hint ? `Дополнительно: ${hint}` : ''].filter(Boolean).join(' '),
-      size: '1024x1024',
+      image: images,
+      prompt: prompt.prompt,
+      size: prompt.size,
       quality: 'high',
     })
-    const b64 = result.data?.[0]?.b64_json
-    if (!b64) return Response.json({ error: 'Модель не вернула изображение' }, { status: 502 })
-    return Response.json({ image: `data:image/png;base64,${b64}` })
+    b64 = result.data?.[0]?.b64_json
+    if (result.usage) {
+      usage = {
+        inputTextTokens: result.usage.input_tokens_details.text_tokens,
+        inputImageTokens: result.usage.input_tokens_details.image_tokens,
+        outputTokens: result.usage.output_tokens,
+      }
+    }
   } catch (error) {
     // Қате мәтіні пайдаланушыға шығады, сондықтан ол ТҮСІНІКТІ болуы керек.
     const message = error instanceof Error ? error.message : 'неизвестная ошибка'
     return Response.json({ error: `ИИ-рендер не получился: ${message}` }, { status: 502 })
   }
+  if (!b64) return Response.json({ error: 'Модель не вернула изображение' }, { status: 502 })
+
+  let cost = null
+  try {
+    cost = estimateRenderCost(usage, rates)
+  } catch (cause) {
+    if (!(cause instanceof ConfigValidationError)) throw cause
+    console.error('render cost:', cause)
+  }
+
+  let history: RenderHistoryRecord | null = null
+  if (body.projectId && !cloudOff()) {
+    const account = await currentAccount()
+    if (account) {
+      history = addRenderRecord(account, body.projectId, {
+        aspect: body.aspect,
+        referenceMode: body.referenceMode,
+        style: body.style ?? null,
+        hint: body.hint?.slice(0, RENDER_HINT_MAX) ?? null,
+        model: MODEL,
+        promptVersion: prompt.version,
+        size: prompt.size,
+        crop: prompt.crop,
+        usage,
+        cost,
+      }, Buffer.from(b64, 'base64'))
+    }
+  }
+
+  return Response.json({
+    image: `data:image/png;base64,${b64}`,
+    frame: { aspect: prompt.aspect, size: prompt.size, crop: prompt.crop },
+    usage,
+    cost,
+    history,
+  })
 }

@@ -1,5 +1,6 @@
 /** Еркін тақта/декор тобының ата кеңістігіндегі X жазықтығына қатысты айна көшірмесі. */
 import { mergeSettings } from './constants'
+import { nextMirrorName } from './mirrorName'
 import { calculateCutDimensions } from './edges'
 import { ConfigValidationError } from './errors'
 import type { BoardSpec, SceneNode } from './tree'
@@ -76,7 +77,7 @@ export function mirrorFreeNodeX(node: SceneNode, catalog: Catalog, planeX: numbe
       },
       rot: { ...source.transform.rot, y: -source.transform.rot.y },
     }
-    const common = { ...source, id: `${source.id}${idSuffix}`, name: `${source.name} (зеркало)`, transform }
+    const common = { ...source, id: `${source.id}${idSuffix}`, name: nextMirrorName(source.name), transform }
     if (source.kind === 'board') return { ...common, kind: 'board', board: payload!.board }
     if (source.kind === 'solid') return { ...common, kind: 'solid', solid: structuredClone(source.solid) }
     if (source.kind === 'annotation') return { ...common, kind: 'annotation', annotation: structuredClone(source.annotation) }

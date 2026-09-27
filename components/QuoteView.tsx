@@ -12,6 +12,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { MarketPriceNotice } from './MarketPrice'
+import { serviceLineText, unitLabel } from '@/lib/priceUnits'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
   SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
@@ -597,10 +598,11 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                       {g.lines.map((l) => {
                         const key = `${g.key}:${l.id}`
                         const sources = priceSourceRows(l)
-                        return <Fragment key={key}><tr className="border-t border-neutral-100 dark:border-neutral-800">
+                        return <Fragment key={key}><tr className="border-t border-neutral-100 dark:border-neutral-800"
+                          title={g.key === 'services' ? serviceLineText(l) : undefined}>
                           <td className="py-1">{l.name}</td>
                           <td className="w-24 py-1 text-right tabular-nums text-neutral-500">
-                            {l.qty} {l.unit}
+                            {l.qty} {unitLabel(l.unit)}
                           </td>
                           <td className={cn('w-28 py-1 text-right tabular-nums', l.unitPrice <= 0 && 'text-amber-600')}>
                             {formatTenge(l.unitPrice)}
@@ -664,14 +666,14 @@ function PriceTable({ price, shopName, overrides, onChange }: {
           паритеті). КП-да (quotePdf.ts) `salePriceOverride` бар болса
           себестоимость/наценка КӨРІНБЕЙДІ — тек түпкі баға (quoteTotalsView).
         */}
-        <Row label={tr('Алдын ала сату бағасы')} value={formatTenge(price.calculatedTotal)} />
+        <Row label={tr('Расчётная цена продажи')} value={formatTenge(price.calculatedTotal)} />
         {price.salePriceOverride !== undefined ? (
-          <Row label={tr('Сату бағасы (қолмен)')} value={formatTengeExact(price.salePriceOverride)} />
+          <Row label={tr('Цена продажи (вручную)')} value={formatTengeExact(price.salePriceOverride)} />
         ) : null}
-        <Row label="ВСЕГО" value={formatTengeExact(price.grossTotal)} />
-        <Row label="СКИДКА" value={`−${formatTengeExact(price.discountTotal)}`} />
+        <Row label={tr('ВСЕГО')} value={formatTengeExact(price.grossTotal)} />
+        <Row label={tr('СКИДКА')} value={`−${formatTengeExact(price.discountTotal)}`} />
         <div className="flex items-baseline justify-between border-t border-neutral-200 pt-1.5 text-sm font-semibold dark:border-neutral-700">
-          <span>К ОПЛАТЕ</span>
+          <span>{tr('К ОПЛАТЕ')}</span>
           <span className="tabular-nums">{formatTengeExact(price.total)}</span>
         </div>
         {shopName ? <p className="pt-1 text-[11px] text-neutral-400">{shopName}</p> : null}

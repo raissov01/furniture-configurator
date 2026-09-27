@@ -356,7 +356,7 @@ export function Toggle({
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+    <h2 className="mt-1 text-[11px] font-semibold text-neutral-700 dark:text-neutral-200">
       {children}
     </h2>
   )
