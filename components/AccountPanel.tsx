@@ -16,7 +16,7 @@ import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
-import { accountFormErrors, canSubmitAccount } from '@/lib/accountPanelState'
+import { accountFormErrors, canSubmitAccount, inviteShopDisplay } from '@/lib/accountPanelState'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -80,11 +80,13 @@ export function AccountPanel() {
    * гидратация сәйкессіздігі шығады.
    */
   const [invite, setInvite] = useState<string | null>(null)
+  const [inviteShopName, setInviteShopName] = useState<string | null>(null)
   const [usage, setUsage] = useState<{ projects: number; members: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const formErrors = accountFormErrors(mode, form, Boolean(invite))
-  const formReady = canSubmitAccount(mode, form, Boolean(invite))
+  const formReady = canSubmitAccount(mode, form, Boolean(invite)) && (!invite || mode === 'login' || inviteShopName !== null)
+  const inviteShop = inviteShopDisplay(invite, inviteShopName)
 
   useEffect(() => {
     if (!account) return
@@ -127,6 +129,13 @@ export function AccountPanel() {
     // аккаунты әлі жоқ, ал әдепкі «кіру» қосымшасы оны шатастырар еді.
     setMode('register')
     setOpen(true)
+    void fetch(`/api/team/invite?token=${encodeURIComponent(token)}`)
+      .then(async (res) => {
+        const data = (await res.json()) as { shopName?: string; error?: string }
+        if (!res.ok || !data.shopName) throw new Error(data.error ?? tr('Приглашение не найдено'))
+        setInviteShopName(data.shopName)
+      })
+      .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : tr('Нет связи с сервером')))
   }, [setOpen])
 
   // Кім кіргенін бет ашылғанда бір рет сұраймыз.
@@ -596,12 +605,16 @@ export function AccountPanel() {
               <Button active={mode === 'register'} onClick={() => setMode('register')}>{tr('Регистрация')}</Button>
             </div>
 
-            {mode === 'register' ? (
+            {mode === 'register' && inviteShop.editable ? (
               <Field label={tr('Название цеха')} hint={tr('Пустое название станет «Мой цех»; до 100 символов')}>
                 <input className={`${input} ${formErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
                   aria-invalid={Boolean(formErrors.shopName)}
                   onChange={(e) => setForm({ ...form, shopName: e.target.value })} />
                 {formErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.shopName)}</span> : null}
+              </Field>
+            ) : mode === 'register' ? (
+              <Field label={tr('Название цеха')} hint={tr('Цех по приглашению — изменить нельзя')}>
+                <input className={input} value={inviteShop.name ?? tr('Проверяется приглашение…')} readOnly />
               </Field>
             ) : null}
 

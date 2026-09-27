@@ -22,3 +22,7 @@ export function accountFormErrors(mode: AccountMode, form: AccountForm, invited:
 export function canSubmitAccount(mode: AccountMode, form: AccountForm, invited: boolean): boolean {
   return Object.keys(accountFormErrors(mode, form, invited)).length === 0
 }
+
+export function inviteShopDisplay(token: string | null, shopName: string | null) {
+  return token ? { editable: false, name: shopName } : { editable: true, name: null }
+}

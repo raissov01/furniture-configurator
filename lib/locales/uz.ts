@@ -1589,4 +1589,6 @@ export const uz: Record<string, string> = {
   'Пароль: введите пароль': 'Parol: parolni kiriting',
   'Пароль: от 8 символов': 'Parol: kamida 8 belgi',
   'Почта: укажите адрес вида name@example.com': 'Email: name@example.com shaklidagi manzilni kiriting',
+  'Проверяется приглашение…': 'Taklif tekshirilmoqda…',
+  'Цех по приглашению — изменить нельзя': 'Taklif qilgan sex — o‘zgartirib bo‘lmaydi',
 }

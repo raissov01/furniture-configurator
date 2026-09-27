@@ -1585,4 +1585,6 @@ export const en: Record<string, string> = {
   'Пароль: введите пароль': 'Password: enter your password',
   'Пароль: от 8 символов': 'Password: at least 8 characters',
   'Почта: укажите адрес вида name@example.com': 'Email: enter an address like name@example.com',
+  'Проверяется приглашение…': 'Checking invitation…',
+  'Цех по приглашению — изменить нельзя': 'Inviting workshop — read only',
 }
