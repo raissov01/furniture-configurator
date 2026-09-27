@@ -20,6 +20,9 @@ describe('StructureTreeView markup', () => {
       onHidden: vi.fn(), onLocked: vi.fn(), onGroup: vi.fn(), onUngroup: vi.fn(), onReparent: vi.fn(), onArray: vi.fn(), onArrange: vi.fn(), onAutoJoint: vi.fn(),
     }))
     expect(html).toContain('data-testid="arrange-tools"')
+    expect(html).toContain('data-testid="property-tools"')
+    expect(html).toContain('data-testid="scale-tools"')
+    expect(html).toContain('aria-label="Ось масштабирования"')
     expect(html).toContain('data-testid="snap-tools"')
     expect(html).toContain('arrange-distribute')
     expect(html).toContain('Массив')
