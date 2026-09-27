@@ -13,7 +13,7 @@
  */
 
 import { z } from 'zod'
-import { KERF } from './constants'
+import { KERF, MAX_KERF } from './constants'
 import { fillingHardware } from './filling'
 import {
   HANDLE_BORE_SPACINGS, HandleModelSchema, HingeSystemSchema, defaultHandles,
@@ -675,7 +675,7 @@ const LabourRatesSchema = z.object({
 })
 
 const CuttingSettingsSchema = z.object({
-  kerf: z.number().int().nonnegative().max(20),
+  kerf: z.number().int().nonnegative().max(MAX_KERF),
   trimEdge: z.number().int().nonnegative().max(200).nullable(),
   optimization: z.enum(['fast', 'standard', 'deep']),
 })

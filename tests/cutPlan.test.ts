@@ -47,6 +47,13 @@ describe('рез жоспары — қасиеттер', () => {
   const nesting = nestPanels(projectPanels(), SEED_CATALOG)
   const plan = cutPlan(nesting)
 
+  it('жоспар да жарамсыз пропилді қабылдамайды', () => {
+    const sheet = nesting.byMaterial[0]!.sheets[0]!
+    for (const kerf of [-1, 21, 0.5, Number.NaN]) {
+      expect(() => sheetCutPlan(sheet, { kerf })).toThrow(/kerf.*0\.\.20/)
+    }
+  })
+
   it('бірде-бір рез детальді ҚАҚ ЖАРМАЙДЫ', () => {
     for (const m of plan.byMaterial) {
       const material = nesting.byMaterial.find((x) => x.materialId === m.materialId)!

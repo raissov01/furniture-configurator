@@ -212,6 +212,8 @@ export const HINGE_COUNT_BY_HEIGHT: { maxHeight: number; count: number }[] = [
 
 /** Пропил ені — араның қалыңдығы. Әр деталь арасынан осынша материал жоғалады. */
 export const KERF = 4
+/** Цех профиліндегі пропилдің ең үлкен рұқсат етілген ені, мм. */
+export const MAX_KERF = 20
 /** 100×100 мм-ден кіші қалдық — қоқыс, деловой отход есептелмейді. */
 export const MIN_USEFUL_OFFCUT = 100
 

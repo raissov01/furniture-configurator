@@ -19,6 +19,7 @@
  */
 
 import { KERF } from './constants'
+import { validateKerf } from './nesting'
 import type { MaterialNesting, NestedPart, NestedSheet, NestingResult, SheetRect } from './nesting'
 
 /**
@@ -221,6 +222,7 @@ function trimCuts(sheet: NestedSheet): CutLine[] {
 /** Бір парақтың рез тізбегі мен сандары. */
 export function sheetCutPlan(sheet: NestedSheet, options: CutPlanOptions = {}): SheetCutPlan {
   const kerf = options.kerf ?? KERF
+  validateKerf(kerf)
   const cuts: CutLine[] = trimCuts(sheet)
   // Соңғы обрезка көлденең болды — ішкі бөлікті сол бағыттан бастаймыз.
   const lastAxis = cuts.length > 0 ? cuts[cuts.length - 1]!.axis : 'v'

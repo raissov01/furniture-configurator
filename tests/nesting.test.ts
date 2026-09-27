@@ -175,6 +175,15 @@ describe('раскрой', () => {
 describe('раскрой баптаулары', () => {
   const panels = manyPanels()
 
+  it('пропил тек 0..20 бүтін мм болады', () => {
+    const sample = panels.slice(0, 1)
+    for (const kerf of [-1, 21, 999999, 0.5, Number.NaN]) {
+      expect(() => nestPanels(sample, SEED_CATALOG, { kerf })).toThrow(/kerf.*0\.\.20/)
+    }
+    expect(() => nestPanels(sample, SEED_CATALOG, { kerf: 0 })).not.toThrow()
+    expect(() => nestPanels(sample, SEED_CATALOG, { kerf: 20 })).not.toThrow()
+  })
+
   it('подрезка пайдалы аймақты дәл сонша қысады', () => {
     const wide = nestPanels(panels, SEED_CATALOG, { trimEdge: 0 })
     const tight = nestPanels(panels, SEED_CATALOG, { trimEdge: 25 })
