@@ -247,10 +247,6 @@ function WalkControls({
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       keys.current[e.code] = true
-      if (e.code === 'KeyE') {
-        const st = useConfigurator.getState()
-        st.setOpenness(st.openness > 0 ? 0 : 1)
-      }
     }
     const up = (e: KeyboardEvent) => { keys.current[e.code] = false }
     /*
