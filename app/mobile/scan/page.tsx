@@ -36,12 +36,12 @@ export default function MobileScanPage() {
         let tasks = (await db.listInstallations()).filter((task) => task.projectId === decoded.projectId)
         if (navigator.onLine) {
           const list = await fetch('/api/installation', { credentials: 'same-origin', cache: 'no-store' })
-          if (!list.ok) throw new Error(t('Монтаж нұсқасы тексерілмеді. Қайта қосылып көріңіз.'))
+          if (!list.ok) throw new Error(t('Не удалось проверить версию монтажа. Повторите при наличии сети.'))
           const listing = await list.json() as { tasks: { id: string; projectId: string }[] }
           const fresh: InstallationTask[] = []
           for (const item of listing.tasks.filter((entry) => entry.projectId === decoded.projectId)) {
             const detail = await fetch(`/api/installation/${encodeURIComponent(item.id)}`, { credentials: 'same-origin', cache: 'no-store' })
-            if (!detail.ok) throw new Error(t('Монтаж нұсқасы тексерілмеді. Қайта қосылып көріңіз.'))
+            if (!detail.ok) throw new Error(t('Не удалось проверить версию монтажа. Повторите при наличии сети.'))
             const body = await detail.json() as { task: InstallationTask }
             await db.putInstallation(body.task)
             fresh.push(body.task)
@@ -51,16 +51,16 @@ export default function MobileScanPage() {
         const version = scanVersionStatus(decoded, tasks)
         if (request !== scanRequest.current) return
         setPart(decoded)
-        if (version === 'stale') { setMessage(t('Бұл бирка ескірген. Жөндеуден кейінгі жаңа QR-ді пайдаланыңыз.')); return }
+        if (version === 'stale') { setMessage(t('Эта бирка устарела. Используйте новый QR после ремонта.')); return }
         if (version === 'unknown' && tasks.some((task) => task.panelIds.includes(decoded.panelId))) {
-          setMessage(t('Бирка нұсқасы монтаж тапсырмасымен сәйкес емес.')); return
+          setMessage(t('Версия бирки не совпадает с монтажным заданием.')); return
         }
         let project = await db.getProject(decoded.projectId)
         if (navigator.onLine) {
           const response = await fetch(`/api/projects/${encodeURIComponent(decoded.projectId)}`, { credentials: 'same-origin' })
-          if (!response.ok) throw new Error(t('Жобаның жаңа нұсқасы тексерілмеді. Қайта қосылып көріңіз.'))
+          if (!response.ok) throw new Error(t('Не удалось проверить свежую версию проекта. Повторите при наличии сети.'))
           const body: unknown = await response.json()
-          if (!body || typeof body !== 'object' || !('project' in body)) throw new Error(t('Жоба жауабы жарамсыз'))
+          if (!body || typeof body !== 'object' || !('project' in body)) throw new Error(t('Неверный ответ проекта'))
           project = parseProjectV4(body.project)
           await db.putProject(decoded.projectId, project)
         }
@@ -71,8 +71,8 @@ export default function MobileScanPage() {
         if (!found) throw new Error(t('Деталь не найдена в проекте'))
         if (request !== scanRequest.current) return
         setPanel(found)
-        setMessage(version === 'unknown' ? t('Бұл жобаға монтаж тапсырмасы жоқ: QR нұсқасы расталмады.') :
-          navigator.onLine ? '' : t('Офлайн: соңғы сервер нұсқасы тексерілмеді.'))
+        setMessage(version === 'unknown' ? t('Для проекта нет монтажного задания: версия QR не подтверждена.') :
+          navigator.onLine ? '' : t('Офлайн: последняя версия сервера не проверена.'))
       } finally { db.close() }
     } catch (error) { if (request === scanRequest.current) {
       setPart(null); setPanel(null); setMessage(error instanceof Error ? error.message : t('QR не прочитан'))

@@ -124,7 +124,7 @@ export function CutPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const labelOptions = useMemo(() => {
     try {
-      if (!cloudId) return { value: null, error: tr('QR үшін жобаны алдымен бұлтқа сақтаңыз') }
+      if (!cloudId) return { value: null, error: tr('Для QR сначала сохраните проект в облаке') }
       return { value: labelExportOptions(
         { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
         cloudId ?? '', 1,
@@ -136,14 +136,14 @@ export function CutPage() {
   const labelsReady = labelOptions.value !== null && !Object.values(labelDraftInvalid).some(Boolean)
 
   const verifyLabelProject = async () => {
-    if (!cloudId) throw new Error(tr('QR үшін жобаны алдымен бұлтқа сақтаңыз'))
+    if (!cloudId) throw new Error(tr('Для QR сначала сохраните проект в облаке'))
     const localId = await currentCloudProjectId(exportProject(), window.localStorage.getItem(CLOUD_PROJECT_BINDING_KEY))
-    if (localId !== cloudId) throw new Error(tr('Жоба өзгерген. QR үшін бұлтқа қайта сақтаңыз.'))
+    if (localId !== cloudId) throw new Error(tr('Проект изменён. Сохраните его в облаке снова для QR.'))
     const response = await fetch(`/api/projects/${encodeURIComponent(cloudId)}`, { credentials: 'same-origin', cache: 'no-store' })
-    if (!response.ok) throw new Error(tr('QR жобасы серверде табылмады. Қайта сақтаңыз.'))
+    if (!response.ok) throw new Error(tr('Проект для QR не найден на сервере. Сохраните его снова.'))
     const body = await response.json() as { project?: unknown }
     const serverId = await currentCloudProjectId(body.project, window.localStorage.getItem(CLOUD_PROJECT_BINDING_KEY))
-    if (serverId !== cloudId) throw new Error(tr('Жоба өзгерген. QR үшін бұлтқа қайта сақтаңыз.'))
+    if (serverId !== cloudId) throw new Error(tr('Проект изменён. Сохраните его в облаке снова для QR.'))
   }
 
   const production = useMemo(() => {
