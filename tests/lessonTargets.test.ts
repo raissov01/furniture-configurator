@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { LESSONS } from '../src/core/lessonCatalog'
 import { lessonStepFor, lessonAvailability } from '../lib/lessonTargets'
@@ -23,5 +24,11 @@ describe('lesson targets', () => {
     const lesson = LESSONS[0]!
     expect(lessonAvailability(lesson, true, false, () => false)).toBe(false)
     expect(lessonAvailability(lesson, true, false, (step) => step.selector === '[data-testid="classic-tool-properties"]')).toBe(true)
+  })
+
+  it('targets the first quote tool because duplicate labels are removed', () => {
+    const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
+    const firstQuote = source.split('\n').find((line) => line.includes("icon: 'print'") && line.includes("tr('Смета и раскрой')"))
+    expect(firstQuote).toContain("id: 'quote'")
   })
 })
