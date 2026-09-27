@@ -21,7 +21,6 @@ import { projectProduction } from '@/lib/projectProduction'
 import { flatArchiveFiles } from '@/lib/flatArchiveFiles'
 import {
   ConfigValidationError,
-  cutPlan,
   flattenTree,
   mergeSettings,
   nestPanels,
@@ -37,6 +36,7 @@ import { cn } from '@/lib/cn'
 import { cutDisplay, visibleMaterials } from '@/lib/cutView'
 import { playbackStep } from '@/src/core/cutPlayback'
 import { labelExportOptions, labelSizeLimits } from '@/lib/labelExportOptions'
+import { safeCutPlan } from '@/lib/safeCutPlan'
 import type { LabelPage } from '@/src/core/export/labelLayout'
 
 /**
@@ -151,10 +151,11 @@ export function CutPage() {
     }
   }, [panels, production.error, catalog, options])
   const nesting = nested.nesting
-  const plan = useMemo(
-    () => (nesting ? cutPlan(nesting, { kerf: cutting.kerf }) : null),
+  const planned = useMemo(
+    () => safeCutPlan(nesting, cutting.kerf),
     [nesting, cutting.kerf],
   )
+  const plan = planned.plan
   const advice = useMemo(
     () => (nesting ? unplacedAdvice(nesting, panels, catalog, options) : []),
     [nesting, panels, catalog, options],
@@ -192,7 +193,7 @@ export function CutPage() {
               {tr('Показать резы')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={busy !== null || !nesting || planned.error !== null}
               title={tr('Карта раскроя для цеха, по листу на страницу')}
               onClick={() => void run('map', async () => {
                 const { nestingPdf } = await import('@/src/core/export/nestingPdf')
@@ -203,7 +204,7 @@ export function CutPage() {
               {busy === 'map' ? '…' : tr('PDF карты')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={busy !== null || !nesting || planned.error !== null}
               title={tr('По одному DXF на лист, всё в архиве')}
               onClick={() => void run('dxf', async () => {
                 const [{ nestingToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -222,7 +223,7 @@ export function CutPage() {
               {busy === 'dxf' ? '…' : 'DXF'}
             </Button>
             <Button
-              disabled={busy !== null || !nesting || !labelsReady}
+              disabled={busy !== null || !nesting || planned.error !== null || !labelsReady}
               title={tr('Бирки на детали: позиция, размер реза, кромка по кромкам')}
               onClick={() => void run('labels', async () => {
                 const { labelsPdf } = await import('@/src/core/export/labels')
@@ -238,7 +239,7 @@ export function CutPage() {
               {busy === 'labels' ? '…' : tr('Бирки')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting || !labelsReady}
+              disabled={busy !== null || !nesting || planned.error !== null || !labelsReady}
               title={tr('Всё для цеха одним архивом: карта, DXF листов, DXF деталей с присадкой, деталировка и бирки')}
               onClick={() => void run('bundle', async () => {
                 const [
@@ -275,7 +276,7 @@ export function CutPage() {
               {busy === 'bundle' ? '…' : tr('Пакет для цеха')}
             </Button>
             <Button
-              disabled={busy !== null || panels.length === 0 || production.error !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null || planned.error !== null}
               title={tr('Присадка для станка: на каждую деталь свой файл, плюс index.csv')}
               onClick={() => void run('cnc', async () => {
                 const [{ cncFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -296,7 +297,7 @@ export function CutPage() {
               {busy === 'cnc' ? '…' : tr('ЧПУ по деталям')}
             </Button>
             <Button
-              disabled={busy !== null || panels.length === 0 || production.error !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null || planned.error !== null}
               title={tr('Для Базиса: список деталей для Раскроя (CSV, XLSX), скрипт для Мебельщика — детали и присадка как крепёж, DXF деталей')}
               onClick={() => void run('basis', async () => {
                 const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfArchiveFiles }, { zipSync, strToU8 }] =
@@ -356,6 +357,9 @@ export function CutPage() {
         </section>
         {nested.error ? (
           <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{nested.error}</p>
+        ) : null}
+        {planned.error ? (
+          <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{planned.error}</p>
         ) : null}
         {notice ? (
           <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
