@@ -43,6 +43,8 @@ import {
   replaceTreeMaterial,
   nextFreeOffset,
   parseProjectV4,
+  pasteNodeProperties,
+  scaleTreeNode,
   SceneLightsSchema,
   parseShopProfile,
   renamePriceList as renameShopPriceList,
@@ -54,7 +56,8 @@ import {
 import type { Quality } from '@/lib/appearance'
 import type { PanoramaContext } from '@/lib/panorama'
 import type {
-  BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
+  BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr, SceneNode,
+  PropertyClipboard, ScalePercent,
   Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
   SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
@@ -310,6 +313,8 @@ type State = Snapshot & {
   arrayNode(id: string, opts: ArrayOptions): void
   translateNodes(moves: readonly { id: string; delta: Vec3 }[], opts?: { continueGesture?: boolean }): void
   arrangeNodes(ids: readonly string[], axis: Axis, mode: BoxAlignment | 'distribute'): void
+  pasteProperties(clipboard: PropertyClipboard, ids: readonly string[]): void
+  scaleNode(id: string, factors: ScalePercent): void
   placeLibraryItem(item: LibraryItem, parentId?: string): void
   replaceFreeBoardMaterial(oldId: string, newId: string): void
   replaceProjectMaterial(oldId: string, newId: string): void
@@ -551,6 +556,20 @@ function treeEdit(s: State, root: GroupNode, layers = s.layers) {
     : s.autoJoints
   return { root, layers, autoJoints, ...cabinetsFromTree(root, s.room, layers),
     past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null }
+}
+
+/** A hidden edited node must still build when the operator reveals it later. */
+function validateEditedSubtrees(s: State, root: GroupNode, ids: readonly string[]): void {
+  const reveal = (node: SceneNode): SceneNode => node.kind === 'group'
+    ? { ...node, hidden: false, layerId: undefined, children: node.children.map(reveal) }
+    : { ...node, hidden: false, layerId: undefined }
+  for (const id of new Set(ids)) {
+    const node = findNode(root, id)
+    if (!node) throw new ConfigValidationError('nodeIds', `түйін табылмады: ${id}`, 'бар түйін id')
+    const checkRoot: GroupNode = { ...root, hidden: false, layerId: undefined,
+      transform: structuredClone(IDENTITY_TRANSFORM), children: [reveal(node)] }
+    flattenTree(checkRoot, s.catalog, s.projectSettings ?? s.shop.settings)
+  }
 }
 
 function mapBoard(root: GroupNode, id: string, update: (board: BoardSpec) => BoardSpec): GroupNode {
@@ -1503,6 +1522,23 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const root = arrangeTreeSelection(s.root, ids, s.catalog, s.layers, axis, mode, s.projectSettings ?? s.shop.settings)
     if (root !== s.root) set(treeEdit(s, root))
+  },
+  pasteProperties(clipboard, ids) {
+    const s = get()
+    const root = pasteNodeProperties(s.root, clipboard, ids, s.layers)
+    if (root === s.root) return
+    // Validate all regenerated production panels before one atomic undo step.
+    validateEditedSubtrees(s, root, ids)
+    flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers, s.autoJoints)
+    set(treeEdit(s, root))
+  },
+  scaleNode(id, factors) {
+    const s = get()
+    const root = scaleTreeNode(s.root, id, factors, s.layers)
+    if (root === s.root) return
+    validateEditedSubtrees(s, root, [id])
+    flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers, s.autoJoints)
+    set(treeEdit(s, root))
   },
   placeLibraryItem(item, parentId) {
     const s = get()
