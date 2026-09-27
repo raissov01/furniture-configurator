@@ -90,6 +90,8 @@ describe('properties dialog state', () => {
     expect(propertiesChildModalActive(false, false)).toBe(false)
     expect(propertiesChildModalActive(true, false)).toBe(true)
     expect(propertiesChildModalActive(false, true)).toBe(true)
+    expect(propertiesChildModalActive(false, false, true, false)).toBe(true)
+    expect(propertiesChildModalActive(false, false, false, true)).toBe(true)
     expect(childExportAllowed(true)).toBe(false)
     expect(childExportAllowed(false)).toBe(true)
   })

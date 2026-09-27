@@ -12,6 +12,7 @@ import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
 import { SolidProperties } from '@/components/SolidProperties'
 import { Button } from '@/components/ui'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, onClose }: {
   nodeId: string
@@ -31,6 +32,9 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const syncShare = useConfigurator((s) => s.syncShare)
   const quoteOpen = useConfigurator((s) => s.quoteOpen)
   const drillOpen = useConfigurator((s) => s.drillOpen)
+  const galleryOpen = useConfigurator((s) => s.galleryOpen)
+  const shopOpen = useConfigurator((s) => s.shopOpen)
+  const { zIndex } = useModalLayer(true, 'properties')
   const node = findNode(root, nodeId)
   const baseline = useRef<PropertiesSession | null>(null)
   const dialogRef = useRef<HTMLElement | null>(null)
@@ -45,7 +49,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   const dirty = storeDirty || nameDirty
   const invalid = propertiesInvalid(error)
   const productionReady = propertiesProductionReady(dirty, Boolean(invalid), draftInvalid)
-  const childModalActive = propertiesChildModalActive(quoteOpen, drillOpen)
+  const childModalActive = propertiesChildModalActive(quoteOpen, drillOpen, galleryOpen, shopOpen)
 
   const cancel = () => {
     if (baseline.current) restorePropertiesSession(baseline.current)
@@ -81,7 +85,8 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   }
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
-      if (propertiesChildModalActive(useConfigurator.getState().quoteOpen, useConfigurator.getState().drillOpen)) return
+      const state = useConfigurator.getState()
+      if (propertiesChildModalActive(state.quoteOpen, state.drillOpen, state.galleryOpen, state.shopOpen)) return
       const target = event.target instanceof Element ? event.target.tagName.toLowerCase() : ''
       const action = propertiesKeyAction({
         key: event.key, target, exactInput: event.target instanceof Element && event.target.hasAttribute('data-exact-mm'), isComposing: event.isComposing,
@@ -104,7 +109,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   if (!node || (node.kind !== 'cabinet' && node.kind !== 'board' && node.kind !== 'solid')) return null
   const locked = Boolean(node.locked)
   // Фон — МОДАЛДЫ: сыртқа басу ештеңе істемейді (бұрын өзгерісті ескертусіз жоятын, P0-3).
-  return <div className="p100-dialog-backdrop" data-testid="properties-dialog-backdrop">
+  return <div className="p100-dialog-backdrop" style={{ zIndex }} data-testid="properties-dialog-backdrop">
     <section ref={dialogRef} aria-hidden={childModalActive} onInput={(event) => {
       const target = event.target
       if (target instanceof HTMLInputElement && target.hasAttribute('data-properties-name')) setNameDirty(target.value !== node.name)

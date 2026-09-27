@@ -19,6 +19,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
+import { useModalLayer } from '@/lib/useModalLayer'
 import {
   CUTOUT_PRESETS,
   DRILL_PRESETS,
@@ -103,6 +104,7 @@ function place(drill: Drill, length: number, width: number): { x: number; y: num
 
 export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panels: Panel[]; catalog: Catalog; propertiesOpen?: boolean }) {
   const open = useConfigurator((s) => s.drillOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'drill')
   const setOpen = useConfigurator((s) => s.setDrillOpen)
   const cabinet = useConfigurator((s) => s.cabinets.find((item) => item.id === s.activeId))
   const boardNode = useConfigurator((s) => {
@@ -164,7 +166,7 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!open) return
+      if (!open || !isTop) return
       if (e.key === 'Escape') setOpen(false)
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected !== null && panel) {
         const found = panel.drilling.find((d) => drillKey(d) === selected)
@@ -184,7 +186,7 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
   if (!open) return null
   if (!panel || !material) {
     return (
-      <Shell onClose={() => setOpen(false)}>
+      <Shell onClose={() => setOpen(false)} zIndex={zIndex}>
         <p className="text-xs text-neutral-500">{tr('Нет деталей для присадки.')}</p>
       </Shell>
     )
@@ -244,7 +246,7 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
   }
 
   return (
-    <Shell onClose={() => setOpen(false)}>
+    <Shell onClose={() => setOpen(false)} zIndex={zIndex}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="mr-1 text-sm font-semibold">{tr('Присадка вручную')}</h2>
         <span className="text-[11px] text-neutral-500">
@@ -641,12 +643,13 @@ function SelectedInfo({ panel, keyOf }: { panel: Panel; keyOf: string }) {
   )
 }
 
-function Shell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function Shell({ children, onClose, zIndex }: { children: React.ReactNode; onClose: () => void; zIndex: number }) {
   const dialogRef = useRef<HTMLDivElement>(null)
   useEffect(() => { dialogRef.current?.focus() }, [])
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={onClose}
     >
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Присадка')}
