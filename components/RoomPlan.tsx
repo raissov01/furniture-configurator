@@ -29,9 +29,8 @@ import { ConfigValidationError } from '@/src/core/errors'
 import { Button, Field, NumberInput, SectionTitle, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { isCeilingIssue } from '@/lib/roomElevationUi'
+import { planDragOffset } from '@/lib/roomPlanDrag'
 
-/** Жоспардың ең үлкен қабырғасы экранда осынша пиксель болады. */
-const PLAN_PX = 420
 /** Қабырға сызығының қалыңдығы, мм (шартты — тек көрініс үшін). */
 const WALL_MM = 60
 
@@ -95,20 +94,18 @@ export function RoomPlan() {
 
   if (!open) return null
 
-  const scale = PLAN_PX / Math.max(room.width, room.depth)
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        className="min-w-0 w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-3 shadow-xl dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="text-sm font-semibold">{tr('Комната')}</h2>
-          <span className="text-[11px] text-neutral-400">
+          <span className="hidden text-[11px] text-neutral-400 sm:inline">
             выберите стену, поставьте на неё корпус
           </span>
           <div className="ml-auto">
@@ -116,10 +113,9 @@ export function RoomPlan() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <PlanSvg
             room={room}
-            scale={scale}
             entries={entries}
             activeId={activeId}
             selectedWall={selectedWall}
@@ -128,9 +124,9 @@ export function RoomPlan() {
             onMove={(id, offset) => { if (movableIds.has(id)) movePlacement(id, { offset }) }}
           />
 
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-3">
             <SectionTitle>{tr('Размеры комнаты, мм')}</SectionTitle>
-            <fieldset className="grid grid-cols-3 gap-2">
+            <fieldset className="grid grid-cols-1 gap-2 min-[460px]:grid-cols-3">
               <Field label={tr('Ширина')}>
                 <NumberInput value={room.width} min={500} max={20000} step={50}
                   onChange={(width) => editRoom({ width })} />
@@ -315,10 +311,9 @@ function FinishEditor({ room, onChange }: { room: Room; onChange: (finish: RoomF
 }
 
 function PlanSvg({
-  room, scale, entries, activeId, selectedWall, onWall, onCabinet, onMove,
+  room, entries, activeId, selectedWall, onWall, onCabinet, onMove,
 }: {
   room: Room
-  scale: number
   entries: { cabinet: CabinetConfig; placement: Placement }[]
   activeId: string
   selectedWall: WallId
@@ -336,7 +331,7 @@ function PlanSvg({
    * қабырға−ені] аралығында қыселінеді. Дәлдік керек болса — оң жақтағы сан
    * қалады.
    */
-  const drag = useRef<{ id: string; wall: WallId; startX: number; startY: number; startOffset: number } | null>(null)
+  const drag = useRef<{ id: string; wall: WallId; startX: number; startY: number; startOffset: number; pxPerMm: number } | null>(null)
   const [dragging, setDragging] = useState<string | null>(null)
   useEffect(() => {
     if (!dragging) return
@@ -345,25 +340,22 @@ function PlanSvg({
       if (!d) return
       const wall = walls.find((w) => w.id === d.wall)
       if (!wall) return
-      const dxMm = (e.clientX - d.startX) / scale
-      const dzMm = (e.clientY - d.startY) / scale
-      const along = dxMm * wall.direction.x + dzMm * wall.direction.z
+      const alongPx = (e.clientX - d.startX) * wall.direction.x + (e.clientY - d.startY) * wall.direction.z
       const cab = entries.find((en) => en.cabinet.id === d.id)?.cabinet
       const max = Math.max(0, wall.length - (cab?.width ?? 0))
-      onMove(d.id, Math.round(Math.min(max, Math.max(0, d.startOffset + along))))
+      onMove(d.id, planDragOffset(d.startOffset, alongPx, d.pxPerMm, max))
     }
     const up = () => { drag.current = null; setDragging(null) }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
     return () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
-  }, [dragging, walls, scale, entries, onMove])
+  }, [dragging, walls, entries, onMove])
 
   return (
     <svg
       viewBox={`${-pad} ${-pad} ${room.width + pad * 2} ${room.depth + pad * 2}`}
-      width={(room.width + pad * 2) * scale}
-      height={(room.depth + pad * 2) * scale}
-      className="shrink-0 rounded-lg bg-neutral-50 dark:bg-neutral-950"
+      className="block h-auto w-full max-w-[420px] min-w-0 rounded-lg bg-neutral-50 dark:bg-neutral-950"
+      style={{ aspectRatio: `${room.width + pad * 2} / ${room.depth + pad * 2}` }}
       role="img"
       aria-label={tr('План комнаты')}
     >
@@ -410,6 +402,7 @@ function PlanSvg({
               drag.current = {
                 id: cabinet.id, wall: placement.wall,
                 startX: e.clientX, startY: e.clientY, startOffset: placement.offset,
+                pxPerMm: (e.currentTarget.ownerSVGElement?.getBoundingClientRect().width ?? 1) / (room.width + pad * 2),
               }
               setDragging(cabinet.id)
             }}
