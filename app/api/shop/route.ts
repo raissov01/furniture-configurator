@@ -5,6 +5,7 @@ import { readShopProfile, writeShopProfile } from '@/lib/server/store'
 import { cloudOff } from '@/lib/server/cloud'
 import { can } from '@/lib/permissions'
 import { toProductionShopProfile } from '@/src/core/publicShop'
+import { migrateBandThreshold } from '@/src/core/migrateBandThreshold'
 
 export async function GET(): Promise<Response> {
   const off = cloudOff()
@@ -15,8 +16,15 @@ export async function GET(): Promise<Response> {
   if (!can(account.role, 'readProduction')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
   const stored = readShopProfile(account.shopId)
   if (!stored) return NextResponse.json({ profile: null })
-  const profile = parseShopProfile(stored)
-  return NextResponse.json({ profile: can(account.role, 'readInternalPrice') ? profile : toProductionShopProfile(profile) })
+  try {
+    const migrated = migrateBandThreshold(stored)
+    const profile = parseShopProfile(migrated.value)
+    return NextResponse.json({ profile: can(account.role, 'readInternalPrice') ? profile : toProductionShopProfile(profile),
+      warnings: migrated.warnings })
+  } catch (error) {
+    return NextResponse.json({ error: `Сақталған цех профилін оқу мүмкін емес: ${error instanceof Error ? error.message : String(error)}` },
+      { status: 422 })
+  }
 }
 
 export async function PUT(request: Request): Promise<Response> {
