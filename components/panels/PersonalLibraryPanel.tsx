@@ -9,7 +9,7 @@ import { exportLibraryJson, importLibraryJson, readLocalLibrary, writeLocalLibra
 import { importUploadSummary, LIBRARY_AUTH_CHANGED_EVENT, libraryUploadOutcome } from '@/lib/librarySyncUi'
 
 const inputStyle = 'min-w-0 border border-neutral-700 bg-[var(--p100-dialog-content)] px-1.5 py-1 text-xs text-neutral-100'
-const buttonStyle = 'border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-40'
+const buttonStyle = 'border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-[var(--p100-tool-hover)] disabled:opacity-40'
 
 /** JSON өлшемдерінен жасалған нобай; бөгде өндірушінің суреті қолданылмайды. */
 function ItemPreview({ item }: { item: LibraryItem }) {
@@ -252,7 +252,7 @@ export function PersonalLibraryPanel() {
       </div>
       <button type="button" className={`mt-1 ${buttonStyle}`} disabled={!oldMaterialId || !newMaterialId || oldMaterialId === newMaterialId} onClick={() => void replaceAll()}>{tr('Заменить во всей библиотеке')}</button>
     </section>}
-    {error && <p role="alert" className="border border-red-700 p-1 text-xs text-red-300">{error}</p>}
+    {error && <p role="alert" className="border border-[var(--p100-invalid)] p-1 text-xs text-[var(--p100-invalid)]">{error}</p>}
     {message && <p role="status" className="text-xs text-neutral-400">{message}</p>}
   </div>
 }

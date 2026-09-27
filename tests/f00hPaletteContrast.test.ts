@@ -32,4 +32,14 @@ describe('F00h классикалық палитра және контраст',
       expect(panel, path).not.toMatch(/bg-neutral-9(?:00|50)/)
     }
   })
+
+  it('док қатесі мен ескертуі ашық фонда оқылады', () => {
+    expect(hexContrast(token('warning'), token('dialog-content'))).toBeGreaterThanOrEqual(4.5)
+    expect(hexContrast(token('success'), token('dialog-content'))).toBeGreaterThanOrEqual(4.5)
+    expect(hexContrast(token('invalid'), token('dialog-content'))).toBeGreaterThanOrEqual(4.5)
+    for (const path of ['FindPanel', 'ReplacePanel', 'LibraryPanel', 'PersonalLibraryPanel', 'ImportPanel']) {
+      const panel = source(`components/panels/${path}.tsx`)
+      expect(panel, path).not.toMatch(/(?:bg|text)-(?:red|amber|emerald)-(?:300|400|500|950)/)
+    }
+  })
 })

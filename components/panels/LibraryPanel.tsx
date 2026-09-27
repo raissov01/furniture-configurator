@@ -238,7 +238,7 @@ export function LibraryPanel() {
           <p className="font-medium">{pendingCabinet.name}</p>
           <p>{tr('Будет добавлен приблизительный шаблон')}: {tr(pendingChoice.templateName)}</p>
           <p className="tabular-nums">{pendingChoice.dimensions.height} (H) × {pendingChoice.dimensions.width} (W) × {pendingChoice.dimensions.depth} (D) {tr('мм')}</p>
-          <p className="text-amber-300">{tr('Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.')}</p>
+          <p className="text-[var(--p100-warning)]">{tr('Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.')}</p>
           <div className="flex gap-1">
             <button type="button" className="border border-neutral-500 px-2 py-1" onClick={() => addCabinetToProject(pendingCabinet)}>{tr('Добавить шаблон')}</button>
             <button type="button" className="border border-neutral-700 px-2 py-1" onClick={() => setPendingCabinet(null)}>{tr('Отмена')}</button>
@@ -260,7 +260,7 @@ export function LibraryPanel() {
                   className={cn('w-full border bg-[var(--p100-dialog)] px-1 py-1', coordErrors[`new:${axis}`] ? 'border-red-600' : 'border-neutral-700')} />
               </label>)}
             </div>
-            {(Object.keys(coordErrors).length > 0 || propError) ? <p role="alert" className="text-red-400">{Object.values(coordErrors)[0] ?? propError}</p> : null}
+            {(Object.keys(coordErrors).length > 0 || propError) ? <p role="alert" className="text-[var(--p100-invalid)]">{Object.values(coordErrors)[0] ?? propError}</p> : null}
             <div className="grid grid-cols-2 gap-1.5">
               {propItems.map((prop) => <button key={prop.id} type="button" onClick={() => placeProp(prop.id)}
                 disabled={Object.keys(coordErrors).some((key) => key.startsWith('new:'))}
@@ -272,7 +272,7 @@ export function LibraryPanel() {
             <h3 className="border-t border-neutral-700 pt-2 font-semibold">{tr('Размещённый декор')}</h3>
             {placed.map((node) => <div key={node.id} className="space-y-1 border border-neutral-700 p-2">
               <div className="flex items-center justify-between gap-2"><span>{tr(node.name)}</span>
-                <button type="button" onClick={() => deleteProp(node.id)} className="text-red-300">{tr('Удалить')}</button></div>
+                <button type="button" onClick={() => deleteProp(node.id)} className="text-[var(--p100-invalid)]">{tr('Удалить')}</button></div>
               <div className="flex gap-1">{(['x', 'y', 'z'] as const).map((axis) =>
                 <label key={axis} className="min-w-0 flex-1">{axis.toUpperCase()}
                   <input type="text" inputMode="numeric" value={placedDraft[`${node.id}:${axis}`] ?? String(node.transform.pos[axis])}
@@ -370,7 +370,7 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
       {dims.length > 0 ? (
         <div className="w-full truncate text-[9px] tabular-nums text-neutral-500">{dims.join(' · ')}</div>
       ) : null}
-      {onSelect && reason ? <span className="w-full text-[9px] text-amber-300">{reason}</span> : null}
+      {onSelect && reason ? <span className="w-full text-[9px] text-[var(--p100-warning)]">{reason}</span> : null}
     </button>
   )
 }

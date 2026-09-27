@@ -154,6 +154,8 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   --p100-tool-border: #cce8ff;
   --p100-tool-pressed-border: #99d1ff;
   --p100-invalid: #c42b1c;
+  --p100-warning: #805000;
+  --p100-success: #216e39;
 }
 @media (min-width: 1024px) {
   .p100-workspace { background: var(--p100-chrome); color: var(--p100-text); font: 12px/1.2 'Segoe UI', Tahoma, Arial, sans-serif; }

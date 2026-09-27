@@ -147,7 +147,7 @@ export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult)
       </div>
 
       {error ? (
-        <div className="border border-red-900 bg-red-950/40 p-2 text-[11px] text-red-300">{error}</div>
+        <div className="border border-[var(--p100-invalid)] bg-[var(--p100-dialog-content)] p-2 text-[11px] text-[var(--p100-invalid)]">{error}</div>
       ) : null}
 
       {preview ? (
@@ -182,7 +182,7 @@ export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult)
           </div>
 
           {preview.skipped.length > 0 ? (
-            <div className="border border-amber-900 bg-amber-950/30 p-2 text-[11px] text-amber-300">
+            <div className="border border-[var(--p100-warning)] bg-[var(--p100-dialog-content)] p-2 text-[11px] text-[var(--p100-warning)]">
               {tr('Не поддерживается, пропущено')}:{' '}
               {preview.skipped.map((s) => `${s.type} ×${s.count}`).join(', ')}
             </div>

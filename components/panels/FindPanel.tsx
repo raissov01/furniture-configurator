@@ -55,7 +55,7 @@ export function FindPanel() {
   }
 
   if (error) {
-    return <div data-panel="find" role="alert" className="border border-red-900 bg-red-950 px-2 py-1 text-xs text-red-300">{error}</div>
+    return <div data-panel="find" role="alert" className="border border-[var(--p100-invalid)] bg-[var(--p100-dialog-content)] px-2 py-1 text-xs text-[var(--p100-invalid)]">{error}</div>
   }
 
   return (

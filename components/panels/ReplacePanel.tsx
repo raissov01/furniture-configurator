@@ -117,7 +117,7 @@ export function ReplacePanel() {
       <div className="flex flex-col gap-1">
         <p className="text-[10px] uppercase tracking-wider text-neutral-500">{tr('Материалы в проекте')}</p>
         {!usage.ok ? (
-          <p className="text-[11px] text-amber-500">{usage.message}</p>
+          <p className="text-[11px] text-[var(--p100-warning)]">{usage.message}</p>
         ) : usage.value.materials.length === 0 ? (
           <p className="text-[11px] text-neutral-600">{tr('В проекте нет деталей')}</p>
         ) : (
@@ -178,7 +178,7 @@ export function ReplacePanel() {
               {!preview ? (
                 <p className="text-neutral-600">{tr('Выберите область')}</p>
               ) : !preview.ok ? (
-                <p className="text-amber-500">{preview.message}</p>
+                <p className="text-[var(--p100-warning)]">{preview.message}</p>
               ) : (
                 <>
                   <div className="flex items-center justify-between">
@@ -190,7 +190,7 @@ export function ReplacePanel() {
                   </p>}
                   <div className="flex items-center justify-between">
                     <span className="text-neutral-400">{tr('Изменение цены')}</span>
-                    <span className={cn('tabular-nums', preview.value.priceDiff > 0 ? 'text-amber-500' : preview.value.priceDiff < 0 ? 'text-emerald-500' : 'text-neutral-300')}>
+                    <span className={cn('tabular-nums', preview.value.priceDiff > 0 ? 'text-[var(--p100-warning)]' : preview.value.priceDiff < 0 ? 'text-[var(--p100-success)]' : 'text-neutral-300')}>
                       {preview.value.priceDiff > 0 ? '+' : ''}{formatTenge(preview.value.priceDiff)}
                     </span>
                   </div>
@@ -199,7 +199,7 @@ export function ReplacePanel() {
                     <span className="tabular-nums">{formatTenge(preview.value.priceAfter)}</span>
                   </div>
                   {preview.value.cutSizeChanged ? (
-                    <p className="mt-1 text-amber-500">
+                    <p className="mt-1 text-[var(--p100-warning)]">
                       {tr('Толщина материала другая — размер реза тоже пересчитан (§4.3).')}
                     </p>
                   ) : null}
@@ -209,11 +209,11 @@ export function ReplacePanel() {
           ) : null}
 
           <Button active disabled={!canApply} onClick={apply}>{tr('Заменить')}</Button>
-          {applyError && <p role="alert" className="text-red-400">{applyError}</p>}
+          {applyError && <p role="alert" className="text-[var(--p100-invalid)]">{applyError}</p>}
         </>
       ) : null}
 
-      {justApplied ? <p className="text-[11px] text-emerald-500">{justApplied}</p> : null}
+      {justApplied ? <p className="text-[11px] text-[var(--p100-success)]">{justApplied}</p> : null}
       {boardMaterials.length > 0 ? <section className="flex flex-col gap-1 border-t border-neutral-800 pt-2 text-[11px]">
         <p className="text-neutral-400">{tr('Замена материалов свободных панелей')}</p>
         <select className="border border-neutral-700 bg-[var(--p100-dialog-content)] p-1" aria-label={tr('Материал свободной панели')} value={boardOldId} onChange={(event) => setBoardOldId(event.target.value)}>
@@ -228,7 +228,7 @@ export function ReplacePanel() {
           try { replaceFreeBoardMaterial(boardOldId, boardNewId); setBoardError(null); setJustApplied(tr('Заменено.')) }
           catch (cause) { setBoardError(cause instanceof Error ? cause.message : tr('Не удалось заменить материал')) }
         }}>{tr('Заменить свободные панели')}</Button>
-        {boardError && <p role="alert" className="text-red-400">{boardError}</p>}
+        {boardError && <p role="alert" className="text-[var(--p100-invalid)]">{boardError}</p>}
       </section> : null}
     </div>
   )
