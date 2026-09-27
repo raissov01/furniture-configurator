@@ -35,6 +35,7 @@ export type ClassicCommand =
   | { type: 'fittings'; show: 'none' | 'drilling' | 'fittings' }
   | { type: 'fit' }
   | { type: 'toggleSilhouette' }
+  | { type: 'toggleWalk' }
   | { type: 'addCabinet' }
   | { type: 'addBoard' }
   | { type: 'addSolid' }
@@ -80,6 +81,7 @@ export type ClassicMenuState = {
   showDrilling: boolean
   showFittings: boolean
   silhouetteOn: boolean
+  walk?: boolean
   open: boolean
   assembly: boolean
   theme: Theme
@@ -163,6 +165,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('view.fittings.fittings', 'Фурнитура: крепёж', { type: 'fittings', show: 'fittings' }, { active: s.showFittings }),
         item('view.fit', 'Вписать в кадр', { type: 'fit' }),
         item('view.silhouette', 'Человек для масштаба', { type: 'toggleSilhouette' }, { active: s.silhouetteOn }),
+        item('view.walk', 'Прогулка', { type: 'toggleWalk' }, { active: Boolean(s.walk) }),
         // Классикалық режимде ескі header жасырын — тема мен 3D сапасы осында (P0-5).
         SEP,
         { kind: 'heading', id: 'view.theme', label: 'Тема' },

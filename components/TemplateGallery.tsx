@@ -19,6 +19,7 @@ import { KitchenWizard } from '@/components/KitchenWizard'
 import { matchTemplateId } from '@/lib/templateMatch'
 import { parseKitchenWalls } from '@/lib/kitchenWallInput'
 import { shouldCloseGalleryOnKey } from '@/lib/galleryKeyboard'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 type Filter = TemplateCategory | 'all' | 'sets' | 'standard'
 
@@ -42,6 +43,7 @@ const thumbScale = (heightMm: number) =>
 
 export function TemplateGallery() {
   const open = useConfigurator((s) => s.galleryOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'gallery')
   const setOpenRaw = useConfigurator((s) => s.setGalleryOpen)
   const firstRun = useConfigurator((s) => s.firstRun)
   const setFirstRun = useConfigurator((s) => s.setFirstRun)
@@ -90,8 +92,9 @@ export function TemplateGallery() {
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent) => {
-      if (!shouldCloseGalleryOnKey(event.key, wizardOpen)) return
+      if (!isTop || !shouldCloseGalleryOnKey(event.key, wizardOpen)) return
       event.preventDefault()
+      event.stopImmediatePropagation()
       setFirstRun(false)
       setOpenRaw(false)
     }
@@ -99,7 +102,7 @@ export function TemplateGallery() {
     return () => {
       document.removeEventListener('keydown', onKey)
     }
-  }, [open, wizardOpen, setFirstRun, setOpenRaw])
+  }, [open, isTop, wizardOpen, setFirstRun, setOpenRaw])
 
   const counts = useMemo(() => {
     const map = new Map<TemplateCategory, number>()
@@ -122,7 +125,8 @@ export function TemplateGallery() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div

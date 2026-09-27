@@ -5,11 +5,13 @@
  * керек — цехтағы адам клиенттің готовый өлшемін кесіп алмауы үшін.
  */
 
-import { t as tr } from '@/lib/i18n'
-import { useMemo } from 'react'
+import { getLang, t as tr } from '@/lib/i18n'
+import { useMemo, useState } from 'react'
 import { CUT_LIST_COLUMNS, formatCutList, panelFitWarnings } from '@/src/core/index'
 import type { Catalog, CutListRow, Panel } from '@/src/core/index'
 import { cn } from '@/lib/cn'
+import { nextCutListSort, sortCutListRows } from '@/lib/cutListSort'
+import type { CutListSort } from '@/lib/cutListSort'
 
 const GROUP_STYLE: Record<string, string> = {
   'ГОТОВЫЙ · клиент': 'bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200',
@@ -26,6 +28,8 @@ export function CutListTable({
   panels, catalog, collapsed = false, onToggle,
 }: { panels: Panel[]; catalog: Catalog; collapsed?: boolean; onToggle?: () => void }) {
   const rows: CutListRow[] = useMemo(() => formatCutList(panels, catalog), [panels, catalog])
+  const [sort, setSort] = useState<CutListSort | null>(null)
+  const sortedRows = useMemo(() => sortCutListRows(rows, sort, getLang()), [rows, sort])
   const pieces = rows.reduce((s, r) => s + r.qty, 0)
   /*
    * Параққа сыймайтын деталь ОСЫ ЖЕРДЕ айтылады. Раскрой да айтады, бірақ ол
@@ -101,18 +105,27 @@ export function CutListTable({
               {CUT_LIST_COLUMNS.map((c) => (
                 <th
                   key={c.key}
+                  scope="col"
+                  aria-sort={sort?.key === c.key ? sort.direction === 'asc' ? 'ascending' : 'descending' : undefined}
                   className={cn(
-                    'whitespace-nowrap border-b border-neutral-200 px-2 py-1 font-medium text-neutral-500 dark:border-neutral-800',
+                    'whitespace-nowrap border-b border-neutral-200 p-0 font-medium text-neutral-500 dark:border-neutral-800',
                     c.align === 'right' ? 'text-right' : 'text-left',
                   )}
                 >
-                  {c.header}
+                  <button type="button"
+                    aria-label={`${tr('Сортировать')}: ${c.group ? `${tr(c.group)} · ` : ''}${tr(c.header)}`}
+                    onClick={() => setSort((current) => nextCutListSort(current, c.key))}
+                    className={cn('flex w-full items-center gap-1 px-2 py-1 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-600 dark:hover:bg-neutral-800', c.align === 'right' ? 'justify-end' : 'justify-start')}
+                  >
+                    <span>{tr(c.header)}</span>
+                    {sort?.key === c.key ? <span aria-hidden="true">{sort.direction === 'asc' ? '↑' : '↓'}</span> : null}
+                  </button>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => (
+            {sortedRows.map((row, i) => (
               <tr key={i} className="odd:bg-neutral-50/70 dark:odd:bg-neutral-900/40">
                 {CUT_LIST_COLUMNS.map((c) => (
                   <td

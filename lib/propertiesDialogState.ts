@@ -67,8 +67,8 @@ export function propertiesProductionReady(dirty: boolean, invalid: boolean, draf
   return !dirty && !invalid && !draftInvalid
 }
 
-export function propertiesChildModalActive(quoteOpen: boolean, drillOpen: boolean): boolean {
-  return quoteOpen || drillOpen
+export function propertiesChildModalActive(quoteOpen: boolean, drillOpen: boolean, galleryOpen = false, shopOpen = false): boolean {
+  return quoteOpen || drillOpen || galleryOpen || shopOpen
 }
 
 /** Child dialogs can show live data, but must not download files while Properties can still Cancel. */

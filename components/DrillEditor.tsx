@@ -18,7 +18,9 @@ import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { drillClickResult, drillDeleteDecision, drillPresetOptions } from '@/lib/f17DrillUi'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { panelCncAvailable, panelCncCsv } from '@/lib/panelCncExport'
 import {
   CUTOUT_PRESETS,
@@ -29,9 +31,6 @@ import {
   findCutoutPreset,
   drillEditCounts,
   drillKey,
-  drillFromPreset,
-  findDrillPreset,
-  isDrillWithinMaterial,
   isManualDrill,
   removeDrill,
   resetPanelDrills,
@@ -104,6 +103,7 @@ function place(drill: Drill, length: number, width: number): { x: number; y: num
 
 export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panels: Panel[]; catalog: Catalog; propertiesOpen?: boolean }) {
   const open = useConfigurator((s) => s.drillOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'drill')
   const setOpen = useConfigurator((s) => s.setDrillOpen)
   const cabinet = useConfigurator((s) => s.cabinets.find((item) => item.id === s.activeId))
   const boardNode = useConfigurator((s) => {
@@ -112,6 +112,7 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
   })
   const edit = useConfigurator((s) => s.edit)
   const editBoard = useConfigurator((s) => s.editBoard)
+  const projectSettings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
 
   const [panelId, setPanelId] = useState<string | null>(null)
   const [presetId, setPresetId] = useState(DRILL_PRESETS[0]!.id)
@@ -120,13 +121,16 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
   const [snap, setSnap] = useState(true)
   const [selected, setSelected] = useState<string | null>(null)
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null)
+  const [feedback, setFeedback] = useState<string | null>(null)
 
   const edits: DrillEdits = boardNode ? { [boardNode.id]: { added: boardNode.board.drilling ?? [], removed: [] } }
     : cabinet?.drillEdits ?? {}
   const allCutouts: PanelCutouts = boardNode ? { [boardNode.id]: boardNode.board.cutouts ?? [] }
     : cabinet?.panelCutouts ?? {}
   const panel = panels.find((p) => p.id === panelId) ?? panels[0]
-  const preset = findDrillPreset(presetId)!
+  const settings = { ...projectSettings, ...cabinet?.settings }
+  const presetOptions = drillPresetOptions(settings)
+  const preset = presetOptions.find((option) => option.id === presetId) ?? presetOptions[0]!
 
   const setEdits = (next: DrillEdits, key: string) => {
     if (boardNode) editBoard(boardNode.id, { drilling: next[boardNode.id]?.added ?? [] })
@@ -165,17 +169,22 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!open) return
+      if (!open || !isTop) return
       if (e.key === 'Escape') setOpen(false)
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected !== null && panel) {
         const found = panel.drilling.find((d) => drillKey(d) === selected)
         if (!found) return
         e.preventDefault()
+        if (drillDeleteDecision(boardNode !== null, isManualDrill(found, edits[panel.id])) === 'auto-board') {
+          setFeedback(tr('Автоотверстие задаётся соединением. Измените соединение; удалить можно только ручное отверстие.'))
+          return
+        }
         setEdits(
           removeDrill(edits, panel.id, found, { manual: isManualDrill(found, edits[panel.id]) }),
           `remove:${selected}`,
         )
         setSelected(null)
+        setFeedback(null)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -185,7 +194,7 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
   if (!open) return null
   if (!panel || !material) {
     return (
-      <Shell onClose={() => setOpen(false)}>
+      <Shell onClose={() => setOpen(false)} zIndex={zIndex}>
         <p className="text-xs text-neutral-500">{tr('Нет деталей для присадки.')}</p>
       </Shell>
     )
@@ -229,23 +238,19 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
     if (!spot) return
 
     const onEdge = isEdgeFace(spot.face)
-    // Пресет пен бет сәйкес келмесе, ҮНСІЗ басқа тесік қоймаймыз.
-    if (onEdge !== (preset.where === 'edge')) return
-
     // Торцта тесік ӘРҚАШАН қалыңдықтың ортасында: станок басқаша бұрғыламайды.
     const x = snap && !onEdge ? snapToPitch(spot.x) : spot.x
     const y = onEdge ? t / 2 : snap ? snapToPitch(spot.y) : spot.y
-    const drill = drillFromPreset(preset, spot.face, x, y, t)
-    // Аудит Y6: ЕН бойынша қиғаш (бұрыштық корпус) панельде тікбұрышты
-    // заготовканың ІШІНДЕ, бірақ кесіліп кететін үшбұрышта жатқан нүктеге
-    // тесік қоюға болмайды — ҮНСІЗ бас тартамыз (onEdge сәйкессіздігіндей).
-    if (!isDrillWithinMaterial(panel, drill.face, drill.x, drill.y)) return
+    const result = drillClickResult(panel, t, preset.id, settings, { ...spot, x, y })
+    if (!result.drill) { setFeedback(result.error); return }
+    const drill = result.drill
     setEdits(addDrill(edits, panel.id, drill), `add:${drillKey(drill)}`)
     setSelected(drillKey(drill))
+    setFeedback(null)
   }
 
   return (
-    <Shell onClose={() => setOpen(false)}>
+    <Shell onClose={() => setOpen(false)} zIndex={zIndex}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="mr-1 text-sm font-semibold">{tr('Присадка вручную')}</h2>
         <span className="text-[11px] text-neutral-500">
@@ -275,17 +280,19 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
           </Button>
           <Button
             disabled={!panelEdit || (boardNode !== null && panelEdit.added.length === 0)}
-            title={boardNode ? tr('Удалить все отверстия') : tr('Вернуть автоматическую присадку этой детали')}
+            title={boardNode ? tr('Удалить только ручные отверстия; автоматические задаются соединением') : tr('Вернуть автоматическую присадку этой детали')}
             onClick={() => {
               setEdits(resetPanelDrills(edits, panel.id), `reset:${panel.id}`)
               setSelected(null)
+              setFeedback(null)
             }}
           >
-            {boardNode ? tr('Удалить все отверстия') : tr('Вернуть авто')}
+            {boardNode ? tr('Удалить ручные отверстия') : tr('Вернуть авто')}
           </Button>
           <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
         </div>
       </div>
+      {feedback ? <p role="status" className="mb-2 border border-red-500 px-2 py-1 text-xs text-red-700 dark:text-red-300">{feedback}</p> : null}
 
       <div className="grid gap-3 lg:grid-cols-[230px_1fr]">
         <aside className="space-y-3">
@@ -303,8 +310,8 @@ export function DrillEditor({ panels, catalog, propertiesOpen = false }: { panel
           <Field label={tr('Что сверлим')} hint={preset.where === 'edge' ? tr('в торец') : tr('в пласть')}>
             <Select
               value={presetId}
-              onChange={setPresetId}
-              options={DRILL_PRESETS.map((p) => ({ value: p.id, label: p.name }))}
+              onChange={(id) => { setPresetId(id); setFeedback(null) }}
+              options={presetOptions.map((p) => ({ value: p.id, label: p.name }))}
             />
           </Field>
 
@@ -634,17 +641,18 @@ function SelectedInfo({ panel, keyOf }: { panel: Panel; keyOf: string }) {
   )
 }
 
-function Shell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function Shell({ children, onClose, zIndex }: { children: React.ReactNode; onClose: () => void; zIndex: number }) {
   const dialogRef = useRef<HTMLDivElement>(null)
   useEffect(() => { dialogRef.current?.focus() }, [])
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={onClose}
     >
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Присадка')}
         className={cn(
-          'w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl',
+          'w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-4',
           'dark:border-neutral-700 dark:bg-neutral-900',
         )}
         onClick={(e) => e.stopPropagation()}

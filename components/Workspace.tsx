@@ -11,8 +11,8 @@ import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
-import { AnnotationProperties } from '@/components/AnnotationProperties'
 import { SolidProperties } from '@/components/SolidProperties'
+import { AnnotationProperties } from '@/components/AnnotationProperties'
 import { PropertiesDialog } from '@/components/PropertiesDialog'
 import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
@@ -29,6 +29,8 @@ import { HistoryPanel } from '@/components/HistoryPanel'
 import { ShareCodeDialog } from '@/components/ShareCodeDialog'
 import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
+import { deleteAction, resetDecision } from '@/lib/workspaceActions'
+import { uniqueToolbarRows } from '@/lib/classicToolbar'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
@@ -61,6 +63,8 @@ import { usePanels } from '@/lib/usePanels'
 import { useTreeSceneItems } from '@/lib/useTreeSceneItems'
 import { useProjectProduction } from '@/lib/useProjectProduction'
 import { productionAvailability } from '@/lib/productionAvailability'
+import { assemblyStepView } from '@/lib/assemblyStepView'
+import { parseSilhouetteHeight } from '@/lib/silhouetteInput'
 import {
   DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, shelfSpanWarnings,
 } from '@/src/core/index'
@@ -94,12 +98,12 @@ const VIEW_TABS: {
   key: string
   ruLabel: string
   preset: CameraPreset
-  /** Көрсетілмесе — қазіргі проекция сол күйі қалады (жоспар, мысалы). */
+  /** Қойындының нақты проекциясы. */
   projection?: 'perspective' | 'ortho'
 }[] = [
   { key: 'perspective', ruLabel: 'Перспектива', preset: 'three-quarter', projection: 'perspective' },
   { key: 'axo', ruLabel: 'Аксонометрия', preset: 'three-quarter', projection: 'ortho' },
-  { key: 'plan', ruLabel: 'План', preset: 'plan' },
+  { key: 'plan', ruLabel: 'План', preset: 'plan', projection: 'ortho' },
   { key: 'wall-north', ruLabel: 'Стена С', preset: 'wall-north', projection: 'ortho' },
   { key: 'wall-west', ruLabel: 'Стена З', preset: 'wall-west', projection: 'ortho' },
   { key: 'wall-south', ruLabel: 'Стена Ю', preset: 'wall-south', projection: 'ortho' },
@@ -154,9 +158,10 @@ export function Workspace() {
   const removeCabinet = useConfigurator((s) => s.removeCabinet)
   const addCabinet = useConfigurator((s) => s.addCabinet)
   const addBoard = useConfigurator((s) => s.addBoard)
-  const addAnnotation = useConfigurator((s) => s.addAnnotation)
   const addSolid = useConfigurator((s) => s.addSolid)
+  const addAnnotation = useConfigurator((s) => s.addAnnotation)
   const removeBoard = useConfigurator((s) => s.removeBoard)
+  const removeAnnotation = useConfigurator((s) => s.removeAnnotation)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
@@ -181,6 +186,9 @@ export function Workspace() {
   const setShowFronts = useConfigurator((s) => s.setShowFronts)
   const silhouette = useConfigurator((s) => s.silhouette)
   const setSilhouette = useConfigurator((s) => s.setSilhouette)
+  const [silhouetteDraft, setSilhouetteDraft] = useState(() => String(silhouette.height))
+  useEffect(() => setSilhouetteDraft(String(silhouette.height)), [silhouette.height])
+  const silhouetteError = parseSilhouetteHeight(silhouetteDraft).error
   const projection = useConfigurator((s) => s.projection)
   const setProjection = useConfigurator((s) => s.setProjection)
   const fitCamera = useConfigurator((s) => s.fitCamera)
@@ -221,8 +229,8 @@ export function Workspace() {
   const activePanels = hasActiveCabinet ? panels : []
   const activeNode = findNode(root, activeId)
   const activeBoard = activeNode?.kind === 'board' ? activeNode : null
-  const activeAnnotation = activeNode?.kind === 'annotation' ? activeNode : null
   const activeSolid = activeNode?.kind === 'solid' ? activeNode : null
+  const activeAnnotation = activeNode?.kind === 'annotation' ? activeNode : null
   const activeBoardJoint = activeBoard ? autoJoints.find((joint) => joint.boardIds.includes(activeId)) : undefined
   const boardPanel = activeBoard ? production.scene.nodes.find((node) => node.nodeId === activeId)?.panels[0] : undefined
   const editableBoard = useMemo(() => {
@@ -259,6 +267,20 @@ export function Workspace() {
     } catch (cause) {
       setMirrorError(cause instanceof Error ? cause.message : String(cause))
     }
+  }
+
+  const deleteSelected = () => {
+    let editable = false
+    try { assertTreeNodeEditable(root, activeId, layers); editable = true }
+    catch (cause) { if (!(cause instanceof ConfigValidationError)) throw cause }
+    const action = deleteAction(activeNode?.kind ?? null, editable, cabinets.length, Boolean(activeBoardJoint))
+    if (action === 'board') removeBoard(activeId)
+    if (action === 'annotation') removeAnnotation(activeId)
+    if (action === 'cabinet') removeCabinet(activeId)
+    if (action) setSelected(null)
+  }
+  const requestReset = () => {
+    if (resetDecision(window.confirm(tr('Сбросить текущий проект?'))) === 'reset') reset()
   }
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
@@ -428,6 +450,8 @@ export function Workspace() {
    */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const dialogState = useConfigurator.getState()
+      if (propertiesNodeId || dialogState.galleryOpen || dialogState.shopOpen || dialogState.quoteOpen || dialogState.drillOpen || dialogState.roomOpen) return
       if (isTyping(e.target)) return
       // Escape — 3D-дегі таңдауды алу. Хоткейлер тізіміне кірмейді: бұл
       // «әрекет» емес, кез келген жерден шығудың әдеттегі жолы.
@@ -452,6 +476,7 @@ export function Workspace() {
         case 'help': setHelpOpen(true); break
         case 'undo': undo(); break
         case 'redo': redo(); break
+        case 'delete': deleteSelected(); break
       }
     }
     window.addEventListener('keydown', onKey)
@@ -495,7 +520,7 @@ export function Workspace() {
           .catch((cause: unknown) => setExportError(cause instanceof Error ? cause.message : String(cause)))
         break
       case 'clientLink': void copyClientLink(); break
-      case 'reset': reset(); break
+      case 'reset': requestReset(); break
       case 'undo': undo(); break
       case 'redo': redo(); break
       case 'preset': setCameraPreset(command.preset); break
@@ -509,6 +534,7 @@ export function Workspace() {
         break
       case 'fit': fitCamera(); break
       case 'toggleSilhouette': setSilhouette({ on: !silhouette.on }); break
+      case 'toggleWalk': setWalk(!walk); break
       case 'addCabinet': addCabinet(); break
       case 'addBoard': addBoard(); break
       case 'addSolid': addSolid(); break
@@ -533,13 +559,13 @@ export function Workspace() {
     canExportActiveCabinet: hasActiveCabinet && productionState.exportsAvailable,
     productionError: Boolean(production.error),
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
-    silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,
+    silhouetteOn: silhouette.on, walk, open: openness > 0, assembly: assemblyStep !== null,
     theme, quality, lang: getLang(),
     price: liveTotal === null ? null : 'total' in liveTotal ? { total: formatTenge(liveTotal.total) } : { missing: true },
     cloud: cloudEnabled, classic,
   })
 
-  const classicToolRows: ClassicToolSpec[][] = classic ? [
+  const classicToolRows: ClassicToolSpec[][] = classic ? uniqueToolbarRows<ClassicToolSpec>([
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
       { icon: 'open', label: tr('Открыть проект'), action: () => pickProjectFile(loadProject) },
@@ -548,8 +574,8 @@ export function Workspace() {
       { icon: 'cut', label: tr('Раскрой'), action: () => { window.location.href = '/cut' } },
       { icon: 'copy', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable },
-      { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo },
-      { icon: 'redo', label: tr('Повторить'), action: redo, disabled: !canRedo },
+      { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, id: 'undo' },
+      { icon: 'redo', label: tr('Повторить'), action: redo, disabled: !canRedo, id: 'redo' },
       { icon: 'settings', label: tr('Цех: материалы и цены'), action: () => setShopOpen(true) },
     ],
     [
@@ -569,12 +595,11 @@ export function Workspace() {
     ],
     [
       { icon: 'structure', label: tr('Структура'), action: () => setStructureOpen(true), active: structureOpen, id: 'structure' },
-      { icon: 'layers', label: tr('Слои'), action: () => setStructureOpen(true) },
-      { icon: 'library', label: tr('Библиотека'), action: () => setStructureOpen(true) },
       { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
+      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
       { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
@@ -585,7 +610,7 @@ export function Workspace() {
       { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard },
       { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
     ],
-  ] : []
+  ]) : []
 
   return (
     <div className={cn("flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100", classic && "p100-workspace")} data-workspace-style={classic ? "classic" : "ours"}>
@@ -621,7 +646,7 @@ export function Workspace() {
         «Наш» режимі мен e2e үшін өзгеріссіз қалды.
       */}
 
-      <nav data-tour="menubar" data-testid="classic-menubar" className="flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+      <nav role="menubar" aria-label={tr('Главное меню')} data-tour="menubar" data-testid="classic-menubar" className="hidden lg:flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
         {classic && <Link href="/" title={`${SITE.name} — ${tr('На главную')}`} className="mr-1 hidden items-center lg:inline-flex" data-testid="classic-brand">
           <img src="/brand/aismebel-mark.svg" width={16} height={16} alt={SITE.name} />
         </Link>}
@@ -650,6 +675,14 @@ export function Workspace() {
       {classic && <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
         {classicToolRows.map((row, index) => <div className="p100-toolbar-row" key={index}>
           {row.map((tool) => <ClassicTool key={`${tool.icon}-${tool.label}`} {...tool} />)}
+          {index === 2 && assemblyStep !== null && <label className="ml-2 flex items-center gap-1 border border-neutral-400 px-1 text-xs" data-testid="classic-assembly-step">
+            <span>{tr('Сборка')}</span>
+            <input type="range" aria-label={tr('Показать сборку по шагам')} min={1}
+              max={assemblyStepView(assemblyStep, projectPanels.length).max}
+              value={assemblyStepView(assemblyStep, projectPanels.length).value}
+              onChange={(event) => setAssemblyStep(Number(event.target.value))} />
+            <span className="tabular-nums">{assemblyStepView(assemblyStep, projectPanels.length).label}</span>
+          </label>}
           {index === 3 && <label className="p100-toolbar-style">{tr('Рабочее место')}
             <select aria-label={tr('Стиль рабочего места')} value="classic" onChange={(event) => changeStyle(event.target.value === 'classic')}>
               <option value="classic">{tr('Классический')}</option><option value="ours">{tr('Наш')}</option>
@@ -692,7 +725,7 @@ export function Workspace() {
             <MenuItem onClick={() => void copyClientLink()}>{tr('Ссылка клиенту')}</MenuItem>
             {/* qdesign «3D-көріністе ашу» сияқты: 6 таңбалы код, 24 сағат, автожаңарту. */}
             <MenuItem onClick={() => setShareCodeOpen(true)}>{tr('Код для клиента')}</MenuItem>
-            <MenuItem onClick={reset}>{tr('Сброс')}</MenuItem>
+            <MenuItem onClick={requestReset}>{tr('Сброс')}</MenuItem>
           </Menu>
           <Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
           {/* Раскрой — БӨЛЕК бет (цех станогы қасында ашады), сондықтан тікелей. */}
@@ -883,21 +916,22 @@ export function Workspace() {
             {tr('Человек для масштаба')}
           </MenuItem>
         </Menu>
-        {silhouette.on ? (
-          <input
-            type="number"
-            className="w-16 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
-            value={silhouette.height}
-            min={MIN_SILHOUETTE_HEIGHT}
-            max={MAX_SILHOUETTE_HEIGHT}
-            step={10}
-            title={tr('Рост человека, мм')}
-            onChange={(e) => {
-              const v = Number(e.target.value)
-              if (Number.isFinite(v)) setSilhouette({ height: Math.round(v) })
-            }}
-          />
-        ) : null}
+        {silhouette.on ? <div className="flex flex-col gap-0.5">
+          <input type="text" inputMode="numeric" aria-label={tr('Рост человека, мм')}
+            aria-invalid={Boolean(silhouetteError)} aria-describedby={silhouetteError ? 'silhouette-height-error' : undefined}
+            className={cn('w-20 border bg-white px-1.5 py-1 text-xs tabular-nums dark:bg-neutral-900',
+              silhouetteError ? 'border-red-600 text-red-700' : 'border-neutral-300 dark:border-neutral-700')}
+            value={silhouetteDraft} title={tr('Рост человека, мм')}
+            onChange={(event) => {
+              const raw = event.target.value
+              setSilhouetteDraft(raw)
+              const parsed = parseSilhouetteHeight(raw)
+              if (parsed.value !== undefined) setSilhouette({ height: parsed.value })
+            }} />
+          {silhouetteError ? <span id="silhouette-height-error" role="alert" className="text-xs text-red-700">
+            {tr('Рост человека, мм')}: {tr('Допустимо целое число в диапазоне')} {MIN_SILHOUETTE_HEIGHT}…{MAX_SILHOUETTE_HEIGHT} мм
+          </span> : null}
+        </div> : null}
         <Button size="sm" onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
       </div>
 
@@ -1031,8 +1065,8 @@ export function Workspace() {
           {classic ? <>
             <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} />
             <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} />
-            <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" />
             <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} />
+            <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" />
             <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} />
             <ClassicTool icon="structure" label={tr('Структура')} action={() => setStructureOpen(true)} id="structure-side" />
           </> : <>
@@ -1050,8 +1084,8 @@ export function Workspace() {
           </>}
         </div>
         <div className="flex min-h-0 flex-col">
-        {/* Телефонда 3D көрінеді, ал қасиеттердің бөлек scroll аймағына орын қалады. */}
-        <main className="relative isolate h-[32dvh] min-h-[240px] max-h-[32dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+        {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
+        <main className="relative isolate h-[28dvh] min-h-[240px] max-h-[28dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
@@ -1159,7 +1193,7 @@ export function Workspace() {
               </div>
             </> : activeAnnotation ? <div className="truncate text-sm font-semibold" title={activeAnnotation.name}>{activeAnnotation.name}</div>
               : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
-            {classic && (activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+            {classic && (activeBoard || activeSolid || activeAnnotation || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
           <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && !activeAnnotation && "lg:hidden")}>
             <Dense>
@@ -1184,25 +1218,12 @@ export function Workspace() {
               ) : null}
             </Dense>
           </div>
-          {classic && <section className="p100-camera-pane hidden lg:block" aria-label={tr('Камера')}>
-            <div className="p100-camera-title">{tr('Камера 1')}</div>
-            <div className="p100-camera-controls">
-              <Button size="sm" onClick={() => { setCameraPreset('three-quarter'); setProjection('perspective') }}>{tr('Перспектива')}</Button>
-              <Button size="sm" onClick={() => { setCameraPreset('front'); setProjection('ortho') }}>{tr('Фас')}</Button>
-              <Button size="sm" onClick={() => setCameraPreset('plan')}>{tr('План')}</Button>
-              <Button size="sm" onClick={fitCamera}>{tr('Вписать в кадр')}</Button>
-              {(activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
-              <Button size="sm" onClick={addBoard}>{tr('+ доска')}</Button>
-              <Button size="sm" onClick={addAnnotation}>{tr('+ текст')}</Button>
-              <Button size="sm" onClick={addSolid}>{tr('+ блок')}</Button>
-            </div>
-          </section>}
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
           <div className={cn("flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800", classic && "lg:hidden")}>
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
-            <Button onClick={addAnnotation} testId="add-annotation">{tr('+ текст')}</Button>
             <Button onClick={addSolid}>{tr('+ блок')}</Button>
+            <Button onClick={addAnnotation} testId="add-annotation">{tr('+ текст')}</Button>
             {activeBoard && <Button onClick={() => removeBoard(activeId)}
               disabled={!editableBoard || Boolean(activeBoardJoint)}>{tr('Удалить доску')}</Button>}
             <Button onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>{tr('Дублировать')}</Button>
