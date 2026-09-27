@@ -1126,6 +1126,7 @@ export const uz: Record<string, string> = {
   'Вертикальная плоскость (D = толщина)': 'Vertikal tekislik (D = qalinlik)',
   'толщина материала': 'material qalinligi',
   'Текстура вдоль длины': "Tekstura uzunlik bo'ylab",
+  'У материала нет направления текстуры': "Bu materialda tekstura yo'nalishi yo'q",
   'Материал не найден': 'Material topilmadi',
   'Не удалось изменить деталь': "Detalni o'zgartirib bo'lmadi",
   'Удалить все отверстия': "Barcha teshiklarni o'chirish",

@@ -269,12 +269,13 @@ export function Button({
 }
 
 export function Toggle({
-  checked, onChange, label,
-}: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  checked, onChange, label, disabled = false,
+}: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300">
+    <label className={cn('flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300', disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
       <input
         type="checkbox"
+        disabled={disabled}
         className="accent-neutral-900 dark:accent-neutral-100"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}

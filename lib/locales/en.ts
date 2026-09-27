@@ -1122,6 +1122,7 @@ export const en: Record<string, string> = {
   'Вертикальная плоскость (D = толщина)': 'Vertical plane (D = thickness)',
   'толщина материала': 'material thickness',
   'Текстура вдоль длины': 'Grain along length',
+  'У материала нет направления текстуры': 'This material has no grain direction',
   'Материал не найден': 'Material not found',
   'Не удалось изменить деталь': 'Could not edit part',
   'Удалить все отверстия': 'Remove all holes',
