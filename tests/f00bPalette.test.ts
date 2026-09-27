@@ -22,9 +22,9 @@ describe('F00b бренд палитрасы', () => {
     expect(sheet).not.toContain('fill="var(--blueprint)"')
   })
 
-  it('Наш режимінің белсенді түймесі графит, белгісі амбер', () => {
-    expect(workspace).toContain('"ours-workspace"')
-    expect(css).toMatch(/\.ours-workspace[^}]+background:\s*var\(--brand-graphite\)/s)
-    expect(css).toMatch(/\.ours-workspace[^}]+border-bottom-color:\s*var\(--brand-amber\)/s)
+  // F00c десктоптағы «Наш» режимін алып тастады: оның графит/амбер ережелері де жоқ.
+  it('Наш режимі жоқ, оның бөлек стилі де қалмады', () => {
+    expect(workspace).not.toContain('"ours-workspace"')
+    expect(css).not.toContain('.ours-workspace')
   })
 })

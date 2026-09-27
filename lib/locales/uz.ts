@@ -11,6 +11,8 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'AR недоступен без облачного хранения': 'AR uchun bulutli saqlash kerak',
+  'Допустимо от 1 до 500 символов': 'Ruxsat etilgan uzunlik: 1–500 belgi',
   'В ссылке нет проекта. Попросите отправить её целиком.': 'Havolada loyiha yo‘q. To‘liq havolani so‘rang.',
   'Не удалось открыть проект по этой ссылке.': 'Bu havoladagi loyiha ochilmadi.',
   'Код не найден или его срок истёк: код действует 24 часа. Попросите у мастера новый.': 'Kod topilmadi yoki muddati tugadi. Kod 24 soat amal qiladi. Ustadan yangi kod so‘rang.',
@@ -1876,6 +1878,15 @@ export const uz: Record<string, string> = {
   'Панели': 'Panellar',
 
   // Бұтақтарды біріктіруде сақталған аудармалар.
+  'В каталоге цеха нет петли для этого типа фасада. Добавьте артикул в настройках цеха.': 'Sex katalogida bu fasad turi uchun ilmoq yo‘q. Sex sozlamalariga artikul qo‘shing.',
+  'Введите целые высоты полок': 'Tokcha balandligini butun millimetrda kiriting',
+  'Выберите подходящую петлю': 'Mos ilmoqni tanlang',
+  'Деталировка временно недоступна. Экспорт заблокирован.': 'Kesim ro‘yxati vaqtincha mavjud emas. Eksport bloklangan.',
+  'Добавьте отдельную секцию для каждой двери.': 'Har bir eshik uchun alohida bo‘lim qo‘shing.',
+  'Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.': 'Maydonni tuzating. Oxirgi to‘g‘ri model ko‘rsatilgan. Kesim ro‘yxati vaqtincha mavjud emas. Eksport bloklangan.',
+  'Материал корпуса не найден': 'Korpus materiali topilmadi',
+  'Открыть настройки цеха': 'Sex sozlamalarini ochish',
+  'значений': 'qiymat',
 
 
 

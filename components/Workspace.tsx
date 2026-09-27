@@ -44,6 +44,8 @@ import { classicMenus, type ClassicCommand, type ClassicPanel } from '@/lib/clas
 import { classicMenuItemTitle } from '@/lib/classicMenuUi'
 import { classicShopTools } from '@/lib/classicShopTools'
 import { classicDockTools } from '@/lib/classicDockTools'
+import { canToggleSelectedDoor, classicWorkspaceStyle } from '@/lib/classicWorkspaceUi'
+import { propertiesNodeSupported } from '@/lib/propertiesNodeUi'
 import { runShopExport } from '@/lib/shopExport'
 import { selectShopExportPanels } from '@/lib/shopExportScope'
 import { downloadProjectFile, pickProjectFile, projectFileErrorMessage } from '@/lib/projectFile'
@@ -301,7 +303,7 @@ export function Workspace() {
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
-  const [classic, setClassic] = useState(true)
+  const classic = true
   const [structureOpen, setStructureOpen] = useState(false)
   const [fileOpenError, setFileOpenError] = useState<string | null>(null)
   const openProjectPicker = () => {
@@ -311,7 +313,7 @@ export function Workspace() {
   const [dockRequest, setDockRequest] = useState<DockRequest>({ tab: 'structure', revision: 0 })
   const openDockTab = (tab: DockRequest['tab']) => {
     setDockRequest((current) => nextDockRequest(current, tab))
-    if (classic && window.matchMedia('(min-width: 1024px)').matches) setStructureOpen(true)
+    if (window.matchMedia('(min-width: 1024px)').matches) setStructureOpen(true)
   }
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
   const [draftState, setDraftState] = useState<{ id: string; errors: Record<string, boolean> }>({ id: activeId, errors: {} })
@@ -320,14 +322,9 @@ export function Workspace() {
   const onDraftValidityChange = (field: string, invalid: boolean) =>
     setDraftState((current) => ({ id: activeId, errors: updateDraftErrors(current.id === activeId ? current.errors : {}, field, invalid) }))
   useEffect(() => {
-    try { setClassic(window.localStorage.getItem(WORKSPACE_STYLE_KEY) !== 'ours') }
+    try { window.localStorage.setItem(WORKSPACE_STYLE_KEY, classicWorkspaceStyle(window.localStorage.getItem(WORKSPACE_STYLE_KEY))) }
     catch (cause) { console.debug('Workspace style storage unavailable', cause) }
   }, [])
-  const changeStyle = (next: boolean) => {
-    setClassic(next)
-    try { window.localStorage.setItem(WORKSPACE_STYLE_KEY, next ? 'classic' : 'ours') }
-    catch (cause) { console.debug('Workspace style storage unavailable', cause) }
-  }
   useEffect(() => {
     const open = (event: Event) => {
       const id = (event as CustomEvent<string>).detail
@@ -581,11 +578,11 @@ export function Workspace() {
       case 'removeCabinet': removeCabinet(activeId); setSelected(null); break
       case 'toggleOpen': setOpenness(openness > 0 ? 0 : 1); break
       case 'toggleAssembly': setAssemblyStep(assemblyStep === null ? 1 : null); break
+      case 'toggleSelectedDoor': if (selected && canToggleSelectedDoor(projectPanels.find((part) => part.id === selected))) togglePanelOpen(selected); break
       case 'navigate': window.location.href = command.href; break
       case 'theme': setTheme(command.theme); chooseTheme(command.theme); break
       case 'quality': setQuality(command.quality); saveQuality(command.quality); break
       case 'lang': setLang(command.lang); break
-      case 'workspaceStyle': changeStyle(command.classic); break
     }
   }
   const menus = classicMenus({
@@ -599,10 +596,10 @@ export function Workspace() {
     silhouetteOn: silhouette.on, walk, open: openness > 0, assembly: assemblyStep !== null,
     theme, quality, lang: getLang(),
     price: liveTotal === null ? null : 'total' in liveTotal ? { total: formatTengeExact(liveTotal.total) } : { missing: true },
-    cloud: cloudEnabled, classic,
+    cloud: cloudEnabled, selectedDoor: canToggleSelectedDoor(projectPanels.find((part) => part.id === selected)), selectedDoorOpen: Boolean(selected && openPanels[selected]),
   })
 
-  const classicToolRows: ClassicToolSpec[][] = classic ? compactToolbarRows<ClassicToolSpec>(assertUniqueToolbarRows<ClassicToolSpec>([
+  const classicToolRows: ClassicToolSpec[][] = compactToolbarRows<ClassicToolSpec>(assertUniqueToolbarRows<ClassicToolSpec>([
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
       { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
@@ -616,6 +613,7 @@ export function Workspace() {
     ],
     [
       { icon: 'box', label: tr('Тело'), action: () => setViewMode('solid'), active: viewMode === 'solid' },
+      { icon: 'ghost', label: tr('Полупрозрачно'), action: () => setViewMode('ghost'), active: viewMode === 'ghost', id: 'ghost' },
       { icon: 'wire', label: tr('Контур'), action: () => setViewMode('wire'), active: viewMode === 'wire' },
       { icon: 'magnet', label: tr('Привязка'), action: () => {
         if (snapOptions.grid > 0 || snapOptions.tolerance > 0) {
@@ -626,11 +624,16 @@ export function Workspace() {
       { icon: 'measure', label: tr('Размеры на сцене'), action: () => setShowDimensions(!showDimensions), active: showDimensions },
       { icon: 'fit', label: tr('Вписать в кадр'), action: fitCamera },
       { icon: 'view', label: tr('Перспектива'), action: () => { setCameraPreset('three-quarter'); setProjection('perspective') } },
+      { icon: 'walk', label: tr('Прогулка'), action: () => setWalk(!walk), active: walk, id: 'walk' },
+      { icon: 'doors', label: openness > 0 ? tr('Закрыть створки') : tr('Распахнуть'), action: () => setOpenness(openness > 0 ? 0 : 1), active: openness > 0, id: 'open-all' },
+      { icon: 'door', label: selected && openPanels[selected] ? tr('Закрыть дверцу') : tr('Открыть дверцу'), action: () => { if (selected) togglePanelOpen(selected) }, disabled: !canToggleSelectedDoor(projectPanels.find((part) => part.id === selected)), id: 'door' },
     ],
     [
       { icon: classicDockTools.structure.icon, label: tr(classicDockTools.structure.label), action: () => openDockTab('structure'), active: structureOpen && dockRequest.tab === 'structure', id: 'structure' },
       { icon: classicDockTools.layers.icon, label: tr(classicDockTools.layers.label), action: () => openDockTab('layers'), active: structureOpen && dockRequest.tab === 'layers', id: 'layers' },
       { icon: classicDockTools.library.icon, label: tr(classicDockTools.library.label), action: () => openDockTab('library'), active: structureOpen && dockRequest.tab === 'library', id: 'library' },
+      { icon: 'find', label: tr('Найти'), action: () => openDockTab('find'), id: 'find' },
+      { icon: 'replace', label: tr('Замена'), action: () => openDockTab('replace'), id: 'replace' },
       { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
@@ -642,13 +645,13 @@ export function Workspace() {
     [
       { icon: 'render', label: tr('Рендер'), action: () => setRenderOpen(true) },
       { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard, id: 'drill' },
-      { icon: 'properties', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !Boolean(activeBoard || activeSolid || cabinet), id: 'properties' },
+      { icon: 'properties', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !propertiesNodeSupported(activeNode?.kind), id: 'properties' },
       { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
     ],
-  ])) : []
+  ]))
 
   return (
-    <div className={cn("flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100", classic ? "p100-workspace" : "ours-workspace")} data-workspace-style={classic ? "classic" : "ours"}>
+    <div className="p100-workspace flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100" data-workspace-style="classic">
       {propertiesNodeId && <PropertiesDialog nodeId={propertiesNodeId} catalog={catalog} panels={activePanels} boardPanel={boardPanel} error={error ?? null} onClose={() => { setPropertiesNodeId(null); setDraftState({ id: activeId, errors: {} }) }} />}
       <TemplateGallery />
       <AiPanel />
@@ -678,13 +681,13 @@ export function Workspace() {
         ⚠ Жасырын header батырмасын `.click()` етуге БОЛМАЙДЫ: классикалық
         режимде ол header `display:none`, «Файл → Экспорт для цеха» ештеңе
         ашпайтын (аудит 09-26, P0-1). Ескі «Создать ▾» / «Проект ▾» мәзірлері
-        «Наш» режимі мен e2e үшін өзгеріссіз қалды.
+        Шағын экранда бұл қатарлар ықшам редактордың басқаруы болып қалады.
       */}
 
       <nav role="menubar" aria-label={tr('Главное меню')} data-tour="menubar" data-testid="classic-menubar" className="hidden lg:flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 px-2 py-1 text-xs dark:border-neutral-800 dark:bg-neutral-900">
-        {classic && <Link href="/" title={`${SITE.name} — ${tr('На главную')}`} className="mr-1 hidden items-center lg:inline-flex" data-testid="classic-brand">
+        <Link href="/" title={`${SITE.name} — ${tr('На главную')}`} className="mr-1 hidden items-center lg:inline-flex" data-testid="classic-brand">
           <img src="/brand/aismebel-mark.svg" width={16} height={16} alt={SITE.name} />
-        </Link>}
+        </Link>
         {menus.map((menu) => <Menu key={menu.id} label={tr(menu.label)} size="sm" {...(menu.align ? { align: menu.align } : {})}>
           {menu.items.map((entry, index) => {
             if (entry.kind === 'separator') return <div key={`sep-${index}`} className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
@@ -692,6 +695,18 @@ export function Workspace() {
             if (entry.kind === 'slider') return <label key={entry.id} className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
               {tr(entry.label)}
               <Slider value={exploded} onChange={setExploded} />
+            </label>
+            if (entry.kind === 'silhouetteHeight') return <label key={entry.id} className="flex flex-col gap-1 px-2.5 py-1.5 text-xs" data-testid="classic-silhouette-height">
+              {tr(entry.label)}
+              <input type="text" inputMode="numeric" value={silhouetteDraft} aria-invalid={Boolean(silhouetteError)}
+                className={cn('w-24 border px-1.5 py-1 tabular-nums', silhouetteError ? 'border-red-600 text-red-700' : 'border-neutral-400')}
+                onChange={(event) => {
+                  const raw = event.target.value
+                  setSilhouetteDraft(raw)
+                  const parsed = parseSilhouetteHeight(raw)
+                  if (parsed.value !== undefined) setSilhouette({ height: parsed.value })
+                }} />
+              {silhouetteError && <span role="alert" className="text-red-700">{tr(entry.label)}: {tr('Допустимо целое число в диапазоне')} {MIN_SILHOUETTE_HEIGHT}…{MAX_SILHOUETTE_HEIGHT} мм</span>}
             </label>
             return <MenuItem key={entry.id} active={entry.active ?? false} disabled={entry.disabled ?? false}
               title={classicMenuItemTitle(entry.raw ? entry.label : tr(entry.label), entry.hint)}
@@ -705,18 +720,13 @@ export function Workspace() {
           })}
         </Menu>)}
 
-        <label className="p100-toolbar-style ml-auto hidden items-center gap-1 text-xs lg:flex" data-testid="workspace-style-menu">
-          <span>{tr('Рабочее место')}</span>
-          <select aria-label={tr('Стиль рабочего места')} value={classic ? 'classic' : 'ours'} onChange={(event) => changeStyle(event.target.value === 'classic')}>
-            <option value="classic">{tr('Классический')}</option><option value="ours">{tr('Наш')}</option>
-          </select>
-        </label>
-        {classic && <Link href="/mobile" className="inline-flex min-h-6 items-center border border-neutral-300 px-2 text-xs dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>}
+        <span data-testid="classic-project-title" className="ml-3 max-w-64 truncate border-l border-neutral-300 pl-3 font-semibold" title={projectName}>{projectName}</span>
+        <Link href="/mobile" className="ml-auto inline-flex min-h-6 items-center border border-neutral-300 px-2 text-xs dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>
       </nav>
 
       {cloudEnabled && <ApprovalBanner code={shareCode} />}
 
-      {classic && <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
+      <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
         {classicToolRows.map((row, index) => <div className="p100-toolbar-row" key={index}>
           {row.map((tool) => <ClassicTool key={`${tool.icon}-${tool.label}`} {...tool} onHover={setHoveredToolLabel} />)}
           {index === 2 && assemblyStep !== null && <label className="ml-2 flex items-center gap-1 border border-neutral-400 px-1 text-xs" data-testid="classic-assembly-step">
@@ -727,9 +737,13 @@ export function Workspace() {
               onChange={(event) => setAssemblyStep(Number(event.target.value))} />
             <span className="tabular-nums">{assemblyStepView(assemblyStep, projectPanels.length).label}</span>
           </label>}
+          {index === classicToolRows.length - 1 && <div className="p100-xr-tools">
+            {hasActiveCabinet && !sceneError && !projectLoadError ? <span data-testid="classic-ar"><ArButton /></span> : null}
+            <span data-testid="classic-vr"><VrButton /></span>
+          </div>}
         </div>)}
-      </div>}
-      <header className="legacy-tools flex max-h-[35dvh] flex-wrap items-center gap-3 overflow-y-auto border-b border-neutral-200 px-3 py-2 lg:max-h-none lg:overflow-visible dark:border-neutral-800">
+      </div>
+      <header className="compact-tools flex max-h-[35dvh] flex-wrap items-center gap-3 overflow-y-auto border-b border-neutral-200 px-3 py-2 lg:max-h-none lg:overflow-visible dark:border-neutral-800">
         <Link
           href="/"
           title={tr('На главную')}
@@ -845,13 +859,6 @@ export function Workspace() {
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}
-          <label className="hidden items-center gap-1 text-xs lg:flex">
-            <span>{tr('Рабочее место')}</span>
-            <select aria-label={tr('Стиль рабочего места')} value={classic ? 'classic' : 'ours'} onChange={(event) => changeStyle(event.target.value === 'classic')} className="border border-neutral-300 bg-white px-1 py-1 text-xs">
-              <option value="classic">{tr('Классический')}</option>
-              <option value="ours">{tr('Наш')}</option>
-            </select>
-          </label>
           <AppearanceSwitch />
           <LangSwitch />
         </div>
@@ -924,7 +931,7 @@ export function Workspace() {
         (жаңа/дубль/айна/өшіру) — аяста да қалды (астыңғы «Модуль» тобы),
         мұнда тек ЖЫЛДАМ белгіше нұсқасы.
       */}
-      <div className="legacy-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
+      <div className="compact-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
         <Button size="sm" onClick={addCabinet} title={tr('Новый корпус')}>+</Button>
         <Button size="sm" onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>⧉</Button>
         <Button size="sm" onClick={mirrorSelected} disabled={!canMirrorSelected} title={freeMirrorCheck?.reason ?? tr('Зеркальная копия')}>⇋</Button>
@@ -1122,21 +1129,7 @@ export function Workspace() {
           Телефонда жасырын: PRO100 макеті десктопқа арналған.
         */}
         <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
-          {classic ? <>
-            <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
-          </> : <>
-          <Button
-            size="sm"
-            active={!selected}
-            title={tr('Выбор — щёлкните по модулю в сцене, Esc — снять выделение')}
-            onClick={() => setSelected(null)}
-          >
-            ⊙
-          </Button>
-          <Button size="sm" disabled title={tr('Переместить — перетащите выбранный модуль по стене прямо в 3D-сцене')}>
-            ✥
-          </Button>
-          </>}
+          <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
         </div>
         <div className="flex min-h-0 flex-col">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
@@ -1148,10 +1141,8 @@ export function Workspace() {
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
           </div>
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
-          {walk ? null : classic ? <>
-            {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} dockRequest={dockRequest}
-              canOpenProperties={Boolean(activeBoard || activeSolid || cabinet)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
-          </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 hidden w-72 lg:block"><TreeDock request={dockRequest} /></div>}
+          {walk ? null : structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} dockRequest={dockRequest}
+            canOpenProperties={propertiesNodeSupported(activeNode?.kind)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
           {/*
             КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
             §2): PRO100-де олар сахнаның үстінде қалқымайды, тар белгіше
@@ -1162,13 +1153,13 @@ export function Workspace() {
           {walk ? (
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
               {/* Жалпақ: тұтас түс, blur жоқ (пайдаланушының дизайн ережесі). */}
-              <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/90 px-4 py-2 text-xs text-white">
+              <div className="pointer-events-auto flex items-center gap-3 border border-neutral-700 bg-neutral-900 px-4 py-2 text-xs text-white">
                 <span>{touch
                   ? tr('Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть')
                   : tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
                 <button
                   type="button"
-                  className="rounded-full bg-white/15 px-2.5 py-1 hover:bg-white/25"
+                  className="border border-neutral-500 bg-neutral-800 px-2.5 py-1 hover:bg-neutral-700"
                   onClick={() => setWalk(false)}
                 >
                   {tr('Выйти')}
@@ -1221,9 +1212,9 @@ export function Workspace() {
             </div>}
         </section>
         </div>
-        <aside className="relative z-10 flex h-[60dvh] min-h-[360px] max-h-[60dvh] flex-col overflow-hidden border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:static lg:z-auto lg:h-auto lg:min-h-0 lg:max-h-none">
+        <aside className="relative z-10 flex h-[60dvh] min-h-[360px] max-h-[60dvh] flex-col overflow-hidden border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
-          <div className={cn("border-b border-neutral-200 px-3 py-2 dark:border-neutral-800", classic && !activeAnnotation && "lg:hidden")}>
+          <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-800 lg:hidden">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
               {tr('Модуль')}
               {cabinet && cabinets.length > 1
@@ -1248,9 +1239,9 @@ export function Workspace() {
               </div>
             </> : activeAnnotation ? <div className="truncate text-sm font-semibold" title={activeAnnotation.name}>{activeAnnotation.name}</div>
               : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
-            {classic && (activeBoard || activeSolid || activeAnnotation || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+            {(activeBoard || activeSolid || activeAnnotation || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
-          <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && !activeAnnotation && "lg:hidden")}>
+          <div className="min-h-0 flex-1 overflow-y-auto p-3 lg:hidden">
             <Dense>
               {/*
                 МОДУЛЬДІҢ ОРНЫ (qdesign «Модуль орны, мм»: X/Y/Z, Бұрылыс) енді
@@ -1274,7 +1265,7 @@ export function Workspace() {
             </Dense>
           </div>
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
-          <div className={cn("flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800", classic && "lg:hidden")}>
+          <div className="flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800 lg:hidden">
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
             <Button onClick={addSolid}>{tr('+ блок')}</Button>
@@ -1293,7 +1284,7 @@ export function Workspace() {
           </div>
         </aside>
       </div>
-      {classic && <footer className="p100-status hidden lg:flex" role="status" data-testid="p100-status">
+      <footer className="p100-status hidden lg:flex" role="status" data-testid="p100-status">
         <span>{classicToolStatus(hoveredToolLabel, selected, activeNode?.name, tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
         {selected && activeNode && <span className="ml-auto tabular-nums">
           {tr('Положение')}: X {activeNode.transform.pos.x} · Y {activeNode.transform.pos.y} · Z {activeNode.transform.pos.z} мм
@@ -1309,7 +1300,7 @@ export function Workspace() {
           title={'total' in liveTotal ? tr('Итого клиенту — открыть смету') : tr('Задайте цены материалов в профиле цеха')}>
           {'total' in liveTotal ? <span className="tabular-nums">{tr('Итого клиенту')}: <b>{formatTengeExact(liveTotal.total)}</b></span> : tr('Цены не заданы')}
         </button>}
-      </footer>}
+      </footer>
     </div>
   )
 }

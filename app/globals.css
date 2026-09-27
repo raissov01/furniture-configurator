@@ -149,14 +149,16 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   .p100-workspace [data-tour="viewtabs"] { background: var(--p100-tab-strip); }
   .p100-workspace aside { background: var(--p100-chrome); border-color: var(--p100-divider); }
   .p100-workspace > .grid { grid-template-columns: 28px minmax(0,1fr); position: relative; }
-  .p100-workspace > .grid > aside { position: absolute; z-index: 12; right: 0; bottom: 0; width: 150px; border: 1px solid var(--p100-divider); }
-  .p100-workspace .legacy-tools { display: none; }
+  .p100-workspace > .grid > aside { display: none; }
+  .p100-workspace .compact-tools { display: none; }
   .p100-workspace .p100-toolbar { display: block; }
   .p100-workspace .p100-side-tools { padding: 3px 1px; gap: 2px; }
 }
 .p100-toolbar { display: none; border-bottom: 1px solid var(--p100-divider); background: var(--p100-chrome); }
 .p100-toolbar-row { display: flex; align-items: center; height: 31px; gap: 1px; padding-left: 3px; }
 .p100-toolbar-row + .p100-toolbar-row { border-top: 1px solid var(--p100-divider); }
+.p100-xr-tools { display: inline-flex; align-items: flex-start; gap: 3px; margin-left: 6px; }
+.p100-xr-tools button { border: 1px solid var(--p100-divider); border-radius: 1px; background: var(--p100-field); min-height: 25px; }
 .p100-icon-button { display: inline-flex; width: 27px; height: 25px; align-items: center; justify-content: center; flex: none; padding: 2px; border: 1px solid transparent; border-radius: 1px; background: var(--p100-chrome); color: var(--p100-text); }
 @media (max-width: 1023px) {
   [data-workspace-style] :is(button, a, select, input[type="range"], input[type="checkbox"]) { min-width: 44px; min-height: 44px; }
@@ -171,7 +173,8 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-icon-button:disabled svg { filter: grayscale(1); opacity: 0.45; }
 .p100-toolbar-style { align-items: center; gap: 5px; font-size: 11px; }
 .p100-toolbar-style select { height: 21px; border: 1px solid var(--p100-fieldset-border); border-radius: 1px; background: var(--p100-field); color: var(--p100-text); }
-.p100-floating-window { position: absolute; z-index: 20; width: 435px; height: 190px; border: 1px solid var(--p100-fieldset-border); border-radius: 2px; background: var(--p100-dialog); color: var(--p100-text); }
+.p100-floating-window { display: none; position: absolute; z-index: 20; width: 435px; height: 190px; border: 1px solid var(--p100-fieldset-border); border-radius: 2px; background: var(--p100-dialog); color: var(--p100-text); }
+@media (min-width: 1024px) { .p100-floating-window { display: block; } }
 .p100-floating-title { display: flex; height: 26px; align-items: center; gap: 6px; padding: 0 6px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-dialog); cursor: move; user-select: none; }
 .p100-floating-title span { margin-right: auto; }
 .p100-floating-title button { min-width: 22px; height: 20px; padding: 0 5px; border: 1px solid transparent; cursor: default; }
@@ -244,28 +247,6 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-workspace :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--p100-invalid); outline: 1px solid var(--p100-invalid); outline-offset: -1px; }
 .p100-dialog-invalid { color: var(--p100-invalid); }
 
-/* "Наш" режимі бренд токендерін алады; классикалық PRO100 ережелері бөлек. */
-.ours-workspace :is(button[aria-pressed="true"], button[aria-current="true"], button[data-menu-trigger][aria-expanded="true"]) {
-  background: var(--brand-graphite);
-  color: #ffffff;
-  border-color: var(--brand-graphite);
-  border-bottom-color: var(--brand-amber);
-}
-.ours-workspace :is(button[aria-pressed="true"], button[aria-current="true"], button[data-menu-trigger][aria-expanded="true"]):hover {
-  background: var(--brand-graphite);
-  color: #ffffff;
-}
-.ours-workspace [data-testid="workspace-dock-host"],
-.ours-workspace [data-dock-zone],
-.ours-workspace [data-dock-panel] { background: var(--paper); color: var(--ink); border-color: var(--rule); }
-.ours-workspace [data-dock-panel] > div:first-child,
-.ours-workspace [data-dock-zone] > div:first-child { background: var(--panel); color: var(--ink); border-color: var(--rule); }
-.ours-workspace [data-dock-panel] > div:nth-child(2) { color: var(--ink); }
-.ours-workspace [data-dock-zone] button[aria-selected="true"] {
-  background: var(--brand-graphite);
-  color: #ffffff;
-  border-bottom: 1px solid var(--brand-amber);
-}
 .p100-workspace [data-testid="workspace-dock-host"],
 .p100-workspace [data-dock-zone],
 .p100-workspace [data-dock-panel] { background: var(--p100-dialog); color: var(--p100-text); border-color: var(--p100-divider); }

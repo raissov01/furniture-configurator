@@ -67,7 +67,7 @@ export function ArButton() {
   }
 
   // Бұлт сөндірулі құрастыруда (Vercel демосы) файлды сақтайтын жер жоқ.
-  if (!cloudEnabled) return null
+  if (!cloudEnabled) return <Button disabled title={tr('AR недоступен без облачного хранения')}>AR</Button>
 
   return (
     <>

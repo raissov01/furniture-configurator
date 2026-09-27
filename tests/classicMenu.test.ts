@@ -19,7 +19,7 @@ const base: ClassicMenuState = {
   canExport: true, canExportPdf: true, productionError: false,
   cameraPreset: 'front', viewMode: 'solid', showFronts: true, projection: 'perspective', showDimensions: false,
   showDrilling: false, showFittings: false, silhouetteOn: false, open: false, assembly: false,
-  theme: 'system', quality: 'high', lang: 'ru', price: null, cloud: false, classic: true,
+  theme: 'system', quality: 'high', lang: 'ru', price: null, cloud: false,
 }
 
 const items = (state: ClassicMenuState = base) => classicMenus(state).flatMap((menu) => menu.items.map((item) => ({ menu: menu.id, item })))
@@ -140,14 +140,11 @@ describe('classic menu: settings hidden in the old header (P0-5)', () => {
     expect(missing.command).toEqual({ type: 'open', panel: 'shop' })
   })
 
-  it('Сервис has «Аккаунт» only when the cloud is on, and the workplace style switch', () => {
+  it('Сервис has «Аккаунт» only when the cloud is on and no desktop workplace switch', () => {
     expect(itemsOf('service').some((item) => item.id === 'service.account')).toBe(false)
     expect(itemsOf('service', { ...base, cloud: true }).find((item) => item.id === 'service.account')?.command)
       .toEqual({ type: 'open', panel: 'account' })
-    const styles = itemsOf('service').filter((item) => item.command.type === 'workspaceStyle')
-    expect(styles.map((item) => [item.command, item.active])).toEqual([
-      [{ type: 'workspaceStyle', classic: true }, true], [{ type: 'workspaceStyle', classic: false }, false],
-    ])
+    expect(itemsOf('service').some((item) => item.id.startsWith('service.style'))).toBe(false)
   })
 
   it('Workspace wires the new commands and shows the price in the classic status bar', () => {
@@ -155,7 +152,7 @@ describe('classic menu: settings hidden in the old header (P0-5)', () => {
     expect(source).toMatch(/case 'theme':[^\n]*chooseTheme\(command\.theme\)/)
     expect(source).toMatch(/case 'quality':[^\n]*saveQuality\(command\.quality\)/)
     expect(source).toMatch(/case 'lang':[^\n]*setLang\(command\.lang\)/)
-    expect(source).toMatch(/case 'workspaceStyle':[^\n]*changeStyle\(command\.classic\)/)
+    expect(source).not.toContain("case 'workspaceStyle'")
     expect(source).toContain('data-testid="p100-status-price"')
   })
 })

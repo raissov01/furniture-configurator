@@ -652,6 +652,12 @@ export function PanelMesh({
             e.stopPropagation()
             onPanelDoubleClick()
           }}
+          onContextMenu={(e) => {
+            if (vr || !panel.opening) return
+            e.stopPropagation()
+            e.nativeEvent.preventDefault()
+            togglePanelOpen(key)
+          }}
           onClick={(e) => {
             // VR-да оқиға корпустың тобына көтеріледі — ол есікті ашады.
             if (vr) return
@@ -714,6 +720,12 @@ export function PanelMesh({
         if (vr) return
         e.stopPropagation()
         onPanelDoubleClick()
+      }}
+      onContextMenu={(e) => {
+        if (vr || !panel.opening) return
+        e.stopPropagation()
+        e.nativeEvent.preventDefault()
+        togglePanelOpen(key)
       }}
       onClick={(e) => {
         if (vr) return

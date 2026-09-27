@@ -1,7 +1,7 @@
 'use client'
 
 /** Original 18 px line drawings for the classic desktop controls. */
-export type ClassicIconName = 'new' | 'open' | 'save' | 'print' | 'cut' | 'copy' | 'delete' | 'undo' | 'redo' | 'settings' | 'properties' | 'shop' | 'view' | 'box' | 'decor' | 'board' | 'text' | 'wire' | 'eye' | 'magnet' | 'light' | 'fit' | 'structure' | 'library' | 'layers' | 'measure' | 'render' | 'room' | 'help' | 'duplicate' | 'mirror' | 'quote' | 'drill' | 'assembly'
+export type ClassicIconName = 'new' | 'open' | 'save' | 'print' | 'cut' | 'copy' | 'delete' | 'undo' | 'redo' | 'settings' | 'properties' | 'shop' | 'view' | 'box' | 'decor' | 'board' | 'text' | 'wire' | 'eye' | 'magnet' | 'light' | 'fit' | 'structure' | 'library' | 'layers' | 'measure' | 'render' | 'room' | 'help' | 'duplicate' | 'mirror' | 'quote' | 'drill' | 'assembly' | 'walk' | 'doors' | 'ghost' | 'door' | 'find' | 'replace'
 
 export function ClassicIcon({ name }: { name: ClassicIconName }) {
   const blue = 'var(--p100-icon-blue)'
@@ -42,6 +42,12 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     quote: <><path d="M4 2h10v14H4zM6 5h6M6 8h6M6 11h3"/><path d="M11 13h2" stroke={blue}/></>,
     drill: <><path d="M3 3h12v12H3zM9 4v10M4 9h10"/><circle cx="9" cy="9" r="2.5" fill={blue}/></>,
     assembly: <><path d="m2 5 7-3 7 3-7 3zM2 10l7 3 7-3M2 14l7 3 7-3"/><path d="M9 9v3" stroke={blue}/></>,
+    walk: <><circle cx="9" cy="3" r="2"/><path d="m9 5 2 4-3 2-3 5m6-7 3 2m-5 0 4 5" stroke={blue}/></>,
+    doors: <><path d="M2 2h14v14H2zM9 2v14M5 8h1m6 0h1"/><path d="m2 16 3-2m11 2-3-2" stroke={blue}/></>,
+    ghost: <><path d="m2 5 7-3 7 3v9l-7 3-7-3zM2 5l7 3 7-3M9 8v9" opacity=".5"/><path d="M3 13h12" stroke={blue} strokeDasharray="2 2"/></>,
+    door: <><path d="M3 2h12v14H3zM6 3l6 2v10l-6 2z"/><circle cx="10" cy="10" r="1" fill={blue}/></>,
+    find: <><circle cx="7" cy="7" r="5"/><path d="m11 11 5 5" stroke={blue}/></>,
+    replace: <><path d="M3 6a6 6 0 0 1 10-2m0-2v3h-3M15 12a6 6 0 0 1-10 2m0 2v-3h3"/><path d="M7 8h4m-2-2v4" stroke={blue}/></>,
   }
   return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round">{shape[name]}</svg>
 }
