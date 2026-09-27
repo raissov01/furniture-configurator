@@ -19,7 +19,12 @@ function onlineFailure(status: number): SendResult {
 }
 
 async function readReply(response: Response, payload: JsonValue): Promise<SendResult> {
-  if (!response.ok && response.status !== 409) return onlineFailure(response.status)
+  if (!response.ok && response.status !== 409) {
+    const raw: unknown = await response.json().catch(() => null)
+    const reason = raw && typeof raw === 'object' && 'error' in raw && typeof raw.error === 'string' ? raw.error : ''
+    const fallback = onlineFailure(response.status)
+    return fallback.kind === 'rejected' && reason ? { kind: 'rejected', reason } : fallback
+  }
   const raw = await response.json() as unknown
   const parsed = replySchema.safeParse(raw)
   if (response.status === 409 && (!parsed.success || parsed.data.kind !== 'conflict')) {
