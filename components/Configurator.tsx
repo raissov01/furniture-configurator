@@ -28,6 +28,7 @@ import { enableCornerCabinet } from '@/lib/cornerTransition'
 import { drawerFillerStep } from '@/lib/drawerFillerStep'
 import { drawerContentWithCount } from '@/lib/drawerContent'
 import { fixtureChoiceDisabled } from '@/lib/f07FixtureChoice'
+import { updateFixtureAt } from '@/lib/f07FixtureDetails'
 import { removeSectionContentAt, replaceSectionContent, updateSectionContentAt } from '@/lib/f07SectionContents'
 import { showLegacyDrawerProfileWarning } from '@/lib/legacyDrawerProfile'
 import { compatibleHinges, previewFrontEdit } from '@/lib/frontEdit'
@@ -37,6 +38,7 @@ import { parseShelfHeights, shelfCountChange, shelfHeightsChange } from '@/lib/s
 import { matchTemplateId } from '@/lib/templateMatch'
 import {
   APPLIANCES, APPLIANCE_NICHE_MODELS, DEFAULT_SETTINGS, FILLINGS, HANDLE_POSITIONS, MILLING_PATTERNS,
+  WORKTOP_FIXTURE_MODELS,
   ConfigValidationError,
   defaultHandleSpec, defaultMillingSpec, findTemplate, formatCutList, handlePositionName, millingPattern,
   roomWalls, wallById, walkTree,
@@ -825,7 +827,9 @@ function FrontFittings({
  * Корпустағы ТЕХНИКА: мойка, варочная панель, сорғыш. Клиенттікі —
  * сметаға кірмейді, тек 3D-де және «техника клиента» тізімінде көрінеді.
  */
-function FixtureFields() {
+function FixtureFields({ onDraftValidityChange }: {
+  onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
+}) {
   const cabinet = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
   const fixtures = cabinet.fixtures ?? []
@@ -834,9 +838,16 @@ function FixtureFields() {
   const without = (kind: CabinetFixture['kind']) => fixtures.filter((f) => f.kind !== kind)
   const has = (kind: CabinetFixture['kind']) => fixtures.some((f) => f.kind === kind)
   const hob = fixtures.find((f) => f.kind === 'hob')
+  const sink = fixtures.find((f) => f.kind === 'sink')
   const yesNo = [{ value: 'no', label: tr('Нет') }, { value: 'yes', label: tr('Есть') }]
-  const sinkDisabled = fixtureChoiceDisabled(fixtures, 'sink')
-  const hobDisabled = fixtureChoiceDisabled(fixtures, 'hob')
+  const sinkDisabled = fixtureChoiceDisabled(fixtures, 'sink', Boolean(cabinet.worktop))
+  const hobDisabled = fixtureChoiceDisabled(fixtures, 'hob', Boolean(cabinet.worktop))
+  const changeFixture = (kind: 'sink' | 'hob', patch: { modelId?: string | undefined; frontInset?: number | undefined }) => {
+    const fixtureIndex = fixtures.findIndex((fixture) => fixture.kind === kind)
+    const existing = fixtures[fixtureIndex]
+    if (!existing || existing.kind !== kind) return
+    set(updateFixtureAt(fixtures, fixtureIndex, { ...existing, ...patch }), `fixtures.${kind}`)
+  }
 
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -850,7 +861,7 @@ function FixtureFields() {
       <Field label={tr('Варочная панель')}>
         <Select
           value={hob?.kind === 'hob' ? hob.fuel : 'none'}
-          onChange={(v) => set(v === 'none' ? without('hob') : [...without('hob'), { kind: 'hob', fuel: v }], 'fixtures.hob')}
+          onChange={(v) => set(v === 'none' ? without('hob') : [...without('hob'), { ...(hob?.kind === 'hob' ? hob : {}), kind: 'hob', fuel: v }], 'fixtures.hob')}
           options={[
             { value: 'none' as const, label: tr('Нет') },
             { value: 'gas' as const, label: tr('Газовая'), disabled: hobDisabled },
@@ -865,8 +876,34 @@ function FixtureFields() {
           options={yesNo}
         />
       </Field>
+      {([sink, hob] as const).map((fixture) => {
+        if (!fixture) return null
+        const kind = fixture.kind
+        const selectedId = fixture.modelId ?? (kind === 'hob' ? 'hob-60-default' : '')
+        const model = WORKTOP_FIXTURE_MODELS.find((candidate) => candidate.id === selectedId)
+        const fixtureIndex = fixtures.findIndex((candidate) => candidate.kind === kind)
+        return <div key={kind} className="col-span-3 grid grid-cols-1 gap-2 border border-neutral-200 p-2 dark:border-neutral-800 sm:grid-cols-2">
+          <Field label={`${tr(kind === 'sink' ? 'Мойка' : 'Варочная панель')}: ${tr('Артикул')}`}>
+            <Select value={selectedId} onChange={(modelId) => changeFixture(kind, { modelId: modelId || undefined })}
+              options={[{ value: '', label: tr('Не указан') }, ...WORKTOP_FIXTURE_MODELS.filter((candidate) => candidate.kind === kind)
+                .map((candidate) => ({ value: candidate.id, label: candidate.article }))]} />
+          </Field>
+          <Field label={`${tr('Отступ выреза спереди')}, ${tr('мм')}`} hint={model?.minFront === undefined ? undefined : `≥ ${model.minFront}`}>
+            <NumberInput value={fixture.frontInset ?? model?.minFront ?? 0} min={0} step={1}
+              field={`fixtures[${fixtureIndex}].frontInset`}
+              onDraftValidityChange={onDraftValidityChange}
+              onChange={(frontInset) => changeFixture(kind, { frontInset })} />
+          </Field>
+          {model ? <p className="text-[11px] text-neutral-600 dark:text-neutral-300 sm:col-span-2">
+            {tr('Вырез')}: {model.width} (W) × {model.depth} (D) {tr('мм')}
+            {model.radius === undefined ? '' : ` · R${model.radius}`}
+          </p> : <p className="text-[11px] text-amber-700 dark:text-amber-300 sm:col-span-2">
+            {tr('Без артикула вырез мойки не создаётся')}
+          </p>}
+        </div>
+      })}
       {(sinkDisabled || hobDisabled) && <p className="col-span-3 text-[11px] text-neutral-600 dark:text-neutral-300">
-        {tr('Мойка и варочная панель не помещаются в одном модуле')}
+        {cabinet.worktop ? tr('Мойка и варочная панель не помещаются в одном модуле') : tr('Для мойки или плиты добавьте столешницу')}
       </p>}
     </div>
   )
@@ -1554,7 +1591,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange }: { 
             />
           </Field>
         </div>
-        <FixtureFields />
+        <FixtureFields onDraftValidityChange={onDraftValidityChange} />
 
         </Collapsible>
         <Collapsible id="rails" title={tr('Планки и фартук')} badge={`${(cabinet.rails ?? []).length + (cabinet.backsplash ? 1 : 0)}`}>

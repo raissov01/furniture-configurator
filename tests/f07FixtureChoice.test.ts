@@ -10,4 +10,8 @@ describe('F07 fixture choices', () => {
     expect(fixtureChoiceDisabled([{ kind: 'hob', fuel: 'gas' }], 'sink')).toBe(true)
     expect(fixtureChoiceDisabled([{ kind: 'hood' }], 'sink')).toBe(false)
   })
+  it('requires a worktop before selecting a sink or hob', () => {
+    expect(fixtureChoiceDisabled([], 'sink', false)).toBe(true)
+    expect(fixtureChoiceDisabled([], 'hob', false)).toBe(true)
+  })
 })

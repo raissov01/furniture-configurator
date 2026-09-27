@@ -1388,5 +1388,9 @@ export const en: Record<string, string> = {
   'Добавить технику': 'Add appliance',
   'Выберите тип': 'Choose type',
   'Мойка и варочная панель не помещаются в одном модуле': 'A sink and hob cannot share one module',
+  'Отступ выреза спереди': 'Cutout front inset',
+  'Вырез': 'Cutout',
+  'Без артикула вырез мойки не создаётся': 'A sink cutout requires an article',
+  'Для мойки или плиты добавьте столешницу': 'Add a worktop for a sink or hob',
 
 }
