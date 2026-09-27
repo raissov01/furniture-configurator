@@ -1347,4 +1347,12 @@ export const en: Record<string, string> = {
   'Вернуть рыночную цену: {price}': 'Restore market price: {price}',
   'Цена изменена цехом — рыночные обновления её не трогают': 'Price set by the workshop — market updates never touch it',
 
+  'Код клиента истёк': 'The client code has expired',
+  'Код клиента изменился': 'The client code has changed',
+  'Не удалось обновить проект для клиента': 'Could not update the client project',
+  'Цена согласования': 'Approval price',
+  'Клиент согласовал версию': 'Client approved version',
+  'Текущий проект изменён после согласования': 'The current project changed after approval',
+  'Скачать подписанный PDF': 'Download stamped PDF',
+
 }

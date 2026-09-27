@@ -38,6 +38,7 @@ export function ShareCodeDialog() {
   const open = useConfigurator((s) => s.shareCodeOpen)
   const setOpen = useConfigurator((s) => s.setShareCodeOpen)
   const startShare = useConfigurator((s) => s.startShare)
+  const syncShare = useConfigurator((s) => s.syncShare)
   const session = useConfigurator((s) => s.shareSession)
   const projectName = useConfigurator((s) => s.projectName)
   const priceMinor = useConfigurator((s) => s.priceOverrides.salePrice)
@@ -46,7 +47,7 @@ export function ShareCodeDialog() {
   const [online, setOnline] = useState(true)
   const [busy, setBusy] = useState(false)
   const [phone, setPhone] = useState('')
-  const [approval, setApproval] = useState<{ version: number; confirmationCode: string } | null>(null)
+  const [approval, setApproval] = useState<{ version: number; confirmationCode: string; priceMinor: number } | null>(null)
 
   useEffect(() => { setApproval(null) }, [session?.code])
 
@@ -87,6 +88,10 @@ export function ShareCodeDialog() {
     setBusy(true)
     setError(null)
     try {
+      // Workspace-тің 500 мс автосақтауын күтуге тәуелді болмау: кезектегі
+      // барлық PUT аяқталып, ағымдағы жоба серверге жеткен соң ғана мөр басталады.
+      const synced = await syncShare()
+      if (!synced.ok) throw new Error(synced.error)
       const previewPngBase64 = approvalPreview()
       const response = await fetch(`/api/share/${encodeURIComponent(session.code)}/approval`, {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
@@ -98,10 +103,11 @@ export function ShareCodeDialog() {
           ? raw.error : `${tr('Не удалось начать согласование')} (${response.status})`
         throw new Error(reason)
       }
-      if (!raw || typeof raw !== 'object' || !('version' in raw) || !('confirmationCode' in raw) ||
+      if (!raw || typeof raw !== 'object' || !('version' in raw) || !('confirmationCode' in raw) || !('priceMinor' in raw) ||
           typeof raw.version !== 'number' || typeof raw.confirmationCode !== 'string' ||
+          typeof raw.priceMinor !== 'number' || !Number.isSafeInteger(raw.priceMinor) || raw.priceMinor < 0 ||
           !/^\d{6}$/.test(raw.confirmationCode)) throw new Error(tr('Неверный ответ сервера'))
-      setApproval({ version: raw.version, confirmationCode: raw.confirmationCode })
+      setApproval({ version: raw.version, confirmationCode: raw.confirmationCode, priceMinor: raw.priceMinor })
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : tr('Не удалось начать согласование'))
     } finally {
@@ -110,9 +116,9 @@ export function ShareCodeDialog() {
   }
 
   const sendWhatsApp = () => {
-    if (!session || !approval || priceMinor === undefined) return
+    if (!session || !approval) return
     try {
-      const url = approvalWhatsAppUrl({ phone, projectName, priceMinor, shareCode: session.code,
+      const url = approvalWhatsAppUrl({ phone, projectName, priceMinor: approval.priceMinor, shareCode: session.code,
         confirmationCode: approval.confirmationCode, link,
         language: getLang() === 'kk' ? 'kk' : 'ru' })
       window.open(url, '_blank', 'noopener,noreferrer')
@@ -171,6 +177,7 @@ export function ShareCodeDialog() {
               <InternetRequirement feature="publishShare" online={online} />
               {approval && <div className="mt-3 space-y-2 border border-neutral-300 p-3 text-sm">
                 <p>{tr('Версия')}: {approval.version}</p>
+                <p>{tr('Цена согласования')}: {formatTengeExact(approval.priceMinor)}</p>
                 <p>{tr('Код подтверждения')}: <strong className="font-mono text-lg">{approval.confirmationCode}</strong></p>
                 <p className="text-xs text-[var(--p100-muted)]">{tr('Передайте код клиенту; после перезагрузки он больше не показывается.')}</p>
                 <label className="block">{tr('Телефон клиента с кодом страны')}

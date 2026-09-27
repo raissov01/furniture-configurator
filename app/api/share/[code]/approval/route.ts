@@ -52,6 +52,14 @@ function readVersion(code: string, shareCreatedAt: number, version?: number): St
   return (db().prepare(sql).get(...(version === undefined ? [code, shareCreatedAt] : [code, shareCreatedAt, version])) as Stored | undefined) ?? null
 }
 
+function latestApprovedVersion(code: string, shareCreatedAt: number): number | null {
+  approvalTable()
+  const row = db().prepare(`SELECT version FROM approval_revisions
+    WHERE share_code = ? AND share_created_at = ? AND seal_json IS NOT NULL
+    ORDER BY version DESC LIMIT 1`).get(code, shareCreatedAt) as { version: number } | undefined
+  return row?.version ?? null
+}
+
 function revision(row: Stored): ApprovalRevision<ProjectFileV4> {
   return {
     version: row.version, project: JSON.parse(row.project_json) as ProjectFileV4,
@@ -130,7 +138,7 @@ export async function POST(request: Request, { params }: Context): Promise<Respo
       database.exec('COMMIT')
     } catch (cause) { database.exec('ROLLBACK'); throw cause }
     // Код тек цехқа қайтады. Оны клиент телефонына жеткізу — UI/хабарлама интеграциясының міндеті.
-    return NextResponse.json({ version: next.version, hash: next.hash, confirmationCode },
+    return NextResponse.json({ version: next.version, hash: next.hash, priceMinor: next.priceMinor, confirmationCode },
       { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch (cause) {
     console.error('approval POST failed', cause)
@@ -231,6 +239,7 @@ export async function GET(request: Request, { params }: Context): Promise<Respon
     const matchesCurrent = await projectFingerprint(current) === row.hash &&
       current.priceOverrides?.salePrice === row.price_minor
     return NextResponse.json({ version: row.version, hash: row.hash, priceMinor: row.price_minor,
+      latestApprovedVersion: latestApprovedVersion(code, share.created_at),
       status: matchesCurrent ? (row.seal_json ? 'approved' : 'pending') : 'changed',
       seal: row.seal_json ? revision(row).seal : null },
     { headers: { 'Cache-Control': 'no-store' } })

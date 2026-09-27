@@ -87,14 +87,15 @@ try {
   assert(await h.evaluate(`(() => {
     const input = document.querySelector('fieldset input[type=file]')
     if (!input) return false
-    const bytes = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg=='), x => x.charCodeAt(0))
+    const bytes = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAGUlEQVR4nGMU7djLQApgIkn1qIZRDUNKAwBUkAF6aM7XRgAAAABJRU5ErkJggg=='), x => x.charCodeAt(0))
     const transfer = new DataTransfer()
     transfer.items.add(new File([bytes], 'wall.png', { type: 'image/png' }))
     input.files = transfer.files
     input.dispatchEvent(new Event('change', { bubbles: true }))
     return true
   })()`), 'photo input missing')
-  assert(await h.until("document.body.innerText.includes('Фото сохранено на этом устройстве')", 5000), 'offline photo was not stored')
+  assert(await h.until("document.body.innerText.includes('Фото сохранено на этом устройстве')", 5000),
+    `offline photo was not stored: ${await h.evaluate("[...document.querySelectorAll('[role=status]')].map(x => x.textContent).join(' | ')")}`)
   assert(await h.clickText('Назад'), 'wizard back missing')
   assert(await h.until("document.body.innerText.includes('Замеры на этом устройстве')", 5000), 'today screen missing after save')
   await session.send('Page.reload', { ignoreCache: true })
