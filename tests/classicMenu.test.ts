@@ -10,6 +10,9 @@ import { projectFileName, parseProjectFileText } from '../lib/projectFile'
 import { runShopExport, shopExportFileName } from '../lib/shopExport'
 import { useConfigurator } from '../store/configurator'
 import { referenceProject } from './fixtures'
+import { en } from '../lib/locales/en'
+import { kk } from '../lib/locales/kk'
+import { uz } from '../lib/locales/uz'
 
 const base: ClassicMenuState = {
   canUndo: true, canRedo: false, activeEditable: true, editableBoard: false, canRemoveCabinet: true,
@@ -30,6 +33,19 @@ const find = (id: string, state?: ClassicMenuState) => {
 describe('classic menu', () => {
   it('offers walk mode in the visible classic View menu', () => {
     expect(find('view.walk').command).toEqual({ type: 'toggleWalk' })
+  })
+  it('translates every visible menu label in all three non-Russian languages', () => {
+    const states = [base, { ...base, price: { missing: true } as const, cloud: true },
+      { ...base, price: { total: '100 ₸' }, cloud: true }]
+    const labels = new Set(states.flatMap((state) => classicMenus(state).flatMap((menu) => [
+      menu.label,
+      ...menu.items.flatMap((entry) => entry.kind === 'separator' || (entry.kind === 'item' && entry.raw)
+        ? [] : [entry.label]),
+    ])))
+    labels.delete('3/4')
+    for (const [lang, dictionary] of Object.entries({ kk, en, uz })) {
+      for (const label of labels) expect(dictionary[label], `${lang}: ${label}`).toBeTruthy()
+    }
   })
   it('keeps the PRO100 order of top menus', () => {
     expect(classicMenus(base).map((menu) => menu.label).slice(0, 5)).toEqual(['Файл', 'Правка', 'Вид', 'Элемент', 'Инструменты'])
@@ -153,7 +169,7 @@ describe('project file helpers', () => {
   it('parses a saved project and rejects garbage with a readable error', () => {
     const text = JSON.stringify(useConfigurator.getState().exportProject())
     expect(parseProjectFileText(text).schemaVersion).toBe(4)
-    expect(() => parseProjectFileText('{nope')).toThrow()
+    expect(() => parseProjectFileText('{nope', 'broken.json')).toThrow(/Неверный JSON.*broken\.json/)
   })
 })
 

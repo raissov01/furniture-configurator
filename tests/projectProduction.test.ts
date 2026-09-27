@@ -10,9 +10,51 @@ import { cutListToCsv } from '../src/core/export/csv'
 import { cncFiles } from '../src/core/export/cnc'
 import { cabinetToDxfFiles } from '../src/core/export/dxf'
 import { projectProduction } from '../lib/projectProduction'
+import { runShopExport } from '../lib/shopExport'
+import { strFromU8, unzipSync } from 'fflate'
 import { catalog, PVC2, referenceProject } from './fixtures'
 
 describe('UI production uses the visible canonical scene', () => {
+  it('keeps both cabinets and a free board in project CSV and DXF downloads', async () => {
+    const file = parseProjectV4(referenceProject)
+    const first = file.root.children.find((node) => node.kind === 'cabinet')
+    if (!first || first.kind !== 'cabinet') throw new Error('Эталон корпус табылмады')
+    file.root.children.push({ ...structuredClone(first), id: 'second-cabinet',
+      config: { ...first.config, id: 'second-cabinet' } }, {
+      kind: 'board', id: 'free-board', name: 'Еркін тақта', transform: IDENTITY_TRANSFORM,
+      board: { materialId: catalog.materials[0]!.id, length: 600, width: 400,
+        orientation: ORIENT_HORIZONTAL, role: 'custom', grainAlongLength: true,
+        edges: { L1: null, L2: null, W1: null, W2: null } },
+    })
+    const panels = projectProduction(file.root, flattenTree(file.root, catalog, file.settings)).panels
+    expect(panels).toHaveLength(23)
+    expect(new Set(panels.map((panel) => panel.id)).size).toBe(23)
+
+    let csv = ''
+    await runShopExport('csv', { panels, catalog, exportId: 'whole-project' }, (_name, data) => {
+      if (typeof data === 'string') csv = data
+    })
+    expect(csv.trim().split('\n').slice(1).reduce((qty, line) => qty + Number(line.split(',')[3]), 0)).toBe(23)
+
+    let xlsx: Uint8Array | undefined
+    await runShopExport('xlsx', { panels, catalog, exportId: 'whole-project' }, (_name, data) => {
+      if (data instanceof Uint8Array) xlsx = data
+    })
+    expect(xlsx).toBeDefined()
+    const sheetXml = Object.entries(unzipSync(xlsx!))
+      .filter(([name]) => /^xl\/worksheets\/sheet\d+\.xml$/.test(name))
+      .map(([, data]) => strFromU8(data))
+    const xlsxPieces = sheetXml.flatMap((xml) => [...xml.matchAll(/<c r="B\d+" s="4"><v>(\d+)<\/v><\/c>/g)])
+      .reduce((qty, match) => qty + Number(match[1]), 0)
+    expect(xlsxPieces).toBe(23)
+
+    let zip: Uint8Array | undefined
+    await runShopExport('dxf', { panels, catalog, exportId: 'whole-project' }, (_name, data) => {
+      if (data instanceof Uint8Array) zip = data
+    })
+    expect(zip).toBeDefined()
+    expect(Object.keys(unzipSync(zip!)).filter((name) => name.endsWith('.dxf'))).toHaveLength(23)
+  })
   it.each(SEED_SETS)('$id keeps legacy manufacturing and pricing results', (set) => {
     const { cabinets, placements } = setToProject(set, SEED_CATALOG)
     expect(cabinets.length).toBeGreaterThan(0)
