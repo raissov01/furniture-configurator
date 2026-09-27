@@ -46,7 +46,7 @@ const controlDense = `${controlBase} px-1.5 py-1 text-xs`
 const useControl = () => (React.useContext(DenseCtx) ? controlDense : control)
 
 export function NumberInput({
-  value, onChange, min, max, step = 1, buttonStep = step, invalid, field, onDraftValidityChange,
+  value, onChange, min, max, step = 1, buttonStep = step, invalid, field, label: explicitLabel, onDraftValidityChange,
 }: {
   value: number
   onChange: (v: number) => void
@@ -56,10 +56,11 @@ export function NumberInput({
   buttonStep?: number
   invalid?: boolean
   field?: string
+  label?: string
   onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const dense = React.useContext(DenseCtx)
-  const label = React.useContext(FieldLabelCtx) || tr('Значение')
+  const label = explicitLabel ?? (React.useContext(FieldLabelCtx) || tr('Значение'))
   const cls = useControl()
   const [draft, setDraft] = React.useState(String(value))
   const [draftError, setDraftError] = React.useState<ReturnType<typeof parseNumberDraft>['error']>(undefined)
@@ -79,6 +80,7 @@ export function NumberInput({
     <input
       type="text"
       inputMode="decimal"
+      aria-label={explicitLabel}
       aria-invalid={Boolean(invalid || draftError) || undefined}
       className={cn(cls, 'tabular-nums', (invalid || draftError) && 'border-red-500 dark:border-red-500', dense && 'order-2 min-w-0 rounded-none border-x-0 px-0.5 text-center')}
       value={draft}

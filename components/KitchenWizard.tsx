@@ -104,7 +104,7 @@ function RunEditor(
                 <option key={k.kind} value={k.kind}>{tr(k.name)}</option>
               ))}
             </select>
-            <span className="min-w-0 sm:w-16"><NumberInput value={m.width} min={200} max={KITCHEN_WALL_UI_MAX} field={`${fieldPrefix}.${i}`} onDraftValidityChange={onDraftValidityChange} onChange={(width) => setAt(i, { width })} /></span>
+            <span className="min-w-0 sm:w-16"><NumberInput value={m.width} min={200} max={KITCHEN_WALL_UI_MAX} field={`${fieldPrefix}.${i}`} label={`${tr('Ширина, мм')} ${i + 1}`} onDraftValidityChange={onDraftValidityChange} onChange={(width) => setAt(i, { width })} /></span>
             <div className="col-span-3 flex justify-end gap-1 sm:contents">
               <button type="button" className={icon} disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
               <button type="button" className={icon} disabled={i === run.length - 1} onClick={() => move(i, 1)}>↓</button>
@@ -231,19 +231,19 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
     // Құрастыру бірнеше секунд алады — «Жүктелуде…» оверлейімен (qdesign сияқты).
     runBusy(tr('Собираем проект…'), () => {
       try {
-      if (d.type === 'kitchen') {
-        loadKitchen(options)
-      } else {
-        loadFurniture({
+        if (d.type === 'kitchen') {
+          loadKitchen(options)
+        } else {
+          loadFurniture({
           type: d.type,
           // U тек ас үйде; басқа түрде ол болмайды, бірақ TS үшін тарылтамыз.
           layout: d.type === 'tv' || d.layout === 'u' ? (d.layout === 'u' ? 'corner' : 'straight') : d.layout,
           lengthA: d.lengthA,
           lengthB: d.layout === 'corner' ? d.lengthB : undefined,
           materials: { carcassId: d.carcassId || undefined, frontId: d.frontId || undefined },
-        })
-      }
-      onClose()
+          })
+        }
+        onClose()
       } catch (cause) {
         setGenerateError(cause instanceof Error ? cause.message : String(cause))
       }

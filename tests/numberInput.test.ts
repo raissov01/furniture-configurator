@@ -49,6 +49,11 @@ describe('number draft validation', () => {
     expect(html).toMatch(/aria-label="Увеличить"[^>]*title="Увеличить"/)
   })
 
+  it('names standalone module width errors by parameter', () => {
+    const html = renderToString(createElement(NumberInput, { value: 600, min: 200, max: 20000, label: 'Ширина, мм 1', onChange: () => undefined }))
+    expect(html).toContain('aria-label="Ширина, мм 1"')
+  })
+
   it('blocks exports while an uncommitted dimension draft is invalid', () => {
     const workspace = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
     expect(workspace).toContain('productionAvailability(production.error, draftInvalid)')
