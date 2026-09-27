@@ -1599,4 +1599,6 @@ export const uz: Record<string, string> = {
   'Удалить свой аккаунт и уйти': 'Hisobimni o‘chirib chiqish',
   'Аккаунт участника будет удалён. Он больше не сможет войти. Удалить аккаунт?': 'A’zo hisobi o‘chiriladi. U endi kira olmaydi. Hisobni o‘chirasizmi?',
   'Ваш аккаунт будет удалён. Вы больше не сможете войти. Удалить аккаунт и уйти?': 'Hisobingiz o‘chiriladi. Endi kira olmaysiz. Hisobni o‘chirib chiqasizmi?',
+  'Приглашение отозвано.': 'Taklif bekor qilindi.',
+  'Не удалось отозвать приглашение': 'Taklifni bekor qilib bo‘lmadi',
 }

@@ -16,7 +16,7 @@ import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
-import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning } from '@/lib/accountPanelState'
+import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError } from '@/lib/accountPanelState'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -262,14 +262,28 @@ export function AccountPanel() {
 
   const dropInvite = async (token: string) => {
     setBusy(true)
+    setError(null)
+    setNotice(null)
     try {
-      await fetch('/api/team', {
+      const res = await fetch('/api/team', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       })
+      const data = (await res.json()) as { error?: string }
+      const problem = revokeError(res.ok, data.error ?? null)
+      if (problem) {
+        setError(tr(problem))
+        return
+      }
       setInviteLink(null)
-      await refreshTeam()
+      setTeam((current) => current ? {
+        ...current,
+        invites: current.invites.map((item) => item.token === token ? { ...item, revoked: true } : item),
+      } : null)
+      setNotice(tr('Приглашение отозвано.'))
+    } catch {
+      setError(tr('Нет связи с сервером'))
     } finally {
       setBusy(false)
     }

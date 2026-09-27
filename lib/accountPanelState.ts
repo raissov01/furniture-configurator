@@ -32,3 +32,7 @@ export function memberRemovalWarning(self: boolean): string {
     ? 'Ваш аккаунт будет удалён. Вы больше не сможете войти. Удалить аккаунт и уйти?'
     : 'Аккаунт участника будет удалён. Он больше не сможет войти. Удалить аккаунт?'
 }
+
+export function revokeError(ok: boolean, serverError: string | null): string | null {
+  return ok ? null : serverError || 'Не удалось отозвать приглашение'
+}

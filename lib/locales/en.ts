@@ -1595,4 +1595,6 @@ export const en: Record<string, string> = {
   'Удалить свой аккаунт и уйти': 'Delete my account and leave',
   'Аккаунт участника будет удалён. Он больше не сможет войти. Удалить аккаунт?': 'The member’s account will be deleted. They will no longer be able to sign in. Delete it?',
   'Ваш аккаунт будет удалён. Вы больше не сможете войти. Удалить аккаунт и уйти?': 'Your account will be deleted. You will no longer be able to sign in. Delete it and leave?',
+  'Приглашение отозвано.': 'Invitation revoked.',
+  'Не удалось отозвать приглашение': 'Could not revoke the invitation',
 }
