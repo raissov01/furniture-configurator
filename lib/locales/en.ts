@@ -10,10 +10,51 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+<<<<<<< HEAD
+=======
+  'Выбор — щёлкните по модулю в сцене, Esc — снять выделение': 'Select — click a cabinet in the scene, Esc to clear selection',
+  'Выйти': 'Sign out',
+  'Переместить — перетащите выбранный модуль по стене прямо в 3D-сцене': 'Move — drag the selected cabinet along the wall in the 3D scene',
+  'Привязка': 'Snap',
+  'Общее': 'General',
+  'Производство': 'Production',
+  '— Нет —': '— None —',
+  'есть': 'yes',
+  'Деталировка — кратко': 'Cut list — summary',
+  'Открыть смету': 'Open estimate',
+  'и ещё': 'and another',
+  'Цена, услуги цеха и полный список фурнитуры — в смете. Здесь только деталировка для ориентира.': 'Prices, shop services and the full hardware list are in the estimate. This cut list is a brief preview.',
+  'Открыть присадку': 'Open drilling',
+  'Открыть раскрой': 'Open nesting',
+  'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
+    'Invalid JSON in “{name}”. Choose a .json project file or correct its syntax.',
+  'История изменений': 'Change history',
+  'Открыть проект': 'Open project',
+  'Повторить': 'Redo',
+  'Раскрой (отдельный экран)': 'Nesting (separate screen)',
+  'Сохранить проект': 'Save project',
+  'Ссылка клиенту': 'Client link',
+  'Цех: материалы и цены': 'Shop: materials and prices',
+  'Файл': 'File',
+  'Правка': 'Edit',
+  'Элемент': 'Element',
+  'Инструменты': 'Tools',
+  'Справка': 'Help',
+  'Новый корпус': 'New cabinet',
+  'Сбросить текущий проект?': 'Reset the current project?',
+  'Выбор': 'Select',
+  'Стена С': 'North wall',
+  'Стена З': 'West wall',
+  'Стена Ю': 'South wall',
+  'Стена В': 'East wall',
+  'Сортировать': 'Sort',
+  'Допустимо целое число в диапазоне': 'Allowed whole-number range',
+>>>>>>> codex/0924
   'Лист для бирок': 'Label sheet',
   'Ширина бирки, мм': 'Label width, mm',
   'Высота бирки, мм': 'Label height, mm',
   'Нет отверстий': 'No holes',
+<<<<<<< HEAD
   'Файл': 'File',
   'Правка': 'Edit',
   'Инструменты': 'Tools',
@@ -44,6 +85,17 @@ export const en: Record<string, string> = {
   'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.': 'Invalid JSON in “{name}”. Choose a .json project file or correct its syntax.',
   'История изменений': 'Change history',
   'Раскрой (отдельный экран)': 'Nesting (separate screen)',
+=======
+  'Порядок резов': 'Cut order',
+  'Шаг реза': 'Cut step',
+  'Вперёд': 'Next',
+  'Пауза': 'Pause',
+  'Воспроизвести': 'Play',
+  'Все материалы': 'All materials',
+  'Только видимые карты': 'Visible sheets only',
+  'Только предпросмотр: откройте импорт в проекте': 'Preview only: open import in a project',
+  'Готовый': 'Finished',
+>>>>>>> codex/0924
   'Текст': 'Text',
   'Добавить текст': 'Add text',
   '+ текст': '+ text',
@@ -1105,6 +1157,11 @@ export const en: Record<string, string> = {
   'Библиотека': 'Library',
   'Моя библиотека': 'My library',
   'Структура': 'Structure',
+<<<<<<< HEAD
+=======
+  'Найти': 'Find',
+  'Рез': 'Cut',
+>>>>>>> codex/0924
   'Замена': 'Replace',
   'Дерево, слои и библиотека': 'Tree, layers and library',
   'Предпросмотр элемента': 'Item preview',
@@ -1470,22 +1527,55 @@ export const en: Record<string, string> = {
   'Сначала примените изменения для экспорта': 'Apply changes before exporting',
   'Закройте свойства через OK перед экспортом': 'Close Properties with OK before exporting',
   'Свойства нескольких объектов не редактируются вместе. Выберите один объект перед открытием свойств.': 'Multiple objects cannot be edited together in Properties. Select one object before opening Properties.',
+<<<<<<< HEAD
   'Найти': 'Find',
   'В каталоге цеха нет петли для этого типа фасада. Добавьте артикул в настройках цеха.': 'No hinge for this front type in the shop catalogue. Add an article in shop settings.',
   'Введите целые высоты полок': 'Enter whole millimetre shelf heights',
   'Воспроизвести': 'Play',
   'Вперёд': 'Forward',
   'Все материалы': 'All materials',
+=======
+  'Автоотверстие задаётся соединением. Измените соединение; удалить можно только ручное отверстие.': 'Automatic holes come from the joint. Change the joint; only manual holes can be deleted.',
+  'Удалить только ручные отверстия; автоматические задаются соединением': 'Delete manual holes only; automatic holes come from the joint',
+  'Удалить ручные отверстия': 'Delete manual holes',
+  'DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива. Полный ЧПУ CSV — в раскрое.': 'DXF: flat faces; edge holes are in EDGE-DRILLING.csv in this archive. Full CNC CSV is in Cutting.',
+  'DXF — пласти; торец — EDGE-DRILLING.csv. Полный ЧПУ CSV:': 'DXF — flat faces; edges — EDGE-DRILLING.csv. Full CNC CSV:',
+  'DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива': 'DXF: flat faces; edge holes are in EDGE-DRILLING.csv in this archive',
+  'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF sheet cutting maps; drilling is in the shop bundle or CNC per part',
+  'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Bundle: face DXFs, EDGE-DRILLING.csv for edges, cutting map, cut list and labels. Full CNC CSV has a separate button.',
+  'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Sheet DXFs are cutting maps. The shop bundle includes EDGE-DRILLING.csv for edges; full drilling CSV is under CNC per part.',
+  'Прямоугольный DXF-план обновит ширину (W) и глубину (D) комнаты; мебель не добавится.': 'A rectangular DXF plan updates the room width (W) and depth (D); it does not add furniture.',
+  'Прайс-лист': 'Price list',
+  'Информация': 'Info',
+  'Импорт': 'Import',
+  'Можно импортировать только прямоугольный план из четырёх стен': 'Only a rectangular plan with four walls can be imported',
+  'Размеры комнаты должны быть больше нуля': 'Room dimensions must be greater than zero',
+  'Координаты DXF должны быть целыми миллиметрами': 'DXF coordinates must be whole millimetres',
+  'Закрепить у края': 'Dock at edge',
+  'Левый край': 'Left edge',
+  'Правый край': 'Right edge',
+  'Верхний край': 'Top edge',
+  'Нижний край': 'Bottom edge',
+  'передний длинный край': 'front long edge',
+  'задний длинный край': 'rear long edge',
+  'короткий край': 'short edge',
+  'Ничего не выбрано — выберите деталь в 3D или панели Структура.': 'Nothing selected — choose a part in 3D or the Structure panel.',
+  'В каталоге цеха нет петли для этого типа фасада. Добавьте артикул в настройках цеха.': 'No hinge for this front type in the shop catalogue. Add an article in shop settings.',
+  'Введите целые высоты полок': 'Enter whole millimetre shelf heights',
+>>>>>>> codex/0924
   'Выберите подходящую петлю': 'Choose a suitable hinge',
   'Деталировка временно недоступна. Экспорт заблокирован.': 'Cut list temporarily unavailable. Export is blocked.',
   'Добавьте отдельную секцию для каждой двери.': 'Add a separate section for each door.',
   'Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.': 'Correct the field. The last valid model is shown. Cut list temporarily unavailable. Export is blocked.',
   'Материал корпуса не найден': 'Cabinet material not found',
   'Открыть настройки цеха': 'Open shop settings',
+<<<<<<< HEAD
   'Пауза': 'Pause',
   'Порядок резов': 'Cut order',
   'Только видимые карты': 'Visible sheets only',
   'Шаг реза': 'Cut step',
+=======
+>>>>>>> codex/0924
   'значений': 'values',
 
   "Импорт прайса CSV/XLSX": "Import CSV/XLSX price list",
@@ -1515,6 +1605,7 @@ export const en: Record<string, string> = {
 
   'до 2 знаков после запятой': 'up to 2 decimal places',
 
+<<<<<<< HEAD
   'Сбросить текущий проект?': 'Reset the current project?',
   'Стена С': 'North wall',
   'Стена З': 'West wall',
@@ -1546,6 +1637,13 @@ export const en: Record<string, string> = {
   'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF sheet cutting maps; drilling is in the shop bundle or CNC per part',
   'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Bundle: face DXFs, EDGE-DRILLING.csv for edges, cutting map, cut list and labels. Full CNC CSV has a separate button.',
   'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Sheet DXFs are cutting maps. The shop bundle includes EDGE-DRILLING.csv for edges; full drilling CSV is under CNC per part.',
+=======
+  // Бұтақтарды біріктіруде сақталған аудармалар.
+  'Добавить подтверждённый артикул петли': 'Add a verified hinge article',
+  'Профиль цеха: зазор {gap} мм с каждой стороны, схема отверстий Blum TANDEM. Артикул фурнитуры не определён; проверьте направляющие перед изготовлением.': 'Shop profile: {gap} mm clearance per side and a Blum TANDEM hole pattern. The hardware article is unknown; check the runners before manufacturing.',
+  'У материала нет направления текстуры': 'This material has no grain direction',
+  'DXF деталей и торцевая присадка CSV в одном архиве': 'Part DXFs and edge drilling CSV in one archive',
+>>>>>>> codex/0924
   'Тематические уроки': 'Guided lessons',
   'Начать урок': 'Start lesson',
   'Пройдено · повторить': 'Completed · repeat',
@@ -1580,6 +1678,7 @@ export const en: Record<string, string> = {
   'Здесь доступны файлы для цеха и клиента.': 'Files for the workshop and customer are available here.',
   'Откройте мастер': 'Open the wizard',
   'В меню «Создать» откройте готовые шаблоны и выберите мастер.': 'Open ready made templates from the Create menu and select a wizard.',
+<<<<<<< HEAD
   'Пустое название станет «Мой цех»; до 100 символов': 'A blank name becomes “Мой цех”; up to 100 characters',
   'Название цеха: от 0 до 100 символов': 'Workshop name: 0–100 characters',
   'Пароль: введите пароль': 'Password: enter your password',
@@ -1597,4 +1696,6 @@ export const en: Record<string, string> = {
   'Ваш аккаунт будет удалён. Вы больше не сможете войти. Удалить аккаунт и уйти?': 'Your account will be deleted. You will no longer be able to sign in. Delete it and leave?',
   'Приглашение отозвано.': 'Invitation revoked.',
   'Не удалось отозвать приглашение': 'Could not revoke the invitation',
+=======
+>>>>>>> codex/0924
 }
