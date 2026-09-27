@@ -40,6 +40,22 @@ describe('PRO100 сандық эталоны', () => {
     }
   })
 
+  it('құжаттағы біздің төрт сценарийдің саны мен дайын ауданын бекітеді', () => {
+    expect(scenarios.map((scenario) => ({
+      id: scenario.id,
+      pieces: scenario.expected.parts.reduce((sum, part) => sum + part.qty, 0),
+      positions: scenario.expected.parts.length,
+      areas: scenario.expected.materials.slice().sort((a, b) => b.thickness - a.thickness)
+        .map((material) => material.areaMm2),
+      missingPrices: scenario.expected.costs.missingPrices.length,
+    }))).toEqual([
+      { id: 's1-base-600', pieces: 8, positions: 6, areas: [2_171_354, 432_000], missingPrices: 10 },
+      { id: 's2-wall-800', pieces: 9, positions: 6, areas: [1_902_936, 576_000], missingPrices: 10 },
+      { id: 's3-drawers-600', pieces: 23, positions: 9, areas: [3_686_266, 432_000], missingPrices: 9 },
+      { id: 's4-kitchen-2400', pieces: 51, positions: 10, areas: [13_653_870, 3_456_000], missingPrices: 10 },
+    ])
+  })
+
   it('1-сценарийдегі PRO100 детальдары мен біздің конструкция айырмасын сақтайды', () => {
     const parts = rows('piece-list.txt')
     expect(parts).toEqual([
@@ -66,10 +82,17 @@ describe('PRO100 сандық эталоны', () => {
   })
 
   it('1-сценарийдегі материал, фурнитура және бос смета есебін оқиды', () => {
-    expect(rows('material-consumption.txt')).toEqual([
+    const consumption = rows('material-consumption.txt')
+    expect(consumption).toEqual([
       ['01 Основное для КУХНИ\\Двп 4мм', '0.43', 'm²'],
       ['01 Основное для КУХНИ\\Лдсп', '1.91', 'm²'],
     ])
+    const parts = rows('piece-list.txt')
+    for (const material of consumption) {
+      const areaMm2 = parts.filter((part) => part[5] === material[0])
+        .reduce((sum, part) => sum + Number(part[1]) * Number(part[2]) * Number(part[4]), 0)
+      expect(Math.round(areaMm2 / 10_000) / 100).toBe(Number(material[1]))
+    }
     expect(rows('element-list.txt')).toEqual([['полкодержатель', '4']])
     const calculation = rows('calculation.txt')
     expect(calculation.filter((row) => ['materials', 'elements', 'assembly', 'others', 'TOTAL'].includes(row[0]!)))
