@@ -746,7 +746,6 @@ export const en: Record<string, string> = {
   'Вверх (подъёмный)': 'Up (lift-up)',
   'Присадка подъёмника не ставится: её сверлят по бумажному шаблону механизма. Механизм попадает в смету, в деталировке фасада есть пометка.':
     'The lift mechanism is not drilled here: the shop drills it by the maker\'s paper template. The mechanism is in the quote and the front carries a note.',
-  'Поворот': 'Rotation',
   'Пределы габарита': 'Size limits',
   'Тариф': 'Plan',
   'Тема': 'Theme',
@@ -1874,4 +1873,15 @@ export const en: Record<string, string> = {
   'Удаление и связь': 'Deletion and contact',
   'Локальные данные можно удалить через настройки устройства. По синхронизированным данным обратитесь к администратору своей мастерской. Контакт оператора и срок хранения серверных данных должны быть опубликованы до выхода в магазин приложений.': 'Local data can be removed in device settings. For synced data, contact your workshop administrator. The operator contact and server retention period must be published before store release.',
 
+  'Положение и поворот': 'Position and rotation',
+  'Применить положение': 'Apply transform',
+  'Поворот': 'Rotation',
+  'Элементов в группе': 'Items in group',
+  'X/Y/Z — целые миллиметры; поворот Y — число градусов.': 'X/Y/Z must be integer millimetres; Y rotation must be a number of degrees.',
+  'Не удалось изменить положение': 'Could not change transform',
+  'Не удалось изменить название': 'Could not change name',
+  'Блеск (sheen)': 'Sheen',
+  'Лак (clearcoat)': 'Clearcoat',
+  'Карта AO (URL)': 'AO map (URL)',
+  'Сила AO': 'AO intensity',
 }

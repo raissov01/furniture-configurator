@@ -10,12 +10,11 @@ import type { Box } from './geometry'
 import type { GroupNode, Pose, SceneNode } from './tree'
 import type { Axis, Catalog, SettingsOverride, Vec3 } from './types'
 import type { Layer } from './layers'
+import type { SnapFootprint } from './snap'
 
-function exact(value: number, axis: Axis): number {
-  const rounded = Math.round(value)
-  if (!Number.isSafeInteger(rounded) || Math.abs(value - rounded) > 1e-7) {
-    throw new ConfigValidationError(`bounds.${axis}`, 'бұрылған нысанның әлем шекарасы бүтін мм емес', '90°-қа еселі бұрылыс және бүтін мм')
-  }
+function outward(value: number, axis: Axis, side: 'min' | 'max'): number {
+  const rounded = side === 'min' ? Math.floor(value + 1e-7) : Math.ceil(value - 1e-7)
+  if (!Number.isSafeInteger(rounded)) throw new ConfigValidationError(`bounds.${axis}`, 'әлем шекарасы тым үлкен', 'қауіпсіз бүтін мм')
   return rounded === 0 ? 0 : rounded
 }
 
@@ -26,11 +25,38 @@ function worldBox(local: Box, pose: Pose): Box {
   const xs: number[] = []
   const zs: number[] = []
   for (const x of [local.min.x, local.max.x]) for (const z of [local.min.z, local.max.z]) {
-    xs.push(exact(pose.position.x + x * cos + z * sin, 'x'))
-    zs.push(exact(pose.position.z - x * sin + z * cos, 'z'))
+    xs.push(pose.position.x + x * cos + z * sin)
+    zs.push(pose.position.z - x * sin + z * cos)
   }
-  return { min: { x: Math.min(...xs), y: exact(pose.position.y + local.min.y, 'y'), z: Math.min(...zs) },
-    max: { x: Math.max(...xs), y: exact(pose.position.y + local.max.y, 'y'), z: Math.max(...zs) } }
+  return { min: { x: outward(Math.min(...xs), 'x', 'min'), y: outward(pose.position.y + local.min.y, 'y', 'min'), z: outward(Math.min(...zs), 'z', 'min') },
+    max: { x: outward(Math.max(...xs), 'x', 'max'), y: outward(pose.position.y + local.max.y, 'y', 'max'), z: outward(Math.max(...zs), 'z', 'max') } }
+}
+
+/** Жеке жапырақ нысандардың XZ-дегі нақты бұрылған сыртқы жиектері. */
+export function selectionFootprints(root: GroupNode, ids: readonly string[], catalog: Catalog, layers: Layer[],
+  settings?: SettingsOverride): SnapFootprint[] {
+  const scene = flattenTree(root, catalog, settings, layers)
+  const footprints = new Map<string, SnapFootprint>()
+  const add = (id: string, local: Box, pose: Pose) => {
+    const angle = pose.rotationY * Math.PI / 180
+    const cos = Math.cos(angle); const sin = Math.sin(angle)
+    const point = (x: number, z: number) => ({ x: pose.position.x + x * cos + z * sin,
+      z: pose.position.z - x * sin + z * cos })
+    footprints.set(id, { id, minY: pose.position.y + local.min.y, maxY: pose.position.y + local.max.y,
+      corners: [point(local.min.x, local.min.z), point(local.max.x, local.min.z),
+        point(local.max.x, local.max.z), point(local.min.x, local.max.z)] })
+  }
+  for (const flat of scene.nodes) {
+    const boxes = flat.panels.map((panel) => {
+      const material = catalog.materials.find((entry) => entry.id === panel.materialId)
+      if (!material) throw new ConfigValidationError('materialId', `материал табылмады: ${panel.materialId}`)
+      return panelBox(panel, material.thickness)
+    })
+    if (boxes.length > 0) add(flat.nodeId, union(boxes), flat.pose)
+  }
+  for (const solid of scene.solids) add(solid.nodeId,
+    { min: { x: 0, y: 0, z: 0 }, max: solid.spec.size }, solid.pose)
+  return ids.map((id) => footprints.get(id)).filter((item): item is SnapFootprint => Boolean(item))
 }
 
 function descendants(node: SceneNode): string[] {

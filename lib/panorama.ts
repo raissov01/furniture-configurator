@@ -111,3 +111,13 @@ export function capturePanorama(context: PanoramaContext, faceSize = 512): strin
     context.invalidate()
   }
 }
+
+/** Browser download of the current 360° view; returns the image for preview/tests. */
+export function downloadPanorama(context: PanoramaContext): string {
+  const url = capturePanorama(context)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'panorama-360.png'
+  link.click()
+  return url
+}

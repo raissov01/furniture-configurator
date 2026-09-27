@@ -51,12 +51,19 @@ export const MaterialSchema = z.object({
   pbr: z.strictObject({
     roughness: z.number().min(0).max(1).optional(),
     metalness: z.number().min(0).max(1).optional(),
+    sheen: z.number().min(0).max(1).optional(),
+    clearcoat: z.number().min(0).max(1).optional(),
     reflection: z.number().min(0).max(2).optional(),
     opacity: z.number().min(0).max(1).optional(),
     normal: z.strictObject({
       url: z.url().refine((value) => /^https?:\/\//i.test(value), 'normal URL must use http(s)'),
       sizeMm: z.strictObject({ x: mm, y: mm }),
       strength: z.number().min(0).max(2),
+    }).optional(),
+    ambientOcclusion: z.strictObject({
+      url: z.url().refine((value) => /^https?:\/\//i.test(value), 'AO URL must use http(s)'),
+      sizeMm: z.strictObject({ x: mm, y: mm }),
+      intensity: z.number().min(0).max(1),
     }).optional(),
   }).optional(),
   /** Тақта (постформинг): раскройға кірмейді, сметаға метрмен. */

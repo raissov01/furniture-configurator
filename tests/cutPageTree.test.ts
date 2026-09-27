@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { IDENTITY_TRANSFORM, ORIENT_HORIZONTAL, parseProjectV4 } from '../src/core/index'

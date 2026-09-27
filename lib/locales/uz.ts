@@ -752,7 +752,6 @@ export const uz: Record<string, string> = {
   'Вверх (подъёмный)': 'Tepaga (ko\'tariladigan)',
   'Присадка подъёмника не ставится: её сверлят по бумажному шаблону механизма. Механизм попадает в смету, в деталировке фасада есть пометка.':
     'Ko\'targich prisadkasi qo\'yilmaydi: uni mexanizmning qog\'oz shabloni bo\'yicha teshadi. Mexanizm smetaga tushadi, fasad detalirovkasida izoh bor.',
-  'Поворот': 'Burilish',
   'Пределы габарита': 'Gabarit chegaralari',
   'Тариф': 'Tarif',
   'Тема': 'Mavzu',
@@ -1878,4 +1877,15 @@ export const uz: Record<string, string> = {
   'Удаление и связь': 'O‘chirish va aloqa',
   'Локальные данные можно удалить через настройки устройства. По синхронизированным данным обратитесь к администратору своей мастерской. Контакт оператора и срок хранения серверных данных должны быть опубликованы до выхода в магазин приложений.': 'Mahalliy ma’lumotlarni qurilma sozlamalarida o‘chirish mumkin. Sinxronlangan ma’lumotlar uchun sex administratoriga murojaat qiling. Operator aloqasi va server saqlash muddati do‘konga chiqishdan oldin e’lon qilinishi kerak.',
 
+  'Положение и поворот': 'Joylashuv va burilish',
+  'Применить положение': 'Joylashuvni qo‘llash',
+  'Поворот': 'Burilish',
+  'Элементов в группе': 'Guruhdagi elementlar',
+  'X/Y/Z — целые миллиметры; поворот Y — число градусов.': 'X/Y/Z butun millimetr bo‘lishi kerak; Y burilishi gradus soni.',
+  'Не удалось изменить положение': 'Joylashuvni o‘zgartirib bo‘lmadi',
+  'Не удалось изменить название': 'Nomni o‘zgartirib bo‘lmadi',
+  'Блеск (sheen)': 'Yaltirash (sheen)',
+  'Лак (clearcoat)': 'Lak qatlami (clearcoat)',
+  'Карта AO (URL)': 'AO xaritasi (URL)',
+  'Сила AO': 'AO kuchi',
 }

@@ -49,7 +49,7 @@ describe('classic icon states', () => {
   it('exposes a selected button to assistive technology and keeps disabled controls still', () => {
     const selected = renderToString(createElement(Button, { active: true, children: 'Таңдау' }))
     expect(selected).toContain('aria-pressed="true"')
-    expect(css).toMatch(/button:not\(\.p100-icon-button\):not\(\[data-decor-swatch\]\):hover:not\(:disabled\)/)
-    expect(css).toMatch(/button:not\(\.p100-icon-button\):not\(\[data-decor-swatch\]\):active:not\(:disabled\)/)
+    expect(css).toMatch(/button:not\(\.p100-icon-button\):not\(\.p100-view-tab\):not\(\[data-decor-swatch\]\):hover:not\(:disabled\)/)
+    expect(css).toMatch(/button:not\(\.p100-icon-button\):not\(\.p100-view-tab\):not\(\[data-decor-swatch\]\):active:not\(:disabled\)/)
   })
 })

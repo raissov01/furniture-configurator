@@ -1,13 +1,14 @@
 'use client'
 
 /** Original 18 px line drawings for the classic desktop controls. */
-export type ClassicIconName = 'new' | 'open' | 'save' | 'print' | 'cut' | 'copy' | 'delete' | 'undo' | 'redo' | 'settings' | 'view' | 'box' | 'board' | 'wire' | 'eye' | 'magnet' | 'light' | 'fit' | 'structure' | 'library' | 'layers' | 'measure' | 'render' | 'room' | 'help' | 'duplicate' | 'mirror' | 'quote' | 'drill' | 'assembly'
+export type ClassicIconName = 'select' | 'new' | 'open' | 'save' | 'print' | 'cut' | 'copy' | 'delete' | 'undo' | 'redo' | 'settings' | 'view' | 'box' | 'board' | 'wire' | 'eye' | 'magnet' | 'light' | 'fit' | 'structure' | 'library' | 'layers' | 'measure' | 'render' | 'room' | 'help' | 'duplicate' | 'mirror' | 'quote' | 'drill' | 'assembly'
 
 export function ClassicIcon({ name }: { name: ClassicIconName }) {
   const blue = 'var(--p100-icon-blue)'
   const red = 'var(--p100-icon-red)'
   const yellow = 'var(--p100-icon-yellow)'
   const shape: Record<ClassicIconName, React.ReactNode> = {
+    select: <path d="M3 2v13l3.5-3.2 2.1 4.1 2.3-1.2-2.2-4.1L14 10z" fill={blue} />,
     new: <><path d="M4 2.5h7l3 3V16H4z"/><path d="M11 2.5V6h3"/></>,
     open: <><path d="M2 6h5l1.5 2H16l-2 7H2z" fill={yellow}/><path d="M3 6V4h5l1.5 2"/></>,
     save: <><path d="M3 2h11l2 2v12H3z" fill={blue}/><path d="M6 2v5h7V2M6 16v-6h7v6" stroke="var(--p100-canvas)"/><path d="M8 3v3" stroke="var(--p100-canvas)"/></>,

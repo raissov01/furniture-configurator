@@ -57,11 +57,17 @@ export type Material = {
 export type MaterialPbr = {
   roughness?: number | undefined
   metalness?: number | undefined
+  /** Матаның/жұмсақ беттің шеткі жарық жылтыры, 0..1. */
+  sheen?: number | undefined
+  /** Мөлдір лак қабатының күші, 0..1. */
+  clearcoat?: number | undefined
   /** Қоршаған орта шағылысының қарқыны. */
   reflection?: number | undefined
   opacity?: number | undefined
   /** Normal карта сыртқы URL арқылы; сурет репоға көшірілмейді. */
   normal?: { url: string; sizeMm: { x: number; y: number }; strength: number } | undefined
+  /** AO жарық көлеңкесі сыртқы grayscale картадан есептеледі; карта болмаса жалған AO жоқ. */
+  ambientOcclusion?: { url: string; sizeMm: { x: number; y: number }; intensity: number } | undefined
 }
 
 /**

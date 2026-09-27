@@ -6,6 +6,7 @@ export type SnapHint = { axis: Axis; kind: 'face' | 'edge' | 'centre' | 'grid' |
 export type SnapBox = { pos: Vec3; size: Vec3 }
 export type SnapTarget = SnapBox & { id: string }
 export type SnapOptions = { grid: number; tolerance: number }
+export type SnapFootprint = { id: string; corners: readonly { x: number; z: number }[]; minY: number; maxY: number }
 const axes: readonly Axis[] = ['x', 'y', 'z']
 const priority: Record<SnapHint['kind'], number> = { face: 0, wall: 1, edge: 2, centre: 3, grid: 4 }
 
@@ -72,4 +73,47 @@ export function snapPosition(moving: SnapBox, others: readonly SnapTarget[], roo
     }
   }
   return { pos, hints }
+}
+
+/**
+ * Айналған екі тіктөртбұрыштың нақты XZ жиектерін беттестіру. Координата
+ * бүтін мм болу үшін нормаль бойындағы жылжу жақын бүтін X/Z-ке дөңгелектенеді;
+ * қалдық қате ең көбі жарты мм әр өс бойынша. Жиектер параллель әрі биіктігі
+ * қабаттасқанда ғана кандидат саналады. Бұл AABB бұрышына snap емес.
+ */
+export function snapRotatedEdges(moving: SnapFootprint, others: readonly SnapFootprint[], tolerance: number):
+  { delta: { x: number; z: number }; targetId: string } | null {
+  if (!Number.isSafeInteger(tolerance) || tolerance < 0) throw new ConfigValidationError('tolerance', 'теріс не бөлшек шек', '≥ 0 бүтін мм')
+  const edge = (corners: SnapFootprint['corners'], index: number) => [corners[index]!, corners[(index + 1) % corners.length]!] as const
+  let best: { delta: { x: number; z: number }; targetId: string; score: number } | null = null
+  if (moving.corners.length !== 4) throw new ConfigValidationError('moving.corners', 'төрт бұрыш керек', '4 бұрыш')
+  for (const other of others) {
+    if (other.corners.length !== 4) throw new ConfigValidationError(`others.${other.id}.corners`, 'төрт бұрыш керек', '4 бұрыш')
+    if (moving.maxY <= other.minY || other.maxY <= moving.minY) continue
+    for (let i = 0; i < 4; i += 1) {
+      const [ma, mb] = edge(moving.corners, i)
+      const mdx = mb.x - ma.x; const mdz = mb.z - ma.z
+      const mLength = Math.hypot(mdx, mdz)
+      if (mLength < 1e-9) continue
+      for (let j = 0; j < 4; j += 1) {
+        const [ta, tb] = edge(other.corners, j)
+        const tdx = tb.x - ta.x; const tdz = tb.z - ta.z
+        const length = Math.hypot(tdx, tdz)
+        if (length < 1e-9 || Math.abs((mdx * tdz - mdz * tdx) / (mLength * length)) > 1e-6) continue
+        const ux = tdx / length; const uz = tdz / length
+        const along = (point: { x: number; z: number }) => (point.x - ta.x) * ux + (point.z - ta.z) * uz
+        if (Math.min(along(ma), along(mb)) >= length || Math.max(along(ma), along(mb)) <= 0) continue
+        const nx = -uz; const nz = ux
+        const distance = (ma.x - ta.x) * nx + (ma.z - ta.z) * nz
+        if (Math.abs(distance) > tolerance) continue
+        const delta = { x: Math.round(-distance * nx), z: Math.round(-distance * nz) }
+        if (delta.x === 0 && delta.z === 0) continue
+        const residual = Math.abs(distance + delta.x * nx + delta.z * nz)
+        if (residual > Math.SQRT1_2) continue
+        const score = Math.abs(distance) + residual * 0.001
+        if (!best || score < best.score) best = { delta, targetId: other.id, score }
+      }
+    }
+  }
+  return best ? { delta: best.delta, targetId: best.targetId } : null
 }

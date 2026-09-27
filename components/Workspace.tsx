@@ -8,6 +8,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { downloadPanorama } from '@/lib/panorama'
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
@@ -556,6 +557,16 @@ export function Workspace() {
         })
           .catch((cause: unknown) => setExportError(cause instanceof Error ? cause.message : String(cause)))
         break
+      case 'panorama':
+        setExportError(null)
+        requestAnimationFrame(() => {
+          try {
+            const context = useConfigurator.getState().liveRenderContext
+            if (!context) throw new Error(tr('Сцена ещё не готова'))
+            downloadPanorama(context)
+          } catch (cause) { setExportError(cause instanceof Error ? cause.message : tr('Не удалось создать панораму')) }
+        })
+        break
       case 'clientLink': void copyClientLink(); break
       case 'reset': requestReset(); break
       case 'undo': undo(); break
@@ -647,7 +658,7 @@ export function Workspace() {
       { icon: 'render', label: tr('Рендер'), action: () => setRenderOpen(true) },
       { icon: 'quote', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
       { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard, id: 'drill' },
-      { icon: 'settings', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !Boolean(activeBoard || activeSolid || cabinet), id: 'properties' },
+      { icon: 'settings', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !Boolean(activeBoard || activeSolid || activeNode?.kind === 'group' || cabinet), id: 'properties' },
       { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
     ],
   ]) : []
@@ -717,7 +728,12 @@ export function Workspace() {
 
       {classic && <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
         {classicToolRows.map((row, index) => <div className="p100-toolbar-row" key={index}>
-          {row.map((tool) => <ClassicTool key={`${tool.icon}-${tool.label}`} {...tool} onHover={setHoveredToolLabel} />)}
+          <span className="p100-toolbar-gripper" aria-hidden="true" />
+          {row.map((tool, toolIndex) => <span key={`${tool.icon}-${tool.label}`} className="p100-toolbar-cell">
+            <ClassicTool {...tool} onHover={setHoveredToolLabel} />
+            {(index === 0 ? [2, 6, 8] : index === 1 ? [3, 6] : [2, 6]).includes(toolIndex)
+              && <span className="p100-toolbar-separator" aria-hidden="true" />}
+          </span>)}
           {index === 2 && assemblyStep !== null && <label className="ml-2 flex items-center gap-1 border border-neutral-400 px-1 text-xs" data-testid="classic-assembly-step">
             <span>{tr('Сборка')}</span>
             <input type="range" aria-label={tr('Показать сборку по шагам')} min={1}
@@ -1129,9 +1145,20 @@ export function Workspace() {
           — үнсіз ескерту (сахнада тартып апарыңыз), батырма емес.
           Телефонда жасырын: PRO100 макеті десктопқа арналған.
         */}
-        <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
+        <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800" data-testid="classic-side-tools">
           {classic ? <>
-            <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="select" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="settings" label={tr('Свойства')} action={() => setPropertiesNodeId(activeId)} disabled={!Boolean(activeNode)} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="structure" label={tr('Структура')} action={() => openDockTab('structure')} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="layers" label={tr('Слои')} action={() => openDockTab('layers')} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="library" label={tr('Библиотека')} action={() => openDockTab('library')} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="new" label={tr('Добавить текст')} action={addAnnotation} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="room" label={tr('Стены и комната')} action={() => setRoomOpen(true)} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="render" label={tr('Рендер')} action={() => setRenderOpen(true)} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="quote" label={tr('Деталировка')} action={toggleCut} active={cutOpen} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="fit" label={tr('Вписать в кадр')} action={fitCamera} onHover={setHoveredToolLabel} />
           </> : <>
           <Button
             size="sm"
@@ -1158,7 +1185,7 @@ export function Workspace() {
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
           {walk ? null : classic ? <>
             {structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} dockRequest={dockRequest}
-              canOpenProperties={Boolean(activeBoard || activeSolid || cabinet)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
+              canOpenProperties={Boolean(activeBoard || activeSolid || activeNode?.kind === 'group' || cabinet)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
           </> : <div className="pointer-events-auto absolute left-3 top-3 z-10 hidden w-72 lg:block"><TreeDock request={dockRequest} /></div>}
           {/*
             КӨРІНІС құралдары ЖОҒАРҒЫ ЕКІ ҚАТАРҒА көшті (docs/pro100/ui-design.md,
@@ -1198,28 +1225,29 @@ export function Workspace() {
           қояды — активтілік те содан есептеледі.
         */}
         <div
-          className="flex items-center gap-0.5 overflow-x-auto border-t border-neutral-200 bg-neutral-50 px-1 py-1 dark:border-neutral-800 dark:bg-neutral-900"
+          className="p100-view-tabs flex items-center gap-0.5 overflow-x-auto border-t border-neutral-200 bg-neutral-50 px-1 py-1 dark:border-neutral-800 dark:bg-neutral-900"
           data-tour="viewtabs"
         >
-          {VIEW_TABS.map((v) => {
+          {VIEW_TABS.map((v, index) => {
             const isActive = cameraPreset === v.preset && (v.projection === undefined || projection === v.projection)
             return (
-              <Button
+              <span key={v.key} className="p100-view-tab-cell">
+              {index > 0 && <span className="p100-view-tab-divider" aria-hidden="true">|</span>}
+              <button type="button" className="p100-view-tab" aria-current={isActive ? 'page' : undefined}
                 key={v.key}
-                size="sm"
-                active={isActive}
                 onClick={() => {
                   setCameraPreset(v.preset)
                   if (v.projection) setProjection(v.projection)
                 }}
               >
                 {tr(v.ruLabel)}
-              </Button>
+              </button>
+              </span>
             )
           })}
         </div>
         <section
-          className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72')}
+          className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72', classic && !cutOpen && 'lg:hidden')}
           data-tour="cutlist"
         >
           {productionState.cutListAvailable
@@ -1256,7 +1284,7 @@ export function Workspace() {
               </div>
             </> : activeAnnotation ? <div className="truncate text-sm font-semibold" title={activeAnnotation.name}>{activeAnnotation.name}</div>
               : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
-            {classic && (activeBoard || activeSolid || activeAnnotation || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+            {classic && (activeBoard || activeSolid || activeAnnotation || activeNode?.kind === 'group' || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
           <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && !activeAnnotation && "lg:hidden")}>
             <Dense>
@@ -1305,6 +1333,7 @@ export function Workspace() {
         <span>{classicToolStatus(hoveredToolLabel, selected, activeNode?.name, tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
         {selected && activeNode && <span className="ml-auto tabular-nums">
           {tr('Положение')}: X {activeNode.transform.pos.x} · Y {activeNode.transform.pos.y} · Z {activeNode.transform.pos.z} мм
+          {' · '}{tr('Поворот')}: Y {activeNode.transform.rot.y}°
           {' · '}{tr('Размеры')}: {activeNode.kind === 'cabinet'
             ? `${activeNode.config.height} (H) × ${activeNode.config.width} (W) × ${activeNode.config.depth} (D)`
             : activeNode.kind === 'board' && catalog.materials.find((material) => material.id === activeNode.board.materialId)

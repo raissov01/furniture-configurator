@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { LESSONS } from '../src/core/lessonCatalog'
 import { lessonStepFor, lessonAvailability } from '../lib/lessonTargets'
 import { classicShopTools } from '../lib/classicShopTools'
@@ -31,6 +32,8 @@ describe('lesson targets', () => {
     expect(classicShopTools.quote).toEqual({ icon: 'quote', label: 'Смета и раскрой' })
     const firstQuote = source.split('\n').find((line) => line.includes('classicShopTools.quote.icon') && line.includes('classicShopTools.quote.label'))
     expect(firstQuote).toContain("id: 'quote'")
+  })
+
   it('routes the quote lesson to the dedicated toolbar control', () => {
     const quote = LESSONS.find((lesson) => lesson.id === 'quote')!
     expect(lessonStepFor(quote, true, false)?.selector).toBe('[data-testid="classic-tool-quote"]')

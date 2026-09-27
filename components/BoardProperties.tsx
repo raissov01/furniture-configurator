@@ -12,6 +12,7 @@ import { PolygonEditor } from '@/components/PolygonEditor'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, panelFitWarnings } from '@/src/core/index'
 import type { BoardNode, BoardSpec, Catalog, Orientation, Panel, PanelEdges } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
+import { MaterialAppearanceEditor } from '@/components/VisualSettingsPanel'
 
 type Tab = 'general' | 'material' | 'reports' | 'production'
 const orientations: { value: string; label: string; orientation: Orientation }[] = [
@@ -126,6 +127,7 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
       <Toggle checked={node.board.grainAlongLength} disabled={grainUi.disabled}
         onChange={(grainAlongLength) => edit({ grainAlongLength })} label={tr('Текстура вдоль длины')} />
       {grainUi.reason && <p className="text-[11px] text-neutral-500">{tr(grainUi.reason)}</p>}
+      <MaterialAppearanceEditor initialMaterialId={material.id} />
     </fieldset>
     <div className={tab === 'reports' ? 'space-y-2' : 'hidden'}>
       <p>{tr('Готовый')}: {panel ? `${panel.finishedLength} × ${panel.finishedWidth} мм` : '—'}</p>
