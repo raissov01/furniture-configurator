@@ -1580,4 +1580,9 @@ export const en: Record<string, string> = {
   'Здесь доступны файлы для цеха и клиента.': 'Files for the workshop and customer are available here.',
   'Откройте мастер': 'Open the wizard',
   'В меню «Создать» откройте готовые шаблоны и выберите мастер.': 'Open ready made templates from the Create menu and select a wizard.',
+  'Пустое название станет «Мой цех»; до 100 символов': 'A blank name becomes “Мой цех”; up to 100 characters',
+  'Название цеха: от 0 до 100 символов': 'Workshop name: 0–100 characters',
+  'Пароль: введите пароль': 'Password: enter your password',
+  'Пароль: от 8 символов': 'Password: at least 8 characters',
+  'Почта: укажите адрес вида name@example.com': 'Email: enter an address like name@example.com',
 }

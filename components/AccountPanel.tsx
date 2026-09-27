@@ -16,6 +16,7 @@ import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
+import { accountFormErrors, canSubmitAccount } from '@/lib/accountPanelState'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -82,6 +83,8 @@ export function AccountPanel() {
   const [usage, setUsage] = useState<{ projects: number; members: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const formErrors = accountFormErrors(mode, form, Boolean(invite))
+  const formReady = canSubmitAccount(mode, form, Boolean(invite))
 
   useEffect(() => {
     if (!account) return
@@ -199,6 +202,7 @@ export function AccountPanel() {
   }, [account, shop, profileReady])
 
   const submit = async () => {
+    if (busy || !formReady) return
     setBusy(true)
     setError(null)
     try {
@@ -593,25 +597,31 @@ export function AccountPanel() {
             </div>
 
             {mode === 'register' ? (
-              <Field label={tr('Название цеха')}>
-                <input className={input} value={form.shopName} placeholder={tr('Цех «Алаш»')}
+              <Field label={tr('Название цеха')} hint={tr('Пустое название станет «Мой цех»; до 100 символов')}>
+                <input className={`${input} ${formErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
+                  aria-invalid={Boolean(formErrors.shopName)}
                   onChange={(e) => setForm({ ...form, shopName: e.target.value })} />
+                {formErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.shopName)}</span> : null}
               </Field>
             ) : null}
 
             <Field label={tr('Почта')}>
-              <input className={input} type="email" autoComplete="email" value={form.email}
+              <input className={`${input} ${formErrors.email ? 'border-red-500 dark:border-red-500' : ''}`} type="email" autoComplete="email" value={form.email}
+                aria-invalid={Boolean(formErrors.email)}
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              {formErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.email)}</span> : null}
             </Field>
             <Field label={tr('Пароль')} hint={mode === 'register' ? 'от 8 символов' : undefined}>
-              <input className={input} type="password"
+              <input className={`${input} ${formErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
+                aria-invalid={Boolean(formErrors.password)}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 value={form.password}
                 onKeyDown={(e) => { if (e.key === 'Enter') void submit() }}
                 onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              {formErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.password)}</span> : null}
             </Field>
 
-            <Button onClick={() => void submit()} disabled={busy} active>
+            <Button onClick={() => void submit()} disabled={busy || !formReady} active>
               {mode === 'login' ? 'Войти' : 'Создать аккаунт'}
             </Button>
 

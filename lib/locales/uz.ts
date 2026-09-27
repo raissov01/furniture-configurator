@@ -1584,4 +1584,9 @@ export const uz: Record<string, string> = {
   'Здесь доступны файлы для цеха и клиента.': 'Sex va mijoz uchun fayllar shu yerda.',
   'Откройте мастер': 'Ustani oching',
   'В меню «Создать» откройте готовые шаблоны и выберите мастер.': 'Yaratish menyusida tayyor shablonlarni ochib, ustani tanlang.',
+  'Пустое название станет «Мой цех»; до 100 символов': 'Bo‘sh nom “Мой цех” bo‘ladi; 100 belgigacha',
+  'Название цеха: от 0 до 100 символов': 'Sex nomi: 0–100 belgi',
+  'Пароль: введите пароль': 'Parol: parolni kiriting',
+  'Пароль: от 8 символов': 'Parol: kamida 8 belgi',
+  'Почта: укажите адрес вида name@example.com': 'Email: name@example.com shaklidagi manzilni kiriting',
 }
