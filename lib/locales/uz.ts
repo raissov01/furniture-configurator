@@ -1593,4 +1593,6 @@ export const uz: Record<string, string> = {
   'до 2 знаков после запятой': 'verguldan keyin ko‘pi bilan 2 raqam',
 
   // Бұтақтарды біріктіруде сақталған аудармалар.
+
+
 }

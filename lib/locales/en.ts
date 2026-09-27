@@ -1589,4 +1589,6 @@ export const en: Record<string, string> = {
   'до 2 знаков после запятой': 'up to 2 decimal places',
 
   // Бұтақтарды біріктіруде сақталған аудармалар.
+
+
 }
