@@ -19,14 +19,17 @@ describe('F14 фасад декорының кромкасы', () => {
     expect(metres.get('pvc2-h1145')).toBeCloseTo(9.156, 3)
   })
 
-  it('бөлек фасад материалының кромка саясаты белгісіз болса қате береді', () => {
+  it('кромка саясаты белгісіз болса жоба кромкасын алып ескертеді', () => {
     const catalog = {
       ...SEED_CATALOG,
       materials: SEED_CATALOG.materials.map((material) => material.id === 'ldsp16-h3303'
         ? { ...material, defaultEdging: undefined }
         : material),
     }
-    expect(() => generateCabinet({ ...referenceWardrobe, frontMaterialId: 'ldsp16-h3303' }, catalog))
-      .toThrow(/frontMaterialId.*defaultEdging/)
+    const panels = generateCabinet({ ...referenceWardrobe, frontMaterialId: 'ldsp16-h3303' }, catalog)
+    const fronts = panels.filter((panel) => panel.role === 'front')
+    expect(fronts).toHaveLength(2)
+    expect(fronts.every((front) => front.note.includes('defaultEdging') && front.note.includes('config.edging'))).toBe(true)
+    expect(fronts[0]?.edges.L1?.bandId).toBe(referenceWardrobe.edging.visibleFront)
   })
 })
