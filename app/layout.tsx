@@ -3,6 +3,7 @@ import { Golos_Text, JetBrains_Mono, PT_Sans_Narrow } from 'next/font/google'
 import './globals.css'
 import { I18nProvider } from '@/components/I18nProvider'
 import { ServiceWorker } from '@/components/ServiceWorker'
+import { ThemeInitializer } from '@/components/ThemeInitializer'
 import { BRAND } from '@/src/core/brand'
 
 /**
@@ -78,6 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ru" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body className="antialiased" style={{ fontFamily: 'var(--font-body), system-ui, sans-serif' }}>
+        <ThemeInitializer />
         <I18nProvider>{children}</I18nProvider>
         <ServiceWorker />
       </body>

@@ -90,6 +90,11 @@ export function applyTheme(theme: Theme): void {
   }
 }
 
+/** Тікелей ашылған маршрутта да адамның сақталған таңдауы қолданылсын. */
+export function initializeSavedTheme(): void {
+  applyTheme(readTheme())
+}
+
 /** Тема ауысқанда хабар: классикалық мәзір мен header қосқышы бір күйде тұрсын. */
 export const THEME_EVENT = 'appearance:theme'
 
