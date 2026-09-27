@@ -18,6 +18,7 @@ import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
 import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
 import { useModalLayer } from '@/lib/useModalLayer'
+import { bindCloudProject } from '@/lib/cloudProjectBinding'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -345,14 +346,18 @@ export function AccountPanel() {
     setBusy(true)
     setError(null)
     try {
+      const project = exportProject()
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project: exportProject() }),
+        body: JSON.stringify({ project }),
       })
-      const data = (await res.json()) as { error?: string }
+      const data = (await res.json()) as { error?: string; id?: string }
       if (!res.ok) setError(data.error ?? 'Не сохранилось')
-      else await refreshProjects()
+      else if (data.id) { await bindCloudProject(data.id, project); await refreshProjects() }
+      else setError(tr('Сервер не вернул ID проекта'))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : tr('Нет связи с сервером'))
     } finally {
       setBusy(false)
     }
@@ -364,6 +369,7 @@ export function AccountPanel() {
     const data = (await res.json()) as { project?: unknown }
     try {
       loadProject(parseProjectV4(data.project))
+      await bindCloudProject(id, exportProject())
       setOpen(false)
     } catch (e) {
       setError(`Проект не открылся: ${e instanceof Error ? e.message : 'неверная форма'}`)

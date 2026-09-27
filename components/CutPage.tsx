@@ -35,7 +35,8 @@ import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
 import { cutDisplay, visibleMaterials } from '@/lib/cutView'
 import { playbackStep } from '@/src/core/cutPlayback'
-import { labelExportOptions, labelSizeLimits, projectLabelIdentity } from '@/lib/labelExportOptions'
+import { labelExportOptions, labelSizeLimits } from '@/lib/labelExportOptions'
+import { CLOUD_PROJECT_BINDING_KEY, currentCloudProjectId } from '@/lib/cloudProjectBinding'
 import { cutExportAllowed, safeCutPlan } from '@/lib/safeCutPlan'
 import type { LabelPage } from '@/src/core/export/labelLayout'
 
@@ -80,6 +81,11 @@ export function CutPage() {
   const autoJoints = useConfigurator((s) => s.autoJoints)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const projectName = useConfigurator((s) => s.projectName)
+  const exportProject = useConfigurator((s) => s.exportProject)
+  const room = useConfigurator((s) => s.room)
+  const info = useConfigurator((s) => s.projectInfo)
+  const priceOverrides = useConfigurator((s) => s.priceOverrides)
+  const lights = useConfigurator((s) => s.lights)
   const projectLoadError = useConfigurator((s) => s.projectLoadError)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
@@ -96,6 +102,16 @@ export function CutPage() {
     setMounted(true)
   }, [hydrateShop, hydrateProject])
 
+  const [cloudId, setCloudId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!mounted) return
+    let active = true
+    void currentCloudProjectId(exportProject(), window.localStorage.getItem(CLOUD_PROJECT_BINDING_KEY))
+      .then((id) => { if (active) setCloudId(id) })
+      .catch(() => { if (active) setCloudId(null) })
+    return () => { active = false }
+  }, [mounted, exportProject, root, layers, autoJoints, settings, catalog, projectName, room, info, priceOverrides, lights])
+
   const [showCuts, setShowCuts] = useState(true)
   const [materialFilter, setMaterialFilter] = useState('all')
   const [busy, setBusy] = useState<string | null>(null)
@@ -108,16 +124,27 @@ export function CutPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const labelOptions = useMemo(() => {
     try {
-      const identity = projectLabelIdentity(root)
+      if (!cloudId) return { value: null, error: tr('QR үшін жобаны алдымен бұлтқа сақтаңыз') }
       return { value: labelExportOptions(
         { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
-        identity.projectId, identity.version,
+        cloudId ?? '', 1,
       ), error: null }
     } catch (error) {
       return { value: null, error: error instanceof Error ? error.message : String(error) }
     }
-  }, [labelPage, labelWidth, labelHeight, root])
+  }, [labelPage, labelWidth, labelHeight, cloudId])
   const labelsReady = labelOptions.value !== null && !Object.values(labelDraftInvalid).some(Boolean)
+
+  const verifyLabelProject = async () => {
+    if (!cloudId) throw new Error(tr('QR үшін жобаны алдымен бұлтқа сақтаңыз'))
+    const localId = await currentCloudProjectId(exportProject(), window.localStorage.getItem(CLOUD_PROJECT_BINDING_KEY))
+    if (localId !== cloudId) throw new Error(tr('Жоба өзгерген. QR үшін бұлтқа қайта сақтаңыз.'))
+    const response = await fetch(`/api/projects/${encodeURIComponent(cloudId)}`, { credentials: 'same-origin', cache: 'no-store' })
+    if (!response.ok) throw new Error(tr('QR жобасы серверде табылмады. Қайта сақтаңыз.'))
+    const body = await response.json() as { project?: unknown }
+    const serverId = await currentCloudProjectId(body.project, window.localStorage.getItem(CLOUD_PROJECT_BINDING_KEY))
+    if (serverId !== cloudId) throw new Error(tr('Жоба өзгерген. QR үшін бұлтқа қайта сақтаңыз.'))
+  }
 
   const production = useMemo(() => {
     if (projectLoadError) return { panels: [], error: projectLoadError }
@@ -227,6 +254,7 @@ export function CutPage() {
               disabled={busy !== null || !nesting || !cutExportReady || !labelsReady}
               title={tr('Бирки на детали: позиция, размер реза, кромка по кромкам')}
               onClick={() => void run('labels', async () => {
+                await verifyLabelProject()
                 const { labelsPdf } = await import('@/src/core/export/labels')
                 const bytes = await labelsPdf({
                   labels: partLabels(panels, catalog, nesting!),
@@ -243,6 +271,7 @@ export function CutPage() {
               disabled={busy !== null || !nesting || !cutExportReady || !labelsReady}
               title={tr('Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.')}
               onClick={() => void run('bundle', async () => {
+                await verifyLabelProject()
                 const [
                   { nestingToDxfFiles, cabinetToDxfArchiveFiles }, { cutListToCsv },
                   { labelsPdf, labelsToCsv }, { nestingPdf }, { zipSync, strToU8 },
