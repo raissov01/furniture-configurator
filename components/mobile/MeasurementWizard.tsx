@@ -176,7 +176,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
           inputMode="numeric" type="text" value={draftNumbers[field] ?? (value.value || '')}
           onChange={(event) => changeNumber(field, event.target.value, value.source)} />
         <select aria-label={`${t(label)}: ${t('Источник')}`} className={`${input} !w-28 shrink-0`}
-          value={value.source} onChange={(event) => changeNumber(field, String(value.value), event.target.value as CaptureSource)}>
+          value={value.source} onChange={(event) => changeNumber(field, draftNumbers[field] ?? String(value.value), event.target.value as CaptureSource)}>
           <option value="manual">{t('Вручную')}</option><option value="voice">{t('Голос')}</option><option value="laser">{t('Лазер')}</option>
         </select>
       </span>
