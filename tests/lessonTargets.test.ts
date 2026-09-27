@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { LESSONS } from '../src/core/lessonCatalog'
 import { lessonStepFor, lessonAvailability } from '../lib/lessonTargets'
+import { classicShopTools } from '../lib/classicShopTools'
 
 describe('lesson targets', () => {
   it('routes every classic lesson to an exposed control', () => {
@@ -28,7 +29,8 @@ describe('lesson targets', () => {
 
   it('targets the first quote tool because duplicate labels are removed', () => {
     const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
-    const firstQuote = source.split('\n').find((line) => line.includes("icon: 'print'") && line.includes("tr('Смета и раскрой')"))
+    expect(classicShopTools.quote).toEqual({ icon: 'quote', label: 'Смета и раскрой' })
+    const firstQuote = source.split('\n').find((line) => line.includes('classicShopTools.quote.icon') && line.includes('classicShopTools.quote.label'))
     expect(firstQuote).toContain("id: 'quote'")
   })
 })

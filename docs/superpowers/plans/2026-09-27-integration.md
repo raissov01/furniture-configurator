@@ -27,12 +27,12 @@
 
 ### Task 2: Integrate branches
 
-- [ ] Merge each requested branch in order when it is not already an ancestor.
-- [ ] Run typecheck after each actual merge; inspect and resolve any conflict preserving both intentions.
-- [ ] Review and merge remaining `claude/*` branches absent from `codex/0924`.
+- [x] Merge each requested branch in order when it is not already an ancestor.
+- [x] Run typecheck after each actual merge; inspect and resolve any conflict preserving both intentions.
+- [x] Review and merge remaining `claude/*` branches absent from `codex/0924`.
 
 ### Task 3: Verify and report
 
-- [ ] Run the complete Vitest suite and the reference wardrobe test.
-- [ ] Run typecheck and `next build` with the memory limit.
-- [ ] Review the final diff, write the report in the main tree, and leave the integration worktree clean.
+- [x] Run the complete Vitest suite and the reference wardrobe test: 3119 passed, 5 skipped; snapshot 3/3 passed.
+- [x] Run typecheck and `next build` with the memory limit; webpack build passed in the symlinked worktree.
+- [x] Review the final diff, write the report in the main tree, and leave the integration worktree clean.
