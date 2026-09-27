@@ -1784,7 +1784,7 @@ export function generateCabinet(
         front.note = [front.note, 'Подъёмный: присадка по шаблону механизма']
           .filter(Boolean).join('; ')
         if (milling) {
-          validateMilling(milling, ctx.thickness(front))
+          validateMilling(milling, ctx.thickness(front), front.finishedWidth, front.finishedLength)
           applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)
         }
         return
@@ -1810,7 +1810,7 @@ export function generateCabinet(
       front.opening = { kind: 'door', side }
       hingeHoles(front, carcassPanel, side, ctx, hingeSystem)
       if (milling) {
-        validateMilling(milling, ctx.thickness(front))
+        validateMilling(milling, ctx.thickness(front), front.finishedWidth, front.finishedLength)
         applyMilling(front, millingPaths(milling, front.finishedWidth, front.finishedLength), ctx)
       }
     })
