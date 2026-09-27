@@ -63,37 +63,53 @@ export const METAL_BOX_SYSTEMS: Record<MetalBoxSystemId, MetalBoxSystem> = {
   legrabox: {
     id: 'legrabox',
     name: 'Blum LEGRABOX',
-    nominalLengths: [250, 300, 350, 400, 450, 500, 550],
+    // Blum Catalogue 2027/2028 б.242: LEGRABOX M, NL 270–650; 250 жоқ.
+    nominalLengths: [270, 300, 350, 400, 450, 500, 550, 600, 650],
     bottomWidthSub: 35,
     bottomDepthSub: 10,
     backWidthSub: 38,
     backHeight: 63,
     hardwareId: 'box-legrabox',
-    source: MEASURED,
+    source: `${MEASURED}; Blum Catalogue 2027/2028 б.242: https://publications.blum.com/2026/catalogue/en/238/`,
   },
   // түбі 426 × 793, арт қабырға 84 × 781 (биіктік класы M — 90.5 мм)
   tandembox: {
     id: 'tandembox',
-    name: 'Blum TANDEMBOX',
-    nominalLengths: [250, 300, 350, 400, 450, 500, 550],
+    name: 'Blum TANDEMBOX M',
+    // Blum Catalogue 2027/2028 б.300–301: 578 — 270–600; 576 (65 кг) — 450–650.
+    // 650 тек 576 профиліне арналған, сондықтан атауда 576 көрсетілді.
+    nominalLengths: [270, 300, 350, 400, 450, 500, 550, 600, 650],
     bottomWidthSub: 75,
     bottomDepthSub: 24,
     backWidthSub: 87,
     backHeight: 84,
     hardwareId: 'box-tandembox',
-    source: `${MEASURED}; биіктік класы M — 90.5 мм`,
+    source: `${MEASURED}; Blum Catalogue 2027/2028 б.300–301, биіктік класы M`,
   },
   // түбі 424 × 817, арт қабырға 83 × 817 (биіктік класы M — 83.6 мм)
   merivobox: {
     id: 'merivobox',
     name: 'Blum MERIVOBOX',
-    nominalLengths: [250, 300, 350, 400, 450, 500, 550],
+    // Blum Catalogue 2027/2028 б.256–257: MERIVOBOX 450 профилі, M.
+    nominalLengths: [270, 300, 350, 400, 450, 500, 550, 600],
     bottomWidthSub: 51,
     bottomDepthSub: 26,
     backWidthSub: 51,
     backHeight: 83,
     hardwareId: 'box-merivobox',
-    source: `${MEASURED}; биіктік класы M — 83.6 мм`,
+    source: `${MEASURED}; Blum Catalogue 2027/2028 б.256–257, биіктік класы M — 83.6 мм`,
+  },
+  // Blum Catalogue 2027/2028 б.352–353: METABOX M, ДСП түбі мен арты.
+  metabox: {
+    id: 'metabox',
+    name: 'Blum METABOX M',
+    nominalLengths: [270, 350, 400, 450, 500, 550],
+    bottomWidthSub: 31,
+    bottomDepthSub: 2,
+    backWidthSub: 31,
+    backHeight: 71,
+    hardwareId: 'box-metabox',
+    source: 'Blum Catalogue 2027/2028 б.352–353: https://publications.blum.com/2026/catalogue/en/353/',
   },
 }
 

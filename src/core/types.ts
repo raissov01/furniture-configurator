@@ -785,7 +785,7 @@ export type PanelMount = 'inset' | 'overlay' | 'overlayLeft' | 'overlayRight'
 export type DrawerSystemId = 'roller' | 'ball' | 'tandem'
 
 /** Металл жәшік жүйесі: қорап дайын, парақтан түбі мен арты ғана кесіледі. */
-export type MetalBoxSystemId = 'tandembox' | 'legrabox' | 'merivobox'
+export type MetalBoxSystemId = 'tandembox' | 'legrabox' | 'merivobox' | 'metabox'
 
 /** Аяқтың тұғыры (`CabinetConfig.base.legType`). */
 export type LegType = 'cylinder' | 'cone' | 'square' | 'vector' | 'none'
