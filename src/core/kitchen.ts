@@ -22,6 +22,8 @@ import { defaultMillingSpec } from './milling'
 import type { MillingPatternId } from './milling'
 import { findTemplate, templateToCabinet } from './templates'
 import { findFixture } from './filling'
+import { planWorktopCutout, worktopFixtureModel } from './worktopFixtures'
+import type { Cutout } from './cutouts'
 import type { CabinetConfig, CabinetFixture, Catalog, CustomPart, Material, Placement, Section } from './types'
 
 export type KitchenLayout = 'straight' | 'corner' | 'u'
@@ -49,6 +51,13 @@ export type KitchenOptions = {
    * Ящикті тумбаға отырады (астында кастрюль ящигі — әдеттегі шешім).
    */
   hob?: 'gas' | 'electric' | 'none' | undefined
+  /** Ортақ тақтадағы өндірістік ойықтарға артикул мен алдыңғы орын. */
+  worktopFixtures?: {
+    hobModelId?: string | undefined
+    hobFrontInset?: number | undefined
+    sinkModelId?: string | undefined
+    sinkFrontInset?: number | undefined
+  } | undefined
   /** Панельдің үстіне сорғыш (үстіңгі шкафтың орнына). Әдепкі — бар. */
   hood?: boolean | undefined
   /** Өлшемдер (қадам 2). Берілмегені әдепкіден. */
@@ -60,6 +69,8 @@ export type KitchenOptions = {
     upperHeight?: number | undefined
     upperElevation?: number | undefined
     worktopOverhang?: number | undefined
+    /** Өндірістік ортақ тақтаның толық тереңдігі, мм; берілмесе ескі геометрия. */
+    worktopDepth?: number | undefined
     backsplashHeight?: number | undefined
   } | undefined
   /** Материалдар (қадам 5). Берілмегені шаблон материалынан. */
@@ -671,16 +682,28 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
       // Үстіңгі қатар болса, плитаның үстінде СОРҒЫШ ШКАФЫ тұрады (сорғыштың
       // орны сонда) — бөлек «труба» сорғыш тек үстіңгі қатарсыз гарнитурда.
       // ⚠ Екеуі бірге болса, труба (биіктігі 800) шкафтың ішінен өтіп кетер еді.
-      let cab = withFixture(base, { kind: 'hob', fuel: hobFuel === 'electric' ? 'electric' : 'gas' })
+      let cab = withFixture(base, { kind: 'hob', fuel: hobFuel === 'electric' ? 'electric' : 'gas',
+        ...(options.worktopFixtures?.hobModelId ? { modelId: options.worktopFixtures.hobModelId } : {}),
+        ...(options.worktopFixtures?.hobFrontInset === undefined
+          ? {} : { frontInset: options.worktopFixtures.hobFrontInset }),
+      })
       if ((options.hood ?? true) && !withUpper) cab = withFixture(cab, { kind: 'hood' })
       return dressLower(cab, options)
     }
-    if (mod.kind === 'sink') return dressLower(withFixture(base, { kind: 'sink' }), options)
+    if (mod.kind === 'sink') return dressLower(withFixture(base, { kind: 'sink',
+      ...(options.worktopFixtures?.sinkModelId ? { modelId: options.worktopFixtures.sinkModelId } : {}),
+      ...(options.worktopFixtures?.sinkFrontInset === undefined
+        ? {} : { frontInset: options.worktopFixtures.sinkFrontInset }),
+    }), options)
     if (mod.kind === 'cornerSink') {
       // Соқыр бұрыш `left` жақта: қатардың offset 0-і — дәл бұрыш, ал фронт.
       // панельдің `left`-і корпустың x = 0 жағына тұрады (generateCabinet).
       const blind: CabinetConfig = { ...base, frontPanel: { width: CORNER_BLIND, side: 'left' } }
-      return dressLower(withFixture(blind, { kind: 'sink' }), options)
+      return dressLower(withFixture(blind, { kind: 'sink',
+        ...(options.worktopFixtures?.sinkModelId ? { modelId: options.worktopFixtures.sinkModelId } : {}),
+        ...(options.worktopFixtures?.sinkFrontInset === undefined
+          ? {} : { frontInset: options.worktopFixtures.sinkFrontInset }),
+      }), options)
     }
     return dressLower(base, options)
   }
@@ -853,18 +876,50 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
         label: 'Столешница',
         ...(worktopId ? { materialId: worktopId } : {}),
         length: end - start - (buttEnd ? overhang : 0) - (buttStart ? overhang : 0),
-        width: head.depth + overhang,
+        width: options.dims?.worktopDepth ?? head.depth + overhang,
         position: { x: buttStart ? overhang : 0, y: head.height, z: -overhang },
         plane: 'horizontal',
         edging: 'none',
         note: 'Постформинг, общая на ряд',
+      }
+      const cutouts: Cutout[] = []
+      // Ескі 530 мм тақта өндірістік 595 мм шекке сыймайды. Өндірістік
+      // тереңдік/артикул АЙҚЫН берілсе ғана автоматты ойық жоспарлаймыз.
+      const manufacturingRequested = options.dims?.worktopDepth !== undefined
+        || options.worktopFixtures !== undefined
+      if (manufacturingRequested) {
+        for (const placement of group) {
+          const cabinet = byId.get(placement.cabinetId)!
+          for (const fixture of cabinet.fixtures ?? []) {
+            if (fixture.kind === 'hood') continue
+            if (fixture.kind === 'sink' && !fixture.modelId) {
+              throw new ConfigValidationError('worktopFixtures.sinkModelId', 'берілмеген',
+                'мойканың нақты артикулын және алдыңғы шегінісін енгізіңіз')
+            }
+            const model = worktopFixtureModel(fixture.modelId ?? 'hob-60-default')
+            if (model.kind !== fixture.kind) {
+              throw new ConfigValidationError('fixtures.modelId', fixture.modelId ?? '',
+                `${fixture.kind} моделі`)
+            }
+            const planned = planWorktopCutout(model, {
+              panelLength: part.length, panelWidth: part.width,
+              centreX: placement.offset - start + cabinet.width / 2 - part.position.x,
+              cabinetWidth: cabinet.width,
+              ...(fixture.frontInset === undefined ? {} : { frontInset: fixture.frontInset }),
+            })
+            cutouts.push({ ...planned, id: `${planned.id}-${placement.cabinetId}` })
+          }
+        }
       }
       for (const p of group) {
         const c = byId.get(p.cabinetId)!
         cabinets[cabinets.indexOf(c)] = {
           ...c,
           worktop: { ...c.worktop!, shared: true, ...(worktopId ? { materialId: worktopId } : {}) },
-          ...(c === head ? { customParts: [...(c.customParts ?? []), part] } : {}),
+          ...(c === head ? {
+            customParts: [...(c.customParts ?? []), part],
+            ...(cutouts.length > 0 ? { panelCutouts: { ...(c.panelCutouts ?? {}), [part.id]: cutouts } } : {}),
+          } : {}),
         }
       }
     }
