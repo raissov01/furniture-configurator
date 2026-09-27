@@ -116,13 +116,13 @@ export function DockHost({ panels, children, initiallyClosed = [], storageKey }:
   }, [bounds])
 
   return (
-    <div ref={containerRef} data-testid="workspace-dock-host" className="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-neutral-950">
+    <div ref={containerRef} data-testid="workspace-dock-host" className="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-neutral-100 dark:bg-neutral-900">
       <div className="flex min-h-0 flex-1 flex-col">
         <DockZone side="top" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
         <div className="flex min-h-0 flex-1">
           <ClosedPanelsMenu panels={panels} state={state} onOpen={(id) => setState((s) => openPanel(s, id))} />
           <DockZone side="left" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
-          <div className="relative min-w-0 flex-1 border border-neutral-800">{children}</div>
+          <div className="relative min-w-0 flex-1 border border-neutral-300 dark:border-neutral-700">{children}</div>
           <DockZone side="right" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
         </div>
         <DockZone side="bottom" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
@@ -320,7 +320,7 @@ function ClosedPanelsMenu({
   if (closed.length === 0) return null
   return (
     <details className="relative z-30 w-7 shrink-0 border-r border-neutral-300 bg-neutral-100 text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
-      <summary aria-label={tr('Панели')} className="flex min-h-24 cursor-pointer list-none items-center justify-center px-1 text-xs [writing-mode:vertical-rl]">{tr('Панели')}</summary>
+      <summary aria-label={tr('Панели')} className="flex min-h-24 cursor-pointer list-none items-center justify-center border border-neutral-300 bg-neutral-100 px-1 text-xs text-neutral-800 [writing-mode:vertical-rl] dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">{tr('Панели')}</summary>
       <div role="menu" aria-label={tr('Панели')} className="absolute left-full top-0 z-40 min-w-40 border border-neutral-300 bg-white p-1 text-xs dark:border-neutral-700 dark:bg-neutral-900">
         {closed.map((panel) => (
           <button key={panel.id} role="menuitem" type="button" onClick={() => onOpen(panel.id)}
