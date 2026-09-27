@@ -90,7 +90,7 @@ export function planWorktopCutout(model: WorktopFixtureModel, place: WorktopCuto
       `${model.width / 2}..${place.panelLength - model.width / 2} мм`)
   }
   return {
-    id: `fixture-${model.id}`, label: `${model.article} (${model.source})`,
+    id: `fixture-${model.id}`, label: model.article,
     shape: 'rect', corner: 'bottomLeft', x, y: front,
     width: model.width, height: model.depth,
     ...(model.radius === undefined ? {} : { radius: model.radius }),
