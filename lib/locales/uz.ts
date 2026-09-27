@@ -1649,4 +1649,6 @@ export const uz: Record<string, string> = {
   'Копировать': 'Nusxalash',
   'Нет связи с сервером. Локальная копия не сохранена.': 'Server bilan aloqa yoʻq. Mahalliy nusxa saqlanmadi.',
   'Ревизия сервера': 'Server reviziyasi',
+  'Нет шаблона для заданных размеров. Проверьте H, W, D и диапазон 100..4000 мм.': 'Bu o‘lchamlarga mos shablon yo‘q. H, W, D va 100..4000 mm oralig‘ini tekshiring.',
+  'Заданные размеры и декор соблюдаются точно. Не тронутое поле — размер по шаблону.': 'Belgilangan o‘lcham va dekor aniq saqlanadi. Tegilmagan maydon shablon o‘lchamini oladi.',
 }

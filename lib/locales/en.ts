@@ -1645,4 +1645,6 @@ export const en: Record<string, string> = {
   'Копировать': 'Copy',
   'Нет связи с сервером. Локальная копия не сохранена.': 'No server connection. The local copy was not saved.',
   'Ревизия сервера': 'Server revision',
+  'Нет шаблона для заданных размеров. Проверьте H, W, D и диапазон 100..4000 мм.': 'No template fits these dimensions. Check H, W, D and the 100..4000 mm range.',
+  'Заданные размеры и декор соблюдаются точно. Не тронутое поле — размер по шаблону.': 'Specified dimensions and decor are kept exactly. An untouched field uses the template size.',
 }
