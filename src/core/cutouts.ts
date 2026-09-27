@@ -50,6 +50,31 @@ export type PanelCutouts = Record<string, Cutout[]>
  */
 export type CutoutBounds = { x: number; y: number; width: number; height: number }
 
+export type CutoutPoint = { x: number; y: number }
+export type RoundedCutoutPath = {
+  lines: { from: CutoutPoint; to: CutoutPoint }[]
+  arcs: { center: CutoutPoint; radius: number; startDeg: number; endDeg: number }[]
+}
+
+/** 3D және DXF қолданатын R-бұрышты ойықтың бірдей төрт түзуі мен доғасы. */
+export function roundedCutoutPath(bounds: CutoutBounds, radius: number): RoundedCutoutPath {
+  const { x, y, width: w, height: h } = bounds
+  const r = radius
+  const lines = [
+    { from: { x: x + r, y }, to: { x: x + w - r, y } },
+    { from: { x: x + w, y: y + r }, to: { x: x + w, y: y + h - r } },
+    { from: { x: x + w - r, y: y + h }, to: { x: x + r, y: y + h } },
+    { from: { x, y: y + h - r }, to: { x, y: y + r } },
+  ].filter(({ from, to }) => from.x !== to.x || from.y !== to.y)
+  const arcs = [
+    { center: { x: x + r, y: y + r }, radius: r, startDeg: 180, endDeg: 270 },
+    { center: { x: x + w - r, y: y + r }, radius: r, startDeg: 270, endDeg: 360 },
+    { center: { x: x + w - r, y: y + h - r }, radius: r, startDeg: 0, endDeg: 90 },
+    { center: { x: x + r, y: y + h - r }, radius: r, startDeg: 90, endDeg: 180 },
+  ]
+  return { lines, arcs }
+}
+
 /** Дайын бұрыштан рез бұрышына жылжу; присадка мен DXF осы datum-ды қолданады. */
 export function cutoutCutOrigin(panel: Panel, bands: Map<string, EdgeBand>, settings: ConstructionSettings): { x: number; y: number } {
   return {
@@ -106,7 +131,7 @@ export function validateCutout(
   }
   if (cutout.shape === 'rect' && cutout.radius !== undefined) {
     const max = Math.min(cutout.width, cutout.height) / 2
-    if (cutout.radius < 0 || cutout.radius > max) {
+    if (!Number.isInteger(cutout.radius) || cutout.radius < 0 || cutout.radius > max) {
       throw new ConfigValidationError(`${field}.radius`, `${cutout.radius}`, `0..${Math.floor(max)} мм`)
     }
   }

@@ -174,6 +174,15 @@ describe('пресеттер', () => {
 })
 
 describe('экспорт пен сақтау', () => {
+  it('R5 ойықты DXF-ке төрт түзу және төрт доға етіп шығарады', () => {
+    const cutout: Cutout = { id: 'vent', shape: 'rect', corner: 'bottomLeft',
+      x: 100, y: 100, width: 204, height: 60, radius: 5 }
+    const dxf = cabinetToDxfFiles(build([cutout]),
+      { catalog: SEED_CATALOG, settings: mergeSettings() }).get('back.dxf')!
+    expect(dxf.match(/\n0\nARC\n8\nCUTOUT\n/g)).toHaveLength(4)
+    expect(dxf.match(/\n0\nLINE\n8\nCUTOUT\n/g)).toHaveLength(4)
+    expect(dxf).toContain('40\n5.0')
+  })
   it('DXF-те ойма БӨЛЕК қабатта', () => {
     // §O6: ойманың рез координатасын дұрыс шығару үшін catalog/settings керек.
     const dxf = cabinetToDxfFiles(

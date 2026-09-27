@@ -30,7 +30,7 @@ import { drillingToCsv } from './csv'
 import { cutPlan } from '../cutPlan'
 import type { CutLine } from '../cutPlan'
 import type { NestedSheet, NestingResult } from '../nesting'
-import { cutoutBounds, cutoutCutOrigin } from '../cutouts'
+import { cutoutBounds, cutoutCutOrigin, roundedCutoutPath } from '../cutouts'
 import { isWidthBevel } from '../types'
 import { requireCncReady } from './cncGuard'
 import type { Catalog, ConstructionSettings, Drill, EdgeBand, Groove, Panel } from '../types'
@@ -119,6 +119,11 @@ function lwpolyline(layer: string, points: [number, number][], closed: boolean):
 
 function circle(layer: string, x: number, y: number, radius: number): Group[] {
   return [g(0, 'CIRCLE'), g(8, layer), g(10, x), g(20, y), g(30, 0), g(40, radius)]
+}
+
+function line(layer: string, x1: number, y1: number, x2: number, y2: number): Group[] {
+  return [g(0, 'LINE'), g(8, layer), g(10, x1), g(20, y1), g(30, 0),
+    g(11, x2), g(21, y2), g(31, 0)]
 }
 
 /**
@@ -362,6 +367,19 @@ export function panelToDxf(panel: Panel, options: DxfOptions = {}): string {
       if (cutout.shape === 'circle') {
         const [cx, cy] = framePoint(x + bounds.width / 2, y + bounds.height / 2, outer)
         entities.push(...circle(layer, cx, cy, cutout.diameter / 2))
+      } else if ((cutout.radius ?? 0) > 0) {
+        const path = roundedCutoutPath({ x, y, width: bounds.width, height: bounds.height }, cutout.radius!)
+        for (const segment of path.lines) {
+          const [x1, y1] = framePoint(segment.from.x, segment.from.y, outer)
+          const [x2, y2] = framePoint(segment.to.x, segment.to.y, outer)
+          entities.push(...line(layer, x1, y1, x2, y2))
+        }
+        for (const corner of path.arcs) {
+          const [cx, cy] = framePoint(corner.center.x, corner.center.y, outer)
+          const start = outer ? reflectedArcAngle(corner.endDeg, flipAxis) : corner.startDeg
+          const end = outer ? reflectedArcAngle(corner.startDeg, flipAxis) : corner.endDeg
+          entities.push(...arc(layer, cx, cy, corner.radius, start, end))
+        }
       } else {
         entities.push(...lwpolyline(layer, [
           [x, y], [x + bounds.width, y], [x + bounds.width, y + bounds.height], [x, y + bounds.height],
