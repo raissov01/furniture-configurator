@@ -75,7 +75,7 @@ import { parseSilhouetteHeight } from '@/lib/silhouetteInput'
 import {
   DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, shelfSpanWarnings,
 } from '@/src/core/index'
-import { useConfigurator } from '@/store/configurator'
+import { PROJECT_META_KEY, useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 
 // R3F тек браузерде жүреді — сервер жағында рендерленбейді.
@@ -178,6 +178,10 @@ export function Workspace() {
   const hydrateShop = useConfigurator((s) => s.hydrateShop)
   const hydrateProject = useConfigurator((s) => s.hydrateProject)
   const saveProjectLocally = useConfigurator((s) => s.saveProjectLocally)
+  const localSaveError = useConfigurator((s) => s.localSaveError)
+  const localConflict = useConfigurator((s) => s.localConflict)
+  const checkLocalRevision = useConfigurator((s) => s.checkLocalRevision)
+  const resolveLocalConflict = useConfigurator((s) => s.resolveLocalConflict)
   const exportProject = useConfigurator((s) => s.exportProject)
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
   const setSketchOpen = useConfigurator((s) => s.setSketchOpen)
@@ -358,10 +362,10 @@ export function Workspace() {
   useEffect(() => {
     if (propertiesNodeId) return
     const timer = setTimeout(() => {
-      saveProjectLocally()
+      const saveError = saveProjectLocally()
       // Тарихқа да жазамыз: автосақтау бір ғана кілтті қайта жазады да,
       // жарты сағат бұрынғы күйге қайтуға мүмкіндік қалмайды.
-      pushHistory()
+      if (!saveError) pushHistory()
       // Клиентке код берілген болса — оның экраны да жаңарсын (автожаңарту).
       syncShare()
     }, 500)
@@ -382,6 +386,12 @@ export function Workspace() {
     window.addEventListener('pagehide', flush)
     return () => window.removeEventListener('pagehide', flush)
   }, [saveProjectLocally, propertiesNodeId])
+
+  useEffect(() => {
+    const changed = (event: StorageEvent) => { if (event.key === PROJECT_META_KEY) checkLocalRevision() }
+    window.addEventListener('storage', changed)
+    return () => window.removeEventListener('storage', changed)
+  }, [checkLocalRevision])
 
   // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
   const spanWarnings = useMemo(() => shelfSpanWarnings(production.panels, shop), [production.panels, shop])
@@ -597,8 +607,8 @@ export function Workspace() {
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
       { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
-      { icon: classicShopTools.quote.icon, label: tr(classicShopTools.quote.label), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
-      { icon: classicShopTools.nesting.icon, label: tr(classicShopTools.nesting.label), action: () => { window.location.href = '/cut' } },
+      { icon: classicShopTools.quote.icon, label: tr(classicShopTools.quote.label), action: () => setQuoteOpen(true), disabled: Boolean(production.error), id: 'quote' },
+      { icon: classicShopTools.nesting.icon, label: tr(classicShopTools.nesting.label), action: () => { window.location.href = '/cut' }, id: 'cut' },
       { icon: 'copy', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable },
       { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, id: 'undo' },
@@ -636,7 +646,8 @@ export function Workspace() {
     [
       { icon: 'render', label: tr('Рендер'), action: () => setRenderOpen(true) },
       { icon: 'quote', label: tr('Смета и раскрой'), action: () => setQuoteOpen(true), disabled: Boolean(production.error) },
-      { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard },
+      { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard, id: 'drill' },
+      { icon: 'settings', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !Boolean(activeBoard || activeSolid || cabinet), id: 'properties' },
       { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
     ],
   ]) : []
@@ -652,7 +663,7 @@ export function Workspace() {
       {activeEditable || editableBoard ? <DrillEditor panels={activeBoard ? (boardPanel ? [boardPanel] : []) : activePanels} catalog={catalog} propertiesOpen={propertiesNodeId !== null} /> : null}
       {activeEditable ? <CustomParts catalog={catalog} /> : null}
       <ProjectPanel panels={projectPanels} catalog={catalog} />
-      <HelpPanel />
+      <HelpPanel classic={classic} />
       <HistoryPanel />
       {shareCodeOpen && <ShareCodeDialog />}
       {cloudEnabled && <AccountPanel />}
@@ -821,7 +832,15 @@ export function Workspace() {
       {(activeBoard || activeSolid || cabinet) && <div data-testid="mobile-properties-trigger"
         className="relative z-30 flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
         <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
-        <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>
+        {cabinet && <div className="flex shrink-0 gap-1">
+          <Button tour="mobile-size" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Габариты')}</Button>
+          <Button tour="mobile-sections" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Секции модуля')}</Button>
+          <Button tour="mobile-cutlist" size="sm" onClick={() => {
+            if (!cutOpen) toggleCut()
+            document.querySelector('[data-tour="cutlist"]')?.scrollIntoView({ block: 'nearest' })
+          }}>{tr('Деталировка')}</Button>
+        </div>}
+        {!cabinet && <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
       </div>}
 
       {projectLoadError && (
@@ -845,6 +864,17 @@ export function Workspace() {
           <Button size="sm" onClick={dismissHistoryRestoreError}>{tr('Закрыть')}</Button>
         </div>
       )}
+      {localConflict && <div role="alert" className="relative z-30 flex flex-wrap items-center gap-2 border-b border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+        <span className="w-full">{tr('Проект изменён в другой вкладке. Какую версию сохранить?')}</span>
+        <Button size="sm" onClick={() => resolveLocalConflict('other')}>{tr('Открыть версию другой вкладки')}</Button>
+        <Button size="sm" onClick={() => resolveLocalConflict('mine')}>{tr('Сохранить мою версию')}</Button>
+        <Button size="sm" onClick={() => downloadProjectFile(exportProject())}>{tr('Скачать копию JSON')}</Button>
+      </div>}
+      {localSaveError && !localConflict && <div role="alert" className="relative z-30 flex flex-wrap items-center gap-2 border-b border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:bg-red-950 dark:text-red-100">
+        <span className="flex-1">{localSaveError}</span>
+        <Button size="sm" onClick={() => downloadProjectFile(exportProject())}>{tr('Скачать копию JSON')}</Button>
+        <Button size="sm" onClick={() => saveProjectLocally()}>{tr('Повторить сохранение')}</Button>
+      </div>}
 
       {/*
         PRO100-ДЕГІ ЕКІ ҰСАҚ БЕЛГІШЕ ҚАТАРЫ (docs/pro100/ui-design.md, §2).
@@ -1102,12 +1132,6 @@ export function Workspace() {
         <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
           {classic ? <>
             <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="box" label={tr('Добавить декоративный блок')} action={addSolid} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="board" label={tr('Добавить текст')} action={addAnnotation} id="annotation-side" onHover={setHoveredToolLabel} />
-            <ClassicTool icon="measure" label={tr('Размеры на сцене')} action={() => setShowDimensions(!showDimensions)} active={showDimensions} onHover={setHoveredToolLabel} />
-            <ClassicTool icon="structure" label={tr('Структура')} action={() => openDockTab('structure')} id="structure-side" onHover={setHoveredToolLabel} />
-            <ClassicTool icon="library" label={tr('Библиотека')} action={() => openDockTab('library')} id="library-side" onHover={setHoveredToolLabel} />
           </> : <>
           <Button
             size="sm"

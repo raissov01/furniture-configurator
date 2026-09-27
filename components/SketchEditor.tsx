@@ -16,6 +16,7 @@ import type { CabinetConfig, Section, SectionContent } from '@/src/core/index'
 import { activeCabinet, useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { eraseBandDecision, eraseDividerDecision, mergeBandsForErase, mergeSectionsForErase, splitDecision, sketchContentDecision } from '@/lib/f32Sketch'
 
 type Tool = 'divider' | 'band' | 'shelf' | 'drawer' | 'rod' | 'front' | 'erase'
 
@@ -41,6 +42,13 @@ export function SketchEditor() {
   const materials = useConfigurator((s) => s.shop.materials)
   const edit = useConfigurator((s) => s.edit)
   const [tool, setTool] = useState<Tool>('divider')
+  const [pendingErase, setPendingErase] = useState<
+    | { kind: 'divider'; index: number }
+    | { kind: 'band'; sectionIndex: number; index: number }
+    | null
+  >(null)
+  const [pendingReplace, setPendingReplace] = useState<{ sectionIndex: number; bandIndex: number; next: SectionContent } | null>(null)
+  const [feedback, setFeedback] = useState<string | null>(null)
 
   const t = materials.find((m) => m.id === cabinet.carcassMaterialId)?.thickness ?? 16
 
@@ -65,7 +73,7 @@ export function SketchEditor() {
 
   if (!open) return null
 
-  const setSections = (sections: Section[]) => edit('sketch', { sections })
+  const setSections = (sections: Section[]) => { edit('sketch', { sections }); setFeedback(null) }
 
   /** Басылған нүктедегі секция мен жолақ. */
   const locate = (xMm: number, yMm: number) => {
@@ -84,14 +92,13 @@ export function SketchEditor() {
       if (!hit) return
       // Секцияны басылған жерден екіге бөлеміз: екеуі де тіркелген енге ие
       // болады, сонда сурет пен нәтиже дәл келеді.
-      const left = Math.round(xMm - hit.section.x)
-      const right = Math.round(hit.section.width - left - t)
-      if (left < 100 || right < 100) return
+      const split = splitDecision(xMm - hit.section.x, hit.section.width, t, 'divider')
+      if (!split.allowed) { setFeedback(split.error); return }
       const next = [...cabinet.sections]
       const original = next[hit.section.index]!
       next.splice(hit.section.index, 1,
-        { ...original, id: `${original.id}a`, widthMode: 'fixed', width: left },
-        { id: `${original.id}b`, widthMode: 'fixed', width: right, contents: [{ kind: 'empty' }], fronts: null },
+        { ...original, id: `${original.id}a`, widthMode: 'fixed', width: split.first },
+        { id: `${original.id}b`, widthMode: 'fixed', width: split.second, contents: [{ kind: 'empty' }], fronts: null },
       )
       setSections(next)
       return
@@ -99,12 +106,12 @@ export function SketchEditor() {
 
     if (tool === 'band') {
       if (!hit || !hit.band) return
-      const lower = Math.round(yMm - hit.band.y)
-      if (lower < 100 || hit.band.height - lower - t < 100) return
+      const split = splitDecision(yMm - hit.band.y, hit.band.height, t, 'band')
+      if (!split.allowed) { setFeedback(split.error); return }
       const contents = [...hit.section.section.contents]
       const existing = contents[hit.bandIndex] ?? { kind: 'empty' as const }
       contents.splice(hit.bandIndex, 1,
-        { ...existing, height: lower },
+        { ...existing, height: split.first },
         { kind: 'empty' },
       )
       setSections(cabinet.sections.map((s, i) => (i === hit.section.index ? { ...s, contents } : s)))
@@ -115,21 +122,13 @@ export function SketchEditor() {
       if (!hit || hit.bandIndex < 0) return
       const contents = [...hit.section.section.contents]
       const current = contents[hit.bandIndex]
-      const height = current?.height
-      const keep = height === undefined ? {} : { height }
-      let next: SectionContent
-      if (tool === 'shelf') {
-        next = current?.kind === 'shelves'
-          ? { ...current, count: Math.min(20, current.count + 1) }
-          : { kind: 'shelves', count: 1, shelfKind: 'adjustable', ...keep }
-      } else if (tool === 'drawer') {
-        next = current?.kind === 'drawers'
-          ? { ...current, count: Math.min(8, current.count + 1) }
-          : { kind: 'drawers', count: 1, ...keep }
-      } else {
-        next = { kind: 'rod', ...keep }
+      const decision = sketchContentDecision(current, tool)
+      if (decision.error || !decision.next) { setFeedback(decision.error ?? 'contents: жарамсыз'); return }
+      if (decision.requiresConfirmation) {
+        setPendingReplace({ sectionIndex: hit.section.index, bandIndex: hit.bandIndex, next: decision.next })
+        return
       }
-      contents.splice(hit.bandIndex, 1, next)
+      contents.splice(hit.bandIndex, 1, decision.next)
       setSections(cabinet.sections.map((s, i) => (i === hit.section.index ? { ...s, contents } : s)))
       return
     }
@@ -146,30 +145,47 @@ export function SketchEditor() {
     // Стереть: алдымен перегородка, сосын жолақ шекарасы.
     const nearDivider = layout.dividerPositions.findIndex((x) => Math.abs(xMm - (x + t / 2)) < HIT_MM)
     if (nearDivider >= 0 && cabinet.sections.length > 1) {
-      const next = [...cabinet.sections]
-      const merged = next[nearDivider]!
-      next.splice(nearDivider, 2, { ...merged, widthMode: 'flex', width: undefined })
-      setSections(next)
+      const decision = eraseDividerDecision(cabinet.sections[nearDivider]!, cabinet.sections[nearDivider + 1]!)
+      if (decision.requiresConfirmation) { setPendingReplace(null); setPendingErase({ kind: 'divider', index: nearDivider }) }
+      else setSections(mergeSectionsForErase(cabinet.sections, nearDivider, decision.keep))
       return
     }
     if (hit && hit.section.bands.length > 1) {
       const boundary = hit.section.bands.findIndex((b, i) =>
         i < hit.section.bands.length - 1 && Math.abs(yMm - (b.y + b.height + t / 2)) < HIT_MM)
       if (boundary >= 0) {
-        const contents = [...hit.section.section.contents]
-        const kept = contents[boundary]!
-        contents.splice(boundary, 2, { ...kept, height: undefined })
-        setSections(cabinet.sections.map((s, i) => (i === hit.section.index ? { ...s, contents } : s)))
+        const section = hit.section.section
+        const decision = eraseBandDecision(section.contents[boundary]!, section.contents[boundary + 1]!)
+        if (decision.requiresConfirmation) { setPendingReplace(null); setPendingErase({ kind: 'band', sectionIndex: hit.section.index, index: boundary }) }
+        else setSections(cabinet.sections.map((s, i) => i === hit.section.index
+          ? mergeBandsForErase(s, boundary, decision.keep) : s))
       }
     }
   }
 
   const scale = CANVAS_PX / cabinet.height
   const activeTool = TOOLS.find((x) => x.value === tool)!
+  const applyPendingErase = (keep: 'left' | 'right' | 'lower' | 'upper') => {
+    if (!pendingErase) return
+    if (pendingErase.kind === 'divider' && (keep === 'left' || keep === 'right')) {
+      setSections(mergeSectionsForErase(cabinet.sections, pendingErase.index, keep))
+    } else if (pendingErase.kind === 'band' && (keep === 'lower' || keep === 'upper')) {
+      setSections(cabinet.sections.map((section, i) => i === pendingErase.sectionIndex
+        ? mergeBandsForErase(section, pendingErase.index, keep) : section))
+    }
+    setPendingErase(null)
+  }
+  const contentNames = (section: Section) => [
+    ...section.contents.filter((content) => content.kind !== 'empty').map((content) =>
+      tr(content.kind === 'shelves' ? 'Полки' : content.kind === 'drawers' ? 'Ящики' : 'Штанга')),
+    ...(section.fronts ? [tr('Фасад')] : []),
+  ].join(', ')
+  const contentLabel = (kind: SectionContent['kind'] | undefined) => tr(kind === 'shelves'
+    ? 'Полки' : kind === 'drawers' ? 'Ящики' : kind === 'rod' ? 'Штанга' : 'Пусто')
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => setOpen(false)}
     >
       <div
@@ -179,7 +195,7 @@ export function SketchEditor() {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="mr-2 text-sm font-semibold">{tr('Нарисовать корпус')}</h2>
           {TOOLS.map((x) => (
-            <Button key={x.value} active={tool === x.value} onClick={() => setTool(x.value)}>
+            <Button key={x.value} active={tool === x.value} onClick={() => { setTool(x.value); setFeedback(null) }}>
               {x.label}
             </Button>
           ))}
@@ -189,9 +205,49 @@ export function SketchEditor() {
         </div>
 
         <p className="mb-2 text-[11px] text-neutral-500">{activeTool.hint}</p>
+        {feedback && <p role="alert" className="mb-2 border border-red-600 p-2 text-xs text-red-700 dark:text-red-400">{feedback}</p>}
+
+        {pendingErase && <div role="alertdialog" aria-label={tr('Выберите, что сохранить')}
+          className="mb-3 border border-amber-600 bg-white p-3 text-xs dark:bg-neutral-900">
+          <p className="mb-2 font-medium">{tr('При объединении содержимое другой части будет удалено. Выберите, что сохранить.')}</p>
+          {pendingErase.kind === 'divider' ? <>
+            <p>{tr('Слева')}: {contentNames(cabinet.sections[pendingErase.index]!) || '—'}</p>
+            <p>{tr('Справа')}: {contentNames(cabinet.sections[pendingErase.index + 1]!) || '—'}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button onClick={() => applyPendingErase('left')}>{tr('Сохранить левую часть')}</Button>
+              <Button onClick={() => applyPendingErase('right')}>{tr('Сохранить правую часть')}</Button>
+              <Button onClick={() => setPendingErase(null)}>{tr('Отмена')}</Button>
+            </div>
+          </> : <>
+            <p>{tr('Снизу')}: {contentLabel(cabinet.sections[pendingErase.sectionIndex]?.contents[pendingErase.index]?.kind)}</p>
+            <p>{tr('Сверху')}: {contentLabel(cabinet.sections[pendingErase.sectionIndex]?.contents[pendingErase.index + 1]?.kind)}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button onClick={() => applyPendingErase('lower')}>{tr('Сохранить нижнюю часть')}</Button>
+              <Button onClick={() => applyPendingErase('upper')}>{tr('Сохранить верхнюю часть')}</Button>
+              <Button onClick={() => setPendingErase(null)}>{tr('Отмена')}</Button>
+            </div>
+          </>}
+        </div>}
+
+        {pendingReplace && <div role="alertdialog" aria-label={tr('Подтвердите замену содержимого')}
+          className="mb-3 border border-amber-600 bg-white p-3 text-xs dark:bg-neutral-900">
+          <p className="mb-2">{tr('Текущее содержимое будет удалено')}:{' '}
+            {contentLabel(cabinet.sections[pendingReplace.sectionIndex]?.contents[pendingReplace.bandIndex]?.kind)}.</p>
+          <div className="flex gap-2">
+            <Button onClick={() => {
+              const sections = cabinet.sections.map((section, i) => i === pendingReplace.sectionIndex
+                ? { ...section, contents: section.contents.map((content, j) => j === pendingReplace.bandIndex ? pendingReplace.next : content) }
+                : section)
+              setSections(sections)
+              setPendingReplace(null)
+            }}>{tr('Заменить содержимое')}</Button>
+            <Button onClick={() => setPendingReplace(null)}>{tr('Отмена')}</Button>
+          </div>
+        </div>}
 
         {layout ? (
-          <div className="flex justify-center rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-950">
+          <div className={cn('flex justify-center rounded-lg border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-950',
+            (pendingErase || pendingReplace) && 'pointer-events-none')}>
             <svg
               viewBox={`0 0 ${cabinet.width} ${cabinet.height}`}
               width={cabinet.width * scale}

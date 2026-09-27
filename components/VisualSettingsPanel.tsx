@@ -134,7 +134,7 @@ function NumberField({ label, value, onChange, min, max, step = 1, integer = fal
   const [error, setError] = useState<string | null>(null)
   useEffect(() => { setDraft(String(value)); setError(null) }, [value])
   return <label className="text-xs">{label}
-    <input className={`${inputStyle} mt-1`} type="number" step={step} min={min} max={max} value={draft} aria-invalid={!!error}
+    <input className={`${inputStyle} mt-1`} type="text" inputMode="decimal" value={draft} aria-invalid={!!error}
       aria-describedby={error ? errorId : undefined}
       onChange={(event) => {
         const raw = event.target.value

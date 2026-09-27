@@ -18,7 +18,7 @@ describe('classic desktop workspace', () => {
     const rules = css.split('\n').filter((line) => line.trim().startsWith('.p100-'))
     expect(rules.join('\n')).not.toMatch(/#[0-9a-f]{3,8}\b/i)
   })
-  it('defaults to the classic shell with camera controls and a labelled H × W × D status', () => {
+  it('defaults to the classic shell with view tabs and a labelled H × W × D status', () => {
     useConfigurator.getState().loadProject(referenceProject)
     const id = useConfigurator.getState().activeId
     useConfigurator.getState().setSelected(id)
@@ -27,11 +27,13 @@ describe('classic desktop workspace', () => {
     expect(html).toContain('data-workspace-style="classic"')
     expect(html).toContain('data-testid="classic-toolbar"')
     expect(html).toContain('data-testid="classic-tool-save"')
+    // The lesson target must survive toolbar command deduplication.
+    expect(html.match(/data-testid="classic-tool-quote"/g)).toHaveLength(1)
     expect(html).toContain('data-testid="classic-tool-structure"')
     expect(html).not.toContain('data-testid="classic-structure-window"')
     expect(html).toContain('lg:hidden"><section data-testid="tree-dock"')
-    expect(html).not.toContain('p100-camera-pane')
     expect(html).toContain('data-tour="viewtabs"')
+    expect(html).not.toContain('p100-camera-pane')
     expect(html).toContain('data-testid="p100-status"')
     expect(html).toContain('(H) ×')
     expect(html).toContain('(W) ×')
