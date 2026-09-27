@@ -6,11 +6,11 @@
  * сахна метрге келтіріледі (scale 0.001).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentRef, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import {
-  Environment, Grid, Lightformer, OrbitControls, OrthographicCamera, PointerLockControls,
+  Billboard, Environment, Grid, Lightformer, OrbitControls, OrthographicCamera, PointerLockControls, Text,
 } from '@react-three/drei'
 import { EffectComposer, N8AO } from '@react-three/postprocessing'
 import {
@@ -34,7 +34,7 @@ import { grainTexture } from '@/lib/grainTexture'
 import { dragPlaneAxis } from '@/lib/dragPlane'
 import type { CameraPreset } from '@/store/configurator'
 import {
-  DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, mergeSettings, panelExtents,
+  DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, mergeSettings, panelExtents, visibleAnnotations,
   placementSpan, projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, snapOffset,
   snapPosition, selectionBoxes, visibleOpenings, wallById, wallPieces,
   sunDirection,
@@ -1241,6 +1241,9 @@ export default function Scene({
   const viewMode = useConfigurator((s) => s.viewMode)
   const assemblyStep = useConfigurator((s) => s.assemblyStep)
   const selected = useConfigurator((s) => s.selected)
+  const root = useConfigurator((s) => s.root)
+  const layers = useConfigurator((s) => s.layers)
+  const annotations = useMemo(() => visibleAnnotations(root, layers), [root, layers])
   const setActive = useConfigurator((s) => s.setActive)
   const setSelected = useConfigurator((s) => s.setSelected)
   const projectSettings = useConfigurator((s) => s.projectSettings)
@@ -1274,7 +1277,7 @@ export default function Scene({
   const panelNodeCount = flatScene?.nodes.length ?? items.length
   const cabinetIds = new Set(items.map((item) => item.cabinet.id))
   const freeBoards = flatScene?.nodes.filter((node) => !cabinetIds.has(node.nodeId)) ?? []
-  const geometryBounds = treeSceneBounds({ items, boards: freeBoards, solids: flatScene?.solids ?? [] }, catalog)
+  const geometryBounds = treeSceneBounds({ items, boards: freeBoards, solids: flatScene?.solids ?? [] }, catalog, annotations)
 
   /*
    * КАМЕРА НЕГЕ ҚАРАЙДЫ.
@@ -1313,7 +1316,7 @@ export default function Scene({
         facingY: 0,
       }
     }
-    if ((!active || items.length > 1 || freeBoards.length > 0 || (flatScene?.solids.length ?? 0) > 0)
+    if ((!active || items.length > 1 || freeBoards.length > 0 || (flatScene?.solids.length ?? 0) > 0 || annotations.length > 0)
       && preset !== 'inside') {
       const { x0, x1, y0, y1, z0, z1 } = geometryBounds
       return {
@@ -1338,7 +1341,7 @@ export default function Scene({
       box: { W: active.cabinet.width, H: active.cabinet.height, D: active.cabinet.depth },
       facingY: active.pose.rotationY,
     }
-  }, [active, room, preset, items, geometryBounds, freeBoards.length, flatScene?.solids.length])
+  }, [active, room, preset, items, geometryBounds, freeBoards.length, flatScene?.solids.length, annotations.length])
 
   /*
    * Силуэт қайда тұрады.
@@ -1598,6 +1601,22 @@ export default function Scene({
               </mesh>
             </group>
           ))}
+          <Suspense fallback={null}>{annotations.map((annotation) => (
+            <group key={annotation.nodeId} position={[annotation.pose.position.x, annotation.pose.position.y, annotation.pose.position.z]}
+              rotation={[0, annotation.pose.rotationY * Math.PI / 180, 0]}>
+              <Billboard>
+                <Text font="/fonts/DejaVuSans-subset.ttf" fontSize={annotation.fontSize} color={annotation.color} anchorX="center" anchorY="middle"
+                  outlineWidth={selected === annotation.nodeId ? 2 : 0} outlineColor="#22d3ee"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setActive(annotation.nodeId)
+                    setSelected(selected === annotation.nodeId ? null : annotation.nodeId)
+                  }}>
+                  {annotation.text}
+                </Text>
+              </Billboard>
+            </group>
+          ))}</Suspense>
         </group>
         {/* Силуэт белсенді шкафтың СОЛ ЖАҒЫНА, еденге қойылады. */}
         {silhouette.on && active ? (
@@ -1634,7 +1653,7 @@ export default function Scene({
             wallCtx={view.wallCtx}
             // Орын (offset, «От пола») ӘДЕЙІ жоқ — CameraRig-тің эффектісін қара.
             layoutKey={treeSceneLayoutKey(room, active?.cabinet.id ?? '',
-              { items, boards: freeBoards, solids: flatScene?.solids ?? [] }, catalog)}
+              { items, boards: freeBoards, solids: flatScene?.solids ?? [] }, catalog, annotations)}
           />
         )}
         {/*

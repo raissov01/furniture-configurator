@@ -11,6 +11,7 @@
  */
 import * as React from 'react'
 import { cn } from '@/lib/cn'
+import { t as tr } from '@/lib/i18n'
 import {
   activateTab,
   bringToFront,
@@ -39,18 +40,33 @@ export type DockPanelSpec = {
 }
 
 const SIDE_LABEL: Record<DockSide, string> = {
-  left: 'Сол жиек',
-  right: 'Оң жиек',
-  top: 'Үстіңгі жиек',
-  bottom: 'Астыңғы жиек',
+  left: 'Левый край',
+  right: 'Правый край',
+  top: 'Верхний край',
+  bottom: 'Нижний край',
 }
 
-export function DockHost({ panels, children }: { panels: DockPanelSpec[]; children?: React.ReactNode }) {
+export function DockHost({ panels, children, initiallyClosed = [], storageKey }: {
+  panels: DockPanelSpec[]
+  children?: React.ReactNode
+  initiallyClosed?: readonly PanelId[]
+  storageKey?: string
+}) {
   const panelIds = React.useMemo(() => panels.map((p) => p.id), [panels])
+  const defaultState = React.useMemo(() => {
+    const state = createDockState(panelIds)
+    for (const id of initiallyClosed) {
+      const entry = state.panels[id]
+      if (entry) state.panels[id] = { ...entry, visible: false }
+    }
+    return state
+  // Panel IDs and initial visibility are fixed for the lifetime of this host.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const byId = React.useMemo(() => new Map(panels.map((p) => [p.id, p] as const)), [panels])
   const containerRef = React.useRef<HTMLDivElement>(null)
 
-  const [state, setState] = React.useState<DockState>(() => createDockState(panelIds))
+  const [state, setState] = React.useState<DockState>(defaultState)
   const [bounds, setBounds] = React.useState<Bounds>({ width: 0, height: 0 })
   const [dropHint, setDropHint] = React.useState<DockSide | null>(null)
   // ⚠ REF ЕМЕС, СТЕЙТ: React Strict Mode (Next dev) mount эффектілерін
@@ -67,7 +83,7 @@ export function DockHost({ panels, children }: { panels: DockPanelSpec[]; childr
   // Гидратациядан КЕЙІН оқимыз (Collapsible-дегі ережемен бірдей себеп):
   // сервер мен клиент бірінші кадрда бірдей болуы керек.
   React.useEffect(() => {
-    setState(loadDockState(panelIds))
+    setState(loadDockState(panelIds, storageKey, defaultState))
     setLoaded(true)
     // panelIds әдетте тұрақты жиын — тек бастапқы жүктемеде іске қосамыз.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,8 +91,8 @@ export function DockHost({ panels, children }: { panels: DockPanelSpec[]; childr
 
   React.useEffect(() => {
     if (!loaded) return
-    saveDockState(state)
-  }, [state, loaded])
+    saveDockState(state, storageKey)
+  }, [state, loaded, storageKey])
 
   // Талап: «терезе кішірейгенде панель экраннан шығып кетпейді».
   React.useEffect(() => {
@@ -104,7 +120,7 @@ export function DockHost({ panels, children }: { panels: DockPanelSpec[]; childr
         <DockZone side="top" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
         <div className="flex min-h-0 flex-1">
           <DockZone side="left" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
-          <div className="relative min-w-0 flex-1 border border-dashed border-neutral-800">{children}</div>
+          <div className="relative min-w-0 flex-1 border border-neutral-800">{children}</div>
           <DockZone side="right" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
         </div>
         <DockZone side="bottom" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
@@ -200,7 +216,7 @@ function DockZone({
           })}
         </div>
       ) : (
-        <div className="flex-1 p-1 text-[10px] text-neutral-500">{SIDE_LABEL[side]}-ке бекіту</div>
+        <div className="flex-1 p-1 text-[10px] text-neutral-500">{tr('Закрепить у края')}: {tr(SIDE_LABEL[side])}</div>
       )}
 
       <div className="relative min-h-0 flex-1">
@@ -309,7 +325,7 @@ function ClosedPanelsMenu({
           onClick={() => onOpen(p.id)}
           className="pointer-events-auto border border-neutral-800 bg-neutral-900 px-2 py-1 text-[10px] uppercase tracking-wider text-neutral-400 hover:text-neutral-100"
         >
-          {p.title} ашу
+          {tr('Открыть')} {p.title}
         </button>
       ))}
     </div>

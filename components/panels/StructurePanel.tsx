@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DragEvent, KeyboardEvent, MouseEvent } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
-import { ConfigValidationError, flattenTree } from '@/src/core/index'
-import type { AutoJointKind, AutoJointRecord, Axis, FlatScene, GroupNode } from '@/src/core/index'
+import { ConfigValidationError, copyNodeProperties, findNode, flattenTree } from '@/src/core/index'
+import type { AutoJointKind, AutoJointRecord, Axis, FlatScene, GroupNode, PropertyClipboard, PropertyGroup, ScalePercent } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { buildCanonicalRows, canDropInto, externalSelectionNodeIds, selectTreeRows } from './canonicalTreeRows'
 import type { CanonicalTreeRow } from './canonicalTreeRows'
@@ -49,8 +49,15 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
   const [arrangeAxis, setArrangeAxis] = useState<Axis>('x')
   const [jointKind, setJointKind] = useState<AutoJointKind | ''>('')
   const [jointTolerance, setJointTolerance] = useState(0)
+  const [propertyGroups, setPropertyGroups] = useState<Record<PropertyGroup, boolean>>({ material: true, edges: false, dimensions: false })
+  const [propertyClipboard, setPropertyClipboard] = useState<PropertyClipboard | null>(null)
+  const [copyStatus, setCopyStatus] = useState(false)
+  const [scaleAxis, setScaleAxis] = useState<Axis | 'all'>('all')
+  const [scalePercent, setScalePercent] = useState(100)
   const snapOptions = useConfigurator((s) => s.snapOptions)
   const setSnapOptions = useConfigurator((s) => s.setSnapOptions)
+  const pasteProperties = useConfigurator((s) => s.pasteProperties)
+  const scaleNode = useConfigurator((s) => s.scaleNode)
   const byId = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows])
   const selectable = useMemo(() => rows.filter((row) => row.kind !== 'part' && row.id !== root.id && !row.locked).map((row) => row.id), [rows, root.id])
   const lastExternal = useRef<string | null>(null)
@@ -110,6 +117,27 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
     const id = selectedNodes.length === 1 ? selectedNodes[0] : null
     if (id && run(() => onArray(id, { axis: arrayAxis, count: arrayCount, step: arrayStep }))) setArrayOpen(false)
   }
+  const selectedToolNode = selectedNodes.length === 1 ? findNode(root, selectedNodes[0]!) : undefined
+  const canCopyProperties = selectedToolNode?.kind === 'board' || selectedToolNode?.kind === 'cabinet'
+  const copyProperties = () => {
+    if (!canCopyProperties || !selectedToolNode) return
+    const groups = (['material', 'edges', 'dimensions'] as const)
+      .filter((group) => propertyGroups[group] && (group !== 'edges' || selectedToolNode.kind === 'board'))
+    run(() => {
+      setPropertyClipboard(copyNodeProperties(root, selectedToolNode.id, groups))
+      setCopyStatus(true)
+    })
+  }
+  const pasteCopiedProperties = () => {
+    if (propertyClipboard && selectedNodes.length > 0) run(() => pasteProperties(propertyClipboard, selectedNodes))
+  }
+  const scaleSelected = () => {
+    if (selectedNodes.length !== 1) return
+    const factors: ScalePercent = { x: 100, y: 100, z: 100 }
+    if (scaleAxis === 'all') factors.x = factors.y = factors.z = scalePercent
+    else factors[scaleAxis] = scalePercent
+    run(() => scaleNode(selectedNodes[0]!, factors))
+  }
   const selectedBoards = selectedNodes.length === 2
     && selectedNodes.every((id) => byId.get(id)?.kind === 'board')
     ? selectedNodes as [string, string] : null
@@ -127,6 +155,10 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
     const key = event.key.toLowerCase()
     if ((event.ctrlKey || event.metaKey) && event.altKey && ['1', '2', '3', '4'].includes(key)) {
       event.preventDefault(); arrange(({ '1': 'min', '2': 'center', '3': 'max', '4': 'distribute' } as const)[key as '1' | '2' | '3' | '4'])
+    } else if ((event.ctrlKey || event.metaKey) && event.shiftKey && key === 'c') {
+      event.preventDefault(); copyProperties()
+    } else if ((event.ctrlKey || event.metaKey) && event.shiftKey && key === 'v') {
+      event.preventDefault(); pasteCopiedProperties()
     } else if ((event.ctrlKey || event.metaKey) && key === 'g') {
       event.preventDefault(); if (event.shiftKey) ungroup(); else group()
     } else if (key === 'f2') {
@@ -186,6 +218,40 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
       </button>)}
       <button type="button" disabled={selectedNodes.length !== 1} onClick={() => setArrayOpen((open) => !open)}
         className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">{tr('Массив')}</button>
+    </div>
+    <div className="flex flex-wrap items-center gap-1 border-b border-neutral-300 pb-1 dark:border-neutral-700" data-testid="property-tools">
+      <span className="font-medium">{tr('Группы свойств')}:</span>
+      {(['material', 'edges', 'dimensions'] as const).map((propertyGroup) => <label key={propertyGroup} className="flex items-center gap-1">
+        <input type="checkbox" checked={propertyGroups[propertyGroup]}
+          disabled={propertyGroup === 'edges' && selectedToolNode?.kind === 'cabinet'}
+          onChange={(event) => setPropertyGroups((current) => ({ ...current, [propertyGroup]: event.target.checked }))} />
+        {tr(({ material: 'Материал', edges: 'Кромка', dimensions: 'Размеры' })[propertyGroup])}
+      </label>)}
+      <button type="button" data-testid="copy-properties" disabled={!canCopyProperties} onClick={copyProperties}
+        title={tr('Копировать свойства (Ctrl+Shift+C)')}
+        className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">
+        {tr('Копировать свойства')}
+      </button>
+      <button type="button" data-testid="paste-properties" disabled={!propertyClipboard || selectedNodes.length === 0} onClick={pasteCopiedProperties}
+        title={tr('Вставить свойства (Ctrl+Shift+V)')}
+        className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">
+        {tr('Вставить свойства')}
+      </button>
+      {copyStatus && <span role="status">{tr('Свойства скопированы')}</span>}
+    </div>
+    <div className="flex flex-wrap items-end gap-1 border-b border-neutral-300 pb-1 dark:border-neutral-700" data-testid="scale-tools">
+      <label>{tr('Ось масштабирования')}
+        <select aria-label={tr('Ось масштабирования')} value={scaleAxis} onChange={(event) => setScaleAxis(event.target.value as Axis | 'all')}
+          className="block border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900">
+          <option value="all">{tr('Пропорционально')}</option>
+          {(['x', 'y', 'z'] as const).map((axis) => <option key={axis} value={axis}>{axis.toUpperCase()}</option>)}
+        </select>
+      </label>
+      <label>{tr('Масштаб, %')}<input type="number" min={1} step={1} value={scalePercent}
+        onChange={(event) => setScalePercent(Number(event.target.value))}
+        className="block w-20 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900" /></label>
+      <button type="button" data-testid="scale-node" disabled={selectedNodes.length !== 1} onClick={scaleSelected}
+        className="border border-neutral-300 px-1 py-0.5 disabled:opacity-40 dark:border-neutral-700">{tr('Масштабировать')}</button>
     </div>
     {arrayOpen && <div className="flex flex-wrap items-end gap-1 border-b border-neutral-300 pb-1 dark:border-neutral-700" data-testid="array-tools">
       <label>{tr('Ось')}<select value={arrayAxis} onChange={(event) => setArrayAxis(event.target.value as Axis)}

@@ -56,8 +56,12 @@ export type GroupNode = NodeBase & { kind: 'group'; children: SceneNode[] }
 export type CabinetNode = NodeBase & { kind: 'cabinet'; config: CabinetConfig }
 export type BoardNode = NodeBase & { kind: 'board'; board: BoardSpec }
 export type SolidNode = NodeBase & { kind: 'solid'; solid: SolidSpec }
+/** Көріністегі жазба: ешбір өндірістік деталь не гравировка емес. */
+export type AnnotationNode = NodeBase & { kind: 'annotation'; annotation: AnnotationSpec }
 
-export type SceneNode = GroupNode | CabinetNode | BoardNode | SolidNode
+export type SceneNode = GroupNode | CabinetNode | BoardNode | SolidNode | AnnotationNode
+
+export type AnnotationSpec = { text: string; fontSize: number; color: string }
 
 /**
  * ЕРКІН ТАҚТА = бір деталь.

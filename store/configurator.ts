@@ -43,6 +43,8 @@ import {
   replaceTreeMaterial,
   nextFreeOffset,
   parseProjectV4,
+  pasteNodeProperties,
+  scaleTreeNode,
   SceneLightsSchema,
   parseShopProfile,
   renamePriceList as renameShopPriceList,
@@ -54,7 +56,8 @@ import {
 import type { Quality } from '@/lib/appearance'
 import type { PanoramaContext } from '@/lib/panorama'
 import type {
-  BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
+  AnnotationSpec, BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
+  PropertyClipboard, ScalePercent, SceneNode,
   Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
   SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
@@ -283,6 +286,9 @@ type State = Snapshot & {
 
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
+  addAnnotation(): string
+  editAnnotation(id: string, patch: Partial<AnnotationSpec>): void
+  removeAnnotation(id: string): void
   removeBoard(id: string): void
   editBoard(id: string, patch: Partial<BoardSpec>): void
   autoJointBoards(ids: [string, string], kind: AutoJointKind, tolerance: number): void
@@ -310,6 +316,8 @@ type State = Snapshot & {
   arrayNode(id: string, opts: ArrayOptions): void
   translateNodes(moves: readonly { id: string; delta: Vec3 }[], opts?: { continueGesture?: boolean }): void
   arrangeNodes(ids: readonly string[], axis: Axis, mode: BoxAlignment | 'distribute'): void
+  pasteProperties(clipboard: PropertyClipboard, ids: readonly string[]): void
+  scaleNode(id: string, factors: ScalePercent): void
   placeLibraryItem(item: LibraryItem, parentId?: string): void
   replaceFreeBoardMaterial(oldId: string, newId: string): void
   replaceProjectMaterial(oldId: string, newId: string): void
@@ -553,11 +561,37 @@ function treeEdit(s: State, root: GroupNode, layers = s.layers) {
     past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null }
 }
 
+/** A hidden edited node must still build when the operator reveals it later. */
+function validateEditedSubtrees(s: State, root: GroupNode, ids: readonly string[]): void {
+  const reveal = (node: SceneNode): SceneNode => node.kind === 'group'
+    ? { ...node, hidden: false, layerId: undefined, children: node.children.map(reveal) }
+    : { ...node, hidden: false, layerId: undefined }
+  for (const id of new Set(ids)) {
+    const node = findNode(root, id)
+    if (!node) throw new ConfigValidationError('nodeIds', `түйін табылмады: ${id}`, 'бар түйін id')
+    const checkRoot: GroupNode = { ...root, hidden: false, layerId: undefined,
+      transform: structuredClone(IDENTITY_TRANSFORM), children: [reveal(node)] }
+    flattenTree(checkRoot, s.catalog, s.projectSettings ?? s.shop.settings)
+  }
+}
+
 function mapBoard(root: GroupNode, id: string, update: (board: BoardSpec) => BoardSpec): GroupNode {
   return { ...root, children: root.children.map((child) => {
     if (child.kind === 'board' && child.id === id) return { ...child, board: update(child.board) }
     return child.kind === 'group' ? mapBoard(child, id, update) : child
   }) }
+}
+
+function mapAnnotation(root: GroupNode, id: string, update: (value: AnnotationSpec) => AnnotationSpec): GroupNode {
+  return { ...root, children: root.children.map((child) => {
+    if (child.kind === 'annotation' && child.id === id) return { ...child, annotation: update(child.annotation) }
+    return child.kind === 'group' ? mapAnnotation(child, id, update) : child
+  }) }
+}
+
+function withoutAnnotation(root: GroupNode, id: string): GroupNode {
+  return { ...root, children: root.children.filter((child) => child.id !== id).map((child) =>
+    child.kind === 'group' ? withoutAnnotation(child, id) : child) }
 }
 
 function withoutBoard(root: GroupNode, id: string): GroupNode {
@@ -765,6 +799,47 @@ export const useConfigurator = create<State>((set, get) => ({
     }] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id
+  },
+
+  addAnnotation() {
+    const s = get()
+    const id = `annotation-${crypto.randomUUID()}`
+    const fontSize = 80
+    const root: GroupNode = { ...s.root, children: [...s.root.children, {
+      kind: 'annotation', id, name: tr('Текст'),
+      // Text is centred vertically; start a full font height above the floor.
+      transform: { pos: { x: Math.round(s.room.width / 2), y: fontSize, z: Math.round(s.room.depth / 2) },
+        rot: { x: 0, y: 0, z: 0 } },
+      annotation: { text: tr('Текст'), fontSize, color: '#262626' },
+    }] }
+    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
+    return id
+  },
+
+  editAnnotation(id, patch) {
+    const s = get()
+    const node = assertTreeNodeEditable(s.root, id, s.layers)
+    if (node.kind !== 'annotation') throw new ConfigValidationError('nodeId', `мәтін емес: ${id}`, 'annotation id')
+    const value = { ...node.annotation, ...patch }
+    if (!value.text.trim() || value.text.length > 500) throw new ConfigValidationError('annotation.text',
+      'мәтін бос немесе 500 таңбадан ұзын', '1..500 таңба')
+    if (!Number.isInteger(value.fontSize) || value.fontSize <= 0) throw new ConfigValidationError('annotation.fontSize',
+      'қаріп өлшемі бүтін оң мм болуы керек', '1 мм және жоғары')
+    if (!/^#[0-9a-fA-F]{6}$/.test(value.color)) throw new ConfigValidationError('annotation.color',
+      'түс hex пішінінде болуы керек', '#RRGGBB')
+    value.text = value.text.trim()
+    if (value.text === node.annotation.text && value.fontSize === node.annotation.fontSize
+      && value.color === node.annotation.color) return
+    set(treeEdit(s, mapAnnotation(s.root, id, () => value)))
+  },
+
+  removeAnnotation(id) {
+    const s = get()
+    const node = assertTreeNodeEditable(s.root, id, s.layers)
+    if (node.kind !== 'annotation') throw new ConfigValidationError('nodeId', `мәтін емес: ${id}`, 'annotation id')
+    set({ ...treeEdit(s, withoutAnnotation(s.root, id)),
+      activeId: s.activeId === id ? s.cabinets[0]?.id ?? '' : s.activeId,
+      selected: s.selected === id ? null : s.selected })
   },
 
   removeBoard(id) {
@@ -1503,6 +1578,23 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const root = arrangeTreeSelection(s.root, ids, s.catalog, s.layers, axis, mode, s.projectSettings ?? s.shop.settings)
     if (root !== s.root) set(treeEdit(s, root))
+  },
+  pasteProperties(clipboard, ids) {
+    const s = get()
+    const root = pasteNodeProperties(s.root, clipboard, ids, s.layers)
+    if (root === s.root) return
+    // Validate all regenerated production panels before one atomic undo step.
+    validateEditedSubtrees(s, root, ids)
+    flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers, s.autoJoints)
+    set(treeEdit(s, root))
+  },
+  scaleNode(id, factors) {
+    const s = get()
+    const root = scaleTreeNode(s.root, id, factors, s.layers)
+    if (root === s.root) return
+    validateEditedSubtrees(s, root, [id])
+    flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers, s.autoJoints)
+    set(treeEdit(s, root))
   },
   placeLibraryItem(item, parentId) {
     const s = get()

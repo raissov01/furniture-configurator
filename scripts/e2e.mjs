@@ -13,7 +13,7 @@
  */
 
 import { spawn } from 'node:child_process'
-import { captureFailureSnapshot, makeHelpers } from './e2eHelpers.mjs'
+import { captureFailureSnapshot, makeHelpers, serializeCapture } from './e2eHelpers.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:3000'
 const PORT = Number(process.env['E2E_CDP_PORT'] ?? 9333)
@@ -142,14 +142,14 @@ async function run() {
   const session = await connect()
   const h = makeHelpers(session, BASE)
   const { mkdirSync, writeFileSync } = await import('node:fs')
-  snapshot = async (n) => {
+  snapshot = serializeCapture(async (n) => {
     const shot = await session.send('Page.captureScreenshot', { format: 'png' })
     if (!shot?.data) return null
     mkdirSync(SHOT_DIR, { recursive: true })
     const file = `${SHOT_DIR}/${String(n).padStart(2, '0')}.png`
     writeFileSync(file, Buffer.from(shot.data, 'base64'))
     return file
-  }
+  })
 
   // Тестер бір-бірінен ТӘУЕЛСІЗ болуы керек: алдыңғы жүгіріс сақтаған жоба
   // мен цех профилі жаңа жүгірісте эталон шкафты ауыстырып жіберер еді.

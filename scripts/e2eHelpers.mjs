@@ -7,6 +7,16 @@ export async function captureFailureSnapshot(capture) {
   }
 }
 
+/** CDP allows one screenshot at a time; a failed check and an explicit shot can race. */
+export function serializeCapture(capture) {
+  let previous = Promise.resolve()
+  return (...args) => {
+    const current = previous.then(() => capture(...args))
+    previous = current.then(() => undefined, () => undefined)
+    return current
+  }
+}
+
 export function makeHelpers({ send }, base) {
   const evaluate = async (expression) => {
     const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })

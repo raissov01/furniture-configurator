@@ -128,6 +128,13 @@ export const SceneNodeSchema: z.ZodType<SceneNode> = z.lazy(() => z.discriminate
       color: z.string().optional(), textureId: z.string().optional(),
       modelSource: ManufacturerModelSourceSchema.optional() }),
   }),
+  z.strictObject({ kind: z.literal('annotation'), ...baseNode,
+    annotation: z.strictObject({
+      text: z.string().trim().min(1).max(500),
+      fontSize: positiveMm,
+      color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    }),
+  }),
 ]))
 
 const ProjectFileV4BaseSchema: z.ZodType<ProjectFileV4> = z.strictObject({
