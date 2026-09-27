@@ -120,6 +120,15 @@ describe('смета', () => {
 })
 
 describe('шектер мен қателер', () => {
+  it('арт қабырға өз қорабының биіктігінен аспайды', () => {
+    const config = cabinet('tandembox', {
+      height: 720,
+      sections: [{ id: 's1', widthMode: 'flex', contents: [{ kind: 'drawers', count: 3 }], fronts: null }],
+      metalBoxBackHeight: 300,
+    })
+    expect(() => generateCabinet(config, catalog)).toThrow(/metalBoxBackHeight.*рұқсат етілген/)
+  })
+
   it('тайыз корпуста түсінікті ҚАТЕ', () => {
     expect(() => gen('legrabox', { depth: 250 })).toThrow(/направляющая/)
   })

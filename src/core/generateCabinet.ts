@@ -2280,6 +2280,13 @@ function makeDrawers(input: {
   const metalParts = metalBox
     ? metalBoxParts(metalBox, openingWidth, nominal, metalBoxBackHeight)
     : null
+  if (metalParts && metalParts.back.height > boxHeight) {
+    throw new ConfigValidationError(
+      'metalBoxBackHeight',
+      `${metalParts.back.height} мм`,
+      `≤ ${boxHeight} мм (фасад биіктігі ${frontHeight} мм − drawerBoxDrop ${settings.drawerBoxDrop} мм)`,
+    )
+  }
   if (metalParts && (metalParts.bottom.width < MIN_DIMENSION || metalParts.bottom.depth < MIN_DIMENSION)) {
     throw new ConfigValidationError(
       `sections[${sectionIndex}].contents[${bandIndex}]`,
