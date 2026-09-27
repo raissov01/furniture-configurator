@@ -26,7 +26,7 @@ import {
 import { materialWidthRangeAt } from './bevelBounds'
 import { validateJointDrill } from './autoJoint'
 import { ConfigValidationError } from './errors'
-import type { Catalog, Drill, DrillPurpose, Panel } from './types'
+import type { Catalog, ConstructionSettings, Drill, DrillPurpose, Panel, SettingsOverride } from './types'
 
 /**
  * Қолмен қосылатын тесіктің координатасы панельдің НАҒЫЗ материалы ішінде ме
@@ -87,7 +87,9 @@ export function isManualDrill(drill: Drill, edit: DrillEdit | undefined): boolea
  * `generateCabinet`-тің ішінде, панельдер әлі ешкімге берілмей тұрып
  * шақырылады.
  */
-export function applyDrillEdits(panels: Panel[], edits: DrillEdits | undefined, catalog: Catalog): void {
+export function applyDrillEdits(
+  panels: Panel[], edits: DrillEdits | undefined, catalog: Catalog, settings: ConstructionSettings,
+): void {
   if (!edits) return
   for (const panel of panels) {
     const edit = edits[panel.id]
@@ -101,6 +103,16 @@ export function applyDrillEdits(panels: Panel[], edits: DrillEdits | undefined, 
     if (thickness === undefined) throw new ConfigValidationError(`panel[${panel.id}].materialId`, 'материал табылмады')
     for (const [index, drill] of edit.added.entries()) {
       validateJointDrill(panel, drill, thickness, `drillEdits[${panel.id}].added.${index}`)
+      if (drill.purpose === 'confirmat' && (drill.face === 'inner' || drill.face === 'outer') &&
+        drill.diameter !== settings.confirmatFaceDiameter) {
+        throw new ConfigValidationError(`drillEdits[${panel.id}].added.${index}.confirmatFaceDiameter`,
+          'қол конфирмат Ø цехтағы автоматты Ø-ге сәйкес емес', `Ø${settings.confirmatFaceDiameter} мм`)
+      }
+      if (drill.purpose === 'confirmat' && drill.face.startsWith('edge') &&
+        drill.depth !== settings.confirmatEdgeDepth) {
+        throw new ConfigValidationError(`drillEdits[${panel.id}].added.${index}.confirmatEdgeDepth`,
+          'қол конфирмат пилотының тереңдігі цех баптауына сәйкес емес', `${settings.confirmatEdgeDepth} мм`)
+      }
       // Көшірме: конфигтегі объект панельге СІЛТЕМЕМЕН кетпеуі керек,
       // әйтпесе экспорт конфигті өзгертіп жіберуі мүмкін.
       panel.drilling.push({ ...drill })
@@ -181,8 +193,18 @@ export const DRILL_PRESETS: DrillPreset[] = [
   },
 ]
 
-export function findDrillPreset(id: string): DrillPreset | undefined {
-  return DRILL_PRESETS.find((p) => p.id === id)
+export function findDrillPreset(id: string, settings?: SettingsOverride): DrillPreset | undefined {
+  const preset = DRILL_PRESETS.find((p) => p.id === id)
+  if (!preset || !settings) return preset
+  if (id === 'confirmat-face' && settings.confirmatFaceDiameter !== undefined) {
+    return { ...preset, diameter: settings.confirmatFaceDiameter,
+      name: `Конфирмат в пласть Ø${settings.confirmatFaceDiameter}, насквозь` }
+  }
+  if (id === 'confirmat-edge' && settings.confirmatEdgeDepth !== undefined) {
+    return { ...preset, depth: settings.confirmatEdgeDepth,
+      name: `Конфирмат в торец Ø${preset.diameter} × ${settings.confirmatEdgeDepth}` }
+  }
+  return preset
 }
 
 /** 32 мм торына түсіру — қолмен қойылған тесік те жүйенің ішінде қалуы үшін. */

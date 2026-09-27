@@ -148,6 +148,23 @@ describe('түзетуді өзгерту', () => {
 })
 
 describe('пресеттер', () => {
+  it('цех Ø9 конфирматымен қол пресет пен автоматты присадка сәйкес', () => {
+    const config = base()
+    const settings = { confirmatFaceDiameter: 9 }
+    const preset = findDrillPreset('confirmat-face', settings)!
+    expect(preset).toMatchObject({ diameter: 9, name: 'Конфирмат в пласть Ø9, насквозь' })
+    const side = sideOf(build({ ...config, settings }))
+    expect(side.drilling.filter((hole) => hole.purpose === 'confirmat' && hole.face === 'outer')
+      .every((hole) => hole.diameter === preset.diameter)).toBe(true)
+    const oldHole = drillFromPreset(findDrillPreset('confirmat-face')!, 'outer', 100, 100, 16)
+    expect(() => build({ ...config, settings, drillEdits: addDrill({}, side.id, oldHole) }))
+      .toThrow(/confirmatFaceDiameter/)
+  })
+
+  it('торц пилотының цехтағы тереңдігі қол пресетке беріледі', () => {
+    expect(findDrillPreset('confirmat-edge', { confirmatEdgeDepth: 32 }))
+      .toMatchObject({ diameter: 5, depth: 32, name: 'Конфирмат в торец Ø5 × 32' })
+  })
   it('сандары §4.9 константаларымен БІР', () => {
     expect(findDrillPreset('confirmat-edge')).toMatchObject({ diameter: 5, depth: 35, where: 'edge' })
     expect(findDrillPreset('shelf-pin')).toMatchObject({ diameter: 5, depth: 8 })
