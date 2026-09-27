@@ -10,6 +10,7 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Допустимо целое число в диапазоне': 'Allowed whole-number range',
   'Автоматическая присадка нарушена': 'Automatic drilling joint is broken',
   'Проверьте контакт досок и крепёж': 'Check board contact and fastener',
   'Удалить соединение': 'Remove joint',

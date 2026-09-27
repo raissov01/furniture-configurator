@@ -60,6 +60,7 @@ import { useTreeSceneItems } from '@/lib/useTreeSceneItems'
 import { useProjectProduction } from '@/lib/useProjectProduction'
 import { productionAvailability } from '@/lib/productionAvailability'
 import { assemblyStepView } from '@/lib/assemblyStepView'
+import { parseSilhouetteHeight } from '@/lib/silhouetteInput'
 import {
   DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, shelfSpanWarnings,
 } from '@/src/core/index'
@@ -179,6 +180,9 @@ export function Workspace() {
   const setShowFronts = useConfigurator((s) => s.setShowFronts)
   const silhouette = useConfigurator((s) => s.silhouette)
   const setSilhouette = useConfigurator((s) => s.setSilhouette)
+  const [silhouetteDraft, setSilhouetteDraft] = useState(() => String(silhouette.height))
+  useEffect(() => setSilhouetteDraft(String(silhouette.height)), [silhouette.height])
+  const silhouetteError = parseSilhouetteHeight(silhouetteDraft).error
   const projection = useConfigurator((s) => s.projection)
   const setProjection = useConfigurator((s) => s.setProjection)
   const fitCamera = useConfigurator((s) => s.fitCamera)
@@ -888,21 +892,22 @@ export function Workspace() {
             {tr('Человек для масштаба')}
           </MenuItem>
         </Menu>
-        {silhouette.on ? (
-          <input
-            type="number"
-            className="w-16 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
-            value={silhouette.height}
-            min={MIN_SILHOUETTE_HEIGHT}
-            max={MAX_SILHOUETTE_HEIGHT}
-            step={10}
-            title={tr('Рост человека, мм')}
-            onChange={(e) => {
-              const v = Number(e.target.value)
-              if (Number.isFinite(v)) setSilhouette({ height: Math.round(v) })
-            }}
-          />
-        ) : null}
+        {silhouette.on ? <div className="flex flex-col gap-0.5">
+          <input type="text" inputMode="numeric" aria-label={tr('Рост человека, мм')}
+            aria-invalid={Boolean(silhouetteError)} aria-describedby={silhouetteError ? 'silhouette-height-error' : undefined}
+            className={cn('w-20 border bg-white px-1.5 py-1 text-xs tabular-nums dark:bg-neutral-900',
+              silhouetteError ? 'border-red-600 text-red-700' : 'border-neutral-300 dark:border-neutral-700')}
+            value={silhouetteDraft} title={tr('Рост человека, мм')}
+            onChange={(event) => {
+              const raw = event.target.value
+              setSilhouetteDraft(raw)
+              const parsed = parseSilhouetteHeight(raw)
+              if (parsed.value !== undefined) setSilhouette({ height: parsed.value })
+            }} />
+          {silhouetteError ? <span id="silhouette-height-error" role="alert" className="text-xs text-red-700">
+            {tr('Рост человека, мм')}: {tr('Допустимо целое число в диапазоне')} {MIN_SILHOUETTE_HEIGHT}…{MAX_SILHOUETTE_HEIGHT} мм
+          </span> : null}
+        </div> : null}
         <Button size="sm" onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
       </div>
 
