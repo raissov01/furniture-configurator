@@ -9,8 +9,23 @@
 import { randomUUID } from 'node:crypto'
 import { db } from './db'
 import { audit } from './observability'
+import { parseCloudOrg } from '@/src/core/cloudProjectOrganize'
+import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
 
 export type ProjectRow = { id: string; name: string; updatedAt: number }
+
+export function readCloudOrg(shopId: string, userId: string): CloudOrg | null {
+  const row = db().prepare('SELECT json FROM cloud_project_org WHERE shop_id = ? AND user_id = ?')
+    .get(shopId, userId) as { json: string } | undefined
+  return row ? parseCloudOrg(row.json) : null
+}
+
+export function writeCloudOrg(shopId: string, userId: string, org: CloudOrg): void {
+  db().prepare(`INSERT INTO cloud_project_org (user_id, shop_id, json, updated_at) VALUES (?, ?, ?, ?)
+    ON CONFLICT (user_id) DO UPDATE SET json = excluded.json, updated_at = excluded.updated_at
+    WHERE cloud_project_org.shop_id = excluded.shop_id`)
+    .run(userId, shopId, JSON.stringify(org), Date.now())
+}
 
 export function readShopProfile(shopId: string): unknown | null {
   const row = db().prepare('SELECT json FROM shop_profiles WHERE shop_id = ?').get(shopId) as
@@ -44,9 +59,25 @@ export function writeShopProfile(shopId: string, profile: unknown, actorId?: str
 
 export function listProjects(shopId: string): ProjectRow[] {
   const rows = db()
-    .prepare('SELECT id, name, updated_at FROM projects WHERE shop_id = ? ORDER BY updated_at DESC LIMIT 100')
+    .prepare('SELECT id, name, updated_at FROM projects WHERE shop_id = ? ORDER BY updated_at DESC, id DESC')
     .all(shopId) as { id: string; name: string; updated_at: number }[]
   return rows.map((r) => ({ id: r.id, name: r.name, updatedAt: r.updated_at }))
+}
+
+export function listProjectsPage(
+  shopId: string, options: { limit: number; offset: number; query?: string },
+): { projects: ProjectRow[]; total: number } {
+  const query = options.query?.trim() ?? ''
+  const escaped = query.replace(/[!%_]/g, (character) => `!${character}`)
+  const filter = query ? " AND LOWER(name) LIKE LOWER(?) ESCAPE '!'" : ''
+  const args = query ? [shopId, `%${escaped}%`] : [shopId]
+  const database = db()
+  const count = database.prepare(`SELECT COUNT(*) AS total FROM projects WHERE shop_id = ?${filter}`)
+    .get(...args) as { total: number }
+  const rows = database.prepare(`SELECT id, name, updated_at FROM projects WHERE shop_id = ?${filter}
+    ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?`)
+    .all(...args, options.limit, options.offset) as { id: string; name: string; updated_at: number }[]
+  return { total: count.total, projects: rows.map((r) => ({ id: r.id, name: r.name, updatedAt: r.updated_at })) }
 }
 
 export function readProject(shopId: string, id: string): unknown | null {
