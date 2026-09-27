@@ -14,6 +14,7 @@ import type { CameraPreset } from '@/store/configurator'
 import type { Quality, Theme } from '@/lib/appearance'
 import { LANGS, type Lang } from '@/lib/i18n'
 import type { ShopExportFormat } from '@/lib/shopExport'
+import type { ShopExportScope } from '@/lib/shopExportScope'
 
 export type ClassicPanel = 'gallery' | 'ai' | 'sketch' | 'parts' | 'history' | 'shop' | 'project' | 'quote' | 'drill' | 'room' | 'help' | 'shareCode' | 'account'
 
@@ -21,7 +22,7 @@ export type ClassicCommand =
   | { type: 'open'; panel: ClassicPanel }
   | { type: 'saveProject' }
   | { type: 'openProject' }
-  | { type: 'export'; format: ShopExportFormat }
+  | { type: 'export'; format: ShopExportFormat; scope: ShopExportScope }
   | { type: 'clientLink' }
   | { type: 'reset' }
   | { type: 'undo' }
@@ -36,6 +37,7 @@ export type ClassicCommand =
   | { type: 'toggleSilhouette' }
   | { type: 'addCabinet' }
   | { type: 'addBoard' }
+  | { type: 'addSolid' }
   | { type: 'removeBoard' }
   | { type: 'duplicate' }
   | { type: 'mirror' }
@@ -60,12 +62,15 @@ export type ClassicMenuState = {
   canUndo: boolean
   canRedo: boolean
   activeEditable: boolean
+  canMirrorSelected?: boolean
   editableBoard: boolean
   canRemoveCabinet: boolean
   /** Цех экспорты мүмкін бе (белсенді корпус бар, өндірісте қате жоқ). */
   canExport: boolean
-  /** PDF сборка сызбасы тек корпусқа. */
+  /** Project PDF is available when at least one visible cabinet supplies projections. */
   canExportPdf: boolean
+  /** Active cabinet exports require the selected node itself to be a cabinet. */
+  canExportActiveCabinet?: boolean
   productionError: boolean
   cameraPreset: CameraPreset
   viewMode: 'solid' | 'ghost' | 'wire'
@@ -121,11 +126,16 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('file.save', 'Сохранить проект', { type: 'saveProject' }),
         item('file.open', 'Открыть проект', { type: 'openProject' }),
         SEP,
-        { kind: 'heading', id: 'file.export', label: 'Экспорт для цеха' },
-        item('file.export.xlsx', 'XLSX — деталировка', { type: 'export', format: 'xlsx' }, { disabled: !s.canExport }),
-        item('file.export.csv', 'CSV — на распил', { type: 'export', format: 'csv' }, { disabled: !s.canExport }),
-        item('file.export.dxf', 'DXF — на станок', { type: 'export', format: 'dxf' }, { disabled: !s.canExport }),
-        item('file.export.pdf', 'PDF — сборочный чертёж', { type: 'export', format: 'pdf' }, { disabled: !s.canExport || !s.canExportPdf }),
+        { kind: 'heading', id: 'file.export', label: 'Экспорт для цеха — весь проект' },
+        item('file.export.xlsx', 'XLSX — весь проект', { type: 'export', format: 'xlsx', scope: 'project' }, { disabled: !s.canExport }),
+        item('file.export.csv', 'CSV — весь проект', { type: 'export', format: 'csv', scope: 'project' }, { disabled: !s.canExport }),
+        item('file.export.dxf', 'DXF — весь проект', { type: 'export', format: 'dxf', scope: 'project' }, { disabled: !s.canExport }),
+        item('file.export.project.pdf', 'PDF — весь проект', { type: 'export', format: 'pdf', scope: 'project' }, { disabled: !s.canExportPdf }),
+        { kind: 'heading', id: 'file.export.cabinet', label: 'Активный корпус' },
+        item('file.export.cabinet.xlsx', 'XLSX — активный корпус', { type: 'export', format: 'xlsx', scope: 'cabinet' }, { disabled: !(s.canExportActiveCabinet ?? s.canExportPdf) }),
+        item('file.export.cabinet.csv', 'CSV — активный корпус', { type: 'export', format: 'csv', scope: 'cabinet' }, { disabled: !(s.canExportActiveCabinet ?? s.canExportPdf) }),
+        item('file.export.cabinet.dxf', 'DXF — активный корпус', { type: 'export', format: 'dxf', scope: 'cabinet' }, { disabled: !(s.canExportActiveCabinet ?? s.canExportPdf) }),
+        item('file.export.pdf', 'PDF — сборка активного корпуса', { type: 'export', format: 'pdf', scope: 'cabinet' }, { disabled: !(s.canExportActiveCabinet ?? s.canExportPdf) }),
         SEP,
         item('file.link', 'Ссылка клиенту', { type: 'clientLink' }),
         item('file.code', 'Код для клиента', { type: 'open', panel: 'shareCode' }),
@@ -165,9 +175,10 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
       id: 'element', label: 'Элемент', items: [
         item('element.add', 'Новый корпус', { type: 'addCabinet' }),
         item('element.board', 'Добавить свободную доску', { type: 'addBoard' }),
+        item('element.solid', 'Добавить декоративный блок', { type: 'addSolid' }),
         item('element.removeBoard', 'Удалить доску', { type: 'removeBoard' }, { disabled: !s.editableBoard }),
         item('element.duplicate', 'Дублировать', { type: 'duplicate' }, { disabled: !s.activeEditable }),
-        item('element.mirror', 'Зеркальная копия', { type: 'mirror' }, { disabled: !s.activeEditable }),
+        item('element.mirror', 'Зеркальная копия', { type: 'mirror' }, { disabled: !(s.canMirrorSelected ?? s.activeEditable) }),
         item('element.remove', 'Удалить корпус', { type: 'removeCabinet' }, { disabled: !s.canRemoveCabinet }),
         SEP,
         item('element.open', s.open ? 'Закрыть створки' : 'Распахнуть', { type: 'toggleOpen' }, { active: s.open }),

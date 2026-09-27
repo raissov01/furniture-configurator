@@ -13,10 +13,13 @@ import { useState } from 'react'
 import { Menu, MenuItem } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
 import { runShopExport, type ShopExportFormat } from '@/lib/shopExport'
+import { selectShopExportPanels, type ShopExportScope } from '@/lib/shopExportScope'
 import type { CabinetConfig, Panel } from '@/src/core/index'
 
-export function ExportMenu({ cabinet, panels, exportId, exportName }: {
-  cabinet?: CabinetConfig; panels: Panel[]; exportId?: string; exportName?: string
+export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPanels, projectName, exportId, exportName }: {
+  cabinet?: CabinetConfig | undefined; pdfCabinet?: CabinetConfig | undefined
+  pdfAssembly?: { nodeId: string; panels: Panel[]; nodeCount: number } | undefined
+  panels: Panel[]; projectPanels?: Panel[]; projectName?: string; exportId?: string; exportName?: string
 }) {
   const catalog = useConfigurator((s) => s.catalog)
   const projectInfo = useConfigurator((s) => s.projectInfo)
@@ -24,10 +27,17 @@ export function ExportMenu({ cabinet, panels, exportId, exportName }: {
   const [busy, setBusy] = useState<string | null>(null)
 
   // Логика `lib/shopExport.ts`-те: классикалық «Файл» мәзірі де соны тікелей шақырады.
-  const run = async (format: ShopExportFormat) => {
+  const run = async (format: ShopExportFormat, scope: ShopExportScope) => {
     setBusy(format)
     try {
-      await runShopExport(format, { cabinet, panels, catalog, settings, projectInfo, exportId, exportName })
+      await runShopExport(format, {
+        cabinet: format === 'pdf' ? (scope === 'project' ? pdfCabinet : cabinet) : scope === 'cabinet' ? cabinet : undefined,
+        panels: selectShopExportPanels(scope, format, panels, projectPanels ?? panels),
+        pdfAssembly: scope === 'project' ? pdfAssembly : undefined,
+        catalog, settings, projectInfo,
+        exportId: scope === 'project' ? 'project' : exportId,
+        exportName: scope === 'project' ? projectName : exportName,
+      })
     } finally {
       setBusy(null)
     }
@@ -36,16 +46,22 @@ export function ExportMenu({ cabinet, panels, exportId, exportName }: {
   return (
     <div data-tour="export">
       <Menu label={busy ? '…' : tr('Экспорт')} title={tr('Скачать файлы для цеха')} align="right">
-        <MenuItem disabled={busy !== null} onClick={() => void run('xlsx')}>
+        {projectPanels ? <div className="border-b border-neutral-200 px-2 py-1 text-xs">{tr('Весь проект')}</div> : null}
+        <MenuItem disabled={busy !== null} onClick={() => void run('xlsx', projectPanels ? 'project' : 'cabinet')}>
           XLSX — {tr('деталировка')}
         </MenuItem>
-        <MenuItem disabled={busy !== null} onClick={() => void run('csv')}>
+        <MenuItem disabled={busy !== null} onClick={() => void run('csv', projectPanels ? 'project' : 'cabinet')}>
           CSV — {tr('на распил')}
         </MenuItem>
-        <MenuItem disabled={busy !== null} title={tr('Каждая деталь — отдельный DXF, всё в одном архиве')} onClick={() => void run('dxf')}>
+        <MenuItem disabled={busy !== null} title={tr('DXF деталей и торцевая присадка CSV в одном архиве')} onClick={() => void run('dxf', projectPanels ? 'project' : 'cabinet')}>
           DXF — {tr('на станок')}
         </MenuItem>
-        {cabinet && <MenuItem disabled={busy !== null} title={tr('Проекции, сборка и деталировка')} onClick={() => void run('pdf')}>
+        {projectPanels && pdfCabinet && <MenuItem disabled={busy !== null} onClick={() => void run('pdf', 'project')}>
+          PDF — {tr('Весь проект')}
+        </MenuItem>}
+        {cabinet && projectPanels ? <div className="border-b border-neutral-200 px-2 py-1 text-xs">{tr('Активный корпус')}</div> : null}
+        {cabinet && projectPanels ? (['xlsx', 'csv', 'dxf'] as const).map((format) => <MenuItem key={format} disabled={busy !== null} onClick={() => void run(format, 'cabinet')}>{format.toUpperCase()} — {tr('Активный корпус')}</MenuItem>) : null}
+        {cabinet && <MenuItem disabled={busy !== null} title={tr('Проекции, сборка и деталировка')} onClick={() => void run('pdf', 'cabinet')}>
           PDF — {tr('сборочный чертёж')}
         </MenuItem>}
       </Menu>

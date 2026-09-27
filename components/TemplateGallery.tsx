@@ -178,7 +178,7 @@ export function TemplateGallery() {
           </div>
         ) : null}
 
-        <KitchenWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+        {wizardOpen ? <KitchenWizard open onClose={() => setWizardOpen(false)} /> : null}
 
         {firstRun ? (
           <div data-testid="first-run-categories" className="mb-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">

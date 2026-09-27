@@ -222,7 +222,7 @@ export function CutPage() {
               title={tr('Всё для цеха одним архивом: карта, DXF листов, DXF деталей с присадкой, деталировка и бирки')}
               onClick={() => void run('bundle', async () => {
                 const [
-                  { nestingToDxfFiles, cabinetToDxfFiles }, { cutListToCsv },
+                  { nestingToDxfFiles, cabinetToDxfArchiveFiles }, { cutListToCsv },
                   { labelsPdf, labelsToCsv }, { nestingPdf }, { zipSync, strToU8 },
                 ] = await Promise.all([
                   import('@/src/core/export/dxf'),
@@ -238,7 +238,7 @@ export function CutPage() {
                 for (const [name, content] of flatArchiveFiles(nestingToDxfFiles(nesting!))) {
                   entries[`raskroy/${name}`] = strToU8(content)
                 }
-                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) {
+                for (const [name, content] of flatArchiveFiles(cabinetToDxfArchiveFiles(panels, dxfOptions))) {
                   entries[`detali/${name}`] = strToU8(content)
                 }
                 entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(panels, catalog)}`)
@@ -279,7 +279,7 @@ export function CutPage() {
               disabled={busy !== null || panels.length === 0 || production.error !== null}
               title={tr('Для Базиса: список деталей для Раскроя (CSV, XLSX), скрипт для Мебельщика — детали и присадка как крепёж, DXF деталей')}
               onClick={() => void run('basis', async () => {
-                const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfFiles }, { zipSync, strToU8 }] =
+                const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfArchiveFiles }, { zipSync, strToU8 }] =
                   await Promise.all([
                     import('@/src/core/export/basis'),
                     import('@/src/core/export/dxf'),
@@ -291,7 +291,7 @@ export function CutPage() {
                 const options = { projectName, script: { scene, settings } }
                 const entries: Record<string, Uint8Array> = {}
                 for (const [name, bytes] of basisFiles(panels, catalog, options)) entries[name] = bytes
-                for (const [name, content] of flatArchiveFiles(cabinetToDxfFiles(panels, dxfOptions))) {
+                for (const [name, content] of flatArchiveFiles(cabinetToDxfArchiveFiles(panels, dxfOptions))) {
                   entries[`dxf/${name}`] = strToU8(content)
                 }
                 download(

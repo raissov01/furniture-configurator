@@ -46,23 +46,31 @@ const controlDense = `${controlBase} px-1.5 py-1 text-xs`
 const useControl = () => (React.useContext(DenseCtx) ? controlDense : control)
 
 export function NumberInput({
-  value, onChange, min, max, step = 1, invalid, field, onDraftValidityChange,
+  value, onChange, min, max, step = 1, buttonStep = step, invalid, field, label: explicitLabel, onDraftValidityChange,
 }: {
   value: number
   onChange: (v: number) => void
   min?: number
   max?: number
   step?: number
+  buttonStep?: number
   invalid?: boolean
   field?: string
+  label?: string
   onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const dense = React.useContext(DenseCtx)
-  const label = React.useContext(FieldLabelCtx) || tr('Значение')
+  const label = explicitLabel ?? (React.useContext(FieldLabelCtx) || tr('Значение'))
   const cls = useControl()
   const [draft, setDraft] = React.useState(String(value))
   const [draftError, setDraftError] = React.useState<ReturnType<typeof parseNumberDraft>['error']>(undefined)
+  const wasRejected = React.useRef(Boolean(invalid))
   React.useEffect(() => { setDraft(String(value)); setDraftError(undefined); if (field) onDraftValidityChange?.(field, false) }, [value])
+  React.useEffect(() => {
+    // A different valid control can resolve a rejected edit while this value stays unchanged.
+    if (wasRejected.current && !invalid) setDraft(String(value))
+    wasRejected.current = Boolean(invalid)
+  }, [invalid, value])
   const errorText = draftError === 'required' ? tr('Поле обязательно')
     : draftError === 'integer' ? tr('Введите целое число, мм')
     : draftError === 'range' ? tr('Значение вне диапазона')
@@ -72,6 +80,7 @@ export function NumberInput({
     <input
       type="text"
       inputMode="decimal"
+      aria-label={explicitLabel}
       aria-invalid={Boolean(invalid || draftError) || undefined}
       className={cn(cls, 'tabular-nums', (invalid || draftError) && 'border-red-500 dark:border-red-500', dense && 'order-2 min-w-0 rounded-none border-x-0 px-0.5 text-center')}
       value={draft}
@@ -81,7 +90,7 @@ export function NumberInput({
         const result = parseNumberDraft(raw, { min, max, integer: step >= 1 })
         setDraftError(result.error)
         if (field) onDraftValidityChange?.(field, Boolean(result.error))
-        if (result.value !== undefined && result.value !== value) onChange(result.value)
+        if (result.value !== undefined && (result.value !== value || invalid)) onChange(result.value)
       }}
     />
   )
@@ -93,14 +102,14 @@ export function NumberInput({
    * элементі» — оның ішіндегі БІРІНШІ labelable элемент; батырма алда тұрса,
    * жазуды басқан адам «−»-ті басып қояр еді. Солға «−» тек CSS `order`-мен.
    */
-  const bump = (dir: 1 | -1) => { onChange(steppedValue(value, dir, step, min, max)) }
+  const bump = (dir: 1 | -1) => { onChange(steppedValue(value, dir, buttonStep, min, max)) }
   const stepper = 'order-1 w-5 shrink-0 border border-neutral-300 bg-white text-xs text-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:text-neutral-100'
   return (
     <span className="block">
       <span className="flex items-stretch">
         {input}
-        <button type="button" tabIndex={-1} aria-label={tr('Уменьшить')} title={tr('Уменьшить')} disabled={Boolean(draftError) || !stepAvailable(value, -1, step, min, max)} onClick={() => bump(-1)} className={cn(stepper, 'rounded-l-md')}>‹</button>
-        <button type="button" tabIndex={-1} aria-label={tr('Увеличить')} title={tr('Увеличить')} disabled={Boolean(draftError) || !stepAvailable(value, 1, step, min, max)} onClick={() => bump(1)} className={cn(stepper, 'order-3 rounded-r-md')}>›</button>
+        <button type="button" tabIndex={-1} aria-label={tr('Уменьшить')} title={tr('Уменьшить')} disabled={Boolean(draftError) || !stepAvailable(value, -1, buttonStep, min, max)} onClick={() => bump(-1)} className={cn(stepper, 'rounded-l-md')}>‹</button>
+        <button type="button" tabIndex={-1} aria-label={tr('Увеличить')} title={tr('Увеличить')} disabled={Boolean(draftError) || !stepAvailable(value, 1, buttonStep, min, max)} onClick={() => bump(1)} className={cn(stepper, 'order-3 rounded-r-md')}>›</button>
       </span>
       {error}
     </span>
@@ -108,13 +117,14 @@ export function NumberInput({
 }
 
 export function Select<T extends string>({
-  value, onChange, options,
-}: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[] }) {
+  value, onChange, options, disabled, invalid,
+}: { value: T; onChange: (v: T) => void; options: { value: T; label: string; disabled?: boolean }[]; disabled?: boolean; invalid?: boolean }) {
   const cls = useControl()
   return (
-    <select className={cls} value={value} onChange={(e) => onChange(e.target.value as T)}>
+    <select className={cn(cls, invalid && 'border-red-500 dark:border-red-500')} aria-invalid={invalid || undefined}
+      value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as T)}>
       {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
+        <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>
       ))}
     </select>
   )
