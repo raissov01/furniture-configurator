@@ -13,6 +13,7 @@
  */
 
 import { z } from 'zod'
+import { migrateBandThreshold } from './migrateBandThreshold'
 import { KERF, MAX_KERF } from './constants'
 import { fillingHardware } from './filling'
 import {
@@ -769,6 +770,7 @@ const ShopProfileV6Schema = z.object(ShopProfileSchema.shape)
  * толтырған бағалары нұсқа ауысқанда жоғалмауы керек (§7).
  */
 export function parseShopProfile(raw: unknown): ShopProfile {
+  raw = migrateBandThreshold(raw).value
   const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion
 
   // v1 → v2: жұмыс ақысы мен үстеме пайда болды.
@@ -873,6 +875,16 @@ export function parseShopProfile(raw: unknown): ShopProfile {
           : list))
         : old.priceLists,
     }
+  }
+
+  // v3+ сақталған цехтарда жаңа inset артикулдары жоқ болуы мүмкін.
+  // Тек жоқ ID-лер қосылады; цех өзі түзеткен жүйелер өзгермейді.
+  const candidate = migrated as { hingeSystems?: unknown }
+  if (Array.isArray(candidate.hingeSystems)) {
+    const known = new Set(candidate.hingeSystems.map((system: unknown) =>
+      system && typeof system === 'object' ? (system as { id?: unknown }).id : undefined))
+    const added = defaultHingeSystems().filter((system) => system.mount === 'inset' && !known.has(system.id))
+    if (added.length) migrated = { ...(migrated as object), hingeSystems: [...candidate.hingeSystems, ...added] }
   }
 
   const parsed = syncActivePriceList(ShopProfileSchema.parse(migrated) as ShopProfile)
