@@ -477,6 +477,7 @@ export const en: Record<string, string> = {
     'Bazis reads Windows-1251, which has no Kazakh letters',
   'Переименуйте детали латиницей или по-русски.': 'Rename the parts in Latin or in Russian.',
   'Открывание': 'Opening side',
+  'Добавьте отдельную секцию для каждой двери.': 'Add a separate section for each door.',
   'сторона петель': 'hinge side',
   'Автоматически': 'Automatic',
   'Все влево': 'All to the left',

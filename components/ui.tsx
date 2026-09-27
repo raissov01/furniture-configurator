@@ -82,7 +82,7 @@ export function NumberInput({
         const result = parseNumberDraft(raw, { min, max, integer: step >= 1 })
         setDraftError(result.error)
         if (field) onDraftValidityChange?.(field, Boolean(result.error))
-        if (result.value !== undefined && result.value !== value) onChange(result.value)
+        if (result.value !== undefined && (result.value !== value || invalid)) onChange(result.value)
       }}
     />
   )

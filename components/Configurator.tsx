@@ -25,6 +25,7 @@ import { DecorPicker } from '@/components/DecorPicker'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
+import { previewFrontEdit } from '@/lib/frontEdit'
 import { commitPropertiesName } from '@/lib/propertiesSession'
 import { sectionWidths } from '@/lib/sectionWidths'
 import { parseShelfHeights, shelfCountChange, shelfHeightsChange } from '@/lib/shelfDraft'
@@ -57,6 +58,25 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
   const editSection = useConfigurator((s) => s.editSection)
   const removeSection = useConfigurator((s) => s.removeSection)
   const catalog = useConfigurator((s) => s.catalog)
+  const cabinet = useConfigurator(activeCabinet)
+  const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
+  const [frontError, setFrontError] = useState<{ field: string; message: string; allowed?: string | undefined } | null>(null)
+  const frontDraftField = `sections[${index}].fronts`
+  useEffect(() => {
+    setFrontError(null)
+    onDraftValidityChange?.(frontDraftField, false)
+  }, [section])
+  const editFronts = (patch: Partial<SectionFronts>, field: string) => {
+    const result = previewFrontEdit(cabinet, index, patch, catalog, settings)
+    if (!result.ok) {
+      setFrontError(result)
+      onDraftValidityChange?.(frontDraftField, true)
+      return
+    }
+    setFrontError(null)
+    onDraftValidityChange?.(frontDraftField, false)
+    editSection(index, { fronts: result.fronts }, field)
+  }
   const cabFrontMat = useConfigurator((s) => activeCabinet(s).frontMaterialId)
   // Фасадқа жарамды декорлар: ХДФ (3 мм) фасад болмайды.
   const sectionFrontMats = useMemo(() => catalog.materials.filter((m) => m.thickness >= 10), [catalog])
@@ -389,27 +409,16 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
             value={section.fronts?.count ?? 0}
             min={0}
             max={8}
-            onChange={(count) =>
-              editSection(
-                index,
-                // Ілгек пен тұтқа САҚТАЛАДЫ: санды өзгерту оларды тастап
-                // кетсе, баптау үнсіз әдепкіге қайтар еді.
-                { fronts: count > 0 ? { ...(section.fronts ?? { mount: 'overlay' }), count } : null },
-                'section.fronts',
-              )
-            }
+            invalid={Boolean(frontError)}
+            field={`${frontDraftField}.count`}
+            onDraftValidityChange={onDraftValidityChange}
+            onChange={(count) => editFronts({ count }, 'section.fronts')}
           />
         </Field>
         <Field label={tr('Тип фасада')}>
           <Select
             value={section.fronts?.mount ?? 'overlay'}
-            onChange={(mount) =>
-              editSection(
-                index,
-                { fronts: { ...(section.fronts ?? { count: 1 }), mount } },
-                'section.frontMount',
-              )
-            }
+            onChange={(mount) => editFronts({ mount }, 'section.frontMount')}
             options={[
               { value: 'overlay', label: tr('Накладной') },
               { value: 'inset', label: tr('Вкладной') },
@@ -417,6 +426,14 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
           />
         </Field>
       </div>
+
+      {frontError ? (
+        <div role="alert" className="border border-red-500 p-2 text-[11px] text-red-700 dark:text-red-400">
+          <b>{frontError.field}</b>: {tr(frontError.message)}
+          {frontError.allowed ? ` — ${frontError.allowed}` : null}
+          {frontError.field.endsWith('.opening') ? ` ${tr('Добавьте отдельную секцию для каждой двери.')}` : null}
+        </div>
+      ) : null}
 
       {/* СЕКЦИЯ ФАСАДЫНЫҢ ДЕКОРЫ — корпустан бөлек (qdesign сияқты: бір
           шкафта әр есік әртүрлі түсте). Берілмесе — корпустікі. */}
@@ -431,7 +448,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
                 materials={sectionFrontMats}
                 value={section.fronts.materialId ?? cabFrontMat}
                 onChange={(materialId) =>
-                  editSection(index, { fronts: { ...section.fronts!, materialId } }, 'section.frontMaterial')
+                  editFronts({ materialId }, 'section.frontMaterial')
                 }
               />
             </div>
@@ -440,7 +457,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
                 type="button"
                 title={tr('Вернуть декор корпуса')}
                 onClick={() =>
-                  editSection(index, { fronts: { ...section.fronts!, materialId: undefined } }, 'section.frontMaterial')
+                  editFronts({ materialId: undefined }, 'section.frontMaterial')
                 }
                 className="shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
               >
@@ -454,7 +471,9 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
       {section.fronts ? (
         <FrontFittings
           fronts={section.fronts}
-          onChange={(patch, field) => editSection(index, { fronts: { ...section.fronts!, ...patch } }, field)}
+          onChange={editFronts}
+          fieldPrefix={frontDraftField}
+          onDraftValidityChange={onDraftValidityChange}
         />
       ) : null}
     </div>
@@ -555,13 +574,16 @@ function HandleFields({
 function FrontFittings({
   fronts,
   onChange,
+  fieldPrefix,
+  onDraftValidityChange,
 }: {
   fronts: SectionFronts
   onChange: (patch: Partial<SectionFronts>, field: string) => void
+  fieldPrefix: string
+  onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const shop = useConfigurator((s) => s.shop)
   const systems = shop.hingeSystems
-
   const hingeId = fronts.hingeSystemId ?? systems[0]?.id ?? ''
 
   const milling: MillingSpec | null = fronts.milling ?? null
@@ -621,6 +643,8 @@ function FrontFittings({
               value={gaps[key] ?? shopGap}
               min={0}
               max={50}
+              field={`${fieldPrefix}.gaps.${key}`}
+              onDraftValidityChange={onDraftValidityChange}
               onChange={(v) => setGap(key, v)}
             />
           </Field>

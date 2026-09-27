@@ -482,6 +482,7 @@ export const uz: Record<string, string> = {
     'Bazis Windows-1251 ni o\'qiydi, unda qozoq harflari yo\'q',
   'Переименуйте детали латиницей или по-русски.': 'Detallarni lotin yoki rus tilida qayta nomlang.',
   'Открывание': 'Ochilishi',
+  'Добавьте отдельную секцию для каждой двери.': 'Har bir eshik uchun alohida seksiya qo\'shing.',
   'сторона петель': 'petlya tomoni',
   'Автоматически': 'Avtomatik',
   'Все влево': 'Hammasi chapga',
