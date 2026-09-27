@@ -1664,8 +1664,7 @@ export function generateCabinet(
     runnerHoles(right, run.boxBottomY + baseHeight, run.boxFrontZ, run.boxDepth, sectionCentreX, ctx, drawerSystem)
   }
 
-  // Ілгектер: шеткі фасадтар секцияның тік панеліне ілінеді.
-  // Ортадағы фасадтардың жанында тік панель жоқ, сондықтан оларға тек чашка.
+  // Ілгектер: әр чашкаға секция шетіндегі НАҚТЫ тік панельде планка қажет.
   for (const group of frontGroups) {
     const [left, right] = boundsOf(group.sectionIndex)
     const last = group.fronts.length - 1
@@ -1723,6 +1722,13 @@ export function generateCabinet(
       const carcassPanel = side === 'left'
         ? (i === 0 ? (blindLeft ? frontPanelStand ?? undefined : left) : undefined)
         : (i === last ? (blindRight ? frontPanelStand ?? undefined : right) : undefined)
+      if (!carcassPanel) {
+        throw new ConfigValidationError(
+          `sections[${group.sectionIndex}].fronts.opening`,
+          `${i + 1}-фасадтың ${side === 'left' ? 'сол' : 'оң'} жағында петля планкасына тірек панель жоқ`,
+          'әр есіктің ілгек жағында тік тірек панель болуы керек; секцияны бөліңіз',
+        )
+      }
       // 3D-дегі анимация ІЛГЕКТІҢ жағын осы жерден алады: екеуі бір шешімнен
       // шықса, есік ешқашан «басқа жаққа» ашылмайды.
       front.opening = { kind: 'door', side }
