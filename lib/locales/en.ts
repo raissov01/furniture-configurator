@@ -1338,13 +1338,17 @@ export const en: Record<string, string> = {
   // Нарық бағасы (marketPrices.ts)
   'Цены — рыночная медиана ({date}). Введите свои цены.': 'Prices are the market median ({date}). Enter your own prices.',
   'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.': 'Market-priced items: {n}. A price you change becomes your own and is never overwritten by market updates.',
-  'Вернуть все рыночные цены': 'Restore all market prices',
-  'Все позиции, для которых есть рыночные данные, получат рыночную медиану — ваши цены по ним будут заменены. Продолжить?': 'Every item with market data will get the market median — your prices for them will be replaced. Continue?',
   'рыночная': 'market',
   'своя': 'own',
   'Вернуть рыночную цену': 'Restore market price',
   '{label}: медиана, {date}, {n} предложений': '{label}: median, {date}, {n} offers',
   'Вернуть рыночную цену: {price}': 'Restore market price: {price}',
   'Цена изменена цехом — рыночные обновления её не трогают': 'Price set by the workshop — market updates never touch it',
+  'Вернуть цены по умолчанию': 'Restore default prices',
+  'Все позиции с рекомендуемой или рыночной ценой получат её — ваши цены по ним будут заменены. Продолжить?': 'Every item with a recommended or market price will get it back — your prices for them will be replaced. Continue?',
+  'Цены по умолчанию — рекомендуемые ({date}) и рыночная медиана. Введите свои цены.': 'Default prices are recommended ({date}) and the market median. Enter your own prices.',
+  'Рекомендуемая цена ({date})': 'Recommended price ({date})',
+  'Вернуть рекомендуемую цену': 'Restore recommended price',
+  'Вернуть рекомендуемую цену: {price}': 'Restore recommended price: {price}',
 
 }
