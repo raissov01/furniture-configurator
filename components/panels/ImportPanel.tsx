@@ -13,8 +13,7 @@
  * қауіпті. Нақты бөлмені жаңарту `onImport`-ты шақырушының ісі (немесе
  * кейін қосылатын стор экшені). Есепте бұл егжей-тегжейлі жазылған.
  *
- * Дизайн: градиент/blur/эмоджі ЖОҚ — тұтас түс + 1px жиек, қара тақырып
- * (docking жүйесінің өзі осылай: `border-neutral-800 bg-neutral-950`).
+ * Дизайн: градиент/blur/эмоджі жоқ — PRO100 ашық токендері мен 1px жиек.
  */
 import * as React from 'react'
 import { t as tr } from '@/lib/i18n'
@@ -44,7 +43,7 @@ function WallsPreview({ result }: { result: DxfImportResult }) {
   const toSvg = (x: number, z: number) => [pad + (x - minX) * scale, pad + (z - minZ) * scale] as const
 
   return (
-    <svg viewBox="0 0 320 240" className="h-40 w-full border border-neutral-800 bg-neutral-950">
+    <svg viewBox="0 0 320 240" className="h-40 w-full border border-neutral-800 bg-[var(--p100-dialog-content)]">
       {result.walls.map((wall, i) => {
         const [x1, y1] = toSvg(wall.start.x, wall.start.z)
         const [x2, y2] = toSvg(wall.end.x, wall.end.z)
@@ -55,7 +54,7 @@ function WallsPreview({ result }: { result: DxfImportResult }) {
             y1={y1}
             x2={x2}
             y2={y2}
-            stroke="#e5e5e5"
+            stroke="var(--p100-text)"
             strokeWidth={2}
             strokeLinecap="square"
           />
@@ -141,7 +140,7 @@ export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult)
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="w-full border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-left text-[11px] text-neutral-300 hover:border-neutral-600 hover:text-neutral-100"
+          className="w-full border border-neutral-800 bg-[var(--p100-dialog)] px-2 py-1.5 text-left text-[11px] text-neutral-300 hover:border-neutral-600 hover:text-neutral-100"
         >
           {fileName ?? tr('Выбрать DXF-файл…')}
         </button>
@@ -158,7 +157,7 @@ export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult)
             <select
               value={selectedLayer}
               onChange={(e) => onLayerChange(e.target.value)}
-              className="w-full border border-neutral-800 bg-neutral-900 px-2 py-1 text-[11px] text-neutral-200 outline-none focus:border-neutral-500"
+              className="w-full border border-neutral-800 bg-[var(--p100-dialog)] px-2 py-1 text-[11px] text-neutral-200 outline-none focus:border-neutral-500"
             >
               <option value={ALL_LAYERS}>{tr('Все слои')} ({preview.layers.length})</option>
               {preview.layers.map((l) => (
@@ -194,7 +193,7 @@ export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult)
             onClick={doImport}
             disabled={!canConfirmDxfImport(preview.walls.length, Boolean(onImport), imported)}
             title={!onImport ? tr('Только предпросмотр: откройте импорт в проекте') : undefined}
-            className="mt-auto w-full border border-neutral-700 bg-neutral-100 px-2 py-1.5 text-[11px] font-medium text-neutral-900 hover:bg-white disabled:cursor-not-allowed disabled:border-neutral-800 disabled:bg-neutral-900 disabled:text-neutral-600"
+            className="mt-auto w-full border border-neutral-700 bg-neutral-100 px-2 py-1.5 text-[11px] font-medium text-neutral-900 hover:bg-white disabled:cursor-not-allowed disabled:border-neutral-800 disabled:bg-[var(--p100-dialog)] disabled:text-neutral-600"
           >
             {imported ? tr('Импортировано') : tr('Импортировать')}
           </button>

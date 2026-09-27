@@ -108,7 +108,7 @@ export function ReplacePanel() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 bg-neutral-950 text-neutral-100">
+    <div className="flex h-full flex-col gap-3 bg-[var(--p100-dialog-content)] text-neutral-100">
       <p className="text-[10px] leading-snug text-neutral-500">
         {tr('Заменить один материал на другой одним действием — по всему проекту или по выбранным корпусам (Ctrl+Z отменяет).')}
       </p>
@@ -130,7 +130,7 @@ export function ReplacePanel() {
                 className={cn(
                   rowBase,
                   'text-left transition hover:border-neutral-600',
-                  oldMaterialId === m.materialId ? 'border-neutral-100 bg-neutral-900' : 'bg-neutral-950',
+                  oldMaterialId === m.materialId ? 'border-neutral-100 bg-[var(--p100-dialog)]' : 'bg-[var(--p100-dialog-content)]',
                 )}
                 title={rolesLabel(m)}
               >
@@ -216,11 +216,11 @@ export function ReplacePanel() {
       {justApplied ? <p className="text-[11px] text-emerald-500">{justApplied}</p> : null}
       {boardMaterials.length > 0 ? <section className="flex flex-col gap-1 border-t border-neutral-800 pt-2 text-[11px]">
         <p className="text-neutral-400">{tr('Замена материалов свободных панелей')}</p>
-        <select className="border border-neutral-700 bg-neutral-950 p-1" aria-label={tr('Материал свободной панели')} value={boardOldId} onChange={(event) => setBoardOldId(event.target.value)}>
+        <select className="border border-neutral-700 bg-[var(--p100-dialog-content)] p-1" aria-label={tr('Материал свободной панели')} value={boardOldId} onChange={(event) => setBoardOldId(event.target.value)}>
           <option value="">{tr('Старый материал')}</option>
           {boardMaterials.map((material) => <option key={material.id} value={material.id}>{material.name}</option>)}
         </select>
-        <select className="border border-neutral-700 bg-neutral-950 p-1" aria-label={tr('Новый материал свободной панели')} value={boardNewId} onChange={(event) => setBoardNewId(event.target.value)}>
+        <select className="border border-neutral-700 bg-[var(--p100-dialog-content)] p-1" aria-label={tr('Новый материал свободной панели')} value={boardNewId} onChange={(event) => setBoardNewId(event.target.value)}>
           <option value="">{tr('Новый материал')}</option>
           {projectCatalog.materials.map((material) => <option key={material.id} value={material.id}>{material.name}</option>)}
         </select>
