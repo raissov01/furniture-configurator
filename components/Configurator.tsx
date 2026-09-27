@@ -25,6 +25,7 @@ import { DecorPicker } from '@/components/DecorPicker'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
+import { drawerFillerStep } from '@/lib/drawerFillerStep'
 import { showLegacyDrawerProfileWarning } from '@/lib/legacyDrawerProfile'
 import { compatibleHinges, previewFrontEdit } from '@/lib/frontEdit'
 import { commitPropertiesName } from '@/lib/propertiesSession'
@@ -95,6 +96,8 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
   useEffect(() => { setHeightsDraft((shelves?.at ?? []).join(', ')) }, [shelves?.at])
   const stand = section.contents.find((c) => c.kind === 'stand')
   const drawers = section.contents.find((c) => c.kind === 'drawers')
+  const drawerContentIndex = section.contents.findIndex((c) => c.kind === 'drawers')
+  const fillerStep = drawerFillerStep(catalog.materials, cabinet.carcassMaterialId)
   const rod = section.contents.find((c) => c.kind === 'rod')
   const filling = section.contents.find((c) => c.kind === 'filling')
   const appliance = section.contents.find((c) => c.kind === 'appliance')
@@ -360,14 +363,19 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
               editSection(index, { contents }, field)
             }}
           />
-          <div className="grid grid-cols-2 gap-2">
+          {fillerStep === null ? <p role="alert" className="text-xs text-red-700 dark:text-red-400">
+            {tr('Материал корпуса не найден')}: {cabinet.carcassMaterialId}
+          </p> : <div className="grid grid-cols-2 gap-2">
             {([['left', 'Планка слева'], ['right', 'Планка справа']] as const).map(([side, label]) => (
               <Field key={side} label={tr(label)} hint={tr('сужает нишу, мм')}>
                 <NumberInput
                   value={drawers.fillers?.[side] ?? 0}
                   min={0}
                   max={200}
-                  step={16}
+                  step={fillerStep}
+                  invalid={invalidField === `sections[${index}].contents[${drawerContentIndex}].fillers.${side}`}
+                  field={`sections[${index}].contents[${drawerContentIndex}].fillers.${side}`}
+                  onDraftValidityChange={onDraftValidityChange}
                   onChange={(value) => {
                     const contents = section.contents.map((c) =>
                       c.kind === 'drawers'
@@ -378,7 +386,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
                 />
               </Field>
             ))}
-          </div>
+          </div>}
         </>
       ) : null}
 

@@ -611,6 +611,7 @@ export const uz: Record<string, string> = {
   'Направляющие': 'Yo\'naltiruvchilar',
   'размер короба зависит от них': 'quti o\'lchami ularga bog\'liq',
   'Из профиля цеха': 'Sex profilidan',
+  'Материал корпуса не найден': 'Korpus materiali topilmadi',
   'Профиль цеха: зазор {gap} мм с каждой стороны, схема отверстий Blum TANDEM. Артикул фурнитуры не определён; проверьте направляющие перед изготовлением.': 'Sex profili: har tomonda {gap} mm bo‘shliq, teshik sxemasi Blum TANDEM. Furnitura artikuli noma’lum; ishlab chiqarishdan oldin yo‘naltirgichlarni tekshiring.',
   'Роликовые (телескопические)': 'Rolikli (teleskopik)',
   'Шариковые полного выдвижения': 'Sharikli, to\'liq chiqadigan',

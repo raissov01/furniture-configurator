@@ -606,6 +606,7 @@ export const en: Record<string, string> = {
   'Направляющие': 'Runners',
   'размер короба зависит от них': 'the box size depends on them',
   'Из профиля цеха': 'From the shop profile',
+  'Материал корпуса не найден': 'Carcass material not found',
   'Профиль цеха: зазор {gap} мм с каждой стороны, схема отверстий Blum TANDEM. Артикул фурнитуры не определён; проверьте направляющие перед изготовлением.': 'Shop profile: {gap} mm clearance per side and a Blum TANDEM hole pattern. The hardware article is unknown; check the runners before manufacturing.',
   'Роликовые (телескопические)': 'Roller (telescopic)',
   'Шариковые полного выдвижения': 'Ball-bearing, full extension',
