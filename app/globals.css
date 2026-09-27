@@ -103,15 +103,59 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .dimline > .dimline-track::before { left: 0; }
 .dimline > .dimline-track::after { right: 0; }
 
+/* Амбер детальдың үстіндегі жазу — екі темада да бірдей (фон амбер). */
+:root {
+  --ink-on-amber: #3f3108;
+  --ink-on-amber-soft: #5c4712;
+}
+
+/*
+ * Лендинг қозғалысы. Әдепкі күй — соңғы күй: бұл ережелер тек JS
+ * `data-reveal` / `.cut-tick` қойғанда және адам қозғалысты өшірмегенде істейді.
+ * Жұмсақ шығу қисығы (expo-out), тек opacity + transform.
+ */
 @media (prefers-reduced-motion: no-preference) {
-  .rise {
-    animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  [data-reveal="pending"] > * { opacity: 0; }
+  [data-reveal="in"] > * {
+    animation: site-reveal 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(10px); }
+  @keyframes site-reveal {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* «Готовый → рез»: кромка шегерілген сан орнына жоғарыдан түседі. */
+  .cut-tick { animation: cut-tick 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @keyframes cut-tick {
+    from { opacity: 0; transform: translateY(-0.45em); }
     to { opacity: 1; transform: none; }
   }
 }
+
+/*
+ * Сайт батырмалары мен сілтемелері: тұтас түс + 1px жиек, көлеңкесіз.
+ * Басқанда 1px төмен түседі — физикалық батырма сияқты (қозғалыссыз режимде де
+ * түс ауысуы қалады, ол әрекетті растайды).
+ */
+:root { --cta-bg-hover: #2c3b4d; --ghost-hover: var(--paper); }
+:root[data-theme="dark"] { --cta-bg-hover: #f5b45c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cta-bg-hover: #f5b45c; } }
+.site-cta { background: var(--cta-bg); color: var(--cta-ink); border-color: var(--cta-bg); }
+.site-ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
+.site-cta, .site-ghost { transition: background-color 140ms ease-out, border-color 140ms ease-out, transform 90ms ease-out; }
+.site-cta:hover { background: var(--cta-bg-hover); border-color: var(--cta-bg-hover); }
+.site-ghost:hover { background: var(--ghost-hover); }
+.site-ghost[aria-expanded="true"] { background: var(--paper); }
+@media (prefers-reduced-motion: no-preference) {
+  .site-cta:active, .site-ghost:active { transform: translateY(1px); }
+}
+.site-link { color: var(--ink-soft); text-underline-offset: 0.3em; text-decoration-thickness: 1px; transition: color 140ms ease-out; }
+.site-link:hover { color: var(--ink); text-decoration-line: underline; }
+.site ::selection { background: var(--brand-amber); color: var(--brand-graphite); }
+
+/* Кромка шегерілген өлшем: статикалық күйде де ажыратылады. */
+.cut-changed { color: var(--oak-deep); }
+.cut-pending { color: var(--ink-soft); opacity: 0.55; }
 
 :where(a, button):focus-visible {
   outline: 2px solid var(--blueprint);

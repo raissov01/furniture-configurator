@@ -11,22 +11,11 @@ import type { ReactNode } from 'react'
 
 export function Dimension({ value, label }: { value: string; label?: string }) {
   return (
-    <div className="dimline py-6 text-[11px] tracking-[0.18em]" style={{ fontFamily: 'var(--font-mono)' }}>
+    <div className="dimline py-6 text-xs tracking-[0.06em]" style={{ fontFamily: 'var(--font-mono)' }}>
       <span>{label ?? ''}</span>
       <span className="dimline-track" />
       <span>{value}</span>
     </div>
-  )
-}
-
-export function Eyebrow({ children }: { children: ReactNode }) {
-  return (
-    <p
-      className="mb-3 text-[11px] uppercase tracking-[0.22em]"
-      style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}
-    >
-      {children}
-    </p>
   )
 }
 
@@ -55,16 +44,11 @@ export function Section({
 export function Cta({
   href, children, tone = 'solid',
 }: { href: string; children: ReactNode; tone?: 'solid' | 'ghost' }) {
-  const solid = tone === 'solid'
+  // Күйлер (hover / pressed / focus) — `globals.css`-тегі .site-cta / .site-ghost.
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-2 border px-5 py-3 text-sm transition"
-      style={
-        solid
-          ? { background: 'var(--cta-bg)', color: 'var(--cta-ink)', borderColor: 'var(--cta-bg)' }
-          : { background: 'transparent', color: 'var(--ink)', borderColor: 'var(--ink)' }
-      }
+      className={`${tone === 'solid' ? 'site-cta' : 'site-ghost'} inline-flex min-h-11 items-center gap-2 border px-5 py-3 text-sm`}
     >
       {children}
     </Link>
@@ -73,13 +57,15 @@ export function Cta({
 
 /** Титул блогы: сызбадағыдай, сол жақта белгі — оң жақта мазмұн. */
 export function Titled({
-  mark, title, children,
-}: { mark: string; title: string; children: ReactNode }) {
+  mark, markLabel, title, children,
+}: { mark: string; markLabel?: string; title: string; children: ReactNode }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-[5.5rem_minmax(0,1fr)]">
+    <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-3 sm:grid-cols-[3.5rem_minmax(0,1fr)]">
+      {/* Реттік сан мағына тасиды (қадамдар тізбегі), сондықтан «Шаг» сөзінсіз, үлкен цифр. */}
       <div
-        className="text-[11px] uppercase tracking-[0.2em]"
-        style={{ fontFamily: 'var(--font-mono)', color: 'var(--blueprint)' }}
+        aria-label={markLabel}
+        className="text-3xl leading-none tabular-nums sm:text-4xl"
+        style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--oak-deep)' }}
       >
         {mark}
       </div>
