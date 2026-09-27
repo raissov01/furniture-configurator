@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { defaultHingeSystems } from '../src/core/fittings'
 import { catalog, oneSection, withCabinet } from './fixtures'
-import { previewFrontEdit } from '../lib/frontEdit'
+import { availableVerifiedHinges, compatibleHinges, previewFrontEdit } from '../lib/frontEdit'
 
-const fullCatalog = catalog
+const hinges = defaultHingeSystems()
+const fullCatalog = { ...catalog, hingeSystems: hinges }
 const cabinet = withCabinet({ sections: oneSection({ fronts: { count: 2, mount: 'overlay' } }) })
 
 describe('F05 front controls', () => {
@@ -25,4 +27,31 @@ describe('F05 front controls', () => {
     expect(previewFrontEdit(cabinet, 0, { opening: 'left' }, fullCatalog)).toMatchObject({ ok: false, field: 'sections[0].fronts.opening' })
   })
 
+  it('only offers hinges matching mount and clears an old explicit hinge on mount change', () => {
+    const overlay = compatibleHinges(hinges, 'overlay')
+    const inset = compatibleHinges(hinges, 'inset')
+    expect(overlay.length).toBeGreaterThan(0)
+    expect(inset.map((h) => h.id)).toContain('hinge-blum-71b3750-inset')
+    expect(inset.every((h) => h.mount === 'inset')).toBe(true)
+    const withExplicit = withCabinet({ sections: oneSection({ fronts: {
+      count: 2, mount: 'overlay', hingeSystemId: overlay[0]!.id,
+    } }), settings: { shelfSetback: 20 } })
+    expect(previewFrontEdit(withExplicit, 0, { mount: 'inset' }, fullCatalog)).toMatchObject({
+      ok: true, fronts: { mount: 'inset', hingeSystemId: undefined },
+    })
+  })
+
+  it('explains when the shop has no matching hinge system', () => {
+    const insetCabinet = withCabinet({ ...cabinet, settings: { shelfSetback: 20 } })
+    expect(previewFrontEdit(insetCabinet, 0, { mount: 'inset' }, {
+      ...catalog, hingeSystems: compatibleHinges(hinges, 'overlay'),
+    })).toMatchObject({ ok: false, field: 'sections[0].fronts.hingeSystemId' })
+  })
+
+  it('offers only missing sourced articles for the shop hinge catalog', () => {
+    const choices = availableVerifiedHinges(compatibleHinges(hinges, 'overlay'))
+    expect(choices.map((hinge) => hinge.id)).toContain('hinge-blum-71b3750-inset')
+    expect(choices.every((hinge) => hinge.mount === 'inset' && Boolean(hinge.source))).toBe(true)
+    expect(availableVerifiedHinges(hinges)).toEqual([])
+  })
 })

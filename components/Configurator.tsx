@@ -25,7 +25,7 @@ import { DecorPicker } from '@/components/DecorPicker'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
-import { previewFrontEdit } from '@/lib/frontEdit'
+import { compatibleHinges, previewFrontEdit } from '@/lib/frontEdit'
 import { commitPropertiesName } from '@/lib/propertiesSession'
 import { sectionWidths } from '@/lib/sectionWidths'
 import { parseShelfHeights, shelfCountChange, shelfHeightsChange } from '@/lib/shelfDraft'
@@ -60,6 +60,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
   const catalog = useConfigurator((s) => s.catalog)
   const cabinet = useConfigurator(activeCabinet)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
+  const setShopOpen = useConfigurator((s) => s.setShopOpen)
   const [frontError, setFrontError] = useState<{ field: string; message: string; allowed?: string | undefined } | null>(null)
   const frontDraftField = `sections[${index}].fronts`
   useEffect(() => {
@@ -432,6 +433,9 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
           <b>{frontError.field}</b>: {tr(frontError.message)}
           {frontError.allowed ? ` — ${frontError.allowed}` : null}
           {frontError.field.endsWith('.opening') ? ` ${tr('Добавьте отдельную секцию для каждой двери.')}` : null}
+          {frontError.field.endsWith('.hingeSystemId') ? (
+            <button type="button" className="ml-1 underline" onClick={() => setShopOpen(true)}>{tr('Открыть настройки цеха')}</button>
+          ) : null}
         </div>
       ) : null}
 
@@ -583,8 +587,11 @@ function FrontFittings({
   onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const shop = useConfigurator((s) => s.shop)
+  const setShopOpen = useConfigurator((s) => s.setShopOpen)
   const systems = shop.hingeSystems
-  const hingeId = fronts.hingeSystemId ?? systems[0]?.id ?? ''
+  const matchingSystems = compatibleHinges(systems, fronts.mount)
+  const selectedHinge = fronts.hingeSystemId ?? matchingSystems[0]?.id ?? ''
+  const hingeId = matchingSystems.some((system) => system.id === selectedHinge) ? selectedHinge : ''
 
   const milling: MillingSpec | null = fronts.milling ?? null
   const pattern = milling ? millingPattern(milling.patternId) : null
@@ -716,10 +723,20 @@ function FrontFittings({
       <Field label={tr('Петля')}>
         <Select
           value={hingeId}
+          disabled={matchingSystems.length === 0}
           onChange={(hingeSystemId) => onChange({ hingeSystemId }, 'section.hinge')}
-          options={systems.map((h) => ({ value: h.id, label: h.name }))}
+          options={[
+            ...(hingeId ? [] : [{ value: '', label: tr('Выберите подходящую петлю'), disabled: true }]),
+            ...matchingSystems.map((h) => ({ value: h.id, label: h.name })),
+          ]}
         />
       </Field>
+      {matchingSystems.length === 0 ? (
+        <p role="alert" className="border border-red-500 p-2 text-[11px] text-red-700 dark:text-red-400">
+          {tr('В каталоге цеха нет петли для этого типа фасада. Добавьте артикул в настройках цеха.')}
+          <button type="button" className="ml-1 underline" onClick={() => setShopOpen(true)}>{tr('Открыть настройки цеха')}</button>
+        </p>
+      ) : null}
 
       <HandleFields
         label={tr('Ручка')}

@@ -1,5 +1,15 @@
-import { ConfigValidationError, generateCabinet } from '../src/core/index'
-import type { CabinetConfig, Catalog, SectionFronts, SettingsOverride } from '../src/core/index'
+import { ConfigValidationError, defaultHingeSystems, generateCabinet } from '../src/core/index'
+import type { CabinetConfig, Catalog, HingeSystem, SectionFronts, SettingsOverride } from '../src/core/index'
+
+export function compatibleHinges(systems: readonly HingeSystem[], mount: SectionFronts['mount']): HingeSystem[] {
+  return systems.filter((system) => system.mount === mount)
+}
+
+/** Supplier documented seed articles that this shop has not yet added. */
+export function availableVerifiedHinges(systems: readonly HingeSystem[]): HingeSystem[] {
+  const existing = new Set(systems.map((system) => system.id))
+  return defaultHingeSystems().filter((system) => system.mount === 'inset' && Boolean(system.source) && !existing.has(system.id))
+}
 
 export type FrontEditResult =
   | { ok: true; fronts: SectionFronts | null }
@@ -25,6 +35,14 @@ export function previewFrontEdit(
     // A deliberately selected hinge belongs to the old mounting style.
     // Let the core choose the first compatible system for the new style.
     fronts.hingeSystemId = undefined
+  }
+  if (fronts.count > 0 && catalog.hingeSystems && compatibleHinges(catalog.hingeSystems, fronts.mount).length === 0) {
+    return {
+      ok: false,
+      field: `sections[${sectionIndex}].fronts.hingeSystemId`,
+      message: 'В каталоге цеха нет петли для этого типа фасада. Добавьте артикул в настройках цеха.',
+      allowed: `mount=${fronts.mount}`,
+    }
   }
   const nextFronts = fronts.count > 0 ? fronts : null
   const nextCabinet = {

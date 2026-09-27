@@ -109,13 +109,13 @@ export function NumberInput({
 }
 
 export function Select<T extends string>({
-  value, onChange, options,
-}: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[] }) {
+  value, onChange, options, disabled,
+}: { value: T; onChange: (v: T) => void; options: { value: T; label: string; disabled?: boolean }[]; disabled?: boolean }) {
   const cls = useControl()
   return (
-    <select className={cls} value={value} onChange={(e) => onChange(e.target.value as T)}>
+    <select className={cls} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as T)}>
       {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
+        <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>
       ))}
     </select>
   )
