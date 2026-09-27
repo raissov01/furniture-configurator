@@ -9,6 +9,7 @@
 import { zipSync, strToU8 } from 'fflate'
 import { CUT_LIST_COLUMNS, formatCutList } from '../cutList'
 import type { Catalog, CutListRow, Panel } from '../types'
+import type { SpecialPartRow } from '../specialParts'
 
 /** 1980-01-01 00:00 UTC — ZIP форматындағы ең ерте жарамды күн. */
 const FIXED_MTIME = Date.UTC(1980, 0, 1)
@@ -149,7 +150,8 @@ export function simpleTableXlsx(sheetName: string, header: string[], rows: (stri
  * Деталировка: ӘР МАТЕРИАЛҒА БІР ПАРАҚ, соңында қорытынды жол.
  * Тақырыпта ГОТОВЫЙ (клиент) мен РЕЗ (цех) бағандары бөлек түспен.
  */
-export function cutListToXlsx(panels: Panel[], catalog: Catalog, projectName: string): Uint8Array {
+export function cutListToXlsx(panels: Panel[], catalog: Catalog, projectName: string,
+  specialParts: readonly SpecialPartRow[] = []): Uint8Array {
   const rows = formatCutList(panels, catalog)
   const byMaterial = new Map<string, CutListRow[]>()
   for (const row of rows) {
@@ -192,6 +194,24 @@ export function cutListToXlsx(panels: Panel[], catalog: Catalog, projectName: st
         total,
       ],
     })
+  }
+
+  for (const section of ['Токарлық бұйым', 'Иілген деталь'] as const) {
+    const parts = specialParts.filter((part) => part.section === section)
+    if (!parts.length) continue
+    const headers = section === 'Токарлық бұйым'
+      ? ['Наименование', 'Материал', 'Высота, мм', 'Макс. диаметр, мм', 'Кол-во', 'Операция', 'Цена/шт, тиын']
+      : ['Наименование', 'Материал', 'Развёртка, мм', 'Высота, мм', 'Радиус, мм', 'Угол, °', 'Кол-во', 'Операция', 'Цена/шт, тиын']
+    const body: Cell[][] = parts.map((part) => (section === 'Токарлық бұйым'
+      ? [part.name, part.materialName, part.height, part.maxDiameter ?? '', part.quantity, part.operation, part.unitPrice]
+      : [part.name, part.materialName, part.developedLength ?? '', part.height, part.radius ?? '',
+        part.angleDegrees ?? '', part.quantity, part.operation, part.unitPrice]
+    ).map((value) => ({ value })))
+    sheets.push({ name: safeSheetName(section, used), rows: [
+      [{ value: projectName, style: STYLE_HEADER }],
+      headers.map((value) => ({ value, style: STYLE_HEADER })),
+      ...body,
+    ] })
   }
 
   // Присадка бөлек парақта: цехта оны бөлек адам оқиды.

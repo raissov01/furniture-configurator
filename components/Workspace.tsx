@@ -69,6 +69,8 @@ import { isTouchDevice } from '@/lib/walkInput'
 import { usePanels } from '@/lib/usePanels'
 import { useTreeSceneItems } from '@/lib/useTreeSceneItems'
 import { useProjectProduction } from '@/lib/useProjectProduction'
+import { bytesToBase64, parseObjSolidForScene, parseTdsSolid } from '@/lib/meshImport'
+import { MAX_IMPORTED_MODEL_BYTES, MAX_IMPORTED_TEXTURE_BYTES } from '@/src/core/import/tds'
 import { productionAvailability } from '@/lib/productionAvailability'
 import { assemblyStepView } from '@/lib/assemblyStepView'
 import { parseSilhouetteHeight } from '@/lib/silhouetteInput'
@@ -168,6 +170,46 @@ export function Workspace() {
   const addCabinet = useConfigurator((s) => s.addCabinet)
   const addBoard = useConfigurator((s) => s.addBoard)
   const addSolid = useConfigurator((s) => s.addSolid)
+  const addSpecialPart = useConfigurator((s) => s.addSpecialPart)
+  const addImportedSolid = useConfigurator((s) => s.addImportedSolid)
+  const importInputRef = useRef<HTMLInputElement>(null)
+  const [importUnit, setImportUnit] = useState(1)
+  const [specialError, setSpecialError] = useState<string | null>(null)
+  const insertSpecialPart = (kind: 'lathe' | 'bent') => {
+    try { addSpecialPart(kind); setSpecialError(null) }
+    catch (cause) { setSpecialError(cause instanceof Error ? cause.message : String(cause)) }
+  }
+  const importSolidFiles = async (files: FileList | null) => {
+    if (!files) return
+    try {
+      const selected = Array.from(files)
+      const models = selected.filter((file) => /\.(?:3ds|obj)$/i.test(file.name))
+      if (models.length !== 1) throw new Error(tr('Выберите один файл 3DS или OBJ'))
+      const model = models[0]!
+      if (model.size > MAX_IMPORTED_MODEL_BYTES) throw new Error(tr('Файл 3D превышает лимит 2 МБ'))
+      const textureFiles = selected.filter((file) => /\.(?:png|jpe?g|webp)$/i.test(file.name))
+      if (textureFiles.reduce((sum, file) => sum + file.size, 0) > MAX_IMPORTED_TEXTURE_BYTES) {
+        throw new Error(tr('Текстуры превышают лимит 4 МБ'))
+      }
+      const textures: Record<string, string> = {}
+      for (const file of textureFiles) {
+        const mime = /\.png$/i.test(file.name) ? 'image/png' : /\.webp$/i.test(file.name) ? 'image/webp' : 'image/jpeg'
+        textures[file.name.toLowerCase()] = `data:${mime};base64,${bytesToBase64(new Uint8Array(await file.arrayBuffer()))}`
+      }
+      const id = `import-${crypto.randomUUID()}`
+      const options = { id, name: model.name.replace(/\.(?:3ds|obj)$/i, ''), mmPerUnit: importUnit }
+      const bytes = new Uint8Array(await model.arrayBuffer())
+      const node = /\.3ds$/i.test(model.name)
+        ? parseTdsSolid(bytes, options, textures).node
+        : parseObjSolidForScene(new TextDecoder().decode(bytes), options)
+      addImportedSolid(node)
+      setSpecialError(null)
+    } catch (cause) {
+      setSpecialError(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = ''
+    }
+  }
   const addAnnotation = useConfigurator((s) => s.addAnnotation)
   const removeBoard = useConfigurator((s) => s.removeBoard)
   const removeAnnotation = useConfigurator((s) => s.removeAnnotation)
@@ -424,7 +466,7 @@ export function Workspace() {
   const liveTotal = useMemo((): { total: number } | { missing: true } | null => {
     if (production.error) return null
     try {
-      const price = approvalPrice(deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides, production.manualItems)
+      const price = approvalPrice(deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides, production.manualItems, production.specialParts)
       return price.kind === 'missing' ? { missing: true } : { total: price.total }
     } catch (error) {
       // Жарамсыз конфиг кезінде (теріп жатқанда) баға уақытша көрінбейді — бұл
@@ -432,7 +474,7 @@ export function Workspace() {
       console.debug('Цена в тулбаре не посчитана', error)
       return null
     }
-  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides, production.manualItems, production.error])
+  }, [deferredPanels, catalog, shop, projectHardware, moduleWidths, priceOverrides, production.manualItems, production.specialParts, production.error])
   const [shared, setShared] = useState<string | null>(null)
   const copyClientLink = async () => {
     let link: string
@@ -549,6 +591,7 @@ export function Workspace() {
         void runShopExport(command.format, {
           cabinet: command.format === 'pdf' && command.scope === 'project' ? pdfCabinet : command.scope === 'cabinet' ? cabinet : undefined,
           panels: selectShopExportPanels(command.scope, command.format, activePanels, projectPanels),
+          specialParts: command.scope === 'project' ? production.specialParts : [],
           pdfAssembly: command.scope === 'project' ? pdfAssembly : undefined,
           catalog, settings, projectInfo,
           exportId: command.scope === 'project' ? 'project' : undefined,
@@ -575,6 +618,8 @@ export function Workspace() {
       case 'addCabinet': addCabinet(); break
       case 'addBoard': addBoard(); break
       case 'addSolid': addSolid(); break
+      case 'addSpecialPart': insertSpecialPart(command.kind); break
+      case 'importSolid': importInputRef.current?.click(); break
       case 'removeBoard': if (editableBoard && !activeBoardJoint) removeBoard(activeId); break
       case 'duplicate': duplicateCabinet(activeId); break
       case 'mirror': mirrorSelected(); break
@@ -591,7 +636,9 @@ export function Workspace() {
   const menus = classicMenus({
     canUndo, canRedo, activeEditable, canMirrorSelected, editableBoard: editableBoard && !activeBoardJoint,
     canRemoveCabinet: cabinets.length >= 2 && activeEditable,
-    canExport: projectPanels.length > 0 && productionState.exportsAvailable,
+    canExport: (projectPanels.length > 0 || production.specialParts.length > 0) && productionState.exportsAvailable,
+    canExportPanels: projectPanels.length > 0 && productionState.exportsAvailable,
+    canExportDxf: (projectPanels.length > 0 || production.specialParts.some((part) => part.section === 'Иілген деталь')) && productionState.exportsAvailable,
     canExportPdf: Boolean(pdfCabinet) && productionState.exportsAvailable,
     canExportActiveCabinet: hasActiveCabinet && productionState.exportsAvailable,
     productionError: Boolean(production.error),
@@ -639,6 +686,8 @@ export function Workspace() {
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
       { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
+      { icon: 'box', label: tr('Токарная деталь'), action: () => insertSpecialPart('lathe') },
+      { icon: 'box', label: tr('Гнутая деталь'), action: () => insertSpecialPart('bent') },
       { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
       { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
@@ -674,6 +723,7 @@ export function Workspace() {
         manualItems={production.manualItems}
         projectName={projectName}
         moduleWidths={moduleWidths}
+        specialParts={production.specialParts}
       /> : null}
       {/*
         PRO100-ДЕГІ МӘЗІР ЖОЛАҒЫ (docs/pro100/ui-design.md, §1: «Файл · Правка ·
@@ -802,7 +852,7 @@ export function Workspace() {
               </Button>
             )
           ) : null}
-          {projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet ?? undefined} pdfCabinet={pdfCabinet} pdfAssembly={pdfAssembly} panels={activePanels} projectPanels={projectPanels} projectName={projectName} /> : null}
+          {(projectPanels.length > 0 || production.specialParts.length > 0) && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet ?? undefined} pdfCabinet={pdfCabinet} pdfAssembly={pdfAssembly} panels={activePanels} projectPanels={projectPanels} specialParts={production.specialParts} projectName={projectName} /> : null}
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}
@@ -1224,7 +1274,7 @@ export function Workspace() {
           data-tour="cutlist"
         >
           {productionState.cutListAvailable
-            ? <CutListTable panels={projectPanels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
+            ? <CutListTable panels={projectPanels} catalog={catalog} specialParts={production.specialParts} collapsed={!cutOpen} onToggle={toggleCut} />
             : <div role="status" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
               {tr('Деталировка временно недоступна. Экспорт заблокирован.')}
             </div>}
@@ -1287,6 +1337,17 @@ export function Workspace() {
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
             <Button onClick={addBoard}>{tr('+ доска')}</Button>
             <Button onClick={addSolid}>{tr('+ блок')}</Button>
+            <Button onClick={() => insertSpecialPart('lathe')}>{tr('Токарная деталь')}</Button>
+            <Button onClick={() => insertSpecialPart('bent')}>{tr('Гнутая деталь')}</Button>
+            <label className="text-xs">{tr('Единица 3D')}
+              <select className="ml-1 border border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-900"
+                value={importUnit} onChange={(event) => setImportUnit(Number(event.target.value))}>
+                <option value={1}>мм</option><option value={10}>см</option><option value={1000}>м</option>
+              </select>
+            </label>
+            <Button onClick={() => importInputRef.current?.click()}>{tr('Импорт → 3DS/OBJ')}</Button>
+            <input ref={importInputRef} type="file" accept=".3ds,.obj,.png,.jpg,.jpeg,.webp" multiple className="sr-only"
+              aria-label={tr('Файлы 3DS/OBJ и текстуры')} onChange={(event) => { void importSolidFiles(event.target.files) }} />
             <Button onClick={addAnnotation} testId="add-annotation">{tr('+ текст')}</Button>
             {activeBoard && <Button onClick={() => removeBoard(activeId)}
               disabled={!editableBoard || Boolean(activeBoardJoint)}>{tr('Удалить доску')}</Button>}
@@ -1300,6 +1361,7 @@ export function Workspace() {
               {tr('Удалить')}
             </Button>
           </div>
+          {specialError && <p role="alert" className="border-t border-red-200 px-2 py-1 text-xs text-red-700 dark:border-red-900 dark:text-red-300">{specialError}</p>}
         </aside>
       </div>
       {classic && <footer className="p100-status hidden lg:flex" role="status" data-testid="p100-status">

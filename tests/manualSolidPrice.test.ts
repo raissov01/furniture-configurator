@@ -34,3 +34,34 @@ it('solid қолмен қойылған бағасы сметаға түйін �
   expect(publicCopy.priceOverrides?.salePrice).toBe(withPrice.total)
   expect(() => useConfigurator.getState().editSolid(id, { manualPriceTiyn: -1 })).toThrow(/manualPriceTiyn/)
 })
+
+it('декор мен арнайы детальдың бағасын екеуін де бір рет санайды', () => {
+  const state = useConfigurator.getState()
+  const nesting = nestPanels([], state.catalog)
+  const price = priceProject([], nesting, state.shop, [], [], undefined,
+    [{ nodeId: 'decor-1', name: 'Decor', priceTiyn: 1_200 }],
+    [{ nodeId: 'lathe-1', section: 'Токарлық бұйым', name: 'Leg', materialId: state.catalog.materials[0]!.id,
+      materialName: 'Board', quantity: 2, height: 420, maxDiameter: 40,
+      operation: 'токарлық операция', unitPrice: 3_400 }])
+  expect(price.manualItems).toEqual([expect.objectContaining({ cost: 1_200 })])
+  expect(price.hardware).toContainEqual(expect.objectContaining({ id: 'special-lathe-1', cost: 6_800 }))
+  expect(price.goods).toBe(8_000)
+})
+
+it('арнайы детальдың ішіндегі ескі декор бағасы қосылмайды және ашық көшірмеде екі баға да жасырылған', () => {
+  const id = useConfigurator.getState().addSpecialPart('lathe')
+  const node = findNode(useConfigurator.getState().root, id)
+  if (node?.kind !== 'solid' || !node.solid.fabrication) throw new Error('lathe solid missing')
+  useConfigurator.getState().editSolid(id, { manualPriceTiyn: 999_999,
+    fabrication: { ...node.solid.fabrication, unitPrice: 3_400 } })
+  const state = useConfigurator.getState()
+  const saved = parseProjectV4(state.exportProject())
+  const scene = flattenTree(saved.root, state.catalog, state.projectSettings ?? state.shop.settings, state.layers)
+  const production = projectProduction(saved.root, scene, state.catalog.materials)
+  expect(production.manualItems).toEqual([])
+  expect(production.specialParts).toHaveLength(1)
+  const publicCopy = toPublicProject(saved)
+  const publicNode = findNode(publicCopy.root, id)
+  expect(publicNode?.kind === 'solid' ? publicNode.solid.manualPriceTiyn : undefined).toBeUndefined()
+  expect(publicNode?.kind === 'solid' ? publicNode.solid.fabrication?.unitPrice : undefined).toBe(0)
+})

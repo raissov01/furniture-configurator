@@ -4,6 +4,8 @@ import { IDENTITY_TRANSFORM } from '@/src/core/tree'
 import { ManufacturerModelSourceSchema } from '@/src/core/manufacturerAssets'
 import type { GroupNode, SceneNode, SolidNode, SolidSpec } from '@/src/core/tree'
 import type { Layer, Vec3 } from '@/src/core/index'
+import type { Material } from '@/src/core/index'
+import { specialSolidSize } from '@/src/core/specialParts'
 
 /** Starting UI dimensions for a decorative object; it is never cut from sheet material. */
 export const DEFAULT_SOLID_SIZE: Vec3 = { x: 100, y: 100, z: 100 }
@@ -25,7 +27,7 @@ function validVec(value: Vec3, prefix: string, positive: boolean): void {
 
 export function editSolidTree(root: GroupNode, id: string, layers: Layer[], change: {
   solid?: Partial<SolidSpec>; position?: Vec3
-}): GroupNode {
+}, materials: readonly Material[] = []): GroupNode {
   const source = assertTreeNodeEditable(root, id, layers)
   if (source.kind !== 'solid') throw new ConfigValidationError('nodeId', 'декоративті блок емес', 'solid id')
   const solid = { ...source.solid, ...change.solid }
@@ -36,6 +38,11 @@ export function editSolidTree(root: GroupNode, id: string, layers: Layer[], chan
     const parsed = ManufacturerModelSourceSchema.safeParse(solid.modelSource)
     if (!parsed.success) throw new ConfigValidationError('solid.modelSource',
       parsed.error.issues[0]?.message ?? 'өндіруші сілтемесі жарамсыз', 'HTTPS бет және артикул')
+  }
+  if (solid.fabrication) {
+    const material = materials.find((item) => item.id === solid.fabrication?.materialId)
+    if (!material) throw new ConfigValidationError('fabrication.materialId', 'материал табылмады', 'каталогтағы материал id')
+    solid.size = specialSolidSize(solid.fabrication, material.minBendRadiusMm)
   }
   const position = change.position ?? source.transform.pos
   validVec(solid.size, 'solid.size', true)

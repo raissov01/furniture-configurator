@@ -114,8 +114,20 @@ export function ShopSettings() {
         ? { ...m, slab: { ...m.slab, pricePerMeter: tiyn } }
         : m)),
     })
-  const setSheet = (id: string, patch: { sheetWidth?: number; sheetHeight?: number }) =>
+  const setSheet = (id: string, patch: { sheetWidth?: number; sheetHeight?: number; minBendRadiusMm?: number | undefined }) =>
     editShop({ materials: shop.materials.map((m) => (m.id === id ? { ...m, ...patch } : m)) })
+  const bendRadiusField = (m: (typeof shop.materials)[number]) => <label className="block text-[11px] text-neutral-500">
+    {tr('Мин. радиус гибки, мм')}
+    <input className="ml-1 w-20 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900"
+      inputMode="numeric" value={m.minBendRadiusMm ?? ''} aria-label={`${m.name}: ${tr('Мин. радиус гибки, мм')}`}
+      onChange={(event) => {
+        const raw = event.target.value
+        if (raw === '') { setSheet(m.id, { minBendRadiusMm: undefined }); return }
+        if (/^[1-9]\d*$/.test(raw) && Number.isSafeInteger(Number(raw))) {
+          setSheet(m.id, { minBendRadiusMm: Number(raw) })
+        }
+      }} />
+  </label>
   const setBandPrice = (id: string, tiyn: number) =>
     editShop({ edgeBands: shop.edgeBands.map((b) => (b.id === id ? { ...b, pricePerMeter: tiyn } : b)) })
   const setHardwarePrice = (id: string, tiyn: number) =>
@@ -249,6 +261,7 @@ export function ShopSettings() {
                   <span key="t" className="tabular-nums text-neutral-500">{m.thickness}</span>,
                   <span key="s" className="text-[11px] tabular-nums text-neutral-500">
                     Плита: {m.slab.stockLengths.join(' / ')} мм
+                    {bendRadiusField(m)}
                   </span>,
                   <span key="p" className="flex items-center gap-1">
                     <MoneyInput value={m.slab.pricePerMeter} label={`${m.name}: ${tr('Цена')}`}
@@ -259,11 +272,12 @@ export function ShopSettings() {
                 ]
                 : [
                   <span key="t" className="tabular-nums text-neutral-500">{m.thickness}</span>,
-                  <span key="s" className="flex items-center gap-1">
-                    <NumberInput value={m.sheetWidth} min={500} step={10}
+                  <span key="s" className="block">
+                    <span className="flex items-center gap-1"><NumberInput value={m.sheetWidth} min={500} step={10}
                       onChange={(sheetWidth) => setSheet(m.id, { sheetWidth })} />
                     <NumberInput value={m.sheetHeight} min={500} step={10}
-                      onChange={(sheetHeight) => setSheet(m.id, { sheetHeight })} />
+                      onChange={(sheetHeight) => setSheet(m.id, { sheetHeight })} /></span>
+                    {bendRadiusField(m)}
                   </span>,
                   <span key="p" className="flex items-center gap-1">
                     <MoneyInput value={m.pricePerSheet} label={`${m.name}: ${tr('Цена')}`}

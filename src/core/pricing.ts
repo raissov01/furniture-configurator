@@ -21,6 +21,8 @@ import type { Discount, Panel, PriceOverrides } from './types'
 import { SERVICE_IDS, SERVICE_NAMES, SHEET_SERVICE_IDS, SHEET_SERVICE_NAMES } from './shop'
 import type { ServiceId, ServiceRate, SheetServiceId, ShopProfile } from './shop'
 import { scaleSalePrice, scalingAreaMm2 } from './salePriceScaling'
+import { specialPartsPrice } from './specialParts'
+import type { SpecialPartRow } from './specialParts'
 
 export type PriceLine = {
   id: string
@@ -40,8 +42,8 @@ export type PriceLine = {
 
 export type PriceSource = {
   panelId?: string | undefined
-  placementIndex?: number | undefined
   nodeId?: string | undefined
+  placementIndex?: number | undefined
   /** Жолдың өлшем бірлігімен есептелген үлес. */
   qty: number
   /** Жол құнының осы көзге тиесілі бүтін тиын үлесі. */
@@ -329,6 +331,8 @@ export function priceProject(
    */
   overrides?: PriceOverrides,
   manualItems: ManualPriceItem[] = [],
+  /** Токарлық/иілген бұйымдар: парақ раскройынан бөлек, даналық құн. */
+  specialParts: readonly SpecialPartRow[] = [],
 ): PriceBreakdown {
   if (nesting.unplaced.length > 0) {
     throw new ConfigValidationError(
@@ -591,6 +595,15 @@ export function priceProject(
       }
     })
     .sort((a, b) => b.cost - a.cost)
+  specialPartsPrice(specialParts) // Дана саны, тиын және жалпы сома бүтін әрі қауіпсіз.
+  for (const part of specialParts) {
+    const cost = part.quantity * part.unitPrice
+    if (!Number.isSafeInteger(cost)) throw new ConfigValidationError('specialParts.unitPrice', 'сома ауқымнан асты', 'қауіпсіз бүтін тиын')
+    if (part.unitPrice <= 0) missingPrices.push(`${part.name}: цена за штуку`)
+    hardware.push({ id: `special-${part.nodeId}`, name: part.name, qty: part.quantity,
+      unit: 'шт', unitPrice: part.unitPrice, cost,
+      sources: [{ nodeId: part.nodeId, qty: part.quantity, cost }] })
+  }
 
   // Парақ пен параққа тәуелді қызмет бір панельге тікелей тиесілі емес.
   // Олардың құнын сол материалдың рез ауданына пропорционал бөлеміз;

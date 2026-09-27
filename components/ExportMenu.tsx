@@ -14,12 +14,12 @@ import { Menu, MenuItem } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
 import { runShopExport, type ShopExportFormat } from '@/lib/shopExport'
 import { selectShopExportPanels, type ShopExportScope } from '@/lib/shopExportScope'
-import type { CabinetConfig, Panel } from '@/src/core/index'
+import type { CabinetConfig, Panel, SpecialPartRow } from '@/src/core/index'
 
-export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPanels, projectName, exportId, exportName }: {
+export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPanels, specialParts = [], projectName, exportId, exportName }: {
   cabinet?: CabinetConfig | undefined; pdfCabinet?: CabinetConfig | undefined
   pdfAssembly?: { nodeId: string; panels: Panel[]; nodeCount: number } | undefined
-  panels: Panel[]; projectPanels?: Panel[]; projectName?: string; exportId?: string; exportName?: string
+  panels: Panel[]; projectPanels?: Panel[]; specialParts?: readonly SpecialPartRow[]; projectName?: string; exportId?: string; exportName?: string
 }) {
   const catalog = useConfigurator((s) => s.catalog)
   const projectInfo = useConfigurator((s) => s.projectInfo)
@@ -33,6 +33,7 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
       await runShopExport(format, {
         cabinet: format === 'pdf' ? (scope === 'project' ? pdfCabinet : cabinet) : scope === 'cabinet' ? cabinet : undefined,
         panels: selectShopExportPanels(scope, format, panels, projectPanels ?? panels),
+        specialParts: scope === 'project' ? specialParts : [],
         pdfAssembly: scope === 'project' ? pdfAssembly : undefined,
         catalog, settings, projectInfo,
         exportId: scope === 'project' ? 'project' : exportId,
@@ -50,10 +51,10 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
         <MenuItem disabled={busy !== null} onClick={() => void run('xlsx', projectPanels ? 'project' : 'cabinet')}>
           XLSX — {tr('деталировка')}
         </MenuItem>
-        <MenuItem disabled={busy !== null} onClick={() => void run('csv', projectPanels ? 'project' : 'cabinet')}>
+        <MenuItem disabled={busy !== null || (projectPanels ?? panels).length === 0} onClick={() => void run('csv', projectPanels ? 'project' : 'cabinet')}>
           CSV — {tr('на распил')}
         </MenuItem>
-        <MenuItem disabled={busy !== null} title={tr('DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива. Полный ЧПУ CSV — в раскрое.')} onClick={() => void run('dxf', projectPanels ? 'project' : 'cabinet')}>
+        <MenuItem disabled={busy !== null || ((projectPanels ?? panels).length === 0 && !specialParts.some((part) => part.section === 'Иілген деталь'))} title={tr('DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива. Полный ЧПУ CSV — в раскрое.')} onClick={() => void run('dxf', projectPanels ? 'project' : 'cabinet')}>
           DXF — {tr('на станок')}
         </MenuItem>
         <p className="px-2 py-1 text-[11px] text-neutral-500">

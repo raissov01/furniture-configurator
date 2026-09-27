@@ -60,7 +60,11 @@ rectangular panel, its cut size is still derived from its edge banding, and
 panel, not what a panel is.
 
 **Non-goals (do not build these unless explicitly asked):**
-- Organic / curved modelling — lathed or bent parts. Nodes are boxes.
+- 2026-09-27: токарлық және иілген деталь пайдаланушы сұрауымен қосылды.
+  Токарлық профиль мен радиусты иілім жеке өндірістік позиция: тікбұрышты
+  `Panel[]` раскройына/автоприсадкасына кірмейді; иілімнің развёрткасы жеке
+  операция және DXF контуры. Импортталған 3DS/OBJ сәндік solid болып қалады.
+  Қалған еркін тақталар §0.2, §4.3 және `Panel[]` ережесін сақтайды.
 - Automatic joint detection between hand-placed boards. Drilling for a free
   board is entered by hand in `DrillEditor`; `autoJoint.ts` is a later spec.
 - CNC G-code post-processors. We export DXF + drilling data; postprocessing is downstream.

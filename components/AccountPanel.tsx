@@ -474,7 +474,6 @@ export function AccountPanel() {
       loadProject(parsed)
       rememberCloud({ id, revision: data.revision! })
       setCloudConflict(null)
-      await bindCloudProject(id, parsed)
       setError(null)
       setOpen(false)
     } catch (e) {

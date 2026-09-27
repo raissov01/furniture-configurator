@@ -36,7 +36,7 @@ function cncButton(html: string): string {
 }
 
 describe('/cut reads canonical tree production', () => {
-  it('links the collapsed mobile export toggle to its action group', () => {
+  it('keeps every export action reachable at a 390 px viewport', () => {
     const html = renderToStaticMarkup(createElement(CutPage))
     expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*aria-controls="cut-export-actions"[^>]*>Экспорт<\/button>/)
     expect(html).toMatch(/<div[^>]*id="cut-export-actions"[^>]*data-testid="cut-export-actions"/)

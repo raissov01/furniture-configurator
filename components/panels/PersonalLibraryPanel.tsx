@@ -7,6 +7,7 @@ import { createLibraryItem, findNode, mergeLibraryCatalog, replaceLibraryMateria
 import type { LibraryItem, SceneNode } from '@/src/core/index'
 import { exportLibraryJson, importLibraryJson, readLocalLibrary, writeLocalLibrary } from '@/lib/libraryLocal'
 import { importUploadSummary, LIBRARY_AUTH_CHANGED_EVENT, libraryUploadOutcome } from '@/lib/librarySyncUi'
+import { LATHE_PROFILES } from '@/src/core/specialParts'
 
 const inputStyle = 'min-w-0 border border-neutral-700 bg-neutral-950 px-1.5 py-1 text-xs text-neutral-100'
 const buttonStyle = 'border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-40'
@@ -37,6 +38,8 @@ export function PersonalLibraryPanel() {
   const projectSettings = useConfigurator((state) => state.projectSettings)
   const shopSettings = useConfigurator((state) => state.shop.settings)
   const placeLibraryItem = useConfigurator((state) => state.placeLibraryItem)
+  const addSpecialPart = useConfigurator((state) => state.addSpecialPart)
+  const editSolid = useConfigurator((state) => state.editSolid)
   const [local, setLocal] = React.useState<LibraryItem[]>([])
   const [remote, setRemote] = React.useState<LibraryItem[]>([])
   const [nodeId, setNodeId] = React.useState(activeId)
@@ -191,6 +194,25 @@ export function PersonalLibraryPanel() {
   }
 
   return <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto bg-neutral-950 p-2 text-neutral-100">
+    <section className="border border-neutral-700 p-2 text-xs" data-testid="special-part-library">
+      <div className="mb-1 font-semibold">{tr('Токарная деталь')} · {tr('Гнутая деталь')}</div>
+      <div className="flex flex-wrap gap-1">
+        {LATHE_PROFILES.map((preset) => <button key={preset.id} type="button" className={buttonStyle}
+          onClick={() => {
+            try {
+              const id = addSpecialPart('lathe')
+              const node = findNode(useConfigurator.getState().root, id)
+              if (node?.kind !== 'solid' || node.solid.fabrication?.kind !== 'lathe') throw new Error(tr('Токарная деталь не создана'))
+              editSolid(id, { fabrication: { ...node.solid.fabrication, profile: structuredClone(preset.profile) } })
+              setError(null)
+            } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) }
+          }}>{tr(preset.name)}</button>)}
+        <button type="button" className={buttonStyle} onClick={() => {
+          try { addSpecialPart('bent'); setError(null) }
+          catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) }
+        }}>{tr('Гнутая деталь')}</button>
+      </div>
+    </section>
     <label className="text-xs">{tr('Элемент проекта')}
       <select className={`mt-1 w-full ${inputStyle}`} value={nodeId} onChange={(event) => setNodeId(event.target.value)}>
         {nodes.map((node) => <option key={node.id} value={node.id}>{node.name}</option>)}

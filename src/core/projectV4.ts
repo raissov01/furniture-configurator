@@ -17,6 +17,9 @@ import { IDENTITY_TRANSFORM } from './tree'
 import { ManufacturerModelSourceSchema } from './manufacturerAssets'
 import { treeFromProject } from './treeFromProject'
 import type { BoardSpec, GroupNode, SceneNode } from './tree'
+import type { FabricationSpec } from './specialParts'
+import { MAX_IMPORTED_MODEL_BYTES, MAX_IMPORTED_TEXTURE_BYTES, validateImportedModel } from './import/tds'
+import type { ImportedModelSpec } from './import/tds'
 import type { Layer } from './layers'
 import type { CabinetConfig, ProjectFile } from './types'
 import type { SceneLight } from './visual'
@@ -40,6 +43,28 @@ export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'pl
 const mm = z.number().int()
 const positiveMm = mm.positive()
 const vec3 = z.strictObject({ x: mm, y: mm, z: mm })
+const fabrication: z.ZodType<FabricationSpec> = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('lathe'),
+    profile: z.array(z.strictObject({ radius: mm.nonnegative(), y: mm.nonnegative() })).min(2).max(128),
+    materialId: z.string().min(1), quantity: positiveMm, unitPrice: mm.nonnegative() }),
+  z.strictObject({ kind: z.literal('bent'), chord: positiveMm, radius: positiveMm.optional(),
+    angleDegrees: z.number().positive().max(180).optional(), height: positiveMm, thickness: positiveMm,
+    referenceFace: z.enum(['inner', 'outer']), materialId: z.string().min(1),
+    quantity: positiveMm, unitPrice: mm.nonnegative() }),
+]).superRefine((spec, context) => {
+  if (spec.kind === 'bent' && (spec.radius === undefined) === (spec.angleDegrees === undefined)) {
+    context.addIssue({ code: 'custom', path: ['radius'], message: 'радиус не бұрыштың тек бірі беріледі' })
+  }
+})
+const importedModel: z.ZodType<ImportedModelSpec> = z.strictObject({
+  format: z.enum(['3ds', 'obj']),
+  dataBase64: z.string().max(Math.ceil(MAX_IMPORTED_MODEL_BYTES * 4 / 3) + 4),
+  mmPerUnit: z.number().finite().positive(),
+  textures: z.record(z.string(), z.string().max(Math.ceil(MAX_IMPORTED_TEXTURE_BYTES * 4 / 3) + 30)).optional(),
+}).superRefine((value, context) => {
+  try { validateImportedModel(value) }
+  catch (cause) { context.addIssue({ code: 'custom', message: cause instanceof Error ? cause.message : String(cause) }) }
+})
 const transform = z.strictObject({
   pos: vec3,
   // composePose тек Y бұрылысын есептейді; X/Z мәнін қабылдау сақталған
@@ -128,7 +153,8 @@ export const SceneNodeSchema: z.ZodType<SceneNode> = z.lazy(() => z.discriminate
     solid: z.strictObject({ size: z.strictObject({ x: positiveMm, y: positiveMm, z: positiveMm }),
       color: z.string().optional(), textureId: z.string().optional(),
       manualPriceTiyn: z.number().int().nonnegative().safe().optional(),
-      modelSource: ManufacturerModelSourceSchema.optional() }),
+      modelSource: ManufacturerModelSourceSchema.optional(), fabrication: fabrication.optional(),
+      importedModel: importedModel.optional() }),
   }),
   z.strictObject({ kind: z.literal('annotation'), ...baseNode,
     annotation: z.strictObject({
