@@ -8,6 +8,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { ReferencePriceList } from './ReferencePriceList'
 import { useEffect, useMemo, useState } from 'react'
 import { useModalLayer } from '@/lib/useModalLayer'
 import {
@@ -216,6 +217,7 @@ export function ShopSettings() {
             </p>
             <PriceListManager shop={shop} />
             <PriceImportPanel shop={shop} />
+            <ReferencePriceList />
           </div>
         ) : null}
 

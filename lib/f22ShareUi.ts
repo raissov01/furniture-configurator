@@ -1,13 +1,14 @@
 import { nestPanels, nestingOptionsOf, priceProject } from '../src/core/index'
-import type { Catalog, HardwarePlacement, Panel, PriceOverrides, ShopProfile } from '../src/core/index'
+import type { Catalog, HardwarePlacement, ManualPriceItem, Panel, PriceOverrides, ShopProfile } from '../src/core/index'
 
 /** Toolbar, КП және келісім диалогы бір өндірістік есепті оқиды. */
 export function approvalPrice(
   panels: Panel[], catalog: Catalog, shop: ShopProfile,
   hardware: HardwarePlacement[], moduleWidths: number[], overrides: PriceOverrides,
+  manualItems: ManualPriceItem[] = [],
 ): { kind: 'ready'; total: number } | { kind: 'missing' } {
   const nesting = nestPanels(panels, catalog, nestingOptionsOf(shop))
-  const price = priceProject(panels, nesting, shop, hardware, moduleWidths, overrides)
+  const price = priceProject(panels, nesting, shop, hardware, moduleWidths, overrides, manualItems)
   return price.missingPrices.length > 0 ? { kind: 'missing' } : { kind: 'ready', total: price.total }
 }
 

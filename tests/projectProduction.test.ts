@@ -118,6 +118,6 @@ describe('UI production uses the visible canonical scene', () => {
     const file = parseProjectV4(referenceProject)
     const hidden = { ...file.root, hidden: true }
     expect(projectProduction(hidden, flattenTree(hidden, catalog)))
-      .toEqual({ panels: [], hardware: [], moduleWidths: [] })
+      .toEqual({ panels: [], hardware: [], moduleWidths: [], manualItems: [] })
   })
 })

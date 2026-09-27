@@ -41,11 +41,15 @@ export type PriceLine = {
 export type PriceSource = {
   panelId?: string | undefined
   placementIndex?: number | undefined
+  nodeId?: string | undefined
   /** Жолдың өлшем бірлігімен есептелген үлес. */
   qty: number
   /** Жол құнының осы көзге тиесілі бүтін тиын үлесі. */
   cost: number
 }
+
+/** Кесілмейтін техника/декордың жобаға қолмен енгізілген құны. */
+export type ManualPriceItem = { nodeId: string; name: string; priceTiyn: number }
 
 /**
  * Бір материалдың жолы — цехтың негізгі кестесі.
@@ -84,6 +88,7 @@ export type PriceBreakdown = {
   materials: PriceLine[]
   edges: PriceLine[]
   hardware: PriceLine[]
+  manualItems: PriceLine[]
   /** Цехтың қызметтері: распил, присадка, кромка, упаковка, сборка. */
   services: PriceLine[]
   /** Материал бойынша жіктеме — цех осы кестені оқиды. */
@@ -323,6 +328,7 @@ export function priceProject(
    * әдепкісімен, бұрынғыдай.
    */
   overrides?: PriceOverrides,
+  manualItems: ManualPriceItem[] = [],
 ): PriceBreakdown {
   if (nesting.unplaced.length > 0) {
     throw new ConfigValidationError(
@@ -332,6 +338,13 @@ export function priceProject(
     )
   }
   const missingPrices: string[] = []
+  const manualLines: PriceLine[] = manualItems.map((item) => {
+    if (!Number.isSafeInteger(item.priceTiyn) || item.priceTiyn < 0) {
+      throw new ConfigValidationError(`solid.${item.nodeId}.manualPriceTiyn`, 'баға жарамсыз', '≥ 0, бүтін тиын')
+    }
+    return { id: item.nodeId, name: item.name, qty: 1, unit: 'шт', unitPrice: item.priceTiyn,
+      cost: item.priceTiyn, sources: [{ nodeId: item.nodeId, qty: 1, cost: item.priceTiyn }] }
+  })
 
   const materialById = new Map(shop.materials.map((m) => [m.id, m]))
   const bandById = new Map(shop.edgeBands.map((b) => [b.id, b]))
@@ -667,6 +680,7 @@ export function priceProject(
     materials.reduce((sum, l) => sum + l.cost, 0)
     + edges.reduce((sum, l) => sum + l.cost, 0)
     + hardware.reduce((sum, l) => sum + l.cost, 0)
+    + manualLines.reduce((sum, l) => sum + l.cost, 0)
   const servicesTotal = services.reduce((sum, l) => sum + l.cost, 0)
 
   const base = goods + servicesTotal
@@ -705,7 +719,7 @@ export function priceProject(
     ? scaleSalePrice(scaling.savedSalePrice, scaling.baseAreaMm2, scaling.currentAreaMm2)
     : overrides?.salePrice
   const grossTotal = salePrice ?? calculatedTotal
-  const groups = { materials, edges, hardware, services }
+  const groups = { materials, edges, hardware, manualItems: manualLines, services }
   const lineLookup = new Map<string, PriceLine>()
   for (const [group, lines] of Object.entries(groups)) {
     for (const line of lines) lineLookup.set(`${group}:${line.id}`, line)
@@ -738,6 +752,7 @@ export function priceProject(
     materials: withDiscounts('materials'),
     edges: withDiscounts('edges'),
     hardware: withDiscounts('hardware'),
+    manualItems: withDiscounts('manualItems'),
     services: withDiscounts('services'),
     byMaterial: materialRows,
     goods,

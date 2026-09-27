@@ -22,6 +22,9 @@ import { importDxfRoomPlan } from '@/src/core/import/dxf'
 import type { DxfImportResult } from '@/src/core/import/dxf'
 import { ConfigValidationError } from '@/src/core/errors'
 import { canConfirmDxfImport } from '@/lib/dxfImportAction'
+import type { Material } from '@/src/core/types'
+import type { BoardNode, SolidNode } from '@/src/core/tree'
+import { AssetImportPanel } from './AssetImportPanel'
 
 const ALL_LAYERS = '__all__'
 
@@ -65,7 +68,7 @@ function WallsPreview({ result }: { result: DxfImportResult }) {
   )
 }
 
-export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult) => void } = {}) {
+function RoomImportPanel({ onImport }: { onImport?: ((result: DxfImportResult) => void) | undefined } = {}) {
   const [fileName, setFileName] = React.useState<string | null>(null)
   const [rawText, setRawText] = React.useState<string | null>(null)
   const [selectedLayer, setSelectedLayer] = React.useState<string>(ALL_LAYERS)
@@ -202,4 +205,27 @@ export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult)
       ) : null}
     </div>
   )
+}
+
+export function ImportPanel({ onImport, onImportAsset, materials = [] }: {
+  onImport?: ((result: DxfImportResult) => void) | undefined
+  onImportAsset?: ((node: BoardNode | SolidNode) => void) | undefined
+  materials?: Material[]
+} = {}) {
+  const [mode, setMode] = React.useState<'room' | 'asset'>('room')
+  return <div className="flex h-full flex-col text-neutral-100">
+    <div className="flex border-b border-neutral-800 text-[11px]">
+      <button type="button" onClick={() => setMode('room')}
+        className={`flex-1 border-r border-neutral-800 p-2 ${mode === 'room' ? 'bg-neutral-800' : 'bg-neutral-950'}`}>
+        {tr('План комнаты')}
+      </button>
+      <button type="button" onClick={() => setMode('asset')}
+        className={`flex-1 p-2 ${mode === 'asset' ? 'bg-neutral-800' : 'bg-neutral-950'}`}>
+        {tr('Деталь / модель')}
+      </button>
+    </div>
+    <div className="min-h-0 flex-1 overflow-auto">
+      {mode === 'room' ? <RoomImportPanel onImport={onImport} /> : <AssetImportPanel materials={materials} onImport={onImportAsset} />}
+    </div>
+  </div>
 }
