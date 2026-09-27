@@ -8,6 +8,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/cn'
 import { t as tr } from '@/lib/i18n'
+import { parseNumberDraft, stepAvailable, steppedValue } from '@/lib/numberDraft'
 
 /**
  * ТЫҒЫЗ режим — оң жақтағы қасиеттер панелі үшін (qdesign сияқты: өрістер
@@ -15,6 +16,7 @@ import { t as tr } from '@/lib/i18n'
  * өлшемде қалады, сондықтан глобал класс емес, контекст.
  */
 const DenseCtx = React.createContext(false)
+const FieldLabelCtx = React.createContext('')
 
 export function Dense({ children }: { children: React.ReactNode }) {
   return <DenseCtx.Provider value>{children}</DenseCtx.Provider>
@@ -28,9 +30,9 @@ export function Field({
     <label className="block">
       <span className={cn('flex items-baseline justify-between gap-2', dense ? 'mb-0.5' : 'mb-1')}>
         <span className={cn('font-medium text-neutral-700 dark:text-neutral-300', dense ? 'text-[11px]' : 'text-xs')}>{label}</span>
-        {hint ? <span className="text-[10px] text-neutral-400 tabular-nums">{hint}</span> : null}
+        {hint ? <span className="min-w-0 text-right text-[10px] text-neutral-500 tabular-nums">{hint}</span> : null}
       </span>
-      {children}
+      <FieldLabelCtx.Provider value={label}>{children}</FieldLabelCtx.Provider>
     </label>
   )
 }
@@ -44,7 +46,7 @@ const controlDense = `${controlBase} px-1.5 py-1 text-xs`
 const useControl = () => (React.useContext(DenseCtx) ? controlDense : control)
 
 export function NumberInput({
-  value, onChange, min, max, step = 1, invalid,
+  value, onChange, min, max, step = 1, invalid, field, onDraftValidityChange,
 }: {
   value: number
   onChange: (v: number) => void
@@ -52,43 +54,55 @@ export function NumberInput({
   max?: number
   step?: number
   invalid?: boolean
+  field?: string
+  onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const dense = React.useContext(DenseCtx)
+  const label = React.useContext(FieldLabelCtx) || tr('Значение')
   const cls = useControl()
+  const [draft, setDraft] = React.useState(String(value))
+  const [draftError, setDraftError] = React.useState<ReturnType<typeof parseNumberDraft>['error']>(undefined)
+  React.useEffect(() => { setDraft(String(value)); setDraftError(undefined); if (field) onDraftValidityChange?.(field, false) }, [value])
+  const errorText = draftError === 'required' ? tr('Поле обязательно')
+    : draftError === 'integer' ? tr('Введите целое число, мм')
+    : draftError === 'range' ? tr('Значение вне диапазона')
+    : draftError === 'number' ? tr('Введите число') : null
+  const range = `${min ?? '−∞'}..${max ?? '+∞'} ${tr('мм')}`
   const input = (
     <input
-      type="number"
-      aria-invalid={invalid || undefined}
-      className={cn(cls, 'tabular-nums', invalid && 'border-red-500 dark:border-red-500', dense && 'order-2 min-w-0 rounded-none border-x-0 px-0.5 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none')}
-      value={value}
-      min={min}
-      max={max}
-      step={step}
+      type="text"
+      inputMode="decimal"
+      aria-invalid={Boolean(invalid || draftError) || undefined}
+      className={cn(cls, 'tabular-nums', (invalid || draftError) && 'border-red-500 dark:border-red-500', dense && 'order-2 min-w-0 rounded-none border-x-0 px-0.5 text-center')}
+      value={draft}
       onChange={(e) => {
-        const next = Number(e.target.value)
-        if (Number.isFinite(next)) onChange(Math.round(next))
+        const raw = e.target.value
+        setDraft(raw)
+        const result = parseNumberDraft(raw, { min, max, integer: step >= 1 })
+        setDraftError(result.error)
+        if (field) onDraftValidityChange?.(field, Boolean(result.error))
+        if (result.value !== undefined && result.value !== value) onChange(result.value)
       }}
     />
   )
-  if (!dense) return input
+  const error = errorText ? <span role="alert" className="mt-1 block text-[11px] text-red-700 dark:text-red-400">{label}: {errorText} — {tr('допустимо')} {range}</span> : null
+  if (!dense) return <span className="block">{input}{error}</span>
   /*
    * ‹ › БАТЫРМАЛАРЫ (qdesign сияқты, тығыз панельде): өлшемді бір басумен
    * қадамға өзгерту. ⚠ DOM-да input БІРІНШІ: <label>-дің «басқаратын
    * элементі» — оның ішіндегі БІРІНШІ labelable элемент; батырма алда тұрса,
    * жазуды басқан адам «−»-ті басып қояр еді. Солға «−» тек CSS `order`-мен.
    */
-  const bump = (dir: 1 | -1) => {
-    let next = value + dir * step
-    if (min !== undefined) next = Math.max(min, next)
-    if (max !== undefined) next = Math.min(max, next)
-    onChange(Math.round(next))
-  }
-  const stepper = 'order-1 w-5 shrink-0 border border-neutral-300 bg-white text-xs text-neutral-500 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:text-neutral-100'
+  const bump = (dir: 1 | -1) => { onChange(steppedValue(value, dir, step, min, max)) }
+  const stepper = 'order-1 w-5 shrink-0 border border-neutral-300 bg-white text-xs text-neutral-500 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:text-neutral-100'
   return (
-    <span className="flex items-stretch">
-      {input}
-      <button type="button" tabIndex={-1} aria-label={tr('Уменьшить')} onClick={() => bump(-1)} className={cn(stepper, 'rounded-l-md')}>‹</button>
-      <button type="button" tabIndex={-1} aria-label={tr('Увеличить')} onClick={() => bump(1)} className={cn(stepper, 'order-3 rounded-r-md')}>›</button>
+    <span className="block">
+      <span className="flex items-stretch">
+        {input}
+        <button type="button" tabIndex={-1} aria-label={tr('Уменьшить')} title={tr('Уменьшить')} disabled={Boolean(draftError) || !stepAvailable(value, -1, step, min, max)} onClick={() => bump(-1)} className={cn(stepper, 'rounded-l-md')}>‹</button>
+        <button type="button" tabIndex={-1} aria-label={tr('Увеличить')} title={tr('Увеличить')} disabled={Boolean(draftError) || !stepAvailable(value, 1, step, min, max)} onClick={() => bump(1)} className={cn(stepper, 'order-3 rounded-r-md')}>›</button>
+      </span>
+      {error}
     </span>
   )
 }

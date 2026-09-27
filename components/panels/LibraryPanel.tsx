@@ -98,7 +98,8 @@ export function LibraryPanel() {
         past: [...state.past, { room: state.room, projectName: state.projectName, root: state.root,
           layers: state.layers, projectSettings: state.projectSettings,
           projectMaterials: state.projectMaterials, projectEdgeBands: state.projectEdgeBands,
-          lights: state.lights, autoJoints: state.autoJoints, activeId: state.activeId }].slice(-100),
+          lights: state.lights, autoJoints: state.autoJoints, activeId: state.activeId,
+          projectInfo: state.projectInfo, priceOverrides: state.priceOverrides }].slice(-100),
         future: [], lastEditKey: null,
       })
       setPropError(null)

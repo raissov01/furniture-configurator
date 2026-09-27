@@ -82,6 +82,10 @@ describe('properties dialog state', () => {
 })
 
 describe('properties dialog rendering', () => {
+  it('updates reactive baseline after Apply so the button can become disabled again', () => {
+    const source = readFileSync(new URL('../components/PropertiesDialog.tsx', import.meta.url), 'utf8')
+    expect(source).toMatch(/^\s+setBaseline\(savedBaseline\)/m)
+  })
   it('starts with Apply disabled and OK enabled', () => {
     const html = render(null)
     expect(buttonTag(html, 'properties-apply')).toContain(' disabled=""')

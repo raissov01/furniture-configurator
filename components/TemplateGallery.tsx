@@ -6,7 +6,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEED_SETS, SEED_TEMPLATES, STANDARD_NOMENCLATURE_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
 import { filterTemplateCatalog } from '@/src/core/templateCatalog'
 import type { Material, TemplateCategory } from '@/src/core/index'
@@ -16,6 +16,9 @@ import { Button, Field } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import { cn } from '@/lib/cn'
 import { KitchenWizard } from '@/components/KitchenWizard'
+import { matchTemplateId } from '@/lib/templateMatch'
+import { parseKitchenWalls } from '@/lib/kitchenWallInput'
+import { shouldCloseGalleryOnKey } from '@/lib/galleryKeyboard'
 
 type Filter = TemplateCategory | 'all' | 'sets' | 'standard'
 
@@ -52,11 +55,13 @@ export function TemplateGallery() {
   const loadSet = useConfigurator((s) => s.loadSet)
   const loadKitchen = useConfigurator((s) => s.loadKitchen)
   const runBusy = useConfigurator((s) => s.runBusy)
-  const activeId = useConfigurator((s) => s.templateId)
+  const activeCabinetId = useConfigurator((s) => s.activeId)
+  const cabinets = useConfigurator((s) => s.cabinets)
   const [filter, setFilter] = useState<Filter>('all')
   const [subcategory, setSubcategory] = useState<string | undefined>()
   const [search, setSearch] = useState('')
   const catalog = useConfigurator((s) => s.catalog)
+  const activeTemplateId = useMemo(() => matchTemplateId(cabinets, activeCabinetId, catalog), [cabinets, activeCabinetId, catalog])
   // Жылдам генератордың материал таңдағыштары үшін: корпус/фасад бірдей
   // пулдан (қалыңдығы ≥10 мм), столешница — тек slab деп белгіленгендерден
   // (G5, `KitchenOptions.materials`-пен бірдей ядро — жаңа геометрия жоқ).
@@ -64,7 +69,7 @@ export function TemplateGallery() {
   const worktopMaterials = useMemo(() => catalog.materials.filter((m) => m.slab), [catalog])
   // Ас үй генераторы формасының күйі.
   const [kit, setKit] = useState(() => ({
-    lengthA: 3000, lengthB: 2400, corner: true, sink: true, upper: true, appliances: true,
+    lengthA: '3000', lengthB: '2400', corner: true, sink: true, upper: true, appliances: true,
     // G1: фартук әдепкіде ҚОСУЛЫ, шебердегі жаңа әдепкімен (600 мм) бірдей.
     backsplash: true,
     carcassId: carcassMaterials[0]?.id ?? '',
@@ -72,6 +77,29 @@ export function TemplateGallery() {
     worktopId: worktopMaterials[0]?.id ?? '',
   }))
   const [wizardOpen, setWizardOpen] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const walls = parseKitchenWalls(kit.lengthA, kit.lengthB, kit.corner)
+
+  useEffect(() => {
+    if (!open) return
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialogRef.current?.focus()
+    return () => { trigger?.focus() }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (!shouldCloseGalleryOnKey(event.key, wizardOpen)) return
+      event.preventDefault()
+      setFirstRun(false)
+      setOpenRaw(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open, wizardOpen, setFirstRun, setOpenRaw])
 
   const counts = useMemo(() => {
     const map = new Map<TemplateCategory, number>()
@@ -98,11 +126,13 @@ export function TemplateGallery() {
       onClick={() => setOpen(false)}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         data-testid="template-gallery-dialog"
         role="dialog"
         aria-modal="true"
         aria-label={firstRun ? tr('С чего начнём?') : tr('Готовые шаблоны')}
-        className="p100-gallery min-w-0 w-full max-w-5xl overflow-x-hidden rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        className="p100-gallery min-w-0 w-full max-w-5xl overflow-x-hidden border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -158,7 +188,7 @@ export function TemplateGallery() {
                 type="button"
                 onClick={() => { setFilter(c.value); setSubcategory(undefined) }}
                 className={cn(
-                  'min-w-0 rounded-lg border px-3 py-2 text-left transition hover:border-neutral-500',
+                  'min-w-0 border px-3 py-2 text-left transition hover:border-neutral-500',
                   filter === c.value
                     ? 'border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800'
                     : 'border-neutral-200 dark:border-neutral-700',
@@ -180,7 +210,7 @@ export function TemplateGallery() {
               модуль бөлу + столешница + үстіңгі қатар). Бекітілген «Наборы»-дан
               айырмасы — ұзындық ерікті, модульдерді өзі бөледі.
             */}
-            <div className="rounded-lg border border-neutral-300 bg-neutral-50 p-3 dark:border-neutral-600 dark:bg-neutral-800/50">
+            <div className="border border-neutral-300 bg-neutral-50 p-3 dark:border-neutral-600 dark:bg-neutral-800">
               <div className="mb-2 flex items-center gap-2">
                 <span className="text-xs font-semibold">{tr('Генератор кухни')}</span>
                 <span className="text-[11px] text-neutral-500">{tr('по длине стены')}</span>
@@ -188,25 +218,29 @@ export function TemplateGallery() {
                   <Button active onClick={() => setWizardOpen(true)}>{tr('Мастер кухни (5 шагов)')}</Button>
                 </div>
               </div>
-              <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-wrap items-end gap-3 max-[420px]:flex-col max-[420px]:items-stretch">
                 <label className="text-[11px] text-neutral-500">
                   {tr('Стена A, мм')}
                   <input
-                    type="number" min={600} step={100}
+                    type="text" inputMode="numeric" aria-invalid={Boolean(walls.errorA)}
+                    aria-describedby={walls.errorA ? 'wall-a-error' : undefined}
                     value={kit.lengthA}
-                    onChange={(e) => setKit((k) => ({ ...k, lengthA: Number(e.target.value) }))}
-                    className="mt-0.5 block w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 dark:border-neutral-600 dark:bg-neutral-900"
+                    onChange={(e) => setKit((k) => ({ ...k, lengthA: e.target.value }))}
+                    className={cn('mt-0.5 block w-24 max-[420px]:w-full rounded-md border bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 dark:bg-neutral-900', walls.errorA ? 'border-red-600 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-600')}
                   />
+                  {walls.errorA ? <span id="wall-a-error" role="alert" className="mt-1 block text-red-600 dark:text-red-400">{tr(walls.errorA)}</span> : null}
                 </label>
                 <label className={cn('text-[11px] text-neutral-500', !kit.corner && 'opacity-40')}>
                   {tr('Стена B (угол), мм')}
                   <input
-                    type="number" min={600} step={100}
+                    type="text" inputMode="numeric" aria-invalid={Boolean(walls.errorB)}
+                    aria-describedby={walls.errorB ? 'wall-b-error' : undefined}
                     value={kit.lengthB}
                     disabled={!kit.corner}
-                    onChange={(e) => setKit((k) => ({ ...k, lengthB: Number(e.target.value) }))}
-                    className="mt-0.5 block w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-900"
+                    onChange={(e) => setKit((k) => ({ ...k, lengthB: e.target.value }))}
+                    className={cn('mt-0.5 block w-24 max-[420px]:w-full rounded-md border bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 disabled:opacity-50 dark:bg-neutral-900', walls.errorB ? 'border-red-600 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-600')}
                   />
+                  {walls.errorB ? <span id="wall-b-error" role="alert" className="mt-1 block text-red-600 dark:text-red-400">{tr(walls.errorB)}</span> : null}
                 </label>
                 <label className="flex items-center gap-1.5 text-xs">
                   <input type="checkbox" checked={kit.corner} onChange={(e) => setKit((k) => ({ ...k, corner: e.target.checked }))} />
@@ -231,12 +265,15 @@ export function TemplateGallery() {
                 </label>
                 <Button
                   active
+                  disabled={!walls.valid}
                   onClick={() => {
+                    const lengthA = walls.lengthA
+                    if (!walls.valid || lengthA === undefined) return
                     setFirstRun(false)
                     runBusy(tr('Собираем кухню…'), () => loadKitchen({
                       layout: kit.corner ? 'corner' : 'straight',
-                      lengthA: kit.lengthA,
-                      lengthB: kit.corner ? kit.lengthB : undefined,
+                      lengthA,
+                      lengthB: kit.corner ? walls.lengthB : undefined,
                       sink: kit.sink,
                       upper: kit.upper,
                       appliances: kit.appliances,
@@ -296,7 +333,7 @@ export function TemplateGallery() {
                   key={preset.id}
                   type="button"
                   onClick={() => { setFirstRun(false); runBusy(tr('Загрузка…'), () => loadSet(preset.id)) }}
-                  className="flex flex-col items-start gap-2 rounded-lg border border-neutral-200 p-3 text-left transition hover:border-neutral-500 hover:shadow-sm dark:border-neutral-700"
+                  className="flex flex-col items-start gap-2 border border-neutral-200 p-3 text-left transition hover:border-neutral-500 dark:border-neutral-700"
                 >
                   <div className="flex flex-wrap items-end gap-2">
                     {cabinets.map((cabinet) => (
@@ -327,9 +364,9 @@ export function TemplateGallery() {
               type="button"
               onClick={() => { setFirstRun(false); loadTemplate(t.id) }}
               className={cn(
-                'flex flex-col items-start gap-2 rounded-lg border p-3 text-left transition',
-                'hover:border-neutral-500 hover:shadow-sm',
-                t.id === activeId
+                'flex flex-col items-start gap-2 border p-3 text-left transition',
+                'hover:border-neutral-500',
+                t.id === activeTemplateId
                   ? 'border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800'
                   : 'border-neutral-200 dark:border-neutral-700',
               )}

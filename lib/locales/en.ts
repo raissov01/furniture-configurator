@@ -795,6 +795,8 @@ export const en: Record<string, string> = {
   'по длине стены': 'by wall length',
   'Стена A, мм': 'Wall A, mm',
   'Стена B (угол), мм': 'Wall B (corner), mm',
+  'Стена A: целые мм, 600–20 000 мм': 'Wall A: whole mm, 600–20,000 mm',
+  'Стена B: целые мм, 600–20 000 мм': 'Wall B: whole mm, 600–20,000 mm',
   'Угол (Г)': 'Corner (L)',
   'Мойка': 'Sink',
   'Верхний ряд': 'Upper row',
@@ -1346,6 +1348,14 @@ export const en: Record<string, string> = {
   '{label}: медиана, {date}, {n} предложений': '{label}: median, {date}, {n} offers',
   'Вернуть рыночную цену: {price}': 'Restore market price: {price}',
   'Цена изменена цехом — рыночные обновления её не трогают': 'Price set by the workshop — market updates never touch it',
+  'Поле обязательно': 'Required field',
+  'Введите целое число, мм': 'Enter a whole number of millimetres',
+  'Значение вне диапазона': 'Value is outside the allowed range',
+  'Введите число': 'Enter a number',
+  'Значение': 'Value',
+  'Рекомендуется': 'Recommended',
+  'Ориентир цеха': 'Workshop guidance',
+  'Обязательный диапазон габаритов': 'Required dimension range',
 
   'Код клиента истёк': 'The client code has expired',
   'Код клиента изменился': 'The client code has changed',
@@ -1354,5 +1364,7 @@ export const en: Record<string, string> = {
   'Клиент согласовал версию': 'Client approved version',
   'Текущий проект изменён после согласования': 'The current project changed after approval',
   'Скачать подписанный PDF': 'Download stamped PDF',
+  'Рассчитывается': 'Calculated',
+  'Увеличьте ширину корпуса или уменьшите число фасадов.': 'Increase the cabinet width or reduce the number of fronts.',
 
 }

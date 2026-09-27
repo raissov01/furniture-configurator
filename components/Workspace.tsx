@@ -7,6 +7,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { Configurator } from '@/components/Configurator'
 import { BoardProperties } from '@/components/BoardProperties'
 import { PropertiesDialog } from '@/components/PropertiesDialog'
@@ -234,6 +235,10 @@ export function Workspace() {
   const [classic, setClassic] = useState(true)
   const [structureOpen, setStructureOpen] = useState(false)
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
+  const [draftState, setDraftState] = useState<{ id: string; errors: Record<string, boolean> }>({ id: activeId, errors: {} })
+  const draftInvalid = draftState.id === activeId && hasDraftErrors(draftState.errors)
+  const onDraftValidityChange = (field: string, invalid: boolean) =>
+    setDraftState((current) => ({ id: activeId, errors: updateDraftErrors(current.id === activeId ? current.errors : {}, field, invalid) }))
   useEffect(() => {
     try { setClassic(window.localStorage.getItem(WORKSPACE_STYLE_KEY) !== 'ours') }
     catch (cause) { console.debug('Workspace style storage unavailable', cause) }
@@ -441,6 +446,7 @@ export function Workspace() {
       case 'saveProject': downloadProjectFile(exportProject()); break
       case 'openProject': pickProjectFile(loadProject); break
       case 'export':
+        if (draftInvalid) break
         setExportError(null)
         void runShopExport(command.format, { cabinet, panels: activePanels, catalog, settings, projectInfo })
           .catch((cause: unknown) => setExportError(cause instanceof Error ? cause.message : String(cause)))
@@ -478,8 +484,8 @@ export function Workspace() {
   const menus = classicMenus({
     canUndo, canRedo, activeEditable, editableBoard: editableBoard && !activeBoardJoint,
     canRemoveCabinet: cabinets.length >= 2 && activeEditable,
-    canExport: hasActiveCabinet && !production.error,
-    canExportPdf: hasActiveCabinet,
+    canExport: hasActiveCabinet && !production.error && !draftInvalid,
+    canExportPdf: hasActiveCabinet && !draftInvalid,
     productionError: Boolean(production.error),
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
     silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,
@@ -536,7 +542,7 @@ export function Workspace() {
 
   return (
     <div className={cn("flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100", classic && "p100-workspace")} data-workspace-style={classic ? "classic" : "ours"}>
-      {propertiesNodeId && <PropertiesDialog nodeId={propertiesNodeId} catalog={catalog} panels={activePanels} boardPanel={boardPanel} error={error ?? null} onClose={() => setPropertiesNodeId(null)} />}
+      {propertiesNodeId && <PropertiesDialog nodeId={propertiesNodeId} catalog={catalog} panels={activePanels} boardPanel={boardPanel} error={error ?? null} onClose={() => { setPropertiesNodeId(null); setDraftState({ id: activeId, errors: {} }) }} />}
       <TemplateGallery />
       <AiPanel />
       <RoomPlan />
@@ -669,7 +675,7 @@ export function Workspace() {
               </Button>
             )
           ) : null}
-          {cabinet && !production.error ? <ExportMenu cabinet={cabinet} panels={activePanels} /> : null}
+          {cabinet && !production.error && !draftInvalid ? <ExportMenu cabinet={cabinet} panels={activePanels} /> : null}
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}
@@ -946,7 +952,7 @@ export function Workspace() {
         жақта таңдалған модульдің қасиеттері мен әрекеттері. Бұрын: сол жақта
         ұзын форма, оң жақта 460 px деталировка — 3D тарылып, тақта екі қатар.
       */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[28px_minmax(0,1fr)_340px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_auto] overflow-y-auto overscroll-contain lg:grid-cols-[28px_minmax(0,1fr)_340px] lg:grid-rows-none lg:overflow-hidden">
         {/*
           СОЛ ЖАҚТАҒЫ ТАР ТІК ҚҰРАЛДАР ЖОЛАҒЫ (docs/pro100/ui-design.md, §3).
           Бізде PRO100-дегідей БӨЛЕК режим жүйесі (таңдау/жылжыту курсоры)
@@ -979,7 +985,7 @@ export function Workspace() {
         </div>
         <div className="flex min-h-0 flex-col">
         {/* Телефонда 3D экранның жартысынан астам: 256 px-те ештеңе көрінбейтін. */}
-        <main className="relative min-h-[55vh] flex-1 lg:min-h-64" data-tour="scene">
+        <main className="relative h-[55dvh] min-h-[55dvh] max-h-[55dvh] flex-none lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
@@ -1053,7 +1059,7 @@ export function Workspace() {
           <CutListTable panels={projectPanels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
         </section>
         </div>
-        <aside className="flex min-h-0 flex-col border-l border-neutral-200 dark:border-neutral-800">
+        <aside className="relative z-10 flex min-h-max flex-col border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:static lg:z-auto lg:min-h-0">
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
           <div className={cn("border-b border-neutral-200 px-3 py-2 dark:border-neutral-800", classic && "lg:hidden")}>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
@@ -1076,7 +1082,7 @@ export function Workspace() {
             </> : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
             {classic && (activeBoard || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
-          <div className={cn("min-h-0 flex-1 overflow-auto p-3", classic && "lg:hidden")}>
+          <div className={cn("min-h-0 flex-1 overflow-visible p-3 lg:overflow-auto", classic && "lg:hidden")}>
             <Dense>
               {/*
                 МОДУЛЬДІҢ ОРНЫ (qdesign «Модуль орны, мм»: X/Y/Z, Бұрылыс) енді
@@ -1086,7 +1092,7 @@ export function Workspace() {
               */}
               {propertiesNodeId ? null : hasActiveCabinet ? (
                 <fieldset disabled={!activeEditable}>
-                  <Configurator invalidField={error?.field ?? null} panels={activePanels} />
+                  <Configurator invalidField={error?.field ?? null} panels={activePanels} onDraftValidityChange={onDraftValidityChange} />
                 </fieldset>
               ) : activeBoard ? (
                 <fieldset disabled={!editableBoard}>
