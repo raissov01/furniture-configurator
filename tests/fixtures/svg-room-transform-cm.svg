@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000cm" height="1000cm" viewBox="0 0 1000 1000">
+  <g transform="translate(10,20)">
+    <g transform="scale(2)">
+      <rect id="floor" x="0" y="0" width="200" height="150"/>
+    </g>
+  </g>
+</svg>

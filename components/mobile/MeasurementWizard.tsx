@@ -81,12 +81,12 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   const [kitchenWall, setKitchenWall] = useState<WallId>('north')
   const [wallTolerance, setWallTolerance] = useState(0)
   const [cornerTolerance, setCornerTolerance] = useState(0)
-  const [laserTarget, setLaserTarget] = useState<'height' | `walls.${WallId}.length`>('height')
-  const [laserText, setLaserText] = useState('')
-  const [linkedProject, setLinkedProject] = useState<ProjectFileV4 | null>(null)
   const [wallToleranceRaw, setWallToleranceRaw] = useState('0')
   const [cornerToleranceRaw, setCornerToleranceRaw] = useState('0')
   const [draftNumbers, setDraftNumbers] = useState<Record<string, string>>({})
+  const [laserTarget, setLaserTarget] = useState<'height' | `walls.${WallId}.length`>('height')
+  const [laserText, setLaserText] = useState('')
+  const [linkedProject, setLinkedProject] = useState<ProjectFileV4 | null>(null)
   const wall = WALL_IDS[wallIndex] ?? 'north'
   const issues = validateMeasurement(survey)
   const saveChain = useRef<Promise<void>>(Promise.resolve())
@@ -118,7 +118,6 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     try {
       const next = applyDistoText(survey, laserTarget, laserText, Date.now())
       setSurvey(next)
-      setDraftNumbers((current) => { const nextDraft = { ...current }; delete nextDraft[laserTarget]; return nextDraft })
       setLaserText('')
       setMessage(t('Измерение Leica DISTO D5 записано'))
     } catch (error) {

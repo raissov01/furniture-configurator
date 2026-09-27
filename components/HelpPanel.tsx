@@ -14,18 +14,33 @@ import { HOTKEYS } from '@/lib/hotkeys'
 import { LESSON_DONE_KEY, startLesson, startTour } from '@/components/Tour'
 import { useConfigurator } from '@/store/configurator'
 import { LESSONS, parseCompletedLessons } from '@/src/core/lessonCatalog'
-import { useEffect, useState } from 'react'
+import { lessonAvailability } from '@/lib/lessonTargets'
+import { findTourTarget } from '@/lib/tourTarget'
+import { helpDialogKeyAction } from '@/lib/helpDialog'
+import { useEffect, useRef, useState } from 'react'
 
-export function HelpPanel() {
+export function HelpPanel({ classic = false }: { classic?: boolean }) {
   const open = useConfigurator((s) => s.helpOpen)
   const setOpen = useConfigurator((s) => s.setHelpOpen)
   const [completed, setCompleted] = useState<string[]>([])
+  const dialogRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialogRef.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (helpDialogKeyAction(event.key, true) === 'close') {
+        event.preventDefault()
+        setOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
     try { setCompleted(parseCompletedLessons(window.localStorage.getItem(LESSON_DONE_KEY))) }
     catch (cause) { console.error('Lesson progress could not be read', cause); setCompleted([]) }
-  }, [open])
+    return () => { window.removeEventListener('keydown', onKey); returnFocus?.focus() }
+  }, [open, setOpen])
   if (!open) return null
+  const mobile = typeof window !== 'undefined' && window.innerWidth < 1024
 
   return (
     <div
@@ -33,11 +48,16 @@ export function HelpPanel() {
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-dialog-title"
+        tabIndex={-1}
+        className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-sm font-semibold">{tr('Горячие клавиши')}</h2>
+          <h2 id="help-dialog-title" className="text-sm font-semibold">{tr('Горячие клавиши')}</h2>
           <div className="ml-auto flex gap-2">
             {/* Оқытуды қайта қосу: адам оны бірінші рет өткізіп жіберуі мүмкін. */}
             <Button onClick={() => { setOpen(false); startTour() }}>{tr('Обучение')}</Button>
@@ -48,13 +68,17 @@ export function HelpPanel() {
         <section className="mb-4 border-b border-neutral-200 pb-3 dark:border-neutral-700">
           <h3 className="mb-2 text-xs font-semibold">{tr('Тематические уроки')}</h3>
           <div className="grid grid-cols-2 gap-2">
-            {LESSONS.map((lesson) => (
+            {LESSONS.map((lesson) => {
+              const available = lessonAvailability(lesson, classic, mobile, (step) => findTourTarget(step, tr) !== null)
+              return (
               <button key={lesson.id} type="button" className="rounded border border-neutral-300 px-2 py-1.5 text-left text-xs hover:border-neutral-700 dark:border-neutral-700"
+                disabled={!available}
+                title={!available ? tr('Выберите корпус или откройте нужный раздел, чтобы начать урок.') : undefined}
                 onClick={() => { setOpen(false); startLesson(lesson.id) }}>
                 <span className="block font-medium">{tr(lesson.name)}</span>
-                <span className="text-[11px] text-neutral-500">{completed.includes(lesson.id) ? tr('Пройдено · повторить') : tr('Начать урок')}</span>
+                <span className="text-[11px] text-neutral-500">{!available ? tr('Выберите корпус или откройте нужный раздел, чтобы начать урок.') : completed.includes(lesson.id) ? tr('Пройдено · повторить') : tr('Начать урок')}</span>
               </button>
-            ))}
+            )})}
           </div>
         </section>
         <dl className="space-y-1">

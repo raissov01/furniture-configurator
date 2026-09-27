@@ -304,6 +304,22 @@ function migrate(database: DatabaseSync): void {
       updated_at INTEGER NOT NULL
     );
   `)
+
+  // 12-қадам: ЖИ-рендер тарихы. Әр жазба бір ПАЙДАЛАНУШЫҒА тиесілі (цехтың
+  // басқа мүшесі де көрмейді); жоба id-і клиенттікі болуы мүмкін (жергілікті
+  // жоба), сондықтан projects кестесіне сілтеме ЖОҚ.
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS render_history (
+      id TEXT PRIMARY KEY,
+      shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      project_id TEXT NOT NULL,
+      json TEXT NOT NULL,
+      image BLOB NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS render_history_owner ON render_history (user_id, project_id, created_at DESC);
+  `)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */

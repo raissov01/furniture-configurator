@@ -19,7 +19,7 @@ export function drillClickResult(
   const drill = drillFromPreset(preset, spot.face, spot.x, spot.y, thickness)
   try {
     validateJointDrill(panel, drill, thickness, 'drill.position')
-    if (!edge && !isDrillWithinMaterial(panel, drill.face, drill.x, drill.y)) {
+    if (!edge && !isDrillWithinMaterial(panel, drill.face, drill.x, drill.y, drill.diameter)) {
       return { error: 'drill.position: тесік нақты материалдан тыс; рұқсат етілгені — кесілген панель контуры' }
     }
     return { drill }

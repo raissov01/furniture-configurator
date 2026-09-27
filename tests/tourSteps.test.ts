@@ -22,6 +22,20 @@ describe('tour steps', () => {
     }
   })
 
+  it('keeps six ordered stops on a phone, starting at the visible size and sections controls', () => {
+    const steps = tourStepsFor(false, true)
+    expect(steps).toHaveLength(6)
+    expect(steps.map((step) => step.selector).slice(0, 2)).toEqual([
+      '[data-tour="mobile-size"]', '[data-tour="mobile-sections"]',
+    ])
+    expect(steps[2]?.selector).toBe('[data-tour="scene"]')
+    expect(steps[3]?.selector).toBe('[data-tour="mobile-cutlist"]')
+    const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
+    for (const marker of ['mobile-size', 'mobile-sections', 'mobile-cutlist']) {
+      expect(source).toContain(`tour="${marker}"`)
+    }
+  })
+
   it('classic selectors exist in the Workspace source', () => {
     const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
     for (const step of CLASSIC_TOUR_STEPS) {
