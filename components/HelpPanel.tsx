@@ -16,17 +16,29 @@ import { useConfigurator } from '@/store/configurator'
 import { LESSONS, parseCompletedLessons } from '@/src/core/lessonCatalog'
 import { lessonAvailability } from '@/lib/lessonTargets'
 import { findTourTarget } from '@/lib/tourTarget'
-import { useEffect, useState } from 'react'
+import { helpDialogKeyAction } from '@/lib/helpDialog'
+import { useEffect, useRef, useState } from 'react'
 
 export function HelpPanel({ classic = false }: { classic?: boolean }) {
   const open = useConfigurator((s) => s.helpOpen)
   const setOpen = useConfigurator((s) => s.setHelpOpen)
   const [completed, setCompleted] = useState<string[]>([])
+  const dialogRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    dialogRef.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (helpDialogKeyAction(event.key, true) === 'close') {
+        event.preventDefault()
+        setOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
     try { setCompleted(parseCompletedLessons(window.localStorage.getItem(LESSON_DONE_KEY))) }
     catch (cause) { console.error('Lesson progress could not be read', cause); setCompleted([]) }
-  }, [open])
+    return () => { window.removeEventListener('keydown', onKey); returnFocus?.focus() }
+  }, [open, setOpen])
   if (!open) return null
   const mobile = typeof window !== 'undefined' && window.innerWidth < 1024
 
@@ -36,11 +48,16 @@ export function HelpPanel({ classic = false }: { classic?: boolean }) {
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-dialog-title"
+        tabIndex={-1}
+        className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-sm font-semibold">{tr('Горячие клавиши')}</h2>
+          <h2 id="help-dialog-title" className="text-sm font-semibold">{tr('Горячие клавиши')}</h2>
           <div className="ml-auto flex gap-2">
             {/* Оқытуды қайта қосу: адам оны бірінші рет өткізіп жіберуі мүмкін. */}
             <Button onClick={() => { setOpen(false); startTour() }}>{tr('Обучение')}</Button>
