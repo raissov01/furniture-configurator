@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  SEED_CATALOG, findTemplate, flattenTree, generateCabinet, migrateV3ToV4,
+  SEED_CATALOG, findTemplate, flattenTree, generateCabinet, generateKitchen, migrateV3ToV4,
   parseProject, parseProjectV4, placementPose, scenePanels, templateToCabinet,
   ProjectFileV4Schema,
 } from '../src/core/index'
@@ -36,6 +36,22 @@ const plainBoardNode = () => ({
 })
 
 describe('v3 → v4 root миграциясы', () => {
+  it('ортақ ас үй цоколі v4 JSON арқылы панельдер мен кесу өлшемдерін сақтайды', () => {
+    const kitchen = generateKitchen({ layout: 'straight', lengthA: 2800, upper: false,
+      sink: false, appliances: false, hob: 'none' }, SEED_CATALOG)
+    const project = migrateV3ToV4({ ...legacy, cabinets: kitchen.cabinets,
+      placements: kitchen.placements, room: kitchen.room })
+    const before = scenePanels(flattenTree(project.root, SEED_CATALOG, project.settings))
+    const after = parseProjectV4(JSON.parse(JSON.stringify(project)))
+    const restored = scenePanels(flattenTree(after.root, SEED_CATALOG, after.settings))
+    expect(restored.map((p) => [p.id, p.cutLength, p.cutWidth])).toEqual(
+      before.map((p) => [p.id, p.cutLength, p.cutWidth]),
+    )
+    expect(restored.filter((p) => p.role === 'plinth')).toHaveLength(
+      before.filter((p) => p.role === 'plinth').length,
+    )
+  })
+
   it('ескі файлдағы қайталанған секция id-лерін жоғалтпай түзетеді', () => {
     const raw = structuredClone(migrateV3ToV4(legacy))
     const node = raw.root.children[0]

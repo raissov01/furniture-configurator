@@ -76,6 +76,48 @@ const entriesOf = (r: ReturnType<typeof generateKitchen>) =>
   }))
 
 describe('generateKitchen', () => {
+  it('столешницаға тек slab санатты материал қабылдайды', () => {
+    const options = { layout: 'straight' as const, lengthA: 1200, upper: false,
+      sink: false, appliances: false, hob: 'none' as const }
+    for (const worktopId of ['hdf3-white', 'ldsp16-w980', 'missing']) {
+      let caught: unknown
+      try {
+        generateKitchen({ ...options, materials: { worktopId } }, SEED_CATALOG)
+      } catch (error) {
+        caught = error
+      }
+      expect(caught).toBeInstanceOf(ConfigValidationError)
+      expect((caught as ConfigValidationError).field).toBe('materials.worktopId')
+    }
+    expect(() => generateKitchen({ ...options, materials: { worktopId: 'pf38-stone' } }, SEED_CATALOG))
+      .not.toThrow()
+  })
+
+  it('ортақ цокольдің резі парақтың жиектелген пайдалы аймағына сияды', () => {
+    const result = generateKitchen({ layout: 'straight', lengthA: 2800, upper: false,
+      sink: false, appliances: false, hob: 'none' }, SEED_CATALOG)
+    const plinths = result.cabinets.flatMap((c) => generateCabinet(c, SEED_CATALOG))
+      .filter((p) => p.role === 'plinth')
+    expect(plinths.length).toBeGreaterThan(1)
+    for (const panel of plinths) {
+      const mat = SEED_CATALOG.materials.find((m) => m.id === panel.materialId)!
+      expect(panel.cutLength).toBeLessThanOrEqual(mat.sheetWidth - 2 * mat.trimEdge)
+    }
+  })
+
+  it('текстурасы жоқ цокольді парақтың ұзын екінші осіне бұрып біріктіре алады', () => {
+    const id = 'ldsp16-w980'
+    const catalog = { ...SEED_CATALOG, materials: SEED_CATALOG.materials.map((m) =>
+      m.id === id ? { ...m, sheetWidth: 1000, sheetHeight: 3000 } : m) }
+    const result = generateKitchen({ layout: 'straight', lengthA: 1200, upper: false,
+      sink: false, appliances: false, hob: 'none',
+      materials: { carcassId: id, frontId: id, plinthId: id } }, catalog)
+    const plinths = result.cabinets.flatMap((c) => generateCabinet(c, catalog))
+      .filter((p) => p.role === 'plinth')
+    expect(plinths).toHaveLength(1)
+    expect(plinths[0]!.cutLength).toBe(1200)
+  })
+
   it('белсенді қабырғалар үшін тек ≥ 600 бүтін мм қабылдайды', () => {
     const invalid = [
       { options: { layout: 'straight' as const, lengthA: 0 }, field: 'lengthA' },
@@ -313,6 +355,15 @@ describe('generateKitchen', () => {
     expect(r.cabinets).toHaveLength(2)
     expect(r.cabinets.some((c) => c.name.toLowerCase().includes('мойк'))).toBe(true)
     expect(validatePlacements(r.room, r.cabinets.map((c) => ({ cabinet: c, placement: r.placements.find((p) => p.cabinetId === c.id)! })))).toEqual([])
+  })
+
+  it('түзу пішінге ауысқанда сақталған B модульдерін орналастырмайды', () => {
+    const result = generateKitchen({ layout: 'straight', lengthA: 600, upper: false,
+      sink: false, appliances: false, hob: 'none',
+      modules: { runA: [{ kind: 'baseDoors', width: 600 }],
+        runB: [{ kind: 'baseDoors', width: 600 }] } }, SEED_CATALOG)
+    expect(result.placements.map((p) => p.wall)).toEqual(['north'])
+    expect(result.cabinets).toHaveLength(1)
   })
 
   it('шыны жоғарғы: үстіңгі фасад glass=true, төменгі — жоқ', () => {

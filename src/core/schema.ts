@@ -303,6 +303,9 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
     plinthMaterialId: z.string().min(1).optional(),
     plinthShape: z.enum(['front', 'box']).optional(),
     plinthJoint: z.enum(['confirmat', 'minifix']).optional(),
+    /** Біріктірілген цокольдің күйі мен бірінші корпустағы толық ұзындығы. */
+    shared: z.boolean().optional(),
+    sharedSpan: mm.optional(),
   }).optional(),
   openTop: z.boolean().optional(),
   frontPanel: z.object({
