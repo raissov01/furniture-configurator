@@ -11,43 +11,16 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
-<<<<<<< HEAD
   'Лист для бирок': 'Birka varag‘i',
   'Ширина бирки, мм': 'Birka eni, mm',
   'Высота бирки, мм': 'Birka balandligi, mm',
   'Нет отверстий': 'Teshik yo‘q',
-=======
-  'Выбор — щёлкните по модулю в сцене, Esc — снять выделение': 'Tanlash — sahnadagi korpusni bosing, Esc — tanlovni bekor qilish',
-  'Выйти': 'Chiqish',
-  'Переместить — перетащите выбранный модуль по стене прямо в 3D-сцене': 'Ko‘chirish — tanlangan korpusni 3D sahnada devor bo‘ylab sudrang',
-  'Привязка': 'Bog‘lash',
-  'Общее': 'Umumiy',
-  'Производство': 'Ishlab chiqarish',
-  '— Нет —': '— Yo‘q —',
-  'есть': 'bor',
-  'Деталировка — кратко': 'Detallar ro‘yxati — qisqacha',
-  'Открыть смету': 'Smetani ochish',
-  'и ещё': 'va yana',
-  'Цена, услуги цеха и полный список фурнитуры — в смете. Здесь только деталировка для ориентира.': 'Narxlar, sex xizmatlari va furnituraning to‘liq ro‘yxati smetada. Bu yerda detallar ro‘yxati qisqacha berilgan.',
-  'Открыть присадку': 'Teshiklar chizmasini ochish',
-  'Открыть раскрой': 'Raskroyni ochish',
-  'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.':
-    '“{name}” faylida JSON xatosi bor. .json loyiha faylini tanlang yoki sintaksisini tuzating.',
-  'История изменений': 'O‘zgarishlar tarixi',
-  'Открыть проект': 'Loyihani ochish',
-  'Повторить': 'Qaytarish',
-  'Раскрой (отдельный экран)': 'Bichish (alohida ekran)',
-  'Сохранить проект': 'Loyihani saqlash',
-  'Ссылка клиенту': 'Mijoz uchun havola',
-  'Цех: материалы и цены': 'Sex: materiallar va narxlar',
->>>>>>> codex/0924
   'Файл': 'Fayl',
   'Правка': 'Tahrirlash',
   'Инструменты': 'Asboblar',
   'Элемент': 'Element',
   'Справка': 'Yordam',
   'Выбор': 'Tanlash',
-<<<<<<< HEAD
   'Выбор — щёлкните по модулю в сцене, Esc — снять выделение': 'Tanlash — sahnadagi korpusni bosing, Esc — tanlovni bekor qilish',
   'Выйти': 'Chiqish',
   'Новый корпус': 'Yangi korpus',
@@ -72,27 +45,6 @@ export const uz: Record<string, string> = {
   'Неверный JSON в файле «{name}». Выберите файл проекта .json или исправьте его синтаксис.': '“{name}” faylida JSON xatosi bor. .json loyiha faylini tanlang yoki sintaksisini tuzating.',
   'История изменений': 'O‘zgarishlar tarixi',
   'Раскрой (отдельный экран)': 'Bichish (alohida ekran)',
-=======
-  'Стена С': 'Shimoliy devor',
-  'Стена З': "G'arbiy devor",
-  'Стена Ю': 'Janubiy devor',
-  'Стена В': 'Sharqiy devor',
-  'Сортировать': 'Saralash',
-  'Допустимо целое число в диапазоне': 'Ruxsat etilgan butun son oralig‘i',
-  'Лист для бирок': 'Birka varag‘i',
-  'Ширина бирки, мм': 'Birka eni, mm',
-  'Высота бирки, мм': 'Birka balandligi, mm',
-  'Нет отверстий': 'Teshik yo‘q',
-  'Порядок резов': 'Kesish tartibi',
-  'Шаг реза': 'Kesish qadami',
-  'Вперёд': 'Oldinga',
-  'Пауза': 'To‘xtatib turish',
-  'Воспроизвести': 'Ijro etish',
-  'Все материалы': 'Barcha materiallar',
-  'Только видимые карты': 'Faqat ko‘rsatiladigan xaritalar',
-  'Только предпросмотр: откройте импорт в проекте': 'Faqat oldindan ko‘rish: importni loyihada oching',
-  'Готовый': 'Tayyor',
->>>>>>> codex/0924
   'Текст': 'Matn',
   'Добавить текст': 'Matn qo‘shish',
   '+ текст': '+ matn',
@@ -1159,11 +1111,6 @@ export const uz: Record<string, string> = {
   'Библиотека': 'Kutubxona',
   'Моя библиотека': 'Mening kutubxonam',
   'Структура': 'Tuzilma',
-<<<<<<< HEAD
-=======
-  'Найти': 'Topish',
-  'Рез': 'Kesim',
->>>>>>> codex/0924
   'Замена': 'Almashtirish',
   'Дерево, слои и библиотека': 'Daraxt, qatlamlar va kutubxona',
   'Предпросмотр элемента': 'Element ko‘rinishi',
@@ -1527,55 +1474,22 @@ export const uz: Record<string, string> = {
   'Сначала примените изменения для экспорта': 'Eksport qilishdan oldin o‘zgarishlarni qo‘llang',
   'Закройте свойства через OK перед экспортом': 'Eksportdan oldin Xususiyatlarni OK orqali yoping',
   'Свойства нескольких объектов не редактируются вместе. Выберите один объект перед открытием свойств.': 'Bir nechta obyekt xususiyatlari birga tahrirlanmaydi. Xususiyatlarni ochishdan oldin bitta obyektni tanlang.',
-<<<<<<< HEAD
   'Найти': 'Topish',
   'В каталоге цеха нет петли для этого типа фасада. Добавьте артикул в настройках цеха.': 'Sex katalogida bu fasad turi uchun ilmoq yo‘q. Sex sozlamalariga artikul qo‘shing.',
   'Введите целые высоты полок': 'Tokcha balandligini butun millimetrda kiriting',
   'Воспроизвести': 'Ijro etish',
   'Вперёд': 'Oldinga',
   'Все материалы': 'Barcha materiallar',
-=======
-  'Автоотверстие задаётся соединением. Измените соединение; удалить можно только ручное отверстие.': 'Avto teshik birikmadan olinadi. Birikmani o\'zgartiring; faqat qo\'lda qo\'yilgan teshikni o\'chirish mumkin.',
-  'Удалить только ручные отверстия; автоматические задаются соединением': 'Faqat qo\'lda qo\'yilgan teshiklarni o\'chirish; avto teshiklar birikmadan olinadi',
-  'Удалить ручные отверстия': 'Qo\'lda qo\'yilgan teshiklarni o\'chirish',
-  'DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива. Полный ЧПУ CSV — в раскрое.': 'DXF: tekis yuzalar; qirra teshiklari shu arxivdagi EDGE-DRILLING.csv da. To‘liq CNC CSV — bichishda.',
-  'DXF — пласти; торец — EDGE-DRILLING.csv. Полный ЧПУ CSV:': 'DXF — tekis yuzalar; qirra — EDGE-DRILLING.csv. To‘liq CNC CSV:',
-  'DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива': 'DXF: tekis yuzalar; qirra teshiklari shu arxivdagi EDGE-DRILLING.csv da',
-  'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF varaq bichish xaritasi; teshiklar sex paketida yoki detallar bo‘yicha CNC da',
-  'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Paket: yuzalar DXF, qirralar uchun EDGE-DRILLING.csv, bichish xaritasi, detallar ro‘yxati va yorliqlar. To‘liq CNC CSV alohida tugmada.',
-  'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Varaq DXF — bichish xaritasi. Sex paketida qirralar uchun EDGE-DRILLING.csv bor; to‘liq teshiklar CSV — detallar bo‘yicha CNC.',
-  'Прямоугольный DXF-план обновит ширину (W) и глубину (D) комнаты; мебель не добавится.': 'To‘rtburchak DXF rejasi xonaning eni (W) va chuqurligini (D) yangilaydi; mebel qo‘shilmaydi.',
-  'Прайс-лист': 'Narxlar ro‘yxati',
-  'Информация': 'Ma’lumot',
-  'Импорт': 'Import',
-  'Можно импортировать только прямоугольный план из четырёх стен': 'Faqat to‘rt devorli to‘rtburchak rejani import qilish mumkin',
-  'Размеры комнаты должны быть больше нуля': 'Xona o‘lchamlari noldan katta bo‘lishi kerak',
-  'Координаты DXF должны быть целыми миллиметрами': 'DXF koordinatalari butun millimetrda bo‘lishi kerak',
-  'Закрепить у края': 'Chekkaga biriktirish',
-  'Левый край': 'Chap chekka',
-  'Правый край': 'O‘ng chekka',
-  'Верхний край': 'Yuqori chekka',
-  'Нижний край': 'Pastki chekka',
-  'передний длинный край': 'oldingi uzun chekka',
-  'задний длинный край': 'orqa uzun chekka',
-  'короткий край': 'qisqa chekka',
-  'Ничего не выбрано — выберите деталь в 3D или панели Структура.': 'Hech narsa tanlanmagan — 3D yoki Tuzilma panelida detalni tanlang.',
-  'В каталоге цеха нет петли для этого типа фасада. Добавьте артикул в настройках цеха.': 'Sex katalogida bu fasad turi uchun ilmoq yo‘q. Sex sozlamalariga artikul qo‘shing.',
-  'Введите целые высоты полок': 'Tokcha balandligini butun millimetrda kiriting',
->>>>>>> codex/0924
   'Выберите подходящую петлю': 'Mos ilmoqni tanlang',
   'Деталировка временно недоступна. Экспорт заблокирован.': 'Kesim ro‘yxati vaqtincha mavjud emas. Eksport bloklangan.',
   'Добавьте отдельную секцию для каждой двери.': 'Har bir eshik uchun alohida bo‘lim qo‘shing.',
   'Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.': 'Maydonni tuzating. Oxirgi to‘g‘ri model ko‘rsatilgan. Kesim ro‘yxati vaqtincha mavjud emas. Eksport bloklangan.',
   'Материал корпуса не найден': 'Korpus materiali topilmadi',
   'Открыть настройки цеха': 'Sex sozlamalarini ochish',
-<<<<<<< HEAD
   'Пауза': 'Pauza',
   'Порядок резов': 'Kesish tartibi',
   'Только видимые карты': 'Faqat ko‘rinadigan varaqlar',
   'Шаг реза': 'Kesish bosqichi',
-=======
->>>>>>> codex/0924
   'значений': 'qiymat',
 
   "Импорт прайса CSV/XLSX": "CSV/XLSX narxlar ro‘yxatini import qilish",
@@ -1605,7 +1519,6 @@ export const uz: Record<string, string> = {
 
   'до 2 знаков после запятой': 'verguldan keyin ko‘pi bilan 2 raqam',
 
-<<<<<<< HEAD
   'Сбросить текущий проект?': 'Joriy loyihani tozalaysizmi?',
   'Стена С': 'Shimoliy devor',
   'Стена З': "G'arbiy devor",
@@ -1637,13 +1550,6 @@ export const uz: Record<string, string> = {
   'DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям': 'DXF varaq bichish xaritasi; teshiklar sex paketida yoki detallar bo‘yicha CNC da',
   'Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.': 'Paket: yuzalar DXF, qirralar uchun EDGE-DRILLING.csv, bichish xaritasi, detallar ro‘yxati va yorliqlar. To‘liq CNC CSV alohida tugmada.',
   'DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».': 'Varaq DXF — bichish xaritasi. Sex paketida qirralar uchun EDGE-DRILLING.csv bor; to‘liq teshiklar CSV — detallar bo‘yicha CNC.',
-=======
-  // Бұтақтарды біріктіруде сақталған аудармалар.
-  'Добавить подтверждённый артикул петли': 'Tasdiqlangan petlya artikulini qo\'shish',
-  'Профиль цеха: зазор {gap} мм с каждой стороны, схема отверстий Blum TANDEM. Артикул фурнитуры не определён; проверьте направляющие перед изготовлением.': 'Sex profili: har tomonda {gap} mm bo‘shliq, teshik sxemasi Blum TANDEM. Furnitura artikuli noma’lum; ishlab chiqarishdan oldin yo‘naltirgichlarni tekshiring.',
-  'У материала нет направления текстуры': "Bu materialda tekstura yo'nalishi yo'q",
-  'DXF деталей и торцевая присадка CSV в одном архиве': 'Detallar DXF va qirra teshiklarining CSV fayli bitta arxivda',
->>>>>>> codex/0924
   'Тематические уроки': 'Mavzuli darslar',
   'Начать урок': 'Darsni boshlash',
   'Пройдено · повторить': "O'tildi · takrorlash",
@@ -1678,7 +1584,6 @@ export const uz: Record<string, string> = {
   'Здесь доступны файлы для цеха и клиента.': 'Sex va mijoz uchun fayllar shu yerda.',
   'Откройте мастер': 'Ustani oching',
   'В меню «Создать» откройте готовые шаблоны и выберите мастер.': 'Yaratish menyusida tayyor shablonlarni ochib, ustani tanlang.',
-<<<<<<< HEAD
   'Пустое название станет «Мой цех»; до 100 символов': 'Bo‘sh nom “Мой цех” bo‘ladi; 100 belgigacha',
   'Название цеха: от 0 до 100 символов': 'Sex nomi: 0–100 belgi',
   'Пароль: введите пароль': 'Parol: parolni kiriting',
@@ -1696,6 +1601,4 @@ export const uz: Record<string, string> = {
   'Ваш аккаунт будет удалён. Вы больше не сможете войти. Удалить аккаунт и уйти?': 'Hisobingiz o‘chiriladi. Endi kira olmaysiz. Hisobni o‘chirib chiqasizmi?',
   'Приглашение отозвано.': 'Taklif bekor qilindi.',
   'Не удалось отозвать приглашение': 'Taklifni bekor qilib bo‘lmadi',
-=======
->>>>>>> codex/0924
 }
