@@ -44,9 +44,25 @@ export function writeShopProfile(shopId: string, profile: unknown, actorId?: str
 
 export function listProjects(shopId: string): ProjectRow[] {
   const rows = db()
-    .prepare('SELECT id, name, updated_at FROM projects WHERE shop_id = ? ORDER BY updated_at DESC LIMIT 100')
+    .prepare('SELECT id, name, updated_at FROM projects WHERE shop_id = ? ORDER BY updated_at DESC, id DESC')
     .all(shopId) as { id: string; name: string; updated_at: number }[]
   return rows.map((r) => ({ id: r.id, name: r.name, updatedAt: r.updated_at }))
+}
+
+export function listProjectsPage(
+  shopId: string, options: { limit: number; offset: number; query?: string },
+): { projects: ProjectRow[]; total: number } {
+  const query = options.query?.trim() ?? ''
+  const escaped = query.replace(/[!%_]/g, (character) => `!${character}`)
+  const filter = query ? " AND LOWER(name) LIKE LOWER(?) ESCAPE '!'" : ''
+  const args = query ? [shopId, `%${escaped}%`] : [shopId]
+  const database = db()
+  const count = database.prepare(`SELECT COUNT(*) AS total FROM projects WHERE shop_id = ?${filter}`)
+    .get(...args) as { total: number }
+  const rows = database.prepare(`SELECT id, name, updated_at FROM projects WHERE shop_id = ?${filter}
+    ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?`)
+    .all(...args, options.limit, options.offset) as { id: string; name: string; updated_at: number }[]
+  return { total: count.total, projects: rows.map((r) => ({ id: r.id, name: r.name, updatedAt: r.updated_at })) }
 }
 
 export function readProject(shopId: string, id: string): unknown | null {

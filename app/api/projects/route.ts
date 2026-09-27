@@ -1,20 +1,31 @@
 import { NextResponse } from 'next/server'
 import { parseProjectV4 } from '@/src/core/index'
 import { currentAccount } from '@/lib/server/session'
-import { listProjects, projectRevision, updateProject, writeProject } from '@/lib/server/store'
+import { listProjects, listProjectsPage, projectRevision, updateProject, writeProject } from '@/lib/server/store'
 import { readPlan, usageOf } from '@/lib/server/plan'
 import { canAddProject } from '@/lib/plans'
 import { cloudOff } from '@/lib/server/cloud'
 import { can } from '@/lib/permissions'
 
-export async function GET(): Promise<Response> {
+export async function GET(request?: Request): Promise<Response> {
   const off = cloudOff()
   if (off) return off
 
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
   if (!can(account.role, 'readProject')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
-  return NextResponse.json({ projects: listProjects(account.shopId) })
+  const params = request ? new URL(request.url).searchParams : new URLSearchParams()
+  if (!params.has('limit') && !params.has('offset') && !params.has('q')) {
+    return NextResponse.json({ projects: listProjects(account.shopId) })
+  }
+  const limit = Number(params.get('limit') ?? '100')
+  const offset = Number(params.get('offset') ?? '0')
+  const query = params.get('q') ?? ''
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100 ||
+    !Number.isSafeInteger(offset) || offset < 0 || query.length > 80) {
+    return NextResponse.json({ error: 'limit: 1–100, offset: 0+, q: 0–80 таңба' }, { status: 400 })
+  }
+  return NextResponse.json(listProjectsPage(account.shopId, { limit, offset, query }))
 }
 
 export async function POST(request: Request): Promise<Response> {
