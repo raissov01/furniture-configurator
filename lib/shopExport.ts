@@ -12,6 +12,7 @@
 import { mergeSettings } from '@/src/core/index'
 import type { CabinetConfig, Catalog, Panel, ProjectInfo, SettingsOverride } from '@/src/core/index'
 import { flatArchiveFiles } from '@/lib/flatArchiveFiles'
+import { splitProjectPdfPanels } from '@/lib/projectPdfScope'
 
 export type ShopExportFormat = 'xlsx' | 'csv' | 'dxf' | 'pdf'
 export const SHOP_EXPORT_FORMATS: readonly ShopExportFormat[] = ['xlsx', 'csv', 'dxf', 'pdf']
@@ -26,6 +27,7 @@ export type ShopExportInput = {
   projectInfo?: ProjectInfo | undefined
   exportId?: string | undefined
   exportName?: string | undefined
+  pdfAssembly?: { nodeId: string; panels: Panel[]; nodeCount: number } | undefined
 }
 
 export function shopExportFileName(base: string, format: ShopExportFormat): string {
@@ -50,7 +52,7 @@ export const downloadFile: SaveFile = (filename, data, mime) => {
 
 export async function runShopExport(format: ShopExportFormat, input: ShopExportInput, save: SaveFile = downloadFile): Promise<void> {
   const { cabinet, panels, catalog } = input
-  const base = cabinet?.id ?? input.exportId ?? 'part'
+  const base = input.exportId ?? cabinet?.id ?? 'part'
   const name = shopExportFileName(base, format)
   switch (format) {
     case 'xlsx': {
@@ -79,14 +81,17 @@ export async function runShopExport(format: ShopExportFormat, input: ShopExportI
     }
     case 'pdf': {
       if (!cabinet) throw new Error('PDF: сборочный чертёж строится только для корпуса')
+      const scope = input.pdfAssembly
+        ? splitProjectPdfPanels(input.pdfAssembly.nodeId, input.pdfAssembly.panels, panels, input.pdfAssembly.nodeCount)
+        : { assembly: panels, supplementary: [] }
       const { assemblyDrawingPdf } = await import('@/src/core/export/pdf')
       const [regular, bold] = await Promise.all([
         fetch('/fonts/DejaVuSans-subset.ttf').then((r) => r.arrayBuffer()),
         fetch('/fonts/DejaVuSans-Bold-subset.ttf').then((r) => r.arrayBuffer()),
       ])
       const bytes = await assemblyDrawingPdf({
-        cabinet, panels, catalog,
-        projectName: cabinet.name,
+        cabinet, panels: scope.assembly, supplementaryPanels: scope.supplementary, catalog,
+        projectName: input.exportName ?? cabinet.name,
         fonts: { regular: new Uint8Array(regular), bold: new Uint8Array(bold) },
         info: input.projectInfo,
       })

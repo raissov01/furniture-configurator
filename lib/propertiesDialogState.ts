@@ -42,6 +42,7 @@ export type PropertiesKeyEvent = {
   key: string
   /** Фокустағы элемент тегі (кіші әріппен). */
   target: string
+  exactInput?: boolean
   isComposing?: boolean
   shiftKey?: boolean
   ctrlKey?: boolean
@@ -57,5 +58,25 @@ export function propertiesKeyAction(event: PropertiesKeyEvent): 'ok' | 'cancel' 
   if (event.key === 'Escape') return 'cancel'
   if (event.key !== 'Enter') return null
   if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return null
+  if (event.exactInput) return null
   return NATIVE_ENTER.has(event.target) ? null : 'ok'
+}
+
+/** A file must describe the committed project, including its valid panel model. */
+export function propertiesProductionReady(dirty: boolean, invalid: boolean, draftInvalid: boolean): boolean {
+  return !dirty && !invalid && !draftInvalid
+}
+
+export function propertiesChildModalActive(quoteOpen: boolean, drillOpen: boolean): boolean {
+  return quoteOpen || drillOpen
+}
+
+/** Child dialogs can show live data, but must not download files while Properties can still Cancel. */
+export function childExportAllowed(propertiesOpen: boolean): boolean {
+  return !propertiesOpen
+}
+
+/** Structure keeps multiple selection locally; state the editing limit at the selection. */
+export function selectionPropertiesNotice(count: number): string | null {
+  return count > 1 ? 'Свойства нескольких объектов не редактируются вместе. Выберите один объект перед открытием свойств.' : null
 }

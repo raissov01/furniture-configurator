@@ -12,7 +12,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { MarketPriceNotice } from './MarketPrice'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
@@ -20,6 +20,7 @@ import type { Discount, HardwarePlacement, NestedSheet, Panel, PriceLine, PriceO
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { childExportAllowed } from '@/lib/propertiesDialogState'
 
 type Tab = 'nesting' | 'price'
 
@@ -53,7 +54,7 @@ function isoToRu(iso: string): string {
 
 /** `panels` — БҮКІЛ ЖОБАНЫҢ детальдары. Геометрия store-да есептелмейді (§3). */
 export function QuoteView({
-  panels, hardware, projectName, moduleWidths,
+  panels, hardware, projectName, moduleWidths, propertiesOpen = false,
 }: {
   panels: Panel[]
   /** Панель емес фурнитура: штанга мен ұстағыштар. */
@@ -61,6 +62,7 @@ export function QuoteView({
   projectName: string
   /** Корпустардың ені, мм — монтаж мөлшерлемесі осыдан саналады. */
   moduleWidths: number[]
+  propertiesOpen?: boolean
 }) {
   const open = useConfigurator((s) => s.quoteOpen)
   const setOpen = useConfigurator((s) => s.setQuoteOpen)
@@ -75,6 +77,9 @@ export function QuoteView({
   const [tab, setTab] = useState<Tab>('nesting')
   const [customer, setCustomer] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
+  const exportAllowed = childExportAllowed(propertiesOpen)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => { if (open) dialogRef.current?.focus() }, [open])
 
   const nesting = useMemo(() => {
     try {
@@ -108,10 +113,10 @@ export function QuoteView({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => setOpen(false)}
     >
-      <div
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Смета по проекту')}
         className="w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
@@ -123,8 +128,9 @@ export function QuoteView({
             {panels.length > 0 ? `деталей в проекте: ${panels.length}` : null}
           </span>
           <div className="ml-auto flex items-center gap-1">
+            {!exportAllowed && <span role="status" className="text-xs">{tr('Закройте свойства через OK перед экспортом')}</span>}
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={!exportAllowed || busy !== null || !nesting}
               title={tr('Карта раскроя для цеха, по листу на страницу')}
               onClick={() => void run('map', async () => {
                 const { nestingPdf } = await import('@/src/core/export/nestingPdf')
@@ -135,7 +141,7 @@ export function QuoteView({
               {busy === 'map' ? '…' : 'PDF карты'}
             </Button>
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={!exportAllowed || busy !== null || !nesting}
               title={tr('По одному DXF на лист, всё в архиве')}
               onClick={() => void run('dxf', async () => {
                 const [{ nestingToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -150,7 +156,7 @@ export function QuoteView({
               {busy === 'dxf' ? '…' : 'DXF'}
             </Button>
             <Button
-              disabled={busy !== null || !price || price.missingPrices.length > 0}
+              disabled={!exportAllowed || busy !== null || !price || price.missingPrices.length > 0}
               title={
                 priceError
                   ? priceError
@@ -177,7 +183,7 @@ export function QuoteView({
               {busy === 'quote' ? '…' : 'КП'}
             </Button>
             <Button
-              disabled={busy !== null}
+              disabled={!exportAllowed || busy !== null}
               title={tr('Что закупить в цех. Выпускается и без заполненных цен')}
               onClick={() => void run('fittings', async () => {
                 const { hardwareList, hardwareListPdf } = await import('@/src/core/export/hardwareList')
@@ -193,7 +199,7 @@ export function QuoteView({
               {busy === 'fittings' ? '…' : 'Фурнитура'}
             </Button>
             <Button
-              disabled={busy !== null}
+              disabled={!exportAllowed || busy !== null}
               title={tr('Список фурнитуры в CSV — отправить поставщику')}
               onClick={() => void run('fittings-csv', async () => {
                 const { hardwareList, hardwareListToCsv } = await import('@/src/core/export/hardwareList')

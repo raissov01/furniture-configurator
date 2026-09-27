@@ -137,8 +137,9 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-toolbar-style { display: flex; align-items: center; gap: 5px; padding-left: 16px; font-size: 11px; }
 .p100-toolbar-style select { height: 21px; border: 1px solid var(--p100-fieldset-border); border-radius: 1px; background: var(--p100-field); color: var(--p100-text); }
 .p100-floating-window { position: absolute; z-index: 20; width: 435px; height: 190px; border: 1px solid var(--p100-fieldset-border); border-radius: 2px; background: var(--p100-dialog); color: var(--p100-text); }
-.p100-floating-title { display: flex; height: 26px; align-items: center; justify-content: space-between; padding: 0 6px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-dialog); cursor: move; user-select: none; }
-.p100-floating-title button { width: 22px; height: 20px; border: 1px solid transparent; cursor: default; }
+.p100-floating-title { display: flex; height: 26px; align-items: center; gap: 6px; padding: 0 6px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-dialog); cursor: move; user-select: none; }
+.p100-floating-title span { margin-right: auto; }
+.p100-floating-title button { min-width: 22px; height: 20px; padding: 0 5px; border: 1px solid transparent; cursor: default; }
 .p100-floating-title button:hover { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
 .p100-floating-window .p100-tree-dock { height: 163px; max-height: 163px; border: 0; }
 .p100-floating-window .p100-tree-dock > button:first-child { display: none; }
@@ -172,6 +173,12 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-dialog-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 8px; border-top: 1px solid var(--p100-divider); }
 .p100-dialog-error { margin: 4px 10px; color: var(--p100-text); font-size: 12px; }
 .p100-dialog :where(input, select, button):focus-visible { outline: 1px solid var(--p100-focus); }
+
+@media (max-width: 1023px) {
+  .p100-dialog-backdrop { background: var(--p100-dialog); }
+  .p100-dialog { width: 100vw; height: 100dvh; max-height: none; border: 1px solid var(--p100-fieldset-border); }
+  .p100-dialog-body { flex: 1; overscroll-behavior: contain; }
+}
 
 /* Классикалық жұмыс үстелінің терезелері жүйенің dark режимінде де ақшыл.
    Диалогтардың сыртқы және ішкі беті PRO100 эталонындағы өлшенген түстерді алады. */

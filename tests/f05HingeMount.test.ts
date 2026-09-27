@@ -22,6 +22,13 @@ describe('F05 петля түрі', () => {
       .toThrow(/fronts\.hingeSystemId.*inset|fronts\.hingeSystemId.*вкладн/)
   })
 
+  it('артикул таңдалмаса, каталогтағы сәйкес inset петляны қолданады', () => {
+    const panels = generateCabinet(inset(), catalog)
+    expect(panels.filter((panel) => panel.role === 'front')).toHaveLength(1)
+    expect(panels.some((panel) => panel.role !== 'front'
+      && panel.drilling.some((drill) => drill.purpose === 'hinge'))).toBe(true)
+  })
+
   it('әдепкі overlay петляның орнына каталогтағы inset жүйені таңдайды', () => {
     const automatic = generateCabinet(inset(), catalog)
     const explicit = generateCabinet(inset('hinge-blum-71b3750-inset'), catalog)
