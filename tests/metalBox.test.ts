@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest'
 import {
   METAL_BOX_SYSTEMS, defaultShopProfile, findMetalBoxSystem, generateCabinet,
   generateHardware, isMetalBoxSystem, metalBoxParts, nestPanels, priceProject,
+  cabinetToDxfFiles, panelToDxf,
 } from '../src/core/index'
 import type { CabinetConfig, MetalBoxSystemId, Panel } from '../src/core/index'
 import { catalog, withCabinet } from './fixtures'
@@ -127,6 +128,13 @@ describe('шектер мен қателер', () => {
       metalBoxBackHeight: 300,
     })
     expect(() => generateCabinet(config, catalog)).toThrow(/metalBoxBackHeight.*рұқсат етілген/)
+  })
+
+  it('бекіту схемасы жоқ металл жүйеге өндірістік DXF берілмейді', () => {
+    const panels = gen('tandembox')
+    expect(() => cabinetToDxfFiles(panels)).toThrow(/бекіту координаталары жоқ/)
+    expect(() => panelToDxf(role(panels, 'drawerBottom')[0]!)).toThrow(/бекіту координаталары жоқ/)
+    expect(() => panelToDxf(panels.find((panel) => panel.id === 'side-left')!)).toThrow(/бекіту координаталары жоқ/)
   })
 
   it('тайыз корпуста түсінікті ҚАТЕ', () => {

@@ -1005,6 +1005,12 @@ export function generateCabinet(
             ? { side: frontPanel.side, width: frontPanel.width }
             : null,
         })
+        if (metalBox) {
+          const [left, right] = boundsOf(sectionIndex)
+          const reason = `${metalBox.name}: корпусқа бекіту координаталары жоқ; артикулдық присадка схемасы қажет`
+          left.cncBlockReason = reason
+          right.cncBlockReason = reason
+        }
         panels.push(...created.panels)
         for (const run of created.runs) {
           drawerRuns.push({ ...run, sectionIndex })
@@ -2359,7 +2365,7 @@ function makeDrawers(input: {
 
     if (metalParts) {
       // Металл жәшік: парақтан ТЕК осы екеуі кесіледі.
-      panels.push(make(
+      const metalBottom = make(
         `${id}-bottom`, 'drawerBottom', 'Дно ящика', carcass,
         // ORIENT_HORIZONTAL: ұзындығы X (ен), ені Z (тереңдік).
         metalParts.bottom.width, metalParts.bottom.depth,
@@ -2370,7 +2376,9 @@ function makeDrawers(input: {
         },
         ORIENT_HORIZONTAL,
         `Дно ящика, ${metalBox!.name}`,
-      ))
+      )
+      metalBottom.cncBlockReason = `${metalBox!.name}: корпусқа бекіту координаталары жоқ; артикулдық присадка схемасы қажет`
+      panels.push(metalBottom)
       panels.push(make(
         `${id}-wall-back`, 'drawerBack', 'Задняя стенка ящика', carcass,
         // ORIENT_FACING: ұзындығы Y (биіктік), ені X.
