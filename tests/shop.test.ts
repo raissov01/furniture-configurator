@@ -122,6 +122,13 @@ describe('профильді сақтау', () => {
     expect(() => parseShopProfile({ ...shop, maxShelfSpan: -5 })).toThrow()
   })
 
+  it('minBandSubtract профильде кемінде 1 бүтін мм болуы керек', () => {
+    for (const invalid of [0, 0.4, 1.5]) {
+      expect(() => parseShopProfile({ ...shop, settings: { ...shop.settings, minBandSubtract: invalid } }))
+        .toThrow(/minBandSubtract/)
+    }
+  })
+
   it('баға бүтін тиын болуы керек, float емес', () => {
     const broken = { ...shop, materials: shop.materials.map((m) => ({ ...m, pricePerSheet: 1250.5 })) }
     expect(() => parseShopProfile(broken)).toThrow()

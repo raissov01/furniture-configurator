@@ -20,7 +20,10 @@ export type PdfFonts = { regular: Uint8Array; bold: Uint8Array }
 
 export type AssemblyPdfInput = {
   cabinet: CabinetConfig
+  /** Шкафтың проекциясына ғана кіретін панельдер. */
   panels: Panel[]
+  /** Жобадағы еркін тақталар: деталировкаға және жеке тесік беттеріне кіреді. */
+  supplementaryPanels?: Panel[] | undefined
   catalog: Catalog
   projectName: string
   fonts: PdfFonts
@@ -252,7 +255,8 @@ function drawIsometric(
 }
 
 function drawCutList(ctx: Ctx, input: AssemblyPdfInput): void {
-  const rows = formatCutList(input.panels, input.catalog)
+  const allPanels = [...input.panels, ...(input.supplementaryPanels ?? [])]
+  const rows = formatCutList(allPanels, input.catalog)
   const cols = CUT_LIST_COLUMNS
   const WIDTH: Partial<Record<(typeof cols)[number]['key'], number>> = {
     name: 78, qty: 34,
@@ -304,8 +308,31 @@ function drawCutList(ctx: Ctx, input: AssemblyPdfInput): void {
   line(ctx.page, MARGIN, y + 9, PAGE.w - MARGIN, y + 9, INK, 0.6)
   label(ctx, MARGIN, y, `Позиций: ${rows.length}    Деталей: ${pieces}`, 8, true)
 
-  const holes = input.panels.reduce((s, p) => s + p.drilling.length, 0)
+  const holes = allPanels.reduce((s, p) => s + p.drilling.length, 0)
   if (holes > 0) label(ctx, MARGIN + 200, y, `Присадка: ${holes} отв.`, 8, true, THIN)
+}
+
+function drawSupplementaryPanel(ctx: Ctx, panel: Panel, pageIndex: number, pages: number): void {
+  let y = PAGE.h - MARGIN - 66
+  label(ctx, MARGIN, y, `Деталь: ${panel.label}`, 12, true)
+  y -= 24
+  if (pageIndex === 0) {
+    label(ctx, MARGIN, y, `Готовый: ${panel.finishedLength} × ${panel.finishedWidth} мм`, 10)
+    y -= 16
+    label(ctx, MARGIN, y, `Рез: ${panel.cutLength} × ${panel.cutWidth} мм`, 10, true)
+    y -= 16
+    label(ctx, MARGIN, y, `Кромка: L1 ${panel.edges.L1?.bandId ?? '—'} · L2 ${panel.edges.L2?.bandId ?? '—'} · W1 ${panel.edges.W1?.bandId ?? '—'} · W2 ${panel.edges.W2?.bandId ?? '—'}`, 8)
+    y -= 28
+  }
+  label(ctx, MARGIN, y, `Присадка (${panel.drilling.length} отв.) · лист ${pageIndex + 1}/${pages}`, 9, true)
+  y -= 19
+  label(ctx, MARGIN, y, '№     Бет                 X, мм      Y, мм      Ø, мм      Глубина, мм      Назначение', 8, true)
+  y -= 14
+  const start = pageIndex * 30
+  panel.drilling.slice(start, start + 30).forEach((drill, index) => {
+    label(ctx, MARGIN, y, `${start + index + 1}     ${drill.face}     ${drill.x}     ${drill.y}     ${drill.diameter}     ${drill.depth}     ${drill.purpose}`, 8)
+    y -= 13
+  })
 }
 
 export async function assemblyDrawingPdf(input: AssemblyPdfInput): Promise<Uint8Array> {
@@ -316,12 +343,14 @@ export async function assemblyDrawingPdf(input: AssemblyPdfInput): Promise<Uint8
 
   const thicknessMap = new Map(input.catalog.materials.map((m) => [m.id, m.thickness]))
   const thicknessOf = (p: Panel) => thicknessMap.get(p.materialId) ?? 16
+  const supplementary = input.supplementaryPanels ?? []
+  const totalPages = 3 + supplementary.reduce((sum, panel) => sum + Math.max(1, Math.ceil(panel.drilling.length / 30)), 0)
 
   // 1-бет: үш проекция
   {
     const page = doc.addPage([PAGE.w, PAGE.h])
     const ctx: Ctx = { page, regular, bold }
-    titleBlock(ctx, input, 'Лист 1 из 3 — проекции')
+    titleBlock(ctx, input, `Лист 1 из ${totalPages} — проекции`)
     const top = PAGE.h - MARGIN - 40 - titleBlockExtra(input)
     const colW = (PAGE.w - 2 * MARGIN) / 3
     const h = top - MARGIN
@@ -335,7 +364,7 @@ export async function assemblyDrawingPdf(input: AssemblyPdfInput): Promise<Uint8
   {
     const page = doc.addPage([PAGE.w, PAGE.h])
     const ctx: Ctx = { page, regular, bold }
-    titleBlock(ctx, input, 'Лист 2 из 3 — сборка')
+    titleBlock(ctx, input, `Лист 2 из ${totalPages} — сборка`)
     const top = PAGE.h - MARGIN - 40 - titleBlockExtra(input)
     drawIsometric(
       ctx, input,
@@ -349,8 +378,20 @@ export async function assemblyDrawingPdf(input: AssemblyPdfInput): Promise<Uint8
   {
     const page = doc.addPage([PAGE.w, PAGE.h])
     const ctx: Ctx = { page, regular, bold }
-    titleBlock(ctx, input, 'Лист 3 из 3 — деталировка')
+    titleBlock(ctx, input, `Лист 3 из ${totalPages} — деталировка`)
     drawCutList(ctx, input)
+  }
+
+  let sheet = 4
+  for (const panel of supplementary) {
+    const pages = Math.max(1, Math.ceil(panel.drilling.length / 30))
+    for (let pageIndex = 0; pageIndex < pages; pageIndex += 1) {
+      const page = doc.addPage([PAGE.w, PAGE.h])
+      const ctx: Ctx = { page, regular, bold }
+      titleBlock(ctx, input, `Лист ${sheet} из ${totalPages} — свободная доска`)
+      drawSupplementaryPanel(ctx, panel, pageIndex, pages)
+      sheet += 1
+    }
   }
 
   stampPdfBrand(doc)

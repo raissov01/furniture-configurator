@@ -13,7 +13,7 @@
  */
 
 import { z } from 'zod'
-import { KERF } from './constants'
+import { KERF, MAX_KERF } from './constants'
 import { fillingHardware } from './filling'
 import {
   HANDLE_BORE_SPACINGS, HandleModelSchema, HingeSystemSchema, defaultHandles,
@@ -292,6 +292,7 @@ const SEED_HARDWARE: Omit<HardwareItem, 'pricePerUnit'>[] = [
   { id: 'box-tandembox', kind: 'other', name: 'Ящик Blum TANDEMBOX (комплект)' },
   { id: 'box-merivobox', kind: 'other', name: 'Ящик Blum MERIVOBOX (комплект)' },
   { id: 'box-metabox', kind: 'other', name: 'Ящик Blum METABOX M (комплект)' },
+  { id: 'box-metabox-n', kind: 'other', name: 'Ящик Blum METABOX N (комплект)' },
   { id: 'rod-25', kind: 'other', name: 'Штанга Ø25 (за метр)' },
   { id: 'rod-bracket', kind: 'other', name: 'Держатель штанги' },
   { id: 'sliding-track', kind: 'other', name: 'Рельс для дверей-купе (за метр)' },
@@ -627,7 +628,7 @@ const SettingsOverrideSchema = z.object({
   backThickness: z.number().positive(),
   grooveDepth: z.number().int().nonnegative(),
   grooveInset: z.number().int().nonnegative(),
-  minBandSubtract: z.number().nonnegative(),
+  minBandSubtract: z.number().int().min(1),
   confirmatSpanForThird: z.number().int().positive().nullable(),
   shelfPinDatum: z.number().int().nonnegative(),
   shelfPinFrontOffset: z.number().int().nonnegative(),
@@ -674,7 +675,7 @@ const LabourRatesSchema = z.object({
 })
 
 const CuttingSettingsSchema = z.object({
-  kerf: z.number().int().nonnegative().max(20),
+  kerf: z.number().int().nonnegative().max(MAX_KERF),
   trimEdge: z.number().int().nonnegative().max(200).nullable(),
   optimization: z.enum(['fast', 'standard', 'deep']),
 })

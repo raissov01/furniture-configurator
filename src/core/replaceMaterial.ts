@@ -27,6 +27,11 @@ import type { ShopProfile } from './shop'
 import { priceProject } from './pricing'
 import { projectUsage } from './materialUsage'
 import type { ProjectUsage } from './materialUsage'
+import { flattenTree } from './flatten'
+import { findNode } from './tree'
+import type { GroupNode, SceneNode } from './tree'
+import type { Layer } from './layers'
+import { replaceTreeMaterial } from './library'
 import type {
   CabinetConfig, Catalog, Material, Panel, SettingsOverride,
 } from './types'
@@ -159,6 +164,89 @@ export type MaterialReplacePreview = {
   priceAfter: number
   /** `priceAfter − priceBefore`, тиын. Теріс болса — арзандады. */
   priceDiff: number
+}
+
+/** Канондық ағашпен алдын ала есепте қосымша қамтылған еркін тақталар. */
+export type TreeMaterialReplacePreview = MaterialReplacePreview & { affectedBoardIds: string[] }
+
+/** Ағаштың көрінетін түйіндерін өндірістік панель, фурнитура және монтаж еніне айналдырады. */
+function treeProduction(root: GroupNode, catalog: Catalog, settings: SettingsOverride, layers?: Layer[]) {
+  const scene = flattenTree(root, catalog, settings, layers)
+  return {
+    scene,
+    panels: mergeProjectPanels(scene.nodes.map((node) => ({ cabinetId: node.nodeId, panels: node.panels }))),
+    hardware: scene.nodes.flatMap((node) => node.hardware),
+    moduleWidths: scene.nodes.flatMap((node) => {
+      const source = findNode(root, node.nodeId)
+      return source?.kind === 'cabinet' ? [source.config.width] : []
+    }),
+  }
+}
+
+/**
+ * Жобаның нақты каталогы, параметрлері және көрінетін ағашы бойынша есептеу.
+ * `scope: all` нақты қолданылатын `replaceTreeMaterial` жолын шақырады.
+ */
+export function previewTreeMaterialReplace(
+  root: GroupNode,
+  catalog: Catalog,
+  shop: ShopProfile,
+  oldMaterialId: string,
+  newMaterialId: string,
+  scope: ReplaceMaterialScope,
+  settings: SettingsOverride = shop.settings,
+  layers?: Layer[],
+): TreeMaterialReplacePreview {
+  validateMaterialId('oldMaterialId', oldMaterialId, catalog.materials)
+  validateMaterialId('newMaterialId', newMaterialId, catalog.materials)
+
+  const replaceScoped = (node: SceneNode): SceneNode => {
+    if (node.kind === 'group') return { ...node, children: node.children.map(replaceScoped) }
+    if (node.kind !== 'cabinet' || !inScope(scope, node.config.id)) return node
+    const config = applyMaterialReplace([node.config], oldMaterialId, newMaterialId, { kind: 'all' })[0]!
+    return { ...node, config }
+  }
+  const nextRoot = scope.kind === 'all'
+    ? replaceTreeMaterial(root, oldMaterialId, newMaterialId, layers)
+    : replaceScoped(root) as GroupNode
+  const before = treeProduction(root, catalog, settings, layers)
+  const after = treeProduction(nextRoot, catalog, settings, layers)
+  const afterNodes = new Map(after.scene.nodes.map((node) => [node.nodeId, node]))
+  const affectedCabinetIds: string[] = []
+  const affectedBoardIds: string[] = []
+  let totalPanels = 0
+  let changedPanels = 0
+  let cutSizeChanged = false
+
+  for (const node of before.scene.nodes) {
+    const source = findNode(root, node.nodeId)
+    if (!source) continue
+    const affected = source.kind === 'cabinet' && inScope(scope, source.config.id)
+      || scope.kind === 'all' && source.kind === 'board' && source.board.materialId === oldMaterialId
+    if (!affected) continue
+    if (source.kind === 'cabinet') affectedCabinetIds.push(source.config.id)
+    if (source.kind === 'board') affectedBoardIds.push(source.id)
+    totalPanels += node.panels.length
+    const updated = new Map(afterNodes.get(node.nodeId)?.panels.map((panel) => [panel.id, panel]) ?? [])
+    for (const panel of node.panels) {
+      const next = updated.get(panel.id)
+      if (!next) continue
+      const dimsChanged = next.cutLength !== panel.cutLength || next.cutWidth !== panel.cutWidth
+      if (next.materialId !== panel.materialId || dimsChanged) changedPanels += 1
+      if (dimsChanged) cutSizeChanged = true
+    }
+  }
+
+  // `priceProject` материал/кромка бағасын ShopProfile-ден оқиды; жобаның
+  // жеке каталогы осы екі тізімді алмастырады, қалған цех бағалары сақталады.
+  const pricedShop = { ...shop, materials: catalog.materials, edgeBands: catalog.edgeBands }
+  const nestingOptions = nestingOptionsOf(shop)
+  const priceBefore = priceProject(before.panels,
+    nestPanels(before.panels, catalog, nestingOptions), pricedShop, before.hardware, before.moduleWidths).total
+  const priceAfter = priceProject(after.panels,
+    nestPanels(after.panels, catalog, nestingOptions), pricedShop, after.hardware, after.moduleWidths).total
+  return { affectedCabinetIds, affectedBoardIds, totalPanels, changedPanels, cutSizeChanged,
+    priceBefore, priceAfter, priceDiff: priceAfter - priceBefore }
 }
 
 /**

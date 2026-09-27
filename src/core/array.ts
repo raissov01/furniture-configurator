@@ -3,7 +3,7 @@ import { ConfigValidationError } from './errors'
 import type { Axis } from './types'
 import type { SceneNode } from './tree'
 
-export type ArrayOptions = { axis: Axis; count: number; step: number; startIndex?: number }
+export type ArrayOptions = { axis: Axis; count: number; step: number; startIndex?: number; parentRotationY?: number }
 
 export function arrayNodes(node: SceneNode, opts: ArrayOptions): SceneNode[] {
   if (!(['x', 'y', 'z'] as const).includes(opts.axis)) throw new ConfigValidationError('axis', 'белгісіз өс', 'x | y | z')
@@ -11,6 +11,14 @@ export function arrayNodes(node: SceneNode, opts: ArrayOptions): SceneNode[] {
     throw new ConfigValidationError('count', 'көшірме саны жарамсыз', '1–1000')
   }
   if (!Number.isSafeInteger(opts.step) || opts.step === 0) throw new ConfigValidationError('step', 'қадам бүтін мм және нөл емес болуы керек', 'бүтін мм ≠ 0')
+  const radians = (opts.parentRotationY ?? 0) * Math.PI / 180
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  const localStep = {
+    x: opts.axis === 'x' ? opts.step * cos : opts.axis === 'z' ? -opts.step * sin : 0,
+    y: opts.axis === 'y' ? opts.step : 0,
+    z: opts.axis === 'x' ? opts.step * sin : opts.axis === 'z' ? opts.step * cos : 0,
+  }
   const first = opts.startIndex ?? 1
   if (!Number.isSafeInteger(first) || first < 1 || !Number.isSafeInteger(first + opts.count - 1)) {
     throw new ConfigValidationError('startIndex', 'рет нөмірі жарамсыз', 'қауіпсіз оң бүтін сан')
@@ -21,9 +29,14 @@ export function arrayNodes(node: SceneNode, opts: ArrayOptions): SceneNode[] {
       ...(source.kind === 'group' ? { children: source.children.map((child) => copy(child, suffix, offset, false)) } : {}) } as SceneNode
     if (clone.kind === 'cabinet') clone.config = { ...clone.config, id: clone.id, name: clone.name }
     if (top) {
-      const value = source.transform.pos[opts.axis] + opts.step * offset
-      if (!Number.isSafeInteger(value)) throw new ConfigValidationError(`transform.pos.${opts.axis}`, 'орын шектен асты', 'қауіпсіз бүтін мм')
-      clone.transform.pos[opts.axis] = value
+      for (const axis of ['x', 'y', 'z'] as const) {
+        const value = source.transform.pos[axis] + localStep[axis] * offset
+        const rounded = Math.round(value)
+        if (!Number.isSafeInteger(rounded) || Math.abs(value - rounded) > 1e-7) {
+          throw new ConfigValidationError(`transform.pos.${axis}`, 'әлем қадамы ата осінде бүтін мм бермейді', '90°-қа еселі бұрылыс және қауіпсіз бүтін мм')
+        }
+        clone.transform.pos[axis] = rounded === 0 ? 0 : rounded
+      }
     }
     return clone
   }

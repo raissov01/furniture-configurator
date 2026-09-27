@@ -1,0 +1,9 @@
+[Unit]
+Description=AisMebel daily database and file backup
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/aismebel/backup.env
+ExecStart=/opt/furniture-configurator/scripts/launch_backup_daily.sh
+UMask=0077
+TimeoutStartSec=2h

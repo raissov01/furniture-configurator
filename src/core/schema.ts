@@ -82,7 +82,7 @@ export const ConstructionSettingsSchema = z.object({
   backThickness: z.number().positive(),
   grooveDepth: z.number().int().nonnegative(),
   grooveInset: z.number().int().nonnegative(),
-  minBandSubtract: z.number().nonnegative(),
+  minBandSubtract: z.number().int().min(1),
   confirmatSpanForThird: mm.nullable(),
   shelfPinDatum: z.number().int().nonnegative(),
   shelfPinFrontOffset: z.number().int().nonnegative(),
@@ -315,7 +315,7 @@ export const CabinetConfigSchema = CabinetBaseSchema.extend({
     materialId: z.string().min(1).optional(),
   }).optional(),
   drawerSystem: z.enum([
-    'roller', 'ball', 'tandem', 'tandembox', 'legrabox', 'merivobox', 'metabox',
+    'roller', 'ball', 'tandem', 'tandembox', 'legrabox', 'merivobox', 'metabox', 'metaboxN',
   ]).optional(),
   metalBoxBackHeight: mm.optional(),
   topRails: z.object({

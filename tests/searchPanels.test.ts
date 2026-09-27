@@ -93,3 +93,20 @@ describe('бос сұрау', () => {
     expect(searchProjectPanels(items, [material], '   ')).toHaveLength(0)
   })
 })
+
+describe('кесу өлшемі бойынша іздеу', () => {
+  const items = [{ cabinetId: 'c1', panels: [
+    makePanel({ id: 'side', finishedLength: 2000, finishedWidth: 447, cutLength: 2000, cutWidth: 445 }),
+    makePanel({ id: 'front', finishedLength: 1994, finishedWidth: 295, cutLength: 1990, cutWidth: 291 }),
+  ] }]
+
+  it('кесу ені мен ұзындығын жеке сан бойынша табады', () => {
+    expect(searchProjectPanels(items, [material], '445').map((hit) => hit.panel.id)).toEqual(['side'])
+    expect(searchProjectPanels(items, [material], '1990').map((hit) => hit.panel.id)).toEqual(['front'])
+  })
+
+  it('кесу өлшемінің екі жазылуын табады', () => {
+    expect(searchProjectPanels(items, [material], '2000x445').map((hit) => hit.panel.id)).toEqual(['side'])
+    expect(searchProjectPanels(items, [material], '1990×291').map((hit) => hit.panel.id)).toEqual(['front'])
+  })
+})

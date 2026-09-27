@@ -15,9 +15,9 @@ import {
 } from '../src/core/index'
 
 describe('шаблон кітапханасы', () => {
-  it('роликті жәшік шаблоны нақты roller жүйесін таңдайды', () => {
+  it('ас үй жәшігі расталған Tandem жүйесін таңдайды', () => {
     const cabinet = templateToCabinet(findTemplate('kitchen-base-drawers-600')!, SEED_CATALOG)
-    expect(cabinet.drawerSystem).toBe('roller')
+    expect(cabinet.drawerSystem).toBe('tandem')
   })
 
   it('id-лер бірегей', () => {

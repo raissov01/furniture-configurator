@@ -2,6 +2,7 @@
  * Кромка: қай жиекке қандай лента жабысады және рез өлшемі қалай шығады.
  */
 
+import { ConfigValidationError } from './errors'
 import type {
   ConstructionMethod, ConstructionSettings, EdgeBand, EdgePolicy,
   EdgeSpec, Orientation, PanelEdges, PanelRole,
@@ -194,9 +195,18 @@ export function calculateCutDimensions(
   bands: Map<string, EdgeBand>,
   settings: ConstructionSettings,
 ): CutDimensions {
+  if (!Number.isInteger(settings.minBandSubtract) || settings.minBandSubtract < 1) {
+    throw new ConfigValidationError('minBandSubtract', String(settings.minBandSubtract), '≥ 1 мм, бүтін сан')
+  }
   const t = (e: EdgeSpec) => subtractedThickness(e, bands, settings)
-  return {
+  const cut = {
     cutLength: finishedLength - t(edges.W1) - t(edges.W2),
     cutWidth: finishedWidth - t(edges.L1) - t(edges.L2),
   }
+  for (const [field, value] of Object.entries(cut)) {
+    if (!Number.isInteger(value)) {
+      throw new ConfigValidationError(field, String(value), 'бүтін мм')
+    }
+  }
+  return cut
 }

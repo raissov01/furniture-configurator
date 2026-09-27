@@ -279,7 +279,7 @@ export function snapOffset(
 export type PlacementIssue = {
   cabinetId: string
   /** UI-да қай өріс жанып тұратынын білу үшін */
-  field: 'offset' | 'width' | 'depth' | 'overlap'
+  field: 'offset' | 'width' | 'depth' | 'elevation' | 'overlap'
   message: string
 }
 
@@ -317,6 +317,14 @@ export function validatePlacements(
         cabinetId: cabinet.id,
         field: 'depth',
         message: `глубина ${cabinet.depth} мм больше комнаты (${across} мм)`,
+      })
+    }
+    const top = (placement.elevation ?? 0) + (cabinet.base?.height ?? 0) + cabinet.height
+    if (top > room.height) {
+      issues.push({
+        cabinetId: cabinet.id,
+        field: 'elevation',
+        message: `верх шкафа ${top} мм выше потолка ${room.height} мм`,
       })
     }
   }

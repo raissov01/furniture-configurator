@@ -117,6 +117,19 @@ export const METAL_BOX_SYSTEMS: Record<MetalBoxSystemId, MetalBoxSystem> = {
     mountingGrid: { firstFromFront: 37, pitch: 32 },
     source: 'Blum Catalogue 2027/2028 б.352–353: https://publications.blum.com/2026/catalogue/en/353/',
   },
+  // Blum Catalogue 2027/2028 б.350–351: METABOX N, ДСП түбі мен арты.
+  metaboxN: {
+    id: 'metaboxN',
+    name: 'Blum METABOX N',
+    nominalLengths: [270, 350, 400, 450, 500, 550],
+    bottomWidthSub: 31,
+    bottomDepthSub: 2,
+    backWidthSub: 31,
+    backHeight: 39,
+    hardwareId: 'box-metabox-n',
+    mountingGrid: { firstFromFront: 37, pitch: 32 },
+    source: 'Blum Catalogue 2027/2028 б.350–351, 369: https://publications.blum.com/2026/catalogue/en/351/',
+  },
 }
 
 export function isMetalBoxSystem(id: string): id is MetalBoxSystemId {

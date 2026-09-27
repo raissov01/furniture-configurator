@@ -7,10 +7,11 @@
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { PDFDocument } from 'pdf-lib'
-import { describe, expect, it } from 'vitest'
+import { PDFDocument, PDFPage } from 'pdf-lib'
+import { describe, expect, it, vi } from 'vitest'
 import {
   defaultShopProfile,
+  cutPlan,
   findTemplate,
   formatTenge,
   generateCabinet,
@@ -71,6 +72,20 @@ describe('раскрой DXF', () => {
     expect(dxf).toContain('TEXT')
   })
 
+  it('DXF кесу ретін бөлек анықтамалық қабатта нөмірлеп береді', () => {
+    const sheet = nesting.byMaterial[0]!.sheets[0]!
+    const file = nestingToDxfFiles(nesting).get(`${sheet.materialId}-list-${sheet.index}.dxf`)!
+    expect(file).toContain('CUT_ORDER_REFERENCE')
+    expect(file).toMatch(/CUT 1 (TRIM|SPLIT|SIZE)/)
+    const cutPaths = file.split('LWPOLYLINE').filter((chunk) => chunk.startsWith('\n8\nCUT_ORDER_REFERENCE'))
+    const planned = cutPlan(nesting).byMaterial[0]!.sheets[0]!.cuts
+    expect(cutPaths).toHaveLength(planned.length)
+    const first = planned[0]!
+    const x = first.axis === 'v' ? first.at : first.from
+    const y = first.axis === 'v' ? first.from : first.at
+    expect(cutPaths[0]).toContain(`10\n${x}.0\n20\n${y}.0`)
+  })
+
   it('әр деталь контур болып шығады', () => {
     const sheet = nesting.byMaterial[0]!.sheets[0]!
     const dxf = nestedSheetToDxf(sheet, 'ЛДСП')
@@ -86,6 +101,17 @@ describe('раскрой DXF', () => {
 })
 
 describe('раскрой PDF', () => {
+  it('әр резді картаға ретімен сызады', async () => {
+    const drawLine = vi.spyOn(PDFPage.prototype, 'drawLine')
+    try {
+      await nestingPdf({ nesting, projectName: 'Шкаф 3 секции', fonts })
+      const cutLines = drawLine.mock.calls.filter(([options]) => options.thickness === 0.6)
+      expect(cutLines).toHaveLength(cutPlan(nesting).stats.cutCount)
+    } finally {
+      drawLine.mockRestore()
+    }
+  })
+
   it('қорытынды беті + әр параққа бір бет', async () => {
     const bytes = await nestingPdf({ nesting, projectName: 'Шкаф 3 секции', fonts })
     const doc = await PDFDocument.load(bytes)

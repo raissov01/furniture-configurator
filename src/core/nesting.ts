@@ -20,7 +20,7 @@
  * гильотин шарты бәрінде де сақталады.
  */
 
-import { KERF, MIN_USEFUL_OFFCUT } from './constants'
+import { KERF, MAX_KERF, MIN_USEFUL_OFFCUT } from './constants'
 import { ConfigValidationError } from './errors'
 import type { Catalog, Material, Panel } from './types'
 
@@ -63,6 +63,8 @@ export type MaterialNesting = {
 }
 
 export type NestingResult = {
+  /** Орналастыруда қолданылған ара жолы; рез экспорты осы мәнді қайталайды. */
+  kerf?: number
   byMaterial: MaterialNesting[]
   /** Барлық парақ саны */
   sheetCount: number
@@ -92,6 +94,13 @@ export type NestingOptions = {
    */
   trimEdge?: number
   optimization?: OptimizationLevel
+}
+
+/** Раскройға тікелей шақыру да профильдегідей пропил шегін сақтайды. */
+export function validateKerf(kerf: number): void {
+  if (!Number.isInteger(kerf) || kerf < 0 || kerf > MAX_KERF) {
+    throw new ConfigValidationError('kerf', `жарамсыз пропил: ${kerf}`, `0..${MAX_KERF} бүтін мм`)
+  }
 }
 
 /** Детальдарды қай ретпен қою: бірінші қойылған деталь параққа орын таңдайды. */
@@ -338,7 +347,7 @@ function nestOnce(
         sheetHeight: material.sheetHeight,
         usable: { ...usable },
         parts: s.parts,
-        offcuts: s.frees.filter((f) => f.width >= MIN_USEFUL_OFFCUT && f.height >= MIN_USEFUL_OFFCUT),
+        offcuts: s.frees.filter((f) => f.width > MIN_USEFUL_OFFCUT && f.height > MIN_USEFUL_OFFCUT),
       })),
       partArea,
       usableArea,
@@ -380,6 +389,7 @@ export function nestPanels(
   options: NestingOptions = {},
 ): NestingResult {
   const gap = options.kerf ?? KERF
+  validateKerf(gap)
   const trimOverride = options.trimEdge
   const level = options.optimization ?? 'standard'
   const count = LEVEL_COUNT[level]
@@ -394,7 +404,7 @@ export function nestPanels(
       bestScore = score
     }
   }
-  return best!
+  return { ...best!, kerf: gap }
 }
 
 /**

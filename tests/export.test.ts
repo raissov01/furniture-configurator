@@ -73,6 +73,20 @@ describe('DXF', () => {
 })
 
 describe('CSV', () => {
+  it('текстура бағытының үш мәнін бөлек экспорттайды', () => {
+    const wood = panels.find((panel) => catalog.materials.find((m) => m.id === panel.materialId)?.hasGrain)!
+    const plain = catalog.materials.find((material) => !material.hasGrain)!
+    const cases = [
+      { panel: { ...wood, grainAlongLength: true }, grain: 'along-length' },
+      { panel: { ...wood, grainAlongLength: false }, grain: 'across-length' },
+      { panel: { ...wood, materialId: plain.id, grainAlongLength: true }, grain: 'none' },
+    ]
+    for (const { panel, grain } of cases) {
+      const row = cutListToCsv([panel], catalog).trim().split('\n')[1]!
+      expect(row.split(',').at(-1)).toBe(grain)
+    }
+  })
+
   it('тек РЕЗ өлшемі — оптимизаторға готовый керек емес', () => {
     const csv = cutListToCsv(panels, catalog)
     const [header, first] = csv.trim().split('\n')

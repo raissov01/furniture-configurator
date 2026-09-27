@@ -96,8 +96,12 @@ export function searchProjectPanels(
         material?.name ?? panel.materialId,
         String(panel.finishedLength),
         String(panel.finishedWidth),
+        String(panel.cutLength),
+        String(panel.cutWidth),
         `${panel.finishedLength}x${panel.finishedWidth}`,
         `${panel.finishedLength}×${panel.finishedWidth}`,
+        `${panel.cutLength}x${panel.cutWidth}`,
+        `${panel.cutLength}×${panel.cutWidth}`,
       ].join(' '))
       if (haystack.includes(needle)) hits.push({ cabinetId, panel })
     }
