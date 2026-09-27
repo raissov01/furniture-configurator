@@ -7,14 +7,14 @@ import { canAddProject } from '@/lib/plans'
 import { cloudOff } from '@/lib/server/cloud'
 import { can } from '@/lib/permissions'
 
-export async function GET(request?: Request): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const off = cloudOff()
   if (off) return off
 
   const account = await currentAccount()
   if (!account) return NextResponse.json({ error: 'Нужен вход' }, { status: 401 })
   if (!can(account.role, 'readProject')) return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
-  const params = request ? new URL(request.url).searchParams : new URLSearchParams()
+  const params = new URL(request.url).searchParams
   if (!params.has('limit') && !params.has('offset') && !params.has('q')) {
     return NextResponse.json({ projects: listProjects(account.shopId) })
   }

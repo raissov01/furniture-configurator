@@ -23,6 +23,7 @@ import { useConfigurator } from '@/store/configurator'
 import { projectPanelId, searchProjectPanels } from '@/src/core/index'
 import { useProjectProduction } from '@/lib/useProjectProduction'
 import { cn } from '@/lib/cn'
+import { findResultSizes } from '@/lib/f11FindResult'
 
 const rowBase = 'flex w-full flex-col gap-0.5 border border-neutral-800 px-2 py-1.5 text-left text-[11px] transition hover:border-neutral-600'
 
@@ -82,6 +83,7 @@ export function FindPanel() {
         ) : (
           hits.map(({ cabinetId, panel }) => {
             const isSelected = selected === panel.id
+            const sizes = findResultSizes(panel)
             return (
               <button
                 key={`${cabinetId}--${panel.id}`}
@@ -89,12 +91,11 @@ export function FindPanel() {
                 onClick={() => goTo(cabinetId, panel.id)}
                 className={cn(rowBase, isSelected ? 'border-neutral-100 bg-neutral-900' : 'bg-neutral-950')}
               >
-                <span className="flex items-center justify-between gap-2">
+                <span className="flex min-w-0 items-center justify-between gap-2">
                   <span className="truncate font-medium">{panel.label}</span>
-                  <span className="shrink-0 tabular-nums text-neutral-500">
-                    {panel.finishedLength}×{panel.finishedWidth}
-                  </span>
                 </span>
+                <span className="tabular-nums text-neutral-400">{tr('Готовый')}: {sizes.finished}</span>
+                <span className="tabular-nums text-neutral-400">{tr('Рез')}: {sizes.cut}</span>
                 <span className="truncate text-neutral-500">
                   {cabinetName(cabinetId)}
                 </span>

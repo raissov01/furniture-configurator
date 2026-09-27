@@ -21,7 +21,6 @@ import { projectProduction } from '@/lib/projectProduction'
 import { flatArchiveFiles } from '@/lib/flatArchiveFiles'
 import {
   ConfigValidationError,
-  cutPlan,
   flattenTree,
   mergeSettings,
   nestPanels,
@@ -34,9 +33,11 @@ import type {
 } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { cn } from '@/lib/cn'
-
-/** Парақ сызбасының экрандағы ені, пиксель. */
-const SHEET_PX = 520
+import { cutDisplay, visibleMaterials } from '@/lib/cutView'
+import { playbackStep } from '@/src/core/cutPlayback'
+import { labelExportOptions, labelSizeLimits } from '@/lib/labelExportOptions'
+import { safeCutPlan } from '@/lib/safeCutPlan'
+import type { LabelPage } from '@/src/core/export/labelLayout'
 
 /**
  * ⚠ Тізім ФУНКЦИЯ, тұрақты емес. Модуль деңгейіндегі `tr()` тіл сақтаудан
@@ -96,9 +97,27 @@ export function CutPage() {
   }, [hydrateShop, hydrateProject])
 
   const [showCuts, setShowCuts] = useState(true)
+  const [materialFilter, setMaterialFilter] = useState('all')
   const [busy, setBusy] = useState<string | null>(null)
+  const [labelPage, setLabelPage] = useState<LabelPage>('a4')
+  const [labelWidth, setLabelWidth] = useState(58)
+  const [labelHeight, setLabelHeight] = useState(40)
+  const [labelDraftInvalid, setLabelDraftInvalid] = useState<Record<string, boolean>>({})
   /** Экспорттың ескертуі (мыс. Базис қазақ әріптерін оқымайды). */
   const [notice, setNotice] = useState<string | null>(null)
+  const labelOptions = useMemo(() => {
+    try {
+      // Ағаштың түбір ID-і барлық жобада "root"; бірінші өндіріс түйінінің
+      // ID-і сақталған файлда тұрақты және жобаларды ажыратады.
+      return { value: labelExportOptions(
+        { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
+        root.children[0]?.id ?? root.id, 4,
+      ), error: null }
+    } catch (error) {
+      return { value: null, error: error instanceof Error ? error.message : String(error) }
+    }
+  }, [labelPage, labelWidth, labelHeight, root])
+  const labelsReady = labelOptions.value !== null && !Object.values(labelDraftInvalid).some(Boolean)
 
   const production = useMemo(() => {
     if (projectLoadError) return { panels: [], error: projectLoadError }
@@ -132,10 +151,11 @@ export function CutPage() {
     }
   }, [panels, production.error, catalog, options])
   const nesting = nested.nesting
-  const plan = useMemo(
-    () => (nesting ? cutPlan(nesting, { kerf: cutting.kerf }) : null),
+  const planned = useMemo(
+    () => safeCutPlan(nesting, cutting.kerf),
     [nesting, cutting.kerf],
   )
+  const plan = planned.plan
   const advice = useMemo(
     () => (nesting ? unplacedAdvice(nesting, panels, catalog, options) : []),
     [nesting, panels, catalog, options],
@@ -168,12 +188,12 @@ export function CutPage() {
           <h1 className="text-sm font-semibold">{tr('Раскрой')}</h1>
           <span className="min-w-0 max-w-full truncate text-[11px] text-neutral-500">{projectName}</span>
 
-          <div data-testid="cut-export-actions" className="flex w-full flex-wrap items-center gap-1 sm:ml-auto sm:w-auto">
-            <Button active={showCuts} onClick={() => setShowCuts(!showCuts)}>
+          <div data-testid="cut-export-actions" className="ml-auto flex w-full min-w-0 flex-wrap items-center gap-1 sm:w-auto">
+            <Button active={showCuts} ariaPressed={showCuts} onClick={() => setShowCuts(!showCuts)}>
               {tr('Показать резы')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={busy !== null || !nesting || planned.error !== null}
               title={tr('Карта раскроя для цеха, по листу на страницу')}
               onClick={() => void run('map', async () => {
                 const { nestingPdf } = await import('@/src/core/export/nestingPdf')
@@ -184,7 +204,7 @@ export function CutPage() {
               {busy === 'map' ? '…' : tr('PDF карты')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={busy !== null || !nesting || planned.error !== null}
               title={tr('DXF карты раскроя по листам; присадка — в пакете для цеха или ЧПУ по деталям')}
               onClick={() => void run('dxf', async () => {
                 const [{ nestingToDxfFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -203,7 +223,7 @@ export function CutPage() {
               {busy === 'dxf' ? '…' : 'DXF'}
             </Button>
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={busy !== null || !nesting || planned.error !== null || !labelsReady}
               title={tr('Бирки на детали: позиция, размер реза, кромка по кромкам')}
               onClick={() => void run('labels', async () => {
                 const { labelsPdf } = await import('@/src/core/export/labels')
@@ -211,6 +231,7 @@ export function CutPage() {
                   labels: partLabels(panels, catalog, nesting!),
                   projectName,
                   fonts: await loadFonts(),
+                  ...labelOptions.value!,
                 })
                 download(`${projectName}-бирки.pdf`, bytes, 'application/pdf')
               })}
@@ -218,7 +239,7 @@ export function CutPage() {
               {busy === 'labels' ? '…' : tr('Бирки')}
             </Button>
             <Button
-              disabled={busy !== null || !nesting}
+              disabled={busy !== null || !nesting || planned.error !== null || !labelsReady}
               title={tr('Пакет: DXF пластей деталей, EDGE-DRILLING.csv для торцов, карта раскроя, деталировка и бирки. Полный ЧПУ CSV — отдельная кнопка.')}
               onClick={() => void run('bundle', async () => {
                 const [
@@ -244,7 +265,7 @@ export function CutPage() {
                 entries['detalirovka.csv'] = strToU8(`\ufeff${cutListToCsv(panels, catalog)}`)
                 entries['birki.csv'] = strToU8(`\ufeff${labelsToCsv(labels)}`)
                 entries['karta-raskroya.pdf'] = await nestingPdf({ nesting: nesting!, projectName, fonts })
-                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts })
+                entries['birki.pdf'] = await labelsPdf({ labels, projectName, fonts, ...labelOptions.value! })
                 download(
                   `${projectName}-цех.zip`,
                   zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }),
@@ -255,7 +276,7 @@ export function CutPage() {
               {busy === 'bundle' ? '…' : tr('Пакет для цеха')}
             </Button>
             <Button
-              disabled={busy !== null || panels.length === 0 || production.error !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null || planned.error !== null}
               title={tr('Присадка для станка: на каждую деталь свой файл, плюс index.csv')}
               onClick={() => void run('cnc', async () => {
                 const [{ cncFiles }, { zipSync, strToU8 }] = await Promise.all([
@@ -276,7 +297,7 @@ export function CutPage() {
               {busy === 'cnc' ? '…' : tr('ЧПУ по деталям')}
             </Button>
             <Button
-              disabled={busy !== null || panels.length === 0 || production.error !== null}
+              disabled={busy !== null || panels.length === 0 || production.error !== null || planned.error !== null}
               title={tr('Для Базиса: список деталей для Раскроя (CSV, XLSX), скрипт для Мебельщика — детали и присадка как крепёж, DXF деталей')}
               onClick={() => void run('basis', async () => {
                 const [{ basisFiles, unsupportedInCp1251 }, { cabinetToDxfArchiveFiles }, { zipSync, strToU8 }] =
@@ -316,11 +337,32 @@ export function CutPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-4">
+        <section className="mb-3 grid gap-2 border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-3" aria-label={tr('Бирки')}>
+          <Field label={tr('Лист для бирок')}>
+            <Select value={labelPage} onChange={(page) => setLabelPage(page as LabelPage)} options={[
+              { value: 'a4', label: 'A4' }, { value: 'a5', label: 'A5' },
+            ]} />
+          </Field>
+          <Field label={tr('Ширина бирки, мм')} hint={`58–${labelSizeLimits(labelPage).width} мм`}>
+            <NumberInput value={labelWidth} min={58} max={labelSizeLimits(labelPage).width}
+              field="labelWidth" onDraftValidityChange={(field, invalid) => setLabelDraftInvalid((state) => ({ ...state, [field]: invalid }))}
+              onChange={setLabelWidth} />
+          </Field>
+          <Field label={tr('Высота бирки, мм')} hint={`40–${labelSizeLimits(labelPage).height} мм`}>
+            <NumberInput value={labelHeight} min={40} max={labelSizeLimits(labelPage).height}
+              field="labelHeight" onDraftValidityChange={(field, invalid) => setLabelDraftInvalid((state) => ({ ...state, [field]: invalid }))}
+              onChange={setLabelHeight} />
+          </Field>
+          {labelOptions.error ? <p role="alert" className="text-xs text-red-700 sm:col-span-3">{labelOptions.error}</p> : null}
+        </section>
         <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
           {tr('DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».')}
         </p>
         {nested.error ? (
           <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{nested.error}</p>
+        ) : null}
+        {planned.error ? (
+          <p role="alert" className="mb-3 border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">{planned.error}</p>
         ) : null}
         {notice ? (
           <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
@@ -339,6 +381,17 @@ export function CutPage() {
               <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
                 {tr('Настройки станка')}
               </h2>
+
+              <Field label={tr('Материал')} hint={tr('Только видимые карты')}>
+                <Select
+                  value={materialFilter}
+                  onChange={setMaterialFilter}
+                  options={[
+                    { value: 'all', label: tr('Все материалы') },
+                    ...nesting.byMaterial.map((item) => ({ value: item.materialId, label: item.materialName })),
+                  ]}
+                />
+              </Field>
 
               <Field label={tr('Пропил, мм')} hint={tr('толщина пилы')}>
                 <NumberInput
@@ -378,7 +431,7 @@ export function CutPage() {
 
               <Totals stats={plan.stats} sheetCount={nesting.sheetCount} />
 
-              {plan.byMaterial.map((m) => {
+              {visibleMaterials(plan.byMaterial, materialFilter).map((m) => {
                 const material = nesting.byMaterial.find((x) => x.materialId === m.materialId)!
                 return (
                   <section key={m.materialId} className="space-y-2">
@@ -446,14 +499,23 @@ const CUT_COLOR: Record<CutLine['kind'], string> = {
 function SheetCard({
   sheet, plan, showCuts,
 }: { sheet: NestedSheet; plan: SheetCutPlan; showCuts: boolean }) {
-  const scale = SHEET_PX / sheet.sheetWidth
+  const [playback, setPlayback] = useState(false)
+  const [step, setStep] = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const display = cutDisplay(plan.cuts, showCuts, playback, step)
+  useEffect(() => {
+    if (!playing || !showCuts || display.step >= display.total) return
+    const timer = window.setInterval(() => setStep((current) => playbackStep(current, plan.cuts.length, 1)), 700)
+    return () => window.clearInterval(timer)
+  }, [playing, showCuts, display.step, display.total, plan.cuts.length])
+  useEffect(() => {
+    if (display.step >= display.total) setPlaying(false)
+  }, [display.step, display.total])
   return (
     <figure className="w-full max-w-[520px] min-w-0 space-y-1">
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
-        width={SHEET_PX}
-        height={sheet.sheetHeight * scale}
-        className="h-auto w-full max-w-[520px] rounded border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
+        className="block h-auto w-full max-w-[520px] rounded border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
         role="img"
         aria-label={`Лист ${sheet.index}`}
       >
@@ -480,7 +542,7 @@ function SheetCard({
             </text>
           </g>
         ))}
-        {showCuts ? plan.cuts.map((c) => {
+        {display.visible.map((c) => {
           const x1 = c.axis === 'v' ? c.at : c.from
           const x2 = c.axis === 'v' ? c.at : c.to
           const y1 = c.axis === 'v' ? c.from : c.at
@@ -489,9 +551,9 @@ function SheetCard({
             <g key={c.order}>
               <line
                 x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke={CUT_COLOR[c.kind]} strokeWidth={6}
+                stroke={CUT_COLOR[c.kind]} strokeWidth={display.active === c ? 12 : 6}
                 strokeDasharray={c.kind === 'trim' ? '24 16' : undefined}
-                strokeOpacity={0.85}
+                strokeOpacity={display.active === c ? 1 : 0.85}
               />
               <circle cx={(x1 + x2) / 2} cy={(y1 + y2) / 2} r={30} fill={CUT_COLOR[c.kind]} />
               <text
@@ -503,8 +565,32 @@ function SheetCard({
               </text>
             </g>
           )
-        }) : null}
+        })}
       </svg>
+      <div className="flex flex-wrap items-center gap-1 text-xs">
+        <Button size="sm" active={playback} disabled={!showCuts} ariaPressed={playback}
+          onClick={() => { setPlayback(!playback); setPlaying(false); setStep(0) }}>
+          {tr('Порядок резов')}
+        </Button>
+        {playback && showCuts ? <>
+          <Button size="sm" disabled={display.step === 0}
+            onClick={() => { setPlaying(false); setStep((current) => playbackStep(current, display.total, -1)) }}>
+            {tr('Назад')}
+          </Button>
+          <input type="range" min={0} max={display.total} value={display.step}
+            aria-label={tr('Шаг реза')} className="min-w-16 flex-1"
+            onChange={(event) => { setPlaying(false); setStep(Number(event.target.value)) }} />
+          <span className="tabular-nums">{display.step}/{display.total}</span>
+          <Button size="sm" disabled={display.step >= display.total}
+            onClick={() => { setPlaying(false); setStep((current) => playbackStep(current, display.total, 1)) }}>
+            {tr('Вперёд')}
+          </Button>
+          <Button size="sm" disabled={display.total === 0}
+            onClick={() => { if (display.step >= display.total) setStep(0); setPlaying(!playing) }}>
+            {playing ? tr('Пауза') : tr('Воспроизвести')}
+          </Button>
+        </> : null}
+      </div>
       <figcaption className="w-[520px] max-w-full text-[11px] text-neutral-500">
         <span className="font-medium text-neutral-700 dark:text-neutral-300">
           {tr('Лист')} {sheet.index}

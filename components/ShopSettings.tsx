@@ -31,6 +31,9 @@ import { useConfigurator } from '@/store/configurator'
 import { Button, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { availableVerifiedHinges } from '@/lib/frontEdit'
+import { materialUsedInTree } from '@/lib/materialUsedInTree'
+import { ruleInputPolicy } from '@/lib/shopRuleInput'
+import { updateCatalogMaterialName } from '@/lib/catalogMaterialName'
 import { ShopDrillingSettings } from './ShopDrillingSettings'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 import { OwnTextureMapper } from './OwnTextureMapper'
@@ -618,6 +621,7 @@ function AddMaterial() {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [brand, setBrand] = useState('')
+  const [autoName, setAutoName] = useState<string | null>(null)
   const [draft, setDraft] = useState({
     name: '',
     thickness: 16,
@@ -677,12 +681,14 @@ function AddMaterial() {
                   type="button"
                   className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800"
                   onClick={() => {
+                    const name = `${DECOR_KIND_NAME[d.kind]} ${d.name} ${draft.thickness} мм`
                     setDraft({
                       ...draft,
-                      name: `${DECOR_KIND_NAME[d.kind]} ${d.name} ${draft.thickness} мм`,
+                      name,
                       color: d.color,
                       hasGrain: d.hasGrain,
                     })
+                    setAutoName(name)
                     setSearch('')
                   }}
                 >
@@ -702,11 +708,16 @@ function AddMaterial() {
       <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_7rem_minmax(0,1.4fr)_6rem]">
         <Field label={tr('Название')}>
           <input className={text} value={draft.name} placeholder={tr('ЛДСП Дуб Сонома 16 мм')}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+            onChange={(e) => { setDraft({ ...draft, name: e.target.value }); setAutoName(null) }} />
         </Field>
         <Field label={tr('Толщина, мм')}>
           <select className={text} value={draft.thickness}
-            onChange={(e) => setDraft({ ...draft, thickness: Number(e.target.value) })}>
+            onChange={(e) => {
+              const thickness = Number(e.target.value)
+              const updated = updateCatalogMaterialName(draft.name, autoName, draft.thickness, thickness)
+              setDraft({ ...draft, thickness, name: updated.name })
+              setAutoName(updated.autoName)
+            }}>
             {SHEET_THICKNESSES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </Field>
@@ -744,6 +755,7 @@ function AddMaterial() {
                 edging: { visibleFront: front, visibleSecondary: secondary },
               }))
               setDraft({ ...draft, name: '' })
+              setAutoName(null)
               setOpen(false)
             }}
           >
@@ -761,8 +773,7 @@ function AddMaterial() {
 function MaterialActions({ id }: { id: string }) {
   const cloneMaterial = useConfigurator((s) => s.cloneMaterial)
   const removeMaterial = useConfigurator((s) => s.removeMaterial)
-  const used = useConfigurator((s) =>
-    s.cabinets.some((c) => c.carcassMaterialId === id || c.frontMaterialId === id || c.backMaterialId === id))
+  const used = useConfigurator((s) => materialUsedInTree(s.root, id))
   return (
     <span className="flex items-center gap-1">
       <Button onClick={() => cloneMaterial(id)} title={tr('Клонировать материал')}>
@@ -794,9 +805,10 @@ function Rule({
   // Экранда ол 0 болып көрінеді: 0 қойса, ереже өшіп қалады.
   const value = raw ?? 0
   const fallback = DEFAULT_SETTINGS[k] ?? tr('выключено')
+  const policy = ruleInputPolicy(k)
   return (
     <Field label={label} hint={hint ?? (overridden ? 'своё' : `по умолчанию ${fallback}`)}>
-      <NumberInput value={value} min={0} step={1} onChange={(v) => onChange(k, v)} />
+      <NumberInput value={value} min={policy.min} step={1} label={policy.label} onChange={(v) => onChange(k, v)} />
     </Field>
   )
 }
