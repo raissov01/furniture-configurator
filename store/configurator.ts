@@ -84,6 +84,9 @@ const COALESCE_MS = 500
 /** Тарих тереңдігі. */
 const HISTORY_LIMIT = 100
 
+/** Бір share кодының PUT сұраныстары серверге жіберілген ретімен жетуі тиіс. */
+let shareSyncTail: Promise<void> = Promise.resolve()
+
 /**
  * `wall-*` — PRO100-дың астыңғы қойынды қатары («Стена С/З/Ю/В»,
  * `docs/pro100/ui-design.md`): бөлменің сол қабырғасының СЫРТЫНАН қарайтын
@@ -200,8 +203,8 @@ type State = Snapshot & {
   shareSession: { code: string; key: string; expiresAt: number } | null
   /** Код жасау (сервер). Бұлт сөндірулі не желі жоқ болса — қатенің мәтіні. */
   startShare(): Promise<{ ok: true; code: string; expiresAt: number } | { ok: false; error: string }>
-  /** Жобаны кодқа қайта жіберу (автоматты жаңарту). Код жоқ болса — ештеңе. */
-  syncShare(): void
+  /** Жобаны кодқа ретімен қайта жіберу; келісім алдында нәтижесін күтуге болады. */
+  syncShare(): Promise<{ ok: true } | { ok: false; error: string }>
   /** Камера проекциясы: перспектива (табиғи) не орто (өлшем алуға ыңғайлы). */
   projection: 'perspective' | 'ortho'
   /**
@@ -1311,15 +1314,31 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   syncShare: () => {
     const session = get().shareSession
-    if (!session || session.expiresAt <= Date.now()) return
-    void fetch(`/api/share/${session.code}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'x-share-key': session.key },
-      body: JSON.stringify(get().exportProject()),
-    }).catch((error: unknown) => {
-      // Желі үзілсе — келесі өзгерісте қайта жіберіледі; жұмысты тоқтатпаймыз.
-      console.warn('Код клиента: обновление не отправлено', error)
+    if (!session || session.expiresAt <= Date.now()) {
+      return Promise.resolve({ ok: false, error: tr('Код клиента истёк') })
+    }
+    const send = async (): Promise<{ ok: true } | { ok: false; error: string }> => {
+      if (get().shareSession?.code !== session.code) {
+        return { ok: false, error: tr('Код клиента изменился') }
+      }
+      try {
+        const response = await fetch(`/api/share/${session.code}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'x-share-key': session.key },
+          body: JSON.stringify(get().exportProject()),
+        })
+        if (!response.ok) return { ok: false, error: `${tr('Не удалось обновить проект для клиента')} (${response.status})` }
+        return { ok: true }
+      } catch (cause) {
+        console.warn('Код клиента: обновление не отправлено', cause)
+        return { ok: false, error: tr('Нет связи с сервером') }
+      }
+    }
+    const result = shareSyncTail.then(send)
+    shareSyncTail = result.then(() => undefined, (cause: unknown) => {
+      console.warn('Код клиента: очередь обновления прервана', cause)
     })
+    return result
   },
   runBusy: (label, fn) => {
     if (get().busy) return

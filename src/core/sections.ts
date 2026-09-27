@@ -12,6 +12,34 @@ import type { Section } from './types'
 /** Бұдан тар секция жарамсыз — ішіне ештеңе сыймайды. */
 export const MIN_SECTION_WIDTH = 100
 
+/** Бар ID-лердің арасынан ең кіші бос секция ID-сін береді. */
+export function nextSectionId(sections: readonly Section[]): string {
+  const used = new Set(sections.map((section) => section.id))
+  for (let index = 1; index <= sections.length + 1; index += 1) {
+    const id = `s${index}`
+    if (!used.has(id)) return id
+  }
+  throw new ConfigValidationError('sections', 'бос id табылмады')
+}
+
+/** Ескі файлдағы қайталанған ID-лерді ғана ауыстырады; секция реті сақталады. */
+export function repairSectionIds(sections: readonly Section[]): Section[] {
+  const reserved = new Set(sections.map((section) => section.id))
+  const seen = new Set<string>()
+  return sections.map((section) => {
+    if (!seen.has(section.id)) {
+      seen.add(section.id)
+      return section
+    }
+    let index = 1
+    while (reserved.has(`s${index}`)) index += 1
+    const id = `s${index}`
+    reserved.add(id)
+    seen.add(id)
+    return { ...section, id }
+  })
+}
+
 export type SectionLayout = {
   section: Section
   /** Секцияның ТАЗА ішкі ені */
@@ -38,6 +66,14 @@ export function layoutSections(
   if (sections.length > 12) {
     throw new ConfigValidationError('sections', `${sections.length} секция`, '1..12')
   }
+
+  const ids = new Set<string>()
+  sections.forEach((section, index) => {
+    if (ids.has(section.id)) {
+      throw new ConfigValidationError(`sections[${index}].id`, `id қайталанды: "${section.id}"`, 'бірегей id')
+    }
+    ids.add(section.id)
+  })
 
   const dividerCount = sections.length - 1
   /** Перегородкалар алынғаннан кейінгі, секцияларға қалатын таза ен. */

@@ -42,8 +42,9 @@ describe('share келісім API', () => {
     const started = await route.POST(req('POST', { previewPngBase64 }), context(s.code))
     if (started.status !== 201) throw new Error(`start ${started.status}: ${await started.text()}`)
     expect(started.status).toBe(201)
-    const challenge = await started.json() as { version: number; hash: string; confirmationCode: string }
+    const challenge = await started.json() as { version: number; hash: string; confirmationCode: string; priceMinor: number }
     expect(challenge.version).toBe(1)
+    expect(challenge.priceMinor).toBe(12500000)
     expect(challenge.hash).toMatch(/^[a-f0-9]{64}$/)
     expect(challenge.confirmationCode).toMatch(/^\d{6}$/)
     actor.value = null
@@ -63,14 +64,14 @@ describe('share келісім API', () => {
     actor.value = owner.account
     expect(share.updateShare(s.code, s.key, JSON.stringify(project('Жаңа')), Date.now(), owner.account.shopId)).toBe(true)
     const stale = await route.GET(req('GET'), context(s.code))
-    expect((await stale.json() as { status: string }).status).toBe('changed')
+    expect(await stale.json()).toMatchObject({ status: 'changed', latestApprovedVersion: 1 })
     const renewed = await route.POST(req('POST', {}), context(s.code))
     expect(renewed.status).toBe(201)
     expect((await renewed.json() as { version: number }).version).toBe(2)
     const old = await route.GET(new Request('http://localhost/api/share/x/approval?version=1'), context(s.code))
     expect((await old.json() as { seal: { hash: string } }).seal.hash).toBe(challenge.hash)
     const current = await route.GET(req('GET'), context(s.code))
-    expect((await current.json() as { status: string }).status).toBe('pending')
+    expect(await current.json()).toMatchObject({ status: 'pending', latestApprovedVersion: 1 })
   })
 
   it('қате баға, жарамсыз сұраныс және рұқсат 4xx болып шығады', async () => {
