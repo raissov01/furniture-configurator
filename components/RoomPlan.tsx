@@ -125,7 +125,7 @@ export function RoomPlan() {
         aria-modal="true"
         aria-labelledby="room-plan-title"
         tabIndex={-1}
-        className="min-w-0 w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-3 shadow-xl outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
+        className="min-w-0 w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-3 outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
