@@ -97,19 +97,24 @@ def create_archive(stage, archive, mode):
 
 
 def sync_remote(backup_dir, rsync_target, s3_target):
+    if rsync_target or s3_target:
+        archives = [path for path in backup_dir.glob(PREFIX + '*.tar.gz')
+                    if path.is_file() and not path.is_symlink() and path.stat().st_size > 0]
+        if not archives:
+            raise ValueError('Сыртқы көшіру тоқтады: жергілікті бэкап архиві жоқ')
     if rsync_target:
         if rsync_target.startswith('-') or ':' not in rsync_target or not rsync_target.endswith('/'):
             raise ValueError('rsync нысанасы user@host:/арнайы/бума/ түрінде аяқталуы керек')
         if rsync_target.rsplit(':', 1)[1] in ('/', './', ''):
             raise ValueError('rsync үшін бөлек бэкап бумасын көрсетіңіз')
-        run(['rsync', '-az', '--delete', '--include=*.tar.gz', '--exclude=*',
+        run(['rsync', '-az', '--include=*.tar.gz', '--exclude=*',
              str(backup_dir) + '/', rsync_target])
     if s3_target:
         _, prefix = s3_location(s3_target)
         if not prefix:
             raise ValueError('S3 нысанасы s3://bucket/арнайы/префикс/ түрінде аяқталуы керек')
         run(['aws', 's3', 'sync', str(backup_dir), s3_target, '--exclude', '*',
-             '--include', '*.tar.gz', '--delete'])
+             '--include', '*.tar.gz'])
 
 
 def backup(args):
