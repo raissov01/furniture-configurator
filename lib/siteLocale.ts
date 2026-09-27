@@ -1,4 +1,4 @@
-import { getLang, type Lang } from '@/lib/i18n'
+import type { Lang } from '@/lib/i18n'
 
 type Translations = { kk: string; en: string; uz: string }
 
@@ -132,14 +132,6 @@ export function siteTranslate(text: string, lang: Lang): string {
 
 export function siteLanguageFromQuery(value: string | string[] | undefined): Lang {
   return value === 'kk' || value === 'en' || value === 'uz' ? value : 'ru'
-}
-
-export function siteT(text: string): string {
-  return siteTranslate(text, getLang())
-}
-
-export function siteFormat(text: string, values: Record<string, string | number>): string {
-  return siteT(text).replace(/\{(\w+)\}/g, (whole, key: string) => key in values ? String(values[key]) : whole)
 }
 
 export function siteFormatFor(text: string, values: Record<string, string | number>, lang: Lang): string {
