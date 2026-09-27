@@ -797,9 +797,9 @@ export function PanelMesh({
           <div className="p100-panel-tooltip pointer-events-none whitespace-nowrap px-2 py-1 text-[11px]">
             <b>{panelDisplayLabel(panel.label)}</b>
             <span className="mx-1.5">·</span>
-            готовый {panel.finishedLength}×{panel.finishedWidth}
+            {tr('Готовый')} {panel.finishedLength} (L) × {panel.finishedWidth} (W)
             <span className="mx-1.5">·</span>
-            <span className="p100-cut">{tr('рез')} {panel.cutLength}×{panel.cutWidth}</span>
+            <span className="p100-cut">{tr('Рез')} {panel.cutLength} (L) × {panel.cutWidth} (W)</span>
           </div>
         </Html>
       ) : null}

@@ -1115,10 +1115,10 @@ export function Workspace() {
               <div data-testid="selected-info-overlay" className="p100-selection-bar pointer-events-auto absolute inset-x-2 bottom-2 z-20 flex max-h-[45%] flex-wrap items-center gap-2 overflow-y-auto px-3 py-1.5 text-xs">
                 <b>{panelDisplayLabel(part.label)}</b>
                 <span className="p100-muted tabular-nums">
-                  {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
+                  {tr('Готовый · клиент')}: {part.finishedLength} (L) × {part.finishedWidth} (W)
                 </span>
                 <span className="p100-cut tabular-nums">
-                  {tr('Рез · цех')}: {part.cutLength}×{part.cutWidth}
+                  {tr('Рез · цех')}: {part.cutLength} (L) × {part.cutWidth} (W)
                 </span>
                 <span className="p100-muted tabular-nums">
                   {part.drilling.length} {tr('отв.')}
