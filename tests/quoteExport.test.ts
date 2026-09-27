@@ -127,6 +127,31 @@ describe('раскрой PDF', () => {
 })
 
 describe('КП PDF', () => {
+  it('клиентке тек соңғы баға, реквизиттер және ₸ шығады', async () => {
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText')
+    try {
+      const shop = { ...pricedShop, bin: '123456789012', address: 'Астана, Абай 1' }
+      await quotePdf({ price: priceProject(panels, nesting, shop), shop,
+        projectName: 'Шкаф', date: '27.09.2026', fonts })
+      const lines = drawText.mock.calls.map(([value]) => value)
+      expect(lines).toContain('БИН: 123456789012')
+      expect(lines).toContain('Адрес: Астана, Абай 1')
+      expect(lines).toContain('К оплате')
+      expect(lines.join(' ')).toContain('₸')
+      expect(lines.join(' ')).not.toMatch(/Себестоимость|Наценка|СКИДКА|−0 ₸|тг/)
+    } finally { drawText.mockRestore() }
+  })
+
+  it('цех логотипі болса PDF сурет ретінде қояды', async () => {
+    const drawImage = vi.spyOn(PDFPage.prototype, 'drawImage')
+    try {
+      const logoDataUrl = `data:image/png;base64,${readFileSync('public/brand/favicon-32.png').toString('base64')}`
+      const shop = { ...pricedShop, logoDataUrl }
+      await quotePdf({ price: priceProject(panels, nesting, shop), shop,
+        projectName: 'Шкаф', date: '27.09.2026', fonts })
+      expect(drawImage).toHaveBeenCalled()
+    } finally { drawImage.mockRestore() }
+  })
   it('клиентке материал бойынша раскройдағы нақты парақ санын шығарады', () => {
     const price = priceProject(panels, nesting, pricedShop, [], [], { salePrice: 12_345_67 })
     const rows = quoteSheetRows(price)
@@ -202,10 +227,10 @@ describe('қаріп жиынтығы', () => {
     }
   })
 
-  it('₸ таңбасы қаріпте ЖОҚ — сондықтан PDF-те «тг» жазылады', async () => {
+  it('₸ таңбасы қаріпте бар — PDF пен экранда бір валюта', async () => {
     const fontkit = (await import('@pdf-lib/fontkit')).default
     const font = fontkit.create(Buffer.from(fonts.regular))
-    expect(font.glyphsForString('₸')[0]?.id).toBe(0)
+    expect(font.glyphsForString('₸')[0]?.id).not.toBe(0)
     expect(formatTenge(100)).toContain('₸')
     expect(formatTenge(100, 'тг')).toContain('тг')
   })

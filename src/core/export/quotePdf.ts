@@ -14,12 +14,13 @@ import fontkit from '@pdf-lib/fontkit'
 import { PDFDocument, rgb } from 'pdf-lib'
 import type { PDFFont, PDFPage } from 'pdf-lib'
 import { ConfigValidationError } from '../errors'
-import { formatTengeExact, quoteLineGroups, quoteTotalsView } from '../pricing'
+import { formatTengeExact, quoteTotalsView } from '../pricing'
 import type { PriceBreakdown } from '../pricing'
 import type { ShopProfile } from '../shop'
 import { projectInfoRows } from './pdf'
 import type { PdfFonts } from './pdf'
 import { BRAND, stampPdfBrand } from '../brand'
+import { quoteSummaryRows, readableBrandText, shopContactRows } from './quotePresentation'
 
 /** A4 портрет, пункт. */
 const PAGE = { w: 595, h: 842 }
@@ -28,11 +29,8 @@ const INK = rgb(0.12, 0.12, 0.14)
 const MUTED = rgb(0.45, 0.45, 0.5)
 const RULE = rgb(0.8, 0.8, 0.84)
 
-/**
- * PDF-те валюта «тг» деп жазылады: құжатқа енетін қаріп жиынтығында ₸ (U+20B8)
- * ЖОҚ, ал жоқ таңба үнсіз түсіп қалады — клиент валютасы көрсетілмеген КП алады.
- */
-const CURRENCY = 'тг'
+/** Қаріп жиынтығында U+20B8 міндетті түрде болуы тиіс. */
+const CURRENCY = '₸'
 const money = (minor: number) => formatTengeExact(minor, CURRENCY)
 
 export type QuotePdfInput = {
@@ -64,7 +62,7 @@ export function quoteSheetRows(price: PriceBreakdown): QuoteSheetRow[] {
     .sort((a, b) => a.materialId.localeCompare(b.materialId))
 }
 
-const COL = { qty: 300, unit: 360, price: 430, sum: PAGE.w - MARGIN }
+const COL = { sum: PAGE.w - MARGIN }
 
 function label(ctx: Ctx, x: number, y: number, value: string, size = 9, bold = false, color = INK): void {
   ctx.page.drawText(value, { x, y, size, font: bold ? ctx.bold : ctx.regular, color })
@@ -105,17 +103,32 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
     y = PAGE.h - MARGIN
   }
 
-  label(ctx, MARGIN, y, 'Коммерческое предложение', 16, true)
+  const hex = input.shop.brandColor ?? BRAND.color
+  const brand = rgb(parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255)
+  const textHex = readableBrandText(hex)
+  const brandText = rgb(parseInt(textHex.slice(1, 3), 16) / 255,
+    parseInt(textHex.slice(3, 5), 16) / 255, parseInt(textHex.slice(5, 7), 16) / 255)
+  page.drawRectangle({ x: MARGIN, y: y + 17, width: PAGE.w - MARGIN * 2, height: 3, color: brand })
+  label(ctx, MARGIN, y, 'Коммерческое предложение', 16, true, brandText)
   right(ctx, PAGE.w - MARGIN, y, input.date, 9, false, MUTED)
-  y -= 22
-  // Бастаманың оң жағында — платформаның атауы (КП цехтікі, атау шағын әрі сұр).
-  right(ctx, PAGE.w - MARGIN, y, BRAND.name, 8, true, MUTED)
-
-  const shopLine = [input.shop.name, input.shop.city, input.shop.phone].filter(Boolean).join(' · ')
-  if (shopLine) {
-    label(ctx, MARGIN, y, shopLine, 9, false, MUTED)
-    y -= 14
+  y -= 25
+  if (input.shop.logoDataUrl) {
+    const imageBytes = Uint8Array.from(atob(input.shop.logoDataUrl.split(',')[1]!), (c) => c.charCodeAt(0))
+    const image = input.shop.logoDataUrl.startsWith('data:image/png;')
+      ? await doc.embedPng(imageBytes) : await doc.embedJpg(imageBytes)
+    const scale = Math.min(1, 80 / image.width, 28 / image.height)
+    page.drawImage(image, { x: PAGE.w - MARGIN - image.width * scale, y: y - 8,
+      width: image.width * scale, height: image.height * scale })
+  } else {
+    page.drawRectangle({ x: PAGE.w - MARGIN - 75, y: y - 6, width: 16, height: 16, color: brand })
+    label(ctx, PAGE.w - MARGIN - 71, y - 2, 'A', 10, true, rgb(1, 1, 1))
+    right(ctx, PAGE.w - MARGIN, y, BRAND.name, 8, true, brandText)
   }
+  for (const [index, row] of shopContactRows(input.shop).entries()) {
+    label(ctx, MARGIN, y, row, index === 0 ? 11 : 9, index === 0, index === 0 ? brandText : MUTED)
+    y -= index === 0 ? 16 : 13
+  }
+  y -= 8
   label(ctx, MARGIN, y, `Проект: ${input.projectName}`, 10)
   y -= 14
   // Тапсырыс реквизиттері (Заказ/Заказчик/Дизайнер/Примечание) — толтырылмаған
@@ -127,86 +140,17 @@ export async function quotePdf(input: QuotePdfInput): Promise<Uint8Array> {
     y -= 14
   }
 
-  const groups = quoteLineGroups(input.price)
-  if (groups.length > 0) {
-    y -= 8
-    label(ctx, MARGIN, y, 'Позиция', 8, true, MUTED)
-    right(ctx, COL.unit, y, 'Кол-во', 8, true, MUTED)
-    right(ctx, COL.price, y, 'Цена', 8, true, MUTED)
-    right(ctx, COL.sum, y, 'Сумма', 8, true, MUTED)
-    y -= 6
-    rule(ctx, y)
-    y -= 14
-  }
-
-  for (const group of groups) {
-    if (group.lines.length === 0) continue
-    need(40)
-    label(ctx, MARGIN, y, group.title, 8, true, MUTED)
-    y -= 13
-    for (const line of group.lines) {
-      need(24)
-      label(ctx, MARGIN, y, line.name, 9)
-      right(ctx, COL.unit, y, `${line.qty} ${line.unit}`, 9, false, MUTED)
-      right(ctx, COL.price, y, money(line.unitPrice), 9, false, MUTED)
-      right(ctx, COL.sum, y, money(line.cost), 9)
-      y -= 13
-      if (line.discountAmount) {
-        need(24)
-        label(ctx, MARGIN + 12, y, 'Скидка', 8, false, MUTED)
-        right(ctx, COL.sum, y, `-${money(line.discountAmount)}`, 8, false, MUTED)
-        y -= 13
-      }
-    }
-    y -= 4
-  }
-
-  const sheetRows = quoteSheetRows(input.price)
-  if (sheetRows.length > 0) {
-    need(36)
-    y -= 6
-    label(ctx, MARGIN, y, 'Расход листов по раскрою', 9, true)
-    y -= 16
-    for (const row of sheetRows) {
-      need(20)
-      label(ctx, MARGIN + 12, y, row.materialName, 8)
-      right(ctx, COL.sum, y, `${row.sheets} л.`, 8, true)
-      y -= 14
-    }
-  }
-
-  need(105)
+  need(60)
   y -= 4
   rule(ctx, y)
   y -= 16
-  /*
-   * `quoteTotalsView`: қолмен қойылған сату бағасы (`salePriceOverride`)
-   * бар жобада себестоимость пен коэффициент КЛИЕНТКЕ КӨРІНБЕЙДІ (qdesign
-   * «Предложение клиенту» — тек түпкі баға). Толық жіктеме цехтың өз
-   * экранында (`QuoteView.tsx`) әрдайым көрінеді, мұнда — тек осы шарт
-   * орындалғанда.
-   */
   const totals = quoteTotalsView(input.price)
-  if (totals.kind === 'breakdown') {
-    label(ctx, MARGIN + 260, y, 'Себестоимость', 9, false, MUTED)
-    right(ctx, COL.sum, y, money(totals.subtotal), 9)
-    y -= 14
-    label(ctx, MARGIN + 260, y, `Наценка ${totals.markupPercent}%`, 9, false, MUTED)
-    right(ctx, COL.sum, y, money(totals.markup), 9)
-    y -= 8
-    rule(ctx, y, MUTED)
-    y -= 18
+  for (const row of quoteSummaryRows(totals)) {
+    if (row.prominent) { rule(ctx, y + 8, brand); y -= 8 }
+    label(ctx, MARGIN + 250, y, row.title, row.prominent ? 12 : 9, row.prominent, row.prominent ? brandText : MUTED)
+    right(ctx, COL.sum, y, money(row.amount), row.prominent ? 12 : 9, row.prominent, row.prominent ? brandText : INK)
+    y -= row.prominent ? 19 : 17
   }
-  label(ctx, MARGIN + 260, y, 'ВСЕГО', 9, true)
-  right(ctx, COL.sum, y, money(totals.grossTotal), 9, true)
-  y -= 15
-  label(ctx, MARGIN + 260, y, 'СКИДКА', 9, false, MUTED)
-  right(ctx, COL.sum, y, `-${money(totals.discount)}`, 9, false, MUTED)
-  y -= 8
-  rule(ctx, y, MUTED)
-  y -= 18
-  label(ctx, MARGIN + 260, y, 'К ОПЛАТЕ', 12, true)
-  right(ctx, COL.sum, y, money(totals.total), 12, true)
 
   stampPdfBrand(doc)
   return doc.save()
