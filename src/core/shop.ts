@@ -13,6 +13,7 @@
  */
 
 import { z } from 'zod'
+import { nextCopyName } from './copyName'
 import { migrateBandThreshold } from './migrateBandThreshold'
 import { KERF, MAX_KERF } from './constants'
 import { fillingHardware } from './filling'
@@ -400,7 +401,7 @@ export function makeMaterial(input: {
  * Бағасы, парақ/тақта өлшемі, кромка саясаты және декор сілтемесі дәл сақталады;
  * жаңа бағаны ойдан шығармаймыз. Ішкі объектілер де тәуелсіз көшіріледі.
  */
-export function cloneMaterial(source: Material, existingIds: Iterable<string>): Material {
+export function cloneMaterial(source: Material, existingIds: Iterable<string>, existingNames: Iterable<string> = []): Material {
   const used = new Set(existingIds)
   const baseId = `${source.id}-copy`
   let id = baseId
@@ -410,7 +411,8 @@ export function cloneMaterial(source: Material, existingIds: Iterable<string>): 
     number += 1
   }
 
-  return { ...structuredClone(source), id, name: `${source.name} (копия)` }
+  const copyNumber = id === baseId ? 1 : Number(id.slice(baseId.length + 1))
+  return { ...structuredClone(source), id, name: nextCopyName(source.name, existingNames, copyNumber) }
 }
 
 export function defaultHardware(): HardwareItem[] {
