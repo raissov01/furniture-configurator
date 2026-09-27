@@ -27,6 +27,8 @@ describe('landing translations', () => {
     const html = renderToStaticMarkup(createElement(LandingPage, { initialLang: lang, explicit: true }))
     expect(html).toContain(`lang="${lang}"`)
     expect(html).toContain(siteTranslate('Корпус, раскрой и цена — из одной модели', lang))
+    expect(html).toContain(siteTranslate('Что получает цех', lang))
+    expect(html).toContain(siteTranslate('Наименование', lang))
     expect(html).toContain(siteTranslate('Что обычно спрашивают', lang))
   })
 
