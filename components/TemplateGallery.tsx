@@ -17,6 +17,7 @@ import { DecorPicker } from '@/components/DecorPicker'
 import { cn } from '@/lib/cn'
 import { KitchenWizard } from '@/components/KitchenWizard'
 import { matchTemplateId } from '@/lib/templateMatch'
+import { parseKitchenWalls } from '@/lib/kitchenWallInput'
 
 type Filter = TemplateCategory | 'all' | 'sets' | 'standard'
 
@@ -67,7 +68,7 @@ export function TemplateGallery() {
   const worktopMaterials = useMemo(() => catalog.materials.filter((m) => m.slab), [catalog])
   // Ас үй генераторы формасының күйі.
   const [kit, setKit] = useState(() => ({
-    lengthA: 3000, lengthB: 2400, corner: true, sink: true, upper: true, appliances: true,
+    lengthA: '3000', lengthB: '2400', corner: true, sink: true, upper: true, appliances: true,
     // G1: фартук әдепкіде ҚОСУЛЫ, шебердегі жаңа әдепкімен (600 мм) бірдей.
     backsplash: true,
     carcassId: carcassMaterials[0]?.id ?? '',
@@ -75,6 +76,7 @@ export function TemplateGallery() {
     worktopId: worktopMaterials[0]?.id ?? '',
   }))
   const [wizardOpen, setWizardOpen] = useState(false)
+  const walls = parseKitchenWalls(kit.lengthA, kit.lengthB, kit.corner)
 
   const counts = useMemo(() => {
     const map = new Map<TemplateCategory, number>()
@@ -191,25 +193,29 @@ export function TemplateGallery() {
                   <Button active onClick={() => setWizardOpen(true)}>{tr('Мастер кухни (5 шагов)')}</Button>
                 </div>
               </div>
-              <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-wrap items-end gap-3 max-[420px]:flex-col max-[420px]:items-stretch">
                 <label className="text-[11px] text-neutral-500">
                   {tr('Стена A, мм')}
                   <input
-                    type="number" min={600} step={100}
+                    type="text" inputMode="numeric" aria-invalid={Boolean(walls.errorA)}
+                    aria-describedby={walls.errorA ? 'wall-a-error' : undefined}
                     value={kit.lengthA}
-                    onChange={(e) => setKit((k) => ({ ...k, lengthA: Number(e.target.value) }))}
-                    className="mt-0.5 block w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 dark:border-neutral-600 dark:bg-neutral-900"
+                    onChange={(e) => setKit((k) => ({ ...k, lengthA: e.target.value }))}
+                    className={cn('mt-0.5 block w-24 max-[420px]:w-full rounded-md border bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 dark:bg-neutral-900', walls.errorA ? 'border-red-600 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-600')}
                   />
+                  {walls.errorA ? <span id="wall-a-error" role="alert" className="mt-1 block text-red-600 dark:text-red-400">{walls.errorA}</span> : null}
                 </label>
                 <label className={cn('text-[11px] text-neutral-500', !kit.corner && 'opacity-40')}>
                   {tr('Стена B (угол), мм')}
                   <input
-                    type="number" min={600} step={100}
+                    type="text" inputMode="numeric" aria-invalid={Boolean(walls.errorB)}
+                    aria-describedby={walls.errorB ? 'wall-b-error' : undefined}
                     value={kit.lengthB}
                     disabled={!kit.corner}
-                    onChange={(e) => setKit((k) => ({ ...k, lengthB: Number(e.target.value) }))}
-                    className="mt-0.5 block w-24 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-900"
+                    onChange={(e) => setKit((k) => ({ ...k, lengthB: e.target.value }))}
+                    className={cn('mt-0.5 block w-24 max-[420px]:w-full rounded-md border bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900 disabled:opacity-50 dark:bg-neutral-900', walls.errorB ? 'border-red-600 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-600')}
                   />
+                  {walls.errorB ? <span id="wall-b-error" role="alert" className="mt-1 block text-red-600 dark:text-red-400">{walls.errorB}</span> : null}
                 </label>
                 <label className="flex items-center gap-1.5 text-xs">
                   <input type="checkbox" checked={kit.corner} onChange={(e) => setKit((k) => ({ ...k, corner: e.target.checked }))} />
@@ -234,12 +240,15 @@ export function TemplateGallery() {
                 </label>
                 <Button
                   active
+                  disabled={!walls.valid}
                   onClick={() => {
+                    const lengthA = walls.lengthA
+                    if (!walls.valid || lengthA === undefined) return
                     setFirstRun(false)
                     runBusy(tr('Собираем кухню…'), () => loadKitchen({
                       layout: kit.corner ? 'corner' : 'straight',
-                      lengthA: kit.lengthA,
-                      lengthB: kit.corner ? kit.lengthB : undefined,
+                      lengthA,
+                      lengthB: kit.corner ? walls.lengthB : undefined,
                       sink: kit.sink,
                       upper: kit.upper,
                       appliances: kit.appliances,
