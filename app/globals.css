@@ -170,7 +170,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-status-price { padding: 0 6px; font-size: 11px; line-height: 16px; }
 .p100-status { min-height: 22px; align-items: center; gap: 12px; padding: 0 8px; border-top: 1px solid var(--p100-divider); background: var(--p100-chrome); font-size: 11px; }
 .p100-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: transparent; }
-.p100-dialog { display: flex; flex-direction: column; width: min(520px, calc(100vw - 24px)); max-height: min(760px, calc(100dvh - 24px)); border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
+.p100-dialog { display: flex; flex-direction: column; width: min(520px, calc(100vw - 24px)); height: min(760px, calc(100dvh - 24px)); max-height: min(760px, calc(100dvh - 24px)); border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
 .p100-dialog-title { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid var(--p100-divider); font-size: 12px; }
 .p100-dialog-title button { min-width: 24px; border: 1px solid transparent; }
 .p100-dialog-lock, .p100-dialog-dimensions { display: flex; align-items: center; gap: 5px; padding: 6px 10px; font-size: 12px; }
