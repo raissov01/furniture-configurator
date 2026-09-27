@@ -37,6 +37,7 @@ import {
   filterItems,
   LIBRARY_TABS,
   paginate,
+  visibleCategoryOptions,
 } from './libraryCatalogLogic'
 import type { LibraryTabId } from './libraryCatalogLogic'
 import { CatalogThumb } from './CatalogThumb'
@@ -50,6 +51,7 @@ export function LibraryPanel() {
   const [tab, setTab] = React.useState<LibraryTabId | 'mine'>('mebel')
   const [search, setSearch] = React.useState('')
   const [categoryPath, setCategoryPath] = React.useState<string | null>(null)
+  const [categorySearch, setCategorySearch] = React.useState('')
   const [page, setPage] = React.useState(0)
   const [lastAdded, setLastAdded] = React.useState<string | null>(null)
   const [pendingCabinet, setPendingCabinet] = React.useState<Pro100LibraryItem | null>(null)
@@ -113,6 +115,7 @@ export function LibraryPanel() {
     setTab(next)
     setSearch('')
     setCategoryPath(null)
+    setCategorySearch('')
     setPage(0)
     setPendingCabinet(null)
   }
@@ -137,6 +140,8 @@ export function LibraryPanel() {
     const source = tab === 'mebel' ? PRO100_CABINET_ITEMS : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS : []
     return categoryOptions(source)
   }, [tab])
+  const visibleCategories = React.useMemo(() => visibleCategoryOptions(categoryChoices, categorySearch, categoryPath),
+    [categoryChoices, categorySearch, categoryPath])
 
   const { pageItems, totalPages, page: clampedPage } = paginate(activeItems, page, PAGE_SIZE)
 
@@ -180,6 +185,11 @@ export function LibraryPanel() {
       {/* Жол жолағы — эталондағы «Mobilier BUCATARIE\Corpuri...» ашылмалысы. */}
       {tab === 'mebel' || tab === 'elementy' || tab === 'raznoe' ? (
         <div className="shrink-0 border-b border-neutral-800 px-1.5 py-1">
+          {(tab === 'mebel' || tab === 'elementy') && (
+            <input type="search" value={categorySearch} onChange={(event) => setCategorySearch(event.target.value)}
+              placeholder={tr('Найти категорию')} aria-label={tr('Найти категорию')}
+              className="mb-1 w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[10px] text-neutral-200 outline-none focus:border-neutral-500" />
+          )}
           <select
             value={categoryPath ?? ''}
             onChange={(e) => {
@@ -189,7 +199,7 @@ export function LibraryPanel() {
             className="w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[10px] text-neutral-300 outline-none"
           >
             <option value="">{tr('Все категории')} ({tab === 'mebel' ? PRO100_CABINET_ITEMS.length : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS.length : PROP_CATALOG.length})</option>
-            {(tab === 'raznoe' ? [...new Set(PROP_CATALOG.map((prop) => prop.category))] : categoryChoices).map((c) => (
+            {(tab === 'raznoe' ? [...new Set(PROP_CATALOG.map((prop) => prop.category))] : visibleCategories).map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>

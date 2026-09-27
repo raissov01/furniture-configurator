@@ -11,6 +11,7 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Найти категорию': 'Toifani topish',
   'Подтвердить шаблон': 'Shablonni tasdiqlash',
   'Будет добавлен приблизительный шаблон': 'Taxminiy shablon qo‘shiladi',
   'Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.': 'Balandlik, chuqurlik va korpus turi PRO100 dan emas, bizning shablondan olingan.',

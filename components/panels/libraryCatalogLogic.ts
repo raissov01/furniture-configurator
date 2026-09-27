@@ -59,6 +59,14 @@ export function categoryOptions(items: SearchableItem[]): string[] {
   return [...set].sort((a, b) => a.localeCompare(b, 'ru'))
 }
 
+/** Үлкен PRO100 санат тізімін DOM-ға түгел шығармау; іздеу қалғанына жол ашады. */
+export function visibleCategoryOptions(categories: readonly string[], query: string, selected: string | null, limit = 40): string[] {
+  const needle = query.trim().toLocaleLowerCase()
+  const visible = categories.filter((category) => category.toLocaleLowerCase().includes(needle)).slice(0, limit)
+  if (selected && !visible.includes(selected)) visible.unshift(selected)
+  return visible
+}
+
 // ── Беттеу (5094 жолды бірден рендерлемеу — гоча №4) ────────────────────────
 
 export function paginate<T>(items: T[], page: number, pageSize: number): { pageItems: T[]; totalPages: number; page: number } {

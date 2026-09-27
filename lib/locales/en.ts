@@ -10,6 +10,7 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Найти категорию': 'Find category',
   'Подтвердить шаблон': 'Confirm template',
   'Будет добавлен приблизительный шаблон': 'Approximate template to add',
   'Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.': 'Height, depth and cabinet type come from our template, not PRO100.',
