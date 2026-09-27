@@ -17,6 +17,8 @@ import { emptySurvey, parseSavedMeasurementDraft } from '@/components/mobile/mea
 import { configuratorKitchenTarget, handoffMeasurementToKitchen } from '@/components/mobile/kitchenHandoff'
 import type { WallId } from '@/src/core/types'
 import type { RoomTolerance } from '@/src/core/measure'
+import { nextNetworkMessage } from '@/components/mobile/measurementUiLogic'
+import { connectionError, connectionState, mobileErrorMessage } from '@/components/mobile/connectionState'
 
 const ROLE_CACHE = 'tapsyrys:role' // UI navigation only; projects, measurements and photos are in IndexedDB.
 const roles: Role[] = ['owner', 'designer', 'shop', 'client']
@@ -124,7 +126,7 @@ export default function MobileTodayPage() {
         if (mounted) { setNetwork(sync.network); setSending(false) }
         if (mounted) await reconcile(db, sync)
       } catch (error) {
-        if (mounted) setMessage(error instanceof Error ? error.message : t('Локальное хранилище недоступно'))
+        if (mounted) setMessage(t(mobileErrorMessage(error, 'Локальное хранилище недоступно', navigator.onLine)))
       }
     }
     void init()
@@ -134,6 +136,7 @@ export default function MobileTodayPage() {
         const response = await fetch('/api/me', { credentials: 'same-origin' })
         if (!response.ok) throw new Error(t('Не удалось проверить роль'))
         const data: unknown = await response.json()
+        if (mounted) { setNetwork('online'); setMessage((current) => nextNetworkMessage(current, true, t('Сервер недоступен'), t('Нет сети'))) }
         if (!data || typeof data !== 'object' || !('account' in data)) return
         const account = data.account
         if (account === null) {
@@ -151,11 +154,15 @@ export default function MobileTodayPage() {
           }
         }
       } catch (error) {
-        if (mounted) setMessage(error instanceof Error ? error.message : t('Не удалось проверить роль'))
+        if (mounted && connectionError(error, navigator.onLine)) setNetwork(navigator.onLine ? 'unreachable' : 'offline')
+        if (mounted) setMessage(!navigator.onLine ? t('Нет сети') :
+          error instanceof TypeError ? t('Сервер недоступен') :
+            error instanceof Error ? error.message : t('Не удалось проверить роль'))
       }
     }
     void checkRole()
-    return () => { mounted = false; db?.close() }
+    window.addEventListener('online', checkRole)
+    return () => { mounted = false; db?.close(); window.removeEventListener('online', checkRole) }
   }, [reconcile, refresh])
 
   useEffect(() => {
@@ -180,18 +187,22 @@ export default function MobileTodayPage() {
         await reconcile(store, queue)
         await schedule()
       } catch (error) {
-        if (!disposed) setMessage(error instanceof Error ? error.message : t('Не удалось отправить очередь'))
+        if (!disposed) {
+          if (connectionError(error, navigator.onLine)) setNetwork(navigator.onLine ? 'unreachable' : 'offline')
+          setMessage(t(mobileErrorMessage(error, 'Не удалось отправить очередь', navigator.onLine)))
+        }
       } finally {
         if (!disposed) setSending(false)
       }
     }
     const change = () => {
       setOnline(navigator.onLine)
+      if (!navigator.onLine) setMessage((current) => nextNetworkMessage(current, false, t('Сервер недоступен'), t('Нет сети')))
       void sendAndSchedule()
     }
     window.addEventListener('online', change)
     window.addEventListener('offline', change)
-    void schedule().catch((error: unknown) => setMessage(error instanceof Error ? error.message : t('Не удалось отправить очередь')))
+    void schedule().catch((error: unknown) => setMessage(t(mobileErrorMessage(error, 'Не удалось отправить очередь', navigator.onLine))))
     return () => {
       disposed = true
       if (retryTimer) clearTimeout(retryTimer)
@@ -227,7 +238,7 @@ export default function MobileTodayPage() {
       await refresh(store)
       setNetwork(queue.network)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t('Не удалось разрешить конфликт'))
+      setMessage(t(mobileErrorMessage(error, 'Не удалось разрешить конфликт', navigator.onLine)))
     }
   }
 
@@ -241,7 +252,7 @@ export default function MobileTodayPage() {
       setNetwork(queue.network)
       await refresh(store)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t('Не удалось повторить отправку'))
+      setMessage(t(mobileErrorMessage(error, 'Не удалось повторить отправку', navigator.onLine)))
     } finally { setSending(false) }
   }
 
@@ -252,9 +263,10 @@ export default function MobileTodayPage() {
     router.push(`/configurator?measurement=${encodeURIComponent(survey.id)}`)
   }
 
-  const networkLabel = !online ? t('Нет сети') : sending ? t('Отправляется') :
-    network === 'unreachable' ? t('Сервер недоступен') : t('В сети')
-  const networkColor = !online || network === 'unreachable' ? 'border-[#8c8c8c] bg-[#ededed]' : 'border-[#28723b] bg-[#e7f4e9]'
+  const connection = connectionState(online, network)
+  const networkLabel = connection === 'offline' ? t('Нет сети') : connection === 'unreachable' ? t('Сервер недоступен') :
+    sending ? t('Отправляется') : t('В сети')
+  const networkColor = connection !== 'online' ? 'border-[#8c8c8c] bg-[#ededed]' : 'border-[#28723b] bg-[#e7f4e9]'
 
   if (active && store) return <MeasurementWizard initial={active} store={store} onBack={() => { setActive(null); void refresh(store) }} onSave={saveSurvey} onKitchen={createKitchen} pending={pending} networkLabel={networkLabel} networkColor={networkColor} />
 
@@ -292,6 +304,7 @@ export default function MobileTodayPage() {
       <button className={`${button} !border-[#005a9e] !bg-[#005a9e] !font-semibold !text-white`} type="button" disabled={!store}
         onClick={() => setActive(emptySurvey(crypto.randomUUID(), Date.now()))}>{t('Новый замер')}</button>
       <Link className={button} href="/configurator">{t('Новая КП')}</Link>
+      {role === 'owner' && <Link className={button} href="/mobile/installation">{t('Монтаж')}</Link>}
       <h2 className="pt-2 text-base font-semibold">{t('Замеры на этом устройстве')}</h2>
       {surveys.length === 0 && <p className="border border-[#b8b8b8] bg-white p-3 text-sm">{t('Пока нет сохранённых замеров')}</p>}
       {surveys.map((survey) => <button key={survey.id} className={button} type="button" onClick={() => setActive(survey)}>

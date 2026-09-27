@@ -17,5 +17,8 @@ describe('телефон PWA кіру нүктесі', () => {
     expect(worker).toMatch(/cache\.add\(['"]\/mobile['"]\)/)
     expect(worker).toMatch(/url\.pathname\.startsWith\(['"]\/api\/['"]\)/)
     expect(worker).not.toMatch(/indexedDB\.deleteDatabase|caches\.delete\(['"]tapsyrys/)
+    expect(worker).toContain("'/brand/aismebel-mark.svg'")
+    expect(worker).toContain("'/manifest.webmanifest'")
+    expect(worker).toMatch(/url\.pathname\.endsWith\('\.svg'\)/)
   })
 })

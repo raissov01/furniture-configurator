@@ -4,6 +4,9 @@ import './globals.css'
 import { I18nProvider } from '@/components/I18nProvider'
 import { ServiceWorker } from '@/components/ServiceWorker'
 import { BRAND } from '@/src/core/brand'
+import { publicOrigin } from '@/lib/sitePublic'
+
+const origin = publicOrigin({ NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL, VERCEL_URL: process.env.VERCEL_URL })
 
 /**
  * Қаріптер: ПТ Санс Нарроу — аймақтың техникалық көрсеткіштерінің қарпі
@@ -33,6 +36,7 @@ const mono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
+  ...(origin ? { metadataBase: new URL(origin) } : {}),
   // Беттердің өз атауы болса — «Раскрой — … · AisMebel», болмаса толық атау.
   title: { default: BRAND.fullName, template: `%s · ${BRAND.name}` },
   applicationName: BRAND.name,
@@ -54,9 +58,9 @@ export const metadata: Metadata = {
     siteName: BRAND.name,
     title: BRAND.fullName,
     type: 'website',
-    images: [{ url: '/icon-512.png', width: 512, height: 512, alt: BRAND.name }],
+    ...(origin ? { images: [{ url: `${origin}/icon-512.png`, width: 512, height: 512, alt: BRAND.name }] } : {}),
   },
-  twitter: { card: 'summary', title: BRAND.fullName, images: ['/icon-512.png'] },
+  twitter: { card: 'summary', title: BRAND.fullName, ...(origin ? { images: [`${origin}/icon-512.png`] } : {}) },
 }
 
 /**

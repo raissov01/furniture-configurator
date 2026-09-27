@@ -9,13 +9,18 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseProjectV4, parseShopProfile } from '@/src/core/index'
 import { addCloudFolder, moveProjectToFolder, organizeProjects, parseCloudOrg } from '@/src/core/cloudProjectOrganize'
 import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
+import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
+import { useModalLayer } from '@/lib/useModalLayer'
+import { bindCloudProject } from '@/lib/cloudProjectBinding'
+import { installationCreateAction } from '@/lib/installationHandoff'
+import Link from 'next/link'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -33,6 +38,7 @@ type PlanInfo = {
   expired: boolean
 }
 type ProjectRow = { id: string; name: string; updatedAt: number }
+type InstallationRow = { id: string; projectId: string; status: 'open' | 'closed'; updatedAt: number }
 type Member = { userId: string; email: string; joinedAt: number; role: Account['role'] }
 type Invite = { token: string; createdAt: number; expiresAt: number; usedBy: string | null; revoked: boolean; role: 'designer' | 'shop' }
 
@@ -43,6 +49,8 @@ const input =
 export function AccountPanel() {
   const open = useConfigurator((s) => s.accountOpen)
   const setOpen = useConfigurator((s) => s.setAccountOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'account')
+  const dialogRef = useRef<HTMLDivElement>(null)
   const shop = useConfigurator((s) => s.shop)
   const setShop = useConfigurator((s) => s.setShop)
   const exportProject = useConfigurator((s) => s.exportProject)
@@ -53,6 +61,7 @@ export function AccountPanel() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
   const [projects, setProjects] = useState<ProjectRow[]>([])
+  const [installations, setInstallations] = useState<InstallationRow[]>([])
   const [org, setOrg] = useState<CloudOrg>(() => parseCloudOrg(null))
   const [folderFilter, setFolderFilter] = useState<'all' | 'unfiled' | `folder:${string}`>('all')
   const [newFolder, setNewFolder] = useState('')
@@ -79,9 +88,27 @@ export function AccountPanel() {
    * гидратация сәйкессіздігі шығады.
    */
   const [invite, setInvite] = useState<string | null>(null)
+  const [inviteShopName, setInviteShopName] = useState<string | null>(null)
   const [usage, setUsage] = useState<{ projects: number; members: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const formErrors = accountFormErrors(mode, form, Boolean(invite))
+  const formReady = canSubmitAccount(mode, form, Boolean(invite)) && (!invite || mode === 'login' || inviteShopName !== null)
+  const inviteShop = inviteShopDisplay(invite, inviteShopName)
+
+  useEffect(() => {
+    if (!open) return
+    dialogRef.current?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (!shouldCloseAccountOnKey(event.key, isTop, busy)) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, isTop, busy, setOpen])
 
   useEffect(() => {
     if (!account) return
@@ -116,6 +143,13 @@ export function AccountPanel() {
     setProjects(data.projects ?? [])
   }, [])
 
+  const refreshInstallations = useCallback(async () => {
+    const response = await fetch('/api/installation', { credentials: 'same-origin', cache: 'no-store' })
+    if (!response.ok) throw new Error(tr('Не удалось загрузить монтажные задания'))
+    const data = await response.json() as { tasks: InstallationRow[] }
+    setInstallations(data.tasks)
+  }, [])
+
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('invite')
     if (!token) return
@@ -124,6 +158,13 @@ export function AccountPanel() {
     // аккаунты әлі жоқ, ал әдепкі «кіру» қосымшасы оны шатастырар еді.
     setMode('register')
     setOpen(true)
+    void fetch(`/api/team/invite?token=${encodeURIComponent(token)}`)
+      .then(async (res) => {
+        const data = (await res.json()) as { shopName?: string; error?: string }
+        if (!res.ok || !data.shopName) throw new Error(data.error ?? tr('Приглашение не найдено'))
+        setInviteShopName(data.shopName)
+      })
+      .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : tr('Нет связи с сервером')))
   }, [setOpen])
 
   // Кім кіргенін бет ашылғанда бір рет сұраймыз.
@@ -143,11 +184,29 @@ export function AccountPanel() {
         setPlan(data.plan ?? null)
         setUsage(data.usage ?? null)
         void refreshProjects()
+        if (data.account.role === 'owner') void refreshInstallations().catch((cause: unknown) =>
+          setError(cause instanceof Error ? cause.message : tr('Не удалось загрузить монтажные задания')))
         void refreshTeam()
         void syncProfile(data.account.role)
       }
     })()
-  }, [refreshProjects, refreshTeam])
+  }, [refreshProjects, refreshTeam, refreshInstallations])
+
+  const startInstallation = async (projectId: string) => {
+    setBusy(true)
+    setError(null)
+    try {
+      const action = installationCreateAction(projectId, crypto.randomUUID(), crypto.randomUUID(), Date.now())
+      const response = await fetch('/api/installation/sync', { method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action) })
+      const body = await response.json() as { kind?: string; error?: string }
+      if (!response.ok || body.kind !== 'applied') throw new Error(body.error ?? tr('Не удалось создать монтажное задание'))
+      await refreshInstallations()
+      setNotice(tr('Монтажное задание открыто'))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : tr('Не удалось создать монтажное задание'))
+    } finally { setBusy(false) }
+  }
 
   /**
    * Кіргеннен кейінгі бірінші синхрондау: серверде профиль бар болса —
@@ -199,6 +258,7 @@ export function AccountPanel() {
   }, [account, shop, profileReady])
 
   const submit = async () => {
+    if (busy || !formReady) return
     setBusy(true)
     setError(null)
     try {
@@ -248,14 +308,28 @@ export function AccountPanel() {
 
   const dropInvite = async (token: string) => {
     setBusy(true)
+    setError(null)
+    setNotice(null)
     try {
-      await fetch('/api/team', {
+      const res = await fetch('/api/team', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       })
+      const data = (await res.json()) as { error?: string }
+      const problem = revokeError(res.ok, data.error ?? null)
+      if (problem) {
+        setError(tr(problem))
+        return
+      }
       setInviteLink(null)
-      await refreshTeam()
+      setTeam((current) => current ? {
+        ...current,
+        invites: current.invites.map((item) => item.token === token ? { ...item, revoked: true } : item),
+      } : null)
+      setNotice(tr('Приглашение отозвано.'))
+    } catch {
+      setError(tr('Нет связи с сервером'))
     } finally {
       setBusy(false)
     }
@@ -264,6 +338,7 @@ export function AccountPanel() {
   const removeMember = async (userId: string) => {
     setBusy(true)
     setError(null)
+    setNotice(null)
     try {
       const res = await fetch('/api/team/member', {
         method: 'DELETE',
@@ -273,9 +348,11 @@ export function AccountPanel() {
       const data = (await res.json()) as { members?: Member[]; error?: string }
       if (!res.ok) {
         setError(data.error ?? 'Не получилось')
+        setConfirmRemove(null)
         return
       }
       setConfirmRemove(null)
+      setNotice(userId === account?.userId ? tr('Аккаунт удалён. Вы вышли.') : tr('Аккаунт участника удалён.'))
       // Өзін шығарған адам цехтан айырылады: сеансы серверде жойылды,
       // сондықтан терезені кірмеген күйге қайтарамыз.
       if (userId === account?.userId) {
@@ -284,7 +361,11 @@ export function AccountPanel() {
         setProjects([])
         return
       }
-      await refreshTeam()
+      if (data.members) setTeam((current) => current ? { ...current, members: data.members! } : null)
+      else await refreshTeam()
+    } catch {
+      setError(tr('Нет связи с сервером'))
+      setConfirmRemove(null)
     } finally {
       setBusy(false)
     }
@@ -294,14 +375,18 @@ export function AccountPanel() {
     setBusy(true)
     setError(null)
     try {
+      const project = exportProject()
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project: exportProject() }),
+        body: JSON.stringify({ project }),
       })
-      const data = (await res.json()) as { error?: string }
+      const data = (await res.json()) as { error?: string; id?: string }
       if (!res.ok) setError(data.error ?? 'Не сохранилось')
-      else await refreshProjects()
+      else if (data.id) { await bindCloudProject(data.id, project); await refreshProjects() }
+      else setError(tr('Сервер не вернул ID проекта'))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : tr('Нет связи с сервером'))
     } finally {
       setBusy(false)
     }
@@ -313,6 +398,7 @@ export function AccountPanel() {
     const data = (await res.json()) as { project?: unknown }
     try {
       loadProject(parseProjectV4(data.project))
+      await bindCloudProject(id, exportProject())
       setOpen(false)
     } catch (e) {
       setError(`Проект не открылся: ${e instanceof Error ? e.message : 'неверная форма'}`)
@@ -323,17 +409,19 @@ export function AccountPanel() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
-      onClick={() => setOpen(false)}
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
+      style={{ zIndex }}
+      onClick={() => { if (isTop && !busy) setOpen(false) }}
     >
       <div
-        className="w-full max-w-lg rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Аккаунт')}
+        className="min-w-0 w-full max-w-lg border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-sm font-semibold">{account ? account.shopName : 'Вход в аккаунт'}</h2>
           <div className="ml-auto">
-            <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
+            <Button onClick={() => setOpen(false)} disabled={busy}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
@@ -342,6 +430,7 @@ export function AccountPanel() {
             {error}
           </p>
         ) : null}
+        {notice ? <p role="status" className="mb-3 border border-neutral-300 px-2.5 py-2 text-xs dark:border-neutral-700">{notice}</p> : null}
 
         {account ? (
           <div className="space-y-3">
@@ -416,7 +505,7 @@ export function AccountPanel() {
                     const iAmOwner = team.members[0]?.userId === account?.userId
                     const canRemove = !owner && (iAmOwner || self)
                     return (
-                      <li key={m.userId} className="flex items-baseline justify-between gap-2 text-xs">
+                      <li key={m.userId} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
                         <span className="min-w-0 truncate">
                           {m.email}
                           <span className="ml-1 text-[10px] text-neutral-400">{owner ? tr('владелец') : m.role === 'shop' ? tr('Цех') : tr('Дизайнер')}</span>
@@ -441,14 +530,14 @@ export function AccountPanel() {
                           {canRemove ? (
                             <Button
                               disabled={busy}
-                              title={self ? tr('Выйти из цеха') : tr('Убрать из цеха')}
+                              title={self ? tr('Удалить свой аккаунт и уйти') : tr('Удалить аккаунт участника')}
                               onClick={() => {
                                 if (confirmRemove === m.userId) void removeMember(m.userId)
                                 else setConfirmRemove(m.userId)
                               }}
                             >
                               {confirmRemove === m.userId
-                                ? tr('Точно?')
+                                ? busy ? tr('Удаляется…') : tr('Удалить аккаунт')
                                 // «Выйти» ЕМЕС: тақтада шығудың өз батырмасы
                                 // бар, екеуі бір аталса адам да, тест те
                                 // шатасады.
@@ -456,6 +545,11 @@ export function AccountPanel() {
                             </Button>
                           ) : null}
                         </span>
+                        {confirmRemove === m.userId ? (
+                          <p role="alert" className="w-full min-w-0 border border-red-300 px-2 py-1 text-red-800 dark:border-red-800 dark:text-red-300">
+                            {tr(memberRemovalWarning(self))}
+                          </p>
+                        ) : null}
                       </li>
                     )
                   })}
@@ -546,7 +640,7 @@ export function AccountPanel() {
                 {visibleProjects.map((p) => (
                   <li
                     key={p.id}
-                    className="flex items-center gap-2 rounded-md border border-neutral-200 px-2 py-1.5 text-xs dark:border-neutral-700"
+                    className="flex flex-wrap items-center gap-2 rounded-md border border-neutral-200 px-2 py-1.5 text-xs dark:border-neutral-700"
                   >
                     <button type="button" className="min-w-0 flex-1 text-left" onClick={() => void openProject(p.id)}>
                       <span className="font-medium">{p.name}</span>
@@ -554,6 +648,14 @@ export function AccountPanel() {
                         {new Date(p.updatedAt).toLocaleDateString('ru-RU')}
                       </span>
                     </button>
+                    {account.role === 'owner' && (() => {
+                      const task = installations.find((item) => item.projectId === p.id)
+                      return task
+                        ? <Link className="min-h-11 border border-neutral-300 bg-white px-2 py-3 dark:bg-neutral-900" href={`/mobile/installation?task=${encodeURIComponent(task.id)}`} onClick={() => setOpen(false)}>
+                          {tr('Монтаж')}: {task.status === 'closed' ? tr('Завершён') : tr('Открыт')}
+                        </Link>
+                        : <Button disabled={busy} onClick={() => void startInstallation(p.id)}>{tr('Отправить в производство → открыть монтаж')}</Button>
+                    })()}
                     <select aria-label={`${tr('Папка')}: ${p.name}`} className="max-w-28 rounded border border-neutral-300 bg-white p-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
                       value={org.projectFolders[p.id] ?? ''} onChange={(event) => saveOrg(moveProjectToFolder(org, p.id, event.target.value || null))}>
                       <option value="">{tr('Без папки')}</option>
@@ -592,26 +694,36 @@ export function AccountPanel() {
               <Button active={mode === 'register'} onClick={() => setMode('register')}>{tr('Регистрация')}</Button>
             </div>
 
-            {mode === 'register' ? (
-              <Field label={tr('Название цеха')}>
-                <input className={input} value={form.shopName} placeholder={tr('Цех «Алаш»')}
+            {mode === 'register' && inviteShop.editable ? (
+              <Field label={tr('Название цеха')} hint={tr('Пустое название станет «Мой цех»; до 100 символов')}>
+                <input className={`${input} ${formErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
+                  aria-invalid={Boolean(formErrors.shopName)}
                   onChange={(e) => setForm({ ...form, shopName: e.target.value })} />
+                {formErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.shopName)}</span> : null}
+              </Field>
+            ) : mode === 'register' ? (
+              <Field label={tr('Название цеха')} hint={tr('Цех по приглашению — изменить нельзя')}>
+                <input className={input} value={inviteShop.name ?? tr('Проверяется приглашение…')} readOnly />
               </Field>
             ) : null}
 
             <Field label={tr('Почта')}>
-              <input className={input} type="email" autoComplete="email" value={form.email}
+              <input className={`${input} ${formErrors.email ? 'border-red-500 dark:border-red-500' : ''}`} type="email" autoComplete="email" value={form.email}
+                aria-invalid={Boolean(formErrors.email)}
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              {formErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.email)}</span> : null}
             </Field>
             <Field label={tr('Пароль')} hint={mode === 'register' ? 'от 8 символов' : undefined}>
-              <input className={input} type="password"
+              <input className={`${input} ${formErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
+                aria-invalid={Boolean(formErrors.password)}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 value={form.password}
                 onKeyDown={(e) => { if (e.key === 'Enter') void submit() }}
                 onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              {formErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.password)}</span> : null}
             </Field>
 
-            <Button onClick={() => void submit()} disabled={busy} active>
+            <Button onClick={() => void submit()} disabled={busy || !formReady} active>
               {mode === 'login' ? 'Войти' : 'Создать аккаунт'}
             </Button>
 

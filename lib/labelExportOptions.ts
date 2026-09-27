@@ -1,12 +1,5 @@
 import type { LabelPage, LabelSize } from '@/src/core/export/labelLayout'
 import { labelLayout } from '@/src/core/export/labelLayout'
-import type { GroupNode } from '@/src/core/tree'
-
-/** Алғашқы деталь нұсқасы — 1; монтаждағы ауыстыру биркалары 2-ден басталады. */
-export function projectLabelIdentity(root: GroupNode): { projectId: string; version: number } {
-  const first = root.children[0]
-  return { projectId: first?.id ?? root.id, version: 1 }
-}
 
 export function labelSizeLimits(page: LabelPage): { width: number; height: number } {
   // labelLayout: парақ жиегінің екі жағында 5 мм басылмайтын аймақ бар.
