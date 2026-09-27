@@ -1,5 +1,8 @@
+'use client'
+
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
+import { siteT as t } from '@/lib/siteLocale'
 
 export function SiteFooter() {
   return (
@@ -10,12 +13,12 @@ export function SiteFooter() {
             {SITE.name}
           </p>
           <p className="mt-1 max-w-md text-sm" style={{ color: 'var(--ink-soft)' }}>
-            Платформа для мебельных цехов Казахстана: корпус, раскрой, присадка и КП.
+            {t('Платформа для мебельных цехов Казахстана: корпус, раскрой, присадка и КП.')}
           </p>
         </div>
         <div className="flex flex-col gap-2 text-sm sm:items-end" style={{ color: 'var(--ink-soft)' }}>
-          <Link href="/configurator" className="transition hover:text-[color:var(--ink)]">Конфигуратор</Link>
-          <Link href="/#pricing" className="transition hover:text-[color:var(--ink)]">Тарифы</Link>
+          <Link href="/configurator" className="transition hover:text-[color:var(--ink)]">{t('Конфигуратор')}</Link>
+          <Link href="/#pricing" className="transition hover:text-[color:var(--ink)]">{t('Тарифы')}</Link>
           {SITE.email && <a href={`mailto:${SITE.email}`} className="transition hover:text-[color:var(--ink)]">{SITE.email}</a>}
         </div>
       </div>
