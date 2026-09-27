@@ -70,11 +70,11 @@ export function QuoteView({
   // солардан барады. «Заказчик» өрісі осы жерде әлі де қолмен түзетілуі мүмкін.
   const projectInfo = useConfigurator((s) => s.projectInfo)
   // Баға түзетулері (qdesign паритеті): коэффициент/сату бағасын осы жобаға ғана ауыстыру.
+  const editProjectInfo = useConfigurator((s) => s.editProjectInfo)
   const priceOverrides = useConfigurator((s) => s.priceOverrides)
   const editPriceOverrides = useConfigurator((s) => s.editPriceOverrides)
   const [tab, setTab] = useState<Tab>('nesting')
   const [materialFilter, setMaterialFilter] = useState('all')
-  const [customer, setCustomer] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const exportAllowed = childExportAllowed(propertiesOpen)
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -166,7 +166,7 @@ export function QuoteView({
               onClick={() => void run('quote', async () => {
                 const { quotePdf } = await import('@/src/core/export/quotePdf')
                 const orderDate = projectInfo.date ? isoToRu(projectInfo.date) : new Date().toLocaleDateString('ru-RU')
-                const client = customer.trim() || projectInfo.client
+                const client = projectInfo.client?.trim()
                 const bytes = await quotePdf({
                   price: price!, shop, projectName,
                   date: orderDate,
@@ -262,9 +262,9 @@ export function QuoteView({
             <label className="flex items-center gap-2 text-xs">
               <span className="text-neutral-500">{tr('Заказчик')}</span>
               <input
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
-                placeholder={projectInfo.client || tr('имя клиента — попадёт в КП')}
+                value={projectInfo.client ?? ''}
+                onChange={(e) => editProjectInfo({ client: e.target.value })}
+                placeholder={tr('имя клиента — попадёт в КП')}
                 className="w-64 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900"
               />
             </label>
