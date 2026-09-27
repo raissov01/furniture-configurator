@@ -70,6 +70,14 @@ function readSaved(): Lang {
  */
 export function applySavedLang(): void {
   const saved = readSaved()
+  const requested = new URLSearchParams(window.location.search).get('lang')
+  if (requested !== null && requested in DICTIONARIES) {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, requested)
+    } catch {
+      // The chosen URL still selects the language in this session.
+    }
+  }
   if (saved !== current) {
     current = saved
     dictionary = DICTIONARIES[saved]
