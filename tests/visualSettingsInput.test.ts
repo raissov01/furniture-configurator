@@ -3,7 +3,7 @@ import { parseVisualNumber, parseNormalUrl } from '../lib/visualSettingsInput'
 
 describe('көрініс өрістерінің енгізуі', () => {
   it('бос, мәтін және шектен тыс мәнді санға айналдырмайды', () => {
-    for (const raw of ['', 'abc', '101', '-1']) {
+    for (const raw of ['', 'abc', '0x10', '1e2', '101', '-1']) {
       const result = parseVisualNumber(raw, 'Интенсивность', 0, 100)
       expect(result.value).toBeNull()
       expect(result.error).toContain('Интенсивность')

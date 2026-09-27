@@ -7,8 +7,9 @@ export function parseVisualNumber(
   raw: string, label: string, min: number, max: number, integer = false, optional = false,
 ): Parsed {
   if (optional && raw.trim() === '') return { value: undefined, error: null }
-  const value = Number(raw)
-  if (raw.trim() === '' || !Number.isFinite(value) || value < min || value > max ||
+  const decimal = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw.trim())
+  const value = decimal ? Number(raw) : NaN
+  if (!Number.isFinite(value) || value < min || value > max ||
       (integer && !Number.isInteger(value))) {
     const range = integer ? tr('Допустимо целое число в диапазоне') : tr('Допустимо число в диапазоне')
     return { value: null, error: `${label}: ${range} ${min}–${max}` }
