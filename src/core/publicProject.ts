@@ -3,6 +3,8 @@ import type { ProjectFileV4 } from './projectV4'
 import { discountAmount, priceProject } from './pricing'
 import { flattenTree } from './flatten'
 import { findNode } from './tree'
+import type { GroupNode, SceneNode } from './tree'
+import { specialPartRows } from './specialParts'
 import { mergeProjectPanels } from './generateCabinet'
 import { nestPanels } from './nesting'
 import { nestingOptionsOf } from './shop'
@@ -10,6 +12,16 @@ import { ConfigValidationError } from './errors'
 import type { ShopProfile } from './shop'
 
 type SavedProject = ProjectFile | ProjectFileV4
+
+function stripSpecialPrices(root: GroupNode): GroupNode {
+  const strip = (node: SceneNode): SceneNode => {
+    if (node.kind === 'group') return { ...node, children: node.children.map(strip) }
+    if (node.kind === 'solid' && node.solid.fabrication) return { ...node,
+      solid: { ...node.solid, fabrication: { ...node.solid.fabrication, unitPrice: 0 } } }
+    return node
+  }
+  return { ...root, children: root.children.map(strip) }
+}
 
 /** A shop-floor copy keeps geometry but carries no commercial inputs. */
 export function toProductionProject<T extends SavedProject>(project: T): T {
@@ -21,6 +33,7 @@ export function toProductionProject<T extends SavedProject>(project: T): T {
       ...(slab ? { slab: { stockLengths: slab.stockLengths, pricePerMeter: 0 } } : {}),
     })),
     edgeBands: project.edgeBands.map((band) => ({ ...band, pricePerMeter: 0 })),
+    ...('root' in project ? { root: stripSpecialPrices(project.root) } : {}),
     priceOverrides: undefined,
   } as T
 }
@@ -68,7 +81,10 @@ export function toPricedPublicProject(project: ProjectFileV4, shop: ShopProfile)
     return source?.kind === 'cabinet' ? [source.config.width] : []
   })
   const nesting = nestPanels(panels, catalog, nestingOptionsOf(shop))
-  const price = priceProject(panels, nesting, shop, hardware, moduleWidths, project.priceOverrides)
+  const specialParts = specialPartRows(scene.solids.flatMap((solid) => solid.spec.fabrication
+    ? [{ nodeId: solid.nodeId, name: solid.name, spec: solid.spec.fabrication }] : []),
+    new Map(catalog.materials.map((material) => [material.id, material])))
+  const price = priceProject(panels, nesting, shop, hardware, moduleWidths, project.priceOverrides, specialParts)
   if (price.missingPrices.length > 0) {
     throw new ConfigValidationError('priceOverrides.salePrice',
       `баға жетіспейді: ${price.missingPrices.join(', ')}`, 'барлық позиция бағасы толтырылсын')

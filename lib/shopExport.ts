@@ -9,8 +9,8 @@
  * Ауыр кітапханалар (pdf-lib, fflate) басу кезінде ғана жүктеледі.
  */
 
-import { mergeSettings } from '@/src/core/index'
-import type { CabinetConfig, Catalog, Panel, ProjectInfo, SettingsOverride } from '@/src/core/index'
+import { bentDxf, mergeSettings } from '@/src/core/index'
+import type { CabinetConfig, Catalog, Panel, ProjectInfo, SettingsOverride, SpecialPartRow } from '@/src/core/index'
 import { flatArchiveFiles } from '@/lib/flatArchiveFiles'
 import { splitProjectPdfPanels } from '@/lib/projectPdfScope'
 
@@ -22,6 +22,7 @@ export type SaveFile = (filename: string, data: Uint8Array | string, mime: strin
 export type ShopExportInput = {
   cabinet?: CabinetConfig | undefined
   panels: Panel[]
+  specialParts?: readonly SpecialPartRow[] | undefined
   catalog: Catalog
   settings?: SettingsOverride | undefined
   projectInfo?: ProjectInfo | undefined
@@ -57,7 +58,7 @@ export async function runShopExport(format: ShopExportFormat, input: ShopExportI
   switch (format) {
     case 'xlsx': {
       const { cutListToXlsx } = await import('@/src/core/export/xlsx')
-      save(name, cutListToXlsx(panels, catalog, cabinet?.name ?? input.exportName ?? base),
+      save(name, cutListToXlsx(panels, catalog, cabinet?.name ?? input.exportName ?? base, input.specialParts),
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       return
     }
@@ -76,6 +77,11 @@ export async function runShopExport(format: ShopExportFormat, input: ShopExportI
       ])
       const entries: Record<string, Uint8Array> = {}
       for (const [file, content] of flatArchiveFiles(cabinetToDxfArchiveFiles(panels, dxfOptions))) entries[file] = strToU8(content)
+      for (const part of input.specialParts ?? []) {
+        if (part.section !== 'Иілген деталь' || !part.developedLength) continue
+        const safeId = part.nodeId.replace(/[^a-zA-Z0-9_-]/g, '_')
+        entries[`BENT-${safeId}-DEVELOPMENT.dxf`] = strToU8(bentDxf(part.developedLength, part.height))
+      }
       save(name, zipSync(entries, { level: 6, mtime: Date.UTC(1980, 0, 1) }), 'application/zip')
       return
     }

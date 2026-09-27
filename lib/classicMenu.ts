@@ -40,6 +40,8 @@ export type ClassicCommand =
   | { type: 'addCabinet' }
   | { type: 'addBoard' }
   | { type: 'addSolid' }
+  | { type: 'addSpecialPart'; kind: 'lathe' | 'bent' }
+  | { type: 'importSolid' }
   | { type: 'removeBoard' }
   | { type: 'duplicate' }
   | { type: 'mirror' }
@@ -69,6 +71,8 @@ export type ClassicMenuState = {
   canRemoveCabinet: boolean
   /** Цех экспорты мүмкін бе (белсенді корпус бар, өндірісте қате жоқ). */
   canExport: boolean
+  canExportPanels?: boolean
+  canExportDxf?: boolean
   /** Project PDF is available when at least one visible cabinet supplies projections. */
   canExportPdf: boolean
   /** Active cabinet exports require the selected node itself to be a cabinet. */
@@ -121,6 +125,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
   return [
     {
       id: 'file', label: 'Файл', items: [
+        item('file.importSolid', 'Импорт → 3DS/OBJ', { type: 'importSolid' }),
         item('file.gallery', 'Готовые шаблоны', { type: 'open', panel: 'gallery' }),
         item('file.ai', 'Техзадание (словами)', { type: 'open', panel: 'ai' }),
         item('file.sketch', 'Нарисовать мышью', { type: 'open', panel: 'sketch' }, { disabled: !s.activeEditable }),
@@ -131,8 +136,8 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         SEP,
         { kind: 'heading', id: 'file.export', label: 'Экспорт для цеха — весь проект' },
         item('file.export.xlsx', 'XLSX — весь проект', { type: 'export', format: 'xlsx', scope: 'project' }, { disabled: !s.canExport }),
-        item('file.export.csv', 'CSV — весь проект', { type: 'export', format: 'csv', scope: 'project' }, { disabled: !s.canExport }),
-        item('file.export.dxf', 'DXF — весь проект', { type: 'export', format: 'dxf', scope: 'project' }, { disabled: !s.canExport }),
+        item('file.export.csv', 'CSV — весь проект', { type: 'export', format: 'csv', scope: 'project' }, { disabled: !(s.canExportPanels ?? s.canExport) }),
+        item('file.export.dxf', 'DXF — весь проект', { type: 'export', format: 'dxf', scope: 'project' }, { disabled: !(s.canExportDxf ?? s.canExport) }),
         item('file.export.project.pdf', 'PDF — весь проект', { type: 'export', format: 'pdf', scope: 'project' }, { disabled: !s.canExportPdf, hint: classicFileHint('printProject') }),
         { kind: 'heading', id: 'file.export.cabinet', label: 'Активный корпус' },
         item('file.export.cabinet.xlsx', 'XLSX — активный корпус', { type: 'export', format: 'xlsx', scope: 'cabinet' }, { disabled: !(s.canExportActiveCabinet ?? s.canExportPdf) }),
@@ -180,6 +185,8 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('element.add', 'Новый корпус', { type: 'addCabinet' }, { hint: classicFileHint('newCabinet') }),
         item('element.board', 'Добавить свободную доску', { type: 'addBoard' }),
         item('element.solid', 'Добавить декоративный блок', { type: 'addSolid' }),
+        item('element.lathe', 'Токарная деталь', { type: 'addSpecialPart', kind: 'lathe' }),
+        item('element.bent', 'Гнутая деталь', { type: 'addSpecialPart', kind: 'bent' }),
         item('element.removeBoard', 'Удалить доску', { type: 'removeBoard' }, { disabled: !s.editableBoard }),
         item('element.duplicate', 'Дублировать', { type: 'duplicate' }, { disabled: !s.activeEditable }),
         item('element.mirror', 'Зеркальная копия', { type: 'mirror' }, { disabled: !(s.canMirrorSelected ?? s.activeEditable) }),

@@ -14,7 +14,7 @@ import {
 } from '@react-three/drei'
 import { EffectComposer, N8AO } from '@react-three/postprocessing'
 import {
-  Euler, NeutralToneMapping, Object3D, Plane, Raycaster, SRGBColorSpace, TextureLoader, Vector2, Vector3,
+  DoubleSide, Euler, Mesh as ThreeMesh, NeutralToneMapping, Object3D, Plane, Raycaster, SRGBColorSpace, Shape, Texture, TextureLoader, Vector2, Vector3,
 } from 'three'
 import { isTouchDevice, walkInput } from '@/lib/walkInput'
 import { useOrthographicCamera } from '@/lib/viewProjection'
@@ -45,6 +45,10 @@ import type {
   CabinetConfig, Catalog, FlatNode, FlatScene, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
   SceneLight, SettingsOverride, Vec3, Wall, WallId,
 } from '@/src/core/index'
+import { bentDevelopment } from '@/src/core/specialParts'
+import type { BentSpec, LatheSpec } from '@/src/core/specialParts'
+import { importedMesh } from '@/lib/meshImport'
+import type { ImportedModelSpec } from '@/src/core/import/tds'
 
 type Controls = ComponentRef<typeof OrbitControls>
 
@@ -66,6 +70,55 @@ const FLAP_OPEN_ANGLE = (75 * Math.PI) / 180
 
 
 const MM = 0.001
+
+function LatheSolidMesh({ spec, size, color, selected }: { spec: LatheSpec; size: number; color: string; selected: boolean }) {
+  const points = useMemo(() => spec.profile.map((point) => new Vector2(point.radius, point.y)), [spec.profile])
+  return <mesh position={[size / 2, 0, size / 2]} castShadow>
+    <latheGeometry args={[points, 48]} />
+    <meshStandardMaterial color={color} emissive={selected ? '#22d3ee' : '#000000'} emissiveIntensity={selected ? 0.35 : 0} />
+  </mesh>
+}
+
+function BentSolidMesh({ spec, minRadius, color, selected }: {
+  spec: BentSpec; minRadius: number | undefined; color: string; selected: boolean
+}) {
+  const shape = useMemo(() => {
+    const derived = bentDevelopment(spec, minRadius)
+    const half = derived.angleRadians / 2
+    const path = new Shape()
+    // Shape XY жазықтығында; mesh −90° X бұрылысынан кейін Y — биіктік, Z — доға.
+    const add = (radius: number, angle: number, first = false) => {
+      const x = radius * Math.sin(angle) + derived.outerRadius * Math.sin(half)
+      const z = radius * Math.cos(angle) - derived.innerRadius * Math.cos(half)
+      if (first) path.moveTo(x, -z)
+      else path.lineTo(x, -z)
+    }
+    for (let i = 0; i <= 48; i += 1) add(derived.outerRadius, -half + i * 2 * half / 48, i === 0)
+    for (let i = 48; i >= 0; i -= 1) add(derived.innerRadius, -half + i * 2 * half / 48)
+    path.closePath()
+    return path
+  }, [spec, minRadius])
+  return <mesh rotation={[-Math.PI / 2, 0, 0]} castShadow>
+    <extrudeGeometry args={[shape, { depth: spec.height, bevelEnabled: false, steps: 1 }]} />
+    <meshStandardMaterial color={color} side={DoubleSide} emissive={selected ? '#22d3ee' : '#000000'} emissiveIntensity={selected ? 0.35 : 0} />
+  </mesh>
+}
+
+function ImportedSolidMesh({ spec }: { spec: ImportedModelSpec }) {
+  const object = useMemo(() => importedMesh(spec), [spec])
+  useEffect(() => () => {
+    object.traverse((child) => {
+      if (!(child instanceof ThreeMesh)) return
+      child.geometry.dispose()
+      const materials = Array.isArray(child.material) ? child.material : [child.material]
+      materials.forEach((material) => {
+        if ('map' in material && material.map instanceof Texture) material.map.dispose()
+        material.dispose()
+      })
+    })
+  }, [object])
+  return <primitive object={object} />
+}
 
 function ProjectAimLight({ light, centre }: {
   light: Extract<SceneLight, { kind: 'spot' | 'sun' }>; centre: Vec3
@@ -1568,18 +1621,27 @@ export default function Scene({
           ))}
           {flatScene?.solids.map((solid) => (
             <group key={solid.nodeId} position={[solid.pose.position.x, solid.pose.position.y, solid.pose.position.z]}
-              rotation={[0, solid.pose.rotationY * Math.PI / 180, 0]}>
-              <mesh position={[solid.spec.size.x / 2, solid.spec.size.y / 2, solid.spec.size.z / 2]}
-                onClick={(event) => {
+              rotation={[0, solid.pose.rotationY * Math.PI / 180, 0]}
+              onClick={(event) => {
                   event.stopPropagation()
                   setActive(solid.nodeId)
                   setSelected(selected === solid.nodeId ? null : solid.nodeId)
-                }} castShadow>
+                }}>
+              {solid.spec.importedModel
+                ? <ImportedSolidMesh spec={solid.spec.importedModel} />
+                : solid.spec.fabrication?.kind === 'lathe'
+                ? <LatheSolidMesh spec={solid.spec.fabrication} size={solid.spec.size.x}
+                  color={solid.spec.color ?? '#a3a3a3'} selected={selected === solid.nodeId} />
+                : solid.spec.fabrication?.kind === 'bent'
+                  ? <BentSolidMesh spec={solid.spec.fabrication}
+                    minRadius={catalog.materials.find((material) => material.id === solid.spec.fabrication?.materialId)?.minBendRadiusMm}
+                    color={solid.spec.color ?? '#a3a3a3'} selected={selected === solid.nodeId} />
+                  : <mesh position={[solid.spec.size.x / 2, solid.spec.size.y / 2, solid.spec.size.z / 2]} castShadow>
                 <boxGeometry args={[solid.spec.size.x, solid.spec.size.y, solid.spec.size.z]} />
                 <meshStandardMaterial color={solid.spec.color ?? '#a3a3a3'}
                   emissive={selected === solid.nodeId ? '#22d3ee' : '#000000'}
                   emissiveIntensity={selected === solid.nodeId ? 0.35 : 0} />
-              </mesh>
+              </mesh>}
             </group>
           ))}
           <Suspense fallback={null}>{annotations.map((annotation) => (

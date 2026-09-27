@@ -20,6 +20,10 @@ import { CLOUD_SELECTION_KEY, nextHistoryId, revisionDecision } from '@/lib/f24U
 import type { LocalRevision } from '@/lib/f24UiLogic'
 import { validSilhouetteHeight } from '@/lib/silhouetteInput'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
+import { LATHE_PROFILES, specialSolidSize } from '@/src/core/specialParts'
+import type { FabricationSpec } from '@/src/core/specialParts'
+import { validateImportedModel } from '@/src/core/import/tds'
+import type { SolidNode } from '@/src/core/tree'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import { materialUsedInTree } from '@/lib/materialUsedInTree'
@@ -323,6 +327,8 @@ type State = Snapshot & {
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
   addSolid(): string
+  addSpecialPart(kind: 'lathe' | 'bent'): string
+  addImportedSolid(node: SolidNode): void
   editSolid(id: string, patch: Partial<SolidSpec>): void
   setSolidPosition(id: string, position: Vec3): void
   mirrorFreeNode(id: string): string
@@ -545,6 +551,7 @@ function projectMaterialsAfterShopEdit(saved: Material[] | undefined, before: Ma
       ...(previous.sheetHeight !== edited.sheetHeight ? { sheetHeight: edited.sheetHeight } : {}),
       ...(previous.hasGrain !== edited.hasGrain ? { hasGrain: edited.hasGrain } : {}),
       ...(previous.trimEdge !== edited.trimEdge ? { trimEdge: edited.trimEdge } : {}),
+      ...(previous.minBendRadiusMm !== edited.minBendRadiusMm ? { minBendRadiusMm: edited.minBendRadiusMm } : {}),
       ...(JSON.stringify(previous.decor) !== JSON.stringify(edited.decor) ? { decor: edited.decor } : {}),
       ...(JSON.stringify(previous.pbr) !== JSON.stringify(edited.pbr) ? { pbr: edited.pbr } : {}),
       ...(JSON.stringify(previous.defaultEdging) !== JSON.stringify(edited.defaultEdging)
@@ -883,6 +890,36 @@ export const useConfigurator = create<State>((set, get) => ({
     return id
   },
 
+  addSpecialPart(kind) {
+    const s = get()
+    const material = s.catalog.materials.find((item) => Number.isSafeInteger(item.thickness) &&
+      (kind === 'lathe' || item.minBendRadiusMm !== undefined))
+    if (!material) throw new ConfigValidationError('minBendRadiusMm',
+      'иілуге жарайтын материал мен оның ең аз радиусын цех баптауында көрсетіңіз', 'материалға оң бүтін мм')
+    const fabrication: FabricationSpec = kind === 'lathe'
+      ? { kind: 'lathe', profile: structuredClone(LATHE_PROFILES[0]!.profile),
+        materialId: material.id, quantity: 1, unitPrice: 0 }
+      : { kind: 'bent', chord: 100, radius: Math.max(100, material.minBendRadiusMm! + material.thickness),
+        height: 500, thickness: material.thickness, referenceFace: 'inner',
+        materialId: material.id, quantity: 1, unitPrice: 0 }
+    const id = `${kind}-${crypto.randomUUID()}`
+    const node = createSolidNode(id, tr(kind === 'lathe' ? 'Токарная деталь' : 'Гнутая деталь'))
+    node.solid = { ...node.solid, fabrication,
+      size: specialSolidSize(fabrication, material.minBendRadiusMm) }
+    const root: GroupNode = { ...s.root, children: [...s.root.children, node] }
+    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
+    return id
+  },
+
+  addImportedSolid(node) {
+    const s = get()
+    if (!node.solid.importedModel) throw new ConfigValidationError('importedModel', 'mesh жоқ', '3DS/OBJ')
+    validateImportedModel(node.solid.importedModel)
+    if (findNode(s.root, node.id)) throw new ConfigValidationError('solid.id', 'id қайталанды', 'бірегей id')
+    const root: GroupNode = { ...s.root, children: [...s.root.children, node] }
+    set({ ...treeEdit(s, root), activeId: node.id, selected: node.id, firstRun: false })
+  },
+
   addAnnotation() {
     const s = get()
     const id = `annotation-${crypto.randomUUID()}`
@@ -900,13 +937,13 @@ export const useConfigurator = create<State>((set, get) => ({
 
   editSolid(id, patch) {
     const s = get()
-    const root = editSolidTree(s.root, id, s.layers, { solid: patch })
+    const root = editSolidTree(s.root, id, s.layers, { solid: patch }, s.catalog.materials)
     if (root !== s.root) set(treeEdit(s, root))
   },
 
   setSolidPosition(id, position) {
     const s = get()
-    const root = editSolidTree(s.root, id, s.layers, { position })
+    const root = editSolidTree(s.root, id, s.layers, { position }, s.catalog.materials)
     if (root !== s.root) set(treeEdit(s, root))
   },
 

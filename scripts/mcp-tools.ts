@@ -49,7 +49,7 @@ function ownProject(account: Account, id: string): ProjectFileV4 {
 function production(project: ProjectFileV4, shop: ShopProfile) {
   const catalog = { ...catalogOf(shop), materials: project.materials, edgeBands: project.edgeBands }
   const scene = flattenTree(project.root, catalog, project.settings, project.layers, project.autoJoints)
-  return { ...projectProduction(project.root, scene), catalog }
+  return { ...projectProduction(project.root, scene, catalog.materials), catalog }
 }
 
 /** Converts a human brief into existing generator options; geometry remains in core. */

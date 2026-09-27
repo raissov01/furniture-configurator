@@ -46,6 +46,7 @@ export const MaterialSchema = z.object({
   hasGrain: z.boolean(),
   pricePerSheet: minorUnits,
   trimEdge: z.number().int().nonnegative(),
+  minBendRadiusMm: mm.optional(),
   defaultEdging: EdgePolicySchema.optional(),
   decor: DecorSchema.optional(),
   pbr: z.strictObject({

@@ -5,6 +5,7 @@ import { t as tr } from '@/lib/i18n'
 import { Field, NumberInput } from '@/components/ui'
 import type { SolidNode } from '@/src/core/tree'
 import { useConfigurator } from '@/store/configurator'
+import { SpecialPartProperties } from './SpecialPartProperties'
 
 /** Decorative solids have scene properties only; they do not produce cut panels. */
 export function SolidProperties({ node }: { node: SolidNode }) {
@@ -25,11 +26,13 @@ export function SolidProperties({ node }: { node: SolidNode }) {
       onChange={(event) => setName(event.target.value)} onBlur={() => {
         if (name !== node.name) run(() => renameNode(node.id, name))
       }} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} /></Field>
-    <div className="grid grid-cols-3 gap-2" data-testid="solid-dimensions">
+    {node.solid.fabrication ? <SpecialPartProperties node={node} onError={setError} /> : node.solid.importedModel
+      ? <p className="tabular-nums text-neutral-500">{node.solid.size.y} (H) × {node.solid.size.x} (W) × {node.solid.size.z} (D) мм</p>
+      : <div className="grid grid-cols-3 gap-2" data-testid="solid-dimensions">
       {([['y', 'H'], ['x', 'W'], ['z', 'D']] as const).map(([axis, label]) =>
         <Field key={axis} label={`${label}, мм`}><NumberInput value={node.solid.size[axis]} min={1}
           onChange={(value) => run(() => editSolid(node.id, { size: { ...node.solid.size, [axis]: value } }))} /></Field>)}
-    </div>
+    </div>}
     <div className="grid grid-cols-3 gap-2" data-testid="solid-position">
       {(['x', 'y', 'z'] as const).map((axis) => <Field key={axis} label={`${axis.toUpperCase()}, мм`}>
         <NumberInput value={node.transform.pos[axis]}
@@ -40,6 +43,6 @@ export function SolidProperties({ node }: { node: SolidNode }) {
       className="h-8 w-full border border-neutral-300 bg-white p-0.5 dark:border-neutral-700 dark:bg-neutral-900"
       value={/^#[0-9a-fA-F]{6}$/.test(node.solid.color ?? '') ? node.solid.color : '#a3a3a3'}
       onChange={(event) => run(() => editSolid(node.id, { color: event.target.value }))} /></Field>
-    <p className="text-neutral-500">{tr('Декоративный блок не входит в деталировку.')}</p>
+    {!node.solid.fabrication && <p className="text-neutral-500">{tr('Декоративный блок не входит в деталировку.')}</p>}
   </section>
 }

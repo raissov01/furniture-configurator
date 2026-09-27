@@ -17,7 +17,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
   SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
-import type { Discount, HardwarePlacement, NestedSheet, Panel, PriceLine, PriceOverrides } from '@/src/core/index'
+import type { Discount, HardwarePlacement, NestedSheet, Panel, PriceLine, PriceOverrides, SpecialPartRow } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -58,7 +58,7 @@ function isoToRu(iso: string): string {
 
 /** `panels` — БҮКІЛ ЖОБАНЫҢ детальдары. Геометрия store-да есептелмейді (§3). */
 export function QuoteView({
-  panels, hardware, projectName, moduleWidths, propertiesOpen = false,
+  panels, hardware, projectName, moduleWidths, specialParts = [], propertiesOpen = false,
 }: {
   panels: Panel[]
   /** Панель емес фурнитура: штанга мен ұстағыштар. */
@@ -66,6 +66,7 @@ export function QuoteView({
   projectName: string
   /** Корпустардың ені, мм — монтаж мөлшерлемесі осыдан саналады. */
   moduleWidths: number[]
+  specialParts?: readonly SpecialPartRow[]
   propertiesOpen?: boolean
 }) {
   const open = useConfigurator((s) => s.quoteOpen)
@@ -112,11 +113,11 @@ export function QuoteView({
   const [priceError, price] = useMemo((): [string | null, ReturnType<typeof priceProject> | null] => {
     if (!nesting) return [null, null]
     try {
-      return [null, priceProject(panels, nesting, shop, hardware, moduleWidths, priceOverrides)]
+      return [null, priceProject(panels, nesting, shop, hardware, moduleWidths, priceOverrides, specialParts)]
     } catch (err) {
       return [err instanceof Error ? err.message : String(err), null]
     }
-  }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides])
+  }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides, specialParts])
 
   const run = async (kind: string, action: () => Promise<void>) => {
     setBusy(kind)

@@ -28,6 +28,6 @@ export function useProjectProduction() {
         error = cause.message
       }
     }
-    return { root, catalog, scene, error, ...projectProduction(root, scene) }
+    return { root, catalog, scene, error, ...projectProduction(root, scene, catalog.materials) }
   }, [root, layers, catalog, settings, autoJoints, loadError])
 }
