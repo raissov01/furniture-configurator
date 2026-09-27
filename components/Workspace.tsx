@@ -984,8 +984,8 @@ export function Workspace() {
           </>}
         </div>
         <div className="flex min-h-0 flex-col">
-        {/* Телефонда 3D экранның жартысынан астам: 256 px-те ештеңе көрінбейтін. */}
-        <main className="relative h-[55dvh] min-h-[55dvh] max-h-[55dvh] flex-none lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+        {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
+        <main className="relative h-[32dvh] min-h-[240px] max-h-[32dvh] flex-none lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
@@ -1059,7 +1059,7 @@ export function Workspace() {
           <CutListTable panels={projectPanels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
         </section>
         </div>
-        <aside className="relative z-10 flex min-h-max flex-col border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:static lg:z-auto lg:min-h-0">
+        <aside className="relative z-10 flex h-[60dvh] min-h-[360px] max-h-[60dvh] flex-col overflow-hidden border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:static lg:z-auto lg:h-auto lg:min-h-0 lg:max-h-none">
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
           <div className={cn("border-b border-neutral-200 px-3 py-2 dark:border-neutral-800", classic && "lg:hidden")}>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
@@ -1082,7 +1082,7 @@ export function Workspace() {
             </> : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
             {classic && (activeBoard || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
-          <div className={cn("min-h-0 flex-1 overflow-visible p-3 lg:overflow-auto", classic && "lg:hidden")}>
+          <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && "lg:hidden")}>
             <Dense>
               {/*
                 МОДУЛЬДІҢ ОРНЫ (qdesign «Модуль орны, мм»: X/Y/Z, Бұрылыс) енді
