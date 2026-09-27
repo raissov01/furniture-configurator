@@ -55,6 +55,7 @@ import { isTouchDevice } from '@/lib/walkInput'
 import { usePanels } from '@/lib/usePanels'
 import { useTreeSceneItems } from '@/lib/useTreeSceneItems'
 import { useProjectProduction } from '@/lib/useProjectProduction'
+import { productionAvailability } from '@/lib/productionAvailability'
 import {
   DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, shelfSpanWarnings,
 } from '@/src/core/index'
@@ -237,6 +238,7 @@ export function Workspace() {
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
   const [draftState, setDraftState] = useState<{ id: string; errors: Record<string, boolean> }>({ id: activeId, errors: {} })
   const draftInvalid = draftState.id === activeId && hasDraftErrors(draftState.errors)
+  const productionState = productionAvailability(production.error, draftInvalid)
   const onDraftValidityChange = (field: string, invalid: boolean) =>
     setDraftState((current) => ({ id: activeId, errors: updateDraftErrors(current.id === activeId ? current.errors : {}, field, invalid) }))
   useEffect(() => {
@@ -484,8 +486,8 @@ export function Workspace() {
   const menus = classicMenus({
     canUndo, canRedo, activeEditable, editableBoard: editableBoard && !activeBoardJoint,
     canRemoveCabinet: cabinets.length >= 2 && activeEditable,
-    canExport: hasActiveCabinet && !production.error && !draftInvalid,
-    canExportPdf: hasActiveCabinet && !draftInvalid,
+    canExport: hasActiveCabinet && productionState.exportsAvailable,
+    canExportPdf: hasActiveCabinet && productionState.exportsAvailable,
     productionError: Boolean(production.error),
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
     silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,
@@ -675,7 +677,7 @@ export function Workspace() {
               </Button>
             )
           ) : null}
-          {cabinet && !production.error && !draftInvalid ? <ExportMenu cabinet={cabinet} panels={activePanels} /> : null}
+          {cabinet && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet} panels={activePanels} /> : null}
           {cloudEnabled && (
             <Button onClick={() => setAccountOpen(true)} title={tr('Аккаунт и проекты в облаке')}>{tr('Аккаунт')}</Button>
           )}
@@ -848,9 +850,13 @@ export function Workspace() {
 
       {production.error ? (
         <div role="alert" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          {production.error}
+          {production.error} — {tr('Деталировка временно недоступна. Экспорт заблокирован.')}
         </div>
       ) : null}
+
+      {draftInvalid && !production.error ? <div role="status" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        {tr('Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.')}
+      </div> : null}
 
       {activeBoardJoint ? (
         <div role="status" className="border-b border-neutral-300 px-3 py-2 text-xs text-neutral-700 dark:border-neutral-700 dark:text-neutral-300">
@@ -1056,7 +1062,11 @@ export function Workspace() {
           className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72')}
           data-tour="cutlist"
         >
-          <CutListTable panels={projectPanels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
+          {productionState.cutListAvailable
+            ? <CutListTable panels={projectPanels} catalog={catalog} collapsed={!cutOpen} onToggle={toggleCut} />
+            : <div role="status" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+              {tr('Деталировка временно недоступна. Экспорт заблокирован.')}
+            </div>}
         </section>
         </div>
         <aside className="relative z-10 flex h-[60dvh] min-h-[360px] max-h-[60dvh] flex-col overflow-hidden border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:static lg:z-auto lg:h-auto lg:min-h-0 lg:max-h-none">

@@ -1365,6 +1365,11 @@ export const en: Record<string, string> = {
   'Текущий проект изменён после согласования': 'The current project changed after approval',
   'Скачать подписанный PDF': 'Download stamped PDF',
   'Рассчитывается': 'Calculated',
+  'Введите целые высоты полок': 'Enter whole-number shelf heights',
+  'значений': 'values',
+  'Деталировка временно недоступна. Экспорт заблокирован.': 'Cut list temporarily unavailable. Export is blocked.',
+  'Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.': 'Correct the field. The last valid model is shown. Cut list temporarily unavailable. Export is blocked.',
+  'DXF деталей и торцевая присадка CSV в одном архиве': 'Part DXFs and edge drilling CSV in one archive',
   'Увеличьте ширину корпуса или уменьшите число фасадов.': 'Increase the cabinet width or reduce the number of fronts.',
 
 }

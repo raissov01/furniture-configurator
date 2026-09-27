@@ -1369,6 +1369,11 @@ export const uz: Record<string, string> = {
   'Текущий проект изменён после согласования': 'Joriy loyiha tasdiqdan keyin o‘zgardi',
   'Скачать подписанный PDF': 'Muhrlangan PDF faylni yuklab olish',
   'Рассчитывается': 'Hisoblanadi',
+  'Введите целые высоты полок': 'Tokcha balandliklarini butun son bilan kiriting',
+  'значений': 'qiymat',
+  'Деталировка временно недоступна. Экспорт заблокирован.': 'Detallar roʻyxati vaqtincha mavjud emas. Eksport bloklangan.',
+  'Исправьте поле. Показана последняя корректная модель. Деталировка временно недоступна. Экспорт заблокирован.': 'Maydonni tuzating. Oxirgi toʻgʻri model koʻrsatilgan. Detallar roʻyxati vaqtincha mavjud emas. Eksport bloklangan.',
+  'DXF деталей и торцевая присадка CSV в одном архиве': 'Detallar DXF va qirra teshiklarining CSV fayli bitta arxivda',
   'Увеличьте ширину корпуса или уменьшите число фасадов.': 'Korpus enini oshiring yoki fasadlar sonini kamaytiring.',
 
 }
