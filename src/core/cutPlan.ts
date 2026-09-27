@@ -149,23 +149,21 @@ function splitRegion(
 
   if (parts.length === 1) {
     const p = parts[0]!
-    // Жалғыз деталь аймақтан кіші болса, оны өлшеміне келтіретін рез керек.
-    const sizeCuts: CutLine[] = []
-    if (region.x + region.width - (p.x + p.width) > 0) {
-      sizeCuts.push({
-        axis: 'v', at: p.x + p.width, from: region.y, to: region.y + region.height,
-        kind: 'size', order: 0,
-      })
+    // Әр резден кейін бөлшек жатқан нақты аймақ тарылып отырады.
+    // Алдыңғы бағытпен бастау артық бұрылысты болдырмайды.
+    const remaining = { ...region }
+    for (const axis of parentAxis === 'v' ? ['v', 'h'] as const : ['h', 'v'] as const) {
+      if (axis === 'v' && remaining.x + remaining.width > p.x + p.width) {
+        const at = p.x + p.width
+        out.push({ axis, at, from: remaining.y, to: remaining.y + remaining.height, kind: 'size', order: 0 })
+        remaining.width = at - remaining.x
+      }
+      if (axis === 'h' && remaining.y + remaining.height > p.y + p.height) {
+        const at = p.y + p.height
+        out.push({ axis, at, from: remaining.x, to: remaining.x + remaining.width, kind: 'size', order: 0 })
+        remaining.height = at - remaining.y
+      }
     }
-    if (region.y + region.height - (p.y + p.height) > 0) {
-      sizeCuts.push({
-        axis: 'h', at: p.y + p.height, from: region.x, to: region.x + region.width,
-        kind: 'size', order: 0,
-      })
-    }
-    // Алдыңғы рездің бағытымен басталсын — артық бұрылыс шықпасын.
-    sizeCuts.sort((a, b) => (a.axis === parentAxis ? -1 : 0) - (b.axis === parentAxis ? -1 : 0))
-    out.push(...sizeCuts)
     return
   }
 
@@ -207,14 +205,25 @@ function splitRegion(
 function trimCuts(sheet: NestedSheet): CutLine[] {
   const u = sheet.usable
   const cuts: CutLine[] = []
+  const remaining: SheetRect = { x: 0, y: 0, width: sheet.sheetWidth, height: sheet.sheetHeight }
   // Алдымен екі тік, сосын екі көлденең: осылай бұрылыс біреу ғана болады.
-  if (u.x > 0) cuts.push({ axis: 'v', at: u.x, from: 0, to: sheet.sheetHeight, kind: 'trim', order: 0 })
-  if (u.x + u.width < sheet.sheetWidth) {
-    cuts.push({ axis: 'v', at: u.x + u.width, from: 0, to: sheet.sheetHeight, kind: 'trim', order: 0 })
+  if (u.x > 0) {
+    cuts.push({ axis: 'v', at: u.x, from: remaining.y, to: remaining.y + remaining.height, kind: 'trim', order: 0 })
+    remaining.width -= u.x
+    remaining.x = u.x
   }
-  if (u.y > 0) cuts.push({ axis: 'h', at: u.y, from: 0, to: sheet.sheetWidth, kind: 'trim', order: 0 })
+  if (u.x + u.width < sheet.sheetWidth) {
+    cuts.push({ axis: 'v', at: u.x + u.width, from: remaining.y, to: remaining.y + remaining.height, kind: 'trim', order: 0 })
+    remaining.width = u.width
+  }
+  if (u.y > 0) {
+    cuts.push({ axis: 'h', at: u.y, from: remaining.x, to: remaining.x + remaining.width, kind: 'trim', order: 0 })
+    remaining.height -= u.y
+    remaining.y = u.y
+  }
   if (u.y + u.height < sheet.sheetHeight) {
-    cuts.push({ axis: 'h', at: u.y + u.height, from: 0, to: sheet.sheetWidth, kind: 'trim', order: 0 })
+    cuts.push({ axis: 'h', at: u.y + u.height, from: remaining.x, to: remaining.x + remaining.width, kind: 'trim', order: 0 })
+    remaining.height = u.height
   }
   return cuts
 }

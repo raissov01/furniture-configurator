@@ -187,11 +187,51 @@ describe('рез жоспары — қолмен саналатын парақ',
 
     expect(plan.cuts.filter((c) => c.kind === 'trim')).toHaveLength(4)
     expect(plan.cuts.filter((c) => c.kind === 'size')).toHaveLength(2)
-    // Обрезка: екі тік (1000) + екі көлденең (1000); өлшемге келтіру: екеуі 980.
-    expect(plan.stats.cutLength).toBe(4 * 1000 + 2 * 980)
+    // Екі тік 1000; одан кейін көлденеңдер тек 980 мм аймақта.
+    // Алдымен 980 мм көлденең размер, соңғы тік тек 500 мм детальда.
+    expect(plan.cuts.map(({ axis, from, to }) => ({ axis, from, to }))).toEqual([
+      { axis: 'v', from: 0, to: 1000 },
+      { axis: 'v', from: 0, to: 1000 },
+      { axis: 'h', from: 10, to: 990 },
+      { axis: 'h', from: 10, to: 990 },
+      { axis: 'h', from: 10, to: 990 },
+      { axis: 'v', from: 10, to: 510 },
+    ])
+    expect(plan.stats.cutLength).toBe(5440)
     // v,v,h,h → сосын h,v: бағыт екі рет ауысады.
     expect(plan.stats.turns).toBe(2)
     expect(plan.stats.kim).toBeCloseTo(25, 9)
+  })
+
+  it('ХДФ эталонында соңғы рез бөлінген детальдың 600 мм жиегімен ғана өтеді', () => {
+    const sheet: NestedSheet = {
+      index: 1,
+      materialId: 'hdf',
+      sheetWidth: 2800,
+      sheetHeight: 2070,
+      usable: { x: 10, y: 10, width: 2780, height: 2050 },
+      parts: [part('back', 10, 10, 2000, 600)],
+      offcuts: [],
+    }
+    const plan = sheetCutPlan(sheet)
+    expect(plan.cuts[5]).toMatchObject({ axis: 'v', at: 2010, from: 10, to: 610 })
+    expect(plan.stats.cutLength).toBe(13080)
+  })
+
+  it('тік размер резінен кейінгі көлденең рез тек тарылған детальдан өтеді', () => {
+    const sheet: NestedSheet = {
+      index: 1,
+      materialId: 'm',
+      sheetWidth: 1000,
+      sheetHeight: 1000,
+      usable: { x: 0, y: 0, width: 1000, height: 1000 },
+      parts: [part('A', 0, 0, 400, 300)],
+      offcuts: [],
+    }
+    expect(sheetCutPlan(sheet).cuts).toMatchObject([
+      { axis: 'v', from: 0, to: 1000 },
+      { axis: 'h', from: 0, to: 400 },
+    ])
   })
 
   it('деталь парақты толық жапса, өлшемге келтіру резі ЖОҚ', () => {
