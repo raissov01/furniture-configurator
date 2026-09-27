@@ -21,6 +21,7 @@ import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
 import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
+import { visibleErrors } from '@/lib/validationVisibility'
 import { useModalLayer } from '@/lib/useModalLayer'
 import { bindCloudProject } from '@/lib/cloudProjectBinding'
 import { installationCreateAction } from '@/lib/installationHandoff'
@@ -67,6 +68,8 @@ export function AccountPanel() {
   const [profileReady, setProfileReady] = useState(false)
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
+  const [formTouched, setFormTouched] = useState<Record<string, boolean>>({})
+  const [formSubmitted, setFormSubmitted] = useState(false)
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [installations, setInstallations] = useState<InstallationRow[]>([])
   const [org, setOrg] = useState<CloudOrg>(() => parseCloudOrg(null))
@@ -108,6 +111,7 @@ export function AccountPanel() {
   const [cloudRetry, setCloudRetry] = useState(false)
   const [busy, setBusy] = useState(false)
   const formErrors = accountFormErrors(mode, form, Boolean(invite))
+  const visibleFormErrors = visibleErrors(formErrors, formTouched, formSubmitted)
   const formReady = canSubmitAccount(mode, form, Boolean(invite)) && (!invite || mode === 'login' || inviteShopName !== null)
   const inviteShop = inviteShopDisplay(invite, inviteShopName)
 
@@ -311,6 +315,7 @@ export function AccountPanel() {
   }, [account, shop, profileReady])
 
   const submit = async () => {
+    setFormSubmitted(true)
     if (busy || !formReady) return
     setBusy(true)
     setError(null)
@@ -330,6 +335,8 @@ export function AccountPanel() {
       setAccount(data.account)
       window.dispatchEvent(new Event(LIBRARY_AUTH_CHANGED_EVENT))
       setForm({ email: '', password: '', shopName: '' })
+      setFormTouched({})
+      setFormSubmitted(false)
       /*
        * Үшеуі ҚАТАР жүреді. Бұрын кезекпен күтетін, ал әрқайсысы бөлек
        * баруы серверге дейінгі кідірісті ҮШ ЕСЕЛЕЙТІН: жақын тұрған дев
@@ -822,16 +829,17 @@ export function AccountPanel() {
         ) : (
           <div className="space-y-3">
             <div className="flex gap-1">
-              <Button active={mode === 'login'} onClick={() => setMode('login')}>{tr('Вход')}</Button>
-              <Button active={mode === 'register'} onClick={() => setMode('register')}>{tr('Регистрация')}</Button>
+              <Button active={mode === 'login'} onClick={() => { setMode('login'); setFormTouched({}); setFormSubmitted(false) }}>{tr('Вход')}</Button>
+              <Button active={mode === 'register'} onClick={() => { setMode('register'); setFormTouched({}); setFormSubmitted(false) }}>{tr('Регистрация')}</Button>
             </div>
 
             {mode === 'register' && inviteShop.editable ? (
               <Field label={tr('Название цеха')} hint={tr('Пустое название станет «Мой цех»; до 100 символов')}>
-                <input className={`${input} ${formErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
-                  aria-invalid={Boolean(formErrors.shopName)}
-                  onChange={(e) => setForm({ ...form, shopName: e.target.value })} />
-                {formErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.shopName)}</span> : null}
+                <input className={`${input} ${visibleFormErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
+                  aria-invalid={Boolean(visibleFormErrors.shopName)}
+                  onBlur={() => setFormTouched((current) => ({ ...current, shopName: true }))}
+                  onChange={(e) => { setFormTouched((current) => ({ ...current, shopName: true })); setForm({ ...form, shopName: e.target.value }) }} />
+                {visibleFormErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.shopName)}</span> : null}
               </Field>
             ) : mode === 'register' ? (
               <Field label={tr('Название цеха')} hint={tr('Цех по приглашению — изменить нельзя')}>
@@ -840,22 +848,24 @@ export function AccountPanel() {
             ) : null}
 
             <Field label={tr('Почта')}>
-              <input className={`${input} ${formErrors.email ? 'border-red-500 dark:border-red-500' : ''}`} type="email" autoComplete="email" value={form.email}
-                aria-invalid={Boolean(formErrors.email)}
-                onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              {formErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.email)}</span> : null}
+              <input className={`${input} ${visibleFormErrors.email ? 'border-red-500 dark:border-red-500' : ''}`} type="email" autoComplete="email" value={form.email}
+                aria-invalid={Boolean(visibleFormErrors.email)}
+                onBlur={() => setFormTouched((current) => ({ ...current, email: true }))}
+                onChange={(e) => { setFormTouched((current) => ({ ...current, email: true })); setForm({ ...form, email: e.target.value }) }} />
+              {visibleFormErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.email)}</span> : null}
             </Field>
             <Field label={tr('Пароль')} hint={mode === 'register' ? 'от 8 символов' : undefined}>
-              <input className={`${input} ${formErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
-                aria-invalid={Boolean(formErrors.password)}
+              <input className={`${input} ${visibleFormErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
+                aria-invalid={Boolean(visibleFormErrors.password)}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 value={form.password}
                 onKeyDown={(e) => { if (e.key === 'Enter') void submit() }}
-                onChange={(e) => setForm({ ...form, password: e.target.value })} />
-              {formErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.password)}</span> : null}
+                onBlur={() => setFormTouched((current) => ({ ...current, password: true }))}
+                onChange={(e) => { setFormTouched((current) => ({ ...current, password: true })); setForm({ ...form, password: e.target.value }) }} />
+              {visibleFormErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.password)}</span> : null}
             </Field>
 
-            <Button onClick={() => void submit()} disabled={busy || !formReady} active>
+            <Button onClick={() => void submit()} disabled={busy || Boolean(invite && mode === 'register' && inviteShopName === null)} active>
               {mode === 'login' ? 'Войти' : 'Создать аккаунт'}
             </Button>
 

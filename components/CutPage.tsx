@@ -390,7 +390,8 @@ export function CutPage() {
               field="labelHeight" onDraftValidityChange={(field, invalid) => setLabelDraftInvalid((state) => ({ ...state, [field]: invalid }))}
               onChange={setLabelHeight} />
           </Field>
-          {labelOptions.error ? <p role="alert" className="text-xs text-red-700 sm:col-span-3">{labelOptions.error}</p> : null}
+          {labelOptions.error && cloudId !== null ? <p role="alert" className="text-xs text-red-700 sm:col-span-3">{labelOptions.error}</p> : null}
+          {!cloudId ? <p className="text-xs text-neutral-600 sm:col-span-3">{tr('Для QR сначала сохраните проект в облаке')}</p> : null}
         </section>
         <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
           {tr('DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».')}
