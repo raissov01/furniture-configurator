@@ -17,6 +17,7 @@ import { appendFreeMirror } from '@/lib/freeMirrorAction'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
+import { validatedShopEdit } from '@/lib/validatedShopEdit'
 import {
   DEFAULT_ROOM,
   IDENTITY_TRANSFORM,
@@ -1299,7 +1300,7 @@ export const useConfigurator = create<State>((set, get) => ({
   editShop(patch) {
     const s = get()
     const changesJointInputs = Boolean(patch.settings || patch.materials || patch.edgeBands)
-    const nextShop = syncActivePriceList({ ...s.shop, ...patch })
+    const nextShop = validatedShopEdit(s.shop, patch)
     const projectSettings = patch.settings
       ? projectSettingsAfterShopEdit(s.projectSettings, s.shop.settings, patch.settings) : s.projectSettings
     const projectMaterials = patch.materials
