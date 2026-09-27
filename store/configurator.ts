@@ -12,6 +12,7 @@
 import { create } from 'zustand'
 import { t as tr } from '@/lib/i18n'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
+import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import {
   DEFAULT_ROOM,
   IDENTITY_TRANSFORM,
@@ -868,8 +869,12 @@ export const useConfigurator = create<State>((set, get) => ({
       return
     }
     const next = { ...templateToCabinet(template, s.catalog), id: s.activeId }
+    const titles = templateProjectTitles(s.projectName, s.root.name, defaultCabinet.name, next.name)
+    const edited = legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c)))
     set({
-      ...legacyEdit(s, s.cabinets.map((c) => (c.id === s.activeId ? next : c))),
+      ...edited,
+      projectName: titles.projectName,
+      root: { ...edited.root, name: titles.rootName },
       templateId: id,
       galleryOpen: false,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
