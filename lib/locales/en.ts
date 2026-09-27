@@ -1587,4 +1587,12 @@ export const en: Record<string, string> = {
   'Почта: укажите адрес вида name@example.com': 'Email: enter an address like name@example.com',
   'Проверяется приглашение…': 'Checking invitation…',
   'Цех по приглашению — изменить нельзя': 'Inviting workshop — read only',
+  'Аккаунт участника удалён.': 'Member account deleted.',
+  'Аккаунт удалён. Вы вышли.': 'Account deleted. You are signed out.',
+  'Удаляется…': 'Deleting…',
+  'Удалить аккаунт': 'Delete account',
+  'Удалить аккаунт участника': 'Delete member account',
+  'Удалить свой аккаунт и уйти': 'Delete my account and leave',
+  'Аккаунт участника будет удалён. Он больше не сможет войти. Удалить аккаунт?': 'The member’s account will be deleted. They will no longer be able to sign in. Delete it?',
+  'Ваш аккаунт будет удалён. Вы больше не сможете войти. Удалить аккаунт и уйти?': 'Your account will be deleted. You will no longer be able to sign in. Delete it and leave?',
 }

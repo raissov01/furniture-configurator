@@ -1591,4 +1591,12 @@ export const uz: Record<string, string> = {
   'Почта: укажите адрес вида name@example.com': 'Email: name@example.com shaklidagi manzilni kiriting',
   'Проверяется приглашение…': 'Taklif tekshirilmoqda…',
   'Цех по приглашению — изменить нельзя': 'Taklif qilgan sex — o‘zgartirib bo‘lmaydi',
+  'Аккаунт участника удалён.': 'A’zo hisobi o‘chirildi.',
+  'Аккаунт удалён. Вы вышли.': 'Hisob o‘chirildi. Siz chiqdingiz.',
+  'Удаляется…': 'O‘chirilmoqda…',
+  'Удалить аккаунт': 'Hisobni o‘chirish',
+  'Удалить аккаунт участника': 'A’zo hisobini o‘chirish',
+  'Удалить свой аккаунт и уйти': 'Hisobimni o‘chirib chiqish',
+  'Аккаунт участника будет удалён. Он больше не сможет войти. Удалить аккаунт?': 'A’zo hisobi o‘chiriladi. U endi kira olmaydi. Hisobni o‘chirasizmi?',
+  'Ваш аккаунт будет удалён. Вы больше не сможете войти. Удалить аккаунт и уйти?': 'Hisobingiz o‘chiriladi. Endi kira olmaysiz. Hisobni o‘chirib chiqasizmi?',
 }

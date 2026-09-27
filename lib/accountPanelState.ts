@@ -26,3 +26,9 @@ export function canSubmitAccount(mode: AccountMode, form: AccountForm, invited: 
 export function inviteShopDisplay(token: string | null, shopName: string | null) {
   return token ? { editable: false, name: shopName } : { editable: true, name: null }
 }
+
+export function memberRemovalWarning(self: boolean): string {
+  return self
+    ? 'Ваш аккаунт будет удалён. Вы больше не сможете войти. Удалить аккаунт и уйти?'
+    : 'Аккаунт участника будет удалён. Он больше не сможет войти. Удалить аккаунт?'
+}

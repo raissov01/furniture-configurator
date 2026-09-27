@@ -16,7 +16,7 @@ import type { CloudOrg } from '@/src/core/cloudProjectOrganize'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
-import { accountFormErrors, canSubmitAccount, inviteShopDisplay } from '@/lib/accountPanelState'
+import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning } from '@/lib/accountPanelState'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -83,6 +83,7 @@ export function AccountPanel() {
   const [inviteShopName, setInviteShopName] = useState<string | null>(null)
   const [usage, setUsage] = useState<{ projects: number; members: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const formErrors = accountFormErrors(mode, form, Boolean(invite))
   const formReady = canSubmitAccount(mode, form, Boolean(invite)) && (!invite || mode === 'login' || inviteShopName !== null)
@@ -277,6 +278,7 @@ export function AccountPanel() {
   const removeMember = async (userId: string) => {
     setBusy(true)
     setError(null)
+    setNotice(null)
     try {
       const res = await fetch('/api/team/member', {
         method: 'DELETE',
@@ -286,9 +288,11 @@ export function AccountPanel() {
       const data = (await res.json()) as { members?: Member[]; error?: string }
       if (!res.ok) {
         setError(data.error ?? 'Не получилось')
+        setConfirmRemove(null)
         return
       }
       setConfirmRemove(null)
+      setNotice(userId === account?.userId ? tr('Аккаунт удалён. Вы вышли.') : tr('Аккаунт участника удалён.'))
       // Өзін шығарған адам цехтан айырылады: сеансы серверде жойылды,
       // сондықтан терезені кірмеген күйге қайтарамыз.
       if (userId === account?.userId) {
@@ -297,7 +301,11 @@ export function AccountPanel() {
         setProjects([])
         return
       }
-      await refreshTeam()
+      if (data.members) setTeam((current) => current ? { ...current, members: data.members! } : null)
+      else await refreshTeam()
+    } catch {
+      setError(tr('Нет связи с сервером'))
+      setConfirmRemove(null)
     } finally {
       setBusy(false)
     }
@@ -355,6 +363,7 @@ export function AccountPanel() {
             {error}
           </p>
         ) : null}
+        {notice ? <p role="status" className="mb-3 border border-neutral-300 px-2.5 py-2 text-xs dark:border-neutral-700">{notice}</p> : null}
 
         {account ? (
           <div className="space-y-3">
@@ -429,7 +438,7 @@ export function AccountPanel() {
                     const iAmOwner = team.members[0]?.userId === account?.userId
                     const canRemove = !owner && (iAmOwner || self)
                     return (
-                      <li key={m.userId} className="flex items-baseline justify-between gap-2 text-xs">
+                      <li key={m.userId} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
                         <span className="min-w-0 truncate">
                           {m.email}
                           <span className="ml-1 text-[10px] text-neutral-400">{owner ? tr('владелец') : m.role === 'shop' ? tr('Цех') : tr('Дизайнер')}</span>
@@ -454,14 +463,14 @@ export function AccountPanel() {
                           {canRemove ? (
                             <Button
                               disabled={busy}
-                              title={self ? tr('Выйти из цеха') : tr('Убрать из цеха')}
+                              title={self ? tr('Удалить свой аккаунт и уйти') : tr('Удалить аккаунт участника')}
                               onClick={() => {
                                 if (confirmRemove === m.userId) void removeMember(m.userId)
                                 else setConfirmRemove(m.userId)
                               }}
                             >
                               {confirmRemove === m.userId
-                                ? tr('Точно?')
+                                ? busy ? tr('Удаляется…') : tr('Удалить аккаунт')
                                 // «Выйти» ЕМЕС: тақтада шығудың өз батырмасы
                                 // бар, екеуі бір аталса адам да, тест те
                                 // шатасады.
@@ -469,6 +478,11 @@ export function AccountPanel() {
                             </Button>
                           ) : null}
                         </span>
+                        {confirmRemove === m.userId ? (
+                          <p role="alert" className="w-full min-w-0 border border-red-300 px-2 py-1 text-red-800 dark:border-red-800 dark:text-red-300">
+                            {tr(memberRemovalWarning(self))}
+                          </p>
+                        ) : null}
                       </li>
                     )
                   })}
