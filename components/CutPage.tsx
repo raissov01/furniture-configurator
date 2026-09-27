@@ -97,6 +97,7 @@ export function CutPage() {
   }, [hydrateShop, hydrateProject])
 
   const [showCuts, setShowCuts] = useState(true)
+  const [showMobileActions, setShowMobileActions] = useState(false)
   const [materialFilter, setMaterialFilter] = useState('all')
   const [busy, setBusy] = useState<string | null>(null)
   const [labelPage, setLabelPage] = useState<LabelPage>('a4')
@@ -177,9 +178,9 @@ export function CutPage() {
   }
 
   return (
-    <main data-cut-panel-count={panels.length} className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <main data-cut-panel-count={panels.length} className="min-h-screen min-w-0 bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-2.5">
+        <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-wrap items-center gap-2 px-4 py-2.5">
           <Link
             href="/configurator"
             className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:border-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-300"
@@ -188,8 +189,13 @@ export function CutPage() {
           </Link>
           <h1 className="text-sm font-semibold">{tr('Раскрой')}</h1>
           <span className="min-w-0 max-w-full truncate text-[11px] text-neutral-500">{projectName}</span>
+          <button type="button" className="ml-auto border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700 sm:hidden"
+            aria-expanded={showMobileActions} aria-controls="cut-export-actions"
+            onClick={() => setShowMobileActions((current) => !current)}>{tr('Экспорт')}</button>
 
-          <div data-testid="cut-export-actions" className="ml-auto flex w-full min-w-0 flex-wrap items-center gap-1 sm:w-auto">
+          <div id="cut-export-actions" data-testid="cut-export-actions"
+            className={cn('w-full min-w-0 grid-cols-2 gap-1 [&>button]:min-w-0 [&>button]:whitespace-normal sm:ml-auto sm:flex sm:w-auto sm:flex-wrap sm:items-center',
+              showMobileActions ? 'grid' : 'hidden')}>
             <Button active={showCuts} ariaPressed={showCuts} onClick={() => setShowCuts(!showCuts)}>
               {tr('Показать резы')}
             </Button>
@@ -337,7 +343,7 @@ export function CutPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-4">
+      <div className="mx-auto w-full max-w-6xl min-w-0 px-4 py-4">
         <section className="mb-3 grid gap-2 border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-3" aria-label={tr('Бирки')}>
           <Field label={tr('Лист для бирок')}>
             <Select value={labelPage} onChange={(page) => setLabelPage(page as LabelPage)} options={[
@@ -378,7 +384,7 @@ export function CutPage() {
           <p className="text-xs text-neutral-500">{tr('Нет деталей для раскроя.')}</p>
         ) : (
           <div className="grid min-w-0 gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
-            <aside className="space-y-3 self-start rounded-lg border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
+            <aside className="min-w-0 space-y-3 self-start border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
                 {tr('Настройки станка')}
               </h2>
@@ -477,7 +483,7 @@ function Totals({ stats, sheetCount }: { stats: CutStats; sheetCount: number }) 
     { label: tr('Деловой отход'), value: `${squareMetres(stats.offcutArea)} м²` },
   ]
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-6">
       {cells.map((c) => (
         <div
           key={c.label}
@@ -516,9 +522,10 @@ function SheetCard({
   }, [display.step, display.total])
   return (
     <figure className="w-full max-w-[520px] min-w-0 space-y-1">
+      <div className="max-w-full overflow-x-auto" aria-label={tr('Карта раскроя')}>
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
-        className="block h-auto w-full max-w-[520px] rounded border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
+        className="block h-auto w-full min-w-[520px] border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950 sm:min-w-0"
         role="img"
         aria-label={`Лист ${sheet.index}`}
       >
@@ -570,6 +577,7 @@ function SheetCard({
           )
         })}
       </svg>
+      </div>
       <div className="flex flex-wrap items-center gap-1 text-xs">
         <Button size="sm" active={playback} disabled={!showCuts} ariaPressed={playback}
           onClick={() => { setPlayback(!playback); setPlaying(false); setStep(0) }}>
