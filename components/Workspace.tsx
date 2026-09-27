@@ -1056,11 +1056,6 @@ export function Workspace() {
       <Tour paused={galleryOpen} classic={classic} />
       <BusyOverlay />
       <RenderPanel />
-      {/*
-        3D-де БАСЫП таңдалған деталь: цехтың сұрағы «мынау қандай деталь»
-        деп басталады, ал жауап әрқашан бір жерде тұруы керек.
-      */}
-
 
       {sizeWarnings.length > 0 ? (
         <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
@@ -1111,36 +1106,37 @@ export function Workspace() {
           <div className="absolute inset-0">
             <Scene items={items} room={room} activeId={activeId} catalog={catalog} flatScene={scene} classic={classic} />
           </div>
-      {selected ? (() => {
-        // Іздеу ЖОБА тізімінен: бір жобадағы екі шкафтың детальі де осында.
-        const part = projectPanels.find((p) => p.id === selected)
-        if (!part) return null
-        return (
-          <div data-testid="selected-info-overlay" className="pointer-events-auto absolute inset-x-2 bottom-2 z-20 flex max-h-[45%] flex-wrap items-center gap-2 overflow-y-auto border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
-            <b>{panelDisplayLabel(part.label)}</b>
-            <span className="tabular-nums text-neutral-500">
-              {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
-            </span>
-            <span className="tabular-nums text-amber-600 dark:text-amber-400">
-              {tr('Рез · цех')}: {part.cutLength}×{part.cutWidth}
-            </span>
-            <span className="tabular-nums text-neutral-500">
-              {part.drilling.length} {tr('отв.')}
-            </span>
-            {part.note ? <span className="truncate text-neutral-400">{part.note}</span> : null}
-            {/* Корпус әрекеттері (көшіру/айна/өшіру) енді оң панельдің астында — әрқашан көзде. */}
-            <div className="ml-auto flex items-center gap-1">
-              {/* Есік/ящик — осы жерден бір-бірлеп ашылады (екі рет басу да солай). */}
-              {part.opening ? (
-                <Button active={Boolean(openPanels[part.id])} onClick={() => togglePanelOpen(part.id)}>
-                  {openPanels[part.id] ? tr('Закрыть дверцу') : tr('Открыть дверцу')}
-                </Button>
-              ) : null}
-              <Button onClick={() => setSelected(null)}>{tr('Закрыть')}</Button>
-            </div>
-          </div>
-        )
-      })() : null}
+          {/* 3D-де таңдалған деталь жайлы ақпарат сахна өлшемін өзгертпейді. */}
+          {selected ? (() => {
+            // Іздеу ЖОБА тізімінен: бір жобадағы екі шкафтың детальі де осында.
+            const part = projectPanels.find((p) => p.id === selected)
+            if (!part) return null
+            return (
+              <div data-testid="selected-info-overlay" className="pointer-events-auto absolute inset-x-2 bottom-2 z-20 flex max-h-[45%] flex-wrap items-center gap-2 overflow-y-auto border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
+                <b>{panelDisplayLabel(part.label)}</b>
+                <span className="tabular-nums text-neutral-500">
+                  {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
+                </span>
+                <span className="tabular-nums text-amber-600 dark:text-amber-400">
+                  {tr('Рез · цех')}: {part.cutLength}×{part.cutWidth}
+                </span>
+                <span className="tabular-nums text-neutral-500">
+                  {part.drilling.length} {tr('отв.')}
+                </span>
+                {part.note ? <span className="truncate text-neutral-400">{part.note}</span> : null}
+                {/* Корпус әрекеттері (көшіру/айна/өшіру) енді оң панельдің астында — әрқашан көзде. */}
+                <div className="ml-auto flex items-center gap-1">
+                  {/* Есік/ящик — осы жерден бір-бірлеп ашылады (екі рет басу да солай). */}
+                  {part.opening ? (
+                    <Button active={Boolean(openPanels[part.id])} onClick={() => togglePanelOpen(part.id)}>
+                      {openPanels[part.id] ? tr('Закрыть дверцу') : tr('Открыть дверцу')}
+                    </Button>
+                  ) : null}
+                  <Button onClick={() => setSelected(null)}>{tr('Закрыть')}</Button>
+                </div>
+              </div>
+            )
+          })() : null}
           {/* Бір канондық ағаш: корпус, еркін тақта, топ және қабаттар. */}
           {walk ? null : structureOpen ? <ClassicStructureWindow onClose={() => setStructureOpen(false)} dockRequest={dockRequest}
             canOpenProperties={propertiesNodeSupported(activeNode?.kind)} onProperties={() => setPropertiesNodeId(activeId)} /> : null}
