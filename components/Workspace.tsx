@@ -69,7 +69,7 @@ import { parseSilhouetteHeight } from '@/lib/silhouetteInput'
 import {
   DIMENSION_AXIS_LABEL, dimensionWarningTemplate, dimensionWarnings, shelfSpanWarnings,
 } from '@/src/core/index'
-import { useConfigurator } from '@/store/configurator'
+import { PROJECT_META_KEY, useConfigurator } from '@/store/configurator'
 import type { CameraPreset } from '@/store/configurator'
 
 // R3F тек браузерде жүреді — сервер жағында рендерленбейді.
@@ -171,6 +171,10 @@ export function Workspace() {
   const hydrateShop = useConfigurator((s) => s.hydrateShop)
   const hydrateProject = useConfigurator((s) => s.hydrateProject)
   const saveProjectLocally = useConfigurator((s) => s.saveProjectLocally)
+  const localSaveError = useConfigurator((s) => s.localSaveError)
+  const localConflict = useConfigurator((s) => s.localConflict)
+  const checkLocalRevision = useConfigurator((s) => s.checkLocalRevision)
+  const resolveLocalConflict = useConfigurator((s) => s.resolveLocalConflict)
   const exportProject = useConfigurator((s) => s.exportProject)
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
   const setSketchOpen = useConfigurator((s) => s.setSketchOpen)
@@ -340,10 +344,10 @@ export function Workspace() {
   useEffect(() => {
     if (propertiesNodeId) return
     const timer = setTimeout(() => {
-      saveProjectLocally()
+      const saveError = saveProjectLocally()
       // Тарихқа да жазамыз: автосақтау бір ғана кілтті қайта жазады да,
       // жарты сағат бұрынғы күйге қайтуға мүмкіндік қалмайды.
-      pushHistory()
+      if (!saveError) pushHistory()
       // Клиентке код берілген болса — оның экраны да жаңарсын (автожаңарту).
       syncShare()
     }, 500)
@@ -364,6 +368,12 @@ export function Workspace() {
     window.addEventListener('pagehide', flush)
     return () => window.removeEventListener('pagehide', flush)
   }, [saveProjectLocally, propertiesNodeId])
+
+  useEffect(() => {
+    const changed = (event: StorageEvent) => { if (event.key === PROJECT_META_KEY) checkLocalRevision() }
+    window.addEventListener('storage', changed)
+    return () => window.removeEventListener('storage', changed)
+  }, [checkLocalRevision])
 
   // Цехтың пролёт шегі қойылмаса, бұл әрқашан бос тізім қайтарады.
   const spanWarnings = useMemo(() => shelfSpanWarnings(production.panels, shop), [production.panels, shop])
@@ -811,6 +821,17 @@ export function Workspace() {
           <Button size="sm" onClick={dismissHistoryRestoreError}>{tr('Закрыть')}</Button>
         </div>
       )}
+      {localConflict && <div role="alert" className="relative z-30 flex flex-wrap items-center gap-2 border-b border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+        <span className="w-full">{tr('Проект изменён в другой вкладке. Какую версию сохранить?')}</span>
+        <Button size="sm" onClick={() => resolveLocalConflict('other')}>{tr('Открыть версию другой вкладки')}</Button>
+        <Button size="sm" onClick={() => resolveLocalConflict('mine')}>{tr('Сохранить мою версию')}</Button>
+        <Button size="sm" onClick={() => downloadProjectFile(exportProject())}>{tr('Скачать копию JSON')}</Button>
+      </div>}
+      {localSaveError && !localConflict && <div role="alert" className="relative z-30 flex flex-wrap items-center gap-2 border-b border-red-300 bg-red-50 px-3 py-2 text-xs text-red-900 dark:bg-red-950 dark:text-red-100">
+        <span className="flex-1">{localSaveError}</span>
+        <Button size="sm" onClick={() => downloadProjectFile(exportProject())}>{tr('Скачать копию JSON')}</Button>
+        <Button size="sm" onClick={() => saveProjectLocally()}>{tr('Повторить сохранение')}</Button>
+      </div>}
 
       {/*
         PRO100-ДЕГІ ЕКІ ҰСАҚ БЕЛГІШЕ ҚАТАРЫ (docs/pro100/ui-design.md, §2).
