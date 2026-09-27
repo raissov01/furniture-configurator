@@ -10,6 +10,22 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Текстуры PRO100': 'PRO100 textures',
+  'Обновить список': 'Refresh list',
+  'Для импорта нужен вход в аккаунт': 'Sign in to use imported textures',
+  'Не удалось загрузить текстуры цеха': 'Could not load shop textures',
+  'INI содержит только размеры и имя файла. Загрузите само изображение и выберите материал проекта.': 'INI contains only sizes and a file name. Upload the image and choose a project material.',
+  'Текстура из импорта': 'Imported texture',
+  'Выберите текстуру': 'Choose a texture',
+  'Материал проекта': 'Project material',
+  'Выберите материал проекта': 'Choose a project material',
+  'Имя файла в INI': 'File name in INI',
+  'Файл изображения PNG, JPEG или WebP (до 1 МБ)': 'PNG, JPEG or WebP image (up to 1 MB)',
+  'Подтверждаю право использовать это изображение в проекте': 'I confirm I have the right to use this image in the project',
+  'Применить текстуру': 'Apply texture',
+  'Не удалось загрузить изображение': 'Could not upload image',
+  'Текстура применена к материалу проекта': 'Texture applied to project material',
+  'Не удалось применить текстуру': 'Could not apply texture',
   'Найти категорию': 'Find category',
   'Подтвердить шаблон': 'Confirm template',
   'Будет добавлен приблизительный шаблон': 'Approximate template to add',

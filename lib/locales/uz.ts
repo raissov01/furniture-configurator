@@ -11,6 +11,22 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Текстуры PRO100': 'PRO100 teksturalari',
+  'Обновить список': 'Ro‘yxatni yangilash',
+  'Для импорта нужен вход в аккаунт': 'Import teksturalari uchun hisobga kiring',
+  'Не удалось загрузить текстуры цеха': 'Sex teksturalari yuklanmadi',
+  'INI содержит только размеры и имя файла. Загрузите само изображение и выберите материал проекта.': 'INI faqat o‘lchamlar va fayl nomini saqlaydi. Rasmni yuklang va loyiha materialini tanlang.',
+  'Текстура из импорта': 'Import qilingan tekstura',
+  'Выберите текстуру': 'Teksturani tanlang',
+  'Материал проекта': 'Loyiha materiali',
+  'Выберите материал проекта': 'Loyiha materialini tanlang',
+  'Имя файла в INI': 'INI dagi fayl nomi',
+  'Файл изображения PNG, JPEG или WebP (до 1 МБ)': 'PNG, JPEG yoki WebP rasmi (1 MB gacha)',
+  'Подтверждаю право использовать это изображение в проекте': 'Bu rasmni loyihada ishlatish huquqim borligini tasdiqlayman',
+  'Применить текстуру': 'Teksturani qo‘llash',
+  'Не удалось загрузить изображение': 'Rasm yuklanmadi',
+  'Текстура применена к материалу проекта': 'Tekstura loyiha materialiga qo‘llandi',
+  'Не удалось применить текстуру': 'Teksturani qo‘llab bo‘lmadi',
   'Найти категорию': 'Toifani topish',
   'Подтвердить шаблон': 'Shablonni tasdiqlash',
   'Будет добавлен приблизительный шаблон': 'Taxminiy shablon qo‘shiladi',

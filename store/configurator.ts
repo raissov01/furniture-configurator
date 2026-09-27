@@ -126,6 +126,7 @@ type Snapshot = {
 type State = Snapshot & {
   setProjectLights(lights: SceneLight[]): void
   setMaterialPbr(materialId: string, pbr: MaterialPbr | undefined): void
+  setMaterialDecor(materialId: string, decor: Material['decor']): void
   /** Invalid local backup stays untouched until explicit recovery/load/reset. */
   projectLoadError: string | null
   /**
@@ -708,6 +709,17 @@ export const useConfigurator = create<State>((set, get) => ({
     if (!material) throw new ConfigValidationError('materialId', `материал табылмады: ${materialId}`)
     if (JSON.stringify(material.pbr) === JSON.stringify(pbr)) return
     const changed = MaterialSchema.parse({ ...material, pbr })
+    const projectMaterials = state.catalog.materials.map((entry) => entry.id === materialId ? changed : entry)
+    set({ projectMaterials, catalog: { ...state.catalog, materials: projectMaterials },
+      past: [...state.past, snapshot(state)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null })
+    get().saveProjectLocally()
+  },
+  setMaterialDecor(materialId, decor) {
+    const state = get()
+    const material = state.catalog.materials.find((entry) => entry.id === materialId)
+    if (!material) throw new ConfigValidationError('materialId', `материал табылмады: ${materialId}`)
+    if (JSON.stringify(material.decor) === JSON.stringify(decor)) return
+    const changed = MaterialSchema.parse({ ...material, decor })
     const projectMaterials = state.catalog.materials.map((entry) => entry.id === materialId ? changed : entry)
     set({ projectMaterials, catalog: { ...state.catalog, materials: projectMaterials },
       past: [...state.past, snapshot(state)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null })
