@@ -294,6 +294,16 @@ function migrate(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS jobs_ready ON jobs (state, run_after);
   `)
+
+  // 13-қадам: әр пайдаланушының бұлт жобаларының папкасы мен сұрыптауы.
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS cloud_project_org (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      json TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+  `)
 }
 
 /** Тек тесте: жадтағы таза базамен жұмыс істеу. */

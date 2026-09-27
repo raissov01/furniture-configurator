@@ -19,6 +19,7 @@ import { validSilhouetteHeight } from '@/lib/silhouetteInput'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
+import { materialUsedInTree } from '@/lib/materialUsedInTree'
 import {
   DEFAULT_ROOM,
   IDENTITY_TRANSFORM,
@@ -62,8 +63,8 @@ import {
 import type { Quality } from '@/lib/appearance'
 import type { PanoramaContext } from '@/lib/panorama'
 import type {
-  AnnotationSpec, BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr, SolidSpec,
-  PropertyClipboard, ScalePercent, SceneNode,
+  AnnotationSpec, BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
+  PropertyClipboard, ScalePercent, SceneNode, SolidSpec,
   Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
   SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
@@ -292,13 +293,13 @@ type State = Snapshot & {
 
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
+  addAnnotation(): string
+  editAnnotation(id: string, patch: Partial<AnnotationSpec>): void
+  removeAnnotation(id: string): void
   addSolid(): string
   editSolid(id: string, patch: Partial<SolidSpec>): void
   setSolidPosition(id: string, position: Vec3): void
   mirrorFreeNode(id: string): string
-  addAnnotation(): string
-  editAnnotation(id: string, patch: Partial<AnnotationSpec>): void
-  removeAnnotation(id: string): void
   removeBoard(id: string): void
   editBoard(id: string, patch: Partial<BoardSpec>): void
   autoJointBoards(ids: [string, string], kind: AutoJointKind, tolerance: number): void
@@ -669,7 +670,7 @@ const cleanPriceOverrides = (overrides: PriceOverrides): PriceOverrides | undefi
 }
 
 const withOpenings = (room: Room): Room =>
-  (room.openings && room.openings.length > 0
+  (room.openings !== undefined
     ? { ...room, openings: fitOpenings(room) }
     : { ...room, openings: defaultOpenings(room) })
 
@@ -811,14 +812,6 @@ export const useConfigurator = create<State>((set, get) => ({
     return id
   },
 
-  addSolid() {
-    const s = get()
-    const id = `solid-${crypto.randomUUID()}`
-    const root: GroupNode = { ...s.root, children: [...s.root.children, createSolidNode(id, tr('Декоративный блок'))] }
-    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
-    return id
-  },
-
   addAnnotation() {
     const s = get()
     const id = `annotation-${crypto.randomUUID()}`
@@ -834,24 +827,12 @@ export const useConfigurator = create<State>((set, get) => ({
     return id
   },
 
-  editSolid(id, patch) {
+  addSolid() {
     const s = get()
-    const root = editSolidTree(s.root, id, s.layers, { solid: patch })
-    if (root !== s.root) set(treeEdit(s, root))
-  },
-
-  setSolidPosition(id, position) {
-    const s = get()
-    const root = editSolidTree(s.root, id, s.layers, { position })
-    if (root !== s.root) set(treeEdit(s, root))
-  },
-
-  mirrorFreeNode(id) {
-    const s = get()
-    const result = appendFreeMirror(s.root, id, s.catalog, s.layers, s.projectSettings ?? s.shop.settings)
-    flattenTree(result.root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
-    set({ ...treeEdit(s, result.root), activeId: result.id, selected: result.id })
-    return result.id
+    const id = `solid-${crypto.randomUUID()}`
+    const root: GroupNode = { ...s.root, children: [...s.root.children, createSolidNode(id, tr('Декоративный блок'))] }
+    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
+    return id
   },
 
   editAnnotation(id, patch) {
@@ -878,6 +859,26 @@ export const useConfigurator = create<State>((set, get) => ({
     set({ ...treeEdit(s, withoutAnnotation(s.root, id)),
       activeId: s.activeId === id ? s.cabinets[0]?.id ?? '' : s.activeId,
       selected: s.selected === id ? null : s.selected })
+  },
+
+  editSolid(id, patch) {
+    const s = get()
+    const root = editSolidTree(s.root, id, s.layers, { solid: patch })
+    if (root !== s.root) set(treeEdit(s, root))
+  },
+
+  setSolidPosition(id, position) {
+    const s = get()
+    const root = editSolidTree(s.root, id, s.layers, { position })
+    if (root !== s.root) set(treeEdit(s, root))
+  },
+
+  mirrorFreeNode(id) {
+    const s = get()
+    const result = appendFreeMirror(s.root, id, s.catalog, s.layers, s.projectSettings ?? s.shop.settings)
+    flattenTree(result.root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
+    set({ ...treeEdit(s, result.root), activeId: result.id, selected: result.id })
+    return result.id
   },
 
   removeBoard(id) {
@@ -1378,9 +1379,7 @@ export const useConfigurator = create<State>((set, get) => ({
    */
   removeMaterial(id) {
     const s = get()
-    const used = s.cabinets.some(
-      (c) => c.carcassMaterialId === id || c.frontMaterialId === id || c.backMaterialId === id,
-    )
+    const used = materialUsedInTree(s.root, id)
     if (used || s.shop.materials.length <= 1) return
     get().setShop({ ...s.shop, materials: s.shop.materials.filter((m) => m.id !== id) })
   },

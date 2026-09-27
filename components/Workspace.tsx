@@ -599,8 +599,8 @@ export function Workspace() {
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
-      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
+      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
     ],
     [
@@ -1212,6 +1212,8 @@ export function Workspace() {
                 </fieldset>
               ) : activeSolid ? (
                 <fieldset disabled={!editableSolid}><SolidProperties key={activeSolid.id} node={activeSolid} /></fieldset>
+              ) : activeAnnotation ? (
+                <AnnotationProperties node={activeAnnotation} />
               ) : null}
             </Dense>
           </div>

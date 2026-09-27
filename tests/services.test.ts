@@ -86,12 +86,12 @@ describe('жіктеме мен жолдар ДӘЛ қосылады', () => {
     }
   })
 
-  it('барлық сома БҮТІН ТЕҢГЕ', () => {
+  it('барлық сома БҮТІН ТИЫН', () => {
     const all = [...p.materials, ...p.edges, ...p.hardware, ...p.services]
-    for (const l of all) expect(l.cost % 100, l.name).toBe(0)
-    for (const r of p.byMaterial) expect(r.total % 100, r.materialName).toBe(0)
-    expect(p.markup % 100).toBe(0)
-    expect(p.total % 100).toBe(0)
+    for (const l of all) expect(Number.isSafeInteger(l.cost), l.name).toBe(true)
+    for (const r of p.byMaterial) expect(Number.isSafeInteger(r.total), r.materialName).toBe(true)
+    expect(Number.isSafeInteger(p.markup)).toBe(true)
+    expect(Number.isSafeInteger(p.total)).toBe(true)
   })
 })
 
@@ -168,7 +168,7 @@ describe('коэффициент', () => {
     expect(raised.installation.cost).toBe(plain.installation.cost)
     // Айырма тек шығынның жартысы.
     const base = plain.goods + plain.servicesTotal
-    expect(raised.coefficientAmount).toBe(Math.round((base * 0.5) / 100) * 100)
+    expect(raised.coefficientAmount).toBe(Math.round(base * 0.5))
   })
 
   it('жарамсыз коэффициент 1-ге теңеледі', () => {
@@ -202,7 +202,7 @@ describe('қорытындының реті', () => {
     )
     const base = p.goods + p.servicesTotal
     expect(p.subtotal).toBe(base + p.coefficientAmount + p.installation.cost)
-    expect(p.markup).toBe(Math.round((p.subtotal * 10) / 100 / 100) * 100)
+    expect(p.markup).toBe(Math.round((p.subtotal * 10) / 100))
     expect(p.total).toBe(p.subtotal + p.markup)
   })
 

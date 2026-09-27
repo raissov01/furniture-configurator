@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { currentAccount } from '@/lib/server/session'
-import { deleteProject, readProject } from '@/lib/server/store'
+import { deleteProject, projectRevision, readProject } from '@/lib/server/store'
 import { cloudOff } from '@/lib/server/cloud'
 import { can } from '@/lib/permissions'
 import { toProductionProject } from '@/src/core/publicProject'
@@ -22,7 +22,8 @@ export async function GET(_request: Request, context: Context): Promise<Response
   const project = readProject(account.shopId, id)
   if (!project) return NextResponse.json({ error: 'Проект не найден' }, { status: 404 })
   return NextResponse.json({ project: account.role === 'shop'
-    ? toProductionProject(project as ProjectFile | ProjectFileV4) : project })
+    ? toProductionProject(project as ProjectFile | ProjectFileV4) : project,
+    revision: projectRevision(account.shopId, id) })
 }
 
 export async function DELETE(_request: Request, context: Context): Promise<Response> {

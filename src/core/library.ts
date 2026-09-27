@@ -52,6 +52,10 @@ export function parseLibraryItem(raw: unknown): LibraryItem {
   for (const material of item.materials) {
     if (material.defaultEdging) for (const bandId of Object.values(material.defaultEdging)) if (bandId) requireBand(bandId)
   }
+  const actualSize = sizeHint(item.node, { materials: item.materials, edgeBands: item.edgeBands })
+  if (actualSize.x !== item.meta.sizeHint.x || actualSize.y !== item.meta.sizeHint.y || actualSize.z !== item.meta.sizeHint.z) {
+    throw new ConfigValidationError('library.meta.sizeHint', 'sizeHint түйін өлшеміне сай емес')
+  }
   return item
 }
 

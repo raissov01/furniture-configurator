@@ -23,6 +23,12 @@ describe('өз кітапханасы', () => {
     expect(() => parseLibraryItem(banded)).toThrow(/band/i)
   })
 
+  it('импорт метадерегіндегі өлшем түйіннің нақты өлшеміне сай болуын талап етеді', () => {
+    const item = createLibraryItem(board, catalog, 'Элементтер', '2026-09-25T00:00:00.000Z', 'size-check')
+    expect(() => parseLibraryItem({ ...item, meta: { ...item.meta,
+      sizeHint: { ...item.meta.sizeHint, x: 0 } } })).toThrow(/sizeHint/)
+  })
+
   it('топ пен шкафты қайта қойғанда барлық ID жаңа әрі материалдары өндірісте бар', () => {
     const cabinet = templateToCabinet(findTemplate('wardrobe-penal-600')!, catalog)
     const group: GroupNode = { kind: 'group', id: 'group-1', name: 'Топ', transform,

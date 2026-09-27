@@ -29,4 +29,3 @@ describe('F08 wizard rules', () => {
     expect(updateWizardLayout({ layout: 'corner', modules }, 'corner').modules).toBe(modules)
   })
 })
-

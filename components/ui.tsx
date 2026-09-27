@@ -295,12 +295,13 @@ export function Slider({
 }
 
 export function Button({
-  children, onClick, disabled, active, title, tour, size = 'md', testId,
+  children, onClick, disabled, active, ariaPressed, title, tour, size = 'md', testId,
 }: {
   children: React.ReactNode
   onClick?: () => void
   disabled?: boolean
   active?: boolean
+  ariaPressed?: boolean
   title?: string
   /** Оқыту көмекшісінің белгісі (`components/Tour.tsx`). */
   tour?: string
@@ -318,9 +319,9 @@ export function Button({
       title={title}
       data-tour={tour}
       data-testid={testId}
-      aria-pressed={active || undefined}
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={ariaPressed ?? (active ? true : undefined)}
       className={cn(
         'rounded-md border font-medium transition',
         size === 'sm' ? 'px-1.5 py-0.5 text-[11px] leading-4' : 'px-2.5 py-1.5 text-xs',
@@ -336,12 +337,13 @@ export function Button({
 }
 
 export function Toggle({
-  checked, onChange, label,
-}: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  checked, onChange, label, disabled = false,
+}: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300">
+    <label className={cn('flex items-center gap-2 text-xs text-neutral-700 dark:text-neutral-300', disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
       <input
         type="checkbox"
+        disabled={disabled}
         className="accent-neutral-900 dark:accent-neutral-100"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
