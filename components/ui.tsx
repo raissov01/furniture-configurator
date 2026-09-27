@@ -257,7 +257,7 @@ export function Menu({
           role="menu"
           aria-label={typeof label === 'string' ? label : undefined}
           style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}
-          className="fixed z-[1000] min-w-44 max-w-[calc(100vw-24px)] overflow-y-auto border border-neutral-300 bg-white p-1 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          className="ui-menu-portal fixed z-[1000] min-w-44 max-w-[calc(100vw-24px)] overflow-y-auto border border-neutral-300 bg-white p-1 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
         >
           <MenuCtx.Provider value={() => setOpen(false)}>{children}</MenuCtx.Provider>
         </div>, document.body) : null}

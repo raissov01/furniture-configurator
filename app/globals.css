@@ -167,6 +167,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 @media (max-width: 1023px) {
   [data-workspace-style] :is(button, a, select, input[type="range"], input[type="checkbox"]) { min-width: 44px; min-height: 44px; }
   [data-workspace-style] [role="menu"] { max-width: calc(100vw - 24px); max-height: 60dvh; overflow-y: auto; }
+  .ui-menu-portal [role="menuitem"] { min-height: 44px; font-size: 14px; }
 }
 .p100-icon-button:hover:not(:disabled) { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
 .p100-icon-button[aria-pressed="true"] { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); }
