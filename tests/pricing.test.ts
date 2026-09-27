@@ -151,6 +151,21 @@ describe('есеп', () => {
     expect(Number.isInteger(p.total)).toBe(true)
   })
 
+  it('qty екі болса, аудан, тесік, қызмет және фурнитура саны екі еселенеді', () => {
+    const doubled = panels.map((p) => ({ ...p, qty: p.qty * 2 }))
+    const doubledNesting = nestPanels(doubled, catalog)
+    const original = priceProject(panels, nesting, pricedShop)
+    const twice = priceProject(doubled, doubledNesting, pricedShop)
+    expect(countHoles(doubled)).toBe(2 * countHoles(panels))
+    expect([...countHardware(doubled)]).toEqual([...countHardware(panels)].map(([id, qty]) => [id, qty * 2]))
+    for (const row of original.byMaterial) {
+      const other = twice.byMaterial.find((candidate) => candidate.materialId === row.materialId)!
+      expect(other.panels).toBe(row.panels * 2)
+      expect(other.holes).toBe(row.holes * 2)
+      expect(other.areaSquareMetres).toBeCloseTo(row.areaSquareMetres * 2, 1)
+    }
+  })
+
   it('үстеме 0 болса қорытынды сомаға тең', () => {
     const p = priceProject(panels, nesting, { ...pricedShop, markupPercent: 0 })
     expect(p.total).toBe(p.subtotal)
