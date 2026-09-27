@@ -18,15 +18,16 @@ import type { NestingResult } from './nesting'
 import { isWidthBevel } from './types'
 import { polygonArea } from './polygon'
 import type { Discount, Panel, PriceOverrides } from './types'
-import { SERVICE_IDS, SERVICE_NAMES } from './shop'
-import type { ServiceId, ServiceRate, ShopProfile } from './shop'
+import { SERVICE_IDS, SERVICE_NAMES, SHEET_SERVICE_IDS, SHEET_SERVICE_NAMES } from './shop'
+import type { ServiceId, ServiceRate, SheetServiceId, ShopProfile } from './shop'
+import { scaleSalePrice, scalingAreaMm2 } from './salePriceScaling'
 
 export type PriceLine = {
   id: string
   name: string
   /** Саны: парақ / метр / дана / м² */
   qty: number
-  unit: 'лист' | 'м' | 'шт' | 'м²' | 'отв'
+  unit: 'лист' | 'м' | 'шт' | 'м²' | 'отв' | 'дет'
   /** Бір бірліктің бағасы, тиын */
   unitPrice: number
   /** Жол сомасы, тиын */
@@ -61,6 +62,8 @@ export type MaterialRow = {
   sheets: number
   panels: number
   holes: number
+  /** Тесігі бар детальдер — «бөлшекке» присадканың саны. */
+  drilledPanels: number
   edgeMetres: number
   /** Парақтардың құны, тиын */
   materialCost: number
@@ -68,6 +71,11 @@ export type MaterialRow = {
   edgeCost: number
   /** Қызмет → сома, тиын */
   services: Record<ServiceId, number>
+  /**
+   * Парақ басы ҚОСЫМША қызметтер, тиын (`ShopProfile.sheetServices`). Баптау
+   * қосулы болмаса — өріс МҮЛДЕ жоқ, бұрынғы жол бірдей қалады.
+   */
+  sheetServices?: Record<SheetServiceId, number> | undefined
   /** Жолдың бәрі қосылғаны, тиын */
   total: number
 }
@@ -88,7 +96,8 @@ export type PriceBreakdown = {
   coefficient: number
   /** Коэффициент ҚОСҚАН сома (base × (k − 1)), тиын */
   coefficientAmount: number
-  installation: { metres: number; rate: number; cost: number }
+  /** `excluded` — жобада «Орнатусыз» белгіленген (`priceOverrides.withoutInstallation`). */
+  installation: { metres: number; rate: number; cost: number; excluded?: true | undefined }
 
   /** Үстемесіз сома, тиын */
   subtotal: number
@@ -106,6 +115,12 @@ export type PriceBreakdown = {
    * дөңгелектеусіз, тура сол сома). Берілмесе — undefined.
    */
   salePriceOverride?: number | undefined
+  /**
+   * Сату бағасы ЛДСП ауданына пропорционал жаңартылған болса — оның негізі.
+   * `salePriceOverride` онда ЖАҢАРТЫЛҒАН сома, ал `savedSalePrice` —
+   * менеджер қойған бастапқы сан.
+   */
+  salePriceScaling?: { savedSalePrice: number; baseAreaMm2: number; currentAreaMm2: number } | undefined
   /** Жеңілдікке дейінгі ВСЕГО: қолмен сату бағасы болса сол, болмаса есептелген баға. */
   grossTotal: number
   /** Барлық жеке позиция жеңілдігінің қосындысы, тиын. */
@@ -328,6 +343,8 @@ export function priceProject(
     area: number
     panels: number
     holes: number
+    /** Тесігі бар детальдер (присадка «за деталь» тек соларға). */
+    drilledPanels: number
     /** bandId → метр */
     edges: Map<string, number>
     /** Детальдердің ұзындығының қосындысы, м — ТАҚТА (постформинг) метрмен сатылады. */
@@ -337,7 +354,7 @@ export function priceProject(
   const statFor = (id: string): Stats => {
     let v = stats.get(id)
     if (!v) {
-      v = { area: 0, panels: 0, holes: 0, edges: new Map(), lengthMetres: 0 }
+      v = { area: 0, panels: 0, holes: 0, drilledPanels: 0, edges: new Map(), lengthMetres: 0 }
       stats.set(id, v)
     }
     return v
@@ -349,6 +366,7 @@ export function priceProject(
     st.lengthMetres += Math.max(p.finishedLength, p.finishedWidth) * p.qty / 1000
     st.panels += p.qty
     st.holes += p.drilling.length * p.qty
+    if (p.drilling.length > 0) st.drilledPanels += p.qty
     if (p.contour) {
       for (const [i, start] of p.contour.points.entries()) {
         const spec = p.contour.bands[i]
@@ -373,13 +391,16 @@ export function priceProject(
   const sheetsByMaterial = new Map(nesting.byMaterial.map((g) => [g.materialId, g.sheets.length]))
   const nameByMaterial = new Map(nesting.byMaterial.map((g) => [g.materialId, g.materialName]))
 
-  /** Қызметтің осы материалдағы саны — негізіне қарай. */
-  const serviceQty = (rate: ServiceRate, id: string, st: Stats): number => {
+  /**
+   * Қызметтің осы материалдағы саны — негізіне қарай. Присадка «за деталь» —
+   * тек тесігі бар детальдер: тесіксіз деталь (задняя стенка) станокқа түспейді.
+   */
+  const serviceQty = (sid: ServiceId, rate: ServiceRate, id: string, st: Stats): number => {
     switch (rate.basis) {
       case 'sheet': return sheetsByMaterial.get(id) ?? 0
       case 'squareMetre': return st.area
       case 'hole': return st.holes
-      case 'panel': return st.panels
+      case 'panel': return sid === 'drilling' ? st.drilledPanels : st.panels
       case 'edgeMetre': return [...st.edges.values()].reduce((sum, m) => sum + m, 0)
     }
   }
@@ -390,6 +411,7 @@ export function priceProject(
   const materialRows: MaterialRow[] = []
 
   const materialIds = [...new Set([...stats.keys(), ...sheetsByMaterial.keys()])]
+  const sheetServicesOn = shop.sheetServices?.enabled === true
   for (const id of materialIds) {
     const st = statFor(id)
     const material = materialById.get(id)
@@ -424,10 +446,18 @@ export function priceProject(
     const services = {} as Record<ServiceId, number>
     for (const sid of SERVICE_IDS) {
       const rate = shop.services[sid]
-      services[sid] = roundMinor(serviceQty(rate, id, st) * rate.rate)
+      services[sid] = roundMinor(serviceQty(sid, rate, id, st) * rate.rate)
     }
 
     const servicesSum = SERVICE_IDS.reduce((sum, sid) => sum + services[sid], 0)
+    // Парақ басы қызметтер тек ПАРАҚ материалына (тақта раскройға кірмейді).
+    const sheetRates = sheetServicesOn && !slab
+      ? shop.sheetServices?.byMaterial?.[id] ?? shop.sheetServices?.rates
+      : undefined
+    const sheetServices = sheetRates
+      ? Object.fromEntries(SHEET_SERVICE_IDS.map((sid) => [sid, roundMinor(sheets * sheetRates[sid])])) as Record<SheetServiceId, number>
+      : undefined
+    const sheetServicesSum = sheetServices ? SHEET_SERVICE_IDS.reduce((sum, sid) => sum + sheetServices[sid], 0) : 0
     materialRows.push({
       materialId: id,
       materialName: name,
@@ -435,11 +465,13 @@ export function priceProject(
       sheets,
       panels: st.panels,
       holes: st.holes,
+      drilledPanels: st.drilledPanels,
       edgeMetres: Math.round([...st.edges.values()].reduce((s2, m) => s2 + m, 0) * 100) / 100,
       materialCost,
       edgeCost,
       services,
-      total: materialCost + edgeCost + servicesSum,
+      ...(sheetServicesOn ? { sheetServices: sheetServices ?? { cutting: 0, drilling: 0, edging: 0 } } : {}),
+      total: materialCost + edgeCost + servicesSum + sheetServicesSum,
     })
   }
   materialRows.sort((a, b) => b.total - a.total)
@@ -490,7 +522,7 @@ export function priceProject(
   const services: PriceLine[] = SERVICE_IDS
     .map((sid) => {
       const rate = shop.services[sid]
-      const qty = materialIds.reduce((sum, id) => sum + serviceQty(rate, id, statFor(id)), 0)
+      const qty = materialIds.reduce((sum, id) => sum + serviceQty(sid, rate, id, statFor(id)), 0)
       const cost = materialRows.reduce((sum, r) => sum + r.services[sid], 0)
       return {
         id: `service-${sid}`,
@@ -502,6 +534,19 @@ export function priceProject(
       }
     })
     .filter((line) => line.qty > 0 && line.unitPrice > 0)
+    // Парақ басы қызметтер — материал БОЙЫНША жол: мөлшерлеме материалға
+    // қарай әртүрлі болуы мүмкін, ал әр жол өз детальдарына дейін
+    // қадағалануы керек (§6).
+    .concat(sheetServicesOn ? materialRows.flatMap((r) => SHEET_SERVICE_IDS
+      .map((sid): PriceLine => ({
+        id: `service-sheet-${sid}-${r.materialId}`,
+        name: `${SHEET_SERVICE_NAMES[sid]}: ${r.materialName}`,
+        qty: r.sheets,
+        unit: 'лист',
+        unitPrice: (shop.sheetServices?.byMaterial?.[r.materialId] ?? shop.sheetServices?.rates)?.[sid] ?? 0,
+        cost: r.sheetServices?.[sid] ?? 0,
+      }))
+      .filter((line) => line.qty > 0 && line.cost > 0)) : [])
 
   // ── Фурнитура ─────────────────────────────────────────────────────────────
   const hardwareById = new Map(shop.hardware.map((h) => [h.id, h]))
@@ -546,14 +591,16 @@ export function priceProject(
   const edgeInputs = (bandId: string) => panels
     .map((p) => ({ panelId: p.id, qty: edgeMetresByBand([p]).get(bandId) ?? 0 }))
     .filter((source) => source.qty > 0)
-  const serviceInputs = (basis: ServiceRate['basis']) => panels.map((p) => ({
-    panelId: p.id,
-    qty: basis === 'hole' ? p.drilling.length * p.qty
-      : basis === 'panel' ? p.qty
-      : basis === 'squareMetre' ? (p.contour ? polygonArea(p.contour.points) : p.finishedLength * p.finishedWidth) * p.qty / 1_000_000
-      : basis === 'edgeMetre' ? [...edgeMetresByBand([p]).values()].reduce((sum, metres) => sum + metres, 0)
-      : panelCutArea(p),
-  })).filter((source) => source.qty > 0)
+  const serviceInputs = (basis: ServiceRate['basis'], sid: ServiceId) => panels
+    .filter((p) => sid !== 'drilling' || basis !== 'panel' || p.drilling.length > 0)
+    .map((p) => ({
+      panelId: p.id,
+      qty: basis === 'hole' ? p.drilling.length * p.qty
+        : basis === 'panel' ? p.qty
+        : basis === 'squareMetre' ? (p.contour ? polygonArea(p.contour.points) : p.finishedLength * p.finishedWidth) * p.qty / 1_000_000
+        : basis === 'edgeMetre' ? [...edgeMetresByBand([p]).values()].reduce((sum, metres) => sum + metres, 0)
+        : panelCutArea(p),
+    })).filter((source) => source.qty > 0)
   const allocate = (line: PriceLine, inputs: Omit<PriceSource, 'cost'>[]) => {
     const sum = inputs.reduce((total, source) => total + source.qty, 0)
     if (sum <= 0) return
@@ -573,8 +620,15 @@ export function priceProject(
   }
   for (const line of edges) allocate(line, edgeInputs(line.id))
   for (const line of services) {
+    const sheetPrefix = SHEET_SERVICE_IDS
+      .map((sid) => `service-sheet-${sid}-`)
+      .find((prefix) => line.id.startsWith(prefix))
+    if (sheetPrefix) {
+      allocate(line, materialInputs(line.id.slice(sheetPrefix.length), false))
+      continue
+    }
     const sid = line.id.slice('service-'.length) as ServiceId
-    allocate(line, serviceInputs(shop.services[sid].basis))
+    allocate(line, serviceInputs(shop.services[sid].basis, sid))
   }
   const hasPins = panels.some((p) => p.drilling.some((d) => d.purpose === 'shelfPin'))
   const runnerId = panels.flatMap((p) => p.drilling)
@@ -628,7 +682,8 @@ export function priceProject(
   const coefficientAmount = roundMinor(base * (coefficient - 1))
 
   const metres = moduleWidths.reduce((sum, w) => sum + w, 0) / 1000
-  const installationCost = roundMinor(metres * shop.installation.ratePerMetreWidth)
+  const withoutInstallation = overrides?.withoutInstallation === true
+  const installationCost = withoutInstallation ? 0 : roundMinor(metres * shop.installation.ratePerMetreWidth)
 
   const subtotal = base + coefficientAmount + installationCost
   const markup = roundMinor((subtotal * shop.markupPercent) / 100)
@@ -639,7 +694,17 @@ export function priceProject(
    * шыққан жалпы бағаны БАСЫП ЖАЗАДЫ, бірақ `calculatedTotal` өзгеріссіз қалады —
    * шебер override-ты алып тастап, коэффициентке қайта орала алады.
    */
-  const grossTotal = overrides?.salePrice ?? calculatedTotal
+  const scaling = overrides?.salePrice !== undefined && overrides.salePriceScaling
+    ? {
+      savedSalePrice: overrides.salePrice,
+      baseAreaMm2: overrides.salePriceScaling.baseAreaMm2,
+      currentAreaMm2: scalingAreaMm2(panels, overrides.salePriceScaling.materialIds),
+    }
+    : undefined
+  const salePrice = scaling
+    ? scaleSalePrice(scaling.savedSalePrice, scaling.baseAreaMm2, scaling.currentAreaMm2)
+    : overrides?.salePrice
+  const grossTotal = salePrice ?? calculatedTotal
   const groups = { materials, edges, hardware, services }
   const lineLookup = new Map<string, PriceLine>()
   for (const [group, lines] of Object.entries(groups)) {
@@ -683,18 +748,73 @@ export function priceProject(
       metres: Math.round(metres * 100) / 100,
       rate: shop.installation.ratePerMetreWidth,
       cost: installationCost,
+      ...(withoutInstallation ? { excluded: true as const } : {}),
     },
     subtotal,
     markupPercent: shop.markupPercent,
     markup,
     calculatedTotal,
-    salePriceOverride: overrides?.salePrice,
+    salePriceOverride: salePrice,
+    ...(scaling ? { salePriceScaling: scaling } : {}),
     grossTotal,
     lineDiscountTotal,
     overallDiscountAmount,
     discountTotal,
     total,
     missingPrices,
+  }
+}
+
+/**
+ * Қаржы кестесінің ЖИЫНЫ (qdesign-дегі «Қаржы» панелінің астыңғы жолы):
+ * материал бойынша жолдардың бағандарын қосады, фурнитура мен монтажды бөлек
+ * береді. `goodsAndServices` ӘРҚАШАН `price.goods + price.servicesTotal`-ға
+ * тең — кесте мен КП бір-бірімен тиынға дейін келіседі.
+ */
+export type FinanceTotals = {
+  areaSquareMetres: number
+  sheets: number
+  edgeMetres: number
+  materialCost: number
+  edgeCost: number
+  services: Record<ServiceId, number>
+  sheetServices: Record<SheetServiceId, number>
+  hardwareCost: number
+  installationCost: number
+  goodsAndServices: number
+}
+
+export function financeTotals(price: PriceBreakdown): FinanceTotals {
+  const services = Object.fromEntries(SERVICE_IDS.map((sid) => [sid, 0])) as Record<ServiceId, number>
+  const sheetServices = { cutting: 0, drilling: 0, edging: 0 }
+  let area = 0
+  let edgeMetres = 0
+  let sheets = 0
+  let materialCost = 0
+  let edgeCost = 0
+  for (const row of price.byMaterial) {
+    area += row.areaSquareMetres
+    edgeMetres += row.edgeMetres
+    sheets += row.sheets
+    materialCost += row.materialCost
+    edgeCost += row.edgeCost
+    for (const sid of SERVICE_IDS) services[sid] += row.services[sid]
+    for (const sid of SHEET_SERVICE_IDS) sheetServices[sid] += row.sheetServices?.[sid] ?? 0
+  }
+  const hardwareCost = price.hardware.reduce((sum, line) => sum + line.cost, 0)
+  const serviceSum = SERVICE_IDS.reduce((sum, sid) => sum + services[sid], 0)
+    + SHEET_SERVICE_IDS.reduce((sum, sid) => sum + sheetServices[sid], 0)
+  return {
+    areaSquareMetres: Math.round(area * 100) / 100,
+    sheets,
+    edgeMetres: Math.round(edgeMetres * 100) / 100,
+    materialCost,
+    edgeCost,
+    services,
+    sheetServices,
+    hardwareCost,
+    installationCost: price.installation.cost,
+    goodsAndServices: materialCost + edgeCost + hardwareCost + serviceSum,
   }
 }
 
@@ -810,7 +930,7 @@ const SERVICE_UNITS: Record<ServiceRate['basis'], PriceLine['unit']> = {
   squareMetre: 'м²',
   hole: 'отв',
   edgeMetre: 'м',
-  panel: 'шт',
+  panel: 'дет',
 }
 
 /**

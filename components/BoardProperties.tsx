@@ -8,6 +8,7 @@ import { ExportMenu } from '@/components/ExportMenu'
 import { boardDimensions, resizeBoard } from '@/src/core/boardProperties'
 import { exactInputDraft } from '@/lib/exactInputDraft'
 import { grainDirectionUi } from '@/lib/grainDirectionUi'
+import { PolygonEditor } from '@/components/PolygonEditor'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, panelFitWarnings } from '@/src/core/index'
 import type { BoardNode, BoardSpec, Catalog, Orientation, Panel, PanelEdges } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
@@ -108,14 +109,16 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
             onChange={(value) => setBoardPosition(node.id, { ...node.transform.pos, [axis]: value })} />
         </Field>)}
       </div>
+      <PolygonEditor key={node.id} board={node.board} catalog={catalog} onApply={(patch) => editBoard(node.id, patch)} />
     </fieldset>
     <fieldset disabled={locked} className={tab === 'material' ? 'space-y-3' : 'hidden'}>
       <Field label={tr('Материал')}><Select value={material.id} onChange={(materialId) => edit({ materialId })}
         options={catalog.materials.map((item) => ({ value: item.id, label: item.name }))} /></Field>
       <p>{tr('Толщина, мм')}: <strong>{material.thickness}</strong></p>
+      {node.board.contour && <p className="text-[11px] text-neutral-500">{tr('Кромки сегментов задаются в редакторе контура.')}</p>}
       <div className="grid grid-cols-2 gap-2">
         {edges.map((edge) => <Field key={edge} label={`${tr('Кромка')} ${edge}`}>
-          <Select value={node.board.edges[edge]?.bandId ?? ''} onChange={(bandId) => edit({
+          <Select disabled={Boolean(node.board.contour)} value={node.board.edges[edge]?.bandId ?? ''} onChange={(bandId) => edit({
             edges: { ...node.board.edges, [edge]: bandId ? { bandId } : null },
           })} options={[{ value: '', label: tr('Нет') }, ...catalog.edgeBands.map((band) => ({ value: band.id, label: band.name }))]} />
         </Field>)}

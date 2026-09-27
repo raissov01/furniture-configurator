@@ -4,6 +4,9 @@ import { LibraryItemSchema, parseLibraryItem } from '@/src/core/library'
 import type { LibraryItem } from '@/src/core/library'
 
 export const LIBRARY_LOCAL_KEY = 'furniture-configurator:library-v1'
+export function libraryLocalKey(userId: string | null): string {
+  return userId === null ? LIBRARY_LOCAL_KEY : `${LIBRARY_LOCAL_KEY}:user:${encodeURIComponent(userId)}`
+}
 const LibraryFile = z.strictObject({ schemaVersion: z.literal(1), items: z.array(LibraryItemSchema) })
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem'>
@@ -41,11 +44,11 @@ export function importLibraryJson(json: string, existing: LibraryItem[]): Librar
   return result
 }
 
-export function readLocalLibrary(storage: StorageLike): LibraryItem[] {
-  const raw = storage.getItem(LIBRARY_LOCAL_KEY)
+export function readLocalLibrary(storage: StorageLike, userId: string | null = null): LibraryItem[] {
+  const raw = storage.getItem(libraryLocalKey(userId))
   return raw ? parseFile(raw) : []
 }
 
-export function writeLocalLibrary(storage: StorageLike, items: LibraryItem[]): void {
-  storage.setItem(LIBRARY_LOCAL_KEY, exportLibraryJson(items))
+export function writeLocalLibrary(storage: StorageLike, items: LibraryItem[], userId: string | null = null): void {
+  storage.setItem(libraryLocalKey(userId), exportLibraryJson(items))
 }

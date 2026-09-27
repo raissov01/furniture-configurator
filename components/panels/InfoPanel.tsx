@@ -14,6 +14,7 @@
  */
 import { useMemo } from 'react'
 import { t as tr } from '@/lib/i18n'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { useConfigurator } from '@/store/configurator'
 import { useProjectProduction } from '@/lib/useProjectProduction'
 import { edgeSummary, groupDrillingByPurpose, materialName, roleLabel } from './infoFields'
@@ -51,7 +52,7 @@ export function InfoPanel() {
   return (
     <div data-panel="info" className="flex flex-col gap-2.5 text-[11px]">
       <div>
-        <div className="text-sm font-semibold text-white">{part.label}</div>
+        <div className="text-sm font-semibold text-white">{panelDisplayLabel(part.label)}</div>
         <div className="text-neutral-500">{roleLabel(part)}</div>
       </div>
 

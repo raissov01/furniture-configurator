@@ -24,10 +24,17 @@ describe('нарық бағасының ескертпесі', () => {
     expect(priceOrigin(defaultShop, 'material:ldsp16-w980')).toBe('market')
   })
 
-  it('нарық позициясы бар цехта күнімен ескертеді', () => {
+  it('жаңа цехта: ұсынылған баға күнімен және нарық медианасы', () => {
     const html = notice(starterShopProfile())
-    expect(html).toContain('Цены — рыночная медиана (24.09.2026). Введите свои цены.')
-    expect(html).toContain('Вернуть все рыночные цены')
+    expect(html).toContain('Цены по умолчанию — рекомендуемые (26.09.2026) и рыночная медиана. Введите свои цены.')
+    expect(html).toContain('Вернуть цены по умолчанию')
+    expect(html.toLowerCase()).not.toContain('qdesign')
+  })
+
+  it('тек нарық белгісі бар цехта — нарық медианасының күні', () => {
+    const shop = starterShopProfile()
+    const onlyMarket = { ...shop, marketPrices: { 'edgeBand:pvc04-w980': shop.marketPrices['edgeBand:pvc04-w980']! } }
+    expect(notice(onlyMarket)).toContain('Цены — рыночная медиана (24.09.2026). Введите свои цены.')
   })
 
   it('нарық белгісі жоқ цехта ескертпе жоқ', () => {
@@ -36,16 +43,24 @@ describe('нарық бағасының ескертпесі', () => {
 })
 
 describe('позицияның белгісі', () => {
-  it('нарықтағы баға: «рыночная», медиана, күні, ұсыныс саны', () => {
+  it('ұсынылған баға: «Рекомендуемая цена (26.09.2026)», нарық медианасы тек салыстыру ретінде', () => {
     const html = tag(starterShopProfile(), 'material:ldsp16-w980')
-    expect(html).toContain('рыночная')
+    expect(html).toContain('Рекомендуемая цена (26.09.2026)')
     expect(html).toContain('медиана, 24.09.2026, 7 предложений')
+    expect(html.toLowerCase()).not.toContain('qdesign')
   })
 
-  it('өз бағасы: «своя» және нарыққа қайтару батырмасы', () => {
+  it('нарықтағы баға: «рыночная», медиана, күні, ұсыныс саны', () => {
+    const html = tag(starterShopProfile(), 'edgeBand:pvc04-w980')
+    expect(html).toContain('рыночная')
+    expect(html).toContain('медиана, 24.09.2026, 2 предложений')
+  })
+
+  it('өз бағасы: «своя» және ұсынылған бағаға қайтару батырмасы', () => {
     const html = tag(ownLdsp(starterShopProfile()), 'material:ldsp16-w980')
     expect(html).toContain('своя')
-    expect(html).toContain('Вернуть рыночную цену')
+    expect(html).toContain('Вернуть рекомендуемую цену')
+    expect(html).toMatch(/34\s000/)
   })
 
   it('нарық дерегі жоқ позицияда белгі жоқ', () => {
@@ -56,7 +71,7 @@ describe('позицияның белгісі', () => {
     const own = ownLdsp(starterShopProfile())
     const patch = marketResetPatch(own, 'material:ldsp16-w980')
     const back = syncActivePriceList({ ...own, ...patch })
-    expect(back.materials.find((m) => m.id === 'ldsp16-w980')!.pricePerSheet).toBe(2_687_000)
+    expect(back.materials.find((m) => m.id === 'ldsp16-w980')!.pricePerSheet).toBe(3_400_000)
     expect(priceOrigin(back, 'material:ldsp16-w980')).toBe('market')
   })
 })
@@ -66,8 +81,12 @@ describe('аударма', () => {
     const keys = [
       'Цены — рыночная медиана ({date}). Введите свои цены.',
       'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.',
-      'Вернуть все рыночные цены',
-      'Все позиции, для которых есть рыночные данные, получат рыночную медиану — ваши цены по ним будут заменены. Продолжить?',
+      'Вернуть цены по умолчанию',
+      'Все позиции с рекомендуемой или рыночной ценой получат её — ваши цены по ним будут заменены. Продолжить?',
+      'Цены по умолчанию — рекомендуемые ({date}) и рыночная медиана. Введите свои цены.',
+      'Рекомендуемая цена ({date})',
+      'Вернуть рекомендуемую цену',
+      'Вернуть рекомендуемую цену: {price}',
       'рыночная',
       'своя',
       'Вернуть рыночную цену',
@@ -80,5 +99,9 @@ describe('аударма', () => {
     }
     expect(kk['Цены — рыночная медиана ({date}). Введите свои цены.'])
       .toBe('Бағалар — нарық орташасы (медиана, {date}). Өз бағаңызды енгізіңіз.')
+    expect(kk['Рекомендуемая цена ({date})']).toBe('Ұсынылған баға ({date})')
+    for (const dict of [kk, en, uz]) {
+      for (const key of keys) expect(dict[key]!.toLowerCase(), key).not.toContain('qdesign')
+    }
   })
 })
