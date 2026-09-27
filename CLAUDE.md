@@ -1,4 +1,4 @@
-# Furniture 3D Configurator — Project Spec for Claude Code
+# AisMebel — Project Spec for Claude Code
 
 > Ревизия 2 — 2026-08-20. Түзетілгені: өлшем реті H×W×D-ге бекітілді (§0.1),
 > §4.4 арт қабырға шегерімі, §4.7 дөңгелектеу ережесі, §4.3 `minBandSubtract`,

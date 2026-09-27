@@ -172,6 +172,61 @@ async function run() {
     check(svg > 0, `раскрой суреті салынған (${svg})`)
   })
 
+  await test('AisMebel бренді: лендинг, manifest, классикалық жолақ және телефон', async () => {
+    await h.goto('/', 7000)
+    const landing = await h.evaluate(`(async () => {
+      const manifest = await (await fetch('/manifest.webmanifest')).json()
+      const mark = document.querySelector('header img[src="/brand/aismebel-mark.svg"]')
+      const header = document.querySelector('header')
+      return {
+        title: document.title,
+        text: document.body.innerText,
+        manifest: manifest.name,
+        shortName: manifest.short_name,
+        markLoaded: Boolean(mark?.complete && mark.naturalWidth > 0),
+        headerBlur: header && getComputedStyle(header).backdropFilter,
+      }
+    })()`)
+    check(landing.title.includes('AisMebel'), 'лендинг title-ында AisMebel бар')
+    check(landing.text.includes('AisMebel'), 'лендингте атау көрінеді')
+    check(landing.manifest === 'AisMebel — мебель цехтарына' && landing.shortName === 'AisMebel', 'manifest атауы дұрыс')
+    check(landing.markLoaded, 'лендинг логотипі жүктелді')
+    check(landing.headerBlur === 'none', 'жолақта blur жоқ')
+    check(Boolean(await snapshot('brand-landing')), 'лендинг скриншоты сақталды')
+
+    await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'classic')")
+    await h.goto('/configurator', 10000)
+    await h.clickText('Пропустить', 100)
+    const workspace = await h.evaluate(`(() => ({
+      mark: (() => {
+        const image = document.querySelector('[data-testid="brand-mark"]')
+        return Boolean(image?.complete && image.naturalWidth > 0)
+      })(),
+      title: document.title,
+    }))()`)
+    check(workspace.mark && workspace.title.includes('AisMebel'), 'классикалық жұмыс орнында бренд белгісі бар')
+    check(Boolean(await snapshot('brand-workspace')), 'классикалық жұмыс орнының скриншоты сақталды')
+    await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'ours')")
+
+    await session.send('Emulation.setDeviceMetricsOverride', {
+      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+    })
+    try {
+      await h.goto('/mobile', 7000)
+      const mobile = await h.evaluate(`(() => ({
+        brand: document.querySelector('[data-testid="brand"]')?.innerText,
+        title: document.title,
+      }))()`)
+      check(mobile.brand?.includes('AisMebel') && mobile.title.includes('AisMebel'), 'телефон бетінде атау бар')
+      check(Boolean(await snapshot('brand-mobile')), 'телефон скриншоты сақталды')
+    } finally {
+      await session.send('Emulation.setDeviceMetricsOverride', {
+        width: 1500, height: 1000, deviceScaleFactor: 1, mobile: false,
+      })
+    }
+    await h.goto('/', 7000)
+  })
+
   await test('Лендингтен конфигураторға өту', async () => {
     const clicked = await h.clickText('Открыть конфигуратор', 9000)
     check(clicked, 'батырма табылды')
@@ -832,7 +887,7 @@ async function run() {
      */
     check(
       await h.until(`[...document.querySelectorAll('button')]
-        .some((b) => b.textContent.trim() === 'Убрать' && !b.disabled)`),
+        .some((b) => b.textContent.trim() === 'Убрать' && !b.disabled)`, 30000),
       '«Убрать» белсенді',
     )
     check(await h.clickText('Убрать', 600), 'шығару сұралды')

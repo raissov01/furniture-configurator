@@ -18,8 +18,8 @@ const LINKS = [
 export function SiteHeader() {
   return (
     <header
-      className="sticky top-0 z-40 border-b backdrop-blur"
-      style={{ borderColor: 'var(--rule)', background: 'color-mix(in srgb, var(--panel) 88%, transparent)' }}
+      className="sticky top-0 z-40 border-b"
+      style={{ borderColor: 'var(--rule)', background: 'var(--panel)' }}
     >
       <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-5 py-3 sm:px-8">
         <Link href="/" className="flex items-center gap-2">

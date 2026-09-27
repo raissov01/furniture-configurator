@@ -13,6 +13,7 @@ import {
   formatCutList,
   generateCabinet,
   labelsPdf,
+  labelFooter,
   labelsToCsv,
   encodePartQr,
   decodePartQr,
@@ -35,6 +36,12 @@ const nesting = nestPanels(panels, SEED_CATALOG)
 const labels = partLabels(panels, SEED_CATALOG, nesting)
 
 describe('бирка деректері', () => {
+  it('басылатын төменгі жол бренд пен жоба атауын сақтайды', () => {
+    expect(labelFooter({ cabinetId: 'Шкаф-1', grain: 'along' }, 'Жоба-7'))
+      .toBe('AisMebel · Жоба-7 · Шкаф-1 · текстура вдоль')
+    expect(labelFooter({ cabinetId: null, grain: null }, 'Жоба-7'))
+      .toBe('AisMebel · Жоба-7')
+  })
   it('әр ФИЗИКАЛЫҚ детальға бір бирка', () => {
     expect(labels).toHaveLength(panels.length)
     expect(new Set(labels.map((l) => l.panelId)).size).toBe(panels.length)

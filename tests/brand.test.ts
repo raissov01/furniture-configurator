@@ -40,6 +40,7 @@ describe('AisMebel атауы', () => {
     expect(layout).toMatch(/from '@\/src\/core\/brand'/)
     expect(layout).toMatch(/appleWebApp: \{[^}]*title: BRAND\.name/)
     expect(layout).toMatch(/template: `%s · \$\{BRAND\.name\}`/)
+    expect(layout).toContain('themeColor: BRAND.color')
     for (const old of OLD) expect(layout).not.toMatch(old)
     expect(BRAND.name).toBe('AisMebel')
     expect(BRAND.fullName).toBe('AisMebel — мебель цехтарына')
@@ -52,6 +53,13 @@ describe('AisMebel атауы', () => {
     expect(workspace).not.toMatch(/^\s*РЕЗ\s*$/m)
     expect(read('app/mobile/page.tsx')).toContain('BRAND.name')
     expect(read('components/site/SiteFooter.tsx')).not.toMatch(OLD[0]!)
+  })
+
+  it('лендинг тақтасы жазық түспен салынған', () => {
+    const header = read('components/site/SiteHeader.tsx')
+    expect(header).not.toContain('backdrop-blur')
+    expect(header).not.toContain('color-mix(')
+    expect(header).toContain("background: 'var(--panel)'")
   })
 
   it('интерфейс мәтінінде PRO100 бренд ретінде жоқ (Configurator)', () => {
