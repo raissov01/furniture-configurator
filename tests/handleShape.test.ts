@@ -117,10 +117,13 @@ describe('ас үй генераторы', () => {
   it('үстіңгі шкафтың тұтқасы АСТЫҢҒЫ жиекте, төменгінікі — үстіңгі', () => {
     const cat = { ...SEED_CATALOG, handles }
     const { cabinets } = generateKitchen({ layout: 'straight', lengthA: 3000 }, cat)
-    const upper = cabinets.find((c) => c.id.includes('-up-'))!
-    const lower = cabinets.find((c) => c.sections.some((s) => s.fronts) && !c.id.includes('-up-') && c.height < 1000)!
-    const upperFront = generateCabinet(upper, cat).find((p) => p.role === 'front')!
-    const lowerFront = generateCabinet(lower, cat).find((p) => p.role === 'front')!
+    // Сорғыш шкафының есігі әдейі тұтқасыз; алғашқы upper енді сол болуы мүмкін.
+    const upperFront = cabinets.filter((c) => c.id.includes('-up-'))
+      .flatMap((c) => generateCabinet(c, cat)).find((p) => p.role === 'front' && p.handle)!
+    const lowerFront = cabinets.filter((c) => !c.id.includes('-up-') && c.height < 1000)
+      .flatMap((c) => generateCabinet(c, cat)).find((p) => p.role === 'front' && p.handle)!
+    expect(upperFront).toBeDefined()
+    expect(lowerFront).toBeDefined()
     expect(upperFront.handle!.along).toBe(35)
     expect(lowerFront.handle!.along).toBe(lowerFront.finishedLength - 35)
   })
