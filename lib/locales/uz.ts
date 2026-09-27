@@ -1652,4 +1652,11 @@ export const uz: Record<string, string> = {
   'Офлайн: последняя версия сервера не проверена.': 'Oflayn: serverning so‘nggi versiyasi tekshirilmagan.',
   'Удалить действие из очереди': 'Amalni navbatdan olib tashlash',
   'Действие удалено из очереди. Исправьте данные и повторите.': 'Amal navbatdan olindi. Ma’lumotni tuzatib qayta urinib ko‘ring.',
+  'Напечатать новую бирку QR': 'Yangi QR yorliqni chop etish',
+  'Укажите монтаж и ремонт для бирки': 'Yorliq uchun montaj va ta’mirni ko‘rsating',
+  'Монтажное задание не найдено': 'Montaj vazifasi topilmadi',
+  'Бирка недоступна': 'Yorliq mavjud emas',
+  'Новая бирка после ремонта': 'Ta’mirdan keyingi yangi yorliq',
+  'QR новой бирки': 'Yangi yorliq QR kodi',
+  'Напечатать бирку': 'Yorliqni chop etish',
 }

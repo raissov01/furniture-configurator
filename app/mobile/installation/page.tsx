@@ -232,6 +232,10 @@ export default function MobileInstallationPage() {
       {task.repairs.filter((repair) => repair.status === 'open').map((repair) => <button key={repair.id}
         className="block border p-2" disabled={busy || pending || !canEditInstallation(task)} onClick={() => void send('installation.repairComplete', { repairId: repair.id })}>
         {t('Ремонт завершён')}: {repair.panelId}</button>)}
+      {task.repairs.filter((repair) => repair.status === 'complete').map((repair) =>
+        <Link key={repair.id} className="block min-h-11 border p-2" href={`/mobile/installation/label?task=${encodeURIComponent(task.id)}&repair=${encodeURIComponent(repair.id)}`}>
+          {t('Напечатать новую бирку QR')}: {repair.panelId} · v{repair.labelVersion}
+        </Link>)}
       <button className="block border p-2" disabled={busy || pending || closeBlockReason(task) !== null}
         onClick={() => void send('installation.close', {})}>{t('Завершить монтаж')}</button>
       {closeBlockReason(task) && <p role="status">{closeBlockReason(task)}</p>}

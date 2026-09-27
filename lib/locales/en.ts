@@ -1648,4 +1648,11 @@ export const en: Record<string, string> = {
   'Офлайн: последняя версия сервера не проверена.': 'Offline: the latest server version was not verified.',
   'Удалить действие из очереди': 'Remove action from queue',
   'Действие удалено из очереди. Исправьте данные и повторите.': 'Action removed from queue. Correct the data and retry.',
+  'Напечатать новую бирку QR': 'Print new QR label',
+  'Укажите монтаж и ремонт для бирки': 'Specify the installation and repair for this label',
+  'Монтажное задание не найдено': 'Installation task not found',
+  'Бирка недоступна': 'Label unavailable',
+  'Новая бирка после ремонта': 'New label after repair',
+  'QR новой бирки': 'New label QR',
+  'Напечатать бирку': 'Print label',
 }
