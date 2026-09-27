@@ -63,6 +63,8 @@ export type MaterialNesting = {
 }
 
 export type NestingResult = {
+  /** Орналастыруда қолданылған ара жолы; рез экспорты осы мәнді қайталайды. */
+  kerf?: number
   byMaterial: MaterialNesting[]
   /** Барлық парақ саны */
   sheetCount: number
@@ -402,7 +404,7 @@ export function nestPanels(
       bestScore = score
     }
   }
-  return best!
+  return { ...best!, kerf: gap }
 }
 
 /**
