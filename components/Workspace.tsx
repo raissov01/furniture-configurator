@@ -490,6 +490,12 @@ export function Workspace() {
         case 'undo': undo(); break
         case 'redo': redo(); break
         case 'delete': deleteSelected(); break
+        case 'newCabinet': addCabinet(); break
+        case 'openProject': pickProjectFile(loadProject); break
+        case 'saveProject': downloadProjectFile(exportProject()); break
+        case 'printProject':
+          if (pdfCabinet && productionState.exportsAvailable) runClassicCommand({ type: 'export', format: 'pdf', scope: 'project' })
+          break
       }
     }
     window.addEventListener('keydown', onKey)
