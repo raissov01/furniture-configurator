@@ -170,7 +170,7 @@ describe('варианттар', () => {
 
   it('түсіндірмесі бос емес әрі габаритті атайды', () => {
     const [first] = ruleVariants(request(), SEED_CATALOG)
-    expect(first!.rationale).toContain('2200')
+    expect(first!.rationale).toContain('2200 (H) × 1800 (W) × 600 (D) мм')
     expect(first!.name.length).toBeGreaterThan(0)
   })
 

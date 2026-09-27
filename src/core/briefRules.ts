@@ -213,7 +213,7 @@ export type RuleVariant = {
 }
 
 function describe(template: CabinetTemplate, request: BriefRequest): string {
-  const parts: string[] = [`${request.height} × ${request.width} × ${request.depth} мм`]
+  const parts: string[] = [`${request.height} (H) × ${request.width} (W) × ${request.depth} (D) мм`]
   if (request.sliding) parts.push('двери-купе')
   else if (request.doors) parts.push('распашные фасады')
   else parts.push('открытые полки')
