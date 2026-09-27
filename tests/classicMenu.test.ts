@@ -28,6 +28,9 @@ const find = (id: string, state?: ClassicMenuState) => {
 }
 
 describe('classic menu', () => {
+  it('offers walk mode in the visible classic View menu', () => {
+    expect(find('view.walk').command).toEqual({ type: 'toggleWalk' })
+  })
   it('keeps the PRO100 order of top menus', () => {
     expect(classicMenus(base).map((menu) => menu.label).slice(0, 5)).toEqual(['Файл', 'Правка', 'Вид', 'Элемент', 'Инструменты'])
     expect(classicMenus(base).at(-1)?.label).toBe('Справка')

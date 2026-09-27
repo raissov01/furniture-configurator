@@ -505,6 +505,7 @@ export function Workspace() {
         break
       case 'fit': fitCamera(); break
       case 'toggleSilhouette': setSilhouette({ on: !silhouette.on }); break
+      case 'toggleWalk': setWalk(!walk); break
       case 'addCabinet': addCabinet(); break
       case 'addBoard': addBoard(); break
       case 'addSolid': addSolid(); break
@@ -529,7 +530,7 @@ export function Workspace() {
     canExportActiveCabinet: hasActiveCabinet && productionState.exportsAvailable,
     productionError: Boolean(production.error),
     cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
-    silhouetteOn: silhouette.on, open: openness > 0, assembly: assemblyStep !== null,
+    silhouetteOn: silhouette.on, walk, open: openness > 0, assembly: assemblyStep !== null,
     theme, quality, lang: getLang(),
     price: liveTotal === null ? null : 'total' in liveTotal ? { total: formatTenge(liveTotal.total) } : { missing: true },
     cloud: cloudEnabled, classic,
