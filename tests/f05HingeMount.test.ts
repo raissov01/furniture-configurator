@@ -29,6 +29,12 @@ describe('F05 петля түрі', () => {
       && panel.drilling.some((drill) => drill.purpose === 'hinge'))).toBe(true)
   })
 
+  it('әдепкі overlay петляның орнына каталогтағы inset жүйені таңдайды', () => {
+    const automatic = generateCabinet(inset(), catalog)
+    const explicit = generateCabinet(inset('hinge-blum-71b3750-inset'), catalog)
+    expect(automatic.map((panel) => panel.drilling)).toEqual(explicit.map((panel) => panel.drilling))
+  })
+
   it('цех енгізген inset петлямен фасад пен планка тесіктері жасалады', () => {
     const shopSystem = { ...catalog.hingeSystems![0]!, id: 'shop-inset', mount: 'inset' } as HingeSystem
     const shopCatalog: Catalog = { ...catalog, hingeSystems: [...catalog.hingeSystems!, shopSystem] }
