@@ -76,6 +76,31 @@ const entriesOf = (r: ReturnType<typeof generateKitchen>) =>
   }))
 
 describe('generateKitchen', () => {
+  it('ортақ цокольдің резі парақтың жиектелген пайдалы аймағына сияды', () => {
+    const result = generateKitchen({ layout: 'straight', lengthA: 2800, upper: false,
+      sink: false, appliances: false, hob: 'none' }, SEED_CATALOG)
+    const plinths = result.cabinets.flatMap((c) => generateCabinet(c, SEED_CATALOG))
+      .filter((p) => p.role === 'plinth')
+    expect(plinths.length).toBeGreaterThan(1)
+    for (const panel of plinths) {
+      const mat = SEED_CATALOG.materials.find((m) => m.id === panel.materialId)!
+      expect(panel.cutLength).toBeLessThanOrEqual(mat.sheetWidth - 2 * mat.trimEdge)
+    }
+  })
+
+  it('текстурасы жоқ цокольді парақтың ұзын екінші осіне бұрып біріктіре алады', () => {
+    const id = 'ldsp16-w980'
+    const catalog = { ...SEED_CATALOG, materials: SEED_CATALOG.materials.map((m) =>
+      m.id === id ? { ...m, sheetWidth: 1000, sheetHeight: 3000 } : m) }
+    const result = generateKitchen({ layout: 'straight', lengthA: 1200, upper: false,
+      sink: false, appliances: false, hob: 'none',
+      materials: { carcassId: id, frontId: id, plinthId: id } }, catalog)
+    const plinths = result.cabinets.flatMap((c) => generateCabinet(c, catalog))
+      .filter((p) => p.role === 'plinth')
+    expect(plinths).toHaveLength(1)
+    expect(plinths[0]!.cutLength).toBe(1200)
+  })
+
   it('белсенді қабырғалар үшін тек ≥ 600 бүтін мм қабылдайды', () => {
     const invalid = [
       { options: { layout: 'straight' as const, lengthA: 0 }, field: 'lengthA' },
