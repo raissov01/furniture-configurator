@@ -11,6 +11,7 @@
  * (`placementPose` → `SceneItem.pose`).
  */
 import { generateCabinet } from './generateCabinet'
+import { validateJointDrill } from './autoJoint'
 import { generateHardware } from './hardware'
 import { ORIGIN_POSE, composePose } from './tree'
 import type { GroupNode, Pose, SolidSpec, BoardNode, SceneNode } from './tree'
@@ -98,7 +99,7 @@ function boardPanel(
       )
     }
   }
-  return {
+  const panel: Panel = {
     id: node.id,
     role: spec.role,
     label: node.name,
@@ -123,6 +124,9 @@ function boardPanel(
     milling: spec.milling ?? [],
     ...(spec.corners ? { corners: spec.corners } : {}),
   }
+  panel.drilling.forEach((hole, index) => validateJointDrill(panel, hole, material.thickness,
+    `board[${node.id}].drilling.${index}`))
+  return panel
 }
 
 export function flattenTree(
