@@ -98,7 +98,7 @@ describe('жаңа цех нарық бағасымен толады', () => {
     expect(band(shop, 'pvc2-h1145').pricePerMeter).toBe(14_100)
     expect(shop.marketPrices['edgeBand:pvc04-w980']).toMatchObject({ source: MARKET_MEDIAN_SOURCE, priceTiyn: 3300 })
     expect(shop.services.cutting).toEqual({ basis: 'sheet', rate: 200_000 })
-    expect(shop.services.drilling).toEqual({ basis: 'hole', rate: 3500 })
+    expect(shop.services.drilling).toEqual({ basis: 'sheet', rate: 500_000 })
     expect(shop.services.edging).toEqual({ basis: 'edgeMetre', rate: 17_250 })
   })
 
@@ -277,7 +277,7 @@ describe('нарық бағасына қайтару', () => {
     const back = resetAllToMarket(own)
     expect(material(back, 'ldsp16-w980').pricePerSheet).toBe(3_400_000)
     expect(material(back, 'ldsp18-w980').pricePerSheet).toBe(3_000_000)
-    expect(back.services.drilling).toEqual({ basis: 'hole', rate: 3500 })
+    expect(back.services.drilling).toEqual({ basis: 'sheet', rate: 500_000 })
     expect(priceOrigin(back, 'service:drilling')).toBe('market')
   })
 })
@@ -285,7 +285,7 @@ describe('нарық бағасына қайтару', () => {
 describe('миграция v8 → v9', () => {
   it('бағасы мүлде бос ескі цех нарық бағасымен толады', () => {
     const loaded = parseShopProfile(legacyV8(defaultShopProfile('old-empty')))
-    expect(loaded.schemaVersion).toBe(9)
+    expect(loaded.schemaVersion).toBe(10)
     expect(material(loaded, 'ldsp16-w980').pricePerSheet).toBe(3_400_000)
     expect(priceOrigin(loaded, 'material:ldsp16-w980')).toBe('market')
   })

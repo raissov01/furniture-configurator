@@ -22,7 +22,7 @@ describe('цех присадка профилі', () => {
       materials: shop.materials.map((material) => ({ ...material, pricePerSheet: 123456 })),
     }
     const loaded = parseShopProfile(old)
-    expect(loaded.schemaVersion).toBe(9)
+    expect(loaded.schemaVersion).toBe(10)
     expect(loaded.settings.shelfPinDatum).toBe(37)
     expect(loaded.materials[0]?.pricePerSheet).toBe(123456)
     expect(mergeSettings(loaded.settings).shelfPinFrontOffset).toBe(37)

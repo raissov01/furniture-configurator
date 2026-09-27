@@ -384,8 +384,10 @@ export type RecommendedPrice = {
  * - штанга (дөңгелек, метр), брючница (дана) — бірлігі мен түрі бірдей;
  *   голопрофиль — дереккөзде метр, бізде дана: жоқ;
  * - қызмет: распил мен упаковка — ₸/парақ, біздің негіз де парақ.
- *   Присадка (₸/парақ ↔ біздің ₸/тесік), нөл мәндер (облицовка, работа,
- *   монтаж) және сату коэффициенті (цехтың маржа саясаты) — алынбады.
+ *   Присадка — ₸/парақ: жаңа цехтың присадкасы да ПАРАҚҚА саналады
+ *   (пайдаланушы шешімі, 2026-09-27; нарық медианасы ₸/тесік — салыстыру
+ *   үшін). Нөл мәндер (облицовка, работа, монтаж) және сату коэффициенті
+ *   (цехтың маржа саясаты) — алынбады.
  */
 export const RECOMMENDED_PRICES: Record<PriceKey, RecommendedPrice> = {
   ...Object.fromEntries(SEED_DECORS.map((d) => [`material:ldsp16-${d}`, { priceTiyn: 3_400_000 }])),
@@ -406,6 +408,7 @@ export const RECOMMENDED_PRICES: Record<PriceKey, RecommendedPrice> = {
   'hardware:filling-trousers': { priceTiyn: 2_800_000 },
   'service:cutting': { priceTiyn: 200_000, basis: 'sheet' },
   'service:packing': { priceTiyn: 200_000, basis: 'sheet' },
+  'service:drilling': { priceTiyn: 500_000, basis: 'sheet' },
 }
 
 /** Әдепкі бағасы бар барлық позиция (ұсынылған не нарық). */
@@ -424,6 +427,12 @@ export type MarketPriceMark = {
   offers: number
   /** Салыстыру үшін нарық медианасы, тиын (топ бар болса). */
   marketMedianTiyn?: number
+  /**
+   * Қызметте — баға қай бірлікке қойылды. Бірлік ауысса белгі жарамсыз
+   * («своя»), ал әдепкі бірлігі өзгерсе, бұрынғы бірліктегі белгі өз
+   * бірлігінде ҚАЛАДЫ — цехтың сметасы кенет басқа бірлікке көшпейді.
+   */
+  basis?: ServiceBasis
 }
 
 /** Нарық тобының көрінісі — салыстыру үшін. */
@@ -439,7 +448,6 @@ export type MarketInfo = {
 export type MarketQuote = MarketPriceMark & {
   source: PriceSource
   market: MarketInfo | null
-  basis?: ServiceBasis
 }
 
 function marketInfo(key: PriceKey): MarketInfo | null {
@@ -495,6 +503,7 @@ const markOf = (q: MarketQuote): MarketPriceMark => ({
   offers: q.offers,
   ...(q.group !== undefined ? { group: q.group } : {}),
   ...(q.marketMedianTiyn !== undefined ? { marketMedianTiyn: q.marketMedianTiyn } : {}),
+  ...(q.basis !== undefined ? { basis: q.basis } : {}),
 })
 
 /**
@@ -553,11 +562,21 @@ function withPosition(shop: ShopProfile, key: PriceKey, value: number, basis?: S
   }
 }
 
-/** Белгі әлі жарамды ма: баға да, қызметтің негізі де нарықтағыдай. */
+/**
+ * Белгісі жоқ ескі (v9) қызмет белгісінің бірлігі — сол кездегі әдепкі:
+ * нарық тобының негізі (присадка — тесік), ол жоқ болса ұсынылғанның.
+ */
+export function legacyMarkBasis(key: PriceKey, mark: MarketPriceMark): ServiceBasis | undefined {
+  if (mark.basis !== undefined) return mark.basis
+  if (mark.source === RECOMMENDED_PRICE_SOURCE) return RECOMMENDED_PRICES[key]?.basis
+  return MARKET_DEFAULTS[key]?.basis
+}
+
+/** Белгі әлі жарамды ма: баға да, қызметтің негізі де белгідегідей. */
 function markHolds(shop: ShopProfile, key: PriceKey, mark: MarketPriceMark): boolean {
   const pos = positionOf(shop, key)
   if (!pos || pos.value !== mark.priceTiyn) return false
-  const basis = marketQuote(key)?.basis
+  const basis = legacyMarkBasis(key, mark)
   return basis === undefined || pos.basis === basis
 }
 
@@ -612,7 +631,10 @@ export function refreshMarketPrices(shop: ShopProfile): ShopProfile {
   for (const key of Object.keys(out.marketPrices)) {
     const quote = marketQuote(key)
     if (!quote) continue
-    if (sameMark(out.marketPrices[key]!, quote)) continue
+    const mark = out.marketPrices[key]!
+    if (sameMark(mark, quote)) continue
+    // Әдепкінің бірлігі өзгерген: цех бұрынғы бірлікте қалады (баға да).
+    if (quote.basis !== undefined && legacyMarkBasis(key, mark) !== quote.basis) continue
     out = setMarket(out, key, quote)
   }
   return out
