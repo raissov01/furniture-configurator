@@ -121,8 +121,6 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   .p100-workspace > .grid > aside { position: absolute; z-index: 12; right: 0; bottom: 0; width: 150px; border: 1px solid var(--p100-divider); }
   .p100-workspace .legacy-tools { display: none; }
   .p100-workspace .p100-toolbar { display: block; }
-  .p100-workspace .p100-camera-pane { height: auto; border-top: 0; }
-  .p100-workspace .p100-camera-controls { display: none; }
   .p100-workspace .p100-side-tools { padding: 3px 1px; gap: 2px; }
 }
 .p100-toolbar { display: none; height: 196px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-chrome); }
@@ -169,9 +167,6 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   .p100-workspace .p100-dialog-body :is(input, select, textarea) { background: var(--p100-field); color: var(--p100-text); }
   .p100-workspace .p100-dialog-body input[type="checkbox"] { accent-color: var(--p100-focus); }
 }
-.p100-camera-pane { margin-top: auto; height: 120px; border-top: 1px solid var(--p100-divider); background: var(--p100-chrome); }
-.p100-camera-title { padding: 4px 8px; border-bottom: 1px solid var(--p100-divider); font-size: 11px; }
-.p100-camera-controls { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; }
 .p100-status-price { padding: 0 6px; font-size: 11px; line-height: 16px; }
 .p100-status { min-height: 22px; align-items: center; gap: 12px; padding: 0 8px; border-top: 1px solid var(--p100-divider); background: var(--p100-chrome); font-size: 11px; }
 .p100-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: transparent; }

@@ -30,6 +30,7 @@ import { ShareCodeDialog } from '@/components/ShareCodeDialog'
 import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
+import { uniqueToolbarRows } from '@/lib/classicToolbar'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
@@ -564,7 +565,7 @@ export function Workspace() {
     cloud: cloudEnabled, classic,
   })
 
-  const classicToolRows: ClassicToolSpec[][] = classic ? [
+  const classicToolRows: ClassicToolSpec[][] = classic ? uniqueToolbarRows<ClassicToolSpec>([
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
       { icon: 'open', label: tr('Открыть проект'), action: () => pickProjectFile(loadProject) },
@@ -594,8 +595,6 @@ export function Workspace() {
     ],
     [
       { icon: 'structure', label: tr('Структура'), action: () => setStructureOpen(true), active: structureOpen, id: 'structure' },
-      { icon: 'layers', label: tr('Слои'), action: () => setStructureOpen(true) },
-      { icon: 'library', label: tr('Библиотека'), action: () => setStructureOpen(true) },
       { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
@@ -610,7 +609,7 @@ export function Workspace() {
       { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard },
       { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
     ],
-  ] : []
+  ]) : []
 
   return (
     <div className={cn("flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100", classic && "p100-workspace")} data-workspace-style={classic ? "classic" : "ours"}>
@@ -1216,19 +1215,6 @@ export function Workspace() {
               ) : null}
             </Dense>
           </div>
-          {classic && <section className="p100-camera-pane hidden lg:block" aria-label={tr('Камера')}>
-            <div className="p100-camera-title">{tr('Камера 1')}</div>
-            <div className="p100-camera-controls">
-              <Button size="sm" onClick={() => { setCameraPreset('three-quarter'); setProjection('perspective') }}>{tr('Перспектива')}</Button>
-              <Button size="sm" onClick={() => { setCameraPreset('front'); setProjection('ortho') }}>{tr('Фас')}</Button>
-              <Button size="sm" onClick={() => setCameraPreset('plan')}>{tr('План')}</Button>
-              <Button size="sm" onClick={fitCamera}>{tr('Вписать в кадр')}</Button>
-              {(activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
-              <Button size="sm" onClick={addBoard}>{tr('+ доска')}</Button>
-              <Button size="sm" onClick={addSolid}>{tr('+ блок')}</Button>
-              <Button size="sm" onClick={addAnnotation}>{tr('+ текст')}</Button>
-            </div>
-          </section>}
           {/* Корпус әрекеттері әрқашан көзде (qdesign-дің астыңғы қатары сияқты). */}
           <div className={cn("flex flex-wrap gap-1 border-t border-neutral-200 p-2 dark:border-neutral-800", classic && "lg:hidden")}>
             <Button onClick={addCabinet}>{tr('+ корпус')}</Button>
