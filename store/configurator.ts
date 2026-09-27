@@ -54,7 +54,7 @@ import {
 import type { Quality } from '@/lib/appearance'
 import type { PanoramaContext } from '@/lib/panorama'
 import type {
-  BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
+  AnnotationSpec, BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
   Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
   SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
@@ -283,6 +283,9 @@ type State = Snapshot & {
 
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
+  addAnnotation(): string
+  editAnnotation(id: string, patch: Partial<AnnotationSpec>): void
+  removeAnnotation(id: string): void
   removeBoard(id: string): void
   editBoard(id: string, patch: Partial<BoardSpec>): void
   autoJointBoards(ids: [string, string], kind: AutoJointKind, tolerance: number): void
@@ -560,6 +563,18 @@ function mapBoard(root: GroupNode, id: string, update: (board: BoardSpec) => Boa
   }) }
 }
 
+function mapAnnotation(root: GroupNode, id: string, update: (value: AnnotationSpec) => AnnotationSpec): GroupNode {
+  return { ...root, children: root.children.map((child) => {
+    if (child.kind === 'annotation' && child.id === id) return { ...child, annotation: update(child.annotation) }
+    return child.kind === 'group' ? mapAnnotation(child, id, update) : child
+  }) }
+}
+
+function withoutAnnotation(root: GroupNode, id: string): GroupNode {
+  return { ...root, children: root.children.filter((child) => child.id !== id).map((child) =>
+    child.kind === 'group' ? withoutAnnotation(child, id) : child) }
+}
+
 function withoutBoard(root: GroupNode, id: string): GroupNode {
   return { ...root, children: root.children
     .filter((child) => child.id !== id)
@@ -765,6 +780,45 @@ export const useConfigurator = create<State>((set, get) => ({
     }] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id
+  },
+
+  addAnnotation() {
+    const s = get()
+    const id = `annotation-${crypto.randomUUID()}`
+    const root: GroupNode = { ...s.root, children: [...s.root.children, {
+      kind: 'annotation', id, name: tr('Текст'),
+      transform: { pos: { x: Math.round(s.room.width / 2), y: 10, z: Math.round(s.room.depth / 2) },
+        rot: { x: 0, y: 0, z: 0 } },
+      annotation: { text: tr('Текст'), fontSize: 80, color: '#262626' },
+    }] }
+    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
+    return id
+  },
+
+  editAnnotation(id, patch) {
+    const s = get()
+    const node = assertTreeNodeEditable(s.root, id, s.layers)
+    if (node.kind !== 'annotation') throw new ConfigValidationError('nodeId', `мәтін емес: ${id}`, 'annotation id')
+    const value = { ...node.annotation, ...patch }
+    if (!value.text.trim() || value.text.length > 500) throw new ConfigValidationError('annotation.text',
+      'мәтін бос немесе 500 таңбадан ұзын', '1..500 таңба')
+    if (!Number.isInteger(value.fontSize) || value.fontSize <= 0) throw new ConfigValidationError('annotation.fontSize',
+      'қаріп өлшемі бүтін оң мм болуы керек', '1 мм және жоғары')
+    if (!/^#[0-9a-fA-F]{6}$/.test(value.color)) throw new ConfigValidationError('annotation.color',
+      'түс hex пішінінде болуы керек', '#RRGGBB')
+    value.text = value.text.trim()
+    if (value.text === node.annotation.text && value.fontSize === node.annotation.fontSize
+      && value.color === node.annotation.color) return
+    set(treeEdit(s, mapAnnotation(s.root, id, () => value)))
+  },
+
+  removeAnnotation(id) {
+    const s = get()
+    const node = assertTreeNodeEditable(s.root, id, s.layers)
+    if (node.kind !== 'annotation') throw new ConfigValidationError('nodeId', `мәтін емес: ${id}`, 'annotation id')
+    set({ ...treeEdit(s, withoutAnnotation(s.root, id)),
+      activeId: s.activeId === id ? s.cabinets[0]?.id ?? '' : s.activeId,
+      selected: s.selected === id ? null : s.selected })
   },
 
   removeBoard(id) {

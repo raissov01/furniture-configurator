@@ -10,6 +10,14 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Текст': 'Text',
+  'Добавить текст': 'Add text',
+  '+ текст': '+ text',
+  'Текст записи': 'Annotation text',
+  'Размер текста, мм': 'Text size, mm',
+  'Цвет текста': 'Text color',
+  'Удалить текст': 'Delete text',
+  'Не удалось сохранить текст': 'Could not save text',
   'Автоматическая присадка нарушена': 'Automatic drilling joint is broken',
   'Проверьте контакт досок и крепёж': 'Check board contact and fastener',
   'Удалить соединение': 'Remove joint',
