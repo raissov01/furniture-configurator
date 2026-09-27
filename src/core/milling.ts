@@ -374,7 +374,11 @@ function parsePathData(d: string): MillingPath[] {
     closed = false
   }
 
-  const tokens = d.match(/[MmLlHhVvCcQqZz]|-?\d*\.?\d+(?:e[-+]?\d+)?/gi) ?? []
+  const tokens = d.match(/[A-Za-z]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g) ?? []
+  const unsupported = tokens.find((token) => /^[A-Za-z]$/.test(token) && !/^[MmLlHhVvCcQqZz]$/.test(token))
+  if (unsupported) {
+    throw new ConfigValidationError('milling.svg', `SVG ${unsupported} командасы қолдау таппайды`, 'M/L/H/V/C/Q/Z')
+  }
   let i = 0
   let cmd = ''
 
