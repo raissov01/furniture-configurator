@@ -603,6 +603,7 @@ export function Workspace() {
       { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
+      { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'board', label: tr('Добавить текст'), action: addAnnotation, id: 'annotation' },
       { icon: 'box', label: tr('Добавить декоративный блок'), action: addSolid },
       { icon: 'room', label: tr('Стены и комната'), action: () => setRoomOpen(true), id: 'room' },
@@ -1191,7 +1192,7 @@ export function Workspace() {
               </div>
             </> : activeAnnotation ? <div className="truncate text-sm font-semibold" title={activeAnnotation.name}>{activeAnnotation.name}</div>
               : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
-            {classic && (activeBoard || activeSolid || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+            {classic && (activeBoard || activeSolid || activeAnnotation || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
           <div className={cn("min-h-0 flex-1 overflow-y-auto p-3 lg:overflow-auto", classic && !activeAnnotation && "lg:hidden")}>
             <Dense>

@@ -7,6 +7,6 @@ describe('all browser part DXF archive paths include edge drilling', () => {
     const exportMenu = readFileSync(new URL('../components/ExportMenu.tsx', import.meta.url), 'utf8')
     expect(cutPage.match(/flatArchiveFiles\(cabinetToDxfArchiveFiles\(panels, dxfOptions\)\)/g)).toHaveLength(2)
     expect(cutPage).not.toContain('cabinetToDxfFiles(')
-    expect(exportMenu).toContain('DXF деталей и торцевая присадка CSV в одном архиве')
+    expect(exportMenu).toContain('DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива')
   })
 })

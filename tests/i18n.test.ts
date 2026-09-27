@@ -53,16 +53,6 @@ describe('сөздіктер', () => {
     }
   })
 
-  it('классикалық мәзір мен көрініс құралдары үш тілде аударылады', () => {
-    for (const key of ['Файл', 'Правка', 'Элемент', 'Инструменты', 'Сервис', 'Справка',
-      'Новый корпус', 'Выбор', 'Стена С', 'Стена З', 'Стена Ю', 'Стена В', 'Сбросить текущий проект?']) {
-      for (const [lang, dictionary] of Object.entries(dicts)) {
-        expect(dictionary[key], `${lang}: ${key}`).toBeTruthy()
-        expect(dictionary[key], `${lang}: ${key}`).not.toBe(key)
-      }
-    }
-  })
-
   it('F29: конфигуратор мен раскройдың тікелей аударылатын жолдары сөздікте бар', () => {
     const sources = ['Workspace.tsx', 'CutPage.tsx', 'Configurator.tsx']
     const keys = new Set<string>(['Файл', 'Правка', 'Вид', 'Элемент', 'Инструменты', 'Справка'])
@@ -73,6 +63,16 @@ describe('сөздіктер', () => {
     for (const [name, dict] of Object.entries(dicts)) {
       const missing = [...keys].filter((key) => dict[key] === undefined).sort()
       expect(missing, name).toEqual([])
+    }
+  })
+
+  it('классикалық мәзір мен көрініс құралдары үш тілде аударылады', () => {
+    for (const key of ['Файл', 'Правка', 'Элемент', 'Инструменты', 'Сервис', 'Справка',
+      'Новый корпус', 'Выбор', 'Стена С', 'Стена З', 'Стена Ю', 'Стена В', 'Сбросить текущий проект?']) {
+      for (const [lang, dictionary] of Object.entries(dicts)) {
+        expect(dictionary[key], `${lang}: ${key}`).toBeTruthy()
+        expect(dictionary[key], `${lang}: ${key}`).not.toBe(key)
+      }
     }
   })
 

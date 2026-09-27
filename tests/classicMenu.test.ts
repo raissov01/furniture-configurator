@@ -31,9 +31,6 @@ const find = (id: string, state?: ClassicMenuState) => {
 }
 
 describe('classic menu', () => {
-  it('offers walk mode in the visible classic View menu', () => {
-    expect(find('view.walk').command).toEqual({ type: 'toggleWalk' })
-  })
   it('translates every visible menu label in all three non-Russian languages', () => {
     const states = [base, { ...base, price: { missing: true } as const, cloud: true },
       { ...base, price: { total: '100 ₸' }, cloud: true }]
@@ -46,6 +43,9 @@ describe('classic menu', () => {
     for (const [lang, dictionary] of Object.entries({ kk, en, uz })) {
       for (const label of labels) expect(dictionary[label], `${lang}: ${label}`).toBeTruthy()
     }
+  })
+  it('offers walk mode in the visible classic View menu', () => {
+    expect(find('view.walk').command).toEqual({ type: 'toggleWalk' })
   })
   it('keeps the PRO100 order of top menus', () => {
     expect(classicMenus(base).map((menu) => menu.label).slice(0, 5)).toEqual(['Файл', 'Правка', 'Вид', 'Элемент', 'Инструменты'])

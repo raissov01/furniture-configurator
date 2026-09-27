@@ -21,6 +21,7 @@ import { t as tr } from '@/lib/i18n'
 import { importDxfRoomPlan } from '@/src/core/import/dxf'
 import type { DxfImportResult } from '@/src/core/import/dxf'
 import { ConfigValidationError } from '@/src/core/errors'
+import { canConfirmDxfImport } from '@/lib/dxfImportAction'
 
 const ALL_LAYERS = '__all__'
 
@@ -108,7 +109,7 @@ export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult)
   }
 
   const doImport = () => {
-    if (!preview) return
+    if (!preview || !canConfirmDxfImport(preview.walls.length, Boolean(onImport), imported)) return
     try {
       onImport?.(preview)
       setError(null)
@@ -191,7 +192,8 @@ export function ImportPanel({ onImport }: { onImport?: (result: DxfImportResult)
           <button
             type="button"
             onClick={doImport}
-            disabled={preview.walls.length === 0}
+            disabled={!canConfirmDxfImport(preview.walls.length, Boolean(onImport), imported)}
+            title={!onImport ? tr('Только предпросмотр: откройте импорт в проекте') : undefined}
             className="mt-auto w-full border border-neutral-700 bg-neutral-100 px-2 py-1.5 text-[11px] font-medium text-neutral-900 hover:bg-white disabled:cursor-not-allowed disabled:border-neutral-800 disabled:bg-neutral-900 disabled:text-neutral-600"
           >
             {imported ? tr('Импортировано') : tr('Импортировать')}
