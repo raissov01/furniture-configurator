@@ -17,7 +17,7 @@ import { appendFreeMirror } from '@/lib/freeMirrorAction'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
-import { validatedShopEdit } from '@/lib/validatedShopEdit'
+import { validateProjectShopInputs, validatedShopEdit } from '@/lib/validatedShopEdit'
 import {
   DEFAULT_ROOM,
   IDENTITY_TRANSFORM,
@@ -1307,6 +1307,7 @@ export const useConfigurator = create<State>((set, get) => ({
       ? projectMaterialsAfterShopEdit(s.projectMaterials, s.shop.materials, patch.materials) : s.projectMaterials
     const projectEdgeBands = patch.edgeBands
       ? projectBandsAfterShopEdit(s.projectEdgeBands, s.shop.edgeBands, patch.edgeBands) : s.projectEdgeBands
+    if (patch.materials || patch.edgeBands) validateProjectShopInputs(projectMaterials ?? nextShop.materials, projectEdgeBands ?? nextShop.edgeBands)
     const nextCatalog = projectCatalog(nextShop, projectMaterials, projectEdgeBands)
     // Check the whole geometry before mutating either project overrides or undo.
     const autoJoints = s.autoJoints.length > 0 && changesJointInputs

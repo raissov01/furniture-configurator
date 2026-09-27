@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { defaultShopProfile } from '../src/core/shop'
-import { validatedShopEdit } from '../lib/validatedShopEdit'
+import { validateProjectShopInputs, validatedShopEdit } from '../lib/validatedShopEdit'
 
 describe('F21 цех профилін сақтар алдындағы тексеру', () => {
   it('теріс және бөлшек тиынды қабылдамайды', () => {
@@ -15,5 +15,11 @@ describe('F21 цех профилін сақтар алдындағы тексе
     const shop = defaultShopProfile()
     const next = validatedShopEdit(shop, { edgeBands: [{ ...shop.edgeBands[0]!, pricePerMeter: 125 }, ...shop.edgeBands.slice(1)] })
     expect(next.edgeBands[0]?.pricePerMeter).toBe(125)
+  })
+  it('жобаға көшірілген каталогтың ақшасын бөлек тексереді', () => {
+    const shop = defaultShopProfile()
+    expect(() => validateProjectShopInputs([{ ...shop.materials[0]!, pricePerSheet: -1 }], shop.edgeBands)).toThrow(/pricePerSheet/)
+    expect(() => validateProjectShopInputs(shop.materials, [{ ...shop.edgeBands[0]!, pricePerMeter: -1 }])).toThrow(/pricePerMeter/)
+    expect(validateProjectShopInputs(shop.materials, shop.edgeBands)).toBe(true)
   })
 })
