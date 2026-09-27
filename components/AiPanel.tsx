@@ -26,10 +26,11 @@ import { cn } from '@/lib/cn'
 import { briefDimension, currentBriefRequest, formatBriefDimensions } from '@/lib/f28BriefUi'
 import {
   TEMPLATE_CATEGORIES, generateCabinet, parseBriefRequest, ruleVariants,
+  qaAnswer, qaBuild, qaNextQuestion, qaQuestions,
 } from '@/src/core/index'
-import type { CabinetBrief, CabinetConfig, TemplateCategory } from '@/src/core/index'
+import type { CabinetBrief, CabinetConfig, QaAnswers, TemplateCategory } from '@/src/core/index'
 
-type Mode = 'rules' | 'ai'
+type Mode = 'rules' | 'ai' | 'questions'
 type Variant = { brief: CabinetBrief; cabinet: CabinetConfig; panelCount: number }
 type Dropped = { name: string; reason: string }
 
@@ -185,11 +186,17 @@ export function AiPanel() {
             title={tr('Свободный текст понимает лучше, но нужен ключ и сеть')}>
             {tr('ИИ')}
           </Button>
+          <Button active={mode === 'questions'} onClick={() => { invalidate(); setMode('questions') }}>
+            {tr('Вопросы по шагам')}
+          </Button>
           <span className="text-[11px] text-neutral-400">{tr('опишите задачу словами — предложу варианты')}</span>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
+
+        {mode === 'questions' && <QaPanel />}
+        {mode !== 'questions' && <>
 
         <div className="mb-3 space-y-3 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800">
           <div>
@@ -338,7 +345,64 @@ export function AiPanel() {
             Вариант заменяет текущий корпус целиком. Ctrl+Z возвращает предыдущий.
           </p>
         ) : null}
+        </>}
       </div>
     </div>
   )
+}
+
+/** Бір сұрақтан кейін келесісін көрсетеді; әдепкі жауаптармен ерте аяқтауға болады. */
+function QaPanel() {
+  const catalog = useConfigurator((s) => s.catalog)
+  const loadCabinet = useConfigurator((s) => s.loadCabinet)
+  const loadKitchen = useConfigurator((s) => s.loadKitchen)
+  const [answers, setAnswers] = useState<QaAnswers>({})
+  const [draft, setDraft] = useState('')
+  const [error, setError] = useState('')
+  const question = qaNextQuestion(answers, catalog)
+  const total = qaQuestions(answers, catalog).length
+  const step = total - qaQuestions(answers, catalog).filter((q) => answers[q.id] === undefined).length + 1
+
+  const next = () => {
+    if (!question) return
+    try {
+      const value = question.kind === 'number' ? Number(draft || question.default) : draft || question.default
+      setAnswers(qaAnswer(answers, question.id, value, catalog))
+      setDraft('')
+      setError('')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }
+  const finish = () => {
+    try {
+      const result = qaBuild(answers, catalog)
+      if (result.kind === 'kitchen') loadKitchen(result.options)
+      else loadCabinet(result.cabinet)
+      setError('')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    }
+  }
+
+  return <div className="space-y-3 border border-neutral-300 p-3 text-sm dark:border-neutral-700">
+    <p className="text-xs text-neutral-500">{tr('Без интернета')} · {question ? `${step}/${total}` : tr('Ответы готовы')}</p>
+    {question && <Field label={tr(question.text)} hint={question.kind === 'number' ? `${question.min}–${question.max} ${question.unit}` : undefined}>
+      {question.kind === 'choice'
+        ? <select aria-label={tr(question.text)} value={draft || question.default} onChange={(event) => setDraft(event.target.value)}
+          className="w-full border border-neutral-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+          {question.options.map((option) => <option key={option.value} value={option.value}>{tr(option.label)}</option>)}
+        </select>
+        : <input type="number" min={question.min} max={question.max} step="1" inputMode="numeric"
+          aria-label={tr(question.text)} value={draft} placeholder={String(question.default)}
+          onChange={(event) => setDraft(event.target.value)}
+          className="w-full border border-neutral-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900" />}
+    </Field>}
+    {error && <p role="alert" className="text-xs text-red-700 dark:text-red-400">{error}</p>}
+    <div className="flex gap-2">
+      {question && <Button active onClick={next}>{tr('Следующий вопрос')}</Button>}
+      <Button onClick={finish}>{question ? tr('Создать с ответами по умолчанию') : tr('Создать проект')}</Button>
+    </div>
+    <p className="text-xs text-neutral-500">{tr('Для ИИ через интернет откройте вкладку «ИИ».')}</p>
+  </div>
 }

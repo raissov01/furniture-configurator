@@ -134,7 +134,7 @@ function MillingLines({ panel, catalog, settings, extents }: {
  * ядродан (`panel.handle`), сондықтан тұтқа тесіктің дәл үстінде тұрады.
  */
 const HANDLE_STEEL = '#c3c8ce'
-const HANDLE_GOLA = '#8d949b'
+const PROFILE_COLORS = { darkGray: '#52575b', silver: HANDLE_STEEL, black: '#252729' } as const
 const HANDLE_WOOD = '#8a5a34'
 const HANDLE_RECESS = '#3a3f44'
 
@@ -181,6 +181,7 @@ function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: nu
   }
 
   if (handle.kind === 'profile') {
+    const profileColor = PROFILE_COLORS[handle.profileColor ?? 'silver']
     const edge = handle.edge ?? 'top'
     // Жиектен фасадтың ІШІНЕ қараған бағыт.
     const inward: [number, number] = edge === 'top' ? [0, -1] : edge === 'bottom' ? [0, 1] : edge === 'left' ? [1, 0] : [-1, 0]
@@ -192,7 +193,7 @@ function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: nu
       return (
         <mesh position={at(-16, face + 22)} castShadow>
           <boxGeometry args={size(30, 40)} />
-          <Metal color={HANDLE_GOLA} />
+          <Metal color={profileColor} />
         </mesh>
       )
     }
@@ -201,7 +202,7 @@ function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: nu
       return (
         <mesh position={at(12, face - 6)} castShadow>
           <boxGeometry args={size(28, 12)} />
-          <Metal />
+          <Metal color={profileColor} />
         </mesh>
       )
     }
@@ -209,7 +210,7 @@ function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: nu
     return (
       <mesh position={at(11, 0)} castShadow>
         <boxGeometry args={size(22, extents.z + 1)} />
-        <Metal />
+        <Metal color={profileColor} />
       </mesh>
     )
   }

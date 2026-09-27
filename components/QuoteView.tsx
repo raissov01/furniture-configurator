@@ -15,9 +15,10 @@ import { MarketPriceNotice } from './MarketPrice'
 import { serviceLineText, unitLabel } from '@/lib/priceUnits'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
+  SERVICE_IDS, SERVICE_NAMES, SHEET_SERVICE_IDS, SHEET_SERVICE_NAMES, captureSalePriceScaling, financeTotals,
+  formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
-import type { Discount, HardwarePlacement, NestedSheet, Panel, PriceLine, PriceOverrides } from '@/src/core/index'
+import type { Discount, HardwarePlacement, NestedSheet, Panel, PriceLine, PriceOverrides, ShopProfile } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -72,6 +73,7 @@ export function QuoteView({
   const { zIndex, isTop } = useModalLayer(open, 'quote')
   const setOpen = useConfigurator((s) => s.setQuoteOpen)
   const shop = useConfigurator((s) => s.shop)
+  const editShop = useConfigurator((s) => s.editShop)
   const catalog = useConfigurator((s) => s.catalog)
   // Тапсырыс реквизиттері («Проект» терезесінің «Реквизиты» қойындысы) — КП-ға
   // солардан барады. «Заказчик» өрісі осы жерде әлі де қолмен түзетілуі мүмкін.
@@ -296,7 +298,18 @@ export function QuoteView({
               </p>
             ) : null}
             <PriceOverridesEditor overrides={priceOverrides} onChange={editPriceOverrides}
-              shopCoefficient={shop.coefficient} onSalePriceValidityChange={setSalePriceDraftValid} />
+              shop={shop} panels={panels} onSalePriceValidityChange={setSalePriceDraftValid} />
+            <details className="border border-neutral-200 p-2 text-xs dark:border-neutral-700">
+              <summary className="cursor-pointer">{tr('Базовые цены фурнитуры')}</summary>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {shop.hardware.map((item) => <label key={item.id} className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                  <span className="w-28"><MoneyInput value={item.pricePerUnit} label={`${item.name}: ${tr('Цена')}`}
+                    onChange={(pricePerUnit) => editShop({ hardware: shop.hardware.map((current) =>
+                      current.id === item.id ? { ...current, pricePerUnit } : current) })} /></span>
+                </label>)}
+              </div>
+            </details>
             {priceError ? (
               <div className="rounded-md border border-red-300 bg-red-50 px-2.5 py-2 text-[11px] text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
                 {priceError}
@@ -390,13 +403,19 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
  * коэффициенттен шыққан сомамен есептеледі.
  */
 function PriceOverridesEditor({
-  overrides, onChange, shopCoefficient, onSalePriceValidityChange,
+  overrides, onChange, shop, panels, onSalePriceValidityChange,
 }: {
   overrides: PriceOverrides
   onChange: (patch: Partial<PriceOverrides>) => void
-  shopCoefficient: number
+  shop: ShopProfile
+  panels: Panel[]
   onSalePriceValidityChange: (valid: boolean) => void
 }) {
+  const [scalingError, setScalingError] = useState('')
+  const capture = () => {
+    try { setScalingError(''); return captureSalePriceScaling(panels, shop) }
+    catch (cause) { setScalingError(cause instanceof Error ? cause.message : String(cause)); return null }
+  }
   // Экранда теңгемен көрсетеді, сақтауда тиынмен (§0.2: ақша бүтін минор бірлік).
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-md border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-700">
@@ -404,7 +423,7 @@ function PriceOverridesEditor({
         <span className="text-neutral-500">{tr('Коэффициент (этот проект)')}</span>
         <ValidatedField label={tr('Коэффициент (этот проект)')} value={overrides.coefficient}
           display={String} parse={parseCoefficientInput} onValid={(value) => onChange({ coefficient: value })}
-          placeholder={String(shopCoefficient)} compact />
+          placeholder={String(shop.coefficient)} compact />
       </label>
       {overrides.coefficient !== undefined && <Button onClick={() => onChange({ coefficient: undefined })}>
         {tr('Вернуться к коэффициенту цеха')}
@@ -412,13 +431,36 @@ function PriceOverridesEditor({
       <label className="flex flex-col gap-1">
         <span className="text-neutral-500">{tr('Цена продажи, ₸ (вручную)')}</span>
         <MoneyInput value={overrides.salePrice} label={tr('Цена продажи, ₸ (вручную)')}
-          onChange={(salePrice) => onChange({ salePrice })} onValidityChange={onSalePriceValidityChange} />
+          onChange={(salePrice) => {
+            if (overrides.salePriceScaling) {
+              const scaling = capture()
+              if (scaling) onChange({ salePrice, salePriceScaling: scaling })
+            } else onChange({ salePrice })
+          }} onValidityChange={onSalePriceValidityChange} />
       </label>
       {overrides.salePrice !== undefined ? (
-        <Button onClick={() => onChange({ salePrice: undefined })}>
+        <Button onClick={() => onChange({ salePrice: undefined, salePriceScaling: undefined })}>
           {tr('Вернуться к коэффициенту')}
         </Button>
       ) : null}
+      <label className="flex items-center gap-1 self-end py-1">
+        <input type="checkbox" checked={overrides.withoutInstallation === true}
+          onChange={(event) => onChange({ withoutInstallation: event.target.checked })} />
+        {tr('Без монтажа')}
+      </label>
+      <label className="flex items-center gap-1 self-end py-1"
+        title={tr('После изменения размеров ручная цена меняется пропорционально площади ЛДСП')}>
+        <input type="checkbox" checked={Boolean(overrides.salePriceScaling)} disabled={overrides.salePrice === undefined}
+          onChange={(event) => {
+            if (!event.target.checked) onChange({ salePriceScaling: undefined })
+            else { const scaling = capture(); if (scaling) onChange({ salePriceScaling: scaling }) }
+          }} />
+        {tr('Менять ручную цену по площади ЛДСП')}
+      </label>
+      {scalingError && <span role="alert" className="w-full text-red-700 dark:text-red-400">{scalingError}</span>}
+      {overrides.salePriceScaling && <span className="w-full text-neutral-500">
+        {tr('База площади ЛДСП')}: {overrides.salePriceScaling.baseAreaMm2} мм²
+      </span>}
       <DiscountInput
         label={tr('Скидка на весь проект')}
         discount={overrides.overallDiscount}
@@ -523,6 +565,7 @@ function PriceTable({ price, shopName, overrides, onChange }: {
   overrides: PriceOverrides
   onChange: (patch: Partial<PriceOverrides>) => void
 }) {
+  const totals = financeTotals(price)
   const groups: { key: string; title: string; lines: PriceLine[] }[] = [
     { key: 'materials', title: tr('Материалы'), lines: price.materials },
     { key: 'edges', title: tr('Кромка'), lines: price.edges },
@@ -551,8 +594,12 @@ function PriceTable({ price, shopName, overrides, onChange }: {
               <th className="py-1.5 text-right font-medium">{tr('Листы')}</th>
               <th className="py-1.5 text-right font-medium">{tr('Материал')}</th>
               <th className="py-1.5 text-right font-medium">{tr('Кромка')}</th>
+              <th className="py-1.5 text-right font-medium">{tr('Кромка, п.м.')}</th>
               {SERVICE_IDS.map((sid) => (
                 <th key={sid} className="py-1.5 text-right font-medium">{SERVICE_NAMES[sid]}</th>
+              ))}
+              {price.byMaterial.some((row) => row.sheetServices) && SHEET_SERVICE_IDS.map((sid) => (
+                <th key={`sheet-${sid}`} className="py-1.5 text-right font-medium">{tr(SHEET_SERVICE_NAMES[sid])}</th>
               ))}
               <th className="py-1.5 text-right font-medium">{tr('Итого')}</th>
             </tr>
@@ -565,14 +612,25 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                 <td className="py-1 text-right tabular-nums text-neutral-500">{r.sheets}</td>
                 <td className="py-1 text-right tabular-nums">{formatTenge(r.materialCost)}</td>
                 <td className="py-1 text-right tabular-nums">{formatTenge(r.edgeCost)}</td>
+                <td className="py-1 text-right tabular-nums">{r.edgeMetres}</td>
                 {SERVICE_IDS.map((sid) => (
                   <td key={sid} className="py-1 text-right tabular-nums">{formatTenge(r.services[sid])}</td>
+                ))}
+                {price.byMaterial.some((row) => row.sheetServices) && SHEET_SERVICE_IDS.map((sid) => (
+                  <td key={`sheet-${sid}`} className="py-1 text-right tabular-nums">{formatTenge(r.sheetServices?.[sid] ?? 0)}</td>
                 ))}
                 <td className="py-1 text-right tabular-nums font-medium">{formatTenge(r.total)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="flex flex-wrap gap-3 border border-neutral-200 p-2 text-xs dark:border-neutral-700">
+        <span>{tr('Площадь')}: {totals.areaSquareMetres} м²</span>
+        <span>{tr('Листы')}: {totals.sheets}</span>
+        <span>{tr('Кромка, п.м.')}: {totals.edgeMetres}</span>
+        <span>{tr('Фурнитура')}: {formatTenge(totals.hardwareCost)}</span>
+        <span>{tr('Услуги цеха')}: {formatTenge(price.servicesTotal)}</span>
       </div>
 
       <table className="w-full text-xs">
@@ -652,10 +710,10 @@ function PriceTable({ price, shopName, overrides, onChange }: {
         {price.coefficientAmount !== 0 ? (
           <Row label={`Коэффициент ×${price.coefficient}`} value={formatTenge(price.coefficientAmount)} />
         ) : null}
-        {price.installation.cost > 0 ? (
+        {(price.installation.cost > 0 || price.installation.excluded) ? (
           <Row
-            label={`Монтаж · ${price.installation.metres} м ширины`}
-            value={formatTenge(price.installation.cost)}
+            label={`${tr('Монтаж')} · ${price.installation.metres} ${tr('п.м. ширины')}`}
+            value={price.installation.excluded ? tr('Без монтажа') : formatTenge(price.installation.cost)}
           />
         ) : null}
         <Row label={tr('Себестоимость')} value={formatTenge(price.subtotal)} />
@@ -670,6 +728,9 @@ function PriceTable({ price, shopName, overrides, onChange }: {
         {price.salePriceOverride !== undefined ? (
           <Row label={tr('Сату бағасы (қолмен)')} value={formatTengeExact(price.salePriceOverride)} />
         ) : null}
+        {price.salePriceScaling && <p className="text-[11px] text-neutral-500">
+          {tr('Ручная цена пересчитана по площади ЛДСП')}: {price.salePriceScaling.baseAreaMm2} → {price.salePriceScaling.currentAreaMm2} мм²
+        </p>}
         <Row label="ВСЕГО" value={formatTengeExact(price.grossTotal)} />
         <Row label="СКИДКА" value={`−${formatTengeExact(price.discountTotal)}`} />
         <div className="flex items-baseline justify-between border-t border-neutral-200 pt-1.5 text-sm font-semibold dark:border-neutral-700">

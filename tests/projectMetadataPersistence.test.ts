@@ -31,6 +31,15 @@ afterEach(() => {
 })
 
 describe('жоба реквизиті мен жеңілдігінің автосақталуы', () => {
+  it('орнатусыз және пропорционал баға базасын файлға сақтайды', () => {
+    const values = storage()
+    const scaling = { baseAreaMm2: 123456, materialIds: [initial.cabinets[0]!.carcassMaterialId] }
+    useConfigurator.getState().editPriceOverrides({ salePrice: 500_000, withoutInstallation: true, salePriceScaling: scaling })
+    expect(parseProjectV4(JSON.parse(values.get(PROJECT_KEY)!)).priceOverrides).toEqual({
+      salePrice: 500_000, withoutInstallation: true, salePriceScaling: scaling,
+    })
+  })
+
   it('бес реквизитті edit жасаған сәтте localStorage-ке сақтайды; геометрия өзгермейді', () => {
     const values = storage()
     const root = useConfigurator.getState().root

@@ -19,6 +19,18 @@ export type CanonicalTreeRow = {
   hasChildren: boolean
 }
 
+/** Number cabinets in tree order for display only; persisted names stay unchanged. */
+export function numberedCabinetLabels(rows: readonly CanonicalTreeRow[]): Map<string, string> {
+  const labels = new Map<string, string>()
+  let count = 0
+  for (const row of rows) {
+    if (row.kind !== 'cabinet') continue
+    count += 1
+    labels.set(row.id, `${String(count).padStart(2, '0')}. ${row.label}`)
+  }
+  return labels
+}
+
 export function buildCanonicalRows(root: GroupNode, scene: FlatScene, layers: Layer[]): CanonicalTreeRow[] {
   const flatNodes = new Map(scene.nodes.map((node) => [node.nodeId, node]))
   const count = scene.nodes.length

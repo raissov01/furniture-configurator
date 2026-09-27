@@ -132,6 +132,7 @@ describe('құрастыру — бар генераторлар арқылы', 
       upper: 'no', frontMaterialId: front })
     const result = qaBuild(answers, catalog)
     if (result.kind !== 'kitchen') throw new Error('ас үй күтілді')
+    expect(result.options).toMatchObject({ layout: 'corner', lengthA: 3200, lengthB: 1800, upper: false })
     expect(result.kitchen.cabinets.length).toBeGreaterThan(3)
     expect(result.kitchen.cabinets.some((c) => c.id.includes('-up-'))).toBe(false)
     const withUpper = qaBuild({ ...answers, upper: 'yes' }, catalog)
