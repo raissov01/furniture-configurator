@@ -15,6 +15,7 @@ import { materialRenderKey, resolveMaterialLook } from '@/lib/materialLook'
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import { polygonShape } from '@/lib/f32PolygonShape'
+import { roundedHolePath } from '@/lib/f32RoundedHole'
 import type { Axis, Catalog, EdgeBand, Panel, PanelHandle, SettingsOverride } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { drillToLocalMarker } from '@/lib/drillGeometry'
@@ -300,6 +301,8 @@ function cutoutHoles(panel: Panel): Path[] {
     const hole = new Path()
     if (cutout.shape === 'circle') {
       hole.absarc(b.x + b.width / 2, b.y + b.height / 2, cutout.diameter / 2, 0, Math.PI * 2, false)
+    } else if (cutout.radius && cutout.radius > 0) {
+      return roundedHolePath(b, cutout.radius)
     } else {
       hole.moveTo(b.x, b.y)
       hole.lineTo(b.x + b.width, b.y)
