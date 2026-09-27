@@ -116,7 +116,7 @@ export function DockHost({ panels, children, initiallyClosed = [], storageKey }:
   }, [bounds])
 
   return (
-    <div ref={containerRef} className="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-neutral-950">
+    <div ref={containerRef} data-testid="workspace-dock-host" className="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-neutral-950">
       <div className="flex min-h-0 flex-1 flex-col">
         <DockZone side="top" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
         <div className="flex min-h-0 flex-1">
@@ -204,6 +204,7 @@ function DockZone({
               <button
                 key={id}
                 type="button"
+                aria-selected={id === active}
                 onClick={() => setState((s) => activateTab(s, side, id))}
                 className={cn(
                   'px-2 py-1 text-[11px]',

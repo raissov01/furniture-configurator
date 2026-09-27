@@ -15,41 +15,50 @@
   &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
 }
 
-/**
- * Түс палитрасы цехтың өз материалынан алынған:
- * фон — ЛДСП «Белый платиновый» реңкі, акцент — «Дуб Бардолино» мен кромка,
- * ал көк — сызбадағы өлшем сызығының түсі. Ойдан алынған бренд түсі жоқ.
- */
+/* AisMebel C1 бренд палитрасы; PRO100 токендері төменде бөлек қалады. */
 :root {
-  --ink: #17191e;
-  --ink-soft: #4b4f58;
-  --panel: #dad5cb;
-  --paper: #f7f5f0;
-  --oak: #c9a227;
-  --oak-deep: #7c5f14;
-  --blueprint: #2e4fa8;
-  --rule: #a9a296;
+  --brand-graphite: #1f2a37;
+  --brand-amber: #f2a33a;
+  --neutral-100: #f5f7f9;
+  --neutral-200: #e7eaee;
+  --neutral-400: #aab3bd;
+  --ink: var(--brand-graphite);
+  --ink-soft: #4b5563;
+  --panel: var(--neutral-200);
+  --paper: #ffffff;
+  --oak: var(--brand-amber);
+  --oak-deep: #87520b;
+  --blueprint: var(--brand-graphite);
+  --neutral-offcut: #788695;
+  --rule: var(--neutral-400);
+  --cta-bg: var(--brand-graphite);
+  --cta-ink: #ffffff;
 }
 
-/* Лендинг те сақталған/жүйелік қараңғы таңдауды қолданады. */
 :root[data-theme="dark"] {
-  --ink: #f3f0e9;
-  --ink-soft: #c5c0b6;
-  --panel: #17191e;
-  --paper: #24272d;
-  --oak-deep: #dec16a;
-  --blueprint: #a4b9f2;
-  --rule: #656b74;
+  --ink: #f5f7f9;
+  --ink-soft: #c8d0d8;
+  --panel: #141b24;
+  --paper: #273342;
+  --oak-deep: #f5bd6b;
+  --blueprint: var(--brand-amber);
+  --neutral-offcut: #a5b4c4;
+  --rule: #697586;
+  --cta-bg: var(--brand-amber);
+  --cta-ink: var(--brand-graphite);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink: #f3f0e9;
-    --ink-soft: #c5c0b6;
-    --panel: #17191e;
-    --paper: #24272d;
-    --oak-deep: #dec16a;
-    --blueprint: #a4b9f2;
-    --rule: #656b74;
+    --ink: #f5f7f9;
+    --ink-soft: #c8d0d8;
+    --panel: #141b24;
+    --paper: #273342;
+    --oak-deep: #f5bd6b;
+    --blueprint: var(--brand-amber);
+    --neutral-offcut: #a5b4c4;
+    --rule: #697586;
+    --cta-bg: var(--brand-amber);
+    --cta-ink: var(--brand-graphite);
   }
 }
 
@@ -234,3 +243,32 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
    бұл ереже файлдың СОҢЫНДА, ал селектор салмағы бейтарап ережелерден кем емес. */
 .p100-workspace :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--p100-invalid); outline: 1px solid var(--p100-invalid); outline-offset: -1px; }
 .p100-dialog-invalid { color: var(--p100-invalid); }
+
+/* "Наш" режимі бренд токендерін алады; классикалық PRO100 ережелері бөлек. */
+.ours-workspace :is(button[aria-pressed="true"], button[aria-current="true"], button[data-menu-trigger][aria-expanded="true"]) {
+  background: var(--brand-graphite);
+  color: #ffffff;
+  border-color: var(--brand-graphite);
+  border-bottom-color: var(--brand-amber);
+}
+.ours-workspace :is(button[aria-pressed="true"], button[aria-current="true"], button[data-menu-trigger][aria-expanded="true"]):hover {
+  background: var(--brand-graphite);
+  color: #ffffff;
+}
+.ours-workspace [data-testid="workspace-dock-host"],
+.ours-workspace [data-dock-zone],
+.ours-workspace [data-dock-panel] { background: var(--paper); color: var(--ink); border-color: var(--rule); }
+.ours-workspace [data-dock-panel] > div:first-child,
+.ours-workspace [data-dock-zone] > div:first-child { background: var(--panel); color: var(--ink); border-color: var(--rule); }
+.ours-workspace [data-dock-panel] > div:nth-child(2) { color: var(--ink); }
+.ours-workspace [data-dock-zone] button[aria-selected="true"] {
+  background: var(--brand-graphite);
+  color: #ffffff;
+  border-bottom: 1px solid var(--brand-amber);
+}
+.p100-workspace [data-testid="workspace-dock-host"],
+.p100-workspace [data-dock-zone],
+.p100-workspace [data-dock-panel] { background: var(--p100-dialog); color: var(--p100-text); border-color: var(--p100-divider); }
+.p100-workspace [data-dock-panel] > div:first-child,
+.p100-workspace [data-dock-zone] > div:first-child { background: var(--p100-chrome); color: var(--p100-text); border-color: var(--p100-divider); }
+.p100-workspace [data-dock-panel] > div:nth-child(2) { color: var(--p100-text); }
