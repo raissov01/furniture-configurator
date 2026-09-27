@@ -1802,4 +1802,16 @@ export const en: Record<string, string> = {
   'Подтвердите замену содержимого': 'Confirm content replacement',
   'Текущее содержимое будет удалено': 'Current content will be removed',
   'Заменить содержимое': 'Replace content',
+  'Вернуть цены по умолчанию': 'Restore default prices',
+  'Все позиции с рекомендуемой или рыночной ценой получат её — ваши цены по ним будут заменены. Продолжить?': 'Every item with a recommended or market price will get it back — your prices for them will be replaced. Continue?',
+  'Цены по умолчанию — рекомендуемые ({date}) и рыночная медиана. Введите свои цены.': 'Default prices are recommended ({date}) and the market median. Enter your own prices.',
+  'Рекомендуемая цена ({date})': 'Recommended price ({date})',
+  'Вернуть рекомендуемую цену': 'Restore recommended price',
+  'Вернуть рекомендуемую цену: {price}': 'Restore recommended price: {price}',
+
+  // Смета жолының бірлігі (lib/priceUnits.ts)
+  'лист.': 'sheets',
+  'дет.': 'parts',
+  'шт.': 'pcs',
+  '{name}: {qty} {unit} × {price}': '{name}: {qty} {unit} × {price}',
 }

@@ -1806,4 +1806,16 @@ export const uz: Record<string, string> = {
   'Подтвердите замену содержимого': 'Tarkibni almashtirishni tasdiqlang',
   'Текущее содержимое будет удалено': 'Joriy tarkib o‘chiriladi',
   'Заменить содержимое': 'Tarkibni almashtirish',
+  'Вернуть цены по умолчанию': 'Standart narxlarga qaytarish',
+  'Все позиции с рекомендуемой или рыночной ценой получат её — ваши цены по ним будут заменены. Продолжить?': 'Tavsiya etilgan yoki bozor narxi bor barcha pozitsiyalarga shu narx qo‘yiladi — ulardagi o‘z narxlaringiz almashtiriladi. Davom etasizmi?',
+  'Цены по умолчанию — рекомендуемые ({date}) и рыночная медиана. Введите свои цены.': 'Standart narxlar — tavsiya etilgan ({date}) va bozor medianasi. O‘z narxlaringizni kiriting.',
+  'Рекомендуемая цена ({date})': 'Tavsiya etilgan narx ({date})',
+  'Вернуть рекомендуемую цену': 'Tavsiya etilgan narxga qaytarish',
+  'Вернуть рекомендуемую цену: {price}': 'Tavsiya etilgan narxga qaytarish: {price}',
+
+  // Смета жолының бірлігі (lib/priceUnits.ts)
+  'лист.': 'varaq',
+  'дет.': 'detal',
+  'шт.': 'dona',
+  '{name}: {qty} {unit} × {price}': '{name}: {qty} {unit} × {price}',
 }
