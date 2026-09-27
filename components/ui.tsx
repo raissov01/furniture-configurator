@@ -63,7 +63,13 @@ export function NumberInput({
   const cls = useControl()
   const [draft, setDraft] = React.useState(String(value))
   const [draftError, setDraftError] = React.useState<ReturnType<typeof parseNumberDraft>['error']>(undefined)
+  const wasRejected = React.useRef(Boolean(invalid))
   React.useEffect(() => { setDraft(String(value)); setDraftError(undefined); if (field) onDraftValidityChange?.(field, false) }, [value])
+  React.useEffect(() => {
+    // A different valid control can resolve a rejected edit while this value stays unchanged.
+    if (wasRejected.current && !invalid) setDraft(String(value))
+    wasRejected.current = Boolean(invalid)
+  }, [invalid, value])
   const errorText = draftError === 'required' ? tr('Поле обязательно')
     : draftError === 'integer' ? tr('Введите целое число, мм')
     : draftError === 'range' ? tr('Значение вне диапазона')
@@ -109,11 +115,12 @@ export function NumberInput({
 }
 
 export function Select<T extends string>({
-  value, onChange, options, disabled,
-}: { value: T; onChange: (v: T) => void; options: { value: T; label: string; disabled?: boolean }[]; disabled?: boolean }) {
+  value, onChange, options, disabled, invalid,
+}: { value: T; onChange: (v: T) => void; options: { value: T; label: string; disabled?: boolean }[]; disabled?: boolean; invalid?: boolean }) {
   const cls = useControl()
   return (
-    <select className={cls} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as T)}>
+    <select className={cn(cls, invalid && 'border-red-500 dark:border-red-500')} aria-invalid={invalid || undefined}
+      value={value} disabled={disabled} onChange={(e) => onChange(e.target.value as T)}>
       {options.map((o) => (
         <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>
       ))}

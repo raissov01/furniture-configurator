@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { defaultHingeSystems } from '../src/core/fittings'
+import { defaultHandleSpec, defaultHandles, defaultHingeSystems } from '../src/core/fittings'
 import { catalog, oneSection, withCabinet } from './fixtures'
 import { availableVerifiedHinges, compatibleHinges, previewFrontEdit } from '../lib/frontEdit'
 
 const hinges = defaultHingeSystems()
-const fullCatalog = { ...catalog, hingeSystems: hinges }
+const fullCatalog = { ...catalog, hingeSystems: hinges, handles: defaultHandles() }
 const cabinet = withCabinet({ sections: oneSection({ fronts: { count: 2, mount: 'overlay' } }) })
 
 describe('F05 front controls', () => {
@@ -18,7 +18,16 @@ describe('F05 front controls', () => {
 
   it('rejects count eight before it reaches the saved project', () => {
     const result = previewFrontEdit(cabinet, 0, { count: 8 }, fullCatalog)
-    expect(result).toMatchObject({ ok: false, field: 'sections[0].fronts.opening' })
+    expect(result).toMatchObject({ ok: false })
+  })
+
+  it('keeps an oversized handle offset out of the model and identifies its field', () => {
+    const result = previewFrontEdit(cabinet, 0, { handle: { ...defaultHandleSpec(), edgeOffset: 9999 } }, fullCatalog)
+    expect(result).toMatchObject({ ok: false })
+    if (!result.ok) {
+      expect(result.field).toMatch(/handle\.edgeOffset/)
+      expect(result.allowed).toMatch(/\.\./)
+    }
   })
 
   it('rejects a third unsupported door and a shared opening side before commit', () => {

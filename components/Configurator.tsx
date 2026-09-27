@@ -61,7 +61,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
   const cabinet = useConfigurator(activeCabinet)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const setShopOpen = useConfigurator((s) => s.setShopOpen)
-  const [frontError, setFrontError] = useState<{ field: string; message: string; allowed?: string | undefined } | null>(null)
+  const [frontError, setFrontError] = useState<{ field: string; message: string; allowed?: string | undefined; control: string } | null>(null)
   const frontDraftField = `sections[${index}].fronts`
   useEffect(() => {
     setFrontError(null)
@@ -70,7 +70,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
   const editFronts = (patch: Partial<SectionFronts>, field: string) => {
     const result = previewFrontEdit(cabinet, index, patch, catalog, settings)
     if (!result.ok) {
-      setFrontError(result)
+      setFrontError({ ...result, control: field })
       onDraftValidityChange?.(frontDraftField, true)
       return
     }
@@ -410,7 +410,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
             value={section.fronts?.count ?? 0}
             min={0}
             max={8}
-            invalid={Boolean(frontError)}
+            invalid={frontError?.control === 'section.fronts'}
             field={`${frontDraftField}.count`}
             onDraftValidityChange={onDraftValidityChange}
             onChange={(count) => editFronts({ count }, 'section.fronts')}
@@ -419,6 +419,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
         <Field label={tr('Тип фасада')}>
           <Select
             value={section.fronts?.mount ?? 'overlay'}
+            invalid={frontError?.control === 'section.frontMount'}
             onChange={(mount) => editFronts({ mount }, 'section.frontMount')}
             options={[
               { value: 'overlay', label: tr('Накладной') },
@@ -477,6 +478,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
           fronts={section.fronts}
           onChange={editFronts}
           fieldPrefix={frontDraftField}
+          invalidControl={frontError?.control}
           onDraftValidityChange={onDraftValidityChange}
         />
       ) : null}
@@ -491,7 +493,7 @@ function SectionEditor({ section, index, computedWidth, invalidField, onDraftVal
  * екеуі бір ережемен (`handleBorePoints`) бұрғыланады.
  */
 function HandleFields({
-  value, onChange, field, label,
+  value, onChange, field, label, invalidControl, draftPrefix, onDraftValidityChange,
 }: {
   /** undefined — цехтың әдепкісі, null — әдейі тұтқасыз. */
   value: HandleSpec | null | undefined
@@ -499,6 +501,9 @@ function HandleFields({
   /** Өрістің аты (қате жолағы үшін); баптаулары `${field}Bore` т.с.с. */
   field: string
   label: string
+  invalidControl?: string | undefined
+  draftPrefix?: string | undefined
+  onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const handles = useConfigurator((s) => s.shop.handles)
   const handleSpec: HandleSpec | null = value === null ? null : value ?? defaultHandleSpec()
@@ -551,6 +556,9 @@ function HandleFields({
                 <NumberInput
                   value={handleSpec.edgeOffset}
                   min={0}
+                  invalid={invalidControl === `${field}EdgeOffset`}
+                  {...(draftPrefix ? { field: `${draftPrefix}.edgeOffset` } : {})}
+                  onDraftValidityChange={onDraftValidityChange}
                   onChange={(edgeOffset) => setHandle({ edgeOffset }, 'EdgeOffset')}
                 />
               </Field>
@@ -558,6 +566,9 @@ function HandleFields({
                 <NumberInput
                   value={handleSpec.endOffset}
                   min={0}
+                  invalid={invalidControl === `${field}EndOffset`}
+                  {...(draftPrefix ? { field: `${draftPrefix}.endOffset` } : {})}
+                  onDraftValidityChange={onDraftValidityChange}
                   onChange={(endOffset) => setHandle({ endOffset }, 'EndOffset')}
                 />
               </Field>
@@ -579,11 +590,13 @@ function FrontFittings({
   fronts,
   onChange,
   fieldPrefix,
+  invalidControl,
   onDraftValidityChange,
 }: {
   fronts: SectionFronts
   onChange: (patch: Partial<SectionFronts>, field: string) => void
   fieldPrefix: string
+  invalidControl?: string | undefined
   onDraftValidityChange?: ((field: string, invalid: boolean) => void) | undefined
 }) {
   const shop = useConfigurator((s) => s.shop)
@@ -618,6 +631,7 @@ function FrontFittings({
       <Field label={tr('Открывание')} hint={tr('сторона петель')}>
         <Select
           value={fronts.opening ?? 'auto'}
+          invalid={invalidControl === 'section.opening'}
           onChange={(opening) => onChange({ opening }, 'section.opening')}
           options={[
             { value: 'auto' as const, label: tr('Автоматически') },
@@ -650,6 +664,7 @@ function FrontFittings({
               value={gaps[key] ?? shopGap}
               min={0}
               max={50}
+              invalid={invalidControl === `section.frontGap.${key}`}
               field={`${fieldPrefix}.gaps.${key}`}
               onDraftValidityChange={onDraftValidityChange}
               onChange={(v) => setGap(key, v)}
@@ -723,6 +738,7 @@ function FrontFittings({
       <Field label={tr('Петля')}>
         <Select
           value={hingeId}
+          invalid={invalidControl === 'section.hinge'}
           disabled={matchingSystems.length === 0}
           onChange={(hingeSystemId) => onChange({ hingeSystemId }, 'section.hinge')}
           options={[
@@ -741,6 +757,9 @@ function FrontFittings({
       <HandleFields
         label={tr('Ручка')}
         field="section.handle"
+        invalidControl={invalidControl}
+        draftPrefix={`${fieldPrefix}.handle`}
+        onDraftValidityChange={onDraftValidityChange}
         value={fronts.handle}
         onChange={(handle, field) => onChange({ handle }, field)}
       />
