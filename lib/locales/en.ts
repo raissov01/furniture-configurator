@@ -10,6 +10,17 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Файл': 'File',
+  'Правка': 'Edit',
+  'Элемент': 'Element',
+  'Инструменты': 'Tools',
+  'Справка': 'Help',
+  'Новый корпус': 'New cabinet',
+  'Выбор': 'Select',
+  'Стена С': 'North wall',
+  'Стена З': 'West wall',
+  'Стена Ю': 'South wall',
+  'Стена В': 'East wall',
   'Сортировать': 'Sort',
   'Допустимо целое число в диапазоне': 'Allowed whole-number range',
   'Текст': 'Text',

@@ -53,6 +53,16 @@ describe('сөздіктер', () => {
     }
   })
 
+  it('классикалық мәзір мен көрініс құралдары үш тілде аударылады', () => {
+    for (const key of ['Файл', 'Правка', 'Элемент', 'Инструменты', 'Сервис', 'Справка',
+      'Новый корпус', 'Выбор', 'Стена С', 'Стена З', 'Стена Ю', 'Стена В']) {
+      for (const [lang, dictionary] of Object.entries(dicts)) {
+        expect(dictionary[key], `${lang}: ${key}`).toBeTruthy()
+        expect(dictionary[key], `${lang}: ${key}`).not.toBe(key)
+      }
+    }
+  })
+
   it('орындары бар жолдарда орындар САҚТАЛҒАН', () => {
     for (const [name, dict] of Object.entries(dicts)) {
       for (const [key, value] of Object.entries(dict)) {

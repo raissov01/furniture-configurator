@@ -11,6 +11,18 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Файл': 'Fayl',
+  'Правка': 'Tahrirlash',
+  'Элемент': 'Element',
+  'Инструменты': 'Asboblar',
+  'Сервис': 'Xizmat',
+  'Справка': 'Yordam',
+  'Новый корпус': 'Yangi korpus',
+  'Выбор': 'Tanlash',
+  'Стена С': 'Shimoliy devor',
+  'Стена З': "G'arbiy devor",
+  'Стена Ю': 'Janubiy devor',
+  'Стена В': 'Sharqiy devor',
   'Сортировать': 'Saralash',
   'Допустимо целое число в диапазоне': 'Ruxsat etilgan butun son oralig‘i',
   'Текст': 'Matn',
@@ -1363,7 +1375,6 @@ export const uz: Record<string, string> = {
   'Строка состояния': 'Holat qatori',
   'Выбранный элемент, его положение и размеры H × W × D. Двойной щелчок по детали открывает «Свойства».': 'Tanlangan element, uning joylashuvi va H × W × D o‘lchamlari. Detalni ikki marta bosish «Xususiyatlar»ni ochadi.',
   'допустимо': 'ruxsat etilgan',
-  'Сервис': 'Servis',
 
   'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Parmalash, bichish va stanokka eksport — to‘g‘ridan-to‘g‘ri AisMebel’da, Bazisga o‘tkazmasdan.',
 
