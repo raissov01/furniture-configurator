@@ -20,6 +20,7 @@ import { CLOUD_SELECTION_KEY, nextHistoryId, revisionDecision } from '@/lib/f24U
 import type { LocalRevision } from '@/lib/f24UiLogic'
 import { validSilhouetteHeight } from '@/lib/silhouetteInput'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
+import { solidStartPosition } from '@/lib/sceneUiPlacement'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import { nextCopyName } from '@/lib/copyName'
@@ -879,7 +880,11 @@ export const useConfigurator = create<State>((set, get) => ({
   addSolid() {
     const s = get()
     const id = `solid-${crypto.randomUUID()}`
-    const root: GroupNode = { ...s.root, children: [...s.root.children, createSolidNode(id, tr('Декоративный блок'))] }
+    const solid = createSolidNode(id, tr('Декоративный блок'))
+    const active = findNode(s.root, s.activeId)
+    solid.transform.pos = solidStartPosition(s.room, active?.transform.pos ?? null,
+      active?.kind === 'cabinet' ? active.config.width : active?.kind === 'solid' ? active.solid.size.x : 100)
+    const root: GroupNode = { ...s.root, children: [...s.root.children, solid] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id
   },
