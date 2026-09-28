@@ -5,7 +5,8 @@
  * ағынының бірінші қадамы.
  */
 
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
+import { templateCountLabel } from '@/lib/templateCount'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEED_SETS, SEED_TEMPLATES, STANDARD_NOMENCLATURE_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
 import { filterTemplateCatalog } from '@/src/core/templateCatalog'
@@ -200,7 +201,7 @@ export function TemplateGallery() {
               >
                 <div className="text-xs font-medium">{tr(c.label)}</div>
                 <div className="tabular-nums text-[11px] text-neutral-500">
-                  {counts.get(c.value) ?? 0} {tr('шаблонов')}
+                  {templateCountLabel(counts.get(c.value) ?? 0, getLang())}
                 </div>
               </button>
             ))}
