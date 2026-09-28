@@ -1933,6 +1933,7 @@ export const useConfigurator = create<State>((set, get) => ({
     set({
       ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: nextCopyName(source.name, s.cabinets.map((cabinet) => cabinet.name)) }], [
 
+
         ...s.placements,
         { cabinetId: newId, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
       ]),

@@ -73,6 +73,7 @@ export function SiteHeader() {
 
         <label className="ml-auto text-xs">
 
+
           <span className="sr-only">{t('Язык')}</span>
           <select aria-label={t('Язык')} value={lang} onChange={(event) => chooseLang(event.target.value as typeof LANGS[number]['value'])}
             className="min-h-11 border bg-transparent px-2 text-sm" style={{ borderColor: 'var(--rule)' }}>
@@ -130,6 +131,7 @@ export function SiteHeader() {
           </ul>
         </nav>
       ) : null}
+
 
     </header>
   )

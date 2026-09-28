@@ -12,11 +12,11 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
 import { historySummary } from '@/lib/f24UiLogic'
-import { useModalLayer } from '@/lib/useModalLayer'
 
 type Entry = { at: number; name: string; json: string }
 
@@ -36,6 +36,7 @@ export function HistoryPanel() {
   const setOpen = useConfigurator((s) => s.setHistoryOpen)
   const { zIndex, isTop } = useModalLayer(open, 'history', () => setOpen(false))
 
+
   const restore = useConfigurator((s) => s.restoreHistory)
   const [entries, setEntries] = useState<Entry[]>([])
   const [preview, setPreview] = useState<number | null>(null)
@@ -46,6 +47,7 @@ export function HistoryPanel() {
     if (open) setEntries(read())
   }, [open])
 
+
   if (!open) return null
 
   return (
@@ -53,6 +55,7 @@ export function HistoryPanel() {
       style={{ zIndex }}
       className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => { if (isTop) setOpen(false) }}
+
 
     >
       <div

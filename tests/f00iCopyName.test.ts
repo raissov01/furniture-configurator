@@ -12,5 +12,6 @@ describe('nextCopyName', () => {
     expect(nextCopyName('Wardrobe', ['Wardrobe', 'Wardrobe (копия 1)', 'Wardrobe (копия 4)']))
       .toBe('Wardrobe (копия 5)')
 
+
   })
 })

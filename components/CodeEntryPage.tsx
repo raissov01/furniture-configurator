@@ -57,7 +57,7 @@ export function CodeEntryPage() {
       <h1 className="mt-6 text-3xl font-bold text-[var(--ink)]" style={{ fontFamily: 'var(--font-display)' }}>{tr('Открыть проект по коду')}</h1>
       <p className="mt-2 text-base text-[var(--ink-soft)]">{tr('Введите 6 цифр, которые прислал мастер.')}</p>
       <form className="mt-6 space-y-3" onSubmit={(event) => { event.preventDefault(); void verify() }}>
-        <label htmlFor="share-code" className="block text-sm font-medium text-[var(--ink)]">{tr('Код — 6 цифр')}</label>
+        <label htmlFor="share-code" className="block text-sm font-medium text-[var(--ink)]">{tr('Код: 6 цифр')}</label>
         <input id="share-code" inputMode="numeric" autoComplete="one-time-code" value={draft}
           aria-invalid={touched && Boolean(validation.error)} aria-describedby={touched && validation.error ? 'code-error' : undefined}
           onChange={(event) => { requestId.current += 1; setDraft(event.target.value); setTouched(true); setError(null); setPreview(null); setBusy(false) }}

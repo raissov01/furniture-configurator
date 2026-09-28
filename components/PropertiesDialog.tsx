@@ -90,6 +90,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
     const handle = (event: KeyboardEvent) => {
       if (!isTop) return
 
+
       const state = useConfigurator.getState()
       if (propertiesChildModalActive(state.quoteOpen, state.drillOpen, state.galleryOpen, state.shopOpen)) return
       const target = event.target instanceof Element ? event.target.tagName.toLowerCase() : ''

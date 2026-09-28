@@ -21,6 +21,7 @@ import type { RenderAspect } from '@/src/core/render/prompt'
 import { buildRenderRequest, cropRenderDataUrl } from '@/lib/renderPanelUi'
 import { useModalLayer } from '@/lib/useModalLayer'
 
+
 type HistoryRecord = { id: string; imageUrl: string; createdAt: number; aspect: RenderAspect;
   crop: { x: number; y: number; width: number; height: number }; cost: { tiyn: number } | null }
 
@@ -34,6 +35,7 @@ export function RenderPanel({ panels, cabinets }: { panels: Panel[]; cabinets: C
   const open = useConfigurator((s) => s.renderOpen)
   const setOpen = useConfigurator((s) => s.setRenderOpen)
   const { zIndex, isTop } = useModalLayer(open, 'render', () => setOpen(false))
+
 
   const [busy, setBusy] = useState(false)
   const [hint, setHint] = useState('')
@@ -134,6 +136,7 @@ export function RenderPanel({ panels, cabinets }: { panels: Panel[]; cabinets: C
       style={{ zIndex }}
       className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => { if (isTop) setOpen(false) }}
+
 
     >
       <div

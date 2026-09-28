@@ -143,6 +143,7 @@ export function QuoteView({
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Смета по проекту')}
         className="min-w-0 max-h-[calc(100dvh-1rem)] w-full max-w-5xl overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 sm:max-h-[calc(100dvh-2rem)] sm:p-4 dark:border-neutral-700 dark:bg-neutral-900"
 
+
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -384,6 +385,7 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
               textAnchor="middle" dominantBaseline="middle"
               fontSize={Math.max(34, Math.min(p.width, p.height) * 0.16)}
               fill="var(--brand-graphite)"
+
 
             >
               {index + 1}

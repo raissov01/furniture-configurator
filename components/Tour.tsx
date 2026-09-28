@@ -26,12 +26,14 @@ import { tourCardPosition } from '@/lib/f32TourPosition'
 import { tourZIndex } from '@/lib/modalStack'
 import { useModalStack } from '@/lib/useModalLayer'
 
+
 const DONE_KEY = 'furniture-configurator:tour-done'
 export const LESSON_DONE_KEY = 'furniture-configurator:lessons-done'
 
 export function Tour({ paused = false, classic = false }: { paused?: boolean; classic?: boolean }) {
   const modalStack = useModalStack()
   const blockedByModal = modalStack.some((id) => id !== 'properties')
+
 
   const [step, setStep] = useState<number | null>(null)
   const [lessonId, setLessonId] = useState<string | null>(null)
@@ -159,6 +161,7 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
      * көмекшіні оқи отырып, бірден істеп көруге болады.
      */
     <div className="pointer-events-none fixed inset-0" style={{ zIndex: tourZIndex(modalStack) }}>
+
 
       {/* Қараңғы қабат ТЕСІКПЕН: көрсетіліп тұрған элемент жарық қалады. */}
       <div

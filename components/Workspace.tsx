@@ -552,7 +552,10 @@ export function Workspace() {
    */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const dialogState = useConfigurator.getState()
       if (propertiesNodeId || modalBlocksHotkeys(getModalStack())) return
+      if (dialogState.galleryOpen || dialogState.shopOpen || dialogState.quoteOpen || dialogState.drillOpen || dialogState.roomOpen) return
+
       if (isTyping(e.target)) return
       // Escape — 3D-дегі таңдауды алу. Хоткейлер тізіміне кірмейді: бұл
       // «әрекет» емес, кез келген жерден шығудың әдеттегі жолы.
@@ -900,9 +903,6 @@ export function Workspace() {
             <MenuItem onClick={() => setQuoteOpen(true)} disabled={Boolean(production.error)}>{tr('Смета и раскрой')}</MenuItem>
             <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable && !editableBoard}>{tr('Присадка')}</MenuItem>
             <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
-            <MenuItem onClick={() => setShopOpen(true)}>{tr('Цех')}</MenuItem>
-            <MenuItem onClick={() => openDockTab('library')}>{tr('Библиотека')}</MenuItem>
-            <MenuItem onClick={() => { window.location.href = '/cut' }}>{tr('Раскрой')}</MenuItem>
             <MenuItem onClick={() => setHistoryOpen(true)}>{tr('История')}</MenuItem>
             <MenuItem onClick={() => void copyClientLink()}>{tr('Ссылка клиенту')}</MenuItem>
             {/* qdesign «3D-көріністе ашу» сияқты: 6 таңбалы код, 24 сағат, автожаңарту. */}
@@ -1014,7 +1014,15 @@ export function Workspace() {
       {(activeBoard || activeSolid || cabinet) && <div data-testid="mobile-properties-trigger"
         className="relative z-30 flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
         <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
-        <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>
+        {cabinet && <div className="flex shrink-0 gap-1">
+          <Button tour="mobile-size" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Габариты')}</Button>
+          <Button tour="mobile-sections" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Секции модуля')}</Button>
+          <Button tour="mobile-cutlist" size="sm" onClick={() => {
+            if (!cutOpen) toggleCut()
+            document.querySelector('[data-tour="cutlist"]')?.scrollIntoView({ block: 'nearest' })
+          }}>{tr('Деталировка')}</Button>
+        </div>}
+        {!cabinet && <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
       </div>}
 
       {projectLoadError && (
@@ -1190,6 +1198,7 @@ export function Workspace() {
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
         {!walk && <div data-testid="mobile-tree-dock" className="relative z-20 shrink-0 px-2 pt-1 lg:hidden"><TreeDock request={dockRequest} /></div>}
         <main className="relative isolate h-[40dvh] min-h-[40dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
@@ -1241,8 +1250,8 @@ export function Workspace() {
               {/* Жалпақ: тұтас түс, blur жоқ (пайдаланушының дизайн ережесі). */}
               <div className="pointer-events-auto flex items-center gap-3 border border-neutral-700 bg-neutral-900 px-4 py-2 text-xs text-white">
                 <span>{touch
-                  ? tr('Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть')
-                  : tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
+                  ? tr('Джойстик: идти · проведите пальцем: осмотр · коснитесь дверцы: открыть')
+                  : tr('Кликните для обзора · WASD: идти · E: дверцы · Esc: курсор')}</span>
                 <button
                   type="button"
                   className="border border-neutral-500 bg-neutral-800 px-2.5 py-1 hover:bg-neutral-700"
@@ -1301,6 +1310,7 @@ export function Workspace() {
         </section>
         </div>
         <aside className="relative z-10 flex h-[30dvh] min-h-0 flex-col overflow-hidden border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
+
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
           <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-800 lg:hidden">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">

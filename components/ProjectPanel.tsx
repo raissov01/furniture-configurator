@@ -11,13 +11,13 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { ASSEMBLY_STAGE_NAMES, assemblySteps, projectUsage, rolesLabel } from '@/src/core/index'
 import type { AssemblyStage, Catalog, Panel, ProjectInfo } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
-import { useModalLayer } from '@/lib/useModalLayer'
 
 type Tab = 'materials' | 'assembly' | 'info'
 
@@ -44,6 +44,7 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
   const open = useConfigurator((s) => s.projectOpen)
   const setOpen = useConfigurator((s) => s.setProjectOpen)
   const { zIndex, isTop } = useModalLayer(open, 'project', () => setOpen(false))
+
 
   const setHovered = useConfigurator((s) => s.setHovered)
   // Тізімдегі жол мен 3D бір-бірін БІЛЕДІ: жолды бассаң, сахна сол қадамға
@@ -73,6 +74,7 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
       style={{ zIndex }}
       className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => { if (isTop) setOpen(false) }}
+
 
     >
       <div

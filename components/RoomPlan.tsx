@@ -49,6 +49,7 @@ export function RoomPlan() {
   const setOpen = useConfigurator((s) => s.setRoomOpen)
   const { zIndex, isTop } = useModalLayer(open, 'room', () => setOpen(false))
 
+
   const room = useConfigurator((s) => s.room)
   const cabinets = useConfigurator((s) => s.cabinets)
   const root = useConfigurator((s) => s.root)
@@ -115,6 +116,7 @@ export function RoomPlan() {
       className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
       onClick={() => { if (isTop) setOpen(false) }}
 
+
     >
       <div
         ref={dialogRef}
@@ -123,6 +125,7 @@ export function RoomPlan() {
         aria-labelledby="room-plan-title"
         tabIndex={-1}
         className="min-w-0 max-h-[calc(100dvh-1rem)] w-full max-w-4xl overflow-y-auto rounded-xl border border-neutral-200 bg-white p-3 outline-none sm:max-h-[calc(100dvh-2rem)] dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
+
 
         onClick={(e) => e.stopPropagation()}
       >

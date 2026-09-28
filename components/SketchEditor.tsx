@@ -41,6 +41,7 @@ export function SketchEditor() {
   const setOpen = useConfigurator((s) => s.setSketchOpen)
   const { zIndex, isTop } = useModalLayer(open, 'sketch', () => setOpen(false))
 
+
   const cabinet = useConfigurator(activeCabinet)
   const materials = useConfigurator((s) => s.shop.materials)
   const edit = useConfigurator((s) => s.edit)
@@ -191,6 +192,7 @@ export function SketchEditor() {
       style={{ zIndex }}
       className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => { if (isTop) setOpen(false) }}
+
 
     >
       <div

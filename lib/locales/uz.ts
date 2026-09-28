@@ -17,6 +17,7 @@ export const uz: Record<string, string> = {
   'Проверяем код…': 'Kod tekshirilmoqda…',
   'Проверенный проект': 'Tekshirilgan loyiha',
   'Нужен новый код? Свяжитесь с мастером.': 'Yangi kod kerakmi? Ustaga murojaat qiling.',
+  'Детали на листе': 'Varaqdagi detallar',
   'Выбрать файл': 'Fayl tanlash',
   'Выбрать фото': 'Foto tanlash',
   'загружен': 'yuklangan',
@@ -539,9 +540,9 @@ export const uz: Record<string, string> = {
   'Как в материале': 'Materialdagidek',
   'Оптимизация': 'Optimallashtirish',
   'глубина поиска': 'qidiruv chuqurligi',
-  'Быстрая — одна раскладка': 'Tez — bitta joylashuv',
-  'Обычная — четыре раскладки': 'Oddiy — to\'rtta joylashuv',
-  'Глубокая — все шестнадцать': 'Chuqur — o\'n oltitasi',
+  'Быстрая: одна раскладка': 'Tez: bitta joylashuv',
+  'Обычная: четыре раскладки': 'Oddiy: to\'rtta joylashuv',
+  'Глубокая: все шестнадцать': 'Chuqur: o\'n oltitasi',
   'Показать резы': 'Kesimlarni ko\'rsatish',
   'PDF карты': 'Xarita PDF',
   'Загрузка проекта…': 'Loyiha yuklanmoqda…',
@@ -920,8 +921,8 @@ export const uz: Record<string, string> = {
   'Собираем проект…': 'Loyiha yig‘ilmoqda…',
   'Открыть дверцу': 'Eshikni ochish',
   'Закрыть дверцу': 'Eshikni yopish',
-  'Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть':
-    'Joystik — yurish · barmoq bilan suring — qarash · eshikka teging — ochish',
+  'Джойстик: идти · проведите пальцем: осмотр · коснитесь дверцы: открыть':
+    'Joystik: yurish · barmoq bilan suring: qarash · eshikka teging: ochish',
   'Джойстик: идти': 'Joystik: yurish',
   'Код для клиента': 'Mijoz uchun kod',
   'Создаём код…': 'Kod yaratilmoqda…',
@@ -939,7 +940,7 @@ export const uz: Record<string, string> = {
     'Bu versiyada bulut yo‘q — mijozga havola yuboring (Loyiha → Mijozga havola).',
   'Открыть проект по коду': 'Loyihani kod bilan ochish',
   'Введите 6 цифр, которые прислал мастер.': 'Usta yuborgan 6 raqamni kiriting.',
-  'Код — 6 цифр': 'Kod — 6 raqam',
+  'Код: 6 цифр': 'Kod: 6 raqam',
   'Уменьшить': 'Kamaytirish',
   'Увеличить': 'Oshirish',
   'Итого клиенту — открыть смету': 'Mijozga jami — smetani ochish',
@@ -1040,7 +1041,7 @@ export const uz: Record<string, string> = {
   'Стена C, мм': 'C devor, mm',
   'Прогулка': 'Sayr',
   'Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы': 'Ichida yurish: WASD — yurish, sichqoncha — ko\'rish, E — eshiklarni ochish',
-  'Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор': 'Ko\'rish uchun bosing · WASD — yurish · E — eshiklar · Esc — kursor',
+  'Кликните для обзора · WASD: идти · E: дверцы · Esc: курсор': 'Ko\'rish uchun bosing · WASD: yurish · E: eshiklar · Esc: kursor',
   'Создать': 'Yaratish',
   'С чего начать корпус': 'Korpusni nimadan boshlash',
   'Техзадание (словами)': 'Techzadanie (so\'z bilan)',
@@ -2395,5 +2396,6 @@ export const uz: Record<string, string> = {
   'Монтаж открыт': 'O‘rnatish ochiq',
   'Монтажных заданий пока нет': 'O‘rnatish topshiriqlari hozircha yo‘q',
   'Навигация': 'Menyu',
+
 
 }

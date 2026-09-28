@@ -157,6 +157,7 @@ export function Menu({
   const menuRef = React.useRef<HTMLDivElement>(null)
   const [position, setPosition] = React.useState<ReturnType<typeof menuPosition> | null>(null)
 
+
   const items = () => [...(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])]
     .filter((item) => !item.disabled)
   const place = React.useCallback(() => {
@@ -178,6 +179,7 @@ export function Menu({
     return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true) }
   }, [open, place])
 
+
   React.useEffect(() => {
     const onOtherMenu = (event: Event) => {
       if ((event as CustomEvent<Element | null>).detail !== ref.current) setOpen(false)
@@ -189,6 +191,7 @@ export function Menu({
     if (!open) return
     const onDoc = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node) && !menuRef.current?.contains(e.target as Node)) setOpen(false)
+
 
     }
     document.addEventListener('mousedown', onDoc)
@@ -256,12 +259,17 @@ export function Menu({
       </button>
       {open && position ? createPortal(
 
+
         <div
           ref={menuRef}
           role="menu"
           aria-label={typeof label === 'string' ? label : undefined}
+          onKeyDown={(event) => { event.stopPropagation(); onKeyDown(event) }}
           style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}
-          className="ui-menu-portal fixed z-[1000] min-w-44 max-w-[calc(100vw-24px)] overflow-y-auto border border-neutral-300 bg-white p-1 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          className={cn(
+            'ui-menu-portal fixed z-[1000] min-w-44 max-w-[calc(100vw-24px)] overflow-y-auto border border-neutral-300 bg-white p-1 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100',
+            ref.current?.closest('.p100-workspace') && 'p100-portal-menu',
+          )}
 
         >
           <MenuCtx.Provider value={() => setOpen(false)}>{children}</MenuCtx.Provider>

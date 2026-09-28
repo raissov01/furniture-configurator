@@ -366,6 +366,11 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-cut-page :is(.text-neutral-400, .text-neutral-500) { color: var(--p100-muted); }
 .p100-cut-page .uppercase { text-transform: none; letter-spacing: normal; }
 
+@media (max-width: 639px) {
+  .viewer-page header button, .p100-cut-page :is(button, a, select, input[type="range"]) { min-height: 44px; font-size: 14px; }
+  .viewer-page header .text-xs, .p100-cut-page :is(.text-xs, [class*="text-[11px]"], [class*="text-[10px]"]) { font-size: 14px; }
+}
+
 /* Жарамсыз мән (P0-3): классикалық жиек ережелері қызыл жиекті баспасын —
    бұл ереже файлдың СОҢЫНДА, ал селектор салмағы бейтарап ережелерден кем емес. */
 .p100-workspace :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--p100-invalid); outline: 1px solid var(--p100-invalid); outline-offset: -1px; }

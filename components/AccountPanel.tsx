@@ -22,6 +22,7 @@ import { CommentsInbox } from '@/components/CommentsInbox'
 import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
 import { visibleErrors } from '@/lib/validationVisibility'
 
+
 import { useModalLayer } from '@/lib/useModalLayer'
 import { bindCloudProject } from '@/lib/cloudProjectBinding'
 import { installationCreateAction } from '@/lib/installationHandoff'
@@ -73,6 +74,7 @@ export function AccountPanel() {
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
   const [formTouched, setFormTouched] = useState<Record<string, boolean>>({})
 
+
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [installations, setInstallations] = useState<InstallationRow[]>([])
@@ -116,6 +118,7 @@ export function AccountPanel() {
   const [busy, setBusy] = useState(false)
   const formErrors = accountFormErrors(mode, form, Boolean(invite))
   const visibleFormErrors = visibleErrors(formErrors, formTouched, formSubmitted)
+
 
   const formReady = canSubmitAccount(mode, form, Boolean(invite)) && (!invite || mode === 'login' || inviteShopName !== null)
   const inviteShop = inviteShopDisplay(invite, inviteShopName)
@@ -373,7 +376,9 @@ export function AccountPanel() {
       setForm({ email: '', password: '', shopName: '' })
       setFormTouched({})
 
+
       setFormSubmitted(false)
+      setResetTouched(false)
       /*
        * Үшеуі ҚАТАР жүреді. Бұрын кезекпен күтетін, ал әрқайсысы бөлек
        * баруы серверге дейінгі кідірісті ҮШ ЕСЕЛЕЙТІН: жақын тұрған дев
@@ -552,6 +557,7 @@ export function AccountPanel() {
       const data = await source.json() as { project?: unknown }
       const copy = await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cloudSavePayload(cloudCopyProject(parseProjectV4(data.project), projects.map((row) => row.name)), null, true)) })
+
 
       if (!copy.ok) {
         const failure = await copy.json() as { error?: string }
@@ -871,6 +877,7 @@ export function AccountPanel() {
               <Button active={!resetOpen && mode === 'login'} onClick={() => { setMode('login'); setResetOpen(false); setFormTouched({}); setFormSubmitted(false) }}>{tr('Вход')}</Button>
               <Button active={!resetOpen && mode === 'register'} onClick={() => { setMode('register'); setResetOpen(false); setFormTouched({}); setFormSubmitted(false) }}>{tr('Регистрация')}</Button>
 
+
             </div>
 
             {resetOpen ? <>
@@ -893,6 +900,7 @@ export function AccountPanel() {
                   onChange={(e) => { setFormTouched((current) => ({ ...current, shopName: true })); setForm({ ...form, shopName: e.target.value }) }} />
                 {visibleFormErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.shopName)}</span> : null}
 
+
               </Field>
             ) : mode === 'register' ? (
               <Field label={tr('Название цеха')} hint={tr('Цех по приглашению — изменить нельзя')}>
@@ -910,6 +918,7 @@ export function AccountPanel() {
             <Field label={tr('Пароль')} hint={mode === 'register' ? tr('от 8 символов') : undefined}>
               <input className={`${input} ${visibleFormErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
                 aria-invalid={Boolean(visibleFormErrors.password)}
+
 
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 value={form.password}

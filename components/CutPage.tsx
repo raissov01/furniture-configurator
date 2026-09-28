@@ -47,9 +47,9 @@ import { Dimension, Sheet } from '@/components/brand'
  * оқылғанға ДЕЙІН орындалады да, экранда әрқашан орысша қалып қояды.
  */
 const optimizationOptions = (): { value: OptimizationLevel; label: string }[] => [
-  { value: 'fast', label: tr('Быстрая — одна раскладка') },
-  { value: 'standard', label: tr('Обычная — четыре раскладки') },
-  { value: 'deep', label: tr('Глубокая — все шестнадцать') },
+  { value: 'fast', label: tr('Быстрая: одна раскладка') },
+  { value: 'standard', label: tr('Обычная: четыре раскладки') },
+  { value: 'deep', label: tr('Глубокая: все шестнадцать') },
 ]
 
 /** Подрезка «материалдан» дегенді бөлек мән етіп көрсетеміз. */
@@ -394,6 +394,7 @@ export function CutPage() {
           {labelOptions.error ? <p role="alert" className="text-xs text-red-700 sm:col-span-3">{labelOptions.error}</p> : null}
           {!cloudId ? <p className="text-sm text-neutral-700 sm:col-span-3">{tr('Для QR сначала сохраните проект в облаке')}</p> : null}
 
+
         </section>
         <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
           {tr('DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».')}
@@ -581,6 +582,7 @@ function SheetCard({
               fontSize={Math.max(34, Math.min(p.width, p.height) * 0.16)}
               fill="var(--brand-graphite)"
 
+
             >
               {index + 1}
             </text>
@@ -612,9 +614,12 @@ function SheetCard({
         })}
       </svg>
       </div>
-      <ol className="grid gap-1 text-sm sm:grid-cols-2">
-        {sheet.parts.map((part, index) => <li key={part.panelId}>{index + 1}. {panelDisplayLabel(part.label)} · {part.width} × {part.height} {tr('мм')}</li>)}
-      </ol>
+      <section className="text-sm" aria-label={tr('Детали на листе')}>
+        <p className="mb-1 font-medium">{tr('Детали на листе')}</p>
+        <ol className="grid gap-1 sm:grid-cols-2">
+          {sheet.parts.map((part, index) => <li key={part.panelId}>{index + 1}. {panelDisplayLabel(part.label)} · {part.width} × {part.height} {tr('мм')}</li>)}
+        </ol>
+      </section>
       <div className="flex flex-wrap items-center gap-1 text-xs">
         <Button size="sm" active={playback} disabled={!showCuts} ariaPressed={playback}
           onClick={() => { setPlayback(!playback); setPlaying(false); setStep(0) }}>
@@ -669,7 +674,7 @@ function UnplacedBlock({ advice }: { advice: ReturnType<typeof unplacedAdvice> }
       {advice.map((a) => (
         <div key={a.panelId} className="space-y-1">
           <div className="font-medium">
-            {panelDisplayLabel(a.label)} — {a.cutLength}×{a.cutWidth} {tr('мм')}, {tr('лист')} {a.materialName}{' '}
+            {panelDisplayLabel(a.label)}: {a.cutLength}×{a.cutWidth} {tr('мм')}, {tr('лист')} {a.materialName}{' '}
             ({tr('полезно')} {a.usable.width}×{a.usable.height}, {tr('обрезка')} {a.trimEdge} {tr('мм')})
           </div>
           <ul className="list-disc space-y-0.5 pl-5">

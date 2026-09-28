@@ -21,6 +21,7 @@ import { useEffect, useRef, useState } from 'react'
 import { shouldCloseModalKey } from '@/lib/modalStack'
 import { useModalLayer } from '@/lib/useModalLayer'
 
+
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
 import { Button, Field } from '@/components/ui'
@@ -64,6 +65,7 @@ export function AiPanel() {
   const open = useConfigurator((s) => s.aiOpen)
   const setOpen = useConfigurator((s) => s.setAiOpen)
   const { zIndex, isTop } = useModalLayer(open, 'ai', () => setOpen(false))
+
 
   const loadCabinet = useConfigurator((s) => s.loadCabinet)
   const catalog = useConfigurator((s) => s.catalog)
@@ -177,6 +179,7 @@ export function AiPanel() {
       style={{ zIndex }}
       className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4 "
       onClick={() => { if (isTop) setOpen(false) }}
+
 
     >
       <div

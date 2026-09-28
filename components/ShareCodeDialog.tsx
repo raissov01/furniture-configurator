@@ -42,6 +42,7 @@ export function ShareCodeDialog() {
   const setOpen = useConfigurator((s) => s.setShareCodeOpen)
   const { zIndex, isTop } = useModalLayer(open, 'shareCode', () => setOpen(false))
 
+
   const startShare = useConfigurator((s) => s.startShare)
   const syncShare = useConfigurator((s) => s.syncShare)
   const session = useConfigurator((s) => s.shareSession)
@@ -146,6 +147,7 @@ export function ShareCodeDialog() {
 
   return (
     <div className="p100-dialog-backdrop overflow-auto p-3" style={{ zIndex }} onClick={() => { if (isTop) setOpen(false) }}>
+
 
       <div
         role="dialog"

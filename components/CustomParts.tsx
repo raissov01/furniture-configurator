@@ -87,6 +87,7 @@ export function CustomParts({ catalog }: { catalog: Catalog }) {
   const setOpen = useConfigurator((s) => s.setPartsOpen)
   const { zIndex, isTop } = useModalLayer(open, 'parts', () => setOpen(false))
 
+
   const cabinet = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -116,6 +117,7 @@ export function CustomParts({ catalog }: { catalog: Catalog }) {
       style={{ zIndex }}
       className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
       onClick={() => { if (isTop) setOpen(false) }}
+
 
     >
       <div

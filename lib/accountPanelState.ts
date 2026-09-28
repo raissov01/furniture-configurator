@@ -29,6 +29,7 @@ export function visibleAccountErrors(mode: AccountMode, form: AccountForm, invit
     ...((submitted || touched.shopName) && errors.shopName ? { shopName: errors.shopName } : {}),
   }
 
+
 }
 
 export function canSubmitAccount(mode: AccountMode, form: AccountForm, invited: boolean): boolean {

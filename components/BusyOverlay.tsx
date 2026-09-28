@@ -35,6 +35,7 @@ export function BusyOverlay() {
       data-busy
       className="fixed inset-0 z-[3000] flex items-center justify-center bg-white/70 dark:bg-neutral-950/70"
 
+
     >
       <Spinner label={busy || tr('Загрузка…')} />
     </div>
