@@ -6,7 +6,9 @@
  */
 
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/cn'
+import { menuPosition } from '@/lib/menuPosition'
 import { t as tr } from '@/lib/i18n'
 import { parseNumberDraft, stepAvailable, steppedValue } from '@/lib/numberDraft'
 
@@ -152,12 +154,28 @@ export function Menu({
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
-  const items = () => [...(ref.current?.querySelectorAll<HTMLButtonElement>('[role="menu"] [role="menuitem"]') ?? [])]
+  const menuRef = React.useRef<HTMLDivElement>(null)
+  const [position, setPosition] = React.useState({ left: 8, top: 8, maxHeight: 300 })
+  const updatePosition = React.useCallback(() => {
+    const rect = triggerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const menu = menuRef.current
+    setPosition(menuPosition(rect, window.innerWidth, window.innerHeight,
+      menu?.offsetWidth ?? 260, menu?.scrollHeight ?? 450, align))
+  }, [align])
+  const items = () => [...(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])]
     .filter((item) => !item.disabled)
   const openMenu = () => {
     document.dispatchEvent(new CustomEvent('ui-menu-open', { detail: ref.current }))
     setOpen(true)
   }
+  React.useLayoutEffect(() => { if (open) updatePosition() }, [open, updatePosition])
+  React.useEffect(() => {
+    if (!open) return
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => { window.removeEventListener('resize', updatePosition); window.removeEventListener('scroll', updatePosition, true) }
+  }, [open, updatePosition])
   React.useEffect(() => {
     const onOtherMenu = (event: Event) => {
       if ((event as CustomEvent<Element | null>).detail !== ref.current) setOpen(false)
@@ -167,7 +185,10 @@ export function Menu({
   }, [])
   React.useEffect(() => {
     if (!open) return
-    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    const onDoc = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (!ref.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false)
+    }
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
   }, [open])
@@ -231,18 +252,20 @@ export function Menu({
       >
         {label} <span data-menu-chevron className="text-[9px] opacity-60">▾</span>
       </button>
-      {open ? (
+      {open && typeof document !== 'undefined' ? createPortal(
         <div
+          ref={menuRef}
           role="menu"
           aria-label={typeof label === 'string' ? label : undefined}
+          onKeyDown={(event) => { event.stopPropagation(); onKeyDown(event) }}
+          style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}
           className={cn(
-            'absolute z-40 mt-1 min-w-44 border border-neutral-300 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-900',
-            align === 'right' ? 'right-0' : 'left-0',
+            'fixed z-[1000] min-w-44 max-w-[calc(100vw-16px)] overflow-y-auto border border-neutral-300 bg-white p-1 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100',
+            ref.current?.closest('.p100-workspace') && 'p100-portal-menu',
           )}
         >
           <MenuCtx.Provider value={() => setOpen(false)}>{children}</MenuCtx.Provider>
-        </div>
-      ) : null}
+        </div>, document.body) : null}
     </div>
   )
 }
@@ -268,7 +291,7 @@ export function MenuItem({
       title={title}
       onClick={() => { onClick?.(); close() }}
       className={cn(
-        'flex w-full items-center gap-2 border border-transparent px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40',
+        'flex w-full items-center gap-2 border border-transparent px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40 max-lg:min-h-11 max-lg:text-sm',
         active
           ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
           : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800',
