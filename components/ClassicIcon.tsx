@@ -57,6 +57,8 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     find: <><circle cx="7" cy="7" r="5"/><path d="m11 11 5 5" stroke={blue}/></>,
     replace: <><path d="M3 6a6 6 0 0 1 10-2m0-2v3h-3M15 12a6 6 0 0 1-10 2m0 2v-3h3"/><path d="M7 8h4m-2-2v4" stroke={blue}/></>,
     ar: <><path d="M3 5h3l1.5-2h3L12 5h3v10H3z"/><circle cx="9" cy="10" r="2.5"/><path d="M1 8V5a2 2 0 0 1 2-2m14 5V5a2 2 0 0 0-2-2"/></>,
+    // Шебер: сиқырлы таяқша + кухня модульдері (бірнеше қадаммен құрастыру).
+    wizard: <><path d="m2 16 8-8M9 7l2 2"/><path d="M13 2v4m-2-2h4M15.5 8.5v2m-1-1h2M6 3v2M5 4h2" stroke={blue}/><path d="M11 12h5v4h-5zM13.5 12v4"/></>,
     vr: <><path d="M2 6h14v7H2zM2 9H1m15 0h1M5 13l2-2h4l2 2"/><path d="M5 9h2m4 0h2"/></>,
   }
   return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round">{shape[name]}</svg>

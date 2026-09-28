@@ -25,6 +25,7 @@ import { MILLING_PATTERNS, MODULE_KINDS, furnitureMinWallLength, kitchenLayout }
 import type { FurnitureType, KitchenModule } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { StagePreview } from '@/components/StagePreview'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 const STEPS = ['Расположение', 'Размеры', 'Наполнение', 'Конструкция', 'Материалы'] as const
 
@@ -85,6 +86,10 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
   const loadKitchen = useConfigurator((s) => s.loadKitchen)
   const loadFurniture = useConfigurator((s) => s.loadFurniture)
   const runBusy = useConfigurator((s) => s.runBusy)
+  const setFirstRun = useConfigurator((s) => s.setFirstRun)
+  // Шебер енді галереяның ішінде емес, бірнеше жерден ашылады (мәзір, құрал
+  // жолағы, галерея) — сондықтан өз модал қабаты бар: галереядан ашылса үстінде.
+  const { zIndex } = useModalLayer(open, 'wizard', onClose)
   const [step, setStep] = useState(0)
   const [d, setD] = useState<StageDraft>(DEFAULT_STAGE_DRAFT)
   const [prompt, setPrompt] = useState('')
@@ -153,6 +158,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
         } else {
           loadFurniture(next.options)
         }
+        setFirstRun(false)
         onClose()
       } catch (cause) {
         setGenerateError(cause instanceof Error ? cause.message : String(cause))
@@ -162,7 +168,8 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
 
   return (
     <div
-      className="fixed inset-y-0 left-0 z-[60] flex w-screen items-start justify-center overflow-x-hidden overflow-y-auto bg-black/50 p-2 sm:p-4"
+      style={{ zIndex }}
+      className="fixed inset-y-0 left-0 flex w-screen items-start justify-center overflow-x-hidden overflow-y-auto bg-black/50 p-2 sm:p-4"
       onClick={onClose}
     >
       <div
@@ -445,4 +452,13 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
       </div>
     </div>
   )
+}
+
+/** Шеберді store-дағы `wizardOpen` бойынша бір жерде орнатады (Workspace). */
+export function KitchenWizardHost() {
+  const open = useConfigurator((s) => s.wizardOpen)
+  const setOpen = useConfigurator((s) => s.setWizardOpen)
+  // Жабылғанда unmount — келесі ашылуда қадамдар басынан басталады.
+  if (!open) return null
+  return <KitchenWizard open onClose={() => setOpen(false)} />
 }

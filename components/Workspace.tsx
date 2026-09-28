@@ -73,6 +73,7 @@ import { nextDockRequest, type DockRequest } from '@/lib/treeDockUi'
 import { WorkspaceDock } from '@/components/dock/WorkspaceDock'
 import { ClassicStructureWindow } from '@/components/ClassicStructureWindow'
 import { ClassicIcon, type ClassicIconName } from '@/components/ClassicIcon'
+import { KitchenWizardHost } from '@/components/KitchenWizard'
 import { BusyOverlay, Spinner } from '@/components/BusyOverlay'
 import { TouchJoystick } from '@/components/TouchJoystick'
 import { isTouchDevice } from '@/lib/walkInput'
@@ -165,6 +166,8 @@ export function Workspace() {
   const cameraPreset = useConfigurator((s) => s.cameraPreset)
   const setCameraPreset = useConfigurator((s) => s.setCameraPreset)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
+  const setWizardOpen = useConfigurator((s) => s.setWizardOpen)
+  const openKitchenGenerator = useConfigurator((s) => s.openKitchenGenerator)
   const galleryOpen = useConfigurator((s) => s.galleryOpen)
   const setAiOpen = useConfigurator((s) => s.setAiOpen)
   const setRoomOpen = useConfigurator((s) => s.setRoomOpen)
@@ -600,6 +603,8 @@ export function Workspace() {
 
   const openPanel = (panel: ClassicPanel) => {
     switch (panel) {
+      case 'wizard': setWizardOpen(true); break
+      case 'kitchenGenerator': openKitchenGenerator(); break
       case 'gallery': setGalleryOpen(true); break
       case 'ai': setAiOpen(true); break
       case 'sketch': setSketchOpen(true); break
@@ -699,6 +704,7 @@ export function Workspace() {
   const classicToolRows: ClassicToolSpec[][] = compactToolbarRows<ClassicToolSpec>(assertUniqueToolbarRows<ClassicToolSpec>([
     [
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
+      { icon: 'wizard', label: tr('Мастер мебели'), action: () => setWizardOpen(true), id: 'wizard' },
       { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
       { icon: classicShopTools.quote.icon, label: tr(classicShopTools.quote.label), action: () => setQuoteOpen(true), disabled: Boolean(production.error), disabledReason: tr('Исправьте ошибки проекта'), id: 'quote' },
@@ -754,6 +760,7 @@ export function Workspace() {
     <div className="p100-workspace flex h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100" data-workspace-style="classic">
       {propertiesNodeId && <PropertiesDialog nodeId={propertiesNodeId} catalog={catalog} panels={activePanels} boardPanel={boardPanel} error={error ?? null} onClose={() => { setPropertiesNodeId(null); setDraftState({ id: activeId, errors: {} }) }} />}
       <TemplateGallery />
+      <KitchenWizardHost />
       <AiPanel />
       <RoomPlan />
       <ShopSettings />
@@ -858,7 +865,7 @@ export function Workspace() {
           <span className="p100-toolbar-gripper" aria-hidden="true" />
           {row.map((tool, toolIndex) => <span key={`${tool.icon}-${tool.label}`} className="p100-toolbar-cell">
             <ClassicTool {...tool} onHover={setHoveredToolLabel} />
-            {(index === 0 ? [2, 6, 8] : index === 1 ? [3, 6] : [2, 6]).includes(toolIndex)
+            {(index === 0 ? [3, 7, 9] : index === 1 ? [3, 6] : [2, 6]).includes(toolIndex)
               && <span className="p100-toolbar-separator" aria-hidden="true" />}
           </span>)}
           {index === 2 && assemblyStep !== null && <label className="ml-2 flex items-center gap-1 border border-neutral-400 px-1 text-xs" data-testid="classic-assembly-step">
@@ -896,6 +903,8 @@ export function Workspace() {
         */}
         <div data-testid="mobile-tool-row" className="flex w-full flex-nowrap items-center gap-1">
           <Menu label={tr('Создать')} title={tr('С чего начать корпус')}>
+            <MenuItem onClick={() => setWizardOpen(true)}>{tr('Мастер мебели (5 шагов)')}</MenuItem>
+            <MenuItem onClick={openKitchenGenerator}>{tr('Генератор кухни')}</MenuItem>
             <MenuItem onClick={() => setGalleryOpen(true)}>{tr('Готовые шаблоны')}</MenuItem>
             <MenuItem onClick={() => setAiOpen(true)}>{tr('Техзадание (словами)')}</MenuItem>
             <MenuItem onClick={() => setSketchOpen(true)} disabled={!activeEditable}>{tr('Нарисовать мышью')}</MenuItem>

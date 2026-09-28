@@ -301,6 +301,10 @@ type State = Snapshot & {
   selectedWall: WallId
 
   galleryOpen: boolean
+  /** Ас үй шебері (5 қадам) ашық па — мәзір, құрал жолағы, галерея бәрі осыны ашады. */
+  wizardOpen: boolean
+  /** Галереяның жоғарғы карточкасындағы жылдам генератор формасы жайылған ба. */
+  kitchenGeneratorOpen: boolean
   aiOpen: boolean
   roomOpen: boolean
 
@@ -477,6 +481,10 @@ type State = Snapshot & {
   setCameraPreset(v: CameraPreset): void
   setHovered(v: string | null): void
   setGalleryOpen(v: boolean): void
+  setWizardOpen(v: boolean): void
+  setKitchenGeneratorOpen(v: boolean): void
+  /** Галереяны ашып, жылдам ас үй генераторын бірден жаю. */
+  openKitchenGenerator(): void
   setAiOpen(v: boolean): void
   setRoomOpen(v: boolean): void
 }
@@ -849,6 +857,8 @@ export const useConfigurator = create<State>((set, get) => ({
   selectedWall: 'south',
 
   galleryOpen: false,
+  wizardOpen: false,
+  kitchenGeneratorOpen: false,
   aiOpen: false,
   roomOpen: false,
 
@@ -2074,6 +2084,9 @@ export const useConfigurator = create<State>((set, get) => ({
   setSelected: (selected) => set({ selected }),
   setAssemblyStep: (assemblyStep) => set({ assemblyStep }),
   setGalleryOpen: (galleryOpen) => set({ galleryOpen }),
+  setWizardOpen: (wizardOpen) => set({ wizardOpen }),
+  setKitchenGeneratorOpen: (kitchenGeneratorOpen) => set({ kitchenGeneratorOpen }),
+  openKitchenGenerator: () => set({ galleryOpen: true, kitchenGeneratorOpen: true }),
   setAiOpen: (aiOpen) => set({ aiOpen }),
   setRoomOpen: (roomOpen) => set({ roomOpen }),
 }))

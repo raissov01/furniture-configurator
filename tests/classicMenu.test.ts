@@ -65,6 +65,19 @@ describe('classic menu', () => {
     expect(find('file.export.pdf', { ...base, canExportPdf: false }).disabled).toBe(true)
   })
 
+  it('puts the furniture wizard and kitchen generator at the top of «Файл», next to templates', () => {
+    const file = classicMenus(base).find((menu) => menu.id === 'file')!
+    const ids = file.items.flatMap((entry) => entry.kind === 'item' ? [entry.id] : [])
+    expect(ids.slice(0, 3)).toEqual(['file.wizard', 'file.kitchenGenerator', 'file.gallery'])
+    expect(find('file.wizard')).toMatchObject({ label: 'Мастер мебели (5 шагов)', command: { type: 'open', panel: 'wizard' } })
+    expect(find('file.kitchenGenerator')).toMatchObject({ label: 'Генератор кухни', command: { type: 'open', panel: 'kitchenGenerator' } })
+    expect(find('file.wizard').disabled).toBeFalsy()
+    for (const dictionary of [kk, en, uz] as Record<string, string>[]) {
+      expect(dictionary['Мастер мебели (5 шагов)']).toBeTruthy()
+      expect(dictionary['Генератор кухни']).toBeTruthy()
+    }
+  })
+
   it('opens and saves the project file with its own commands', () => {
     expect(find('file.save').command).toEqual({ type: 'saveProject' } satisfies ClassicCommand)
     expect(find('file.open').command).toEqual({ type: 'openProject' } satisfies ClassicCommand)
