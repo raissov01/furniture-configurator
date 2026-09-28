@@ -10,8 +10,9 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import type { ComponentRef, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import {
-  Billboard, Environment, Grid, Lightformer, OrbitControls, OrthographicCamera, PointerLockControls, Text,
+  Billboard, Grid, OrbitControls, OrthographicCamera, PointerLockControls, Text,
 } from '@react-three/drei'
+import { SceneEnvironment } from './SceneEnvironment'
 import { EffectComposer, N8AO } from '@react-three/postprocessing'
 import {
   DoubleSide, Euler, Mesh as ThreeMesh, NeutralToneMapping, Object3D, Plane, Raycaster, SRGBColorSpace, Shape, Texture, TextureLoader, Vector2, Vector3,
@@ -1559,16 +1560,7 @@ export default function Scene({
           сурет сияқты.
         */}
         <color attach="background" args={[p100Color('--p100-canvas', '#eceae6')]} />
-        {/*
-          ҚОРШАҒАН ОРТА: Lightformer-мен ОСЫ ЖЕРДЕ жасалады — желіден HDR
-          жүктелмейді (PWA офлайн жұмыс істейді). Онсыз болат, шыны, плита мен
-          лак ештеңені шағылыстырмай, сұр пластик болып көрінетін.
-        */}
-        <Environment resolution={256} environmentIntensity={0.55}>
-          <Lightformer form="rect" intensity={2} position={[0, 6, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[12, 12, 1]} />
-          <Lightformer form="rect" intensity={1} position={[-7, 2, 3]} rotation={[0, Math.PI / 2, 0]} scale={[12, 3, 1]} />
-          <Lightformer form="rect" intensity={1} position={[7, 2, -3]} rotation={[0, -Math.PI / 2, 0]} scale={[12, 3, 1]} />
-        </Environment>
+        <SceneEnvironment />
         {/*
           Жарық — үш нүктелі схема (§7, `docs/visual/light.md`): әлсіз
           ambient (негізгі жарықты орта береді) + ЖЫЛЫ негізгі жарық

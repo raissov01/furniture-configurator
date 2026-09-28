@@ -13,7 +13,7 @@
  */
 
 import { spawn } from 'node:child_process'
-import { captureFailureSnapshot, makeHelpers, serializeCapture } from './e2eHelpers.mjs'
+import { acceptJavaScriptDialog, captureFailureSnapshot, makeHelpers, serializeCapture } from './e2eHelpers.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:3000'
 const PORT = Number(process.env['E2E_CDP_PORT'] ?? 9333)
@@ -51,9 +51,12 @@ async function connect() {
   let id = 0
   const pending = new Map()
   const consoleErrors = []
+  const dialogs = []
 
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data)
+    // `send` төменде анықталады; оқиға тек `Page.enable`-ден кейін келеді.
+    acceptJavaScriptDialog(msg, (method, params) => send(method, params), dialogs)
     if (msg.id && pending.has(msg.id)) {
       pending.get(msg.id)(msg.result)
       pending.delete(msg.id)
@@ -91,7 +94,7 @@ async function connect() {
     width: 1500, height: 1000, deviceScaleFactor: 1, mobile: false,
   })
 
-  return { ws, send, consoleErrors }
+  return { ws, send, consoleErrors, dialogs }
 }
 
 // ── Тест қабығы ──────────────────────────────────────────────────────────────
@@ -429,7 +432,10 @@ async function run() {
 
     // Бұрыштық режим фасадты алып тастайды әрі жоба автосақталады, сондықтан
     // күйді КЕЛЕСІ сценарийге қалдыруға болмайды.
+    const dialogsBefore = session.dialogs.length
     check(await h.menu('Проект', 'Сброс', 2000), 'жоба ысырылды')
+    check(session.dialogs.slice(dialogsBefore).some((d) => d.includes('Сбросить текущий проект?')),
+      'ысыру растау сұрады')
   })
 
   await test('Планка, фальш-панель, фартук', async () => {
