@@ -13,6 +13,7 @@
  */
 import * as React from 'react'
 import { cn } from '@/lib/cn'
+import { t as tr } from '@/lib/i18n'
 import type { FloatingRect } from './types'
 
 export function DockPanel({
@@ -66,7 +67,7 @@ export function DockPanel({
         <button
           type="button"
           className="p100-dock-close px-1"
-          aria-label="Жабу"
+          aria-label={tr('Закрыть')}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={onClose}
         >

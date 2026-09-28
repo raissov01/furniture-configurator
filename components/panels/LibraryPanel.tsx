@@ -19,7 +19,8 @@
  * Ол файл қазір бірнеше агенттің қолында (тапсырмадағы ескерту).
  */
 import * as React from 'react'
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
+import { countLabel } from '@/lib/countLabel'
 import { cn } from '@/lib/cn'
 import { useConfigurator } from '@/store/configurator'
 import { findTemplate, templateToCabinet } from '@/src/core/index'
@@ -173,20 +174,22 @@ export function LibraryPanel() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-neutral-950 text-neutral-100">
+    <div className="flex h-full flex-col bg-[var(--p100-dialog-content)] text-neutral-100">
       {/* Толық каталогтың бес қойындысы. */}
-      <div className="flex shrink-0 border-b border-neutral-800">
+      <div className="flex shrink-0 border-b border-neutral-800" role="tablist" aria-label={tr('Библиотека')}>
         {[...LIBRARY_TABS, { id: 'mine' as const, label: tr('Моя библиотека') }].map((t) => (
           <button
             key={t.id}
             type="button"
+            role="tab"
+            aria-selected={tab === t.id}
             onClick={() => changeTab(t.id)}
             className={cn(
               'flex-1 border-r border-neutral-800 px-1 py-1.5 text-[10px] uppercase tracking-wider last:border-r-0',
-              tab === t.id ? 'bg-neutral-900 text-neutral-100' : 'text-neutral-500 hover:text-neutral-300',
+              tab === t.id ? 'bg-[var(--p100-dialog)] text-neutral-100' : 'text-neutral-500 hover:text-neutral-300',
             )}
           >
-            {t.label}
+            {tr(t.label)}
           </button>
         ))}
       </div>
@@ -199,7 +202,7 @@ export function LibraryPanel() {
           {(tab === 'mebel' || tab === 'elementy') && (
             <input type="search" value={categorySearch} onChange={(event) => setCategorySearch(event.target.value)}
               placeholder={tr('Найти категорию')} aria-label={tr('Найти категорию')}
-              className="mb-1 w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[10px] text-neutral-200 outline-none focus:border-neutral-500" />
+              className="mb-1 w-full border border-neutral-800 bg-[var(--p100-dialog)] px-1.5 py-1 text-[10px] text-neutral-200 outline-none focus:border-neutral-500" />
           )}
           <select
             value={categoryPath ?? ''}
@@ -207,7 +210,7 @@ export function LibraryPanel() {
               setCategoryPath(e.target.value || null)
               setPage(0)
             }}
-            className="w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[10px] text-neutral-300 outline-none"
+            className="w-full border border-neutral-800 bg-[var(--p100-dialog)] px-1.5 py-1 text-[10px] text-neutral-300 outline-none"
           >
             <option value="">{tr('Все категории')} ({tab === 'mebel' ? PRO100_CABINET_ITEMS.length : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS.length : PROP_CATALOG.length})</option>
             {(tab === 'raznoe' ? [...new Set(PROP_CATALOG.map((prop) => prop.category))] : visibleCategories).map((c) => (
@@ -226,8 +229,8 @@ export function LibraryPanel() {
             setSearch(e.target.value)
             setPage(0)
           }}
-          placeholder="Іздеу…"
-          className="w-full border border-neutral-800 bg-neutral-900 px-1.5 py-1 text-[11px] text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-500"
+          placeholder={tr('Поиск…')}
+          className="w-full border border-neutral-800 bg-[var(--p100-dialog)] px-1.5 py-1 text-[11px] text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-500"
         />
       </div>
 
@@ -236,7 +239,7 @@ export function LibraryPanel() {
           <p className="font-medium">{pendingCabinet.name}</p>
           <p>{tr('Будет добавлен приблизительный шаблон')}: {tr(pendingChoice.templateName)}</p>
           <p className="tabular-nums">{pendingChoice.dimensions.height} (H) × {pendingChoice.dimensions.width} (W) × {pendingChoice.dimensions.depth} (D) {tr('мм')}</p>
-          <p className="text-amber-300">{tr('Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.')}</p>
+          <p className="text-[var(--p100-warning)]">{tr('Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.')}</p>
           <div className="flex gap-1">
             <button type="button" className="border border-neutral-500 px-2 py-1" onClick={() => addCabinetToProject(pendingCabinet)}>{tr('Добавить шаблон')}</button>
             <button type="button" className="border border-neutral-700 px-2 py-1" onClick={() => setPendingCabinet(null)}>{tr('Отмена')}</button>
@@ -255,10 +258,10 @@ export function LibraryPanel() {
                 <input type="text" inputMode="numeric" value={propDraft[axis]} aria-invalid={Boolean(coordErrors[`new:${axis}`])}
                   onChange={(event) => { const raw = event.target.value; setPropDraft((current) => ({ ...current, [axis]: raw }))
                     editCoordinate(`new:${axis}`, axis, raw, (value) => setPropPosition((current) => ({ ...current, [axis]: value }))) }}
-                  className={cn('w-full border bg-neutral-900 px-1 py-1', coordErrors[`new:${axis}`] ? 'border-red-600' : 'border-neutral-700')} />
+                  className={cn('w-full border bg-[var(--p100-dialog)] px-1 py-1', coordErrors[`new:${axis}`] ? 'border-red-600' : 'border-neutral-700')} />
               </label>)}
             </div>
-            {(Object.keys(coordErrors).length > 0 || propError) ? <p role="alert" className="text-red-400">{Object.values(coordErrors)[0] ?? propError}</p> : null}
+            {(Object.keys(coordErrors).length > 0 || propError) ? <p role="alert" className="text-[var(--p100-invalid)]">{Object.values(coordErrors)[0] ?? propError}</p> : null}
             <div className="grid grid-cols-2 gap-1.5">
               {propItems.map((prop) => <button key={prop.id} type="button" onClick={() => placeProp(prop.id)}
                 disabled={Object.keys(coordErrors).some((key) => key.startsWith('new:'))}
@@ -270,7 +273,7 @@ export function LibraryPanel() {
             <h3 className="border-t border-neutral-700 pt-2 font-semibold">{tr('Размещённый декор')}</h3>
             {placed.map((node) => <div key={node.id} className="space-y-1 border border-neutral-700 p-2">
               <div className="flex items-center justify-between gap-2"><span>{tr(node.name)}</span>
-                <button type="button" onClick={() => deleteProp(node.id)} className="text-red-300">{tr('Удалить')}</button></div>
+                <button type="button" onClick={() => deleteProp(node.id)} className="text-[var(--p100-invalid)]">{tr('Удалить')}</button></div>
               <div className="flex gap-1">{(['x', 'y', 'z'] as const).map((axis) =>
                 <label key={axis} className="min-w-0 flex-1">{axis.toUpperCase()}
                   <input type="text" inputMode="numeric" value={placedDraft[`${node.id}:${axis}`] ?? String(node.transform.pos[axis])}
@@ -278,12 +281,12 @@ export function LibraryPanel() {
                     onChange={(event) => { const raw = event.target.value; const key = `${node.id}:${axis}`
                       setPlacedDraft((current) => ({ ...current, [key]: raw }))
                       editCoordinate(key, axis, raw, (value) => moveProp(node.id, node.transform.pos, axis, value)) }}
-                    className={cn('w-full border bg-neutral-900 px-1 py-1', coordErrors[`${node.id}:${axis}`] ? 'border-red-600' : 'border-neutral-700')} />
+                    className={cn('w-full border bg-[var(--p100-dialog)] px-1 py-1', coordErrors[`${node.id}:${axis}`] ? 'border-red-600' : 'border-neutral-700')} />
                 </label>)}</div>
             </div>)}
           </div>
         ) : pageItems.length === 0 ? (
-          <p className="p-2 text-[11px] text-neutral-500">Табылмады.</p>
+          <p className="p-2 text-[11px] text-neutral-500">{tr('Ничего не найдено')}</p>
         ) : tab === 'materialy' ? (
           <div className="grid grid-cols-2 gap-1.5">
             {(pageItems as Material[]).map((m) => (
@@ -312,7 +315,7 @@ export function LibraryPanel() {
             disabled={clampedPage === 0}
             className="border border-neutral-800 px-1.5 py-0.5 disabled:opacity-30"
           >
-            ← Алдыңғы
+            ← {tr('Назад')}
           </button>
           <span className="tabular-nums">{clampedPage + 1} / {totalPages} ({activeItems.length})</span>
           <button
@@ -321,14 +324,14 @@ export function LibraryPanel() {
             disabled={clampedPage >= totalPages - 1}
             className="border border-neutral-800 px-1.5 py-0.5 disabled:opacity-30"
           >
-            Келесі →
+            {tr('Далее')} →
           </button>
         </div>
       ) : null}
 
       {lastAdded ? (
         <div className="shrink-0 border-t border-neutral-800 px-1.5 py-1 text-[10px] text-neutral-400">
-          Қосылды: <span className="text-neutral-200">{lastAdded}</span>
+          {tr('Добавлено')}: <span className="text-neutral-200">{lastAdded}</span>
         </div>
       ) : null}
       </>}
@@ -346,9 +349,9 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
         : tr('Тип корпуса не определён из названия') : null
   const dims: string[] = []
   if (item.parsed.widthMm !== undefined) dims.push(`W${item.parsed.widthMm}`)
-  if (item.parsed.doorCount !== undefined) dims.push(`${item.parsed.doorCount}дв`)
-  if (item.parsed.drawerCount !== undefined) dims.push(`${item.parsed.drawerCount}ящ`)
-  if (item.parsed.hasSink) dims.push('мойка')
+  if (item.parsed.doorCount !== undefined) dims.push(countLabel(item.parsed.doorCount, 'Дверь', getLang()))
+  if (item.parsed.drawerCount !== undefined) dims.push(countLabel(item.parsed.drawerCount, 'Ящик', getLang()))
+  if (item.parsed.hasSink) dims.push(tr('Раковина'))
 
   return (
     <button
@@ -356,7 +359,7 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
       onClick={onSelect}
       disabled={!onSelect || !choice.allowed}
       className={cn(
-        'flex flex-col items-center gap-1 border border-neutral-800 bg-neutral-900 p-1.5 text-left',
+        'flex flex-col items-center gap-1 border border-neutral-800 bg-[var(--p100-dialog)] p-1.5 text-left',
         onSelect && choice.allowed ? 'hover:border-neutral-500' : 'cursor-default opacity-70',
       )}
       title={reason ?? (item.path.length > 1 ? categoryLabel(item.path) : undefined)}
@@ -368,7 +371,7 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
       {dims.length > 0 ? (
         <div className="w-full truncate text-[9px] tabular-nums text-neutral-500">{dims.join(' · ')}</div>
       ) : null}
-      {onSelect && reason ? <span className="w-full text-[9px] text-amber-300">{reason}</span> : null}
+      {onSelect && reason ? <span className="w-full text-[9px] text-[var(--p100-warning)]">{reason}</span> : null}
     </button>
   )
 }
@@ -377,15 +380,15 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
 
 function MaterialTile({ material }: { material: Material }) {
   return (
-    <div className="flex flex-col items-center gap-1 border border-neutral-800 bg-neutral-900 p-1.5 text-left">
+    <div className="flex flex-col items-center gap-1 border border-neutral-800 bg-[var(--p100-dialog)] p-1.5 text-left">
       {/* Түс/декор дерегі БАЗИСТЕ импортталмаған (basisCatalog.ts §комментарий) —
           сондықтан ойдан түс салмай, бейтарап тор + қалыңдық белгісі. */}
-      <div className="flex h-16 w-full items-center justify-center border border-neutral-800 bg-neutral-950">
-        <span className="text-[10px] text-neutral-500">{material.thickness} мм</span>
+      <div className="flex h-16 w-full items-center justify-center border border-neutral-800 bg-[var(--p100-dialog-content)]">
+        <span className="text-[10px] text-neutral-500">{material.thickness} {tr('мм')}</span>
       </div>
       <div className="w-full truncate text-[10px] text-neutral-300">{material.name}</div>
       <div className="w-full truncate text-[9px] tabular-nums text-neutral-500">
-        {material.pricePerSheet > 0 ? `${(material.pricePerSheet / 100).toLocaleString('ru-RU')} ₸/лист` : 'баға белгісіз'}
+        {material.pricePerSheet > 0 ? `${(material.pricePerSheet / 100).toLocaleString('ru-RU')} ₸/${tr('Лист').toLowerCase()}` : tr('Цена неизвестна')}
       </div>
     </div>
   )

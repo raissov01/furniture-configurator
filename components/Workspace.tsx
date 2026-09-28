@@ -867,7 +867,7 @@ export function Workspace() {
         <span className={cn('hidden',
             mounted && ms > BUDGET_MS
               ? 'rounded bg-red-100 px-1.5 py-0.5 text-[10px] tabular-nums text-red-800 dark:bg-red-950 dark:text-red-300'
-              : 'rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] tabular-nums text-neutral-500 dark:bg-neutral-800'
+              : 'rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] tabular-nums text-neutral-600 dark:bg-neutral-800'
           )}
           title={`Бюджет: ${BUDGET_MS} мс`}
         >
@@ -1028,10 +1028,10 @@ export function Workspace() {
               <div data-testid="selected-info-overlay" className="p100-selection-bar pointer-events-auto absolute inset-x-2 bottom-2 z-20 flex max-h-[45%] flex-wrap items-center gap-2 overflow-y-auto px-3 py-1.5 text-xs">
                 <b>{panelDisplayLabel(part.label)}</b>
                 <span className="p100-muted tabular-nums">
-                  {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
+                  {tr('Готовый · клиент')}: {part.finishedLength} (L) × {part.finishedWidth} (W)
                 </span>
                 <span className="p100-cut tabular-nums">
-                  {tr('Рез · цех')}: {part.cutLength}×{part.cutWidth}
+                  {tr('Рез · цех')}: {part.cutLength} (L) × {part.cutWidth} (W)
                 </span>
                 <span className="p100-muted tabular-nums">
                   {part.drilling.length} {tr('отв.')}

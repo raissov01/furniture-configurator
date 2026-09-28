@@ -123,6 +123,16 @@ export const siteTranslations: Record<string, Translations> = {
   'Полка': { kk: 'Сөре', en: 'Shelf', uz: 'Tokcha' },
   'Задняя стенка': { kk: 'Артқы қабырға', en: 'Back panel', uz: 'Orqa panel' },
   'Фасад': { kk: 'Фасад', en: 'Front', uz: 'Fasad' },
+  // Дизайн өтуі 0928: мобайл мәзір, смета үстемесі, раскрой парағының сандары.
+  'мм': { kk: 'мм', en: 'mm', uz: 'mm' },
+  'Разделы сайта': { kk: 'Сайт бөлімдері', en: 'Site sections', uz: 'Sayt bo‘limlari' },
+  'Меню': { kk: 'Мәзір', en: 'Menu', uz: 'Menyu' },
+  'Закрыть': { kk: 'Жабу', en: 'Close', uz: 'Yopish' },
+  'Наценка {percent}%': { kk: 'Үстеме {percent}%', en: 'Markup {percent}%', uz: 'Ustama {percent}%' },
+  'Коэффициент': { kk: 'Коэффициент', en: 'Coefficient', uz: 'Koeffitsient' },
+  'Монтаж': { kk: 'Монтаж', en: 'Installation', uz: 'O‘rnatish' },
+  'резов': { kk: 'рез', en: 'cuts', uz: 'kesim' },
+  'КИМ': { kk: 'КИМ', en: 'yield', uz: 'foydali chiqim' },
 }
 
 export function siteTranslate(text: string, lang: Lang): string {

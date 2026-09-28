@@ -55,11 +55,11 @@ export function FindPanel() {
   }
 
   if (error) {
-    return <div data-panel="find" role="alert" className="border border-red-900 bg-red-950 px-2 py-1 text-xs text-red-300">{error}</div>
+    return <div data-panel="find" role="alert" className="border border-[var(--p100-invalid)] bg-[var(--p100-dialog-content)] px-2 py-1 text-xs text-[var(--p100-invalid)]">{error}</div>
   }
 
   return (
-    <div data-panel="find" className="flex h-full flex-col gap-2 bg-neutral-950 text-neutral-100">
+    <div data-panel="find" className="flex h-full flex-col gap-2 bg-[var(--p100-dialog-content)] text-neutral-100">
       <p className="text-[10px] leading-snug text-neutral-500">
         {tr('Поиск по названию, материалу или размеру детали.')}
       </p>
@@ -69,7 +69,7 @@ export function FindPanel() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={tr('Например: полка, 600, Дуб')}
-        className="w-full border border-neutral-800 bg-neutral-950 px-2 py-1.5 text-[11px] text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-500"
+        className="w-full border border-neutral-800 bg-[var(--p100-dialog-content)] px-2 py-1.5 text-[11px] text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-500"
       />
 
       {query.trim() ? (
@@ -90,7 +90,8 @@ export function FindPanel() {
                 key={`${cabinetId}--${panel.id}`}
                 type="button"
                 onClick={() => goTo(cabinetId, panel.id)}
-                className={cn(rowBase, isSelected ? 'border-neutral-100 bg-neutral-900' : 'bg-neutral-950')}
+                aria-pressed={isSelected}
+                className={cn(rowBase, isSelected ? 'border-[var(--p100-focus)] bg-[var(--p100-tool-selected)]' : 'bg-[var(--p100-dialog-content)]')}
               >
                 <span className="flex min-w-0 items-center justify-between gap-2">
                   <span className="truncate font-medium">{panelDisplayLabel(panel.label)}</span>

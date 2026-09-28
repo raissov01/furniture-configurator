@@ -188,6 +188,11 @@ export type ShopProfile = {
   name: string
   city: string
   phone: string
+  /** Клиенттік КП реквизиттері мен безендіруі; ескі профильдерде болмауы мүмкін. */
+  bin?: string
+  address?: string
+  logoDataUrl?: string | undefined
+  brandColor?: string
 
   /** Цех константалары. DEFAULT_SETTINGS үстіне жабылады (mergeSettings). */
   settings: SettingsOverride
@@ -784,6 +789,10 @@ export const ShopProfileSchema = z.object({
   name: z.string(),
   city: z.string(),
   phone: z.string(),
+  bin: z.string().regex(/^\d{12}$/).optional(),
+  address: z.string().max(240).optional(),
+  logoDataUrl: z.string().regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/).max(1_500_000).optional(),
+  brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   settings: SettingsOverrideSchema,
   materials: z.array(MaterialSchema).min(1),
   edgeBands: z.array(EdgeBandSchema),

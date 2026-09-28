@@ -13,11 +13,13 @@ import { SiteLanguageProvider, useSiteText } from '@/components/site/SiteLanguag
 import type { Lang } from '@/lib/i18n'
 import { formatTenge } from '@/src/core/index'
 import { demoNesting, demoPrice, demoRows, demoSheet } from '@/lib/demo'
-import { SITE, TARIFFS } from '@/lib/site'
+import { TARIFFS } from '@/lib/site'
 import { SiteHeader } from '@/components/site/SiteHeader'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { SheetFigure } from '@/components/site/SheetFigure'
-import { Cta, Dimension, Eyebrow, H2, Section, Titled } from '@/components/site/parts'
+import { Cta, Dimension, H2, Section, Titled } from '@/components/site/parts'
+import { RevealList } from '@/components/site/motion'
+import { DetailTable } from '@/components/site/DetailTable'
 
 const steps = () => [
   {
@@ -82,8 +84,7 @@ function LandingContent() {
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <Section className="pb-4 pt-12 sm:pt-20">
           <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-            <div className="rise">
-              <Eyebrow>{SITE.name} · {tr('Для мебельных цехов · ЛДСП')}</Eyebrow>
+            <div>
               <h1
                 className="text-[2.6rem] leading-[0.98] sm:text-6xl lg:text-[4.2rem]"
                 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.015em' }}
@@ -95,85 +96,52 @@ function LandingContent() {
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Cta href="/configurator">{tr('Открыть конфигуратор')}</Cta>
-                <Cta href="/mobile" tone="ghost">{tr('Телефон · Сегодня')}</Cta>
                 <Cta href="#artifacts" tone="ghost">{tr('Посмотреть, что забирает цех')}</Cta>
               </div>
-              <p className="mt-4 text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>
+              <p className="mt-4 text-sm" style={{ color: 'var(--ink-soft)' }}>
                 {tr('Без установки. Считает в браузере.')}
               </p>
             </div>
 
-            <div className="rise" style={{ animationDelay: '90ms' }}>
+            <div>
               <SheetFigure
                 sheet={demoSheet.sheet}
                 materialName={demoSheet.materialName}
-                waste={demoSheet.waste}
+                animateCuts
               />
-              <p className="mt-2 text-[11px] leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+              <p className="mt-2 text-xs leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                 {tr('Это не иллюстрация. Лист собран тем же движком, что работает в конфигураторе: гильотинный раскрой, пропил 4 мм, текстура не поворачивается.')}
               </p>
             </div>
           </div>
         </Section>
 
-        <Section><Dimension label={tr('Лист')} value={`${demoSheet.sheet.sheetWidth} × ${demoSheet.sheet.sheetHeight} мм`} /></Section>
+        <Section><Dimension label={tr('Лист')} value={`${demoSheet.sheet.sheetHeight} (H) × ${demoSheet.sheet.sheetWidth} (W) ${tr('мм')}`} /></Section>
 
         {/* ── Артефакты ────────────────────────────────────────────────────── */}
         <Section id="artifacts" className="py-8 sm:py-14">
-          <Eyebrow>{tr('01 — на выходе')}</Eyebrow>
           <H2>{tr('Три документа, которые цех правда отдаёт')}</H2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             {format('Не «3D-визуализация», а бумаги, по которым режут, сверлят и выставляют счёт. Ниже — настоящий вывод по шкафу из {count} деталей.', { count: demoRows.reduce((sum, row) => sum + row.qty, 0) })}
           </p>
 
           <div className="mt-8 grid items-start gap-6 lg:grid-cols-2">
-            <figure className="sheet overflow-hidden">
-              <figcaption
-                className="border-b px-4 py-2 text-[11px] uppercase tracking-[0.18em]"
-                style={{ borderColor: 'var(--rule)', fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}
-              >{tr('Деталировка')}</figcaption>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs" style={{ fontFamily: 'var(--font-mono)' }}>
-                  <thead>
-                    <tr style={{ color: 'var(--ink-soft)' }}>
-                      <th className="px-4 py-2 text-left font-normal">{tr('Наименование')}</th>
-                      <th className="px-2 py-2 text-right font-normal">{tr('Кол-во')}</th>
-                      <th className="px-2 py-2 text-right font-normal" colSpan={2}>{tr('Готовый · клиент')}</th>
-                      <th className="px-2 py-2 text-right font-normal" colSpan={2}>{tr('Рез · цех')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {demoRows.map((r) => (
-                      <tr key={`${r.name}-${r.finishedLength}-${r.finishedWidth}`} className="border-t" style={{ borderColor: 'var(--rule)' }}>
-                        <td className="px-4 py-1.5" style={{ fontFamily: 'var(--font-body)' }}>{tr(r.name)}</td>
-                        <td className="px-2 py-1.5 text-right">{r.qty}</td>
-                        <td className="px-2 py-1.5 text-right" style={{ color: 'var(--blueprint)' }}>{r.finishedLength}</td>
-                        <td className="px-2 py-1.5 text-right" style={{ color: 'var(--blueprint)' }}>{r.finishedWidth}</td>
-                        <td className="px-2 py-1.5 text-right font-semibold">{r.cutLength}</td>
-                        <td className="px-2 py-1.5 text-right font-semibold">{r.cutWidth}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="border-t px-4 py-2 text-[11px]" style={{ borderColor: 'var(--rule)', color: 'var(--ink-soft)' }}>
-                {tr('Клиент видит готовый размер, цех — рез. Разницу даёт кромка, и она посчитана, а не «примерно».')}
-              </p>
-            </figure>
+            <DetailTable rows={demoRows} />
 
             <div className="grid gap-6">
               <figure className="sheet p-4">
-                <figcaption
-                  className="mb-3 text-[11px] uppercase tracking-[0.18em]"
-                  style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}
-                >{tr('Смета')}</figcaption>
+                <figcaption className="mb-3 text-xs" style={{ color: 'var(--ink-soft)' }}>{tr('Смета')}</figcaption>
                 <dl className="space-y-1.5 text-sm">
-                  {[
+                  {/* Жолдар итогқа ДӘЛ қосылуы керек: беттің тезисі — «сандарды ойдан шығармаймыз». */}
+                  {([
                     [tr('Материалы'), demoPrice.materials.reduce((s, l) => s + l.cost, 0)],
                     [tr('Кромка'), demoPrice.edges.reduce((s, l) => s + l.cost, 0)],
                     [tr('Фурнитура'), demoPrice.hardware.reduce((s, l) => s + l.cost, 0)],
-                    [tr('Услуги цеха'), demoPrice.services.reduce((s, l) => s + l.cost, 0)],
-                  ].map(([label, cost]) => (
+                    [tr('Услуги цеха'), demoPrice.servicesTotal],
+                    [tr('Коэффициент'), demoPrice.coefficientAmount],
+                    [tr('Монтаж'), demoPrice.installation.cost],
+                    [format('Наценка {percent}%', { percent: demoPrice.markupPercent }), demoPrice.markup],
+                  ] as [string, number][]).filter(([, cost]) => cost !== 0).map(([label, cost]) => (
                     <div key={String(label)} className="flex items-baseline justify-between gap-4">
                       <dt style={{ color: 'var(--ink-soft)' }}>{label}</dt>
                       <dd style={{ fontFamily: 'var(--font-mono)' }}>{formatTenge(Number(cost))}</dd>
@@ -187,16 +155,13 @@ function LandingContent() {
                     <dd>{formatTenge(demoPrice.total)}</dd>
                   </div>
                 </dl>
-                <p className="mt-3 text-[11px]" style={{ color: 'var(--ink-soft)' }}>
+                <p className="mt-3 text-xs" style={{ color: 'var(--ink-soft)' }}>
                   {tr('Цены здесь — пример. Материал считается по числу листов, а не по площади: цех покупает целый лист, а остаток оплачивает сам.')}
                 </p>
               </figure>
 
               <figure className="sheet p-4">
-                <figcaption
-                  className="mb-3 text-[11px] uppercase tracking-[0.18em]"
-                  style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}
-                >{tr('Файлы на станок')}</figcaption>
+                <figcaption className="mb-3 text-xs" style={{ color: 'var(--ink-soft)' }}>{tr('Файлы на станок')}</figcaption>
                 <ul className="space-y-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
                   <li><b style={{ color: 'var(--ink)' }}>{tr('PDF карты раскроя')}</b> {tr('— по листу на страницу, с подписями деталей.')}</li>
                   <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по листу')}</b> {tr('— лист, область реза, детали и отход на разных слоях.')}</li>
@@ -208,26 +173,26 @@ function LandingContent() {
           </div>
         </Section>
 
-        <Section><Dimension label={tr('Пропил')} value="4 мм" /></Section>
+        <Section><Dimension label={tr('Пропил')} value={`4 ${tr('мм')}`} /></Section>
 
         {/* ── Как это работает ─────────────────────────────────────────────── */}
         <Section id="how" className="py-8 sm:py-14">
-          <Eyebrow>{tr('02 — порядок работы')}</Eyebrow>
           <H2>{tr('Четыре шага от разговора до реза')}</H2>
-          <div className="mt-8 grid gap-8 sm:grid-cols-2">
+          <RevealList as="ol" className="mt-8 grid gap-8 sm:grid-cols-2">
             {steps().map((s, i) => (
-              <Titled key={s.title} mark={format('Шаг {n}', { n: i + 1 })} title={tr(s.title)}>
-                {tr(s.text)}
-              </Titled>
+              <li key={s.title}>
+                <Titled mark={String(i + 1)} markLabel={format('Шаг {n}', { n: i + 1 })} title={tr(s.title)}>
+                  {tr(s.text)}
+                </Titled>
+              </li>
             ))}
-          </div>
+          </RevealList>
         </Section>
 
-        <Section><Dimension label={tr('Кромка')} value="2.0 / 0.4 мм" /></Section>
+        <Section><Dimension label={tr('Кромка')} value={`2.0 / 0.4 ${tr('мм')}`} /></Section>
 
         {/* ── Правила цеха ─────────────────────────────────────────────────── */}
         <Section id="rules" className="py-8 sm:py-14">
-          <Eyebrow>{tr('03 — почему это не «ещё один конструктор»')}</Eyebrow>
           <H2>{tr('Мы не выдумываем ваши числа')}</H2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
             {tr('Каждый цех собирает по-своему. Если зашить одно значение в код, у остальных тихо получится мебель, которая не собирается. Поэтому все константы — в профиле цеха, а не в программе.')}
@@ -252,7 +217,6 @@ function LandingContent() {
 
         {/* ── Тарифы ───────────────────────────────────────────────────────── */}
         <Section id="pricing" className="py-8 sm:py-14">
-          <Eyebrow>{tr('04 — подписка')}</Eyebrow>
           <H2>{tr('Тарифы')}</H2>
           <div className="mt-8 grid gap-4 lg:grid-cols-3">
             {TARIFFS.map((t) => (
@@ -262,7 +226,7 @@ function LandingContent() {
                 style={t.highlighted ? { borderColor: 'var(--ink)', borderWidth: 1 } : undefined}
               >
                 <p className="text-xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{tr(t.name)}</p>
-                <p className="mt-1 text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-soft)' }}>
+                <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>
                   {tr(t.note)}
                 </p>
                 <p className="mt-4 text-2xl" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>{tr(t.price)}</p>
@@ -284,7 +248,6 @@ function LandingContent() {
 
         {/* ── FAQ ──────────────────────────────────────────────────────────── */}
         <Section className="py-8 sm:py-14">
-          <Eyebrow>{tr('05 — вопросы')}</Eyebrow>
           <H2>{tr('Что обычно спрашивают')}</H2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2">
             {faq().map((item) => (
@@ -309,7 +272,7 @@ function LandingContent() {
                 {tr('Регистрация не нужна. Профиль цеха можно заполнить позже.')}
               </p>
             </div>
-            <Cta href="/configurator">{tr('Открыть AisMebel')}</Cta>
+            <Cta href="/configurator">{tr('Открыть конфигуратор')}</Cta>
           </div>
         </Section>
       </main>

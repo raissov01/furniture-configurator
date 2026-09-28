@@ -5,8 +5,8 @@
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { PDFDocument } from 'pdf-lib'
-import { describe, expect, it } from 'vitest'
+import { PDFDocument, PDFPage } from 'pdf-lib'
+import { describe, expect, it, vi } from 'vitest'
 import {
   SEED_CATALOG,
   findTemplate,
@@ -124,6 +124,16 @@ describe('бирка деректері', () => {
 })
 
 describe('биркалар PDF', () => {
+  it('материал қалыңдығын қайталамайды және ұзын атауды толық басады', async () => {
+    const drawText = vi.spyOn(PDFPage.prototype, 'drawText')
+    try {
+      await labelsPdf({ labels: [{ ...labels[0]!, materialName: 'ЛДСП Egger H1145 Дуб Бардолино 16 мм', thickness: 16 }],
+        projectName: 'Шкаф', fonts })
+      const printed = drawText.mock.calls.map(([value]) => value)
+      expect(printed.join(' ')).toContain('ЛДСП Egger H1145 Дуб Бардолино 16 мм')
+      expect(printed.join(' ')).not.toContain('16 мм, 16 мм')
+    } finally { drawText.mockRestore() }
+  })
   it('QR жоба, деталь, нұсқаны офлайн қалпына келтіреді', () => {
     const value = encodePartQr({ projectId: 'жоба/25', panelId: labels[0]!.panelId, version: 2 })
     expect(value).toMatch(/^F1\./)

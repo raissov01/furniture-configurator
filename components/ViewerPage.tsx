@@ -8,7 +8,8 @@
  * жиһаздың өзін көреді, ал цехтың өзіндік құны оның ісі емес.
  */
 
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
+import { countLabel } from '@/lib/countLabel'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -25,6 +26,7 @@ import { ClientComments } from '@/components/ClientComments'
 import { ApprovalPanel } from '@/components/ApprovalPanel'
 import { formatTengeExact } from '@/src/core/index'
 import { viewerHashError, viewerPressedState } from '@/components/viewerPublicError'
+import { SITE } from '@/lib/site'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
 // Жүктелгенше «жүктелуде» шеңбері — клиент бет қатып қалды деп ойламасын.
@@ -130,15 +132,16 @@ export function ViewerPage() {
 
 function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; message: string } }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-200">
+    <main className="flex min-h-screen items-center justify-center bg-[var(--brand-graphite)] px-6 text-white">
       <div className="max-w-md space-y-3 text-center">
+        <p className="flex items-center justify-center gap-2 text-sm font-semibold"><img src="/brand/aismebel-mark.svg" width={24} height={24} alt="" aria-hidden="true" />{SITE.name}</p>
         {state.kind === 'loading' ? (
           <Spinner label={tr('Открываем проект…')} onDark />
         ) : (
           <>
             <h1 className="text-lg font-semibold">{tr('Ссылка не открылась')}</h1>
-            <p className="text-sm text-neutral-400">{state.message}</p>
-            <Link href="/" className="inline-block text-sm text-sky-400 underline">{tr('На главную')}</Link>
+            <p className="text-sm text-neutral-200">{state.message}</p>
+            <Link href="/" className="inline-block text-sm text-[var(--brand-amber)] underline">{tr('На главную')}</Link>
           </>
         )}
       </div>
@@ -178,11 +181,12 @@ function Viewer({
   }, [catalog])
 
   return (
-    <main className="flex min-h-dvh flex-col bg-neutral-950 text-neutral-100 sm:h-dvh">
+    <main className="flex min-h-dvh flex-col bg-[var(--brand-graphite)] text-white sm:h-dvh">
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-2">
+        <img src="/brand/aismebel-mark.svg" width={24} height={24} alt={SITE.name} />
         <span className="text-sm font-semibold">{project.name}</span>
-        <span className="text-xs text-neutral-500">
-          {cabinets.length === 1 ? '1 корпус' : `${cabinets.length} корпуса`}
+        <span className="text-xs text-neutral-200">
+          {countLabel(cabinets.length, 'Корпус', getLang())}
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-1">
           <Button active={walk} ariaPressed={viewerPressedState(controls, 'walk')} onClick={() => setWalk(!walk)}>{tr('Прогулка')}</Button>

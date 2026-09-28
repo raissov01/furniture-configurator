@@ -778,14 +778,17 @@ function FrontFittings({
       {milling?.patternId === 'custom' ? (
         <Field label={tr('Файл SVG')}>
           <div className="flex items-center gap-2">
-            <input
-              type="file"
-              accept=".svg,image/svg+xml"
-              onChange={(e) => readSvg(e.target.files?.[0])}
-              className="w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-neutral-200 file:px-2 file:py-1 file:text-xs dark:file:bg-neutral-800 dark:file:text-neutral-200"
-            />
+            <label className="cursor-pointer border border-neutral-400 bg-white px-2 py-1 text-xs text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
+              {tr('Выбрать файл')}
+              <input
+                type="file"
+                accept=".svg,image/svg+xml"
+                onChange={(e) => readSvg(e.target.files?.[0])}
+                className="sr-only"
+              />
+            </label>
             <span className="whitespace-nowrap text-[11px] text-neutral-500">
-              {milling.svg ? 'загружен' : 'не выбран'}
+              {milling.svg ? tr('загружен') : tr('Файл не выбран')}
             </span>
           </div>
         </Field>
@@ -1873,9 +1876,9 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
 
       <div className={cn(tab === 'general' ? 'block' : 'hidden')}>
       <div className="flex items-center justify-between pt-1">
-        <SectionTitle>{tr('Секции')} ({cabinet.sections.length})</SectionTitle>
+        <SectionTitle>{tf('Секции ({n})', { n: cabinet.sections.length })}</SectionTitle>
         <Button onClick={() => setSectionAddError(addSection())} disabled={cabinet.sections.length >= 12}>
-          + секция
+          {tr('+ секция')}
         </Button>
       </div>
       {sectionAddError ? <p role="alert" className="border border-red-300 bg-red-50 p-2 text-xs text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
