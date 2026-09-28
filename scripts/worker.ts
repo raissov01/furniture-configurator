@@ -4,6 +4,8 @@ import { readProject } from '../lib/server/store'
 import { applyInstallationSync } from '../lib/server/installation'
 import { parseInstallationAction } from '../src/core/installation'
 import { cutListToXlsx, flattenTree, parseProjectV4 } from '../src/core/index'
+import { allowAiRequest } from '../lib/server/rateLimit'
+import { MAX_RENDER_BYTES, renderScene } from '../lib/server/renderScene'
 
 type RenderPayload = { key: string; hint?: string; style?: string }
 type XlsxPayload = { projectId: string }
@@ -14,14 +16,10 @@ export async function processJob(job: JobRow): Promise<unknown> {
     const input = payload as RenderPayload
     const image = await objectStorage().get(job.shop_id, input.key)
     if (!image || image.contentType !== 'image/png') throw new Error('Рендер үшін PNG табылмады')
-    const { POST } = await import('../app/api/render/route')
-    const response = await POST(new Request('http://worker/api/render', { method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: `data:image/png;base64,${Buffer.from(image.bytes).toString('base64')}`, hint: input.hint, style: input.style }),
-    }))
-    const result = await response.json() as { image?: string; error?: string }
-    if (!response.ok || !result.image?.startsWith('data:image/png;base64,')) throw new Error(result.error ?? 'Рендер жасалмады')
-    const key = await objectStorage().put(job.shop_id, 'render', Buffer.from(result.image.slice('data:image/png;base64,'.length), 'base64'), 'image/png')
+    if (image.bytes.byteLength > MAX_RENDER_BYTES) throw new Error('Снимок слишком большой')
+    if (!allowAiRequest(job.shop_id, 'render')) throw new Error('Цехтың ИИ-рендер лимиті бітті')
+    const b64 = await renderScene(image.bytes, input.hint, input.style)
+    const key = await objectStorage().put(job.shop_id, 'render', Buffer.from(b64, 'base64'), 'image/png')
     return { key }
   }
   if (job.kind === 'xlsx') {

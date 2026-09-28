@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { cloudOff } from '@/lib/server/cloud'
-import { SHARE_MAX_BYTES, readShare, shareShopId, updateShare } from '@/lib/server/share'
+import { SHARE_MAX_BYTES, ownsShareKey, readShare, shareShopId, updateShare } from '@/lib/server/share'
 import { currentAccount } from '@/lib/server/session'
 import { can } from '@/lib/permissions'
 import { allowShareMiss, isShareLimited, requestIp } from '@/lib/server/rateLimit'
 import { ConfigValidationError, parseProjectV4 } from '@/src/core/index'
 import { toPublicProject } from '@/src/core/publicProject'
 import { publicProjectForShare } from '@/lib/server/publicShare'
+import { readLimitedBody } from '@/lib/server/readLimitedBody'
 
 type Context = { params: Promise<{ code: string }> }
 
@@ -52,8 +53,13 @@ export async function PUT(request: Request, { params }: Context): Promise<Respon
   if (shopId && (account?.shopId !== shopId || !can(account.role, 'editProject'))) {
     return NextResponse.json({ error: 'Доступ запрещён' }, { status: 403 })
   }
-  const text = await request.text()
-  if (text.length === 0 || text.length > SHARE_MAX_BYTES) {
+  if (!shopId && !ownsShareKey(code, key)) {
+    return NextResponse.json({ error: 'Код не найден, истёк или ключ неверный' }, { status: 404 })
+  }
+  const bytes = await readLimitedBody(request, SHARE_MAX_BYTES)
+  if (!bytes) return NextResponse.json({ error: 'Неверный размер проекта' }, { status: 413 })
+  const text = new TextDecoder().decode(bytes)
+  if (text.length === 0) {
     return NextResponse.json({ error: 'Неверный размер проекта' }, { status: 400 })
   }
   let publicJson: string
