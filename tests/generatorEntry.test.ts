@@ -65,7 +65,9 @@ describe('generator entry points', () => {
     expect(createMenu).toContain("{tr('Мастер мебели (5 шагов)')}")
     expect(createMenu).toContain("{tr('Генератор кухни')}")
     const svg = renderToStaticMarkup(createElement(ClassicIcon, { name: 'wizard' }))
-    expect(svg).toContain('width="18" height="18"')
+    // Барлық классикалық белгіше сияқты: 18 бірлік торда салынып, PRO100 өлшемімен 16 px көрсетіледі.
+    expect(svg).toContain('viewBox="0 0 18 18"')
+    expect(svg).toContain('width="16" height="16"')
     for (const other of ['new', 'magnet', 'light'] as const) expect(renderToStaticMarkup(createElement(ClassicIcon, { name: other }))).not.toBe(svg)
     for (const dictionary of [kk, en, uz] as Record<string, string>[]) expect(dictionary['Мастер мебели']).toBeTruthy()
   })

@@ -15,7 +15,7 @@ import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createElement, type ReactNode } from 'react'
 import { createRequire } from 'node:module'
-import { act, createRoot, extend, type ReconcilerRoot } from '@react-three/fiber'
+import { act, createRoot, extend, useThree, type ReconcilerRoot } from '@react-three/fiber'
 import { SceneEnvironment } from '../components/SceneEnvironment'
 
 /*
@@ -59,6 +59,12 @@ function fakeCanvas() {
   } as unknown as HTMLCanvasElement
 }
 
+let capturedScene: import('three').Scene | null = null
+function CaptureScene() {
+  capturedScene = useThree((state) => state.scene) as never
+  return null
+}
+
 /** Scene сияқты: әр рендерде өзгеретін пропс, ішінде — орта. */
 function Host({ tick, children }: { tick: number; children?: ReactNode }) {
   return createElement('group', { name: `tick-${tick}` }, children)
@@ -91,9 +97,27 @@ describe('SceneEnvironment', () => {
     expect(update).toHaveBeenCalledTimes(1)
   })
 
+  it('жарық деңгейі өзгергенде ғана орта қайта салынып, жаңа интенсивтілік қолданылады', async () => {
+    const update = vi.spyOn(THREE.CubeCamera.prototype, 'update').mockImplementation(() => {})
+    root = createRoot(fakeCanvas())
+    await root.configure({
+      gl: fakeRenderer() as never,
+      frameloop: 'never',
+      size: { width: 100, height: 100, top: 0, left: 0 },
+    })
+    const view = (tick: number, intensity: number) =>
+      createElement(Host, { tick }, createElement(SceneEnvironment, { intensity }), createElement(CaptureScene))
+    await act(async () => root!.render(view(0, 0.55)))
+    for (let tick = 1; tick <= 3; tick += 1) await act(async () => root!.render(view(tick, 0.55)))
+    expect(update).toHaveBeenCalledTimes(1)
+    await act(async () => root!.render(view(4, 0.9)))
+    expect(update).toHaveBeenCalledTimes(2)
+    expect(capturedScene?.environmentIntensity).toBe(0.9)
+  })
+
   it('Scene ортаны тек мемо-компонент арқылы қосады', () => {
     const scene = readFileSync('components/Scene.tsx', 'utf8')
-    expect(scene).toContain('<SceneEnvironment />')
+    expect(scene).toMatch(/<SceneEnvironment[\s/]/)
     expect(scene).not.toMatch(/<Environment[\s>]/)
     expect(scene).not.toContain('<Lightformer')
   })

@@ -1987,11 +1987,13 @@ export const useConfigurator = create<State>((set, get) => ({
 
   removeCabinet(id) {
     const s = get()
-    if (s.cabinets.length <= 1) return
+    // PRO100-дегідей соңғы корпусты да өшіруге болады: бос бөлме (корпуссыз
+    // v4 ағашы) редакторда толық қолдау табады (tests/workspaceEmptyTree).
+    if (!s.cabinets.some((c) => c.id === id)) return
     const cabinets = s.cabinets.filter((c) => c.id !== id)
     set({
       ...legacyEdit(s, cabinets, s.placements.filter((p) => p.cabinetId !== id)),
-      activeId: s.activeId === id ? cabinets[0]!.id : s.activeId,
+      activeId: s.activeId === id ? cabinets[0]?.id ?? s.root.id : s.activeId,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,

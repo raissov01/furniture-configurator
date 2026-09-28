@@ -194,6 +194,22 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   --p100-icon-blue: #065ba8;
   --p100-icon-red: #d13438;
   --p100-icon-yellow: #ecdb8b;
+  --p100-icon-green: #107c10;
+  --p100-icon-lightblue: #9ec5ec;
+  --p100-icon-gray: #b8b8b8;
+  --p100-menubar: #ffffff;
+  --p100-selection-handle: #3333c1;
+  --p100-window-border: #b9b9b9;
+  --p100-close-hover: #e81123;
+  --p100-button-border: #adadad;
+  --p100-button: #e1e1e1;
+  --p100-button-disabled-border: #cccccc;
+  --p100-button-disabled: #f4f4f4;
+  --p100-input-border: #7a7a7a;
+  --p100-tree-toggle: #919191;
+  --p100-grid-line: #e5e5e5;
+  --p100-list-border: #828790;
+  --p100-gripper: #a0a0a0;
   --p100-tool-hover: #e5f3ff;
   --p100-tool-border: #cce8ff;
   --p100-tool-pressed-border: #99d1ff;
@@ -214,14 +230,13 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   .p100-workspace .p100-side-tools { padding: 3px 1px; gap: 2px; }
 }
 .p100-toolbar { display: none; border-bottom: 1px solid var(--p100-divider); background: var(--p100-chrome); }
-.p100-toolbar-row { display: flex; align-items: center; height: 31px; gap: 1px; padding-left: 3px; }
-.p100-toolbar-row + .p100-toolbar-row { border-top: 1px solid var(--p100-divider); }
+.p100-toolbar-row { display: flex; align-items: center; height: 32px; gap: 1px; padding-left: 3px; }
 .p100-xr-tools { display: inline-flex; align-items: flex-start; gap: 3px; margin-left: 6px; }
 .p100-xr-tools button { display: inline-flex; width: 27px; height: 25px; align-items: center; justify-content: center; padding: 2px; border: 1px solid var(--p100-divider); border-radius: 1px; background: var(--p100-field); }
-.p100-toolbar-cell { display: inline-flex; align-items: center; height: 27px; }
+.p100-toolbar-cell { display: inline-flex; align-items: center; height: 26px; }
 .p100-toolbar-gripper { width: 6px; height: 22px; margin: 0 4px 0 1px; border-left: 2px solid var(--p100-divider); border-right: 1px solid var(--p100-field); }
 .p100-toolbar-separator { display: inline-block; width: 1px; height: 21px; margin: 0 5px; background: var(--p100-divider); }
-.p100-icon-button { display: inline-flex; width: 27px; height: 25px; align-items: center; justify-content: center; flex: none; padding: 2px; border: 1px solid transparent; border-radius: 1px; background: var(--p100-chrome); color: var(--p100-text); }
+.p100-icon-button { display: inline-flex; width: 25px; height: 24px; align-items: center; justify-content: center; flex: none; padding: 2px; border: 1px solid transparent; border-radius: 1px; background: var(--p100-chrome); color: var(--p100-text); }
 @media (max-width: 1023px) {
   [data-workspace-style] :is(button, a, select, input[type="range"], input[type="checkbox"]) { min-width: 44px; min-height: 44px; }
   [data-workspace-style] [role="menu"] { max-width: calc(100vw - 24px); max-height: 60dvh; overflow-y: auto; }
@@ -388,3 +403,181 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 [data-cut-panel-count] .text-neutral-400 { color: #525252; }
 .dark [data-cut-panel-count] .text-neutral-400 { color: #d4d4d4; }
 [data-view-page] .text-neutral-500 { color: #a3a3a3; }
+
+
+/* ═══ PRO100 v7.08 дәлдігі (эталон `base-inserted.png`, 1920×1080 өлшемдері) ═══
+ * Мәзір жолағы — ақ, 18 px; құрал жолақтары — әр қатар 32 px, әр жолақ (band)
+ * өз жиегімен; сол жақ тік жолақ 30 px + 2 px жиек; көрініс қойындылары 26 px
+ * (#DFDFDF), күй жолағы 19 px. Қаріп — Windows «Segoe UI» 12 px. */
+@media (min-width: 1024px) {
+  .p100-workspace > nav[data-testid="classic-menubar"] { min-height: 19px; padding: 0 2px; gap: 0; border-bottom: 0; background: var(--p100-menubar); }
+  .p100-workspace [data-testid="classic-menubar"] [data-menu-trigger] { min-height: 18px; padding: 1px 7px; line-height: 16px; }
+  .p100-workspace [data-testid="classic-menubar"] [data-menu-trigger]:hover,
+  .p100-workspace [data-testid="classic-menubar"] [data-menu-trigger][aria-expanded="true"] { background: var(--p100-tool-selected); }
+  .p100-workspace [data-testid="classic-project-title"] { margin-left: auto; padding: 0 8px; border: 0; font-weight: 400; color: var(--p100-muted); }
+  .p100-workspace .p100-toolbar { padding: 0 0 1px; border-bottom: 1px solid var(--p100-divider); }
+  .p100-workspace .p100-toolbar-row { padding-left: 2px; }
+  .p100-workspace .p100-toolbar-band { display: inline-flex; align-items: center; height: 30px; padding-right: 4px; border: 1px solid transparent; border-right-color: var(--p100-divider); border-bottom-color: var(--p100-divider); }
+  .p100-workspace .p100-toolbar-gripper { width: 3px; height: 20px; margin: 0 5px 0 3px; border: 0; border-left: 3px dotted var(--p100-gripper); }
+  .p100-workspace .p100-toolbar-separator { height: 20px; margin: 0 4px; background: var(--p100-divider); }
+  .p100-workspace .p100-side-tools { width: 30px; padding: 4px 2px; gap: 2px; border-right: 2px solid var(--p100-canvas-border); background: var(--p100-chrome); }
+  .p100-workspace .p100-side-separator { display: block; width: 22px; height: 1px; margin: 3px 0; background: var(--p100-divider); }
+  .p100-workspace > .grid { grid-template-columns: 30px minmax(0,1fr); }
+  .p100-workspace > .grid[data-library-open="true"] { grid-template-columns: 30px minmax(0,1fr) 310px; }
+  .p100-workspace [data-tour="viewtabs"] { min-height: 26px; padding: 0 0 0 6px; border-top: 0; }
+  .p100-workspace button.p100-view-tab { padding: 3px 12px; line-height: 18px; }
+  .p100-workspace .p100-view-tab-divider { padding: 0; }
+  .p100-workspace .p100-camera-tab { margin-left: auto; margin-right: 6px; align-items: center; gap: 5px; padding: 3px 10px; border: 0; background: var(--p100-field); color: var(--p100-text); font-size: 12px; line-height: 18px; }
+  .p100-workspace .p100-status { min-height: 19px; font-size: 12px; border-top: 0; }
+  .p100-workspace .p100-status-hint { color: var(--p100-muted); }
+  .p100-workspace .p100-status-metric { display: inline-flex; align-items: center; gap: 4px; }
+  .p100-workspace details.p100-dock-closed-tab { display: none; }
+  .p100-workspace .p100-library-slot { min-height: 0; border-left: 1px solid var(--p100-divider); background: var(--p100-dialog); }
+}
+.p100-icon-button svg { width: 16px; height: 16px; }
+.p100-tool-error { align-items: center; gap: 8px; padding: 2px 8px; border-top: 1px solid var(--p100-divider); background: var(--p100-tooltip); color: var(--p100-text); font-size: 12px; }
+.p100-tool-error button { margin-left: auto; padding: 0 8px; border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); }
+
+/* 8 тұтқа: таңдалған элементтің экрандағы шекарасы (PRO100 `#3333C1`, 5 px шаршы). */
+.p100-selection-rect { position: absolute; display: none; pointer-events: none; z-index: 5; }
+.p100-selection-rect i { position: absolute; width: 5px; height: 5px; margin: -3px 0 0 -3px; background: var(--p100-selection-handle); outline: 1px solid var(--p100-canvas); }
+.p100-selection-rect i[data-handle="nw"] { left: 0; top: 0; } .p100-selection-rect i[data-handle="n"] { left: 50%; top: 0; }
+.p100-selection-rect i[data-handle="ne"] { left: 100%; top: 0; } .p100-selection-rect i[data-handle="e"] { left: 100%; top: 50%; }
+.p100-selection-rect i[data-handle="se"] { left: 100%; top: 100%; } .p100-selection-rect i[data-handle="s"] { left: 50%; top: 100%; }
+.p100-selection-rect i[data-handle="sw"] { left: 0; top: 100%; } .p100-selection-rect i[data-handle="w"] { left: 0; top: 50%; }
+
+/* Windows диалогы: ақ тақырып, сұр іші, TabControl, fieldset, 23 px өріс, OK/Отмена/Применить оң жақта. */
+.p100-window { display: flex; flex-direction: column; max-height: calc(100dvh - 24px); border: 1px solid var(--p100-window-border); background: var(--p100-dialog); color: var(--p100-text); font: 12px/1.3 'Segoe UI', Tahoma, Arial, sans-serif; }
+.p100-window-title { display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 0 0 8px; background: var(--p100-field); }
+.p100-window-title strong { margin-right: auto; font-weight: 400; }
+.p100-window-title button { display: inline-flex; width: 46px; height: 30px; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--p100-text); }
+.p100-window-title button:hover { background: var(--p100-close-hover); color: var(--p100-field); }
+.p100-window-body { min-height: 0; flex: 1; overflow: auto; padding: 8px 10px 4px; }
+.p100-window-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 10px; }
+.p100-window-button { min-width: 75px; height: 23px; padding: 0 10px; border: 1px solid var(--p100-button-border); border-radius: 2px; background: var(--p100-button); color: var(--p100-text); font-size: 12px; }
+.p100-window-button:hover:not(:disabled) { border-color: var(--p100-focus); background: var(--p100-tool-hover); }
+.p100-window-button:disabled { color: var(--p100-gripper); border-color: var(--p100-button-disabled-border); background: var(--p100-button-disabled); }
+.p100-window-button-primary { border-color: var(--p100-focus); box-shadow: inset 0 0 0 1px var(--p100-focus); }
+.p100-inline-button { margin-top: 10px; }
+.p100-tabs { display: flex; gap: 0; padding-left: 2px; border-bottom: 1px solid var(--p100-fieldset-border); }
+.p100-tab { position: relative; top: 1px; padding: 2px 8px; border: 1px solid transparent; border-bottom: 0; background: transparent; color: var(--p100-text); font-size: 12px; }
+.p100-tab:hover { background: var(--p100-tool-hover); }
+.p100-tab[aria-selected="true"] { border-color: var(--p100-fieldset-border); background: var(--p100-dialog-content); }
+.p100-tab-page { padding: 12px; border: 1px solid var(--p100-fieldset-border); border-top: 0; background: var(--p100-dialog-content); }
+.p100-form-grid { display: grid; gap: 6px; }
+.p100-form-row { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 8px; }
+.p100-form-row > span { text-align: right; }
+.p100-form-row :is(input, select) { height: 23px; max-width: 160px; padding: 0 4px; border: 1px solid var(--p100-input-border); border-radius: 0; background: var(--p100-field); color: var(--p100-text); font-size: 12px; }
+.p100-form-row :is(input, select):focus { outline: 0; border-color: var(--p100-focus); box-shadow: inset 0 -1px 0 var(--p100-focus); }
+.p100-swatch-row { display: flex; gap: 4px; }
+.p100-swatch { width: 20px; height: 20px; border: 1px solid var(--p100-input-border); }
+.p100-swatch[aria-pressed="true"] { outline: 2px solid var(--p100-focus); outline-offset: 1px; }
+.p100-hint { color: var(--p100-muted); font-size: 12px; }
+.p100-check { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+
+/* «Свет» ағашы: Наименование | Значение, құсбелгі және жүгірткі. */
+.p100-light-tree { border: 1px solid var(--p100-fieldset-border); background: var(--p100-field); }
+.p100-light-head { display: grid; grid-template-columns: 45% 55%; padding: 2px 6px; border-bottom: 1px solid var(--p100-fieldset-border); color: var(--p100-muted); }
+.p100-light-group { display: flex; width: 100%; align-items: center; gap: 5px; padding: 2px 6px; border: 0; background: transparent; color: var(--p100-text); text-align: left; }
+.p100-tree-toggle { display: inline-flex; width: 9px; height: 9px; align-items: center; justify-content: center; border: 1px solid var(--p100-tree-toggle); font-size: 9px; line-height: 1; }
+.p100-light-row { display: grid; grid-template-columns: calc(45% - 10px) 55%; align-items: center; gap: 0; min-height: 21px; padding-right: 8px; }
+.p100-light-row label { display: flex; align-items: center; gap: 5px; }
+.p100-light-row input[type="range"] { width: 100%; accent-color: var(--p100-focus); }
+
+/* «Отчёты»: кесте. */
+.p100-report-table { height: 380px; overflow: auto; border: 1px solid var(--p100-list-border); background: var(--p100-field); }
+.p100-report-table table { width: 100%; border-collapse: collapse; }
+.p100-report-table th { position: sticky; top: 0; padding: 3px 6px; border-right: 1px solid var(--p100-grid-line); border-bottom: 1px solid var(--p100-grid-line); background: var(--p100-field); font-weight: 400; text-align: left; }
+.p100-report-table td { padding: 1px 6px; white-space: nowrap; }
+.p100-report-table .num { text-align: right; }
+.p100-report-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+
+/* «Библиотека»: оңға қондырылған биік панель, сары папкалар мен превью торы. */
+.p100-library { display: flex; width: 100%; min-height: 0; flex-direction: column; background: var(--p100-dialog); color: var(--p100-text); font: 12px/1.25 'Segoe UI', Tahoma, Arial, sans-serif; }
+.p100-library-title { display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 0 0 6px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-field); }
+.p100-library-title strong { margin-right: auto; font-weight: 400; }
+.p100-library-title button { display: inline-flex; width: 30px; height: 23px; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--p100-text); }
+.p100-library-title button:hover { background: var(--p100-tool-hover); }
+.p100-library .p100-tabs { margin-top: 4px; }
+.p100-library-path { display: flex; align-items: center; gap: 3px; padding: 4px; }
+.p100-library-path-folder svg { width: 18px; height: 15px; }
+.p100-library-path select { min-width: 0; flex: 1; height: 22px; border: 1px solid var(--p100-input-border); background: var(--p100-field); color: var(--p100-text); font-size: 12px; }
+.p100-library-grid { display: grid; min-height: 0; flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 4px; overflow-y: auto; margin: 0 4px; padding: 6px; border: 1px solid var(--p100-list-border); background: var(--p100-field); }
+.p100-lib-tile { display: flex; min-height: 104px; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; padding: 6px 4px; border: 1px solid transparent; background: transparent; color: var(--p100-text); text-align: center; }
+.p100-lib-tile:hover:not(:disabled) { border-color: var(--p100-tool-hover); background: var(--p100-tool-hover); }
+.p100-lib-tile[aria-selected="true"] { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); }
+.p100-lib-tile:disabled { opacity: 0.45; }
+.p100-lib-label { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 11px; line-height: 13px; }
+.p100-lib-thumb { display: flex; width: 72px; height: 68px; align-items: flex-end; justify-content: center; overflow: hidden; }
+.p100-lib-thumb svg { max-width: 72px; max-height: 68px; }
+.p100-lib-thumb img { max-width: 72px; max-height: 68px; object-fit: contain; }
+.p100-lib-action svg, .p100-lib-set svg { width: 36px; height: 36px; margin-bottom: 14px; }
+.p100-lib-swatch { display: block; width: 64px; height: 64px; border: 1px solid var(--p100-gripper); }
+.p100-folder { margin: 16px 0 8px; }
+.p100-library-status { min-height: 20px; padding: 3px 6px; color: var(--p100-muted); font-size: 11px; }
+
+/* «Начало работы»: сахнаның сол жақ жоғарғы бұрышындағы шағын терезе. */
+.p100-start-guide { position: absolute; top: 12px; left: 12px; z-index: 15; width: 330px; border: 1px solid var(--p100-window-border); background: var(--p100-dialog); color: var(--p100-text); font: 12px/1.35 'Segoe UI', Tahoma, Arial, sans-serif; }
+.p100-start-guide ol { display: grid; gap: 8px; margin: 0; padding: 10px 12px 12px 30px; list-style: decimal; }
+.p100-start-guide li span { display: block; margin-bottom: 4px; }
+
+/* Properties (Configurator ішінде): эталон `dialog-properties-general.png` —
+ * 454 px ені, ақ тақырып, Windows TabControl, бөлімдер fieldset рамкасында. */
+@media (min-width: 1024px) {
+  .p100-workspace .p100-dialog { width: min(454px, calc(100vw - 24px)); border-color: var(--p100-window-border); font: 12px/1.3 'Segoe UI', Tahoma, Arial, sans-serif; }
+  .p100-workspace .p100-dialog-title { height: 30px; padding: 0 0 0 10px; border-bottom: 0; background: var(--p100-field); }
+  .p100-workspace .p100-dialog-title strong { font-weight: 400; }
+  .p100-workspace .p100-dialog-title button { min-width: 46px; min-height: 30px; border: 0; border-radius: 0; background: transparent; font-size: 16px; }
+  .p100-workspace .p100-dialog-title button:hover { background: var(--p100-close-hover); color: var(--p100-field); }
+  .p100-workspace .p100-dialog-lock { min-height: 26px; padding: 4px 12px; }
+  .p100-workspace .p100-dialog-body { margin: 0 8px; padding: 0; border: 0; background: transparent; }
+  .p100-workspace .p100-dialog-body [data-tour="tabs"] { gap: 0; padding: 0 0 0 2px; border-bottom: 1px solid var(--p100-fieldset-border); }
+  .p100-workspace .p100-dialog-body [data-tour="tabs"] > button { position: relative; top: 1px; padding: 2px 8px; border: 1px solid transparent; border-bottom: 0; border-radius: 0; background: transparent; }
+  .p100-workspace .p100-dialog-body [data-tour="tabs"] > button[aria-pressed="true"] { border-color: var(--p100-fieldset-border); background: var(--p100-dialog-content); }
+  .p100-workspace .p100-dialog-body [data-tour="tabs"] ~ fieldset { padding: 12px 14px; border: 1px solid var(--p100-fieldset-border); border-top: 0; background: var(--p100-dialog-content); }
+  .p100-workspace .p100-dialog-body div:has(> button[aria-expanded]) { position: relative; margin-top: 12px; padding: 12px 10px 8px; border: 1px solid var(--p100-fieldset-border); }
+  .p100-workspace .p100-dialog-body div:has(> button[aria-expanded]) > button[aria-expanded] { position: absolute; top: -8px; left: 8px; width: auto; padding: 0 4px; border: 0; background: var(--p100-dialog-content); }
+  .p100-workspace .p100-dialog-body div:has(> button[aria-expanded]) > button[aria-expanded] > span { color: var(--p100-text); font-size: 12px; font-weight: 400; }
+  .p100-workspace .p100-dialog-body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select) { min-height: 23px; border-color: var(--p100-input-border); border-radius: 0; }
+  .p100-workspace .p100-dialog-actions { padding: 10px 8px; border-top: 0; }
+  .p100-workspace .p100-dialog-actions button { min-width: 75px; height: 23px; }
+}
+/* PRO100 мәзірі (порталда): ақ, тығыз 22 px пункттер, тақырыптар кіші әріппен. */
+@media (min-width: 1024px) {
+  .p100-portal-menu { padding: 2px; border-color: var(--p100-window-border); background: var(--p100-field); font: 12px/1.2 'Segoe UI', Tahoma, Arial, sans-serif; }
+  .p100-portal-menu button[role="menuitem"] { min-height: 22px; padding: 2px 24px 2px 26px; font-size: 12px; }
+  .p100-portal-menu .uppercase { padding-left: 26px; text-transform: none; letter-spacing: normal; font-size: 11px; color: var(--p100-muted); }
+}
+/* Жалпы классикалық батырма ережесі (0,4,1) PRO100 терезелерінің өз батырмаларын баспасын. */
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) button.p100-window-button.p100-window-button { min-width: 75px; height: 23px; border: 1px solid var(--p100-button-border); border-radius: 2px; background: var(--p100-button); color: var(--p100-text); }
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) button.p100-window-button.p100-window-button:hover:not(:disabled) { border-color: var(--p100-focus); background: var(--p100-tool-hover); }
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) button.p100-window-button.p100-window-button:disabled { border-color: var(--p100-button-disabled-border); background: var(--p100-button-disabled); color: var(--p100-gripper); }
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) button.p100-window-button-primary.p100-window-button { border-color: var(--p100-focus); box-shadow: inset 0 0 0 1px var(--p100-focus); }
+.p100-workspace :is(.p100-window, .p100-library) .p100-tabs button.p100-tab { position: relative; top: 1px; padding: 2px 8px; border: 1px solid transparent; border-bottom: 0; border-radius: 0; background: transparent; }
+.p100-workspace :is(.p100-window, .p100-library) .p100-tabs button.p100-tab:hover:not(:disabled):not([aria-selected="true"]) { background: var(--p100-tool-hover); }
+.p100-workspace :is(.p100-window, .p100-library) .p100-tabs button.p100-tab[aria-selected="true"] { border-color: var(--p100-fieldset-border); background: var(--p100-dialog-content); }
+.p100-workspace .p100-library .p100-library-grid button.p100-lib-tile { border: 1px solid transparent; border-radius: 0; background: transparent; }
+.p100-workspace .p100-library .p100-library-grid button.p100-lib-tile:hover:not(:disabled) { border-color: var(--p100-tool-hover); background: var(--p100-tool-hover); }
+.p100-workspace .p100-library .p100-library-grid button.p100-lib-tile[aria-selected="true"] { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); }
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) :is(.p100-window-title, .p100-library-title) button:not(.p100-icon-button) { border: 0; border-radius: 0; background: transparent; }
+.p100-workspace :is(.p100-window, .p100-start-guide) .p100-window-title button:not(.p100-icon-button):hover:not(:disabled) { background: var(--p100-close-hover); color: var(--p100-field); }
+.p100-workspace .p100-light-tree button.p100-light-group:not(.p100-icon-button) { border: 0; border-radius: 0; background: transparent; }
+.p100-workspace .p100-swatch-row button.p100-swatch:not(.p100-icon-button) { border: 1px solid var(--p100-input-border); border-radius: 0; }
+.p100-workspace button.p100-camera-tab.p100-camera-tab:not(.p100-icon-button) { border: 0; border-radius: 0; background: var(--p100-field); }
+@media (min-width: 1024px) {
+  .p100-workspace .p100-dialog .p100-dialog-body [data-tour="tabs"] > button { position: relative; top: 1px; padding: 2px 8px; border: 1px solid transparent; border-bottom: 0; border-radius: 0; background: transparent; }
+  .p100-workspace .p100-dialog .p100-dialog-body [data-tour="tabs"] > button[aria-pressed="true"] { border-color: var(--p100-fieldset-border); background: var(--p100-dialog-content); }
+}
+@media (min-width: 1024px) {
+  .p100-workspace .p100-dialog-body [data-p100-group] { position: relative; margin-top: 10px; padding: 14px 10px 8px; border: 1px solid var(--p100-fieldset-border); }
+  .p100-workspace .p100-dialog-body [data-p100-group] > :first-child { position: absolute; top: -8px; left: 8px; margin: 0; padding: 0 4px; background: var(--p100-dialog-content); color: var(--p100-text); font-size: 12px; font-weight: 400; letter-spacing: normal; text-transform: none; }
+}
+.p100-group-box { margin: 0 0 10px; padding: 8px 10px 10px; border: 1px solid var(--p100-fieldset-border); }
+.p100-group-box legend { padding: 0 4px; }
+.p100-part-page .p100-form-row input[readonly] { background: var(--p100-dialog-content); }
+.p100-part-page .p100-form-row { grid-template-columns: 150px minmax(0, 1fr); }
+@media (min-width: 1024px) {
+  /* Windows өрісі: 23 px, 12 px мәтін (эталон `dialog-properties-general.png`). */
+  .p100-workspace .p100-dialog .p100-dialog-body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select) { height: 23px; min-height: 23px; padding: 0 4px; font-size: 12px; }
+  .p100-workspace .p100-dialog .p100-dialog-actions button[data-testid="properties-ok"] { border-color: var(--p100-focus); box-shadow: inset 0 0 0 1px var(--p100-focus); }
+}

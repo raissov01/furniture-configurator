@@ -137,7 +137,10 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
           onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }}
           className="w-full border border-neutral-300 bg-white px-2 py-1 aria-invalid:border-red-500 dark:border-neutral-700 dark:bg-neutral-900" />
       </Field>
-      <MaterialAppearanceEditor initialMaterialId={material.id} />
+      <details className="border-t border-neutral-200 pt-2 text-xs dark:border-neutral-800" data-testid="material-advanced">
+        <summary className="cursor-pointer select-none">{tr('Дополнительно (3D-вид материала)')}</summary>
+        <MaterialAppearanceEditor initialMaterialId={material.id} />
+      </details>
     </fieldset>
     <div className={tab === 'reports' ? 'space-y-2' : 'hidden'}>
       <p>{tr('Готовый')}: {panel ? `${panel.finishedLength} × ${panel.finishedWidth} мм` : '—'}</p>

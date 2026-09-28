@@ -1028,6 +1028,36 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
             onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} />
         </Field>
         {nameError && <p role="alert" className="text-red-700">{tr(nameError)}</p>}
+        {/* PRO100 «Свойства → Общее»: Имя → Размеры → Положение. Габарит аттан кейін бірден. */}
+        <div className="flex flex-col gap-2" data-p100-group="dimensions">
+          <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-tour="size" data-tour-mobile="size">
+            <Field label={tr('Высота (H)')} hint={hint('height')}>
+              <NumberInput
+                value={cabinet.height} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.height')} field="cabinet.height" onDraftValidityChange={onDraftValidityChange}
+                onChange={(height) => edit('height', { height })}
+              />
+            </Field>
+            <Field label={tr('Ширина (W)')} hint={hint('width')}>
+              <NumberInput
+                value={cabinet.width} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.width')} field="cabinet.width" onDraftValidityChange={onDraftValidityChange}
+                onChange={(width) => edit('width', { width })}
+              />
+            </Field>
+            <Field label={tr('Глубина (D)')} hint={hint('depth')}>
+              <NumberInput
+                value={cabinet.depth} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.depth')} field="cabinet.depth" onDraftValidityChange={onDraftValidityChange}
+                onChange={(depth) => edit('depth', { depth })}
+              />
+            </Field>
+          </div>
+          <p className="text-[11px] text-neutral-600 dark:text-neutral-300">
+            {tr('Обязательный диапазон габаритов')}: {dimensionGuide('height').allowed} {tr('мм')}.
+            {(['height', 'width', 'depth'] as const).map((axis) => dimensionGuide(axis).shop
+              ? ` ${tr(axis === 'height' ? 'Высота (H)' : axis === 'width' ? 'Ширина (W)' : 'Глубина (D)')}: ${tr('Ориентир цеха')} ${dimensionGuide(axis).shop}.`
+              : '')}
+          </p>
+        </div>
         <div className="flex items-center justify-between gap-2">
           <SectionTitle>{tr('Шаблон')}</SectionTitle>
           <Button onClick={() => setGalleryOpen(true)}>{tr('Выбрать')}</Button>
@@ -1126,33 +1156,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
 
       {/* ═══ РАЗМЕРЫ: H×W×D, конструкция, скос, угловой, фронт. панель, основание ═══ */}
       <div className={cn('flex-col gap-3', tab === 'general' ? 'flex' : 'hidden')}>
-        <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-tour="size" data-tour-mobile="size">
-          <Field label={tr('Высота (H)')} hint={hint('height')}>
-            <NumberInput
-              value={cabinet.height} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.height')} field="cabinet.height" onDraftValidityChange={onDraftValidityChange}
-              onChange={(height) => edit('height', { height })}
-            />
-          </Field>
-          <Field label={tr('Ширина (W)')} hint={hint('width')}>
-            <NumberInput
-              value={cabinet.width} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.width')} field="cabinet.width" onDraftValidityChange={onDraftValidityChange}
-              onChange={(width) => edit('width', { width })}
-            />
-          </Field>
-          <Field label={tr('Глубина (D)')} hint={hint('depth')}>
-            <NumberInput
-              value={cabinet.depth} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.depth')} field="cabinet.depth" onDraftValidityChange={onDraftValidityChange}
-              onChange={(depth) => edit('depth', { depth })}
-            />
-          </Field>
-        </div>
-        <p className="text-[11px] text-neutral-600 dark:text-neutral-300">
-          {tr('Обязательный диапазон габаритов')}: {dimensionGuide('height').allowed} {tr('мм')}.
-          {(['height', 'width', 'depth'] as const).map((axis) => dimensionGuide(axis).shop
-            ? ` ${tr(axis === 'height' ? 'Высота (H)' : axis === 'width' ? 'Ширина (W)' : 'Глубина (D)')}: ${tr('Ориентир цеха')} ${dimensionGuide(axis).shop}.`
-            : '')}
-        </p>
 
         <Collapsible id="construction" title={tr('Конструкция')} defaultOpen tour="sections">
         <Field label={tr('Метод сборки')} hint={tr('обе панели сразу')}>
@@ -1789,7 +1792,11 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
           />
         </Field>
         </Collapsible>
-        <MaterialAppearanceEditor initialMaterialId={cabinet.carcassMaterialId} />
+        {/* PBR терминдері (кедір-бұдыр, sheen, clearcoat) жиһазшыға жат — «Дополнительно» астында. */}
+        <details className="border-t border-neutral-200 pt-2 text-xs dark:border-neutral-800" data-testid="material-advanced">
+          <summary className="cursor-pointer select-none">{tr('Дополнительно (3D-вид материала)')}</summary>
+          <MaterialAppearanceEditor initialMaterialId={cabinet.carcassMaterialId} />
+        </details>
       </div>
 
       {/*

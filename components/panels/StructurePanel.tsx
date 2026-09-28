@@ -1,5 +1,6 @@
 'use client'
 
+import { useClassicView } from '@/store/classicView'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { DragEvent, KeyboardEvent, MouseEvent } from 'react'
@@ -45,6 +46,10 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
   const [tab, setTab] = useState<'project' | 'selection'>('project')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [selectedNodes, setSelectedNodes] = useState<string[]>([])
+  // Классикалық құрал жолағының туралау/топтау батырмалары осы таңдауды алады.
+  const shareTreeSelection = useClassicView((state) => state.setTreeSelection)
+  useEffect(() => { shareTreeSelection(selectedNodes) }, [selectedNodes, shareTreeSelection])
+  useEffect(() => () => shareTreeSelection([]), [shareTreeSelection])
   const [anchor, setAnchor] = useState<string | null>(null)
   const [focusId, setFocusId] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
