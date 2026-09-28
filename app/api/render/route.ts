@@ -26,6 +26,7 @@
 
 import OpenAI from 'openai'
 import { aiAccess } from '@/lib/server/aiAccess'
+import { readLimitedBody } from '@/lib/server/readLimitedBody'
 import { cloudOff } from '@/lib/server/cloud'
 import { addRenderRecord } from '@/lib/server/renderHistory'
 import type { RenderHistoryRecord } from '@/lib/server/renderHistory'
@@ -38,6 +39,8 @@ import { RENDER_HINT_MAX, RenderRequestSchema, buildRenderPrompt } from '@/src/c
 const MODEL = process.env['OPENAI_IMAGE_MODEL'] ?? 'gpt-image-1'
 /** Кірістің шегі: 3D скриншоты мен бөлме фотосы әдетте 1–3 МБ. */
 const MAX_BYTES = 8 * 1024 * 1024
+/** Ағынды JSON parse-тан бұрын шектейміз: базалық PNG + JSON өрістері. */
+const MAX_RENDER_BODY_BYTES = Math.ceil(MAX_BYTES / 3) * 4 + 4096
 
 function decode(dataUrl: string): { bytes: Buffer; mime: string } {
   const comma = dataUrl.indexOf(',')
@@ -52,7 +55,14 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'ИИ-рендер не настроен: нет ключа OpenAI' }, { status: 503 })
   }
 
-  const raw = (await request.json().catch(() => null)) as unknown
+  const requestBytes = await readLimitedBody(request, MAX_RENDER_BODY_BYTES)
+  if (!requestBytes) return Response.json({ error: 'Снимок слишком большой' }, { status: 413 })
+  let raw: unknown = null
+  try {
+    raw = JSON.parse(new TextDecoder().decode(requestBytes)) as unknown
+  } catch {
+    // Жарамсыз JSON-ды schema тексеруі нақты өріс қатесімен қайтарады.
+  }
   const parsed = RenderRequestSchema.safeParse(raw)
   if (!parsed.success) {
     const issue = parsed.error.issues[0]
