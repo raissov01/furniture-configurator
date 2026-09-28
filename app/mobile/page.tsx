@@ -19,6 +19,7 @@ import type { WallId } from '@/src/core/types'
 import type { RoomTolerance } from '@/src/core/measure'
 import { nextNetworkMessage } from '@/components/mobile/measurementUiLogic'
 import { connectionError, connectionState, mobileErrorMessage } from '@/components/mobile/connectionState'
+import { measurementCaption, visibleNetworkMessage } from '@/lib/f00kDisplay'
 
 const ROLE_CACHE = 'tapsyrys:role' // UI navigation only; projects, measurements and photos are in IndexedDB.
 const roles: Role[] = ['owner', 'designer', 'shop', 'client']
@@ -267,6 +268,7 @@ export default function MobileTodayPage() {
   const networkLabel = connection === 'offline' ? t('Нет сети') : connection === 'unreachable' ? t('Сервер недоступен') :
     sending ? t('Отправляется') : t('В сети')
   const networkColor = connection !== 'online' ? 'border-[#8c8c8c] bg-[#ededed]' : 'border-[#28723b] bg-[#e7f4e9]'
+  const visibleMessage = visibleNetworkMessage(networkLabel, message, t('Сервер недоступен'), t('Нет сети'))
 
   if (active && store) return <MeasurementWizard initial={active} store={store} onBack={() => { setActive(null); void refresh(store) }} onSave={saveSurvey} onKitchen={createKitchen} pending={pending} networkLabel={networkLabel} networkColor={networkColor} />
 
@@ -303,12 +305,12 @@ export default function MobileTodayPage() {
       <h2 className="text-base font-semibold">{t('Следующее действие')}</h2>
       <button className={`${button} !border-[var(--brand-graphite)] !bg-[var(--brand-graphite)] !font-semibold !text-white`} type="button" disabled={!store}
         onClick={() => setActive(emptySurvey(crypto.randomUUID(), Date.now()))}>{t('Новый замер')}</button>
-      <Link className={button} href="/configurator">{t('Новая КП')}</Link>
+      <Link className={button} href="/configurator">{t('Новое КП')}</Link>
       {role === 'owner' && <Link className={button} href="/mobile/installation">{t('Монтаж')}</Link>}
       <h2 className="pt-2 text-base font-semibold">{t('Замеры на этом устройстве')}</h2>
       {surveys.length === 0 && <p className="border border-[#b8b8b8] bg-white p-3 text-sm">{t('Пока нет сохранённых замеров')}</p>}
       {surveys.map((survey) => <button key={survey.id} className={button} type="button" onClick={() => setActive(survey)}>
-        {t('Замер')} · {survey.id.slice(0, 8)}
+        {measurementCaption(t('Замер'), survey.height.capturedAt)}
       </button>)}
     </section>}
     {role === 'shop' && <section className="space-y-3">
@@ -336,6 +338,6 @@ export default function MobileTodayPage() {
       <button className={`${button} mt-2`} type="button" disabled={!online} onClick={() => void retryRejected(record)}>{t('Повторить отправку')}</button>
       <p className="mt-1 text-xs text-[#525252]">{t('Работает через интернет')}</p>
     </section>)}
-    {message && <p role="alert" className="mt-4 border border-[#9b1c1c] bg-white p-3 text-sm text-[#9b1c1c]">{message}</p>}
+    {visibleMessage && <p role="alert" className="mt-4 border border-[#9b1c1c] bg-white p-3 text-sm text-[#9b1c1c]">{visibleMessage}</p>}
   </main>
 }

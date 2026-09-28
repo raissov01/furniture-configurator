@@ -4,6 +4,7 @@ type Translations = { kk: string; en: string; uz: string }
 
 /** Public-site copy lives together so every visible statement has four versions. */
 export const siteTranslations: Record<string, Translations> = {
+  'Меню': { kk: 'Мәзір', en: 'Menu', uz: 'Menyu' },
   'Для мебельных цехов · ЛДСП': { kk: 'Жиһаз цехтарына · ЛДСП', en: 'For furniture workshops · particleboard', uz: 'Mebel sexlari uchun · LDSP' },
   'Корпус, раскрой и цена — из одной модели': { kk: 'Корпус, раскрой және баға — бір модельден', en: 'Cabinet, cut plan and price from one model', uz: 'Korpus, bichish va narx — bitta modeldan' },
   'Задаёте габарит — получаете деталировку с колонками «готовый» и «рез», карту раскроя на печать и коммерческое предложение. На ваших материалах, по вашим ценам и вашим правилам сборки.': { kk: 'Өлшемдерді енгізіңіз — дайын және кесу өлшемдері бар деталировка, басып шығарылатын раскрой картасы және коммерциялық ұсыныс аласыз. Өз материалдарыңыз, бағаларыңыз және құрастыру ережелеріңіз бойынша.', en: 'Enter the dimensions to get a cut list with finished and saw sizes, a printable cut plan and a quote. Based on your materials, prices and assembly rules.', uz: 'O‘lchamlarni kiriting — tayyor va kesish o‘lchamlari bilan detallar ro‘yxati, chop etiladigan bichish rejasi va tijorat taklifini oling. O‘z materiallaringiz, narxlaringiz va yig‘ish qoidalaringiz asosida.' },
@@ -96,7 +97,7 @@ export const siteTranslations: Record<string, Translations> = {
   '05 — вопросы': { kk: '05 — сұрақтар', en: '05 — questions', uz: '05 — savollar' },
   'Что обычно спрашивают': { kk: 'Жиі қойылатын сұрақтар', en: 'Frequently asked questions', uz: 'Ko‘p beriladigan savollar' },
   'Мои цены и материалы будут у вас?': { kk: 'Менің бағаларым мен материалдарым қайда сақталады?', en: 'Where are my materials and prices kept?', uz: 'Materiallarim va narxlarim qayerda saqlanadi?' },
-  'Они в вашем профиле, и цех заполняет их сам. В коде нет ни одной цены и ни одного зазора: пока цены не заданы, коммерческое предложение вообще не выпускается — выдуманная цена уходит клиенту.': { kk: 'Олар сіздің профиліңізде, цех өзі толтырады. Бағалар қойылмайынша коммерциялық ұсыныс шығарылмайды.', en: 'They are in your workshop profile. You enter them yourself; no quote is issued until prices are set.', uz: 'Ular sizning sex profilingizda saqlanadi. Narxlar kiritilmaguncha tijorat taklifi tayyorlanmaydi.' },
+  'Они в вашем профиле, и цех заполняет их сам. В коде нет ни одной цены и ни одного зазора: пока цены не заданы, коммерческое предложение вообще не выпускается — клиент не получает выдуманную цену.': { kk: 'Олар сіздің профиліңізде, цех өзі толтырады. Бағалар қойылмайынша коммерциялық ұсыныс шығарылмайды.', en: 'They are in your workshop profile. You enter them yourself; no quote is issued until prices are set.', uz: 'Ular sizning sex profilingizda saqlanadi. Narxlar kiritilmaguncha tijorat taklifi tayyorlanmaydi.' },
   'Файл можно отдать на станок?': { kk: 'Файлды станокқа беруге бола ма?', en: 'Can I send the file to a machine?', uz: 'Faylni dastgohga yuborsa bo‘ladimi?' },
   'Да. По одному DXF на лист раскроя: контур листа, область после подрезки, детали и деловой отход лежат на отдельных слоях. Плюс DXF на каждую деталь с присадкой по диаметрам.': { kk: 'Иә. Әр раскрой парағына жеке DXF: парақ контуры, кесу аймағы, детальдар мен жарамды қалдықтар бөлек қабаттарда. Әр детальға диаметр бойынша присадкасы бар DXF беріледі.', en: 'Yes. Each sheet gets a DXF with separate layers for its outline, usable area, parts and reusable offcuts. Each part also gets a drilling DXF.', uz: 'Ha. Har bir list uchun kontur, kesish sohasi, detallar va foydalaniladigan qoldiqlar alohida qatlamlardagi DXF tayyorlanadi. Har detal uchun teshiklar DXF fayli ham bor.' },
   'У нас свои зазоры и своя присадка.': { kk: 'Біздің саңылауларымыз бен присадкамыз бөлек.', en: 'We have our own gaps and drilling rules.', uz: 'Bizning oraliq va teshish qoidalarimiz boshqacha.' },
@@ -126,7 +127,6 @@ export const siteTranslations: Record<string, Translations> = {
   // Дизайн өтуі 0928: мобайл мәзір, смета үстемесі, раскрой парағының сандары.
   'мм': { kk: 'мм', en: 'mm', uz: 'mm' },
   'Разделы сайта': { kk: 'Сайт бөлімдері', en: 'Site sections', uz: 'Sayt bo‘limlari' },
-  'Меню': { kk: 'Мәзір', en: 'Menu', uz: 'Menyu' },
   'Закрыть': { kk: 'Жабу', en: 'Close', uz: 'Yopish' },
   'Наценка {percent}%': { kk: 'Үстеме {percent}%', en: 'Markup {percent}%', uz: 'Ustama {percent}%' },
   'Коэффициент': { kk: 'Коэффициент', en: 'Coefficient', uz: 'Koeffitsient' },

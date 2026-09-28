@@ -27,6 +27,8 @@ import { ApprovalPanel } from '@/components/ApprovalPanel'
 import { formatTengeExact } from '@/src/core/index'
 import { viewerHashError, viewerPressedState } from '@/components/viewerPublicError'
 import { SITE } from '@/lib/site'
+import { visibleMaterialNames } from '@/lib/f00kDisplay'
+import { cabinetCountLabel } from '@/lib/viewerCount'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
 // Жүктелгенше «жүктелуде» шеңбері — клиент бет қатып қалды деп ойламасын.
@@ -237,7 +239,7 @@ function Viewer({
           {cabinets.map((cabinet) => (
             <p key={cabinet.id}>
               <span className="font-medium">{cabinet.name}</span>
-              <span className="ml-2 text-neutral-400">{materialName(cabinet.carcassMaterialId)} · {materialName(cabinet.frontMaterialId)}</span>
+              <span className="ml-2 text-neutral-400">{visibleMaterialNames(materialName(cabinet.carcassMaterialId), materialName(cabinet.frontMaterialId)).join(' · ')}</span>
             </p>
           ))}
           <p className="ml-auto font-medium">{project.priceOverrides?.salePrice !== undefined

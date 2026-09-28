@@ -151,7 +151,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
       id: 'edit', label: 'Правка', items: [
         item('edit.undo', 'Отменить', { type: 'undo' }, { disabled: !s.canUndo, hint: 'Ctrl+Z' }),
         item('edit.redo', 'Повторить', { type: 'redo' }, { disabled: !s.canRedo, hint: 'Ctrl+⇧Z' }),
-        item('edit.history', 'История изменений', { type: 'open', panel: 'history' }),
+        item('edit.history', 'История сохранений', { type: 'open', panel: 'history' }),
       ],
     },
     {
@@ -212,6 +212,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         ...(s.price === null ? [] : ['total' in s.price
           ? item('service.price', 'Итого клиенту', { type: 'open', panel: 'quote' }, { detail: s.price.total })
           : item('service.price', 'Цены не заданы', { type: 'open', panel: 'shop' })]),
+        item('service.mobile', 'Телефон · Сегодня', { type: 'navigate', href: '/mobile' }),
         ...(s.cloud ? [item('service.account', 'Аккаунт', { type: 'open', panel: 'account' })] : []),
       ],
     },

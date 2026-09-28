@@ -22,6 +22,7 @@ import { t as tr, tf } from '@/lib/i18n'
 import { CABINET_DIMENSION_MAX, CABINET_DIMENSION_MIN, dimensionRangeHint } from '@/lib/dimensionHint'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
@@ -778,17 +779,9 @@ function FrontFittings({
       {milling?.patternId === 'custom' ? (
         <Field label={tr('Файл SVG')}>
           <div className="flex items-center gap-2">
-            <label className="cursor-pointer border border-neutral-400 bg-white px-2 py-1 text-xs text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">
-              {tr('Выбрать файл')}
-              <input
-                type="file"
-                accept=".svg,image/svg+xml"
-                onChange={(e) => readSvg(e.target.files?.[0])}
-                className="sr-only"
-              />
-            </label>
+            <LocalizedFileChooser accept=".svg,image/svg+xml" onChange={(e) => readSvg(e.target.files?.[0])} />
             <span className="whitespace-nowrap text-[11px] text-neutral-500">
-              {milling.svg ? tr('загружен') : tr('Файл не выбран')}
+              {milling.svg ? tr('загружен') : tr('не выбран')}
             </span>
           </div>
         </Field>
@@ -932,8 +925,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
   const addSection = useConfigurator((s) => s.addSection)
   const [sectionAddError, setSectionAddError] = useState<string | null>(null)
   useEffect(() => setSectionAddError(null), [cabinet])
-  const showDimensions = useConfigurator((s) => s.showDimensions)
-  const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
   // Материалдар тізімі цехтың профилінен келеді, кодтан емес.
   const materials = useConfigurator((s) => s.shop.materials)
@@ -1891,8 +1882,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
         ))}
       </div>
 
-      <SectionTitle>{tr('Вид')}</SectionTitle>
-      <Toggle checked={showDimensions} onChange={setShowDimensions} label={tr('Показывать габариты')} />
       </div>
       </fieldset>
     </div>

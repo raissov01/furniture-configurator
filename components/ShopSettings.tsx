@@ -42,6 +42,9 @@ import { PriceImportPanel } from './PriceImportPanel'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 import { OwnTextureMapper } from './OwnTextureMapper'
 import { validateBin, validateShopLogo } from '@/lib/shopBranding'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
+import { shopEditAccess } from '@/lib/shopAccessUi'
+import type { Role } from '@/lib/permissions'
 
 type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
 
@@ -79,14 +82,15 @@ function ShopBinField({ value, onChange }: { value: string; onChange: (value: st
 
 function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => void }) {
   const [error, setError] = useState<string | null>(null)
+  const [filename, setFilename] = useState<string | null>(null)
   return <Field label={tr('Логотип')}>
-    <input type="file" accept="image/png,image/jpeg" className={`${text} ${error ? 'border-red-600' : ''}`}
-      aria-invalid={Boolean(error)} onChange={(event) => {
+    <LocalizedFileChooser accept="image/png,image/jpeg" selectedName={filename} onChange={(event) => {
         const file = event.target.files?.[0]
         if (!file) return
         const problem = validateShopLogo(file)
         setError(problem)
         if (problem) return
+        setFilename(file.name)
         const reader = new FileReader()
         reader.onload = () => {
           if (typeof reader.result === 'string') onChange(reader.result)
@@ -96,7 +100,7 @@ function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => 
         reader.readAsDataURL(file)
       }} />
     {error ? <span className="text-xs text-red-700" role="alert">{tr(error)}</span> : null}
-    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null) }}>{tr('Удалить логотип')}</button>
+    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null); setFilename(null) }}>{tr('Удалить логотип')}</button>
   </Field>
 }
 
@@ -120,9 +124,24 @@ export function ShopSettings() {
   const shop = useConfigurator((s) => s.shop)
   const editShop = useConfigurator((s) => s.editShop)
   const [tab, setTab] = useState<Tab>('profile')
+  const [role, setRole] = useState<Role | null | 'loading'>('loading')
   const verifiedHinges = availableVerifiedHinges(shop.hingeSystems)
 
   const readiness = useMemo(() => shopReadiness(shop), [shop])
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setRole('loading')
+    void fetch('/api/me').then(async (response) => {
+      if (response.status === 503) { if (!cancelled) setRole(null); return }
+      if (!response.ok) throw new Error('account unavailable')
+      const result = (await response.json()) as { account?: { role?: Role } | null }
+      if (!cancelled) setRole(result.account?.role ?? null)
+    }).catch(() => { if (!cancelled) setRole('client') })
+    return () => { cancelled = true }
+  }, [open])
+  const access = role === 'loading' ? { canRead: false, canEdit: false } : shopEditAccess(role)
 
   useEffect(() => {
     if (!open || !isTop) return
@@ -224,15 +243,16 @@ export function ShopSettings() {
           </div>
         </div>
 
-        {!readiness.pricingReady ? (
+        {tab === 'profile' && !readiness.pricingReady ? (
           <p className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-[11px] text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-            {tr('Пока не заданы цены, коммерческое предложение не выпускается: выдуманная цена уходит клиенту. Достаточно заполнить те материалы, с которыми вы реально работаете.')}
+            {tr('Пока цены не заданы, коммерческое предложение не выпускается: клиент не увидит выдуманную цену.')}
+            {' '}{tr('Достаточно заполнить материалы, с которыми вы работаете.')}
           </p>
         ) : null}
 
-        <div className="mb-3">
-          <MarketPriceNotice shop={shop} editShop={editShop} />
-        </div>
+        {tab === 'profile' ? <div className="mb-3"><MarketPriceNotice shop={shop} editShop={access.canEdit ? editShop : undefined} /></div> : null}
+        {!access.canRead ? <p role="status" className="border border-neutral-300 p-3 text-sm">{tr('Настройки цеха недоступны для этой роли.')}</p> : <fieldset disabled={!access.canEdit} className="min-w-0">
+        {!access.canEdit ? <legend className="mb-2 text-sm text-neutral-700">{tr('Только просмотр: изменения доступны владельцу цеха.')}</legend> : null}
 
         {tab === 'profile' ? (
           <div className="space-y-3">
@@ -523,6 +543,7 @@ export function ShopSettings() {
             </p>
           </div>
         ) : null}
+        </fieldset>}
       </div>
     </div>
   )

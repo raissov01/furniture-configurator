@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '@/lib/i18n'
 import { showIssue } from '@/lib/validationVisibility'
 import { CORNER_IDS, OBSTACLE_KINDS, WALL_IDS, validateMeasurement, type MeasurementSurvey, type ObstacleKind, type RoomTolerance } from '@/src/core/measure'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import type { WallId } from '@/src/core/types'
 import type { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
@@ -245,7 +246,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       </div>
       <label className="mt-2 block text-sm">
         <span className="mb-1 block">{t('Фото обязательно даже при ответе «нет»')}</span>
-        <input aria-label={`${t(obstacleLabels[kind])}: ${t('Фото')}`} className="block w-full min-w-0 text-sm file:mr-2 file:min-h-11 file:border file:border-[#8c8c8c] file:bg-white file:px-3" type="file" accept="image/*" capture="environment"
+        <LocalizedFileChooser ariaLabel={`${t(obstacleLabels[kind])}: ${t('Фото')}`} caption="Выбрать фото" accept="image/*" capture="environment"
           onChange={(event) => void selectPhoto(kind, event.target.files?.[0])} />
       </label>
       {answer.photoRef && <p className="mt-1 text-xs text-[#235b2d]">{t('Фото сохранено на этом устройстве')}</p>}

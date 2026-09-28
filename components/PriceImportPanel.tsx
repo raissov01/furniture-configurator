@@ -11,6 +11,7 @@ import {
 import type { PriceColumnMap, PriceTable } from '@/src/core/priceImport'
 import type { ShopProfile } from '@/src/core/shop'
 import { useConfigurator } from '@/store/configurator'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 
 const columns: Array<{ key: keyof PriceColumnMap; title: string }> = [
   { key: 'kind', title: 'Категория' }, { key: 'code', title: 'Артикул' },
@@ -49,9 +50,7 @@ export function PriceImportPanel({ shop }: { shop: ShopProfile }) {
     <h3 className="font-semibold">{tr('Импорт прайса CSV/XLSX')}</h3>
     <div className="grid gap-2 sm:grid-cols-3">
       <label className="block">{tr('Файл прайса')}
-        <span className="mt-1 flex items-center gap-2"><span className="border border-neutral-400 bg-white px-2 py-1 text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100">{tr('Выбрать файл')}</span><span className="min-w-0 truncate">{file?.name ?? tr('Файл не выбран')}</span></span>
-        <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          className="sr-only"
+        <LocalizedFileChooser accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" selectedName={file?.name ?? null}
           onChange={async (event) => {
             const selected = event.currentTarget.files?.[0]
             setFile(null); setMap({}); setApproved([]); setFeedback('')

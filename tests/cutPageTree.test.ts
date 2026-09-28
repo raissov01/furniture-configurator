@@ -47,7 +47,9 @@ describe('/cut reads canonical tree production', () => {
     const source = readFileSync(new URL('../components/CutPage.tsx', import.meta.url), 'utf8')
     const sheetSvgClass = source.match(/<svg[\s\S]*?className="([^"]+)"/)?.[1]
     expect(sheetSvgClass).toContain('w-full')
-    expect(sheetSvgClass).toContain('min-w-[520px]')
+    // 390px экранда картаның оң шеті көрінуі керек; SVG-ге 520px минимум жарамайды.
+    expect(sheetSvgClass).not.toContain('min-w-[520px]')
+    expect(sheetSvgClass).toContain('max-w-full')
     expect(sheetSvgClass).toContain('h-auto')
     expect(source).toContain('max-w-full overflow-x-auto')
     expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*aria-controls="cut-export-actions"[^>]*>Экспорт<\/button>/)

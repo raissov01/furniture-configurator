@@ -21,6 +21,7 @@ import { TemplateGallery } from '@/components/TemplateGallery'
 import { AiPanel } from '@/components/AiPanel'
 import { RoomPlan } from '@/components/RoomPlan'
 import { ShopSettings } from '@/components/ShopSettings'
+import { classicToolTip } from '@/lib/f00kToolTip'
 import { ProjectMenu } from '@/components/ProjectMenu'
 import { QuoteView } from '@/components/QuoteView'
 import { SketchEditor } from '@/components/SketchEditor'
@@ -128,13 +129,19 @@ const BUDGET_MS = 100
 const CUT_OPEN_KEY = 'furniture-configurator:cutlist-open'
 const WORKSPACE_STYLE_KEY = 'furniture-configurator:workspace-style'
 
-type ClassicToolSpec = { icon: ClassicIconName; label: string; action: () => void; disabled?: boolean; active?: boolean; id?: string; onHover?: (label: string | null) => void }
+type ClassicToolSpec = { icon: ClassicIconName; label: string; action: () => void; disabled?: boolean; disabledReason?: string; active?: boolean; id?: string; onHover?: (label: string | null) => void }
 
-function ClassicTool({ icon, label, action, disabled, active, id, onHover }: ClassicToolSpec) {
-  return <button type="button" className="p100-icon-button" title={label} aria-label={label} aria-pressed={active || undefined}
-    data-testid={id ? `classic-tool-${id}` : undefined} disabled={disabled} onClick={action}
-    onMouseEnter={() => onHover?.(label)} onMouseLeave={() => onHover?.(null)}
-    onFocus={() => onHover?.(label)} onBlur={() => onHover?.(null)}><ClassicIcon name={icon} /></button>
+function ClassicTool({ icon, label, action, disabled, disabledReason, active, id, onHover }: ClassicToolSpec) {
+  const tip = classicToolTip(label, disabled, disabledReason)
+  // disabled button hover оқиғасын жібермейді; сыртқы span подсказканы сақтайды.
+  return <span className="inline-flex" title={tip} tabIndex={disabled ? 0 : undefined}
+    aria-label={disabled ? tip : undefined} onMouseEnter={() => onHover?.(tip)} onMouseLeave={() => onHover?.(null)}
+    onFocus={() => onHover?.(tip)} onBlur={() => onHover?.(null)}>
+    <button type="button" className="p100-icon-button" title={tip} aria-label={tip} aria-pressed={active || undefined}
+      data-testid={id ? `classic-tool-${id}` : undefined} disabled={disabled} onClick={action}>
+      <ClassicIcon name={icon} />
+    </button>
+  </span>
 }
 
 export function Workspace() {
@@ -606,11 +613,11 @@ export function Workspace() {
       { icon: 'new', label: tr('Новый корпус'), action: addCabinet, id: 'new' },
       { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save' },
-      { icon: classicShopTools.quote.icon, label: tr(classicShopTools.quote.label), action: () => setQuoteOpen(true), disabled: Boolean(production.error), id: 'quote' },
+      { icon: classicShopTools.quote.icon, label: tr(classicShopTools.quote.label), action: () => setQuoteOpen(true), disabled: Boolean(production.error), disabledReason: tr('Исправьте ошибки проекта'), id: 'quote' },
       { icon: classicShopTools.nesting.icon, label: tr(classicShopTools.nesting.label), action: () => { window.location.href = '/cut' }, id: 'cut' },
-      { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable },
-      { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, id: 'undo' },
-      { icon: 'redo', label: tr('Повторить'), action: redo, disabled: !canRedo, id: 'redo' },
+      { icon: 'delete', label: tr('Удалить корпус'), action: () => { removeCabinet(activeId); setSelected(null) }, disabled: cabinets.length < 2 || !activeEditable, disabledReason: tr(cabinets.length < 2 ? 'Нужны два корпуса' : 'Выбранный корпус заблокирован') },
+      { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, disabledReason: tr('Нет действий для отмены'), id: 'undo' },
+      { icon: 'redo', label: tr('Повторить'), action: redo, disabled: !canRedo, disabledReason: tr('Нет действий для повтора'), id: 'redo' },
       { icon: 'shop', label: tr('Цех: материалы и цены'), action: () => setShopOpen(true) },
     ],
     [
@@ -628,7 +635,7 @@ export function Workspace() {
       { icon: 'view', label: tr('Перспектива'), action: () => { setCameraPreset('three-quarter'); setProjection('perspective') } },
       { icon: 'walk', label: tr('Прогулка'), action: () => setWalk(!walk), active: walk, id: 'walk' },
       { icon: 'doors', label: openness > 0 ? tr('Закрыть створки') : tr('Распахнуть'), action: () => setOpenness(openness > 0 ? 0 : 1), active: openness > 0, id: 'open-all' },
-      { icon: 'door', label: selected && openPanels[selected] ? tr('Закрыть дверцу') : tr('Открыть дверцу'), action: () => { if (selected) togglePanelOpen(selected) }, disabled: !canToggleSelectedDoor(projectPanels.find((part) => part.id === selected)), id: 'door' },
+      { icon: 'door', label: selected && openPanels[selected] ? tr('Закрыть дверцу') : tr('Открыть дверцу'), action: () => { if (selected) togglePanelOpen(selected) }, disabled: !canToggleSelectedDoor(projectPanels.find((part) => part.id === selected)), disabledReason: tr('Выберите фасад'), id: 'door' },
     ],
     [
       { icon: classicDockTools.structure.icon, label: tr(classicDockTools.structure.label), action: () => openDockTab('structure'), active: structureOpen && dockRequest.tab === 'structure', id: 'structure' },
@@ -636,8 +643,8 @@ export function Workspace() {
       { icon: classicDockTools.library.icon, label: tr(classicDockTools.library.label), action: () => openDockTab('library'), active: structureOpen && dockRequest.tab === 'library', id: 'library' },
       { icon: 'find', label: tr('Найти'), action: () => openDockTab('find'), id: 'find' },
       { icon: 'replace', label: tr('Замена'), action: () => openDockTab('replace'), id: 'replace' },
-      { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable },
-      { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected },
+      { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable, disabledReason: tr('Выберите редактируемый корпус') },
+      { icon: 'mirror', label: tr('Зеркальная копия'), action: mirrorSelected, disabled: !canMirrorSelected, disabledReason: freeMirrorCheck?.reason ?? tr('Выберите редактируемый объект') },
       { icon: 'assembly', label: tr('Сборка'), action: () => setAssemblyStep(assemblyStep === null ? 1 : null), active: assemblyStep !== null },
       { icon: 'board', label: tr('Добавить свободную доску'), action: addBoard },
       { icon: 'decor', label: tr('Добавить декоративный блок'), action: addSolid },
@@ -646,8 +653,8 @@ export function Workspace() {
     ],
     [
       { icon: 'render', label: tr('Рендер'), action: () => setRenderOpen(true) },
-      { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard, id: 'drill' },
-      { icon: 'properties', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !propertiesNodeSupported(activeNode?.kind), id: 'properties' },
+      { icon: 'drill', label: tr('Присадка'), action: () => setDrillOpen(true), disabled: !activeEditable && !editableBoard, disabledReason: tr('Выберите корпус или доску'), id: 'drill' },
+      { icon: 'properties', label: tr('Свойства'), action: () => setPropertiesNodeId(activeId), disabled: !propertiesNodeSupported(activeNode?.kind), disabledReason: tr('Выберите элемент'), id: 'properties' },
       { icon: 'help', label: tr('Горячие клавиши'), action: () => setHelpOpen(true) },
     ],
   ]))
@@ -723,7 +730,6 @@ export function Workspace() {
         </Menu>)}
 
         <span data-testid="classic-project-title" className="ml-3 max-w-64 truncate border-l border-neutral-300 pl-3 font-semibold" title={projectName}>{projectName}</span>
-        <Link href="/mobile" className="ml-auto inline-flex min-h-6 items-center border border-neutral-300 px-2 text-xs dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>
       </nav>
 
       {cloudEnabled && <ApprovalBanner code={shareCode} />}
