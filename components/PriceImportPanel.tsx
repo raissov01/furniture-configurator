@@ -11,6 +11,7 @@ import {
 import type { PriceColumnMap, PriceTable } from '@/src/core/priceImport'
 import type { ShopProfile } from '@/src/core/shop'
 import { useConfigurator } from '@/store/configurator'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 
 const columns: Array<{ key: keyof PriceColumnMap; title: string }> = [
   { key: 'kind', title: 'Категория' }, { key: 'code', title: 'Артикул' },
@@ -49,8 +50,7 @@ export function PriceImportPanel({ shop }: { shop: ShopProfile }) {
     <h3 className="font-semibold">{tr('Импорт прайса CSV/XLSX')}</h3>
     <div className="grid gap-2 sm:grid-cols-3">
       <label className="block">{tr('Файл прайса')}
-        <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          className="block w-full min-w-0 border border-neutral-300 p-1 dark:border-neutral-700"
+        <LocalizedFileChooser accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" selectedName={file?.name ?? null}
           onChange={async (event) => {
             const selected = event.currentTarget.files?.[0]
             setFile(null); setMap({}); setApproved([]); setFeedback('')
@@ -96,7 +96,9 @@ export function PriceImportPanel({ shop }: { shop: ShopProfile }) {
           <th className="p-1">#</th><th className="p-1">{tr('Исходная строка')}</th><th className="p-1">{tr('Результат')}</th><th className="p-1">{tr('Подтверждение')}</th>
         </tr></thead><tbody>{value.rows.slice(0, 100).map((row) => <tr key={row.rowNumber} className="border-b border-neutral-200 dark:border-neutral-800">
           <td className="p-1">{row.rowNumber}</td><td className="p-1">{row.source.join(' · ')}</td>
-          <td className="p-1">{row.reason ?? (row.match ? `${row.match.kind}: ${row.match.targetId} · ${row.match.method} · ${row.priceTiyn} тиын` : row.status)}</td>
+          <td className="p-1">{row.reason ?? (row.match
+            ? `${row.match.kind}: ${row.match.targetId} · ${row.match.method} (${Math.round(row.match.confidence * 100)}%) · ${row.priceTiyn} ${tr('тиын')}`
+            : row.status)}</td>
           <td className="p-1">{row.match?.method === 'similar' && <label><input type="checkbox" checked={approved.includes(row.rowNumber)}
             onChange={(event) => setApproved(event.target.checked ? [...approved, row.rowNumber] : approved.filter((n) => n !== row.rowNumber))} /> {tr('Подтвердить похожий код')}</label>}</td>
         </tr>)}</tbody></table>

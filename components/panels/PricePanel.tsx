@@ -28,32 +28,32 @@ export function PricePanel() {
   const priceOverrides = useConfigurator((s) => s.priceOverrides)
   const setQuoteOpen = useConfigurator((s) => s.setQuoteOpen)
 
-  const { panels, hardware, moduleWidths, catalog, error: generationError } = useProjectProduction()
+  const { panels, hardware, moduleWidths, manualItems, specialParts, catalog, error: generationError } = useProjectProduction()
 
   const [nestingError, nesting]: [string | null, NestingResult | null] = useMemo(() => {
-    if (panels.length === 0) return [null, null]
+    if (panels.length === 0 && manualItems.length === 0 && specialParts.length === 0) return [null, null]
     try {
       return [null, nestPanels(panels, catalog, nestingOptionsOf(shop))]
     } catch (error) {
       return [error instanceof Error ? error.message : String(error), null]
     }
-  }, [panels, catalog, shop])
+  }, [panels, manualItems, specialParts, catalog, shop])
 
   const [priceError, price]: [string | null, PriceBreakdown | null] = useMemo(() => {
     if (!nesting) return [null, null]
     try {
-      return [null, priceProject(panels, nesting, shop, hardware, moduleWidths, priceOverrides)]
+      return [null, priceProject(panels, nesting, shop, hardware, moduleWidths, priceOverrides, manualItems, specialParts)]
     } catch (err) {
       return [err instanceof Error ? err.message : String(err), null]
     }
-  }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides])
+  }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides, manualItems, specialParts])
 
   const error = generationError ?? nestingError ?? priceError
   if (error) {
     return <div data-panel="price" role="alert" className="border border-red-900 bg-red-950 px-2 py-1 text-xs text-red-300">{error}</div>
   }
 
-  if (panels.length === 0) {
+  if (panels.length === 0 && manualItems.length === 0 && specialParts.length === 0) {
     return (
       <div data-panel="price" className="text-[11px] text-neutral-500">
         {tr('Нет деталей для раскроя.')}
@@ -67,6 +67,7 @@ export function PricePanel() {
         materials: tr('Материалы'),
         edges: tr('Кромка'),
         hardware: tr('Фурнитура'),
+        manualItems: tr('Декор и техника'),
         services: tr('Услуги цеха'),
       })
     : []

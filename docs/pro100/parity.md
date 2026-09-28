@@ -1,6 +1,6 @@
 # PRO100 парити-кестесі
 
-> Кодпен қайта тексерілгені: 2026-09-27. Бастапқы дереккөз: PRO100 v7.08x64-тің `PRO100.rus` ресурс DLL-інен
+> Кодпен қайта тексерілгені: 2026-09-28. Бастапқы дереккөз: PRO100 v7.08x64-тің `PRO100.rus` ресурс DLL-інен
 > алынған 592 интерфейс жолы (`pro100_ru.txt`), 60-тан астам Delphi диалог
 > класының аты (`pro100_strings.txt`) және архивтегі 29 953 файл жолы
 > (`pro100_list.txt`, соның ішінде `plugins/`, `Библиотека/`, бөлек
@@ -22,8 +22,8 @@
 
 | Күй | Саны | % |
 |---|---|---|
-| ✅ толық бар | 53 | 76,8% |
-| ⚠ ішінара | 12 | 17,4% |
+| ✅ толық бар | 55 | 79,7% |
+| ⚠ ішінара | 10 | 14,5% |
 | ❌ жоқ | 4 | 5,8% |
 | **Бар + ішінара** | **65** | **94,2%** |
 
@@ -33,7 +33,7 @@
 Structure/Layers докы Workspace-ке жалғанған: топтау, тарату, атын өзгерту,
 жасыру/құлыптау, сүйреп ата-түйінді ауыстыру және undo/redo бар. Еркін тақтаны
 қосу, Properties-те өңдеу, кітапханаға сақтау/қою және «Замена» негізгі редакторда.
-Find, Price, Dimensions, Info және Import панельдері негізгі Workspace докына екі режимде де қосылған. Import қазір тек тікбұрышты DXF бөлме жоспарының W/D өлшемін енгізеді; панель/3D актив импортының өзегі бар, бірақ редактор UI-ына әлі жалғанбаған.
+Find, Price, Dimensions, Info және Import панельдері классикалық Workspace докына қосылған. Import панелі тікбұрышты DXF бөлме жоспарының W/D өлшемін енгізеді; 3DS/OBJ жүктеуі Workspace мәзірі мен батырмасына жалғанған. DXF панель контурының импорты әзірге өзекте ғана.
 §2.5-тегі присадканың төрт жолы біздің өнімде бар, бірақ PRO100 жағындағы
 қолдауы ресурс жолдарынан біржақты анықталмайды.
 
@@ -44,12 +44,12 @@ PRO100.layout тізімінде Scene-нен бөлек 14 панель бар.
 | PRO100 панелі | Қазіргі орны/күйі |
 |---|---|
 | Библиотека, Структура проекта, Замена, Слои | Негізгі Workspace-тағы TreeDock; классикалық режимде Структура қалқымалы терезеде ашылады. |
-| Прайс-лист, Найти, Информация, Размеры | Негізгі Workspace-тағы DockHost; екі режимде де ашылады. |
+| Прайс-лист, Найти, Информация, Размеры | Классикалық Workspace-тағы DockHost арқылы ашылады. |
 | Текст | Жазба қосу құралы және қасиет редакторы бар; жеке док панелі жоқ. |
 | Kray, Свет | RenderPanel ішінде рендер мен жарық баптауы бар; жеке док панелі жоқ. |
 | Mesh | Контур көрінісі бар; PRO100 үлгісіндегі жеке Mesh панелі жоқ. |
 | Скрыть | Structure ағашында түйінді жасыру бар; жеке док панелі жоқ. |
-| Токарный станок | Иілген/токарлық деталь спекке кірмеген. |
+| Токарный станок | Токарлық профиль мен радиусты иілім `solid.fabrication` арқылы жасалады; бөлек деталировка, баға және иілім DXF бар. |
 
 Import — осы 14 атаудың ішінде жоқ қосымша панель. Ол негізгі Workspace DockHost-ында ашылады және қазір төрт түзу қабырғалы DXF бөлме жоспарын енгізеді.
 
@@ -65,17 +65,17 @@ Import — осы 14 атаудың ішінде жоқ қосымша пане�
 | Ерікті тіктөртбұрышты тақта, кез келген жерге (`pro100_ru` №3 «Прямоугольник», `TFLATFORM`, `TCUBESFORM`) | ✅ бар | `src/core/tree.ts` `BoardNode`; `components/BoardProperties.tsx` | Еркін тақта UI-дан қосылып, Properties арқылы өңделеді; `Panel[]` өндіріс есебіне түседі. |
 | Мәтін/жазба қою (`PRO100.layout`: «Текст») | ✅ бар | `src/core/tree.ts` `AnnotationNode`; `src/core/annotations.ts`; `components/Scene.tsx`; `components/RoomPlan.tsx` | v4 жобамен сақталады, 3D мен бөлме жоспарында көрінеді, өндірістік `Panel[]` мен кесу тізіміне кірмейді. |
 | Ерікті полигон/пішін (`TSHAPEEDFORM`) | ❌ жоқ | — | Полигонды өндірістік панель ретінде модельдеу жоқ. |
-| Токарлық/иілген деталь (`TEDITLATHEFORM`) | ❌ жоқ | — | Иілген/токарлық деталь спекке кірмеген. |
-| Ұя салу/топтастыру, «группа» (`pro100_ru` №11; `TSTRUCTUREFORM`) | ✅ бар | `components/panels/StructurePanel.tsx`; `src/core/treeEditing.ts` | Workspace ағашында топтау/тарату, ата-түйінді ауыстыру және бір қадамдық undo бар. |
+| Токарлық/иілген деталь (`TEDITLATHEFORM`) | ✅ бар | `src/core/specialParts.ts` `specialPartRows`; `components/SpecialPartProperties.tsx`; `components/Scene.tsx` | Алты дайын токарлық профиль, параметрлік иілім, бөлек деталировка/баға, иілім развёрткасының DXF-і бар. |
+| Ұя салу/топтастыру, «группа» (`pro100_ru` №11; `TSTRUCTUREFORM`) | ✅ бар | `components/panels/StructurePanel.tsx`; `src/core/treeEditing.ts` `groupNodes` | Workspace ағашында топтау/тарату, ата-түйінді ауыстыру және бір қадамдық undo бар. |
 | Объектіні дәл X/Y/Z + бұрылыспен жылжыту (`TMOVEFORM`/`TROTATEFORM`) | ⚠ ішінара | `components/BoardProperties.tsx`; `src/core/exactMm.ts`; `components/Scene.tsx` | Еркін тақтаның X/Y/Z орны мен H/W/D өлшемі абсолют немесе салыстырмалы +/- мм арқылы енгізіледі; топ пен декордың бөлек Properties орны әлі жоқ. |
 | Масштабтау батырмасы (`TSCALEFRAME`) | ✅ бар | `src/core/treeScale.ts` `scaleTreeNode`; `components/panels/StructurePanel.tsx` | Бір нысан/топ біркелкі не X/Y/Z бойынша бүтін мм-ге масштабталады; параметрлік шкафтың H × W × D конфигі өзгереді. Станок координатасы бар тақтаны қауіпсіздік үшін өлшемдеп масштабтау қабылданбайды. |
 | Айна көшірме (`pro100_ru` №294 «Зеркало») | ✅ бар | `src/core/mirror.ts` `mirrorCabinet`; `store/configurator.ts` `mirrorCabinet` | Корпус конфигі мен фасад бағыты айналады. |
-| Объектілерді туралау (`pro100_ru` №44-47, №161-164, №200-205 «Выровнять по…») | ✅ бар | `src/core/treeArrange.ts`; `components/panels/StructurePanel.tsx` | Көптік таңдауда X/Y/Z бойынша бастау, орта, аяқ және тең тарату батырмалары/хоткейлері бар; бір undo. |
+| Объектілерді туралау (`pro100_ru` №44-47, №161-164, №200-205 «Выровнять по…») | ✅ бар | `src/core/treeArrange.ts` `arrangeTreeSelection`; `components/panels/StructurePanel.tsx` | Көптік таңдауда X/Y/Z бойынша бастау, орта, аяқ және тең тарату батырмалары/хоткейлері бар; бір undo. |
 | Тор/привязкамен сүйреу (`pro100_ru` №557 «Сетка») | ⚠ ішінара | `src/core/snap.ts`; `components/Scene.tsx`; `components/panels/StructurePanel.tsx` | Еркін тақтаның 3D сүйреуі тор/бет/жиек/центрге жабысады, тор мен шек UI-да бапталады; 90°-тан тыс бұрылған түйінге және визуал snap сызығына әлі қолдау жоқ. |
-| Сызықтық массив | ✅ бар | `src/core/array.ts`; `components/panels/StructurePanel.tsx` | Таңдалған түйіннің N көшірмесі X/Y/Z қадамымен жасалады, бір undo. |
-| Қабат (слои) басқару, қосу/өшіру/атын өзгерту/түс (`TLAYERSFORM`/`TLAYERSFRAME`, №360-365) | ✅ бар | `components/panels/TreeDock.tsx`; `src/core/layers.ts` | Workspace-та қабат жасау/тағайындау, аты/түсі, көрсету/құлып және сақтау бар. Түйін/ата-топ күйімен бірге есептеледі. |
-| Қасиетті көшіру/қою (№300-301 «Копировать»/«Вставить») | ✅ бар | `src/core/treeProperties.ts`; `components/panels/StructurePanel.tsx` | Материал, кромка және өлшем топтары бір типтегі бірнеше нысанға бір undo қадамында қойылады. Шкаф кромкасы жеке қасиет емес, жоба баптауы. |
-| Іздеу (`TFINDERFORM`, №308 «Найти») | ✅ бар | `components/panels/FindPanel.tsx`; `components/dock/WorkspaceDock.tsx` | Негізгі Workspace докында панель атауы, материалы не өлшемі бойынша іздейді; нәтижені таңдағанда 3D таңдауы жаңарады. |
+| Сызықтық массив | ✅ бар | `src/core/array.ts` `arrayNodes`; `components/panels/StructurePanel.tsx` | Таңдалған түйіннің N көшірмесі X/Y/Z қадамымен жасалады, бір undo. |
+| Қабат (слои) басқару, қосу/өшіру/атын өзгерту/түс (`TLAYERSFORM`/`TLAYERSFRAME`, №360-365) | ✅ бар | `components/panels/TreeDock.tsx`; `src/core/layers.ts` `createLayer` | Workspace-та қабат жасау/тағайындау, аты/түсі, көрсету/құлып және сақтау бар. Түйін/ата-топ күйімен бірге есептеледі. |
+| Қасиетті көшіру/қою (№300-301 «Копировать»/«Вставить») | ✅ бар | `src/core/treeProperties.ts` `pasteNodeProperties`; `components/panels/StructurePanel.tsx` | Материал, кромка және өлшем топтары бір типтегі бірнеше нысанға бір undo қадамында қойылады. Шкаф кромкасы жеке қасиет емес, жоба баптауы. |
+| Іздеу (`TFINDERFORM`, №308 «Найти») | ✅ бар | `components/panels/FindPanel.tsx` `FindPanel`; `components/dock/WorkspaceDock.tsx` | Негізгі Workspace докында панель атауы, материалы не өлшемі бойынша іздейді; нәтижені таңдағанда 3D таңдауы жаңарады. |
 
 ### 2.2 Материал мен текстура
 
@@ -137,11 +137,11 @@ Import — осы 14 атаудың ішінде жоқ қосымша пане�
 | DXF импорты, панель контурын сырттан алу (`TDXFFORM`) | ⚠ ішінара | `src/core/import/dxfBoard.ts` `importDxfBoard`; `components/dock/WorkspaceDock.tsx` | Тікбұрышты панель контуры өзекте оқылады, бірақ Workspace Import панелі қазір тек тікбұрышты бөлме жоспарын енгізеді. |
 | DXF экспорты, әр панельге | ✅ бар | `src/core/export/dxf.ts` `cabinetToDxfFiles` | Әр панельге DXF шығарады. |
 | 3D модель экспорты OBJ (№55-57 «Экспорт в obj») | ⚠ ішінара | `lib/ar.ts` `sceneToGlb`; `components/ExportMenu.tsx` `ExportMenu` | GLB ішкі AR экспорты бар; пайдаланушыға OBJ жүктеу жоқ. |
-| 3D модель импорты, `.3ds`/`.obj` (`import3D.plg`, №114) | ⚠ ішінара | `src/core/import/solid.ts` `importObjSolid`, `importGlbSolid` | OBJ/GLB декор денесінің парсері бар; Workspace импортына жалғанбаған, `.3ds` парсері жоқ. |
+| 3D модель импорты, `.3ds`/`.obj` (`import3D.plg`, №114) | ✅ бар | `lib/meshImport.ts` `importedMesh`; `components/Workspace.tsx`; `components/Scene.tsx` | TDSLoader/OBJLoader mesh-ті көрініске қояды; бірлік таңдауы, көлем шегі және жүктелген 3DS текстуралары бар. Декор өндіріс экспортына кірмейді. |
 | XLSX деталировка | ✅ бар | `src/core/export/xlsx.ts` `cutListToXlsx` | Деталировка XLSX шығарылады. |
 | CSV, сыртқы оптимизаторға | ✅ бар | `src/core/export/csv.ts` `cutListToCsv` | Үшінші тарап оптимизаторына CSV бар. |
 | PDF сборка сызбасы + деталировка | ✅ бар | `src/core/export/pdf.ts` `assemblyDrawingPdf` | Жинау сызбасы мен деталировка PDF бар. |
-| Базиске экспорт/импорт көпірі (`import.bxf2.plg`) | ⚠ ішінара | `src/core/export/basis.ts` `basisFiles`, `basisPartsCsv` | Базиске CSV/DXF экспорт бар; осы жобада BXF2 import не екі бағытты көпір жоқ. |
+| BXF арқылы PRO100/БАЗИС алмасуы (`import.bxf2.plg`) | ❌ жоқ | [BXF шешімі](../export/bxf.md) | Blum BXF схемасын ашық жарияламайды; БАЗИС-тің құжатталған импортында `.bxf2` қолдау таппайды. БАЗИС скрипті мен CSV/DXF экспорты — бөлек бағыт. |
 
 ### 2.7 3D пен рендер
 
@@ -149,7 +149,7 @@ Import — осы 14 атаудың ішінде жоқ қосымша пане�
 |---|---|---|---|
 | Негізгі 3D көрініс, зум/бұру | ✅ бар | `components/Scene.tsx` `Scene`, `OrbitControls` | Негізгі 3D сахна жұмыс істейді. |
 | Камера preset-тері (№244-250: Перспектива/Аксонометрия/Вид сверху/спереди/справа/сзади/слева — 7 бағыт, соның ішінде ШЫН ортографиялық) | ✅ бар | `components/Workspace.tsx` `VIEW_TABS`; `components/Scene.tsx` `OrthographicCamera` | Перспектива, аксонометрия, жоспар және төрт қабырға көрінісі бар. |
-| Жарық көзін қолмен қою/баптау (`TLIGHTSFORM`, `TSPOTLIGHTFRAME`, `TSUNLIGHTFRAME`, №149-156) | ✅ бар | `src/core/visual.ts`; `components/VisualSettingsPanel.tsx`; `components/Scene.tsx` | Point/spot/sun жобаға сақталады; RenderPanel-де қарқын, түс, орын/бағыт өзгертіледі. |
+| Жарық көзін қолмен қою/баптау (`TLIGHTSFORM`, `TSPOTLIGHTFRAME`, `TSUNLIGHTFRAME`, №149-156) | ✅ бар | `src/core/visual.ts` `SceneLightSchema`; `components/VisualSettingsPanel.tsx`; `components/Scene.tsx` | Point/spot/sun жобаға сақталады; RenderPanel-де қарқын, түс, орын/бағыт өзгертіледі. |
 | Фотореалистік рендер (Kray raytracer + `OpenImageDenoise`, `pro100_list.txt: plugins/export.kray/kray/*`) | ⚠ ішінара | `components/RenderPanel.tsx` `RenderPanel` | ИИ-сурет рендері бар; физикалық Kray ray tracing баламасы емес. |
 | Панорама/360° рендер (№51 «Панорама...») | ⚠ браузер тексерісі күтілуде | `lib/panorama.ts`; `components/RenderPanel.tsx` | Алты бөлек 90° WebGL көріністен 2:1 equirectangular PNG жасалады; Chrome e2e оркестрде. |
 | Көрсету режимдері: набросок/контур/жартылай мөлдір/фотореализм/сглаживание (№401-407) | ⚠ ішінара | `store/configurator.ts` `viewMode`; `components/Workspace.tsx` `setViewMode` | Тұтас, жартылай мөлдір, контур бар; sketch/фотореал режимі толық жоқ. |
@@ -163,9 +163,9 @@ Import — осы 14 атаудың ішінде жоқ қосымша пане�
 | PRO100 функциясы | Бізде | Файл/компонент | Ескерту |
 |---|---|---|---|
 | Дайын шкаф/модуль шаблондары | ✅ бар | `src/core/templates.ts` `SEED_TEMPLATES`, `templateToCabinet` | Нақты runtime тізімінде 35 параметрлік үлгі. |
-| Материал кітапханасы қалталы құрылымда (`pro100_list.txt: PRO100v7.08x64/Библиотека/{Мебель,Материалы}`) | ✅ бар | `components/panels/LibraryPanel.tsx`, `components/panels/PersonalLibraryPanel.tsx` | Демо каталог және жеке санат/іздеу/preview бірге; жеке элемент JSON импорт/экспорты бар. |
+| Материал кітапханасы қалталы құрылымда (`pro100_list.txt: PRO100v7.08x64/Библиотека/{Мебель,Материалы}`) | ✅ бар | `components/panels/LibraryPanel.tsx` `LibraryPanel`, `components/panels/PersonalLibraryPanel.tsx` | Демо каталог және жеке санат/іздеу/preview бірге; жеке элемент JSON импорт/экспорты бар. |
 | Сборка/топты кітапханаға сақтау (`.meb`, №15 «элемент библиотеки PRO100») | ✅ балама | `src/core/library.ts` `createLibraryItem`, `insertLibraryItem` | PRO100 `.meb` емес: тексерілетін v1 JSON ағаш бұтағы; қоюда ID жаңарып, Panel[] қайта есептеледі. |
-| Шебердің өз (аккаунт) кітапханасы | ✅ бар | `app/api/library/route.ts`, `lib/server/library.ts`, `lib/libraryLocal.ts` | Жергілікті көшірме мен аккаунтқа байланған SQLite жазбалары. Vercel cloudOff режимінде API 503. |
+| Шебердің өз (аккаунт) кітапханасы | ✅ бар | `app/api/library/route.ts`, `lib/server/library.ts` `listLibraryItems`, `lib/libraryLocal.ts` | Жергілікті көшірме мен аккаунтқа байланған SQLite жазбалары. Vercel cloudOff режимінде API 503. |
 | Бірнеше прайс-парақ арасында ауысу (`TPRICESFORM`/`TSELECTPRICESFORM`, №49 «Отчёты PRO100») | ✅ бар | `src/core/priceLists.ts` `switchPriceList`, `createPriceList`; `components/ShopSettings.tsx` `PriceListManager` | ShopProfile v7 бірнеше атаулы прайсты сақтап, ауыстырады. |
 | Дайын жиынтықтар (наборы: бұрыш, ас үй қатары) | ✅ бар | `src/core/sets.ts` `SEED_SETS`, `setToProject` | Жиынтықтар бар. |
 | PRO100 номенклатурасын импорттау құралы | ✅ бар | `scripts/importPro100.mjs` `main`; `src/core/data/pro100Catalog.ts` `PRO100_LIBRARY` | Локал CLI архивтен атау/қалтаны импорттайды; дайын каталог демо панельде көрінеді. |
@@ -178,7 +178,7 @@ Import — осы 14 атаудың ішінде жоқ қосымша пане�
 | Жоба метаданные: клиент/дизайнер/тапсырыс №/күні/ескерту (`TPROJECTINFOFORM`, №143-148 «Заказ, Дата, Клиент, Дизайнер, Примечание», №498-503) | ✅ бар | `src/core/types.ts` `ProjectInfo`; `src/core/schema.ts` `ProjectInfoSchema`; `components/ProjectPanel.tsx` `INFO_FIELDS` | Заказ/Дата/Клиент/Дизайнер/Примечание сақталып, PDF/КП-ға шығады. |
 | Клиентке серверсіз URL-сілтеме арқылы бөлісу | ✅ бар | `src/core/share.ts` `shareLink`, `encodeProject` | Серверсіз URL токені бар. |
 | Клиентке 6-таңбалы код арқылы ашу, прогулкамен | ✅ бар | `components/ShareCodeDialog.tsx` `ShareCodeDialog`; `components/CodeEntryPage.tsx` `CodeEntryPage` | Алты таңбалы кодпен қарау бар. |
-| Клиент комментарийі, үлгіге тіркелген пікір (PHASE-2 C3) | ✅ кодпен | `lib/server/comments.ts`; `components/ClientComments.tsx`; `components/CommentsInbox.tsx` | `/view?c=`-те жалпы не нысан пікірін қалдырады; дизайнер жауап береді. Серверсіз ескі `#` сілтемеде пікір сақталмайды. |
+| Клиент комментарийі, үлгіге тіркелген пікір (PHASE-2 C3) | ✅ кодпен | `lib/server/comments.ts` `addClientComment`; `components/ClientComments.tsx`; `components/CommentsInbox.tsx` | `/view?c=`-те жалпы не нысан пікірін қалдырады; дизайнер жауап береді. Серверсіз ескі `#` сілтемеде пікір сақталмайды. |
 | Рөлдер: owner/designer/shop/client (PHASE-2 B3) | ⚠ ішінара | `lib/permissions.ts`; `lib/server/auth.ts`; `components/AccountPanel.tsx` | Серверлік матрица, сақталатын owner/designer/shop рөлі және client share рұқсаты бар. Жазылым/төлем бөлек; shop редактор UI-ының толық read-only қабаты әлі керек. |
 
 ### 2.10 Баптау
@@ -209,7 +209,7 @@ Import — осы 14 атаудың ішінде жоқ қосымша пане�
 `PRO100v7.08x64/plugins/import.bxf2.plg` атауы PRO100 бумасында BXF2
 импорт плагині барын ғана көрсетеді: оның бағытын, қолдайтын мәліметін
 және біздің CSV/DXF-пен үйлесімін осы тізімнен білу мүмкін емес. Сондықтан
-§2.6-дағы «көпір» тек өз жағымыздағы экспорт ретінде **⚠** белгіленді.
+§2.6-дағы BXF алмасуы **❌** деп белгіленді; БАЗИСке арналған скрипт пен CSV/DXF — одан бөлек мүмкіндік. [Іске асыру шешімі](../export/bxf.md).
 
 ## 4. Қалған басым олқылықтар
 
@@ -221,8 +221,9 @@ Import — осы 14 атаудың ішінде жоқ қосымша пане�
 2. **Материал жарығы мен бедерінің кей қасиеті жоқ** (§2.2):
    PBR редакторы roughness, metalness, reflection, normal map, opacity береді;
    жарқыл мен AO басқаруы әлі жоқ.
-3. **DXF панель контуры мен OBJ/GLB импорты Workspace-ке жалғанбаған** (§2.6):
-   өзек парсерлері бар; Import панелі қазір тікбұрышты бөлме жоспарын енгізеді. `.3ds` парсері жоқ.
+3. **DXF панель контуры Workspace Import панеліне жалғанбаған** (§2.6):
+   өзек парсері бар, ал Import панелі қазір тікбұрышты бөлме жоспарын енгізеді.
+   3DS/OBJ жүктеуі Workspace-тегі «Импорт → 3DS/OBJ» әрекетінде бар.
 4. **Шпон өрнегін көрші детальдар арасында сәйкестендіру жоқ** (§2.2, §2.4):
    раскрой дән бағытын сақтайды, бірақ сурет жалғастығын есептемейді.
 5. **Рөлдер мен жоба тарихы ішінара** (§2.9): серверлік рұқсат матрицасы

@@ -10,46 +10,55 @@
  */
 @custom-variant dark {
   @media (prefers-color-scheme: dark) {
-    &:where(:not([data-theme="light"], [data-theme="light"] *)) { @slot; }
+    &:where(:not([data-theme="light"], [data-theme="light"] *, .p100-workspace, .p100-workspace *, .p100-cut-page, .p100-cut-page *)) { @slot; }
   }
-  &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
+  &:where([data-theme="dark"], [data-theme="dark"] *):where(:not(.p100-workspace, .p100-workspace *, .p100-cut-page, .p100-cut-page *)) { @slot; }
 }
 
-/**
- * Түс палитрасы цехтың өз материалынан алынған:
- * фон — ЛДСП «Белый платиновый» реңкі, акцент — «Дуб Бардолино» мен кромка,
- * ал көк — сызбадағы өлшем сызығының түсі. Ойдан алынған бренд түсі жоқ.
- */
+/* AisMebel C1 бренд палитрасы; PRO100 токендері төменде бөлек қалады. */
 :root {
-  --ink: #17191e;
-  --ink-soft: #4b4f58;
-  --panel: #dad5cb;
-  --paper: #f7f5f0;
-  --oak: #c9a227;
-  --oak-deep: #7c5f14;
-  --blueprint: #2e4fa8;
-  --rule: #a9a296;
+  --brand-graphite: #1f2a37;
+  --brand-amber: #f2a33a;
+  --neutral-100: #f5f7f9;
+  --neutral-200: #e7eaee;
+  --neutral-400: #aab3bd;
+  --ink: var(--brand-graphite);
+  --ink-soft: #4b5563;
+  --panel: var(--neutral-200);
+  --paper: #ffffff;
+  --oak: var(--brand-amber);
+  --oak-deep: #87520b;
+  --blueprint: var(--brand-graphite);
+  --neutral-offcut: #788695;
+  --rule: var(--neutral-400);
+  --cta-bg: var(--brand-graphite);
+  --cta-ink: #ffffff;
 }
 
-/* Лендинг те сақталған/жүйелік қараңғы таңдауды қолданады. */
 :root[data-theme="dark"] {
-  --ink: #f3f0e9;
-  --ink-soft: #c5c0b6;
-  --panel: #17191e;
-  --paper: #24272d;
-  --oak-deep: #dec16a;
-  --blueprint: #a4b9f2;
-  --rule: #656b74;
+  --ink: #f5f7f9;
+  --ink-soft: #c8d0d8;
+  --panel: #141b24;
+  --paper: #273342;
+  --oak-deep: #f5bd6b;
+  --blueprint: var(--brand-amber);
+  --neutral-offcut: #a5b4c4;
+  --rule: #697586;
+  --cta-bg: var(--brand-amber);
+  --cta-ink: var(--brand-graphite);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink: #f3f0e9;
-    --ink-soft: #c5c0b6;
-    --panel: #17191e;
-    --paper: #24272d;
-    --oak-deep: #dec16a;
-    --blueprint: #a4b9f2;
-    --rule: #656b74;
+    --ink: #f5f7f9;
+    --ink-soft: #c8d0d8;
+    --panel: #141b24;
+    --paper: #273342;
+    --oak-deep: #f5bd6b;
+    --blueprint: var(--brand-amber);
+    --neutral-offcut: #a5b4c4;
+    --rule: #697586;
+    --cta-bg: var(--brand-amber);
+    --cta-ink: var(--brand-graphite);
   }
 }
 
@@ -94,15 +103,59 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .dimline > .dimline-track::before { left: 0; }
 .dimline > .dimline-track::after { right: 0; }
 
+/* Амбер детальдың үстіндегі жазу — екі темада да бірдей (фон амбер). */
+:root {
+  --ink-on-amber: #3f3108;
+  --ink-on-amber-soft: #5c4712;
+}
+
+/*
+ * Лендинг қозғалысы. Әдепкі күй — соңғы күй: бұл ережелер тек JS
+ * `data-reveal` / `.cut-tick` қойғанда және адам қозғалысты өшірмегенде істейді.
+ * Жұмсақ шығу қисығы (expo-out), тек opacity + transform.
+ */
 @media (prefers-reduced-motion: no-preference) {
-  .rise {
-    animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  [data-reveal="pending"] > * { opacity: 0; }
+  [data-reveal="in"] > * {
+    animation: site-reveal 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(10px); }
+  @keyframes site-reveal {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* «Готовый → рез»: кромка шегерілген сан орнына жоғарыдан түседі. */
+  .cut-tick { animation: cut-tick 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @keyframes cut-tick {
+    from { opacity: 0; transform: translateY(-0.45em); }
     to { opacity: 1; transform: none; }
   }
 }
+
+/*
+ * Сайт батырмалары мен сілтемелері: тұтас түс + 1px жиек, көлеңкесіз.
+ * Басқанда 1px төмен түседі — физикалық батырма сияқты (қозғалыссыз режимде де
+ * түс ауысуы қалады, ол әрекетті растайды).
+ */
+:root { --cta-bg-hover: #2c3b4d; --ghost-hover: var(--paper); }
+:root[data-theme="dark"] { --cta-bg-hover: #f5b45c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --cta-bg-hover: #f5b45c; } }
+.site-cta { background: var(--cta-bg); color: var(--cta-ink); border-color: var(--cta-bg); }
+.site-ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
+.site-cta, .site-ghost { transition: background-color 140ms ease-out, border-color 140ms ease-out, transform 90ms ease-out; }
+.site-cta:hover { background: var(--cta-bg-hover); border-color: var(--cta-bg-hover); }
+.site-ghost:hover { background: var(--ghost-hover); }
+.site-ghost[aria-expanded="true"] { background: var(--paper); }
+@media (prefers-reduced-motion: no-preference) {
+  .site-cta:active, .site-ghost:active { transform: translateY(1px); }
+}
+.site-link { color: var(--ink-soft); text-underline-offset: 0.3em; text-decoration-thickness: 1px; transition: color 140ms ease-out; }
+.site-link:hover { color: var(--ink); text-decoration-line: underline; }
+.site ::selection { background: var(--brand-amber); color: var(--brand-graphite); }
+
+/* Кромка шегерілген өлшем: статикалық күйде де ажыратылады. */
+.cut-changed { color: var(--oak-deep); }
+.cut-pending { color: var(--ink-soft); opacity: 0.55; }
 
 :where(a, button):focus-visible {
   outline: 2px solid var(--blueprint);
@@ -110,6 +163,15 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 }
 
 /* Өлшенген PRO100 v7.08 палитрасы; тек классикалық десктоп қабығында. */
+.p100-workspace, .p100-cut-page {
+  color-scheme: light;
+  --ink: var(--brand-graphite);
+  --ink-soft: #4b5563;
+  --paper: #ffffff;
+  --panel: #e7eaee;
+  --rule: #aab3bd;
+  --blueprint: var(--brand-graphite);
+}
 :root {
   --p100-chrome: #f0f0f0;
   --p100-canvas: #ffffff;
@@ -125,13 +187,35 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   --p100-focus: #0078d4;
   --p100-text: #000000;
   --p100-muted: #525252;
+  --p100-cut-accent: #065ba8;
+  --p100-tooltip: #ffffe1;
+  --p100-tooltip-border: #000000;
+  --p100-tooltip-text: #000000;
   --p100-icon-blue: #065ba8;
   --p100-icon-red: #d13438;
   --p100-icon-yellow: #ecdb8b;
+  --p100-icon-green: #107c10;
+  --p100-icon-lightblue: #9ec5ec;
+  --p100-icon-gray: #b8b8b8;
+  --p100-menubar: #ffffff;
+  --p100-selection-handle: #3333c1;
+  --p100-window-border: #b9b9b9;
+  --p100-close-hover: #e81123;
+  --p100-button-border: #adadad;
+  --p100-button: #e1e1e1;
+  --p100-button-disabled-border: #cccccc;
+  --p100-button-disabled: #f4f4f4;
+  --p100-input-border: #7a7a7a;
+  --p100-tree-toggle: #919191;
+  --p100-grid-line: #e5e5e5;
+  --p100-list-border: #828790;
+  --p100-gripper: #a0a0a0;
   --p100-tool-hover: #e5f3ff;
   --p100-tool-border: #cce8ff;
   --p100-tool-pressed-border: #99d1ff;
   --p100-invalid: #c42b1c;
+  --p100-warning: #805000;
+  --p100-success: #216e39;
 }
 @media (min-width: 1024px) {
   .p100-workspace { background: var(--p100-chrome); color: var(--p100-text); font: 12px/1.2 'Segoe UI', Tahoma, Arial, sans-serif; }
@@ -140,19 +224,23 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   .p100-workspace [data-tour="viewtabs"] { background: var(--p100-tab-strip); }
   .p100-workspace aside { background: var(--p100-chrome); border-color: var(--p100-divider); }
   .p100-workspace > .grid { grid-template-columns: 28px minmax(0,1fr); position: relative; }
-  .p100-workspace > .grid > aside { position: absolute; z-index: 12; right: 0; bottom: 0; width: 150px; border: 1px solid var(--p100-divider); }
-  .p100-workspace .legacy-tools { display: none; }
+  .p100-workspace > .grid > aside { display: none; }
+  .p100-workspace .compact-tools { display: none; }
   .p100-workspace .p100-toolbar { display: block; }
   .p100-workspace .p100-side-tools { padding: 3px 1px; gap: 2px; }
 }
-.p100-toolbar { display: none; height: 196px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-chrome); }
-.p100-toolbar-row { display: flex; align-items: center; height: 31px; gap: 1px; padding-left: 3px; }
-.p100-toolbar-row + .p100-toolbar-row { border-top: 1px solid var(--p100-divider); }
-.p100-toolbar-row:last-child { height: 70px; align-items: flex-start; padding-top: 3px; }
-.p100-icon-button { display: inline-flex; width: 27px; height: 25px; align-items: center; justify-content: center; flex: none; padding: 2px; border: 1px solid transparent; border-radius: 1px; background: var(--p100-chrome); color: var(--p100-text); }
+.p100-toolbar { display: none; border-bottom: 1px solid var(--p100-divider); background: var(--p100-chrome); }
+.p100-toolbar-row { display: flex; align-items: center; height: 32px; gap: 1px; padding-left: 3px; }
+.p100-xr-tools { display: inline-flex; align-items: flex-start; gap: 3px; margin-left: 6px; }
+.p100-xr-tools button { display: inline-flex; width: 27px; height: 25px; align-items: center; justify-content: center; padding: 2px; border: 1px solid var(--p100-divider); border-radius: 1px; background: var(--p100-field); }
+.p100-toolbar-cell { display: inline-flex; align-items: center; height: 26px; }
+.p100-toolbar-gripper { width: 6px; height: 22px; margin: 0 4px 0 1px; border-left: 2px solid var(--p100-divider); border-right: 1px solid var(--p100-field); }
+.p100-toolbar-separator { display: inline-block; width: 1px; height: 21px; margin: 0 5px; background: var(--p100-divider); }
+.p100-icon-button { display: inline-flex; width: 25px; height: 24px; align-items: center; justify-content: center; flex: none; padding: 2px; border: 1px solid transparent; border-radius: 1px; background: var(--p100-chrome); color: var(--p100-text); }
 @media (max-width: 1023px) {
   [data-workspace-style] :is(button, a, select, input[type="range"], input[type="checkbox"]) { min-width: 44px; min-height: 44px; }
   [data-workspace-style] [role="menu"] { max-width: calc(100vw - 24px); max-height: 60dvh; overflow-y: auto; }
+  .ui-menu-portal [role="menuitem"] { min-height: 44px; font-size: 14px; }
 }
 .p100-icon-button:hover:not(:disabled) { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
 .p100-icon-button[aria-pressed="true"] { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); }
@@ -161,27 +249,32 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-icon-button:disabled { color: var(--p100-divider); }
 /* Белгішелердің түсті stroke/fill-і `color`-ды елемейді: disabled күйін сүзгі береді (P0-4). */
 .p100-icon-button:disabled svg { filter: grayscale(1); opacity: 0.45; }
-.p100-toolbar-style { display: flex; align-items: center; gap: 5px; padding-left: 16px; font-size: 11px; }
+.p100-toolbar-style { align-items: center; gap: 5px; font-size: 11px; }
 .p100-toolbar-style select { height: 21px; border: 1px solid var(--p100-fieldset-border); border-radius: 1px; background: var(--p100-field); color: var(--p100-text); }
-.p100-floating-window { position: absolute; z-index: 20; width: 435px; height: 190px; border: 1px solid var(--p100-fieldset-border); border-radius: 2px; background: var(--p100-dialog); color: var(--p100-text); }
+.p100-floating-window { display: none; position: absolute; z-index: 20; width: 500px; height: 420px; min-width: 360px; min-height: 260px; max-width: calc(100vw - 60px); max-height: calc(100dvh - 90px); resize: both; overflow: hidden; border: 1px solid var(--p100-fieldset-border); border-radius: 2px; background: var(--p100-dialog); color: var(--p100-text); }
+@media (min-width: 1024px) { .p100-floating-window { display: block; } }
 .p100-floating-title { display: flex; height: 26px; align-items: center; gap: 6px; padding: 0 6px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-dialog); cursor: move; user-select: none; }
 .p100-floating-title span { margin-right: auto; }
 .p100-floating-title button { min-width: 22px; height: 20px; padding: 0 5px; border: 1px solid transparent; cursor: default; }
 .p100-floating-title button:hover { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
-.p100-floating-window .p100-tree-dock { height: 163px; max-height: 163px; border: 0; }
+.p100-floating-window .p100-tree-dock { height: calc(100% - 26px); max-height: none; border: 0; }
+.p100-floating-window .p100-tree-dock > div { flex: 1; }
 .p100-floating-window .p100-tree-dock > button:first-child { display: none; }
 .p100-floating-window .p100-tree-dock [role="tab"] { border-radius: 0; }
 @media (min-width: 1024px) {
-  .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch]) { border-radius: 2px; border-color: var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
-  .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch]):hover:not(:disabled) { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
-  .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch]):active:not(:disabled) { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); transform: translate(1px, 1px); }
-  .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch])[aria-pressed="true"],
-  .p100-workspace button:not(.p100-icon-button):not([data-decor-swatch])[class~="bg-neutral-900"] { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); }
+  .p100-workspace button:not(.p100-icon-button):not(.p100-view-tab):not([data-decor-swatch]) { border-radius: 2px; border-color: var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
+  .p100-workspace button:not(.p100-icon-button):not(.p100-view-tab):not([data-decor-swatch]):hover:not(:disabled) { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
+  .p100-workspace button:not(.p100-icon-button):not(.p100-view-tab):not([data-decor-swatch]):active:not(:disabled) { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); transform: translate(1px, 1px); }
+  .p100-workspace button:not(.p100-icon-button):not(.p100-view-tab):not([data-decor-swatch])[aria-pressed="true"],
+  .p100-workspace button:not(.p100-icon-button):not(.p100-view-tab):not([data-decor-swatch])[class~="bg-neutral-900"] { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); }
   .p100-workspace button:not(.p100-icon-button):focus-visible { outline: 1px dotted var(--p100-text); outline-offset: -3px; }
   .p100-workspace [data-testid="classic-menubar"] [data-menu-trigger] { border-color: transparent; background: transparent; border-radius: 0; padding: 2px 7px; font-size: 12px; font-weight: 400; }
   .p100-workspace [data-testid="classic-menubar"] [data-menu-chevron] { display: none; }
   .p100-workspace [data-testid="classic-menubar"] [role="menu"] { min-width: max-content; border-radius: 0; }
   .p100-workspace [data-testid="classic-menubar"] [role="menuitem"] { white-space: nowrap; }
+  .p100-workspace [role="menuitem"] { border: 0; border-radius: 0; background: var(--p100-field); color: var(--p100-text); }
+  .p100-workspace [role="menuitem"]:hover:not(:disabled) { border: 0; background: var(--p100-tool-hover); }
+  .p100-workspace [role="menuitem"][aria-current="true"] { background: var(--p100-tool-selected); }
   .p100-workspace :is(input, select, textarea) { border-color: var(--p100-fieldset-border); border-radius: 1px; background: var(--p100-field); color: var(--p100-text); }
   .p100-workspace :is(.text-neutral-400, .text-neutral-500, .text-neutral-600, [class*="dark:text-neutral-300"]) { color: var(--p100-muted); }
   .p100-workspace .p100-dialog-backdrop { background: transparent; }
@@ -192,21 +285,61 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
   .p100-workspace .p100-dialog-body :is([class*="dark:border-neutral-700"], [class*="dark:border-neutral-800"]) { border-color: var(--p100-fieldset-border); }
   .p100-workspace .p100-dialog-body :is(input, select, textarea) { background: var(--p100-field); color: var(--p100-text); }
   .p100-workspace .p100-dialog-body input[type="checkbox"] { accent-color: var(--p100-focus); }
+  .p100-workspace .p100-dialog-body fieldset { border: 1px solid var(--p100-fieldset-border); padding: 7px; }
+  .p100-workspace .p100-dialog-body fieldset legend { padding: 0 4px; text-transform: none; }
+  .p100-workspace .p100-view-tabs { min-height: 31px; gap: 0; padding: 0 8px; }
+  .p100-workspace .p100-view-tab-cell { display: inline-flex; align-items: center; white-space: nowrap; }
+  .p100-workspace .p100-view-tab-divider { padding: 0 8px; color: var(--p100-muted); }
+  .p100-workspace button.p100-view-tab { padding: 5px 6px; border: 0; border-radius: 0; background: transparent; color: var(--p100-text); font-size: 12px; }
+  .p100-workspace button.p100-view-tab[aria-current="page"] { background: var(--p100-field); }
 }
 .p100-status-price { padding: 0 6px; font-size: 11px; line-height: 16px; }
+.p100-selection-bar { border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog-content); color: var(--p100-text); }
+.p100-selection-bar .p100-muted { color: var(--p100-muted); }
+.p100-selection-bar .p100-cut { color: var(--p100-cut-accent); }
+.p100-panel-tooltip { border: 1px solid var(--p100-tooltip-border); background: var(--p100-tooltip); color: var(--p100-tooltip-text); }
+.p100-panel-tooltip .p100-cut { color: var(--p100-cut-accent); }
+.p100-dock-host, .p100-dock-zone { background: var(--p100-chrome); color: var(--p100-text); }
+.p100-dock-canvas-border, .p100-dock-zone { border-color: var(--p100-canvas-border); }
+.p100-dock-target { box-shadow: inset 0 0 0 1px var(--p100-focus); }
+.p100-dock-tabs { border-color: var(--p100-divider); background: var(--p100-tab-strip); }
+.p100-dock-tab { color: var(--p100-muted); }
+.p100-dock-tab[aria-selected="true"] { background: var(--p100-field); color: var(--p100-text); }
+.p100-dock-tab:hover { background: var(--p100-tool-hover); color: var(--p100-text); }
+.p100-dock-hint { color: var(--p100-muted); }
+.p100-dock-closed-tab { border-color: var(--p100-canvas-border); background: var(--p100-tab-strip); color: var(--p100-text); }
+.p100-dock-menu { border-color: var(--p100-canvas-border); background: var(--p100-field); color: var(--p100-text); }
+.p100-dock-menuitem:hover { border-color: var(--p100-tool-border); background: var(--p100-tool-hover); }
+.p100-dock-panel { border-color: var(--p100-canvas-border); background: var(--p100-dialog-content); color: var(--p100-text); }
+.p100-dock-title { border-color: var(--p100-divider); background: var(--p100-chrome); color: var(--p100-text); }
+.p100-dock-close { color: var(--p100-muted); }
+.p100-dock-close:hover { background: var(--p100-tool-hover); color: var(--p100-text); }
+.p100-dock-body { color: var(--p100-text); }
+.p100-workspace :is(.p100-dock-body, .p100-tree-dock) :is(.bg-neutral-950, .bg-neutral-900) { background: var(--p100-dialog-content); color: var(--p100-text); }
+.p100-workspace :is(.p100-dock-body, .p100-tree-dock) :is(.text-neutral-100, .text-neutral-300) { color: var(--p100-text); }
+.p100-workspace :is(.p100-dock-body, .p100-tree-dock) :is(.text-neutral-400, .text-neutral-500) { color: var(--p100-muted); }
+.p100-workspace :is(.p100-dock-body, .p100-tree-dock) button.bg-neutral-900 { background: var(--p100-tool-selected); color: var(--p100-text); }
+.p100-dock-resize { border-color: var(--p100-muted); }
+.p100-portal-menu { background: var(--p100-dialog); color: var(--p100-text); border-color: var(--p100-fieldset-border); }
+.p100-portal-menu button { background: transparent; color: var(--p100-text); border: 1px solid transparent; border-radius: 0; }
+.p100-portal-menu button:hover:not(:disabled) { background: var(--p100-tool-hover); }
 .p100-status { min-height: 22px; align-items: center; gap: 12px; padding: 0 8px; border-top: 1px solid var(--p100-divider); background: var(--p100-chrome); font-size: 11px; }
 .p100-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; background: transparent; }
-.p100-dialog { display: flex; flex-direction: column; width: min(520px, calc(100vw - 24px)); height: min(760px, calc(100dvh - 24px)); max-height: min(760px, calc(100dvh - 24px)); border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
+.p100-dialog { display: flex; flex-direction: column; width: min(520px, calc(100vw - 24px)); height: min(600px, 80dvh); max-height: 80dvh; border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
 .p100-dialog-title { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid var(--p100-divider); font-size: 12px; }
-.p100-dialog-title button { min-width: 24px; border: 1px solid transparent; }
+.p100-dialog-title button { min-width: 44px; min-height: 44px; border: 1px solid transparent; font-size: 20px; line-height: 1; }
 .p100-dialog-lock, .p100-dialog-dimensions { display: flex; align-items: center; gap: 5px; padding: 6px 10px; font-size: 12px; }
-.p100-dialog-body { min-height: 0; overflow: auto; margin: 0 6px; padding: 10px; border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog-content); }
+.p100-dialog-lock, .p100-dialog-dimensions { min-height: 44px; }
+.p100-dialog-lock input[type="checkbox"], .p100-dialog-dimensions input[type="checkbox"] { min-width: 18px; min-height: 18px; width: 18px; height: 18px; flex: none; }
+.p100-dialog-body { min-height: 0; flex: 1; overflow: auto; margin: 0 6px; padding: 10px; border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog-content); }
 .p100-dialog-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 8px; border-top: 1px solid var(--p100-divider); }
 .p100-dialog-error { margin: 4px 10px; color: var(--p100-text); font-size: 12px; }
 .p100-dialog :where(input, select, button):focus-visible { outline: 1px solid var(--p100-focus); }
+.p100-dialog.p100-share-dialog { height: auto; max-height: calc(100dvh - 24px); }
 
 @media (max-width: 1023px) {
   [data-workspace-style] :is(button, input:not([type="checkbox"]), select, textarea) { min-height: 44px; font-size: 14px; }
+  [data-workspace-style] .p100-dialog :is(.p100-dialog-lock, .p100-dialog-dimensions) input[type="checkbox"] { min-width: 18px; min-height: 18px; }
   [data-workspace-style] :is(label, .text-xs, [class*="text-[11px]"], [class*="text-[10px]"]) { font-size: 14px; }
   .p100-dialog-backdrop { background: var(--p100-dialog); }
   .p100-dialog { width: 100vw; height: 100dvh; max-height: none; border: 1px solid var(--p100-fieldset-border); }
@@ -217,8 +350,10 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
    Диалогтардың сыртқы және ішкі беті PRO100 эталонындағы өлшенген түстерді алады. */
 .p100-workspace .fixed.inset-0 { backdrop-filter: none; }
 .p100-workspace .fixed.inset-0 > .bg-white { background: var(--p100-dialog); color: var(--p100-text); border-color: var(--p100-fieldset-border); }
+.p100-workspace .fixed.inset-0 > .bg-white { border-width: 1px; border-radius: 2px; }
 .p100-workspace .fixed.inset-0 .bg-neutral-50 { background: var(--p100-dialog-content); color: var(--p100-text); }
 .p100-workspace .fixed.inset-0 :is(input, select, textarea) { background: var(--p100-field); color: var(--p100-text); border-color: var(--p100-fieldset-border); }
+.p100-workspace .fixed.inset-0 select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
 .p100-workspace .fixed.inset-0 :is(.text-neutral-400, .text-neutral-500, [class*="dark:text-neutral-400"]) { color: var(--p100-muted); }
 
 .p100-workspace .p100-gallery { background: var(--p100-dialog); color: var(--p100-text); border-color: var(--p100-fieldset-border); }
@@ -230,8 +365,219 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-workspace .p100-tree-dock :is(.text-neutral-500, [class*="dark:text-neutral-400"]) { color: var(--p100-muted); }
 .p100-workspace .p100-tree-dock [aria-selected="true"] { background: var(--p100-tool-selected); }
 .p100-workspace .p100-tree-dock :is(input, select) { background: var(--p100-field); color: var(--p100-text); }
+.p100-workspace .uppercase { text-transform: none; letter-spacing: normal; }
+.p100-workspace :is(.text-neutral-400, .text-neutral-500) { color: var(--p100-muted); }
+.p100-workspace .p100-dock-body :is(.text-neutral-100, .text-neutral-200, .text-neutral-300) { color: var(--p100-text); }
+.p100-workspace .p100-dock-body :is(.text-neutral-400, .text-neutral-500, .text-neutral-600) { color: var(--p100-muted); }
+.p100-workspace .p100-dock-body :is(.border-neutral-700, .border-neutral-800) { border-color: var(--p100-fieldset-border); }
+.p100-workspace .p100-dock-body button:is([aria-selected="true"], [aria-pressed="true"]) { background: var(--p100-tool-selected); color: var(--p100-text); }
+
+/* Бөлек раскрой беті де классикалық жұмыс үстелінің ашық басқару стилін ұстайды. */
+.p100-cut-page { color-scheme: light; font: 12px/1.3 'Segoe UI', Tahoma, Arial, sans-serif; }
+.p100-cut-page :is(button, select, input, .rounded-lg, .rounded-md) { border-radius: 2px; }
+.p100-cut-page button { border-color: var(--p100-fieldset-border); background: var(--p100-dialog); color: var(--p100-text); }
+.p100-cut-page button:hover:not(:disabled) { background: var(--p100-tool-hover); }
+.p100-cut-page button[aria-pressed="true"] { background: var(--p100-tool-selected); }
+.p100-cut-page :is(.text-neutral-400, .text-neutral-500) { color: var(--p100-muted); }
+.p100-cut-page .uppercase { text-transform: none; letter-spacing: normal; }
+
+@media (max-width: 639px) {
+  .viewer-page header button, .p100-cut-page :is(button, a, select, input[type="range"]) { min-height: 44px; font-size: 14px; }
+  .viewer-page header .text-xs, .p100-cut-page :is(.text-xs, [class*="text-[11px]"], [class*="text-[10px]"]) { font-size: 14px; }
+}
 
 /* Жарамсыз мән (P0-3): классикалық жиек ережелері қызыл жиекті баспасын —
    бұл ереже файлдың СОҢЫНДА, ал селектор салмағы бейтарап ережелерден кем емес. */
 .p100-workspace :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--p100-invalid); outline: 1px solid var(--p100-invalid); outline-offset: -1px; }
 .p100-dialog-invalid { color: var(--p100-invalid); }
+
+.p100-workspace button.p100-dock-tab:not(.p100-icon-button):not([data-decor-swatch]) { border-radius: 0; background: var(--p100-tab-strip); color: var(--p100-muted); }
+.p100-workspace button.p100-dock-tab[aria-selected="true"]:not(.p100-icon-button):not([data-decor-swatch]) { background: var(--p100-field); color: var(--p100-text); }
+.p100-workspace button.p100-dock-menuitem:not(.p100-icon-button):not([data-decor-swatch]) { background: var(--p100-field); color: var(--p100-text); }
+.p100-workspace button.p100-dock-menuitem:hover:not(.p100-icon-button):not([data-decor-swatch]) { background: var(--p100-tool-hover); }
+@media (max-width: 767px) {
+  :is([data-view-page], [data-cut-panel-count], [data-installation-page], .site, .site-footer) :is(button, a, input, select, textarea) { min-height: 44px; font-size: 14px; }
+  :is([data-view-page], [data-cut-panel-count], [data-installation-page], .site) :is(.text-xs, [class*="text-[11px]"], [class*="text-[10px]"]) { font-size: 14px; }
+  .site-footer a { display: flex; align-items: center; }
+}
+[data-cut-panel-count] .text-neutral-400 { color: #525252; }
+.dark [data-cut-panel-count] .text-neutral-400 { color: #d4d4d4; }
+[data-view-page] .text-neutral-500 { color: #a3a3a3; }
+
+
+/* ═══ PRO100 v7.08 дәлдігі (эталон `base-inserted.png`, 1920×1080 өлшемдері) ═══
+ * Мәзір жолағы — ақ, 18 px; құрал жолақтары — әр қатар 32 px, әр жолақ (band)
+ * өз жиегімен; сол жақ тік жолақ 30 px + 2 px жиек; көрініс қойындылары 26 px
+ * (#DFDFDF), күй жолағы 19 px. Қаріп — Windows «Segoe UI» 12 px. */
+@media (min-width: 1024px) {
+  .p100-workspace > nav[data-testid="classic-menubar"] { min-height: 19px; padding: 0 2px; gap: 0; border-bottom: 0; background: var(--p100-menubar); }
+  .p100-workspace [data-testid="classic-menubar"] [data-menu-trigger] { min-height: 18px; padding: 1px 7px; line-height: 16px; }
+  .p100-workspace [data-testid="classic-menubar"] [data-menu-trigger]:hover,
+  .p100-workspace [data-testid="classic-menubar"] [data-menu-trigger][aria-expanded="true"] { background: var(--p100-tool-selected); }
+  .p100-workspace [data-testid="classic-project-title"] { margin-left: auto; padding: 0 8px; border: 0; font-weight: 400; color: var(--p100-muted); }
+  .p100-workspace .p100-toolbar { padding: 0 0 1px; border-bottom: 1px solid var(--p100-divider); }
+  .p100-workspace .p100-toolbar-row { padding-left: 2px; }
+  .p100-workspace .p100-toolbar-band { display: inline-flex; align-items: center; height: 30px; padding-right: 4px; border: 1px solid transparent; border-right-color: var(--p100-divider); border-bottom-color: var(--p100-divider); }
+  .p100-workspace .p100-toolbar-gripper { width: 3px; height: 20px; margin: 0 5px 0 3px; border: 0; border-left: 3px dotted var(--p100-gripper); }
+  .p100-workspace .p100-toolbar-separator { height: 20px; margin: 0 4px; background: var(--p100-divider); }
+  .p100-workspace .p100-side-tools { width: 30px; padding: 4px 2px; gap: 2px; border-right: 2px solid var(--p100-canvas-border); background: var(--p100-chrome); }
+  .p100-workspace .p100-side-separator { display: block; width: 22px; height: 1px; margin: 3px 0; background: var(--p100-divider); }
+  .p100-workspace > .grid { grid-template-columns: 30px minmax(0,1fr); }
+  .p100-workspace > .grid[data-library-open="true"] { grid-template-columns: 30px minmax(0,1fr) 310px; }
+  .p100-workspace [data-tour="viewtabs"] { min-height: 26px; padding: 0 0 0 6px; border-top: 0; }
+  .p100-workspace button.p100-view-tab { padding: 3px 12px; line-height: 18px; }
+  .p100-workspace .p100-view-tab-divider { padding: 0; }
+  .p100-workspace .p100-camera-tab { margin-left: auto; margin-right: 6px; align-items: center; gap: 5px; padding: 3px 10px; border: 0; background: var(--p100-field); color: var(--p100-text); font-size: 12px; line-height: 18px; }
+  .p100-workspace .p100-status { min-height: 19px; font-size: 12px; border-top: 0; }
+  .p100-workspace .p100-status-hint { color: var(--p100-muted); }
+  .p100-workspace .p100-status-metric { display: inline-flex; align-items: center; gap: 4px; }
+  .p100-workspace details.p100-dock-closed-tab { display: none; }
+  .p100-workspace .p100-library-slot { min-height: 0; border-left: 1px solid var(--p100-divider); background: var(--p100-dialog); }
+}
+.p100-icon-button svg { width: 16px; height: 16px; }
+.p100-tool-error { align-items: center; gap: 8px; padding: 2px 8px; border-top: 1px solid var(--p100-divider); background: var(--p100-tooltip); color: var(--p100-text); font-size: 12px; }
+.p100-tool-error button { margin-left: auto; padding: 0 8px; border: 1px solid var(--p100-fieldset-border); background: var(--p100-dialog); }
+
+/* 8 тұтқа: таңдалған элементтің экрандағы шекарасы (PRO100 `#3333C1`, 5 px шаршы). */
+.p100-selection-rect { position: absolute; display: none; pointer-events: none; z-index: 5; }
+.p100-selection-rect i { position: absolute; width: 5px; height: 5px; margin: -3px 0 0 -3px; background: var(--p100-selection-handle); outline: 1px solid var(--p100-canvas); }
+.p100-selection-rect i[data-handle="nw"] { left: 0; top: 0; } .p100-selection-rect i[data-handle="n"] { left: 50%; top: 0; }
+.p100-selection-rect i[data-handle="ne"] { left: 100%; top: 0; } .p100-selection-rect i[data-handle="e"] { left: 100%; top: 50%; }
+.p100-selection-rect i[data-handle="se"] { left: 100%; top: 100%; } .p100-selection-rect i[data-handle="s"] { left: 50%; top: 100%; }
+.p100-selection-rect i[data-handle="sw"] { left: 0; top: 100%; } .p100-selection-rect i[data-handle="w"] { left: 0; top: 50%; }
+
+/* Windows диалогы: ақ тақырып, сұр іші, TabControl, fieldset, 23 px өріс, OK/Отмена/Применить оң жақта. */
+.p100-window { display: flex; flex-direction: column; max-height: calc(100dvh - 24px); border: 1px solid var(--p100-window-border); background: var(--p100-dialog); color: var(--p100-text); font: 12px/1.3 'Segoe UI', Tahoma, Arial, sans-serif; }
+.p100-window-title { display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 0 0 8px; background: var(--p100-field); }
+.p100-window-title strong { margin-right: auto; font-weight: 400; }
+.p100-window-title button { display: inline-flex; width: 46px; height: 30px; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--p100-text); }
+.p100-window-title button:hover { background: var(--p100-close-hover); color: var(--p100-field); }
+.p100-window-body { min-height: 0; flex: 1; overflow: auto; padding: 8px 10px 4px; }
+.p100-window-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 10px; }
+.p100-window-button { min-width: 75px; height: 23px; padding: 0 10px; border: 1px solid var(--p100-button-border); border-radius: 2px; background: var(--p100-button); color: var(--p100-text); font-size: 12px; }
+.p100-window-button:hover:not(:disabled) { border-color: var(--p100-focus); background: var(--p100-tool-hover); }
+.p100-window-button:disabled { color: var(--p100-gripper); border-color: var(--p100-button-disabled-border); background: var(--p100-button-disabled); }
+.p100-window-button-primary { border-color: var(--p100-focus); box-shadow: inset 0 0 0 1px var(--p100-focus); }
+.p100-inline-button { margin-top: 10px; }
+.p100-tabs { display: flex; gap: 0; padding-left: 2px; border-bottom: 1px solid var(--p100-fieldset-border); }
+.p100-tab { position: relative; top: 1px; padding: 2px 8px; border: 1px solid transparent; border-bottom: 0; background: transparent; color: var(--p100-text); font-size: 12px; }
+.p100-tab:hover { background: var(--p100-tool-hover); }
+.p100-tab[aria-selected="true"] { border-color: var(--p100-fieldset-border); background: var(--p100-dialog-content); }
+.p100-tab-page { padding: 12px; border: 1px solid var(--p100-fieldset-border); border-top: 0; background: var(--p100-dialog-content); }
+.p100-form-grid { display: grid; gap: 6px; }
+.p100-form-row { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 8px; }
+.p100-form-row > span { text-align: right; }
+.p100-form-row :is(input, select) { height: 23px; max-width: 160px; padding: 0 4px; border: 1px solid var(--p100-input-border); border-radius: 0; background: var(--p100-field); color: var(--p100-text); font-size: 12px; }
+.p100-form-row :is(input, select):focus { outline: 0; border-color: var(--p100-focus); box-shadow: inset 0 -1px 0 var(--p100-focus); }
+.p100-swatch-row { display: flex; gap: 4px; }
+.p100-swatch { width: 20px; height: 20px; border: 1px solid var(--p100-input-border); }
+.p100-swatch[aria-pressed="true"] { outline: 2px solid var(--p100-focus); outline-offset: 1px; }
+.p100-hint { color: var(--p100-muted); font-size: 12px; }
+.p100-check { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+
+/* «Свет» ағашы: Наименование | Значение, құсбелгі және жүгірткі. */
+.p100-light-tree { border: 1px solid var(--p100-fieldset-border); background: var(--p100-field); }
+.p100-light-head { display: grid; grid-template-columns: 45% 55%; padding: 2px 6px; border-bottom: 1px solid var(--p100-fieldset-border); color: var(--p100-muted); }
+.p100-light-group { display: flex; width: 100%; align-items: center; gap: 5px; padding: 2px 6px; border: 0; background: transparent; color: var(--p100-text); text-align: left; }
+.p100-tree-toggle { display: inline-flex; width: 9px; height: 9px; align-items: center; justify-content: center; border: 1px solid var(--p100-tree-toggle); font-size: 9px; line-height: 1; }
+.p100-light-row { display: grid; grid-template-columns: calc(45% - 10px) 55%; align-items: center; gap: 0; min-height: 21px; padding-right: 8px; }
+.p100-light-row label { display: flex; align-items: center; gap: 5px; }
+.p100-light-row input[type="range"] { width: 100%; accent-color: var(--p100-focus); }
+
+/* «Отчёты»: кесте. */
+.p100-report-table { height: 380px; overflow: auto; border: 1px solid var(--p100-list-border); background: var(--p100-field); }
+.p100-report-table table { width: 100%; border-collapse: collapse; }
+.p100-report-table th { position: sticky; top: 0; padding: 3px 6px; border-right: 1px solid var(--p100-grid-line); border-bottom: 1px solid var(--p100-grid-line); background: var(--p100-field); font-weight: 400; text-align: left; }
+.p100-report-table td { padding: 1px 6px; white-space: nowrap; }
+.p100-report-table .num { text-align: right; }
+.p100-report-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+
+/* «Библиотека»: оңға қондырылған биік панель, сары папкалар мен превью торы. */
+.p100-library { display: flex; width: 100%; min-height: 0; flex-direction: column; background: var(--p100-dialog); color: var(--p100-text); font: 12px/1.25 'Segoe UI', Tahoma, Arial, sans-serif; }
+.p100-library-title { display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 0 0 6px; border-bottom: 1px solid var(--p100-divider); background: var(--p100-field); }
+.p100-library-title strong { margin-right: auto; font-weight: 400; }
+.p100-library-title button { display: inline-flex; width: 30px; height: 23px; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--p100-text); }
+.p100-library-title button:hover { background: var(--p100-tool-hover); }
+.p100-library .p100-tabs { margin-top: 4px; }
+.p100-library-path { display: flex; align-items: center; gap: 3px; padding: 4px; }
+.p100-library-path-folder svg { width: 18px; height: 15px; }
+.p100-library-path select { min-width: 0; flex: 1; height: 22px; border: 1px solid var(--p100-input-border); background: var(--p100-field); color: var(--p100-text); font-size: 12px; }
+.p100-library-grid { display: grid; min-height: 0; flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 4px; overflow-y: auto; margin: 0 4px; padding: 6px; border: 1px solid var(--p100-list-border); background: var(--p100-field); }
+.p100-lib-tile { display: flex; min-height: 104px; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; padding: 6px 4px; border: 1px solid transparent; background: transparent; color: var(--p100-text); text-align: center; }
+.p100-lib-tile:hover:not(:disabled) { border-color: var(--p100-tool-hover); background: var(--p100-tool-hover); }
+.p100-lib-tile[aria-selected="true"] { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); }
+.p100-lib-tile:disabled { opacity: 0.45; }
+.p100-lib-label { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 11px; line-height: 13px; }
+.p100-lib-thumb { display: flex; width: 72px; height: 68px; align-items: flex-end; justify-content: center; overflow: hidden; }
+.p100-lib-thumb svg { max-width: 72px; max-height: 68px; }
+.p100-lib-thumb img { max-width: 72px; max-height: 68px; object-fit: contain; }
+.p100-lib-action svg, .p100-lib-set svg { width: 36px; height: 36px; margin-bottom: 14px; }
+.p100-lib-swatch { display: block; width: 64px; height: 64px; border: 1px solid var(--p100-gripper); }
+.p100-folder { margin: 16px 0 8px; }
+.p100-library-status { min-height: 20px; padding: 3px 6px; color: var(--p100-muted); font-size: 11px; }
+
+/* «Начало работы»: сахнаның сол жақ жоғарғы бұрышындағы шағын терезе. */
+.p100-start-guide { position: absolute; top: 12px; left: 12px; z-index: 15; width: 330px; border: 1px solid var(--p100-window-border); background: var(--p100-dialog); color: var(--p100-text); font: 12px/1.35 'Segoe UI', Tahoma, Arial, sans-serif; }
+.p100-start-guide ol { display: grid; gap: 8px; margin: 0; padding: 10px 12px 12px 30px; list-style: decimal; }
+.p100-start-guide li span { display: block; margin-bottom: 4px; }
+
+/* Properties (Configurator ішінде): эталон `dialog-properties-general.png` —
+ * 454 px ені, ақ тақырып, Windows TabControl, бөлімдер fieldset рамкасында. */
+@media (min-width: 1024px) {
+  .p100-workspace .p100-dialog { width: min(454px, calc(100vw - 24px)); border-color: var(--p100-window-border); font: 12px/1.3 'Segoe UI', Tahoma, Arial, sans-serif; }
+  .p100-workspace .p100-dialog-title { height: 30px; padding: 0 0 0 10px; border-bottom: 0; background: var(--p100-field); }
+  .p100-workspace .p100-dialog-title strong { font-weight: 400; }
+  .p100-workspace .p100-dialog-title button { min-width: 46px; min-height: 30px; border: 0; border-radius: 0; background: transparent; font-size: 16px; }
+  .p100-workspace .p100-dialog-title button:hover { background: var(--p100-close-hover); color: var(--p100-field); }
+  .p100-workspace .p100-dialog-lock { min-height: 26px; padding: 4px 12px; }
+  .p100-workspace .p100-dialog-body { margin: 0 8px; padding: 0; border: 0; background: transparent; }
+  .p100-workspace .p100-dialog-body [data-tour="tabs"] { gap: 0; padding: 0 0 0 2px; border-bottom: 1px solid var(--p100-fieldset-border); }
+  .p100-workspace .p100-dialog-body [data-tour="tabs"] > button { position: relative; top: 1px; padding: 2px 8px; border: 1px solid transparent; border-bottom: 0; border-radius: 0; background: transparent; }
+  .p100-workspace .p100-dialog-body [data-tour="tabs"] > button[aria-pressed="true"] { border-color: var(--p100-fieldset-border); background: var(--p100-dialog-content); }
+  .p100-workspace .p100-dialog-body [data-tour="tabs"] ~ fieldset { padding: 12px 14px; border: 1px solid var(--p100-fieldset-border); border-top: 0; background: var(--p100-dialog-content); }
+  .p100-workspace .p100-dialog-body div:has(> button[aria-expanded]) { position: relative; margin-top: 12px; padding: 12px 10px 8px; border: 1px solid var(--p100-fieldset-border); }
+  .p100-workspace .p100-dialog-body div:has(> button[aria-expanded]) > button[aria-expanded] { position: absolute; top: -8px; left: 8px; width: auto; padding: 0 4px; border: 0; background: var(--p100-dialog-content); }
+  .p100-workspace .p100-dialog-body div:has(> button[aria-expanded]) > button[aria-expanded] > span { color: var(--p100-text); font-size: 12px; font-weight: 400; }
+  .p100-workspace .p100-dialog-body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select) { min-height: 23px; border-color: var(--p100-input-border); border-radius: 0; }
+  .p100-workspace .p100-dialog-actions { padding: 10px 8px; border-top: 0; }
+  .p100-workspace .p100-dialog-actions button { min-width: 75px; height: 23px; }
+}
+/* PRO100 мәзірі (порталда): ақ, тығыз 22 px пункттер, тақырыптар кіші әріппен. */
+@media (min-width: 1024px) {
+  .p100-portal-menu { padding: 2px; border-color: var(--p100-window-border); background: var(--p100-field); font: 12px/1.2 'Segoe UI', Tahoma, Arial, sans-serif; }
+  .p100-portal-menu button[role="menuitem"] { min-height: 22px; padding: 2px 24px 2px 26px; font-size: 12px; }
+  .p100-portal-menu .uppercase { padding-left: 26px; text-transform: none; letter-spacing: normal; font-size: 11px; color: var(--p100-muted); }
+}
+/* Жалпы классикалық батырма ережесі (0,4,1) PRO100 терезелерінің өз батырмаларын баспасын. */
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) button.p100-window-button.p100-window-button { min-width: 75px; height: 23px; border: 1px solid var(--p100-button-border); border-radius: 2px; background: var(--p100-button); color: var(--p100-text); }
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) button.p100-window-button.p100-window-button:hover:not(:disabled) { border-color: var(--p100-focus); background: var(--p100-tool-hover); }
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) button.p100-window-button.p100-window-button:disabled { border-color: var(--p100-button-disabled-border); background: var(--p100-button-disabled); color: var(--p100-gripper); }
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) button.p100-window-button-primary.p100-window-button { border-color: var(--p100-focus); box-shadow: inset 0 0 0 1px var(--p100-focus); }
+.p100-workspace :is(.p100-window, .p100-library) .p100-tabs button.p100-tab { position: relative; top: 1px; padding: 2px 8px; border: 1px solid transparent; border-bottom: 0; border-radius: 0; background: transparent; }
+.p100-workspace :is(.p100-window, .p100-library) .p100-tabs button.p100-tab:hover:not(:disabled):not([aria-selected="true"]) { background: var(--p100-tool-hover); }
+.p100-workspace :is(.p100-window, .p100-library) .p100-tabs button.p100-tab[aria-selected="true"] { border-color: var(--p100-fieldset-border); background: var(--p100-dialog-content); }
+.p100-workspace .p100-library .p100-library-grid button.p100-lib-tile { border: 1px solid transparent; border-radius: 0; background: transparent; }
+.p100-workspace .p100-library .p100-library-grid button.p100-lib-tile:hover:not(:disabled) { border-color: var(--p100-tool-hover); background: var(--p100-tool-hover); }
+.p100-workspace .p100-library .p100-library-grid button.p100-lib-tile[aria-selected="true"] { border-color: var(--p100-tool-pressed-border); background: var(--p100-tool-selected); }
+.p100-workspace :is(.p100-window, .p100-library, .p100-start-guide) :is(.p100-window-title, .p100-library-title) button:not(.p100-icon-button) { border: 0; border-radius: 0; background: transparent; }
+.p100-workspace :is(.p100-window, .p100-start-guide) .p100-window-title button:not(.p100-icon-button):hover:not(:disabled) { background: var(--p100-close-hover); color: var(--p100-field); }
+.p100-workspace .p100-light-tree button.p100-light-group:not(.p100-icon-button) { border: 0; border-radius: 0; background: transparent; }
+.p100-workspace .p100-swatch-row button.p100-swatch:not(.p100-icon-button) { border: 1px solid var(--p100-input-border); border-radius: 0; }
+.p100-workspace button.p100-camera-tab.p100-camera-tab:not(.p100-icon-button) { border: 0; border-radius: 0; background: var(--p100-field); }
+@media (min-width: 1024px) {
+  .p100-workspace .p100-dialog .p100-dialog-body [data-tour="tabs"] > button { position: relative; top: 1px; padding: 2px 8px; border: 1px solid transparent; border-bottom: 0; border-radius: 0; background: transparent; }
+  .p100-workspace .p100-dialog .p100-dialog-body [data-tour="tabs"] > button[aria-pressed="true"] { border-color: var(--p100-fieldset-border); background: var(--p100-dialog-content); }
+}
+@media (min-width: 1024px) {
+  .p100-workspace .p100-dialog-body [data-p100-group] { position: relative; margin-top: 10px; padding: 14px 10px 8px; border: 1px solid var(--p100-fieldset-border); }
+  .p100-workspace .p100-dialog-body [data-p100-group] > :first-child { position: absolute; top: -8px; left: 8px; margin: 0; padding: 0 4px; background: var(--p100-dialog-content); color: var(--p100-text); font-size: 12px; font-weight: 400; letter-spacing: normal; text-transform: none; }
+}
+.p100-group-box { margin: 0 0 10px; padding: 8px 10px 10px; border: 1px solid var(--p100-fieldset-border); }
+.p100-group-box legend { padding: 0 4px; }
+.p100-part-page .p100-form-row input[readonly] { background: var(--p100-dialog-content); }
+.p100-part-page .p100-form-row { grid-template-columns: 150px minmax(0, 1fr); }
+@media (min-width: 1024px) {
+  /* Windows өрісі: 23 px, 12 px мәтін (эталон `dialog-properties-general.png`). */
+  .p100-workspace .p100-dialog .p100-dialog-body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select) { height: 23px; min-height: 23px; padding: 0 4px; font-size: 12px; }
+  .p100-workspace .p100-dialog .p100-dialog-actions button[data-testid="properties-ok"] { border-color: var(--p100-focus); box-shadow: inset 0 0 0 1px var(--p100-focus); }
+}

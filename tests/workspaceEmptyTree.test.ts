@@ -39,7 +39,13 @@ describe('cabinet-free v4 editor shell', () => {
     const properties = editor.match(/<aside\b[\s\S]*?<\/aside>/)?.[0]
     expect(properties).toBeDefined()
     expect(properties).not.toContain('2000 (H)')
-    if (kind === 'empty') expect(properties).not.toContain('<input')
+    if (kind === 'empty') {
+      // Импорттың жасырын file input-ы бос сахнада да қолжетімді; өндірістік
+      // нысанның Properties өрістері пайда болмауы керек.
+      expect(properties).not.toContain('data-testid="board-properties"')
+      expect(properties).not.toContain('data-testid="solid-properties"')
+      expect(properties).not.toContain('data-properties-name')
+    }
     expect(editor.includes('Free-board-target')).toBe(kind === 'board')
     useConfigurator.getState().setRoomOpen(true)
     Object.assign(initialSnapshot, useConfigurator.getState())

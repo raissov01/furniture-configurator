@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import { t } from '@/lib/i18n'
 import { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { createMobileSyncTransport } from '@/lib/mobile/syncTransport'
 import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
-import { canEditInstallation, closeBlockReason, installationQueueNotice, signatureHasStroke } from '@/lib/mobile/installationUi'
+import { canEditInstallation, closeBlockReason, installationQueueNotice, installationTaskLabel, signatureHasStroke } from '@/lib/mobile/installationUi'
 import { installationCreateAction } from '@/lib/installationHandoff'
 import { printableRepairs } from '@/lib/mobile/repairLabel'
 import { INSTALLATION_CHECKLIST, parseInstallationAction, type ChecklistKey, type InstallationActionKind, type InstallationTask } from '@/src/core/installation'
@@ -134,7 +135,7 @@ export default function MobileInstallationPage() {
       await queue.setOnline(navigator.onLine, Date.now())
       const record = await queue.enqueue(action)
       await refresh(db)
-      setMessage(installationQueueNotice(record.status, record.error ?? ''))
+      setMessage(installationQueueNotice(record.status, record.error ?? '', t))
     } catch (error) { setMessage(error instanceof Error ? error.message : t('Не удалось сохранить действие')) }
     finally { setBusy(false) }
   }
@@ -170,13 +171,13 @@ export default function MobileInstallationPage() {
     finally { setBusy(false) }
   }
 
-  return <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-[#f5f5f5] p-4 text-black">
+  return <main data-installation-page className="mx-auto min-h-dvh max-w-xl space-y-4 bg-[#f5f5f5] p-4 text-black">
     <Link href="/mobile" className="block border bg-white p-3">{t('Назад')}</Link>
     <h1 className="text-xl font-semibold">{t('Монтаж')}</h1>
     {!online && <p className="border bg-white p-3 text-sm">{t('Нет сети')}: {t('Данные и фото остаются на этом телефоне')}</p>}
     {pending && <p className="border bg-white p-3 text-sm">{t('Ожидает отправки')}: {blockedRecords.length || 1}</p>}
     {blockedRecords.map((record) => <div key={record.action.id} role="alert" className="border border-red-700 bg-white p-3 text-sm">
-      <p>{installationQueueNotice(record.status, record.error ?? '')}</p>
+      <p>{installationQueueNotice(record.status, record.error ?? '', t)}</p>
       <button className="mt-2 min-h-11 border p-2" onClick={() => void discardBlocked(record)}>{t('Удалить действие из очереди')}</button>
     </div>)}
     {online && projects.some((project) => !tasks.some((item) => item.projectId === project.id)) && <section className="space-y-2 border bg-white p-3 text-sm">
@@ -189,14 +190,16 @@ export default function MobileInstallationPage() {
           </button>
         </div>)}
     </section>}
+    {tasks.length === 0 && <p className="border bg-white p-3 text-sm">{t('Монтажных заданий пока нет')}</p>}
     <div className="space-y-2">{tasks.map((item) => <button key={item.id} className="block min-h-12 w-full border bg-white p-3 text-left"
-      onClick={() => setSelected(item.id)}>{item.id} · {item.status}</button>)}</div>
+      onClick={() => setSelected(item.id)}>{installationTaskLabel(item, projects, t)}</button>)}</div>
     {task && <section className="space-y-3 border bg-white p-3 text-sm">
-      <h2 className="font-semibold">{task.id} · {task.projectId}</h2>
+      <h2 className="font-semibold">{installationTaskLabel(task, projects, t)}</h2>
       {INSTALLATION_CHECKLIST.map((key) => <div key={key} className="border p-2">
         <p>{t(labels[key])}: {task.checklist[key].checked ? '✓' : '—'}</p>
-        <input type="file" accept="image/*" capture="environment" disabled={!canEditInstallation(task)} aria-label={`${t(labels[key])}: ${t('Фото')}`}
-          onChange={(event) => void capture(key, event.target.files?.[0])} />
+        <label className="block"><LocalizedFileChooser accept="image/*" capture="environment" disabled={!canEditInstallation(task)}
+          ariaLabel={`${t(labels[key])}: ${t('Фото')}`} caption="Выбрать фото"
+          onChange={(event) => void capture(key, event.target.files?.[0])} /></label>
         {draft[key] && <button className="mt-2 block border p-2" disabled={busy || pending || task.status === 'closed'}
           onClick={() => void send('installation.checklist', { key, checked: true,
             photo: { id: crypto.randomUUID(), dataUrl: draft[key]! } })}>{t('Подтвердить с фото')}</button>}
@@ -224,8 +227,9 @@ export default function MobileInstallationPage() {
         </select>
         <textarea className="w-full border p-2" disabled={!canEditInstallation(task)} value={defectNote} onChange={(event) => setDefectNote(event.target.value)}
           placeholder={t('Описание дефекта')} />
-        <input type="file" accept="image/*" capture="environment" disabled={!canEditInstallation(task)} aria-label={t('Фото дефекта')}
-          onChange={(event) => void capture('defectPhoto', event.target.files?.[0])} />
+        <label className="block"><LocalizedFileChooser accept="image/*" capture="environment" disabled={!canEditInstallation(task)}
+          ariaLabel={t('Фото дефекта')} caption="Выбрать фото"
+          onChange={(event) => void capture('defectPhoto', event.target.files?.[0])} /></label>
         <button className="block border p-2" disabled={busy || pending || !canEditInstallation(task) || !defectPanel || !defectNote.trim() || !draft.defectPhoto}
           onClick={() => void send('installation.defect', { id: crypto.randomUUID(), panelId: defectPanel,
             note: defectNote, photo: { id: crypto.randomUUID(), dataUrl: draft.defectPhoto! } })}>{t('Создать ремонтное задание')}</button>
@@ -239,7 +243,7 @@ export default function MobileInstallationPage() {
         </Link>)}
       <button className="block border p-2" disabled={busy || pending || closeBlockReason(task) !== null}
         onClick={() => void send('installation.close', {})}>{t('Завершить монтаж')}</button>
-      {closeBlockReason(task) && <p role="status">{closeBlockReason(task)}</p>}
+      {closeBlockReason(task) && <p role="status">{closeBlockReason(task, t)}</p>}
       {task.repairs.some((repair) => repair.status === 'open') && <p>{t('Есть открытые ремонтные задания')}</p>}
     </section>}
     {message && <p role="status" className="border bg-white p-3 text-sm">{message}</p>}

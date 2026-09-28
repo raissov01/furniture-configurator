@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  SEED_CATALOG, defaultHandles, generateCabinet, generateKitchen, handleBorePoints, handleShape,
+  SEED_CATALOG, HandleSpecSchema, defaultHandles, generateCabinet, generateKitchen, handleBorePoints, handleShape,
 } from '../src/core/index'
 import type { CabinetConfig, HandleSpec } from '../src/core/index'
 import { catalog, withCabinet } from './fixtures'
@@ -48,6 +48,16 @@ describe('тұтқаның 3D пішіні', () => {
     // Бұрыштық орын профильде жақын жиекке түседі.
     expect(handleShape(model('handle-profile-c'), { ...spec('handle-profile-c'), position: 'bottomLeft' }, 700, 400))
       .toMatchObject({ edge: 'bottom', along: 0 })
+  })
+
+  it('профиль түсі фасадтың 3D пішініне жетеді, ескі жоба күміс болып қалады', () => {
+    const dark = handleShape(model('handle-profile-gola'),
+      { ...spec('handle-profile-gola'), profileColor: 'darkGray' }, 700, 400)
+    expect(dark).toMatchObject({ kind: 'profile', profileColor: 'darkGray' })
+    const legacy = handleShape(model('handle-profile-gola'), spec('handle-profile-gola'), 700, 400)
+    expect(legacy).toMatchObject({ kind: 'profile', profileColor: 'silver' })
+    expect(HandleSpecSchema.parse({ ...spec('handle-profile-gola'), profileColor: 'black' }).profileColor).toBe('black')
+    expect(() => HandleSpecSchema.parse({ ...spec('handle-profile-gola'), profileColor: 'gold' })).toThrow()
   })
 
   it('тұтқасызда пішін де жоқ', () => {

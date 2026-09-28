@@ -4,11 +4,12 @@
 
 import { Html } from '@react-three/drei'
 import type { CabinetConfig } from '@/src/core/index'
+import { dimensionLabelPositions } from '@/lib/dimensionLabelPlacement'
 
 function Label({ position, text }: { position: [number, number, number]; text: string }) {
   return (
-    <Html position={position} center zIndexRange={[5, 0]}>
-      <div data-dimension-label className="pointer-events-none whitespace-nowrap rounded bg-white/90 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-neutral-900 shadow ring-1 ring-neutral-300">
+    <Html position={position} center zIndexRange={[100, 100]}>
+      <div data-dimension-label className="pointer-events-none whitespace-nowrap border border-neutral-300 bg-white px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-neutral-900">
         {text}
       </div>
     </Html>
@@ -17,11 +18,12 @@ function Label({ position, text }: { position: [number, number, number]; text: s
 
 export function DimensionLabels({ cabinet }: { cabinet: CabinetConfig }) {
   const { height: H, width: W, depth: D } = cabinet
+  const positions = dimensionLabelPositions(H, W, D)
   return (
     <>
-      <Label position={[-90, H / 2, 0]} text={`${H} (H)`} />
-      <Label position={[W / 2, -70, 0]} text={`${W} (W)`} />
-      <Label position={[W + 70, 0, D / 2]} text={`${D} (D)`} />
+      <Label position={positions.height} text={`${H} (H)`} />
+      <Label position={positions.width} text={`${W} (W)`} />
+      <Label position={positions.depth} text={`${D} (D)`} />
     </>
   )
 }

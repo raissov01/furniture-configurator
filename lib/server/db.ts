@@ -206,6 +206,17 @@ function migrate(database: DatabaseSync): void {
   );
   CREATE INDEX IF NOT EXISTS shop_catalog_imports_shop ON shop_catalog_imports (shop_id, created_at DESC)`)
 
+  // PRO100 суреттерінің иесі мен көлемі серверде сақталады; URL құпия токен емес.
+  database.exec(`CREATE TABLE IF NOT EXISTS shop_catalog_images (
+    id TEXT PRIMARY KEY,
+    shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    import_id TEXT NOT NULL REFERENCES shop_catalog_imports(id) ON DELETE CASCADE,
+    extension TEXT NOT NULL,
+    byte_size INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS shop_catalog_images_shop ON shop_catalog_images (shop_id)`)
+
   // Монтаж актісі бөлек сақталады: офлайн әрекеттің ID-і қайта жіберілсе,
   // revision де, төлем оқиғасы да екінші рет пайда болмауы керек.
   database.exec(`
@@ -303,6 +314,34 @@ function migrate(database: DatabaseSync): void {
       json TEXT NOT NULL,
       updated_at INTEGER NOT NULL
     );
+  `)
+
+  // 12-қадам: ЖИ-рендер тарихы. Әр жазба бір ПАЙДАЛАНУШЫҒА тиесілі (цехтың
+  // басқа мүшесі де көрмейді); жоба id-і клиенттікі болуы мүмкін (жергілікті
+  // жоба), сондықтан projects кестесіне сілтеме ЖОҚ.
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS render_history (
+      id TEXT PRIMARY KEY,
+      shop_id TEXT NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      project_id TEXT NOT NULL,
+      json TEXT NOT NULL,
+      image BLOB NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS render_history_owner ON render_history (user_id, project_id, created_at DESC);
+  `)
+
+  // 14-қадам: құпиясөзді қалпына келтіру. Сілтеменің өзі ешқашан базада сақталмайды.
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL,
+      used_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS password_resets_user ON password_resets (user_id, expires_at);
   `)
 }
 

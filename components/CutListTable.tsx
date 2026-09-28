@@ -7,8 +7,8 @@
 
 import { getLang, t as tr } from '@/lib/i18n'
 import { useMemo, useState } from 'react'
-import { CUT_LIST_COLUMNS, formatCutList, panelFitWarnings } from '@/src/core/index'
-import type { Catalog, CutListRow, Panel } from '@/src/core/index'
+import { CUT_LIST_COLUMNS, bentDxf, formatCutList, panelFitWarnings } from '@/src/core/index'
+import type { Catalog, CutListRow, Panel, SpecialPartRow } from '@/src/core/index'
 import { cn } from '@/lib/cn'
 import { nextCutListSort, sortCutListRows } from '@/lib/cutListSort'
 import type { CutListSort } from '@/lib/cutListSort'
@@ -26,8 +26,8 @@ const GROUP_STYLE: Record<string, string> = {
  * жабық күйде де табады (`Collapsible` гочасын қара).
  */
 export function CutListTable({
-  panels, catalog, collapsed = false, onToggle,
-}: { panels: Panel[]; catalog: Catalog; collapsed?: boolean; onToggle?: () => void }) {
+  panels, catalog, specialParts = [], collapsed = false, onToggle,
+}: { panels: Panel[]; catalog: Catalog; specialParts?: readonly SpecialPartRow[]; collapsed?: boolean; onToggle?: () => void }) {
   const rows: CutListRow[] = useMemo(() => formatCutList(panels, catalog), [panels, catalog])
   const [sort, setSort] = useState<CutListSort | null>(null)
   const sortedRows = useMemo(() => sortCutListRows(rows, sort, getLang()), [rows, sort])
@@ -67,7 +67,7 @@ export function CutListTable({
               {tr('Не помещается на лист')}: {fitWarnings.length}
             </span>
           ) : null}
-          Позиций: {rows.length} · Деталей: {pieces}
+          {tr('Позиций')}: {rows.length + specialParts.length} · {tr('Деталей')}: {pieces + specialParts.reduce((sum, row) => sum + row.quantity, 0)}
         </span>
       </button>
       {fitWarnings.length > 0 && !collapsed ? (
@@ -145,6 +145,31 @@ export function CutListTable({
             ))}
           </tbody>
         </table>
+        {(['Токарлық бұйым', 'Иілген деталь'] as const).map((section) => {
+          const parts = specialParts.filter((part) => part.section === section)
+          if (!parts.length) return null
+          return <section key={section} className="border-t border-neutral-300 dark:border-neutral-700" data-testid={section === 'Иілген деталь' ? 'bent-cut-list' : 'lathe-cut-list'}>
+            <h3 className="bg-neutral-100 px-2 py-1 text-xs font-semibold dark:bg-neutral-800">{tr(section)}</h3>
+            <table className="w-full text-[11px]"><thead><tr className="text-left text-neutral-500">
+              <th className="p-1">{tr('Название')}</th><th className="p-1">{tr('Материал')}</th>
+              <th className="p-1">{tr('Размеры')}</th><th className="p-1">{tr('Количество')}</th>
+              <th className="p-1">{tr('Операция')}</th>
+            </tr></thead><tbody>{parts.map((part) => <tr key={part.nodeId} className="border-t border-neutral-200 dark:border-neutral-800">
+              <td className="p-1">{part.name}</td><td className="p-1">{part.materialName}</td>
+              <td className="p-1 tabular-nums">{part.section === 'Иілген деталь'
+                ? `${part.developedLength} × ${part.height} мм · R ${part.radius} мм · ${part.angleDegrees}°`
+                : `${part.height} (H) × Ø${part.maxDiameter} мм`}</td>
+              <td className="p-1 tabular-nums">{part.quantity}</td>
+              <td className="p-1">{tr(part.operation)}{part.section === 'Иілген деталь' && part.developedLength
+                ? <button type="button" className="ml-2 border border-neutral-300 px-1 dark:border-neutral-700"
+                  onClick={() => {
+                    const data = bentDxf(part.developedLength!, part.height)
+                    const url = URL.createObjectURL(new Blob([data], { type: 'application/dxf' }))
+                    const link = document.createElement('a'); link.href = url; link.download = `${part.nodeId}-development.dxf`; link.click(); URL.revokeObjectURL(url)
+                  }}>{tr('Развёртка DXF')}</button> : null}</td>
+            </tr>)}</tbody></table>
+          </section>
+        })}
       </div>
     </div>
   )

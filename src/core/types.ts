@@ -24,6 +24,8 @@ export type Material = {
   pricePerSheet: number
   /** Парақтың әр жағынан кесіліп тасталатын жарамсыз жолақ, мм */
   trimEdge: number
+  /** Цех растайтын ең аз ІШКІ иілу радиусы, мм. Жоқ болса иілген деталь өндірісі жабық. */
+  minBendRadiusMm?: number | undefined
   /**
    * Осы декордың үнсіз кромка жиынтығы (A4). Декоры сәйкес келмейтін кромка
    * жабысса — брак, сондықтан материал өз лентасын өзі көрсетеді.
@@ -57,11 +59,17 @@ export type Material = {
 export type MaterialPbr = {
   roughness?: number | undefined
   metalness?: number | undefined
+  /** Матаның/жұмсақ беттің шеткі жарық жылтыры, 0..1. */
+  sheen?: number | undefined
+  /** Мөлдір лак қабатының күші, 0..1. */
+  clearcoat?: number | undefined
   /** Қоршаған орта шағылысының қарқыны. */
   reflection?: number | undefined
   opacity?: number | undefined
   /** Normal карта сыртқы URL арқылы; сурет репоға көшірілмейді. */
   normal?: { url: string; sizeMm: { x: number; y: number }; strength: number } | undefined
+  /** AO жарық көлеңкесі сыртқы grayscale картадан есептеледі; карта болмаса жалған AO жоқ. */
+  ambientOcclusion?: { url: string; sizeMm: { x: number; y: number }; intensity: number } | undefined
 }
 
 /**
@@ -310,6 +318,7 @@ export function isWidthBevel(
  */
 export type PanelHandle = {
   handleId: string
+  profileColor?: 'darkGray' | 'silver' | 'black' | undefined
   kind: Exclude<HandleKind, 'none'>
   /** Тұтқаның ортасы, мм */
   along: number
@@ -935,7 +944,7 @@ export type CabinetConfig = {
      * бөліседі әрі астына су мен шаң кірмейді.
      *
      * ⚠ ӨЛШЕМ ҚАЙДАН. qdesign-нің дәл сол модулінен өлшенді (2026-09-04,
-     * 900 × 1540 × 700, цоколь 95, шегініс 30): алды мен арты — ТОЛЫҚ ені
+     * 1540 (H) × 900 (W) × 700 (D), цоколь 95, шегініс 30): алды мен арты — ТОЛЫҚ ені
      * (900), ал бүйірлері екеуінің АРАСЫНА кіреді (638 = 700 − 30 − 2×16).
      * Бүйірлер корпустың бүйірімен беттеседі, ал арт тақтай корпустың арт
      * жиегімен тегіс тұрады (шегініс тек АЛДЫНДА).
@@ -1330,6 +1339,27 @@ export type PriceOverrides = {
   lineDiscounts?: Record<string, Discount> | undefined
   /** Жолдық жеңілдіктерден кейін қалған сомаға қолданылатын жеңілдік. */
   overallDiscount?: Discount | undefined
+  /**
+   * «Орнатусыз»: `true` болса монтаж (1 п.м. модуль ені) сметаға ТҮСПЕЙДІ,
+   * цехтың мөлшерлемесі қойылса да. Әдепкі — жоқ, яғни бұрынғыдай.
+   */
+  withoutInstallation?: boolean | undefined
+  /**
+   * Қолмен қойылған сату бағасын ЛДСП ауданына ПРОПОРЦИОНАЛ жаңарту (опция).
+   * `salePrice` сақталған сәттегі аудан осында жазылады; модуль өлшемі
+   * өзгерсе, баға `salePrice × қазіргі аудан / baseAreaMm2` болып қайта
+   * есептеледі (`salePriceScaling.ts`, дөңгелектеу ережесі сонда).
+   * Жоқ болса — қолмен баға бұрынғыдай ТҰРАҚТЫ.
+   */
+  salePriceScaling?: SalePriceScaling | undefined
+}
+
+/** `PriceOverrides.salePriceScaling`: баға сақталған сәттің базасы. */
+export type SalePriceScaling = {
+  /** Сақталған сәттегі ЛДСП ауданы, мм², бүтін сан. */
+  baseAreaMm2: number
+  /** Ауданға кіретін материалдар (сақталған сәтте анықталады, кейін ауыспайды). */
+  materialIds: string[]
 }
 
 export type ProjectFile = {

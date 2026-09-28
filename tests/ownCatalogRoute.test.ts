@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { simpleTableXlsx } from '../src/core/export/xlsx'
+import { DEFAULT_BASIS_COLUMNS } from '../src/core/ownCatalogImport'
 
 process.env['DATA_DIR'] = mkdtempSync(join(tmpdir(), 'furniture-own-catalog-'))
 const actor = vi.hoisted(() => ({ value: null as { userId: string; shopId: string; role: 'owner' | 'designer' | 'shop' | 'client' } | null }))
@@ -64,5 +65,21 @@ describe('цехтың жеке каталогы API', () => {
     expect(response.status).toBe(200)
     expect((await response.json() as { preview: { materials: unknown[] } }).preview.materials).toHaveLength(1)
     expect((await (await route.GET()).json() as { imports: unknown[] }).imports).toEqual([])
+  })
+
+  it('браузер UTF-8 баған картасын ASCII header арқылы жібереді', async () => {
+    const a = auth.register('catalog-utf8@example.kz', 'password123', 'UTF8')
+    if (!a.ok) throw new Error(a.error)
+    actor.value = a.account
+    const xlsx = simpleTableXlsx('Sheet1', Object.values(DEFAULT_BASIS_COLUMNS), [
+      ['A1', 'ЛДСП, Дуб', '01/ЛДСП/Egger', 16, 2800, 2070, 0, 0],
+    ])
+    const asciiMap = encodeURIComponent(JSON.stringify(DEFAULT_BASIS_COLUMNS))
+    expect([...asciiMap].every((character) => character.charCodeAt(0) < 128)).toBe(true)
+    const response = await route.POST(new Request('http://localhost/api/own-catalog?format=basis-xlsx&preview=1', {
+      method: 'POST', headers: { 'x-rights-confirmed': 'true', 'x-column-map': asciiMap }, body: Buffer.from(xlsx),
+    }))
+    expect(response.status).toBe(200)
+    expect((await response.json() as { preview: { materials: unknown[] } }).preview.materials).toHaveLength(1)
   })
 })

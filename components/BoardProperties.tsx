@@ -12,6 +12,7 @@ import { PolygonEditor } from '@/components/PolygonEditor'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, panelFitWarnings } from '@/src/core/index'
 import type { BoardNode, BoardSpec, Catalog, Orientation, Panel, PanelEdges } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
+import { MaterialAppearanceEditor } from '@/components/VisualSettingsPanel'
 
 type Tab = 'general' | 'material' | 'reports' | 'production'
 const orientations: { value: string; label: string; orientation: Orientation }[] = [
@@ -53,7 +54,9 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
   const [tab, setTab] = useState<Tab>('general')
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState(node.name)
+  const [veneerDraft, setVeneerDraft] = useState(node.board.veneerGroup ?? '')
   useEffect(() => setName(node.name), [node.id, node.name])
+  useEffect(() => setVeneerDraft(node.board.veneerGroup ?? ''), [node.id, node.board.veneerGroup])
   const editBoard = useConfigurator((s) => s.editBoard)
   const setBoardPosition = useConfigurator((s) => s.setBoardPosition)
   const renameNode = useConfigurator((s) => s.renameNode)
@@ -126,6 +129,18 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
       <Toggle checked={node.board.grainAlongLength} disabled={grainUi.disabled}
         onChange={(grainAlongLength) => edit({ grainAlongLength })} label={tr('Текстура вдоль длины')} />
       {grainUi.reason && <p className="text-[11px] text-neutral-500">{tr(grainUi.reason)}</p>}
+      <Field label={tr('Группа шпона')} hint={tr('Детали одной группы раскраиваются на отдельных листах.')}>
+        <input type="text" value={veneerDraft} maxLength={100}
+          aria-invalid={Boolean(veneerDraft && veneerDraft.trim() !== veneerDraft) || undefined}
+          onChange={(event) => setVeneerDraft(event.target.value)}
+          onBlur={() => { if (veneerDraft !== (node.board.veneerGroup ?? '')) edit({ veneerGroup: veneerDraft || undefined }) }}
+          onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }}
+          className="w-full border border-neutral-300 bg-white px-2 py-1 aria-invalid:border-red-500 dark:border-neutral-700 dark:bg-neutral-900" />
+      </Field>
+      <details className="border-t border-neutral-200 pt-2 text-xs dark:border-neutral-800" data-testid="material-advanced">
+        <summary className="cursor-pointer select-none">{tr('Дополнительно (3D-вид материала)')}</summary>
+        <MaterialAppearanceEditor initialMaterialId={material.id} />
+      </details>
     </fieldset>
     <div className={tab === 'reports' ? 'space-y-2' : 'hidden'}>
       <p>{tr('Готовый')}: {panel ? `${panel.finishedLength} × ${panel.finishedWidth} мм` : '—'}</p>

@@ -6,7 +6,9 @@
  */
 
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/cn'
+import { menuPosition } from '@/lib/menuPosition'
 import { t as tr } from '@/lib/i18n'
 import { parseNumberDraft, stepAvailable, steppedValue } from '@/lib/numberDraft'
 
@@ -139,25 +141,48 @@ const MenuCtx = React.createContext<() => void>(() => {})
  * жабылады, элемент таңдалғанда да жабылады.
  */
 export function Menu({
-  label, title, active, children, align = 'left', size,
+  label, title, ariaLabel, active, children, align = 'left', size, heightCap,
 }: {
   label: React.ReactNode
   title?: string
+  ariaLabel?: string
   active?: boolean
   children: React.ReactNode
   align?: 'left' | 'right'
   /** Тек батырманың сыртқы түрі (`Button`-дегі `size`); мәзірдің өзі емес. */
   size?: 'sm' | 'md'
+  /** Мәзірдің ең үлкен биіктігі, px (әдепкі 480). */
+  heightCap?: number
 }) {
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
-  const items = () => [...(ref.current?.querySelectorAll<HTMLButtonElement>('[role="menu"] [role="menuitem"]') ?? [])]
+  const menuRef = React.useRef<HTMLDivElement>(null)
+  const [position, setPosition] = React.useState<ReturnType<typeof menuPosition> | null>(null)
+
+
+  const items = () => [...(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])]
     .filter((item) => !item.disabled)
+  const place = React.useCallback(() => {
+    const anchor = triggerRef.current?.getBoundingClientRect()
+    if (!anchor) return
+    setPosition(menuPosition(anchor, window.innerWidth, window.innerHeight,
+      menuRef.current?.offsetWidth ?? 240, align, heightCap))
+  }, [align, heightCap])
   const openMenu = () => {
     document.dispatchEvent(new CustomEvent('ui-menu-open', { detail: ref.current }))
+    place()
     setOpen(true)
   }
+  React.useLayoutEffect(() => {
+    if (!open) return
+    place()
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', place, true)
+    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true) }
+  }, [open, place])
+
+
   React.useEffect(() => {
     const onOtherMenu = (event: Event) => {
       if ((event as CustomEvent<Element | null>).detail !== ref.current) setOpen(false)
@@ -167,7 +192,11 @@ export function Menu({
   }, [])
   React.useEffect(() => {
     if (!open) return
-    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    const onDoc = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node) && !menuRef.current?.contains(e.target as Node)) setOpen(false)
+
+
+    }
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
   }, [open])
@@ -217,6 +246,7 @@ export function Menu({
         type="button"
         role="menuitem"
         aria-haspopup="menu"
+        aria-label={ariaLabel}
         aria-expanded={open}
         data-menu-trigger
         title={title ?? (typeof label === 'string' ? label : undefined)}
@@ -231,18 +261,23 @@ export function Menu({
       >
         {label} <span data-menu-chevron className="text-[9px] opacity-60">▾</span>
       </button>
-      {open ? (
+      {open && position ? createPortal(
+
+
         <div
+          ref={menuRef}
           role="menu"
           aria-label={typeof label === 'string' ? label : undefined}
+          onKeyDown={(event) => { event.stopPropagation(); onKeyDown(event) }}
+          style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}
           className={cn(
-            'absolute z-40 mt-1 min-w-44 border border-neutral-300 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-900',
-            align === 'right' ? 'right-0' : 'left-0',
+            'ui-menu-portal fixed z-[1000] min-w-44 max-w-[calc(100vw-24px)] overflow-y-auto border border-neutral-300 bg-white p-1 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100',
+            ref.current?.closest('.p100-workspace') && 'p100-portal-menu',
           )}
+
         >
           <MenuCtx.Provider value={() => setOpen(false)}>{children}</MenuCtx.Provider>
-        </div>
-      ) : null}
+        </div>, document.body) : null}
     </div>
   )
 }
@@ -268,7 +303,7 @@ export function MenuItem({
       title={title}
       onClick={() => { onClick?.(); close() }}
       className={cn(
-        'flex w-full items-center gap-2 border border-transparent px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40',
+        'flex w-full items-center gap-2 border border-transparent px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40 max-lg:min-h-11 max-lg:text-sm',
         active
           ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
           : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800',
@@ -296,13 +331,14 @@ export function Slider({
 }
 
 export function Button({
-  children, onClick, disabled, active, ariaPressed, title, tour, size = 'md', testId,
+  children, onClick, disabled, active, ariaPressed, ariaLabel, title, tour, size = 'md', testId, className,
 }: {
   children: React.ReactNode
   onClick?: () => void
   disabled?: boolean
   active?: boolean
   ariaPressed?: boolean
+  ariaLabel?: string
   title?: string
   /** Оқыту көмекшісінің белгісі (`components/Tour.tsx`). */
   tour?: string
@@ -313,10 +349,12 @@ export function Button({
    */
   size?: 'sm' | 'md'
   testId?: string
+  className?: string
 }) {
   return (
     <button
       type="button"
+      aria-label={ariaLabel}
       title={title}
       data-tour={tour}
       data-testid={testId}
@@ -330,6 +368,7 @@ export function Button({
         active
           ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
           : 'border-neutral-300 bg-white text-neutral-700 hover:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-500',
+        className,
       )}
     >
       {children}
@@ -356,7 +395,7 @@ export function Toggle({
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+    <h2 className="mt-1 text-[11px] font-semibold text-neutral-700 dark:text-neutral-200">
       {children}
     </h2>
   )

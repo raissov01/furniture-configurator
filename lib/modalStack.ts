@@ -10,3 +10,19 @@ export function closeModal(stack: readonly string[], id: string): string[] {
 export function modalZIndex(stack: readonly string[], id: string): number {
   return 80 + Math.max(0, stack.indexOf(id)) * 10
 }
+
+export function modalBlocksHotkeys(stack: readonly string[]): boolean {
+  return stack.length > 0
+}
+
+export function shouldCloseModalKey(key: string, isTop: boolean): boolean {
+  return key === 'Escape' && isTop
+}
+
+export function tourZIndex(stack: readonly string[]): number {
+  const top = stack.at(-1)
+  if (!top) return 60
+  return modalZIndex(stack, top) - (top === 'help' ? 5 : -5)
+}
+export const hasModal = (stack: readonly string[]): boolean => stack.length > 0
+export const isTopModal = (stack: readonly string[], id: string): boolean => stack.at(-1) === id

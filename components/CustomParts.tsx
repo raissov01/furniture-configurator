@@ -14,6 +14,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { useState } from 'react'
 import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { useConfigurator, activeCabinet } from '@/store/configurator'
@@ -84,6 +85,9 @@ const PRESETS: { id: PresetId; label: string }[] = [
 export function CustomParts({ catalog }: { catalog: Catalog }) {
   const open = useConfigurator((s) => s.partsOpen)
   const setOpen = useConfigurator((s) => s.setPartsOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'parts', () => setOpen(false))
+
+
   const cabinet = useConfigurator(activeCabinet)
   const edit = useConfigurator((s) => s.edit)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -110,8 +114,11 @@ export function CustomParts({ catalog }: { catalog: Catalog }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
-      onClick={() => setOpen(false)}
+      style={{ zIndex }}
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      onClick={() => { if (isTop) setOpen(false) }}
+
+
     >
       <div
         className="w-full max-w-3xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"

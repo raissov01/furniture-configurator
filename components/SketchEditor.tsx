@@ -10,6 +10,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { useMemo, useState } from 'react'
 import { layoutBands, layoutSections } from '@/src/core/index'
 import type { CabinetConfig, Section, SectionContent } from '@/src/core/index'
@@ -38,6 +39,9 @@ const HIT_MM = 40
 export function SketchEditor() {
   const open = useConfigurator((s) => s.sketchOpen)
   const setOpen = useConfigurator((s) => s.setSketchOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'sketch', () => setOpen(false))
+
+
   const cabinet = useConfigurator(activeCabinet)
   const materials = useConfigurator((s) => s.shop.materials)
   const edit = useConfigurator((s) => s.edit)
@@ -185,8 +189,11 @@ export function SketchEditor() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
-      onClick={() => setOpen(false)}
+      style={{ zIndex }}
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      onClick={() => { if (isTop) setOpen(false) }}
+
+
     >
       <div
         className="w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"

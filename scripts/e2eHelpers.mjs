@@ -7,6 +7,23 @@ export async function captureFailureSnapshot(capture) {
   }
 }
 
+/**
+ * Нативтік JS диалогы (alert/confirm/prompt) ашық тұрғанда renderer JS-ті
+ * тоқтатады: `Runtime.evaluate` те, `Page.captureScreenshot` та жауап
+ * бермейді, runner 60 с таймаутқа түседі. 09-27-ден «Проект → Сброс»
+ * `window.confirm` сұрайды — 09-24 аудиттегі «бұрыштық корпуста браузер
+ * қатады» ақауы дәл осы еді (сценарийдің соңғы қадамы — ысыру).
+ *
+ * Runner әрекетті әдейі шақырады, сондықтан диалог РАСТАЛАДЫ; мәтіні
+ * `dialogs`-қа түседі — тест оны тексере алады.
+ */
+export function acceptJavaScriptDialog(msg, send, dialogs) {
+  if (msg?.method !== 'Page.javascriptDialogOpening') return false
+  dialogs.push(`${msg.params?.type ?? 'dialog'}: ${msg.params?.message ?? ''}`)
+  void send('Page.handleJavaScriptDialog', { accept: true })
+  return true
+}
+
 /** CDP allows one screenshot at a time; a failed check and an explicit shot can race. */
 export function serializeCapture(capture) {
   let previous = Promise.resolve()
@@ -163,7 +180,7 @@ export function makeHelpers({ send }, base) {
 
   const numberExpression = (label) => `(() => {
     const l = [...document.querySelectorAll('label')].find((x) => x.textContent.includes(${JSON.stringify(label)}))
-    return l?.querySelector('input[type=number]')?.value ?? null
+    return l?.querySelector('input[type=number], input[type=text]')?.value ?? null
   })()`
   const numberValue = (label) => evaluate(numberExpression(label))
 

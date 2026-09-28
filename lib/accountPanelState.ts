@@ -19,6 +19,19 @@ export function accountFormErrors(mode: AccountMode, form: AccountForm, invited:
   return errors
 }
 
+/** Бос алғашқы формада қате көрсетілмейді; өңделген өрістің себебі ғана көрінеді. */
+export function visibleAccountErrors(mode: AccountMode, form: AccountForm, invited: boolean,
+  touched: Partial<Record<keyof AccountForm, boolean>>, submitted = false) {
+  const errors = accountFormErrors(mode, form, invited)
+  return {
+    ...((submitted || touched.email) && errors.email ? { email: errors.email } : {}),
+    ...((submitted || touched.password) && errors.password ? { password: errors.password } : {}),
+    ...((submitted || touched.shopName) && errors.shopName ? { shopName: errors.shopName } : {}),
+  }
+
+
+}
+
 export function canSubmitAccount(mode: AccountMode, form: AccountForm, invited: boolean): boolean {
   return Object.keys(accountFormErrors(mode, form, invited)).length === 0
 }

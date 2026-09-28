@@ -7,7 +7,9 @@
  * экраннан келеді. Жаңа цех тіркелгенде істейтіні: бағаларын енгізу.
  */
 
-import { t as tr } from '@/lib/i18n'
+import { t as tr, tf } from '@/lib/i18n'
+import { ReferencePriceList } from './ReferencePriceList'
+import { nextCopyName } from '@/src/core/copyName'
 import { useEffect, useMemo, useState } from 'react'
 import { useModalLayer } from '@/lib/useModalLayer'
 import {
@@ -19,6 +21,8 @@ import {
   SERVICE_BASIS_NAMES,
   SERVICE_IDS,
   SERVICE_NAMES,
+  SHEET_SERVICE_IDS,
+  SHEET_SERVICE_NAMES,
   SHEET_FORMATS,
   SHEET_THICKNESSES,
   makeMaterial,
@@ -40,24 +44,73 @@ import { MoneyInput } from './MoneyInput'
 import { PriceImportPanel } from './PriceImportPanel'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 import { OwnTextureMapper } from './OwnTextureMapper'
+import { OwnMaterialChooser } from './OwnMaterialChooser'
+import { OwnCatalogImportPanel } from './OwnCatalogImportPanel'
+import { FittingArticlePicker } from './FittingArticlePicker'
+import { FittingsCatalogPanel } from './FittingsCatalogPanel'
+import { validateBin, validateShopLogo } from '@/lib/shopBranding'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
+import { shopEditAccess } from '@/lib/shopAccessUi'
+import type { Role } from '@/lib/permissions'
 
 type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
 
-type Tab = 'profile' | 'materials' | 'bands' | 'hardware' | 'hinges' | 'rules' | 'drilling'
+type Tab = 'profile' | 'materials' | 'catalog' | 'bands' | 'hardware' | 'hinges' | 'rules' | 'drilling'
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'profile', label: tr('Цех') },
-  { value: 'materials', label: tr('Материалы') },
-  { value: 'bands', label: tr('Кромки') },
-  { value: 'hardware', label: tr('Фурнитура') },
-  { value: 'hinges', label: tr('Петли') },
-  { value: 'rules', label: tr('Правила цеха') },
-  { value: 'drilling', label: tr('Присадка') },
+  { value: 'profile', label: 'Цех' },
+  { value: 'materials', label: 'Материалы' },
+  { value: 'catalog', label: 'Каталог цеха' },
+  { value: 'bands', label: 'Кромки' },
+  { value: 'hardware', label: 'Фурнитура' },
+  { value: 'hinges', label: 'Петли' },
+  { value: 'rules', label: 'Правила цеха' },
+  { value: 'drilling', label: 'Присадка' },
 ]
 
 const text =
   'w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none ' +
   'focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-300'
+
+function ShopBinField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [draft, setDraft] = useState(value)
+  const error = validateBin(draft)
+  useEffect(() => setDraft(value), [value])
+  return <Field label="БИН">
+    <input className={`${text} ${error ? 'border-red-600' : ''}`} value={draft} inputMode="numeric"
+      aria-invalid={Boolean(error)} aria-describedby={error ? 'shop-bin-error' : undefined}
+      onChange={(event) => {
+        const next = event.target.value
+        setDraft(next)
+        if (!validateBin(next)) onChange(next)
+      }} />
+    {error ? <span id="shop-bin-error" className="text-xs text-red-700" role="alert">{tr(error)}</span> : null}
+  </Field>
+}
+
+function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => void }) {
+  const [error, setError] = useState<string | null>(null)
+  const [filename, setFilename] = useState<string | null>(null)
+  return <Field label={tr('Логотип')}>
+    <LocalizedFileChooser accept="image/png,image/jpeg" selectedName={filename} onChange={(event) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+        const problem = validateShopLogo(file)
+        setError(problem)
+        if (problem) return
+        setFilename(file.name)
+        const reader = new FileReader()
+        reader.onload = () => {
+          if (typeof reader.result === 'string') onChange(reader.result)
+          else setError('Логотип: файл не прочитан')
+        }
+        reader.onerror = () => setError('Логотип: файл не прочитан')
+        reader.readAsDataURL(file)
+      }} />
+    {error ? <span className="text-xs text-red-700" role="alert">{tr(error)}</span> : null}
+    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null); setFilename(null) }}>{tr('Удалить логотип')}</button>
+  </Field>
+}
 
 /**
  * Габарит шектерінің өрістері. Реті — жобаның H × W × D ережесімен бірдей,
@@ -79,9 +132,24 @@ export function ShopSettings() {
   const shop = useConfigurator((s) => s.shop)
   const editShop = useConfigurator((s) => s.editShop)
   const [tab, setTab] = useState<Tab>('profile')
+  const [role, setRole] = useState<Role | null | 'loading'>('loading')
   const verifiedHinges = availableVerifiedHinges(shop.hingeSystems)
 
   const readiness = useMemo(() => shopReadiness(shop), [shop])
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setRole('loading')
+    void fetch('/api/me').then(async (response) => {
+      if (response.status === 503) { if (!cancelled) setRole(null); return }
+      if (!response.ok) throw new Error('account unavailable')
+      const result = (await response.json()) as { account?: { role?: Role } | null }
+      if (!cancelled) setRole(result.account?.role ?? null)
+    }).catch(() => { if (!cancelled) setRole('client') })
+    return () => { cancelled = true }
+  }, [open])
+  const access = role === 'loading' ? { canRead: false, canEdit: false } : shopEditAccess(role)
 
   useEffect(() => {
     if (!open || !isTop) return
@@ -106,8 +174,20 @@ export function ShopSettings() {
         ? { ...m, slab: { ...m.slab, pricePerMeter: tiyn } }
         : m)),
     })
-  const setSheet = (id: string, patch: { sheetWidth?: number; sheetHeight?: number }) =>
+  const setSheet = (id: string, patch: { sheetWidth?: number; sheetHeight?: number; minBendRadiusMm?: number | undefined }) =>
     editShop({ materials: shop.materials.map((m) => (m.id === id ? { ...m, ...patch } : m)) })
+  const bendRadiusField = (m: (typeof shop.materials)[number]) => <label className="block text-[11px] text-neutral-500">
+    {tr('Мин. радиус гибки, мм')}
+    <input className="ml-1 w-20 border border-neutral-300 bg-white px-1 dark:border-neutral-700 dark:bg-neutral-900"
+      inputMode="numeric" value={m.minBendRadiusMm ?? ''} aria-label={`${m.name}: ${tr('Мин. радиус гибки, мм')}`}
+      onChange={(event) => {
+        const raw = event.target.value
+        if (raw === '') { setSheet(m.id, { minBendRadiusMm: undefined }); return }
+        if (/^[1-9]\d*$/.test(raw) && Number.isSafeInteger(Number(raw))) {
+          setSheet(m.id, { minBendRadiusMm: Number(raw) })
+        }
+      }} />
+  </label>
   const setBandPrice = (id: string, tiyn: number) =>
     editShop({ edgeBands: shop.edgeBands.map((b) => (b.id === id ? { ...b, pricePerMeter: tiyn } : b)) })
   const setHardwarePrice = (id: string, tiyn: number) =>
@@ -176,23 +256,23 @@ export function ShopSettings() {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="mr-2 text-sm font-semibold">{tr('Настройки цеха')}</h2>
           {TABS.map((t) => (
-            <Button key={t.value} active={tab === t.value} onClick={() => setTab(t.value)}>{t.label}</Button>
+            <Button key={t.value} active={tab === t.value} onClick={() => setTab(t.value)}>{tr(t.label)}</Button>
           ))}
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
-        {!readiness.pricingReady ? (
+        {tab === 'profile' && !readiness.pricingReady ? (
           <p className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-[11px] text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-            Пока не заданы цены, коммерческое предложение не выпускается: выдуманная цена уходит клиенту.
-            Достаточно заполнить те материалы, с которыми вы реально работаете.
+            {tr('Пока цены не заданы, коммерческое предложение не выпускается: клиент не увидит выдуманную цену.')}
+            {' '}{tr('Достаточно заполнить материалы, с которыми вы работаете.')}
           </p>
         ) : null}
 
-        <div className="mb-3">
-          <MarketPriceNotice shop={shop} editShop={editShop} />
-        </div>
+        {tab === 'profile' ? <div className="mb-3"><MarketPriceNotice shop={shop} editShop={access.canEdit ? editShop : undefined} /></div> : null}
+        {!access.canRead ? <p role="status" className="border border-neutral-300 p-3 text-sm">{tr('Настройки цеха недоступны для этой роли.')}</p> : <fieldset disabled={!access.canEdit} className="min-w-0">
+        {!access.canEdit ? <legend className="mb-2 text-sm text-neutral-700">{tr('Только просмотр: изменения доступны владельцу цеха.')}</legend> : null}
 
         {tab === 'profile' ? (
           <div className="space-y-3">
@@ -210,17 +290,34 @@ export function ShopSettings() {
                 <input className={text} value={shop.phone} placeholder="+7 ___ ___ __ __"
                   onChange={(e) => editShop({ phone: e.target.value })} />
               </Field>
+              <ShopBinField value={shop.bin ?? ''} onChange={(bin) => editShop({ bin })} />
+              <Field label={tr('Адрес')}>
+                <input className={text} value={shop.address ?? ''} maxLength={240}
+                  onChange={(e) => editShop({ address: e.target.value })} />
+              </Field>
+              <Field label={tr('Цвет бренда')}>
+                <input type="color" className="h-9 w-full border border-neutral-300 bg-white p-1"
+                  value={shop.brandColor ?? '#1F2A37'} onChange={(e) => editShop({ brandColor: e.target.value })} />
+              </Field>
+              <ShopLogoField onChange={(logoDataUrl) => editShop({ logoDataUrl })} />
             </div>
             <p className="text-[11px] text-neutral-400">
-              Профиль хранится в этом браузере. Когда появятся аккаунты, он переедет на сервер как есть.
+              {tr('Профиль хранится в этом браузере. Когда появятся аккаунты, он переедет на сервер как есть.')}
             </p>
             <PriceListManager shop={shop} />
             <PriceImportPanel shop={shop} />
+            <ReferencePriceList />
           </div>
         ) : null}
 
         {tab === 'materials' ? (
           <div className="space-y-3">
+            <OwnMaterialChooser existingIds={shop.materials.map((material) => material.id)} onAdd={(material) => {
+              const state = useConfigurator.getState()
+              if (!state.shop.materials.some((entry) => entry.id === material.id)) {
+                state.editShop({ materials: [...state.shop.materials, material] })
+              }
+            }} />
             <AddMaterial />
             <OwnTextureMapper />
             <PriceTable
@@ -234,6 +331,7 @@ export function ShopSettings() {
                   <span key="t" className="tabular-nums text-neutral-500">{m.thickness}</span>,
                   <span key="s" className="text-[11px] tabular-nums text-neutral-500">
                     Плита: {m.slab.stockLengths.join(' / ')} мм
+                    {bendRadiusField(m)}
                   </span>,
                   <span key="p" className="flex items-center gap-1">
                     <MoneyInput value={m.slab.pricePerMeter} label={`${m.name}: ${tr('Цена')}`}
@@ -244,11 +342,12 @@ export function ShopSettings() {
                 ]
                 : [
                   <span key="t" className="tabular-nums text-neutral-500">{m.thickness}</span>,
-                  <span key="s" className="flex items-center gap-1">
-                    <NumberInput value={m.sheetWidth} min={500} step={10}
+                  <span key="s" className="block">
+                    <span className="flex items-center gap-1"><NumberInput value={m.sheetWidth} min={500} step={10}
                       onChange={(sheetWidth) => setSheet(m.id, { sheetWidth })} />
                     <NumberInput value={m.sheetHeight} min={500} step={10}
-                      onChange={(sheetHeight) => setSheet(m.id, { sheetHeight })} />
+                      onChange={(sheetHeight) => setSheet(m.id, { sheetHeight })} /></span>
+                    {bendRadiusField(m)}
                   </span>,
                   <span key="p" className="flex items-center gap-1">
                     <MoneyInput value={m.pricePerSheet} label={`${m.name}: ${tr('Цена')}`}
@@ -261,6 +360,19 @@ export function ShopSettings() {
             />
           </div>
         ) : null}
+
+        {tab === 'catalog' ? <OwnCatalogImportPanel onApplyMaterials={(materials, edgeBands) => {
+          const state = useConfigurator.getState()
+          const materialIds = new Set(state.shop.materials.map((item) => item.id))
+          const bandIds = new Set(state.shop.edgeBands.map((item) => item.id))
+          const newMaterials = materials.filter((item) => !materialIds.has(item.id))
+          const newBands = edgeBands.filter((item) => !bandIds.has(item.id))
+          if (newMaterials.length === 0 && newBands.length === 0) throw new Error(tr('Позиция уже добавлена в цех'))
+          state.editShop({
+            materials: [...state.shop.materials, ...newMaterials],
+            edgeBands: [...state.shop.edgeBands, ...newBands],
+          })
+        }} /> : null}
 
         {tab === 'bands' ? (
           <PriceTable
@@ -282,6 +394,7 @@ export function ShopSettings() {
 
         {tab === 'hardware' ? (
           <div className="space-y-4">
+          <FittingsCatalogPanel />
           <HandleCatalogue
             handles={shop.handles}
             onAdd={addHandle}
@@ -320,12 +433,10 @@ export function ShopSettings() {
               </div>
             ) : null}
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              K — расстояние от центра чашки до края фасада. Оно зависит от бренда и от
-              накладки, поэтому <strong>{tr('сверьте его со своим шаблоном')}</strong>: 22 мм здесь —
-              самое частое значение, а не гарантия. Присадка считается по этому числу.
+              {tr('K — расстояние от центра чашки до края фасада. Оно зависит от бренда и накладки; сверьте его со своим шаблоном. 22 мм — частое значение, не гарантия. Присадка считается по этому числу.')}
             </p>
             <PriceTable
-              head={['Система', 'K, мм', 'От края фасада, мм']}
+              head={['Система', 'K, мм', 'От края фасада, мм', tr('Артикул производителя')]}
               rows={shop.hingeSystems.map((h) => ({
                 id: h.id,
                 name: h.name,
@@ -334,6 +445,15 @@ export function ShopSettings() {
                     onChange={(v) => setHingeK(h.id, v)} />,
                   <NumberInput key="e" value={h.endOffset} min={0} max={300} step={5}
                     onChange={(v) => setHingeEnd(h.id, v)} />,
+                  <FittingArticlePicker key="article" system={h} onChange={(id) => editShop({
+                    hingeSystems: shop.hingeSystems.map((entry) => {
+                      if (entry.id !== h.id) return entry
+                      if (id) return { ...entry, fittingProductId: id }
+                      const copy = { ...entry }
+                      delete copy.fittingProductId
+                      return copy
+                    }),
+                  })} />,
                 ],
               }))}
             />
@@ -368,9 +488,7 @@ export function ShopSettings() {
 
             <SectionTitle>{tr('Услуги цеха')}</SectionTitle>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Каждую услугу считайте так, как считаете её у себя: один цех берёт за лист,
-              другой за метр кромки, третий за отверстие. Услуга с нулевой ставкой в смету
-              не попадает и не считается незаполненной.
+              {tr('Считайте услуги по правилам своего цеха: за лист, метр кромки или отверстие. Услуга с нулевой ставкой не попадает в смету и не считается незаполненной.')}
             </p>
             <div className="max-h-[40vh] overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
               <table className="w-full text-xs">
@@ -417,6 +535,26 @@ export function ShopSettings() {
               </table>
             </div>
 
+            <SectionTitle>{tr('Дополнительные услуги за лист')}</SectionTitle>
+            <label className="mb-2 flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={shop.sheetServices?.enabled === true}
+                onChange={(event) => editShop({ sheetServices: {
+                  enabled: event.target.checked,
+                  rates: shop.sheetServices?.rates ?? { cutting: 0, drilling: 0, edging: 0 },
+                  ...(shop.sheetServices?.byMaterial ? { byMaterial: shop.sheetServices.byMaterial } : {}),
+                } })} />
+              {tr('Добавить услуги за каждый использованный лист')}
+            </label>
+            {shop.sheetServices?.enabled && <div className="grid gap-2 sm:grid-cols-3">
+              {SHEET_SERVICE_IDS.map((sid) => <Field key={sid} label={tr(SHEET_SERVICE_NAMES[sid])}
+                hint={tr('Дополнительно к обычным услугам')}>
+                <MoneyInput value={shop.sheetServices?.rates[sid] ?? 0} label={tr(SHEET_SERVICE_NAMES[sid])}
+                  onChange={(value) => editShop({ sheetServices: {
+                    ...shop.sheetServices!, rates: { ...shop.sheetServices!.rates, [sid]: value },
+                  } })} />
+              </Field>)}
+            </div>}
+
             <SectionTitle>{tr('Коэффициент, монтаж и наценка')}</SectionTitle>
             <div className="grid gap-2 sm:grid-cols-3">
               <Field label={tr('Коэффициент')} hint={tr('умножает материалы, услуги и фурнитуру')}>
@@ -444,13 +582,11 @@ export function ShopSettings() {
                 />
               </Field>
               <Button onClick={() => editShop({ maxShelfSpan: null })} disabled={shop.maxShelfSpan === null}>
-                Выключить
+                {tr('Выключить')}
               </Button>
             </div>
             <p className="max-w-2xl text-[11px] leading-snug text-neutral-400">
-              Значения по умолчанию здесь нет намеренно. Предел зависит от материала, толщины и того,
-              что кладут на полку — один цех ставит 800 мм, другой 900. Пока поле пустое, предупреждение
-              не показывается вовсе.
+              {tr('Предел полки зависит от материала, толщины и нагрузки. Пока поле пустое, предупреждение не показывается.')}
             </p>
 
             <SectionTitle>{tr('Пределы габарита')}</SectionTitle>
@@ -475,12 +611,11 @@ export function ShopSettings() {
               ))}
             </div>
             <p className="max-w-2xl text-[11px] leading-snug text-neutral-400">
-              0 — предела нет. Это предупреждение, а не запрет: габарит всё равно можно ввести,
-              цех вправе сделать корпус крупнее и собрать его из двух. Умолчаний здесь тоже нет —
-              предел задаёт станок, лист и машина, которой везут заказ.
+              {tr('0 — предела нет. Это предупреждение, а не запрет: предел задают станок, лист и машина для доставки.')}
             </p>
           </div>
         ) : null}
+        </fieldset>}
       </div>
     </div>
   )
@@ -501,8 +636,7 @@ function PriceListManager({ shop }: { shop: ShopProfile }) {
     <div className="space-y-2">
       <SectionTitle>{tr('Прайс-листы')}</SectionTitle>
       <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-        Материалы, размеры и правила цеха общие для всех прайсов. В новом прайсе цены равны нулю;
-        материал, добавленный позже, в старом прайсе тоже получает нулевую цену.
+        {tr('Материалы, размеры и правила цеха общие для всех прайсов. В новом прайсе цены равны нулю; материал, добавленный позже, в старом прайсе тоже получает нулевую цену.')}
       </p>
       <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
         <Select
@@ -530,7 +664,7 @@ function PriceListManager({ shop }: { shop: ShopProfile }) {
         <Button onClick={() => createPriceList(`Прайс ${shop.priceLists.length + 1}`, 'blank')}>
           {tr('+ Новый прайс')}
         </Button>
-        <Button onClick={() => createPriceList(`${active.name} (копия)`, 'copy')}>
+        <Button onClick={() => createPriceList(nextCopyName(active.name, shop.priceLists.map((list) => list.name)), 'copy')}>
           {tr('Копировать текущий')}
         </Button>
       </div>
@@ -566,8 +700,7 @@ function HandleCatalogue({
     <div className="space-y-2">
       <SectionTitle>{tr('Ручки')} ({handles.length})</SectionTitle>
       <p className="max-w-2xl text-[11px] leading-snug text-neutral-400">
-        Артикулы и цены у каждого цеха свои, поэтому в программе лежат только виды.
-        Добавьте свои позиции — они попадут и в выбор фасада, и в смету.
+        {tr('Артикулы и цены у каждого цеха свои. Добавьте свои позиции — они попадут в выбор фасада и смету.')}
       </p>
       <ul className="space-y-1">
         {handles.map((h) => (
@@ -649,8 +782,7 @@ function AddMaterial() {
     return (
       <div className="flex items-center justify-between">
         <p className="text-[11px] text-neutral-500">
-          Каталог ваш: добавьте декоры, с которыми реально работаете —
-          в библиотеке {DECOR_LIBRARY.length} позиций.
+          {tf('Каталог ваш: добавьте свои декоры. В библиотеке {n} позиций.', { n: DECOR_LIBRARY.length })}
         </p>
         <Button onClick={() => setOpen(true)}>{tr('+ материал')}</Button>
       </div>
@@ -775,7 +907,7 @@ function AddMaterial() {
         </div>
       </div>
       <p className="text-[11px] text-neutral-400">
-        Цена всегда начинается с нуля — её задаёте вы.
+        {tr('Цена всегда начинается с нуля — её задаёте вы.')}
       </p>
     </div>
   )
@@ -793,7 +925,7 @@ function MaterialActions({ id }: { id: string }) {
       <Button
         onClick={() => removeMaterial(id)}
         disabled={used}
-        title={used ? 'Используется в проекте' : 'Удалить из каталога'}
+        title={used ? tr('Используется в проекте') : tr('Удалить из каталога')}
       >
         ✕
       </Button>

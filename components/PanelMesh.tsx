@@ -5,14 +5,16 @@
  * детальді көрсетеді), рез өлшемі емес — CLAUDE.md §4.3.
  */
 
-import { useEffect, useMemo } from 'react'
+import { useContext, useEffect, useMemo } from 'react'
+import { ClassicSceneContext, P100_SELECTION_COLOR } from '@/lib/classicSceneContext'
 import { t as tr } from '@/lib/i18n'
 import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { Edges, Html } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { grainTexture } from '@/lib/grainTexture'
-import { boxGrainUAxis, decorTexture, grainRotation, normalTexture, type GrainUVAxis } from '@/lib/decorTexture'
+import { ambientOcclusionTexture, boxGrainUAxis, decorTexture, grainRotation, normalTexture, type GrainUVAxis } from '@/lib/decorTexture'
 import { materialRenderKey, resolveMaterialLook } from '@/lib/materialLook'
+import { selectionHandlePositions } from '@/lib/selectionHandles'
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import { polygonShape } from '@/lib/f32PolygonShape'
@@ -23,6 +25,9 @@ import { drillToLocalMarker } from '@/lib/drillGeometry'
 import { DrillMarkers } from '@/components/DrillMarkers'
 import { FittingMeshes } from '@/components/FittingMeshes'
 import { fittingsForPanel } from '@/lib/fittingGeometry'
+import { xrayViewState } from '@/lib/xrayView'
+import { boxFitting } from '@/lib/fittingRenderGeometry'
+import { panelOpacity } from '@/lib/panelOpacity'
 import type { RenderedDrillMarker } from '@/components/DrillMarkers'
 
 /**
@@ -48,6 +53,15 @@ const NEUTRAL = '#b8b4ac'
  * бұл — камераны айналдыру не модульді жылжыту, детальді таңдау емес.
  */
 const CLICK_SLOP = 6
+
+function SelectionHandles({ size, cornerOrigin = false }: { size: { x: number; y: number; z: number }; cornerOrigin?: boolean }) {
+  return <group data-testid="selection-handles">
+    {selectionHandlePositions(size, cornerOrigin).map((point, index) => <mesh key={index} position={point} renderOrder={20}>
+      <boxGeometry args={[10, 10, 10]} />
+      <meshBasicMaterial color="#0878c9" depthTest={false} />
+    </mesh>)}
+  </group>
+}
 
 function shade(hex: string, factor: number): string {
   const value = hex.replace('#', '')
@@ -134,7 +148,7 @@ function MillingLines({ panel, catalog, settings, extents }: {
  * ядродан (`panel.handle`), сондықтан тұтқа тесіктің дәл үстінде тұрады.
  */
 const HANDLE_STEEL = '#c3c8ce'
-const HANDLE_GOLA = '#8d949b'
+const PROFILE_COLORS = { darkGray: '#52575b', silver: HANDLE_STEEL, black: '#252729' } as const
 const HANDLE_WOOD = '#8a5a34'
 const HANDLE_RECESS = '#3a3f44'
 
@@ -181,6 +195,7 @@ function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: nu
   }
 
   if (handle.kind === 'profile') {
+    const profileColor = PROFILE_COLORS[handle.profileColor ?? 'silver']
     const edge = handle.edge ?? 'top'
     // Жиектен фасадтың ІШІНЕ қараған бағыт.
     const inward: [number, number] = edge === 'top' ? [0, -1] : edge === 'bottom' ? [0, 1] : edge === 'left' ? [1, 0] : [-1, 0]
@@ -192,7 +207,7 @@ function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: nu
       return (
         <mesh position={at(-16, face + 22)} castShadow>
           <boxGeometry args={size(30, 40)} />
-          <Metal color={HANDLE_GOLA} />
+          <Metal color={profileColor} />
         </mesh>
       )
     }
@@ -201,7 +216,7 @@ function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: nu
       return (
         <mesh position={at(12, face - 6)} castShadow>
           <boxGeometry args={size(28, 12)} />
-          <Metal />
+          <Metal color={profileColor} />
         </mesh>
       )
     }
@@ -209,7 +224,7 @@ function HandleMesh({ handle, extents }: { handle: PanelHandle; extents: { x: nu
     return (
       <mesh position={at(11, 0)} castShadow>
         <boxGeometry args={size(22, extents.z + 1)} />
-        <Metal />
+        <Metal color={profileColor} />
       </mesh>
     )
   }
@@ -340,15 +355,36 @@ export function PanelMesh({
   const exploded = useConfigurator((s) => s.exploded)
   const hovered = useConfigurator((s) => s.hovered)
   const setHovered = useConfigurator((s) => s.setHovered)
-  const viewMode = useConfigurator((s) => s.viewMode)
+  const storedViewMode = useConfigurator((s) => s.viewMode)
   const selected = useConfigurator((s) => s.selected)
   const setSelected = useConfigurator((s) => s.setSelected)
   const setActive = useConfigurator((s) => s.setActive)
   const togglePanelOpen = useConfigurator((s) => s.togglePanelOpen)
+  const openContextMenu = (event: { nativeEvent: MouseEvent; stopPropagation: () => void }) => {
+    if (vr) return
+    event.stopPropagation()
+    event.nativeEvent.preventDefault()
+    if (!document.querySelector('[data-workspace-style]')) { if (panel.opening) togglePanelOpen(key); return }
+    if (cabinetId) setActive(cabinetId)
+    setSelected(key)
+    window.dispatchEvent(new CustomEvent('furniture:scene-context', {
+      detail: { panelId: key, nodeId: cabinetId ?? null, x: event.nativeEvent.clientX, y: event.nativeEvent.clientY },
+    }))
+  }
   const onPanelDoubleClick = () => {
     const classicWorkspace = document.querySelector('[data-workspace-style="classic"]')
       && window.matchMedia('(min-width: 1024px)').matches
     if (!classicWorkspace) { if (panel.opening) togglePanelOpen(key); return }
+    /*
+     * PRO100: бірінші шерту детальды таңдайды; ТАҢДАЛҒАН детальге қос шерту —
+     * детальдың өз қасиеттері. Таңдалмаған детальге бірден қос шерту — корпус
+     * (қос шертудің екі шертуі таңдауды қосып-өшіреді, сондықтан осы сәтте
+     * `selected === key` тек деталь бұрыннан таңдалған болса ғана шын).
+     */
+    if (cabinetId && useConfigurator.getState().selected === key) {
+      window.dispatchEvent(new CustomEvent('furniture:open-part-properties', { detail: { panelId: key, nodeId: cabinetId } }))
+      return
+    }
     openProperties()
   }
   const openProperties = () => {
@@ -362,8 +398,12 @@ export function PanelMesh({
   const quality = useConfigurator((s) => s.quality)
   // Присадка белгісі — әдепкіде ӨШІРУЛІ (store/configurator.ts), клиентке
   // көрсеткенде керек емес.
-  const showDrilling = useConfigurator((s) => s.showDrilling)
-  const showFittings = useConfigurator((s) => s.showFittings)
+  const storedShowDrilling = useConfigurator((s) => s.showDrilling)
+  const storedShowFittings = useConfigurator((s) => s.showFittings)
+  const xray = useConfigurator((s) => s.xray)
+  const { viewMode, showDrilling, showFittings } = xrayViewState({
+    viewMode: storedViewMode, showDrilling: storedShowDrilling, showFittings: storedShowFittings,
+  }, xray)
   const key = pid ?? panel.id
   const material = useMemo(
     () => catalog.materials.find((m) => m.id === panel.materialId),
@@ -385,7 +425,7 @@ export function PanelMesh({
   )
   // Тек екеуі ғана лак қабатын алады (§docs/visual/material.md §3) —
   // қалғаны арзанырақ `meshStandardMaterial`-де қалады.
-  const usesPhysical = quality !== 'low' && (decor?.finish === 'gloss' || decor?.finish === 'stone')
+  const usesPhysical = quality !== 'low' && (decor?.finish === 'gloss' || decor?.finish === 'stone' || look.clearcoat > 0 || look.sheen > 0)
   const invalidate = useThree((s) => s.invalidate)
 
   const extents = useMemo(() => panelExtents(panel, thickness), [panel, thickness])
@@ -434,17 +474,8 @@ export function PanelMesh({
       return { ...m, point, direction }
     })
   }, [canonicalDrillMarkers, panel.orientation, panel.finishedLength, panel.finishedWidth, thickness])
-  const boxFittings = useMemo(() => fittings.map((item) => {
-    const point = { x: 0, y: 0, z: 0 }
-    point[panel.orientation.length] = item.point.x - panel.finishedLength / 2
-    point[panel.orientation.width] = item.point.y - panel.finishedWidth / 2
-    point[panel.orientation.thickness] = item.point.z - thickness / 2
-    const normal = { x: 0, y: 0, z: 0 }
-    normal[panel.orientation.length] = item.normal.x
-    normal[panel.orientation.width] = item.normal.y
-    normal[panel.orientation.thickness] = item.normal.z
-    return { ...item, point, normal }
-  }), [fittings, panel.orientation, panel.finishedLength, panel.finishedWidth, thickness])
+  const boxFittings = useMemo(() => fittings.map((item) => boxFitting(item, panel, thickness)),
+    [fittings, panel, thickness])
 
   const position = useMemo(() => {
     const base = {
@@ -469,8 +500,8 @@ export function PanelMesh({
    * әрең көрінетін сұлба. Тінтуір астындағы панель ӘРҚАШАН тұтас қалады:
    * әйтпесе мөлдір режимде нені меңзеп тұрғаның білінбейді.
    */
-  const opacity = ((showFittings && exploded > 0 && panel.role === 'front') ? 0.3
-    : viewMode === 'solid' || isHovered || isSelected ? 1 : viewMode === 'ghost' ? 0.28 : 0.06) * look.opacity
+  const opacity = panelOpacity({ xray, viewMode, hovered: isHovered, selected: isSelected,
+    lookOpacity: look.opacity, explodedFront: showFittings && exploded > 0 && panel.role === 'front' })
 
   /**
    * Қиғаш деталь мен көлбеу крышка — жалғыз екі жағдай, онда панель әлем
@@ -610,15 +641,38 @@ export function PanelMesh({
     return tex
   }, [pbr?.normal, panel.finishedLength, panel.finishedWidth, panel.grainAlongLength, panel.orientation, shape, tilted, invalidate])
   useEffect(() => () => { normalMap?.dispose() }, [normalMap])
-  const shaderKey = materialRenderKey(usesPhysical, Boolean(texture), Boolean(normalMap))
+  const aoMap = useMemo(() => {
+    if (!pbr?.ambientOcclusion) return null
+    const ao = pbr.ambientOcclusion
+    const tex = ambientOcclusionTexture(ao.url, panel.finishedLength, panel.finishedWidth, ao.sizeMm, () => invalidate())
+    if (tex) {
+      const uAxis: GrainUVAxis = shape || tilted ? 'length' : boxGrainUAxis(panel.orientation)
+      tex.center.set(0.5, 0.5)
+      tex.rotation = grainRotation(uAxis, panel.grainAlongLength)
+    }
+    return tex
+  }, [pbr?.ambientOcclusion, panel.finishedLength, panel.finishedWidth, panel.grainAlongLength, panel.orientation, shape, tilted, invalidate])
+  useEffect(() => () => { aoMap?.dispose() }, [aoMap])
+  /*
+   * PRO100: таңдалған элемент ТҰТАС КӨК боялады (эталон `#0f11ff`), текстурасыз;
+   * корпустың өзі таңдалса (`selected === cabinetId`), оның барлық детальдары.
+   */
+  const classicScene = useContext(ClassicSceneContext)
+  const painted = classicScene.classic && (isSelected || (cabinetId !== undefined && selected === cabinetId))
+  const shownMap = painted ? null : texture
+  const shownNormal = painted || classicScene.relief === 0 ? null : normalMap
+  const shownAo = painted ? null : aoMap
+  const reliefScale = (pbr?.normal?.strength ?? 1) * (classicScene.classic ? classicScene.relief : 1)
+  const envScale = look.envMapIntensity * (classicScene.classic ? classicScene.reflection : 1)
+  const shaderKey = materialRenderKey(usesPhysical, Boolean(shownMap), Boolean(shownNormal), Boolean(shownAo))
 
-  const color = isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
+  const color = painted ? P100_SELECTION_COLOR : isSelected ? '#b9ddf5' : isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
   /*
    * Таңдалғанын ТҮСПЕН көрсетуге болмайды: декордың өзі сары (дуб, бук) —
    * бөлектеу онда жоғалады. Сондықтан таңдалған детальдің ҚЫРЫ сызылады, ол
    * кез келген декордың үстінен көрінеді.
    */
-  const outline = isSelected ? <Edges color="#f2c14e" lineWidth={2.5} /> : null
+  const outline = isSelected && !classicScene.classic ? <Edges color="#0878c9" lineWidth={2.5} /> : null
   // Шыны фасад: мөлдір әйнек + әрқашан көрінетін ЖИЕК (рама). Тұтас панельдей
   // емес, ішін көрсетеді — qdesign-дегі шыны есіктер сияқты.
   const isGlass = panel.glass === true
@@ -645,13 +699,14 @@ export function PanelMesh({
           }}
           onPointerOut={() => setHovered(null)}
           // Прогулканың сәулесі осы кілтпен ЖЕКЕ есікті табады.
-          userData={panel.opening ? { doorPid: key } : {}}
+          userData={{ ...(panel.opening ? { doorPid: key } : {}), p100Selected: painted }}
           // Классикалық десктопта Properties; өзге көріністе есік/ящик ашылады.
           onDoubleClick={(e) => {
             if (vr) return
             e.stopPropagation()
             onPanelDoubleClick()
           }}
+          onContextMenu={openContextMenu}
           onClick={(e) => {
             // VR-да оқиға корпустың тобына көтеріледі — ол есікті ашады.
             if (vr) return
@@ -673,27 +728,31 @@ export function PanelMesh({
           )}
           {usesPhysical ? (
             <meshPhysicalMaterial
-              key={shaderKey} color={color} map={texture} normalMap={normalMap}
-              normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
+              key={shaderKey} color={color} map={shownMap} normalMap={shownNormal} aoMap={shownAo}
+              aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1} sheen={look.sheen}
+              normalScale={[reliefScale, reliefScale]}
               roughness={look.roughness} metalness={look.metalness}
               clearcoat={look.clearcoat} clearcoatRoughness={look.clearcoatRoughness}
-              envMapIntensity={look.envMapIntensity}
+              envMapIntensity={envScale}
               transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
             />
           ) : (
             <meshStandardMaterial
-              key={shaderKey} color={color} map={texture} normalMap={normalMap}
-              normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
+              key={shaderKey} color={color} map={shownMap} normalMap={shownNormal} aoMap={shownAo}
+              aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1}
+              normalScale={[reliefScale, reliefScale]}
               roughness={look.roughness} metalness={look.metalness}
-              envMapIntensity={look.envMapIntensity}
+              envMapIntensity={envScale}
               transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
             />
           )}
           {outline}
+          {xray && !isSelected ? <Edges color="#586574" lineWidth={1} /> : null}
+          {isSelected && !classicScene.classic && <SelectionHandles size={{ x: panel.finishedLength, y: panel.finishedWidth, z: thickness }} cornerOrigin={Boolean(shape)} />}
         </mesh>
         {/* Канондық кеңістік (ұзындық/ен/қалыңдық, бұрылусыз) — дәл осы
             топтың ӨЗ жергілікті кеңістігі, сондықтан ешбір ауыстырусыз. */}
-        <DrillMarkers markers={canonicalDrillMarkers} />
+        <DrillMarkers markers={canonicalDrillMarkers} xray={xray} dimmed={Boolean(xray && selected && !isSelected)} />
         <FittingMeshes fittings={fittings} />
       </group>
     )
@@ -709,12 +768,13 @@ export function PanelMesh({
         setHovered(key)
       }}
       onPointerOut={() => setHovered(null)}
-      userData={panel.opening ? { doorPid: key } : {}}
+      userData={{ ...(panel.opening ? { doorPid: key } : {}), p100Selected: painted }}
       onDoubleClick={(e) => {
         if (vr) return
         e.stopPropagation()
         onPanelDoubleClick()
       }}
+      onContextMenu={openContextMenu}
       onClick={(e) => {
         if (vr) return
         if (e.delta > CLICK_SLOP) return
@@ -736,14 +796,15 @@ export function PanelMesh({
       ) : usesPhysical ? (
         <meshPhysicalMaterial
           key={shaderKey} color={color}
-          map={texture}
-          normalMap={normalMap}
-          normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
+          map={shownMap}
+          normalMap={shownNormal} aoMap={shownAo}
+          aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1} sheen={look.sheen}
+          normalScale={[reliefScale, reliefScale]}
           roughness={look.roughness}
           metalness={look.metalness}
           clearcoat={look.clearcoat}
           clearcoatRoughness={look.clearcoatRoughness}
-          envMapIntensity={look.envMapIntensity}
+          envMapIntensity={envScale}
           transparent={opacity < 1}
           opacity={opacity}
           // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.
@@ -752,12 +813,13 @@ export function PanelMesh({
       ) : (
         <meshStandardMaterial
           key={shaderKey} color={color}
-          map={texture}
-          normalMap={normalMap}
-          normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
+          map={shownMap}
+          normalMap={shownNormal} aoMap={shownAo}
+          aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1}
+          normalScale={[reliefScale, reliefScale]}
           roughness={look.roughness}
           metalness={look.metalness}
-          envMapIntensity={look.envMapIntensity}
+          envMapIntensity={envScale}
           transparent={opacity < 1}
           opacity={opacity}
           // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.
@@ -767,7 +829,8 @@ export function PanelMesh({
       {/* Шыны есіктің рамасы әрқашан көрінеді. */}
       {isGlass ? <Edges color="#5b5147" lineWidth={2} /> : null}
       {outline}
-      {quality !== 'low' && !isGlass && !isSelected
+      {isSelected && !classicScene.classic && <SelectionHandles size={extents} />}
+      {(xray || quality !== 'low') && !isGlass && !isSelected
         ? <PanelEdges x={extents.x} y={extents.y} z={extents.z} />
         : null}
       {panel.role === 'front' && panel.milling.length > 0 ? (
@@ -778,16 +841,16 @@ export function PanelMesh({
       {/* Канондық нүкте боксттың ОРТАСЫНАН саналған ығысуға ауыстырылды
           (`boxDrillMarkers`, жоғарыда) — бұл мештің өз жергілікті кеңістігі
           дәл сол орталықтан саналады. */}
-      <DrillMarkers markers={boxDrillMarkers} />
+      <DrillMarkers markers={boxDrillMarkers} xray={xray} dimmed={Boolean(xray && selected && !isSelected)} />
       <FittingMeshes fittings={boxFittings} />
-      {isHovered || isSelected ? (
+      {!classicScene.classic && (isHovered || isSelected) ? (
         <Html center zIndexRange={[10, 0]}>
-          <div className="pointer-events-none whitespace-nowrap rounded bg-neutral-900/90 px-2 py-1 text-[11px] text-white shadow">
+          <div className="p100-panel-tooltip pointer-events-none whitespace-nowrap px-2 py-1 text-[11px]">
             <b>{panelDisplayLabel(panel.label)}</b>
-            <span className="mx-1.5 opacity-50">·</span>
-            готовый {panel.finishedLength}×{panel.finishedWidth}
-            <span className="mx-1.5 opacity-50">·</span>
-            <span className="text-amber-300">{tr('рез')} {panel.cutLength}×{panel.cutWidth}</span>
+            <span className="mx-1.5">·</span>
+            {tr('Готовый')} {panel.finishedLength} (L) × {panel.finishedWidth} (W)
+            <span className="mx-1.5">·</span>
+            <span className="p100-cut">{tr('Рез')} {panel.cutLength} (L) × {panel.cutWidth} (W)</span>
           </div>
         </Html>
       ) : null}

@@ -10,6 +10,8 @@
  */
 
 import { create } from 'zustand'
+import { nextCopyName } from '@/src/core/copyName'
+import { solidStartPosition } from '@/lib/sceneUiPlacement'
 import { t as tr } from '@/lib/i18n'
 import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
@@ -20,6 +22,10 @@ import { CLOUD_SELECTION_KEY, nextHistoryId, revisionDecision } from '@/lib/f24U
 import type { LocalRevision } from '@/lib/f24UiLogic'
 import { validSilhouetteHeight } from '@/lib/silhouetteInput'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
+import { LATHE_PROFILES, specialSolidSize } from '@/src/core/specialParts'
+import type { FabricationSpec } from '@/src/core/specialParts'
+import { validateImportedModel } from '@/src/core/import/tds'
+
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import { materialUsedInTree } from '@/lib/materialUsedInTree'
@@ -65,16 +71,17 @@ import {
   templateToCabinet,
 } from '@/src/core/index'
 import type { Quality } from '@/lib/appearance'
+import type { BoardNode, SolidNode } from '@/src/core/tree'
 import type { PanoramaContext } from '@/lib/panorama'
 import type {
   AnnotationSpec, BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
-  PropertyClipboard, ScalePercent, SceneNode, SolidSpec,
+  PropertyClipboard, ScalePercent, SceneNode, SolidSpec, Transform,
   Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
   SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
-  setNodeLayer, treeFromProject } from '@/src/core/index'
+  setNodeLayer, treeFromProject, updateNodeTransform } from '@/src/core/index'
 import { LEGACY_MATERIAL_ALIASES } from '@/src/core/data/catalog/materials'
 import { appendNodeArray, assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, translateTreeNodes, ungroupNode } from '@/src/core/treeEditing'
 import type { ArrayOptions } from '@/src/core/array'
@@ -211,6 +218,8 @@ type State = Snapshot & {
   showDrilling: boolean
   /** Бекіткіштің процедуралық пішіндері; тесік режимімен өзара бөлек. */
   showFittings: boolean
+  /** Бүкіл жобаға арналған мөлдір присадка көрінісі. */
+  xray: boolean
   /**
    * Есік пен ящиктің АШЫЛУЫ: 0 — жабық, 1 — толық ашық.
    *
@@ -292,6 +301,10 @@ type State = Snapshot & {
   selectedWall: WallId
 
   galleryOpen: boolean
+  /** Ас үй шебері (5 қадам) ашық па — мәзір, құрал жолағы, галерея бәрі осыны ашады. */
+  wizardOpen: boolean
+  /** Галереяның жоғарғы карточкасындағы жылдам генератор формасы жайылған ба. */
+  kitchenGeneratorOpen: boolean
   aiOpen: boolean
   roomOpen: boolean
 
@@ -323,8 +336,13 @@ type State = Snapshot & {
   edit(key: string, patch: Partial<CabinetConfig>): void
   addBoard(): string
   addSolid(): string
+  importNode(node: BoardNode | SolidNode): void
+  addSpecialPart(kind: 'lathe' | 'bent'): string
+  addImportedSolid(node: SolidNode): void
   editSolid(id: string, patch: Partial<SolidSpec>): void
   setSolidPosition(id: string, position: Vec3): void
+  /** Бір атомдық Properties өзгерісі: топ, еркін тақта немесе декоративті дене. */
+  setNodeTransform(id: string, transform: Transform): void
   mirrorFreeNode(id: string): string
   addAnnotation(): string
   editAnnotation(id: string, patch: Partial<AnnotationSpec>): void
@@ -407,6 +425,7 @@ type State = Snapshot & {
   setShowFronts(v: boolean): void
   setShowDrilling(v: boolean): void
   setShowFittings(v: boolean): void
+  setXray(v: boolean): void
   setOpenness(v: number): void
   /** Бірінші жақтан жүру режимі (Прогулка). */
   walk: boolean
@@ -462,6 +481,10 @@ type State = Snapshot & {
   setCameraPreset(v: CameraPreset): void
   setHovered(v: string | null): void
   setGalleryOpen(v: boolean): void
+  setWizardOpen(v: boolean): void
+  setKitchenGeneratorOpen(v: boolean): void
+  /** Галереяны ашып, жылдам ас үй генераторын бірден жаю. */
+  openKitchenGenerator(): void
   setAiOpen(v: boolean): void
   setRoomOpen(v: boolean): void
 }
@@ -545,6 +568,7 @@ function projectMaterialsAfterShopEdit(saved: Material[] | undefined, before: Ma
       ...(previous.sheetHeight !== edited.sheetHeight ? { sheetHeight: edited.sheetHeight } : {}),
       ...(previous.hasGrain !== edited.hasGrain ? { hasGrain: edited.hasGrain } : {}),
       ...(previous.trimEdge !== edited.trimEdge ? { trimEdge: edited.trimEdge } : {}),
+      ...(previous.minBendRadiusMm !== edited.minBendRadiusMm ? { minBendRadiusMm: edited.minBendRadiusMm } : {}),
       ...(JSON.stringify(previous.decor) !== JSON.stringify(edited.decor) ? { decor: edited.decor } : {}),
       ...(JSON.stringify(previous.pbr) !== JSON.stringify(edited.pbr) ? { pbr: edited.pbr } : {}),
       ...(JSON.stringify(previous.defaultEdging) !== JSON.stringify(edited.defaultEdging)
@@ -691,6 +715,8 @@ const cleanPriceOverrides = (overrides: PriceOverrides): PriceOverrides | undefi
   // сақталған файлда `coefficient: undefined` секілді бос кілт қалады.
   if (overrides.coefficient !== undefined) cleaned.coefficient = overrides.coefficient
   if (overrides.salePrice !== undefined) cleaned.salePrice = overrides.salePrice
+  if (overrides.withoutInstallation !== undefined) cleaned.withoutInstallation = overrides.withoutInstallation
+  if (overrides.salePriceScaling !== undefined) cleaned.salePriceScaling = overrides.salePriceScaling
   if (overrides.lineDiscounts && Object.keys(overrides.lineDiscounts).length > 0) {
     cleaned.lineDiscounts = overrides.lineDiscounts
   }
@@ -799,6 +825,7 @@ export const useConfigurator = create<State>((set, get) => ({
   showFronts: true,
   showDrilling: false,
   showFittings: false,
+  xray: false,
   openness: 0,
   busy: null,
   shareCodeOpen: false,
@@ -830,6 +857,8 @@ export const useConfigurator = create<State>((set, get) => ({
   selectedWall: 'south',
 
   galleryOpen: false,
+  wizardOpen: false,
+  kitchenGeneratorOpen: false,
   aiOpen: false,
   roomOpen: false,
 
@@ -878,9 +907,54 @@ export const useConfigurator = create<State>((set, get) => ({
   addSolid() {
     const s = get()
     const id = `solid-${crypto.randomUUID()}`
-    const root: GroupNode = { ...s.root, children: [...s.root.children, createSolidNode(id, tr('Декоративный блок'))] }
+    const solid = createSolidNode(id, tr('Декоративный блок'))
+    const active = findNode(s.root, s.activeId)
+    solid.transform.pos = solidStartPosition(s.room, active?.transform.pos ?? null,
+      active?.kind === 'cabinet' ? active.config.width : active?.kind === 'solid' ? active.solid.size.x : 100)
+    const root: GroupNode = { ...s.root, children: [...s.root.children, solid] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id
+  },
+
+  importNode(node) {
+    const s = get()
+    if (findNode(s.root, node.id)) {
+      throw new ConfigValidationError('node.id', `түйін id-і қайталанады: ${node.id}`, 'бірегей id')
+    }
+    const root: GroupNode = { ...s.root, children: [...s.root.children, node] }
+    // Парсер тек файл құрылымын тексереді; өндірістік өлшемді жоба каталогымен де тексереміз.
+    flattenTree(root, s.catalog, s.projectSettings ?? s.shop.settings, s.layers)
+    set({ ...treeEdit(s, root), activeId: node.id, selected: node.id, firstRun: false })
+  },
+
+  addSpecialPart(kind) {
+    const s = get()
+    const material = s.catalog.materials.find((item) => Number.isSafeInteger(item.thickness) &&
+      (kind === 'lathe' || item.minBendRadiusMm !== undefined))
+    if (!material) throw new ConfigValidationError('minBendRadiusMm',
+      'иілуге жарайтын материал мен оның ең аз радиусын цех баптауында көрсетіңіз', 'материалға оң бүтін мм')
+    const fabrication: FabricationSpec = kind === 'lathe'
+      ? { kind: 'lathe', profile: structuredClone(LATHE_PROFILES[0]!.profile),
+        materialId: material.id, quantity: 1, unitPrice: 0 }
+      : { kind: 'bent', chord: 100, radius: Math.max(100, material.minBendRadiusMm! + material.thickness),
+        height: 500, thickness: material.thickness, referenceFace: 'inner',
+        materialId: material.id, quantity: 1, unitPrice: 0 }
+    const id = `${kind}-${crypto.randomUUID()}`
+    const node = createSolidNode(id, tr(kind === 'lathe' ? 'Токарная деталь' : 'Гнутая деталь'))
+    node.solid = { ...node.solid, fabrication,
+      size: specialSolidSize(fabrication, material.minBendRadiusMm) }
+    const root: GroupNode = { ...s.root, children: [...s.root.children, node] }
+    set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
+    return id
+  },
+
+  addImportedSolid(node) {
+    const s = get()
+    if (!node.solid.importedModel) throw new ConfigValidationError('importedModel', 'mesh жоқ', '3DS/OBJ')
+    validateImportedModel(node.solid.importedModel)
+    if (findNode(s.root, node.id)) throw new ConfigValidationError('solid.id', 'id қайталанды', 'бірегей id')
+    const root: GroupNode = { ...s.root, children: [...s.root.children, node] }
+    set({ ...treeEdit(s, root), activeId: node.id, selected: node.id, firstRun: false })
   },
 
   addAnnotation() {
@@ -900,14 +974,30 @@ export const useConfigurator = create<State>((set, get) => ({
 
   editSolid(id, patch) {
     const s = get()
-    const root = editSolidTree(s.root, id, s.layers, { solid: patch })
+    const root = editSolidTree(s.root, id, s.layers, { solid: patch }, s.catalog.materials)
     if (root !== s.root) set(treeEdit(s, root))
   },
 
   setSolidPosition(id, position) {
     const s = get()
-    const root = editSolidTree(s.root, id, s.layers, { position })
+    const root = editSolidTree(s.root, id, s.layers, { position }, s.catalog.materials)
     if (root !== s.root) set(treeEdit(s, root))
+  },
+
+  setNodeTransform(id, transform) {
+    const s = get()
+    const node = findNode(s.root, id)
+    if (!node || !['group', 'board', 'solid'].includes(node.kind) || id === s.root.id) {
+      throw new ConfigValidationError('nodeId', `орнын өзгертуге болмайтын түйін: ${id}`, 'топ, тақта немесе декоративті дене')
+    }
+    for (const axis of ['x', 'y', 'z'] as const) {
+      if (!Number.isSafeInteger(transform.pos[axis])) throw new ConfigValidationError(`transform.pos.${axis}`, 'орын бүтін мм болуы керек', 'бүтін мм')
+    }
+    if (transform.rot.x !== 0 || transform.rot.z !== 0 || !Number.isFinite(transform.rot.y)) {
+      throw new ConfigValidationError('transform.rot', 'осы редакторда тек Y өсі бойынша бұрылыс бар', 'rot.x = 0, rot.z = 0, rot.y = нақты градус')
+    }
+    if (JSON.stringify(node.transform) === JSON.stringify(transform)) return
+    set(treeEdit(s, updateNodeTransform(s.root, id, transform, s.layers)))
   },
 
   mirrorFreeNode(id) {
@@ -1453,7 +1543,7 @@ export const useConfigurator = create<State>((set, get) => ({
       ...shop.materials.map((material) => material.id),
       ...shop.edgeBands.map((band) => band.id),
     ]
-    const copy = cloneCatalogMaterial(source, existingIds)
+    const copy = cloneCatalogMaterial(source, existingIds, shop.materials.map((material) => material.name))
     get().setShop({ ...shop, materials: [...shop.materials, copy] })
   },
 
@@ -1515,6 +1605,7 @@ export const useConfigurator = create<State>((set, get) => ({
   setShowFronts: (showFronts) => set({ showFronts }),
   setShowDrilling: (showDrilling) => set({ showDrilling, ...(showDrilling ? { showFittings: false } : {}) }),
   setShowFittings: (showFittings) => set({ showFittings, ...(showFittings ? { showDrilling: false } : {}) }),
+  setXray: (xray) => set({ xray }),
   // «Закрыть створки» / E — БӘРІН жабады: қолмен бір-бірлеп ашылғандарын да.
   setOpenness: (openness) => set(openness <= 0
     ? { openness: 0, openPanels: {}, openCabinets: {} }
@@ -1735,11 +1826,17 @@ export const useConfigurator = create<State>((set, get) => ({
   },
   placeLibraryItem(item, parentId) {
     const s = get()
+    const targetId = parentId ?? s.root.id
+    if (targetId === s.root.id) {
+      if (s.root.locked) {
+        throw new ConfigValidationError('node.locked', `түйін құлыпталған: "${s.root.name}"`, 'locked = false')
+      }
+    } else assertTreeNodeEditable(s.root, targetId, s.layers)
     const merged = mergeLibraryCatalog(s.catalog, item)
     // Баға тек цехтікі (жоқ болса 0) — кітапхана файлындағы баға жобаға кірмейді,
     // әйтпесе қойғандағы смета жобаны қайта ашқандағыдан өзгеше шығады.
     const catalog = projectCatalog(s.shop, merged.materials, merged.edgeBands)
-    const root = insertLibraryItem(s.root, item, catalog, parentId ?? s.root.id, () => `node-${crypto.randomUUID()}`)
+    const root = insertLibraryItem(s.root, item, catalog, targetId, () => `node-${crypto.randomUUID()}`)
     set({ root, catalog, projectMaterials: catalog.materials, projectEdgeBands: catalog.edgeBands,
       ...cabinetsFromTree(root, s.room, s.layers),
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT), future: [], lastEditKey: null })
@@ -1849,7 +1946,9 @@ export const useConfigurator = create<State>((set, get) => ({
     })
     const newId = `cabinet-${crypto.randomUUID()}`
     set({
-      ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: `${source.name} (копия)` }], [
+      ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: nextCopyName(source.name, s.cabinets.map((cabinet) => cabinet.name)) }], [
+
+
         ...s.placements,
         { cabinetId: newId, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
       ]),
@@ -1888,11 +1987,13 @@ export const useConfigurator = create<State>((set, get) => ({
 
   removeCabinet(id) {
     const s = get()
-    if (s.cabinets.length <= 1) return
+    // PRO100-дегідей соңғы корпусты да өшіруге болады: бос бөлме (корпуссыз
+    // v4 ағашы) редакторда толық қолдау табады (tests/workspaceEmptyTree).
+    if (!s.cabinets.some((c) => c.id === id)) return
     const cabinets = s.cabinets.filter((c) => c.id !== id)
     set({
       ...legacyEdit(s, cabinets, s.placements.filter((p) => p.cabinetId !== id)),
-      activeId: s.activeId === id ? cabinets[0]!.id : s.activeId,
+      activeId: s.activeId === id ? cabinets[0]?.id ?? s.root.id : s.activeId,
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
       lastEditKey: null,
@@ -1985,6 +2086,9 @@ export const useConfigurator = create<State>((set, get) => ({
   setSelected: (selected) => set({ selected }),
   setAssemblyStep: (assemblyStep) => set({ assemblyStep }),
   setGalleryOpen: (galleryOpen) => set({ galleryOpen }),
+  setWizardOpen: (wizardOpen) => set({ wizardOpen }),
+  setKitchenGeneratorOpen: (kitchenGeneratorOpen) => set({ kitchenGeneratorOpen }),
+  openKitchenGenerator: () => set({ galleryOpen: true, kitchenGeneratorOpen: true }),
   setAiOpen: (aiOpen) => set({ aiOpen }),
   setRoomOpen: (roomOpen) => set({ roomOpen }),
 }))

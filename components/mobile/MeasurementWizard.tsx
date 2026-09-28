@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { t } from '@/lib/i18n'
+import { showIssue } from '@/lib/validationVisibility'
 import { CORNER_IDS, OBSTACLE_KINDS, WALL_IDS, validateMeasurement, type MeasurementSurvey, type ObstacleKind, type RoomTolerance } from '@/src/core/measure'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import type { WallId } from '@/src/core/types'
 import type { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
+import { useNativeBack } from '@/lib/mobile/nativeBack'
 import type { JsonValue } from '@/src/core/sync/types'
 import type { ProjectFileV4 } from '@/src/core/projectV4'
 import { measurementImpactView } from '@/lib/mobile/measurementImpactView'
@@ -81,6 +84,8 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   const [kitchenWall, setKitchenWall] = useState<WallId>('north')
   const [wallTolerance, setWallTolerance] = useState(0)
   const [cornerTolerance, setCornerTolerance] = useState(0)
+  const [fieldTouched, setFieldTouched] = useState<Record<string, boolean>>({})
+  const [roomAttempted, setRoomAttempted] = useState(false)
   const [laserTarget, setLaserTarget] = useState<'height' | `walls.${WallId}.length`>('height')
   const [laserText, setLaserText] = useState('')
   const [linkedProject, setLinkedProject] = useState<ProjectFileV4 | null>(null)
@@ -107,6 +112,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   }, [store, survey])
 
   const changeNumber = (field: SurveyField, value: string, source: CaptureSource) => {
+    setFieldTouched((current) => ({ ...current, [field]: true }))
     setDraftNumbers((current) => ({ ...current, [field]: value }))
     const numeric = parseWholeInput(value, 1)
     if (numeric === null) return
@@ -118,7 +124,6 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     try {
       const next = applyDistoText(survey, laserTarget, laserText, Date.now())
       setSurvey(next)
-      setDraftNumbers((current) => { const nextDraft = { ...current }; delete nextDraft[laserTarget]; return nextDraft })
       setLaserText('')
       setMessage(t('Измерение Leica DISTO D5 записано'))
     } catch (error) {
@@ -153,6 +158,8 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     try { await saveChain.current; onBack() }
     catch (error) { setMessage(error instanceof Error ? error.message : t('Не удалось сохранить черновик')) }
   }
+  // Android «Артқа»: шеберден тізімге (қосымшадан шығып кетпейді).
+  useNativeBack(() => { void leave() })
 
   const selectPhoto = async (kind: ObstacleKind, file: File | undefined) => {
     if (!file) return
@@ -171,6 +178,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   }
 
   const nextFromRoom = () => {
+    setRoomAttempted(true)
     const badInput = Object.entries(draftNumbers).find(([field, raw]) =>
       (field === 'height' || field.startsWith('walls.') && field.endsWith('.length') || field.startsWith('corners.')) && parseWholeInput(raw, 1) === null)
     if (badInput) { setMessage(`${issueLabel(badInput[0])}: ${t('Допустимо целое число в диапазоне')} 1…${Number.MAX_SAFE_INTEGER}`); return }
@@ -204,9 +212,13 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
   }) => <label className="block min-w-0 text-sm font-medium">
       <span className="mb-1 block">{t(label)}</span>
       <span className="flex min-w-0 gap-2">
-        <input aria-label={`${t(label)}, ${t(unit)}`} aria-invalid={draftNumbers[field] !== undefined && parseWholeInput(draftNumbers[field], min) === null}
-          className={`${input} ${draftNumbers[field] !== undefined && parseWholeInput(draftNumbers[field], min) === null ? '!border-[#9b1c1c]' : ''}`}
+        <input aria-label={`${t(label)}, ${t(unit)}`} aria-invalid={
+          (draftNumbers[field] !== undefined && parseWholeInput(draftNumbers[field], min) === null) ||
+          (showIssue(field, fieldTouched, roomAttempted) && issues.some((issue) => issue.path === field || issue.path === `${field}.value`))}
+          className={`${input} ${(draftNumbers[field] !== undefined && parseWholeInput(draftNumbers[field], min) === null) ||
+            (showIssue(field, fieldTouched, roomAttempted) && issues.some((issue) => issue.path === field || issue.path === `${field}.value`)) ? '!border-[#9b1c1c]' : ''}`}
           inputMode="numeric" type="text" value={draftNumbers[field] ?? (value.value || '')}
+          onBlur={() => setFieldTouched((current) => ({ ...current, [field]: true }))}
           onChange={(event) => changeNumber(field, event.target.value, value.source)} />
         <select aria-label={`${t(label)}: ${t('Источник')}`} className={`${input} !w-28 shrink-0`}
           value={value.source} onChange={(event) => changeNumber(field, draftNumbers[field] ?? String(value.value), event.target.value as CaptureSource)}>
@@ -214,7 +226,8 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
         </select>
       </span>
       <span className="mt-1 block text-xs text-[#525252]">{t(unit)} · {sourceLine(value)}</span>
-      {issues.some((issue) => issue.path === field || issue.path === `${field}.value`) && <span className="block text-xs text-[#9b1c1c]">{t('Требуется целое положительное значение')}</span>}
+      {showIssue(field, fieldTouched, roomAttempted) && issues.some((issue) => issue.path === field || issue.path === `${field}.value`) &&
+        <span className="block text-xs text-[#9b1c1c]">{t(label)}: {t('Допустимо целое число в диапазоне')} {min}…{Number.MAX_SAFE_INTEGER} {t(unit)}</span>}
       {draftNumbers[field] !== undefined && parseWholeInput(draftNumbers[field], min) === null &&
         <span className="block text-xs text-[#9b1c1c]">{t(label)}: {t('Допустимо целое число в диапазоне')} {min}…{Number.MAX_SAFE_INTEGER} {t(unit)}</span>}
     </label>
@@ -226,16 +239,16 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     return <fieldset key={kind} className="min-w-0 border border-[#b8b8b8] bg-white p-3">
       <legend className="px-1 text-sm font-semibold">{t(obstacleLabels[kind])}</legend>
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" aria-pressed={answer.status === 'present'} className={`${button} ${answer.status === 'present' ? '!border-[#005a9e] !bg-[#dceeff]' : ''}`}
+        <button type="button" aria-pressed={answer.status === 'present'} className={`${button} ${answer.status === 'present' ? '!border-[var(--brand-graphite)] !bg-[var(--brand-amber)]' : ''}`}
           onClick={() => { setDraftNumbers((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${path}.`))));
             setSurvey((current) => updateObstacle(current, wall, kind, { status: 'present' })) }}>{t('Есть')}</button>
-        <button type="button" aria-pressed={answer.status === 'absent'} className={`${button} ${answer.status === 'absent' ? '!border-[#005a9e] !bg-[#dceeff]' : ''}`}
+        <button type="button" aria-pressed={answer.status === 'absent'} className={`${button} ${answer.status === 'absent' ? '!border-[var(--brand-graphite)] !bg-[var(--brand-amber)]' : ''}`}
           onClick={() => { setDraftNumbers((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${path}.`))));
             setSurvey((current) => updateObstacle(current, wall, kind, { status: 'absent' })) }}>{t('Нет')}</button>
       </div>
       <label className="mt-2 block text-sm">
         <span className="mb-1 block">{t('Фото обязательно даже при ответе «нет»')}</span>
-        <input aria-label={`${t(obstacleLabels[kind])}: ${t('Фото')}`} className="block w-full min-w-0 text-sm file:mr-2 file:min-h-11 file:border file:border-[#8c8c8c] file:bg-white file:px-3" type="file" accept="image/*" capture="environment"
+        <LocalizedFileChooser ariaLabel={`${t(obstacleLabels[kind])}: ${t('Фото')}`} caption="Выбрать фото" accept="image/*" capture="environment"
           onChange={(event) => void selectPhoto(kind, event.target.files?.[0])} />
       </label>
       {answer.photoRef && <p className="mt-1 text-xs text-[#235b2d]">{t('Фото сохранено на этом устройстве')}</p>}
@@ -336,7 +349,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       {WALL_IDS.map((id) => <div key={id}>{renderMeasuredField({ field: `walls.${id}.length`, label: wallLabels[id], value: survey.walls[id].length })}</div>)}
       <h2 className="font-semibold">{t('Углы, градусы')}</h2>
       {CORNER_IDS.map((id) => <div key={id}>{renderMeasuredField({ field: `corners.${id}`, label: cornerLabels[id], value: survey.corners[id], unit: '°' })}</div>)}
-      <button className={`${button} w-full !border-[#005a9e] !bg-[#005a9e] !text-white`} type="button" onClick={nextFromRoom}>{t('К препятствиям')}</button>
+      <button className={`${button} w-full !border-[var(--brand-graphite)] !bg-[var(--brand-graphite)] !text-white`} type="button" onClick={nextFromRoom}>{t('К препятствиям')}</button>
     </section>}
     {step === 'wall' && <section className="space-y-3">
       <h1 className="text-xl font-semibold">{t(wallLabels[wall])} · {wallIndex + 1}/4</h1>
@@ -344,7 +357,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
       {OBSTACLE_KINDS.map(answerCard)}
       <div className="grid grid-cols-2 gap-2">
         <button className={button} type="button" onClick={() => wallIndex ? setWallIndex(wallIndex - 1) : setStep('room')}>{t('Назад')}</button>
-        <button className={`${button} !border-[#005a9e] !bg-[#005a9e] !text-white`} type="button" onClick={nextFromWall}>{wallIndex < 3 ? t('Следующая стена') : t('Проверить')}</button>
+        <button className={`${button} !border-[var(--brand-graphite)] !bg-[var(--brand-graphite)] !text-white`} type="button" onClick={nextFromWall}>{wallIndex < 3 ? t('Следующая стена') : t('Проверить')}</button>
       </div>
     </section>}
     {step === 'review' && <section className="space-y-3">
@@ -365,7 +378,7 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
         <ul className="mt-2 list-disc pl-5">{issues.map((issue) => <li key={`${issue.path}:${issue.message}`}>{issueLabel(issue.path)}: {issueCopy(issue.path, survey)}</li>)}</ul>
       </div> : <p className="border border-[#247333] bg-white p-3 text-sm">{t('Все обязательные ответы и фото есть')}</p>}
       <button className={`${button} w-full`} type="button" onClick={() => { setStep('wall'); setWallIndex(0) }}>{t('Исправить замер')}</button>
-      <button className={`${button} w-full !border-[#005a9e] !bg-[#005a9e] !text-white`} type="button" disabled={busy || issues.length > 0} onClick={() => void save()}>{t('Сохранить замер')}</button>
+      <button className={`${button} w-full !border-[var(--brand-graphite)] !bg-[var(--brand-graphite)] !text-white`} type="button" disabled={busy || issues.length > 0} onClick={() => void save()}>{t('Сохранить замер')}</button>
       <label className="block text-sm">{t('Стена первого ряда кухни')}
         <select className={`${input} mt-1`} value={kitchenWall} onChange={(event) => setKitchenWall(event.target.value as WallId)}>
           {WALL_IDS.map((id) => <option key={id} value={id}>{t(wallLabels[id])}</option>)}

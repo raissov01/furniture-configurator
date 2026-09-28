@@ -1,7 +1,8 @@
 /** 3D символдарының дерегі тек дайын присадкадан шығады. Өндірістік өлшем есептелмейді. */
 import { drillToLocalMarker } from './drillGeometry'
 import { SHELF_PIN_PITCH } from '../src/core/constants'
-import type { ConstructionSettings, DrillPurpose, EdgeBand, Panel, Vec3 } from '../src/core/types'
+import { DRAWER_SYSTEMS } from '../src/core/drawerSystems'
+import type { Axis, ConstructionSettings, DrillPurpose, EdgeBand, Panel, Vec3 } from '../src/core/types'
 
 export type FittingVisual = {
   purpose: DrillPurpose
@@ -12,14 +13,58 @@ export type FittingVisual = {
   depth: number
   /** Конфирматтың нақты ұзындығы немесе басқа тесік үшін drill depth, мм. */
   length: number
+  /** Осы панельдің материалында ғана көрінетін бөлігі, мм. */
+  embeddedLength: number
   name: string
   article: string
+  /** Жәшіктің нақты бүйір тереңдігінен алынған рельс, тек бірінші бекіту тесігінде. */
+  rail?: { center: Vec3; length: number; sideClearance: number; system: 'roller' | 'ball' | 'tandem'; axis?: Axis } | undefined
+}
+
+export type FittingShape = {
+  head: [number, number, number]
+  shaft: [number, number, number]
+  arm: [number, number, number] | null
+  plate: [number, number, number] | null
+}
+
+/** Мешке арналған шартты пішін; өндірістік координата мен өлшемді өзгертпейді. */
+export function fittingShape(item: FittingVisual): FittingShape {
+  const d = item.diameter
+  const shaft: [number, number, number] = [d, item.embeddedLength, d]
+  if (item.purpose === 'hinge' && d >= 30) return {
+    head: [d, 2, d], shaft,
+    arm: [d, item.depth, d / 2], plate: [d / 2, item.depth, d / 2],
+  }
+  if (item.purpose === 'minifix' && d >= 12) return {
+    head: [d, 3, d], shaft, arm: null, plate: null,
+  }
+  if (item.purpose === 'runner') return {
+    head: [d + 3, 3, d + 3], shaft,
+    arm: null, plate: null,
+  }
+  if (item.purpose === 'shelfPin') return {
+    head: [d + 4, 3, d + 4], shaft, arm: null, plate: null,
+  }
+  return {
+    head: [d + (item.purpose === 'confirmat' ? 3 : 1), 3,
+      d + (item.purpose === 'confirmat' ? 3 : 1)],
+    shaft, arm: null, plate: null,
+  }
 }
 
 const NAMES: Record<DrillPurpose, string> = {
   confirmat: 'Конфирмат', dowel: 'Шкант', minifix: 'Минификс', shelfPin: 'Полкодержатель',
   hinge: 'Петля', runner: 'Направляющая', handle: 'Ручка', leg: 'Опора',
   facadeScrew: 'Крепление фасада',
+}
+
+/** Штанга ұстағыштарының орны ядро шығарған штанганың екі ұшында. */
+export function rodBracketCentres(centre: Vec3, length: number): [Vec3, Vec3] {
+  return [
+    { x: centre.x - length / 2, y: centre.y, z: centre.z },
+    { x: centre.x + length / 2, y: centre.y, z: centre.z },
+  ]
 }
 
 export function fittingsForPanel(
@@ -78,17 +123,42 @@ export function fittingsForPanel(
   return panel.drilling.flatMap((drill, index): FittingVisual[] => {
     if (visibleIndices && !visibleIndices.has(index)) return []
     const marker = drillToLocalMarker(panel, drill, thickness, bands, settings)
+    const normal = {
+      x: marker.direction.x === 0 ? 0 : -marker.direction.x,
+      y: marker.direction.y === 0 ? 0 : -marker.direction.y,
+      z: marker.direction.z === 0 ? 0 : -marker.direction.z,
+    }
+    const length = drill.purpose === 'confirmat' ? settings.confirmatScrewLength : drill.depth
+    const dimensions = { x: panel.finishedLength, y: panel.finishedWidth, z: thickness }
+    const travel = (['x', 'y', 'z'] as const).find((axis) => normal[axis] !== 0)!
+    const room = normal[travel] > 0 ? marker.point[travel] : dimensions[travel] - marker.point[travel]
+    const worldHeight = panel.position.y + marker.point.x
+    const drawer = drill.purpose === 'runner' && assemblyPanels && panel.orientation.length === 'y'
+      ? assemblyPanels.filter((part) => part.role === 'drawerSide'
+        && part.position.y <= worldHeight && worldHeight <= part.position.y + part.finishedLength)
+        .sort((a, b) => Math.abs(a.position.x - panel.position.x) - Math.abs(b.position.x - panel.position.x))[0]
+      : undefined
+    const firstRunnerHole = !panel.drilling.slice(0, index).some((previous) => previous.purpose === 'runner'
+      && previous.face === drill.face && previous.x === drill.x)
+    const runnerSystem = drill.hardwareId?.includes('roller') ? 'roller'
+      : drill.hardwareId?.includes('ball') ? 'ball' : 'tandem'
+    const runnerSpec = DRAWER_SYSTEMS[runnerSystem]
+    const railLength = drawer ? drawer.finishedWidth + (drill.hardwareId ? runnerSpec.boxDepthSub : 0) : 0
     return [{
       purpose: drill.purpose,
       point: marker.point,
-      normal: {
-        x: marker.direction.x === 0 ? 0 : -marker.direction.x,
-        y: marker.direction.y === 0 ? 0 : -marker.direction.y,
-        z: marker.direction.z === 0 ? 0 : -marker.direction.z,
-      },
+      normal,
       diameter: drill.diameter,
       depth: drill.depth,
-      length: drill.purpose === 'confirmat' ? settings.confirmatScrewLength : drill.depth,
+      length,
+      embeddedLength: Math.max(0, Math.min(length, room)),
+      ...(drawer && firstRunnerHole ? { rail: {
+        center: { x: marker.point.x, y: drawer.position.z - panel.position.z + railLength / 2,
+          z: marker.point.z + normal.z * drill.diameter / 2 },
+        length: railLength,
+        sideClearance: runnerSpec.sideClearance,
+        system: runnerSystem,
+      } } : {}),
       name: NAMES[drill.purpose] ?? 'Фурнитура',
       article: drill.hardwareId ?? (drill.purpose === 'confirmat' && settings.confirmatScrewLength === 50
         ? 'confirmat-7x50' : 'Артикул не задан'),

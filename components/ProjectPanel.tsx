@@ -11,6 +11,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -42,6 +43,9 @@ const STAGE_COLOR: Record<AssemblyStage, string> = {
 export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Catalog }) {
   const open = useConfigurator((s) => s.projectOpen)
   const setOpen = useConfigurator((s) => s.setProjectOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'project', () => setOpen(false))
+
+
   const setHovered = useConfigurator((s) => s.setHovered)
   // Тізімдегі жол мен 3D бір-бірін БІЛЕДІ: жолды бассаң, сахна сол қадамға
   // тұрады да, деталь бөлектеледі. Цехтағы адам «мынау қайсысы» дегенді
@@ -67,8 +71,11 @@ export function ProjectPanel({ panels, catalog }: { panels: Panel[]; catalog: Ca
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 backdrop-blur-sm"
-      onClick={() => setOpen(false)}
+      style={{ zIndex }}
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      onClick={() => { if (isTop) setOpen(false) }}
+
+
     >
       <div
         className="w-full max-w-3xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"

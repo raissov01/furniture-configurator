@@ -17,6 +17,8 @@ import type { Cutout } from './cutouts'
 import type { MillingPath } from './milling'
 import type { PolygonContourInput } from './polygon'
 import type { ManufacturerModelSource } from './manufacturerAssets'
+import type { FabricationSpec } from './specialParts'
+import type { ImportedModelSpec } from './import/tds'
 
 /** Ата-түйінге ҚАТЫСТЫ орны. Орын — бүтін мм (§0.2), бұрыш — градус. */
 export type Transform = { pos: Vec3; rot: Vec3 }
@@ -93,8 +95,14 @@ export type BoardSpec = {
 /** Өндіріске КЕТПЕЙТІН қорап: техника, тас, декор. */
 export type SolidSpec = {
   size: Vec3
+  /** Токарлық/иілген бұйым: ағаштан туындайтын бөлек өндірістік позиция. */
+  fabrication?: FabricationSpec | undefined
+  /** Қолданушы жүктеген OBJ/3DS; тек көрініске, өндіріске емес. */
+  importedModel?: ImportedModelSpec | undefined
   color?: string | undefined
   textureId?: string | undefined
+  /** Қолмен қойылған құн, тиын; өндіріске кірмейтін тауар сметада бөлек жол. */
+  manualPriceTiyn?: number | undefined
   /** Модельге сыртқы сілтеме; mesh файлы жобаға енгізілмейді. */
   modelSource?: ManufacturerModelSource | undefined
 }

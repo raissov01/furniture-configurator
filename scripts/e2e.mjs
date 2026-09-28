@@ -13,7 +13,7 @@
  */
 
 import { spawn } from 'node:child_process'
-import { captureFailureSnapshot, makeHelpers, serializeCapture } from './e2eHelpers.mjs'
+import { acceptJavaScriptDialog, captureFailureSnapshot, makeHelpers, serializeCapture } from './e2eHelpers.mjs'
 
 const BASE = process.argv[2] ?? 'http://localhost:3000'
 const PORT = Number(process.env['E2E_CDP_PORT'] ?? 9333)
@@ -51,9 +51,12 @@ async function connect() {
   let id = 0
   const pending = new Map()
   const consoleErrors = []
+  const dialogs = []
 
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data)
+    // `send` төменде анықталады; оқиға тек `Page.enable`-ден кейін келеді.
+    acceptJavaScriptDialog(msg, (method, params) => send(method, params), dialogs)
     if (msg.id && pending.has(msg.id)) {
       pending.get(msg.id)(msg.result)
       pending.delete(msg.id)
@@ -91,7 +94,7 @@ async function connect() {
     width: 1500, height: 1000, deviceScaleFactor: 1, mobile: false,
   })
 
-  return { ws, send, consoleErrors }
+  return { ws, send, consoleErrors, dialogs }
 }
 
 // ── Тест қабығы ──────────────────────────────────────────────────────────────
@@ -141,7 +144,7 @@ async function run() {
   await ensureChrome()
   const session = await connect()
   const h = makeHelpers(session, BASE)
-  const { mkdirSync, writeFileSync } = await import('node:fs')
+  const { mkdirSync, readFileSync, writeFileSync } = await import('node:fs')
   snapshot = serializeCapture(async (n) => {
     const shot = await session.send('Page.captureScreenshot', { format: 'png' })
     if (!shot?.data) return null
@@ -155,9 +158,8 @@ async function run() {
   // мен цех профилі жаңа жүгірісте эталон шкафты ауыстырып жіберер еді.
   await h.goto('/configurator', 6000)
   await h.evaluate('localStorage.clear()')
-  // Бұл ескі сценарийлер оң жақтағы тұрақты редакторды тексереді.
-  // Жаңа әдепкі классикалық жұмыс орны бөлек e2e сценарийінде тексеріледі.
-  await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'ours')")
+  // Барлық сценарий классикалық жұмыс орнын пайдаланады.
+  await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'classic')")
   // Сессия cookie-і де тазаланады: алдыңғы жүгіріс кірген күйде қалдырса,
   // тіркелу тесті «шыққан» экранды таппай қалады.
   await session.send('Network.clearBrowserCookies')
@@ -206,7 +208,7 @@ async function run() {
     }))()`)
     check(workspace.mark && workspace.title.includes('AisMebel'), 'классикалық жұмыс орнында бренд белгісі бар')
     check(Boolean(await snapshot('brand-workspace')), 'классикалық жұмыс орнының скриншоты сақталды')
-    await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'ours')")
+    await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'classic')")
 
     await session.send('Emulation.setDeviceMetricsOverride', {
       width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
@@ -236,11 +238,10 @@ async function run() {
 
   await test('Эталон шкаф: 6 позиция / 11 деталь', async () => {
     await h.goto('/configurator', 11000)
-    const body = await h.text()
-    check(body.includes('Позиций: 6'), 'позиция саны 6')
-    check(body.includes('Деталей: 11'), 'деталь саны 11')
     const rows = await h.cutListRows()
-    check(rows.length === 6, `кестеде 6 жол (${rows.length})`)
+    check(rows.length === 6, `позиция саны 6 (${rows.length})`)
+    const quantity = rows.reduce((sum, row) => sum + Number(row[1] ?? 0), 0)
+    check(quantity === 11, `деталь саны 11 (${quantity})`)
     check(rows.some((r) => r[0] === 'Боковина'), 'боковина бар')
   })
 
@@ -298,7 +299,11 @@ async function run() {
       return true
     })()`)
     check(await chooseJoint('minifix'), 'минификс таңдалды')
-    check(await h.until(`document.body.innerText.includes('Источник: этот корпус')`, 3000), 'шкаф override-ы көрінеді')
+    check(await h.until(`(() => {
+      const root = JSON.parse(localStorage.getItem('furniture-configurator:project') ?? '{}').root
+      const find = (node) => node?.kind === 'cabinet' ? node : node?.children?.map(find).find(Boolean)
+      return find(root)?.config?.carcassJoint === 'minifix'
+    })()`, 5000), 'шкаф override-ы сақталды')
     check(await h.clickText('Открыть присадку', 400), 'жаңа присадка ашылды')
     check((await h.text()).includes('Минификс'), 'жаңа типтің тесіктері көрсетіледі')
     await h.closeModals()
@@ -331,9 +336,12 @@ async function run() {
     check(await h.clickText('Наборы', 1200), 'наборы табы ашылды')
     check(await h.clickContains('Угловой шкаф', 3500), 'жиынтық таңдалды')
     await h.closeModals()
-    // Тақырыптағы белгі: «N панелей · корпусов: M».
-    const body = await h.text()
-    check(/корпусов: [2-9]/.test(body), `бірнеше корпус жүктелді (${body.match(/корпусов: \d+/)?.[0] ?? '—'})`)
+    const cabinetCount = await h.evaluate(`(() => {
+      const root = JSON.parse(localStorage.getItem('furniture-configurator:project') ?? '{}').root
+      const count = (node) => node?.kind === 'cabinet' ? 1 : (node?.children ?? []).reduce((sum, child) => sum + count(child), 0)
+      return count(root)
+    })()`)
+    check(cabinetCount >= 2, `бірнеше корпус жүктелді (${cabinetCount})`)
   })
 
   await test('Нарисовать: перегородка, ящики, штанга', async () => {
@@ -357,11 +365,22 @@ async function run() {
       await session.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 })
       await h.wait(700)
     }
-    const sections = () => h.evaluate(`(document.body.innerText.match(/Секции \\((\\d+)\\)/i) || [])[1]`)
+    const sections = () => h.evaluate(`(() => {
+      const root = JSON.parse(localStorage.getItem('furniture-configurator:project') ?? '{}').root
+      const count = (node) => node?.kind === 'cabinet' ? node.config.sections.length :
+        (node?.children ?? []).reduce((sum, child) => sum + count(child), 0)
+      return count(root)
+    })()`)
 
     const before = await sections()
     await h.clickText('Перегородка', 500)
     await at(0.5, 0.5)
+    await h.until(`(() => {
+      const root = JSON.parse(localStorage.getItem('furniture-configurator:project') ?? '{}').root
+      const count = (node) => node?.kind === 'cabinet' ? node.config.sections.length :
+        (node?.children ?? []).reduce((sum, child) => sum + count(child), 0)
+      return count(root) === ${Number(before) + 1}
+    })()`, 10000)
     const after = await sections()
     check(Number(after) === Number(before) + 1, `перегородка қосылды: ${before} → ${after}`)
 
@@ -413,7 +432,10 @@ async function run() {
 
     // Бұрыштық режим фасадты алып тастайды әрі жоба автосақталады, сондықтан
     // күйді КЕЛЕСІ сценарийге қалдыруға болмайды.
+    const dialogsBefore = session.dialogs.length
     check(await h.menu('Проект', 'Сброс', 2000), 'жоба ысырылды')
+    check(session.dialogs.slice(dialogsBefore).some((d) => d.includes('Сбросить текущий проект?')),
+      'ысыру растау сұрады')
   })
 
   await test('Планка, фальш-панель, фартук', async () => {
@@ -589,6 +611,33 @@ async function run() {
     await h.clickText('Закрыть', 800)
   })
 
+  await test('qdesign: рендер, сұрақ-жауап және қаржы басқаруы', async () => {
+    await h.goto('/configurator', 11000)
+    await h.sceneCenter(60000)
+    await h.closeModals()
+    check(await h.clickText('Рендер', 900), 'рендер терезесі ашылды')
+    check(await h.evaluate("document.querySelector('[role=group][aria-label=\"Пропорция кадра\"]')?.querySelectorAll('button').length === 4"),
+      'төрт кадр пропорциясы бар')
+    check(await h.evaluate("Boolean([...document.querySelectorAll('input[type=file]')].find(x => x.accept.includes('image/jpeg')))"),
+      'бөлме фотосын таңдау бар')
+    await h.closeModals()
+
+    check(await h.menu('Создать', 'Техзадание (словами)', 900), 'бриф ашылды')
+    check(await h.clickText('Вопросы по шагам', 500), 'сұрақ ағыны ашылды')
+    check((await h.text()).includes('Что будем делать?'), 'бірінші сұрақ көрінеді')
+    check(await h.clickText('Следующий вопрос', 500), 'әдепкі жауаппен келесі сұрақ')
+    check((await h.text()).includes('Длина стены под мебель'), 'өлшем сұрағы шықты')
+    await h.closeModals()
+
+    check(await h.menu('Проект', 'Смета и раскрой', 900), 'қаржы ашылды')
+    check(await h.clickText('Стоимость', 500), 'баға қойындысы ашылды')
+    const controls = await h.text()
+    check(controls.includes('Без монтажа'), 'орнатусыз белгісі бар')
+    check(controls.includes('Менять ручную цену по площади ЛДСП'), 'ауданға сай баға опциясы бар')
+    check(controls.includes('Базовые цены фурнитуры'), 'фурнитура бағасын өзгерту бар')
+    await h.closeModals()
+  })
+
   await test('Смета: қызметтер, коэффициент, фурнитура тізімі', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
@@ -614,6 +663,47 @@ async function run() {
       return b ? !b.disabled : null
     })()`)
     check(btn === true, `«Фурнитура» батырмасы белсенді (${btn})`)
+    await h.clickText('Закрыть', 700)
+  })
+
+  await test('Өз каталогы: сүзгі, жеке импорт және артикул ескертулері', async () => {
+    await h.closeModals()
+    check(await h.clickText('Цех', 1200), 'цех баптауы ашылды')
+    check(await h.clickText('Материалы', 900), 'материалдар табы ашылды')
+    const filters = await h.evaluate(`(() => ({
+      producer: Boolean(document.querySelector('[aria-label="Производитель"]')),
+      collection: Boolean(document.querySelector('[aria-label="Коллекция"]')),
+      code: Boolean(document.querySelector('[aria-label="Код декора"]')),
+      source: Boolean([...document.querySelectorAll('a')].find((a) => a.textContent.trim() === 'Источник'))
+    }))()`)
+    check(filters.producer && filters.collection && filters.code && filters.source, 'декордың сүзгілері мен дереккөзі көрінді')
+    const addedMaterial = await h.evaluate(`(() => {
+      const button = [...document.querySelectorAll('button')].find((item) => item.textContent.trim() === 'Добавить в цех' && !item.disabled)
+      button?.click()
+      return Boolean(button)
+    })()`)
+    check(addedMaterial, 'ашық каталогтан бір материал таңдалды')
+    check(await h.until(`document.body.innerText.includes('Добавлено')`, 4000), 'материал цех профиліне қосылды')
+    check(await h.clickText('Каталог цеха', 900), 'жеке импорт табы ашылды')
+    const importState = await h.evaluate(`(() => ({
+      formats: document.body.innerText.includes('Базис Excel') && document.body.innerText.includes('PRO100 textures.ini'),
+      rights: Boolean(document.querySelector('input[type="checkbox"]')),
+      saveDisabled: [...document.querySelectorAll('button')].find((button) => button.textContent.trim() === 'Сохранить импорт')?.disabled
+    }))()`)
+    check(importState.formats && importState.rights && importState.saveDisabled, 'импорт құқық растауын талап етеді')
+    check(await h.clickText('Петли', 900), 'топса табы ашылды')
+    const fitting = await h.evaluate(`(() => ({
+      picker: Boolean(document.querySelector('select[aria-label*="Артикул производителя"]')),
+      warning: document.body.innerText.includes('Недостаточно данных для присадки'),
+      source: Boolean([...document.querySelectorAll('a')].find((a) => a.textContent.trim() === 'Официальный чертёж'))
+    }))()`)
+    check(fitting.picker && fitting.warning && fitting.source, 'ресми артикул, сызба және жетпейтін дерек көрсетілді')
+    check(await h.clickText('Фурнитура', 900), 'фурнитура анықтамалығы ашылды')
+    const catalog = await h.evaluate(`(() => ({
+      brands: ['Blum', 'Hettich', 'Boyard', 'GTV', 'AKS'].every((brand) => document.body.innerText.includes(brand)),
+      source: Boolean([...document.querySelectorAll('a')].find((a) => a.textContent.includes('Официальный чертёж')))
+    }))()`)
+    check(catalog.brands && catalog.source, 'барлық бренд пен ресми дереккөз көрінді')
     await h.clickText('Закрыть', 700)
   })
 
@@ -1032,6 +1122,66 @@ async function run() {
     check(persisted === 1, 'қайта ашқанда жеке кітапхана сақталды')
   })
 
+  await test('Базис кітапханасы: Кухня және Gola санаттары көрінеді', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 11000)
+    check(await h.until("document.querySelector('[data-workspace-style=classic]') !== null", 10000),
+      'классикалық редактор толық жүктелді')
+    check(await h.until(`Boolean([...document.querySelectorAll('button')]
+      .find((button) => button.textContent.trim() === 'Библиотека'))`, 10000), 'кітапхана құралы көрінді')
+    await h.clickText('Пропустить', 150)
+    check(await h.clickText('Библиотека', 350), 'кітапхана ашылды')
+    check(await h.until(`Boolean(document.querySelector('[data-testid="tree-dock"] input[placeholder="Найти категорию"]'))`, 10000),
+      'категория іздеуі ашылды')
+    const categorySearch = await h.evaluate(`(() => {
+      const field = document.querySelector('[data-testid="tree-dock"] input[placeholder="Найти категорию"]')
+      if (!field) return false
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+      setter.call(field, 'Базис:')
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    })()`)
+    check(categorySearch, 'Базис санаттары сүзілді')
+    check(await h.until(`Boolean([...document.querySelectorAll('[data-testid="tree-dock"] select')]
+      .find((select) => [...select.options].some((option) => option.value === 'Базис: Кухня')))`, 10000),
+      'Базис санаттары жүктелді')
+    const categories = await h.evaluate(`(() => {
+      const selects = [...document.querySelectorAll('[data-testid="tree-dock"] select')]
+      const category = selects.find((select) => [...select.options].some((option) => option.value === 'Базис: Кухня'))
+      return category ? [...category.options].map((option) => option.value) : []
+    })()`)
+    check(categories.includes('Базис: Кухня') && categories.includes('Базис: Gola'), 'екі Basis санаты бар')
+    const selected = await h.evaluate(`(() => {
+      const category = [...document.querySelectorAll('[data-testid="tree-dock"] select')]
+        .find((select) => [...select.options].some((option) => option.value === 'Базис: Кухня'))
+      if (!category) return false
+      category.value = 'Базис: Кухня'
+      category.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    })()`)
+    check(selected, 'Кухня сүзгісі таңдалды')
+    check(await h.until(`Boolean([...document.querySelectorAll('[data-testid="tree-dock"] button')]
+      .find((button) => button.textContent.includes('(H) ×') && button.textContent.includes('(W) ×')))`, 7000),
+      'модуль өлшемі H × W × D болып көрінді')
+    const materialTab = await h.evaluate(`(() => {
+      const tab = [...document.querySelectorAll('[data-testid="tree-dock"] button')]
+        .find((button) => button.textContent.trim() === 'Материалы')
+      tab?.click()
+      return Boolean(tab)
+    })()`)
+    check(materialTab, 'Базис материалдары ашылды')
+    const added = await h.evaluate(`(() => {
+      const button = [...document.querySelectorAll('[data-testid="tree-dock"] button')]
+        .find((entry) => entry.textContent.trim() === 'Добавить в цех' && !entry.disabled)
+      button?.click()
+      return Boolean(button)
+    })()`)
+    check(added, 'материал цех каталогына таңдалды')
+    check(await h.until(`Boolean([...document.querySelectorAll('[data-testid="tree-dock"] button')]
+      .find((button) => button.textContent.trim() === 'Уже в цехе' && button.disabled))`, 7000),
+      'материал қайталап қосылмайды')
+  })
+
   await test('Визуал: PBR, жарық және 360° панорама', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
@@ -1096,6 +1246,44 @@ async function run() {
         lightCount: project.lights?.length }
     })()`)
     check(reloaded.roughness === 0.34 && reloaded.lightCount === 1, 'қайта ашқанда PBR мен жарық сақталды')
+  })
+
+  await test('Импорт докы: қате DXF және өндірістік тақта', async () => {
+    await h.closeModals()
+    await h.goto('/configurator', 9000)
+    await h.clickText('Пропустить', 150)
+    check(await h.clickText('Открыть Импорт', 500), 'импорт докы ашылды')
+    check(await h.clickText('Деталь / модель', 300), 'деталь импорты ашылды')
+    const attach = async (name, data) => h.evaluate(`(() => {
+      const input = document.querySelector('[data-dock-panel="import"] input[type=file][accept*=".obj"]')
+      if (!input) return false
+      const transfer = new DataTransfer()
+      transfer.items.add(new File([${JSON.stringify(data)}], ${JSON.stringify(name)}, { type: 'text/plain' }))
+      input.files = transfer.files
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+      return true
+    })()`)
+    check(await attach('bad.dxf', 'broken'), 'бұрыс DXF жіберілді')
+    check(await h.until(`Boolean(document.querySelector('[data-dock-panel="import"] [role="alert"]'))`, 5000), 'қате файлдың хабарламасы көрсетілді')
+    const dxf = readFileSync(new URL('../tests/fixtures/dxf-board-rect.dxf', import.meta.url), 'utf8')
+    check(await attach('shelf.dxf', dxf), 'дұрыс DXF жіберілді')
+    check(await h.until(`Boolean(document.querySelector('[data-dock-panel="import"] button:not([disabled])') &&
+      document.querySelector('[data-dock-panel="import"]').innerText.includes('600 мм × 300 мм'))`, 5000), 'тақта габариті алдын ала көрінді')
+    const submit = await h.evaluate(`(() => {
+      const button = [...document.querySelectorAll('[data-dock-panel="import"] button')]
+        .find((entry) => entry.textContent.trim() === 'Добавить в проект' && !entry.disabled)
+      button?.click()
+      return Boolean(button)
+    })()`)
+    check(submit, 'тақта жобаға қосылды')
+    check(await h.clickText('Сохранить', 300), 'импортталған жоба сақталды')
+    const added = await h.until(`(() => {
+      const raw = localStorage.getItem('furniture-configurator:project')
+      if (!raw) return false
+      const root = JSON.parse(raw).root
+      return root?.children?.some((node) => node.kind === 'board' && node.name === 'shelf' && node.board.length === 600)
+    })()`, 8000)
+    check(added, 'импортталған тақта v4 ағашта сақталды')
   })
 
   await test('Мобильді раскрой: экспорт тобы ашылып жабылады', async () => {

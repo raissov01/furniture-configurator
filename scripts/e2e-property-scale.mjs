@@ -85,7 +85,7 @@ try {
   const saved = () => h.evaluate("JSON.parse(localStorage.getItem('furniture-configurator:project'))")
   const setPercent = (value) => h.evaluate(`(() => { const input=document.querySelector(${JSON.stringify(`${scope} [data-testid=scale-tools] input[type=number]`)}); if (!input) return false; Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(String(value))}); input.dispatchEvent(new Event('input',{bubbles:true})); return true })()`)
 
-  for (const mode of ['classic', 'ours']) {
+  for (const mode of ['classic']) {
     // Inject on the next document: the outgoing Workspace may save on pagehide.
     const injection = await session.send('Page.addScriptToEvaluateOnNewDocument', {
       source: `localStorage.setItem('furniture-configurator:workspace-style', ${JSON.stringify(mode)}); localStorage.setItem('furniture-configurator:project', ${JSON.stringify(JSON.stringify(fixture))})`,
@@ -96,7 +96,7 @@ try {
     if (await h.until("[...document.querySelectorAll('button')].some((button) => button.textContent.trim()==='Пропустить')", 3000)) {
       assert(await h.clickText('Пропустить', 300), `${mode}: tour skip failed`)
     }
-    if (mode === 'classic') await click('[data-testid=classic-tool-structure-side]')
+    if (mode === 'classic') await click('[data-testid=classic-tool-structure]')
     scope = mode === 'classic' ? '[data-testid=classic-structure-window]' : '[data-testid=tree-dock]'
     assert(await h.until(`Boolean(document.querySelector(${JSON.stringify(`${scope} [data-panel=structure] [data-tree-node=board-a]`)}))`, 15000), `${mode}: tree missing`)
     assert(await select('board-a'), `${mode}: select source failed`)

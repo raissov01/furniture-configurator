@@ -18,57 +18,14 @@ import { Button, Field, NumberInput, Select } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { KITCHEN_WALL_UI_MAX } from '@/lib/kitchenWallInput'
-import { selectWorktopMaterials, updateWizardLayout, validateWizardDraft, visibleWizardDraftErrors } from '@/lib/kitchenWizardDraft'
-import { MILLING_PATTERNS, MODULE_KINDS, kitchenLayout } from '@/src/core/index'
-import type { KitchenOptions, MillingPatternId, FurnitureType, KitchenModule } from '@/src/core/index'
+import { selectWorktopMaterials, updateWizardLayout, visibleWizardDraftErrors } from '@/lib/kitchenWizardDraft'
+import { DEFAULT_STAGE_DRAFT, stageOptions, validateStageDraft } from '@/lib/stageBuilder'
+import type { StageDraft } from '@/lib/stageBuilder'
+import { MILLING_PATTERNS, MODULE_KINDS, furnitureMinWallLength, kitchenLayout } from '@/src/core/index'
+import type { FurnitureType, KitchenModule } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
-
-type Draft = {
-  type: FurnitureType
-  layout: 'straight' | 'corner' | 'u'
-  lengthA: number
-  lengthB: number
-  lengthC: number
-  sink: boolean
-  upper: boolean
-  appliances: boolean
-  glassUpper: boolean
-  ledUpper: boolean
-  hob: 'gas' | 'electric' | 'none'
-  hood: boolean
-  lowerHeight: number
-  lowerDepth: number
-  plinthHeight: number
-  upperDepth: number
-  upperHeight: number
-  upperElevation: number
-  worktopOverhang: number
-  backsplashHeight: number
-  carcassId: string
-  frontId: string
-  worktopId: string
-  milling: MillingPatternId
-  /** null — авто-құрастыру; әйтпесе — қолмен өзгертілген раскладка. */
-  modules: { runA: KitchenModule[]; runB: KitchenModule[] } | null
-}
-
-const DEFAULT: Draft = {
-  type: 'kitchen', layout: 'corner', lengthA: 3200, lengthB: 2400, lengthC: 2000,
-  sink: true, upper: true, appliances: true, glassUpper: false, ledUpper: false,
-  hob: 'gas', hood: true,
-  lowerHeight: 720, lowerDepth: 500, plinthHeight: 95,
-  upperDepth: 320, upperHeight: 720, upperElevation: 1460,
-  // Фартук әдепкіде ҚОСУЛЫ: 600 мм. Сан qdesign шеберінің 2-қадамындағы
-  // әдепкі баптауынан оқылды («Жұмыс биіктігі 860 · Фартук 600»), жазбасы —
-  // docs/visual/generator-gaps.md. Бұрын әдепкі 0 еді, сондықтан столешница
-  // мен үстіңгі қатардың арасы жалаң қабырға болып тұратын.
-  // (қара: docs/audit/qdesign-drilling-reference.md). Столешница мен үстіңгі
-  // қатардың арасы жалаң қабырға болып қалмас үшін.
-  worktopOverhang: 30, backsplashHeight: 600,
-  carcassId: '', frontId: '', worktopId: '',
-  milling: 'plain',
-  modules: null,
-}
+import { StagePreview } from '@/components/StagePreview'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 const STEPS = ['Расположение', 'Размеры', 'Наполнение', 'Конструкция', 'Материалы'] as const
 
@@ -129,15 +86,19 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
   const loadKitchen = useConfigurator((s) => s.loadKitchen)
   const loadFurniture = useConfigurator((s) => s.loadFurniture)
   const runBusy = useConfigurator((s) => s.runBusy)
+  const setFirstRun = useConfigurator((s) => s.setFirstRun)
+  // Шебер енді галереяның ішінде емес, бірнеше жерден ашылады (мәзір, құрал
+  // жолағы, галерея) — сондықтан өз модал қабаты бар: галереядан ашылса үстінде.
+  const { zIndex } = useModalLayer(open, 'wizard', onClose)
   const [step, setStep] = useState(0)
-  const [d, setD] = useState<Draft>(DEFAULT)
+  const [d, setD] = useState<StageDraft>(DEFAULT_STAGE_DRAFT)
   const [prompt, setPrompt] = useState('')
   const [aiBusy, setAiBusy] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
   const [generateError, setGenerateError] = useState<string | null>(null)
   const [draftErrors, setDraftErrors] = useState<Record<string, boolean>>({})
   const draftValidityChanged = (field: string, invalid: boolean) => setDraftErrors((errors) => updateDraftErrors(errors, field, invalid))
-  const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((p) => ({ ...p, [k]: v }))
+  const set = <K extends keyof StageDraft>(k: K, v: StageDraft[K]) => setD((p) => ({ ...p, [k]: v }))
 
   if (!open) return null
 
@@ -147,7 +108,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
   ]
 
   const worktopOptions = [materialOptions[0]!, ...selectWorktopMaterials(catalog.materials).map((m) => ({ value: m.id, label: m.name }))]
-  const validation = d.type === 'kitchen' ? validateWizardDraft(d, catalog.materials) : null
+  const validation = validateStageDraft(d, catalog.materials)
   const invalid = hasDraftErrors(draftErrors) || Boolean(validation)
 
   /** Сөзбен: сипаттаманы серверге жіберіп, драфтты толтыру. */
@@ -185,64 +146,19 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
     }
   }
 
-  /** Ағымдағы драфттан KitchenOptions (раскладканы алдын ала есептеу үшін де). */
-  const kitchenOpts = (): KitchenOptions => ({
-    layout: d.layout,
-    lengthA: d.lengthA,
-    lengthB: d.layout === 'corner' || d.layout === 'u' ? d.lengthB : undefined,
-    lengthC: d.layout === 'u' ? d.lengthC : undefined,
-    sink: d.sink,
-    upper: d.upper,
-    appliances: d.appliances,
-    glassUpper: d.glassUpper,
-    ledUpper: d.ledUpper,
-    hob: d.hob,
-    hood: d.hood,
-  })
-
   const generate = () => {
     if (invalid) { setGenerateError(validation?.message ?? tr('Исправьте поля с ошибками')); return }
     setGenerateError(null)
-    const options: KitchenOptions = {
-      layout: d.layout,
-      lengthA: d.lengthA,
-      lengthB: d.layout === 'corner' || d.layout === 'u' ? d.lengthB : undefined,
-      lengthC: d.layout === 'u' ? d.lengthC : undefined,
-      sink: d.sink,
-      upper: d.upper,
-      appliances: d.appliances,
-      glassUpper: d.glassUpper,
-      ledUpper: d.ledUpper,
-      hob: d.hob,
-      hood: d.hood,
-      dims: {
-        lowerHeight: d.lowerHeight, lowerDepth: d.lowerDepth, plinthHeight: d.plinthHeight,
-        upperDepth: d.upperDepth, upperHeight: d.upperHeight, upperElevation: d.upperElevation,
-        worktopOverhang: d.worktopOverhang, backsplashHeight: d.backsplashHeight,
-      },
-      materials: {
-        carcassId: d.carcassId || undefined,
-        frontId: d.frontId || undefined,
-        worktopId: d.worktopId || undefined,
-      },
-      milling: d.milling,
-      modules: d.modules ?? undefined,
-    }
+    const next = stageOptions(d)
     // Құрастыру бірнеше секунд алады — «Жүктелуде…» оверлейімен (qdesign сияқты).
     runBusy(tr('Собираем проект…'), () => {
       try {
-        if (d.type === 'kitchen') {
-          loadKitchen(options)
+        if (next.kind === 'kitchen') {
+          loadKitchen(next.options)
         } else {
-          loadFurniture({
-          type: d.type,
-          // U тек ас үйде; басқа түрде ол болмайды, бірақ TS үшін тарылтамыз.
-          layout: d.type === 'tv' || d.layout === 'u' ? (d.layout === 'u' ? 'corner' : 'straight') : d.layout,
-          lengthA: d.lengthA,
-          lengthB: d.layout === 'corner' ? d.lengthB : undefined,
-          materials: { carcassId: d.carcassId || undefined, frontId: d.frontId || undefined },
-          })
+          loadFurniture(next.options)
         }
+        setFirstRun(false)
         onClose()
       } catch (cause) {
         setGenerateError(cause instanceof Error ? cause.message : String(cause))
@@ -252,11 +168,13 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center overflow-auto bg-black/50 p-2 sm:p-4"
+      style={{ zIndex }}
+      className="fixed inset-y-0 left-0 flex w-screen items-start justify-center overflow-x-hidden overflow-y-auto bg-black/50 p-2 sm:p-4"
       onClick={onClose}
     >
       <div
-        className="mt-4 w-full max-w-3xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+        data-testid="stage-builder-dialog"
+        className="mt-4 box-border min-w-0 w-full max-w-[calc(100vw-1rem)] overflow-x-hidden rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900 sm:max-w-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Тақырып + қадам индикаторы */}
@@ -266,7 +184,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
             <Button onClick={onClose}>{tr('Закрыть')}</Button>
           </div>
         </div>
-        <div className="mb-4 flex flex-wrap gap-1.5">
+        <div data-testid="stage-step-bar" className="mb-4 flex flex-wrap gap-1.5">
           {STEPS.map((label, i) => (
             <button
               key={label}
@@ -294,7 +212,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
               <div className="mb-1 text-[11px] font-medium text-neutral-500">{tr('Опишите словами')}</div>
               <div className="flex gap-2">
                 <input
-                  className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-neutral-900 dark:border-neutral-600 dark:bg-neutral-900"
+                  className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-neutral-900 dark:border-neutral-600 dark:bg-neutral-900"
                   placeholder={tr('Напр.: угловая кухня 3 и 2 метра с посудомойкой, без верхних')}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
@@ -310,16 +228,27 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
             <Field label={tr('Тип мебели')}>
               <Select
                 value={d.type}
-                onChange={(v) => set('type', v)}
+                onChange={(v) => {
+                  const layout = v === 'tv' || v === 'bedroom' ? 'straight'
+                    : v !== 'kitchen' && d.layout === 'u' ? 'straight' : d.layout
+                  setD((previous) => ({ ...previous, type: v, layout, modules: null }))
+                  setDraftErrors((errors) => Object.fromEntries(
+                    Object.entries(visibleWizardDraftErrors(errors, layout))
+                      .filter(([field]) => !field.startsWith('runA.') && !field.startsWith('runB.')),
+                  ))
+                  setGenerateError(null)
+                }}
                 options={[
                   { value: 'kitchen', label: tr('Кухня') },
                   { value: 'wardrobe', label: tr('Шкаф') },
                   { value: 'tv', label: tr('ТВ-зона') },
                   { value: 'chest', label: tr('Комод') },
+                  { value: 'office', label: tr('Кабинет') },
+                  { value: 'bedroom', label: tr('Спальня') },
                 ]}
               />
             </Field>
-            {d.type !== 'tv' ? (
+            {d.type !== 'tv' && d.type !== 'bedroom' ? (
               <Field label={tr('Форма')}>
                 <Select
                   value={d.layout}
@@ -334,9 +263,9 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
             ) : null}
             <div className="grid grid-cols-2 gap-3">
               <Field label={tr('Стена A, мм')}>
-                <NumberInput value={d.lengthA} onChange={(v) => set('lengthA', v)} min={600} max={KITCHEN_WALL_UI_MAX} step={100} field="lengthA" onDraftValidityChange={draftValidityChanged} />
+                <NumberInput value={d.lengthA} onChange={(v) => set('lengthA', v)} min={furnitureMinWallLength(d.type)} max={KITCHEN_WALL_UI_MAX} step={100} field="lengthA" onDraftValidityChange={draftValidityChanged} />
               </Field>
-              {(d.layout === 'corner' || d.layout === 'u') && d.type !== 'tv' ? (
+              {(d.layout === 'corner' || d.layout === 'u') && d.type !== 'tv' && d.type !== 'bedroom' ? (
                 <Field label={tr('Стена B, мм')}>
                   <NumberInput value={d.lengthB} onChange={(v) => set('lengthB', v)} min={600} max={KITCHEN_WALL_UI_MAX} step={100} field="lengthB" onDraftValidityChange={draftValidityChanged} />
                 </Field>
@@ -347,14 +276,12 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
                 </Field>
               ) : null}
             </div>
-            <p className="text-[11px] leading-snug text-neutral-400">
-              {tr('Стена делится на стандартные модули автоматически. Кухня — с мойкой и техникой; шкаф, комод и ТВ-зона — рядом модулей.')}
-            </p>
+            <p className="text-[11px] leading-snug text-neutral-500">{tr('Модули размещаются по выбранным стенам. Размеры и состав видны в предварительном просмотре.')}</p>
           </div>
         ) : null}
 
         {/* ── Қадам 2: өлшемдер ─────────────────────────────────────────── */}
-        {step === 1 ? (
+        {step === 1 && d.type === 'kitchen' ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Field label={tr('Высота низа, мм')}>
               <NumberInput value={d.lowerHeight} onChange={(v) => set('lowerHeight', v)} field="lowerHeight" onDraftValidityChange={draftValidityChanged} min={500} step={10} />
@@ -385,7 +312,11 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
         ) : null}
 
         {/* ── Қадам 3: мазмұн ───────────────────────────────────────────── */}
-        {step === 2 ? (
+        {step === 1 && d.type !== 'kitchen' ? (
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">{tr('Размеры модулей берутся из проверенных шаблонов. Укажите длину стены на первом шаге.')}</p>
+        ) : null}
+
+        {step === 2 && d.type === 'kitchen' ? (
           <div className="space-y-3">
             {([
               ['upper', tr('Верхний ряд шкафов')],
@@ -407,7 +338,7 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
                   {d.modules ? (
                     <Button onClick={() => set('modules', null)}>{tr('Сбросить (авто)')}</Button>
                   ) : (
-                    <Button active onClick={() => set('modules', kitchenLayout(kitchenOpts()))}>
+                    <Button active onClick={() => { const next = stageOptions(d); if (next.kind === 'kitchen') set('modules', kitchenLayout(next.options)) }}>
                       {tr('Разложить по модулям')}
                     </Button>
                   )}
@@ -444,12 +375,16 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
         ) : null}
 
         {/* ── Қадам 4: конструкция ──────────────────────────────────────── */}
+        {step === 2 && d.type !== 'kitchen' ? (
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">{tr('Состав набора показан в предварительном просмотре. После сборки каждый модуль можно изменить в редакторе.')}</p>
+        ) : null}
+
         {step === 3 ? (
           <div className="space-y-3">
             <p className="text-xs leading-relaxed text-neutral-500">
               {tr('Фурнитура (ручки, петли, направляющие) берётся из профиля цеха — она уже настроена и применится ко всем модулям. Изменить можно в «Цех».')}
             </p>
-            <Field label={tr('Варочная панель')}>
+            {d.type === 'kitchen' ? <Field label={tr('Варочная панель')}>
               <Select
                 value={d.hob}
                 onChange={(v) => set('hob', v)}
@@ -459,8 +394,8 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
                   { value: 'none' as const, label: tr('Нет') },
                 ]}
               />
-            </Field>
-            <label className="flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-700">
+            </Field> : null}
+            {d.type === 'kitchen' ? <label className="flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-700">
               <input
                 type="checkbox"
                 checked={d.hood && d.hob !== 'none'}
@@ -468,10 +403,10 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
                 onChange={(e) => set('hood', e.target.checked)}
               />
               {tr('Вытяжка над плитой')}
-            </label>
-            <p className="text-[11px] leading-snug text-neutral-400">
+            </label> : null}
+            {d.type === 'kitchen' ? <p className="text-[11px] leading-snug text-neutral-400">
               {tr('Техника клиента: видна в 3D, в смету не входит.')}
-            </p>
+            </p> : null}
           </div>
         ) : null}
 
@@ -484,20 +419,21 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
             <Field label={tr('Фасады')}>
               <Select value={d.frontId} onChange={(v) => set('frontId', v)} options={materialOptions} />
             </Field>
-            <Field label={tr('Столешница')}>
+            {d.type === 'kitchen' ? <Field label={tr('Столешница')}>
               <Select value={d.worktopId} onChange={(v) => set('worktopId', v)} options={worktopOptions} invalid={validation?.field === 'materials.worktopId'} />
               {validation?.field === 'materials.worktopId' ? <span role="alert" className="text-xs text-red-700">{validation.message}</span> : null}
-            </Field>
-            <Field label={tr('Фрезеровка фасадов')}>
+            </Field> : null}
+            {d.type === 'kitchen' ? <Field label={tr('Фрезеровка фасадов')}>
               <Select
                 value={d.milling}
                 onChange={(v) => set('milling', v)}
                 options={MILLING_PATTERNS.filter((p) => p.id !== 'custom').map((p) => ({ value: p.id, label: tr(p.name) }))}
               />
-            </Field>
+            </Field> : null}
           </div>
         ) : null}
 
+        <div className="mt-4"><StagePreview draft={d} /></div>
         {validation ? <p role="alert" className="mt-2 text-xs text-red-700">{validation.message}</p> : null}
         {generateError ? <p role="alert" className="mt-2 text-xs text-red-700">{generateError}</p> : null}
         {/* ── Навигация ─────────────────────────────────────────────────── */}
@@ -516,4 +452,13 @@ export function KitchenWizard({ open, onClose }: { open: boolean; onClose: () =>
       </div>
     </div>
   )
+}
+
+/** Шеберді store-дағы `wizardOpen` бойынша бір жерде орнатады (Workspace). */
+export function KitchenWizardHost() {
+  const open = useConfigurator((s) => s.wizardOpen)
+  const setOpen = useConfigurator((s) => s.setWizardOpen)
+  // Жабылғанда unmount — келесі ашылуда қадамдар басынан басталады.
+  if (!open) return null
+  return <KitchenWizard open onClose={() => setOpen(false)} />
 }

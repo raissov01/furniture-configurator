@@ -14,17 +14,20 @@ import { Menu, MenuItem } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
 import { runShopExport, type ShopExportFormat } from '@/lib/shopExport'
 import { selectShopExportPanels, type ShopExportScope } from '@/lib/shopExportScope'
-import type { CabinetConfig, Panel } from '@/src/core/index'
+import { downloadPanorama } from '@/lib/panorama'
+import type { CabinetConfig, Panel, SpecialPartRow } from '@/src/core/index'
 
-export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPanels, projectName, exportId, exportName }: {
+export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPanels, specialParts = [], projectName, exportId, exportName, inline = false, onError }: {
   cabinet?: CabinetConfig | undefined; pdfCabinet?: CabinetConfig | undefined
   pdfAssembly?: { nodeId: string; panels: Panel[]; nodeCount: number } | undefined
-  panels: Panel[]; projectPanels?: Panel[]; projectName?: string; exportId?: string; exportName?: string
+  panels: Panel[]; projectPanels?: Panel[]; specialParts?: readonly SpecialPartRow[]; projectName?: string; exportId?: string; exportName?: string
+  inline?: boolean; onError?: (message: string) => void
 }) {
   const catalog = useConfigurator((s) => s.catalog)
   const projectInfo = useConfigurator((s) => s.projectInfo)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const [busy, setBusy] = useState<string | null>(null)
+  const [panoramaError, setPanoramaError] = useState<string | null>(null)
 
   // Логика `lib/shopExport.ts`-те: классикалық «Файл» мәзірі де соны тікелей шақырады.
   const run = async (format: ShopExportFormat, scope: ShopExportScope) => {
@@ -33,6 +36,7 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
       await runShopExport(format, {
         cabinet: format === 'pdf' ? (scope === 'project' ? pdfCabinet : cabinet) : scope === 'cabinet' ? cabinet : undefined,
         panels: selectShopExportPanels(scope, format, panels, projectPanels ?? panels),
+        specialParts: scope === 'project' ? specialParts : [],
         pdfAssembly: scope === 'project' ? pdfAssembly : undefined,
         catalog, settings, projectInfo,
         exportId: scope === 'project' ? 'project' : exportId,
@@ -43,17 +47,15 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
     }
   }
 
-  return (
-    <div data-tour="export">
-      <Menu label={busy ? '…' : tr('Экспорт')} title={tr('Скачать файлы для цеха')} align="right">
+  const items = <>
         {projectPanels ? <div className="border-b border-neutral-200 px-2 py-1 text-xs">{tr('Весь проект')}</div> : null}
         <MenuItem disabled={busy !== null} onClick={() => void run('xlsx', projectPanels ? 'project' : 'cabinet')}>
           XLSX — {tr('деталировка')}
         </MenuItem>
-        <MenuItem disabled={busy !== null} onClick={() => void run('csv', projectPanels ? 'project' : 'cabinet')}>
+        <MenuItem disabled={busy !== null || (projectPanels ?? panels).length === 0} onClick={() => void run('csv', projectPanels ? 'project' : 'cabinet')}>
           CSV — {tr('на распил')}
         </MenuItem>
-        <MenuItem disabled={busy !== null} title={tr('DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива. Полный ЧПУ CSV — в раскрое.')} onClick={() => void run('dxf', projectPanels ? 'project' : 'cabinet')}>
+        <MenuItem disabled={busy !== null || ((projectPanels ?? panels).length === 0 && !specialParts.some((part) => part.section === 'Иілген деталь'))} title={tr('DXF: плоские пласти; торец в EDGE-DRILLING.csv этого архива. Полный ЧПУ CSV — в раскрое.')} onClick={() => void run('dxf', projectPanels ? 'project' : 'cabinet')}>
           DXF — {tr('на станок')}
         </MenuItem>
         <p className="px-2 py-1 text-[11px] text-neutral-500">
@@ -70,7 +72,25 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
         {cabinet && <MenuItem disabled={busy !== null} title={tr('Проекции, сборка и деталировка')} onClick={() => void run('pdf', 'cabinet')}>
           PDF — {tr('сборочный чертёж')}
         </MenuItem>}
-      </Menu>
-    </div>
-  )
+        <MenuItem disabled={busy !== null} onClick={() => {
+          setPanoramaError(null)
+          requestAnimationFrame(() => {
+            try {
+              const context = useConfigurator.getState().liveRenderContext
+              if (!context) throw new Error(tr('Сцена ещё не готова'))
+              downloadPanorama(context)
+            } catch (cause) {
+              const message = cause instanceof Error ? cause.message : tr('Не удалось создать панораму')
+              setPanoramaError(message)
+              onError?.(message)
+            }
+          })
+        }}>{tr('Панорама 360°')}</MenuItem>
+      </>
+
+  if (inline) return items
+  return <div data-tour="export">
+    <Menu label={busy ? '…' : tr('Экспорт')} title={tr('Скачать файлы для цеха')} align="right">{items}</Menu>
+    {panoramaError && <p role="alert" className="text-xs text-red-700">{panoramaError}</p>}
+  </div>
 }

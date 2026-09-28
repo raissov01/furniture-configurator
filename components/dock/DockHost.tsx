@@ -16,6 +16,7 @@ import {
   activateTab,
   bringToFront,
   closePanel,
+  closedPanelIds,
   createDockState,
   dockPanel,
   edgeAtPoint,
@@ -45,6 +46,9 @@ const SIDE_LABEL: Record<DockSide, string> = {
   top: 'Верхний край',
   bottom: 'Нижний край',
 }
+
+/** `window.dispatchEvent(new CustomEvent(OPEN_DOCK_PANEL_EVENT, { detail: 'price' }))` — панельді ашу. */
+export const OPEN_DOCK_PANEL_EVENT = 'furniture:open-dock-panel'
 
 export function DockHost({ panels, children, initiallyClosed = [], storageKey }: {
   panels: DockPanelSpec[]
@@ -109,18 +113,29 @@ export function DockHost({ panels, children, initiallyClosed = [], storageKey }:
     return () => ro.disconnect()
   }, [])
 
+  // Классикалық мәзір («Инструменты → Прайс-лист…») жабық панельді аша алады.
+  React.useEffect(() => {
+    const open = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail
+      if (panels.some((panel) => panel.id === id)) setState((s) => openPanel(s, id as PanelId))
+    }
+    window.addEventListener(OPEN_DOCK_PANEL_EVENT, open)
+    return () => window.removeEventListener(OPEN_DOCK_PANEL_EVENT, open)
+  }, [panels])
+
   const attemptDock = React.useCallback((id: PanelId, point: { x: number; y: number }) => {
     const side = edgeAtPoint(point, bounds)
     if (side) setState((s) => dockPanel(s, id, side))
   }, [bounds])
 
   return (
-    <div ref={containerRef} className="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-neutral-950">
+    <div ref={containerRef} data-testid="workspace-dock-host" className="relative flex h-full w-full min-h-0 flex-col overflow-hidden p100-dock-host">
       <div className="flex min-h-0 flex-1 flex-col">
         <DockZone side="top" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
         <div className="flex min-h-0 flex-1">
+          <ClosedPanelsMenu panels={panels} state={state} onOpen={(id) => setState((s) => openPanel(s, id))} />
           <DockZone side="left" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
-          <div className="relative min-w-0 flex-1 border border-neutral-800">{children}</div>
+          <div className="relative min-w-0 flex-1 border p100-dock-canvas-border">{children}</div>
           <DockZone side="right" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
         </div>
         <DockZone side="bottom" state={state} byId={byId} bounds={bounds} dropHint={dropHint} setState={setState} setDropHint={setDropHint} />
@@ -151,8 +166,6 @@ export function DockHost({ panels, children, initiallyClosed = [], storageKey }:
           )
         })}
       </div>
-
-      <ClosedPanelsMenu panels={panels} state={state} onOpen={(id) => setState((s) => openPanel(s, id))} />
     </div>
   )
 }
@@ -185,18 +198,18 @@ function DockZone({
     <div
       data-dock-zone={side}
       className={cn(
-        'flex shrink-0 flex-col bg-neutral-950',
+        'p100-dock-zone flex shrink-0 flex-col',
         horizontal ? 'w-full' : 'h-full',
-        side === 'left' && 'border-r border-neutral-800',
-        side === 'right' && 'border-l border-neutral-800',
-        side === 'top' && 'border-b border-neutral-800',
-        side === 'bottom' && 'border-t border-neutral-800',
-        isHighlighted && 'ring-1 ring-inset ring-neutral-300',
+        side === 'left' && 'border-r',
+        side === 'right' && 'border-l',
+        side === 'top' && 'border-b',
+        side === 'bottom' && 'border-t',
+        isHighlighted && 'p100-dock-target',
       )}
       style={horizontal ? { minHeight: hasContent ? 180 : 32 } : { width: hasContent ? 260 : 32 }}
     >
       {hasContent ? (
-        <div className="flex shrink-0 flex-wrap gap-px border-b border-neutral-800 bg-neutral-900">
+        <div className="p100-dock-tabs flex shrink-0 flex-wrap gap-px border-b">
           {visibleIds.map((id) => {
             const spec = byId.get(id)
             if (!spec) return null
@@ -204,10 +217,10 @@ function DockZone({
               <button
                 key={id}
                 type="button"
+                aria-selected={id === active}
                 onClick={() => setState((s) => activateTab(s, side, id))}
                 className={cn(
-                  'px-2 py-1 text-[11px] uppercase tracking-wider',
-                  id === active ? 'bg-neutral-950 text-neutral-100' : 'text-neutral-500 hover:text-neutral-300',
+                  'p100-dock-tab px-2 py-1 text-[11px]',
                 )}
               >
                 {spec.title}
@@ -216,7 +229,7 @@ function DockZone({
           })}
         </div>
       ) : (
-        <div className="flex-1 p-1 text-[10px] text-neutral-500">{tr('Закрепить у края')}: {tr(SIDE_LABEL[side])}</div>
+        <div className="p100-dock-hint flex-1 p-1 text-[10px]">{tr('Закрепить у края')}: {tr(SIDE_LABEL[side])}</div>
       )}
 
       <div className="relative min-h-0 flex-1">
@@ -314,21 +327,21 @@ function FloatingPanel({
 function ClosedPanelsMenu({
   panels, state, onOpen,
 }: { panels: DockPanelSpec[]; state: DockState; onOpen: (id: PanelId) => void }) {
-  const closed = panels.filter((p) => !(state.panels[p.id]?.visible ?? true))
+  const closedIds = closedPanelIds(state, panels.map((panel) => panel.id))
+  const closed = panels.filter((panel) => closedIds.includes(panel.id))
   if (closed.length === 0) return null
   return (
-    <div className="pointer-events-none absolute bottom-2 left-2 z-50 flex flex-wrap gap-1">
-      {closed.map((p) => (
-        <button
-          key={p.id}
-          type="button"
-          onClick={() => onOpen(p.id)}
-          className="pointer-events-auto border border-neutral-800 bg-neutral-900 px-2 py-1 text-[10px] uppercase tracking-wider text-neutral-400 hover:text-neutral-100"
-        >
-          {tr('Открыть')} {p.title}
-        </button>
-      ))}
-    </div>
+    <details className="p100-dock-closed-tab relative z-30 w-7 shrink-0 border-r">
+      <summary aria-label={tr('Панели')} className="p100-dock-closed-tab flex min-h-24 cursor-pointer list-none items-center justify-center border px-1 text-xs [writing-mode:vertical-rl]">{tr('Панели')}</summary>
+      <div role="menu" aria-label={tr('Панели')} className="p100-dock-menu absolute left-full top-0 z-40 min-w-40 border p-1 text-xs">
+        {closed.map((panel) => (
+          <button key={panel.id} role="menuitem" type="button" onClick={() => onOpen(panel.id)}
+            className="p100-dock-menuitem block w-full border border-transparent px-2 py-1 text-left">
+            {panel.title}
+          </button>
+        ))}
+      </div>
+    </details>
   )
 }
 

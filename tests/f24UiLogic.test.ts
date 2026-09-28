@@ -9,7 +9,7 @@ describe('F24 UI decisions', () => {
     expect(cloudSavePayload(project, { id: 'p1', revision: 3 }, true)).toEqual({ project })
     expect(parseCloudSelection('{"id":"p1","revision":3}')).toEqual({ id: 'p1', revision: 3 })
     expect(parseCloudSelection('{"id":"p1","revision":-1}')).toBeNull()
-    expect(cloudCopyProject(project)).toEqual({ name: 'Шкаф (копия)' })
+    expect(cloudCopyProject(project)).toEqual({ name: 'Шкаф (копия 1)' })
     expect(cloudSaveOutcome(200, { id: 'p1', revision: 4 }, { id: 'p1', revision: 3 })).toEqual({ kind: 'saved', selection: { id: 'p1', revision: 4 } })
     expect(cloudSaveOutcome(409, { revision: 4 }, { id: 'p1', revision: 3 })).toEqual({ kind: 'conflict', id: 'p1', revision: 4 })
     expect(cloudSaveOutcome(409, { error: 'Лимит' }, null)).toEqual({ kind: 'error', message: 'Лимит' })

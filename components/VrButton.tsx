@@ -11,6 +11,7 @@
 import { useEffect, useState } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
+import { ClassicIcon } from '@/components/ClassicIcon'
 import { useConfigurator } from '@/store/configurator'
 
 export function VrButton() {
@@ -42,7 +43,7 @@ export function VrButton() {
         : tr('Нужен VR-шлем (Meta Quest) с браузером WebXR')}
       onClick={toggle}
     >
-      VR
+      <ClassicIcon name="vr" /><span className="sr-only">VR</span>
     </Button>
   )
 }

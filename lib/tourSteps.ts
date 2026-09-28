@@ -57,9 +57,9 @@ export const OURS_TOUR_STEPS: readonly TourStep[] = [
 
 /** Phone properties and cut list live behind persistent controls above the 3D scene. */
 export const MOBILE_TOUR_STEPS: readonly TourStep[] = OURS_TOUR_STEPS.map((step, index) =>
-  index === 0 ? { ...step, selector: '[data-tour="mobile-size"]' }
-    : index === 1 ? { ...step, selector: '[data-tour="mobile-sections"]' }
-      : index === 3 ? { ...step, selector: '[data-tour="mobile-cutlist"]' } : step)
+  index === 0 ? { ...step, selector: '[data-tour-mobile="size"]' }
+    : index === 1 ? { ...step, selector: '[data-tour-mobile="sections"]' }
+      : index === 3 ? { ...step, selector: '[data-tour-mobile="cutlist"]' } : step)
 
 /** Классикалық (PRO100) жұмыс үстелі: мәзір → құралдар → 3D → көріністер → деталировка → күй жолағы. */
 export const CLASSIC_TOUR_STEPS: readonly TourStep[] = [
@@ -88,7 +88,7 @@ export const CLASSIC_TOUR_STEPS: readonly TourStep[] = [
 ]
 
 export function tourStepsFor(classic: boolean, mobile = false): readonly TourStep[] {
-  return classic ? CLASSIC_TOUR_STEPS : mobile ? MOBILE_TOUR_STEPS : OURS_TOUR_STEPS
+  return mobile ? MOBILE_TOUR_STEPS : classic ? CLASSIC_TOUR_STEPS : OURS_TOUR_STEPS
 }
 
 type Rect = { left: number; top: number; right: number; bottom: number; width: number; height: number }

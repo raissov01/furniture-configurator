@@ -22,6 +22,8 @@ import { t as tr, tf } from '@/lib/i18n'
 import { CABINET_DIMENSION_MAX, CABINET_DIMENSION_MIN, dimensionRangeHint } from '@/lib/dimensionHint'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
+import { MaterialAppearanceEditor } from '@/components/VisualSettingsPanel'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
@@ -606,6 +608,15 @@ function HandleFields({
               options={HANDLE_POSITIONS.map((p) => ({ value: p, label: handlePositionName(p) }))}
             />
           </Field>
+          {model.kind === 'profile' && <Field label={tr('Цвет профиля')}>
+            <Select value={handleSpec.profileColor ?? 'silver'}
+              onChange={(profileColor) => setHandle({ profileColor: profileColor as NonNullable<HandleSpec['profileColor']> }, 'ProfileColor')}
+              options={[
+                { value: 'darkGray', label: tr('Тёмно-серый') },
+                { value: 'silver', label: tr('Серебристый') },
+                { value: 'black', label: tr('Чёрный') },
+              ]} />
+          </Field>}
           {drilled ? (
             <>
               <Field label={tr('Отступ от края, мм')}>
@@ -778,14 +789,9 @@ function FrontFittings({
       {milling?.patternId === 'custom' ? (
         <Field label={tr('Файл SVG')}>
           <div className="flex items-center gap-2">
-            <input
-              type="file"
-              accept=".svg,image/svg+xml"
-              onChange={(e) => readSvg(e.target.files?.[0])}
-              className="w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-neutral-200 file:px-2 file:py-1 file:text-xs dark:file:bg-neutral-800 dark:file:text-neutral-200"
-            />
+            <LocalizedFileChooser accept=".svg,image/svg+xml" onChange={(e) => readSvg(e.target.files?.[0])} />
             <span className="whitespace-nowrap text-[11px] text-neutral-500">
-              {milling.svg ? 'загружен' : 'не выбран'}
+              {milling.svg ? tr('загружен') : tr('не выбран')}
             </span>
           </div>
         </Field>
@@ -929,8 +935,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
   const addSection = useConfigurator((s) => s.addSection)
   const [sectionAddError, setSectionAddError] = useState<string | null>(null)
   useEffect(() => setSectionAddError(null), [cabinet])
-  const showDimensions = useConfigurator((s) => s.showDimensions)
-  const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
   // Материалдар тізімі цехтың профилінен келеді, кодтан емес.
   const materials = useConfigurator((s) => s.shop.materials)
@@ -1024,6 +1028,36 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
             onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }} />
         </Field>
         {nameError && <p role="alert" className="text-red-700">{tr(nameError)}</p>}
+        {/* PRO100 «Свойства → Общее»: Имя → Размеры → Положение. Габарит аттан кейін бірден. */}
+        <div className="flex flex-col gap-2" data-p100-group="dimensions">
+          <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-tour="size" data-tour-mobile="size">
+            <Field label={tr('Высота (H)')} hint={hint('height')}>
+              <NumberInput
+                value={cabinet.height} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.height')} field="cabinet.height" onDraftValidityChange={onDraftValidityChange}
+                onChange={(height) => edit('height', { height })}
+              />
+            </Field>
+            <Field label={tr('Ширина (W)')} hint={hint('width')}>
+              <NumberInput
+                value={cabinet.width} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.width')} field="cabinet.width" onDraftValidityChange={onDraftValidityChange}
+                onChange={(width) => edit('width', { width })}
+              />
+            </Field>
+            <Field label={tr('Глубина (D)')} hint={hint('depth')}>
+              <NumberInput
+                value={cabinet.depth} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.depth')} field="cabinet.depth" onDraftValidityChange={onDraftValidityChange}
+                onChange={(depth) => edit('depth', { depth })}
+              />
+            </Field>
+          </div>
+          <p className="text-[11px] text-neutral-600 dark:text-neutral-300">
+            {tr('Обязательный диапазон габаритов')}: {dimensionGuide('height').allowed} {tr('мм')}.
+            {(['height', 'width', 'depth'] as const).map((axis) => dimensionGuide(axis).shop
+              ? ` ${tr(axis === 'height' ? 'Высота (H)' : axis === 'width' ? 'Ширина (W)' : 'Глубина (D)')}: ${tr('Ориентир цеха')} ${dimensionGuide(axis).shop}.`
+              : '')}
+          </p>
+        </div>
         <div className="flex items-center justify-between gap-2">
           <SectionTitle>{tr('Шаблон')}</SectionTitle>
           <Button onClick={() => setGalleryOpen(true)}>{tr('Выбрать')}</Button>
@@ -1122,33 +1156,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
 
       {/* ═══ РАЗМЕРЫ: H×W×D, конструкция, скос, угловой, фронт. панель, основание ═══ */}
       <div className={cn('flex-col gap-3', tab === 'general' ? 'flex' : 'hidden')}>
-        <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-tour="size">
-          <Field label={tr('Высота (H)')} hint={hint('height')}>
-            <NumberInput
-              value={cabinet.height} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.height')} field="cabinet.height" onDraftValidityChange={onDraftValidityChange}
-              onChange={(height) => edit('height', { height })}
-            />
-          </Field>
-          <Field label={tr('Ширина (W)')} hint={hint('width')}>
-            <NumberInput
-              value={cabinet.width} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.width')} field="cabinet.width" onDraftValidityChange={onDraftValidityChange}
-              onChange={(width) => edit('width', { width })}
-            />
-          </Field>
-          <Field label={tr('Глубина (D)')} hint={hint('depth')}>
-            <NumberInput
-              value={cabinet.depth} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.depth')} field="cabinet.depth" onDraftValidityChange={onDraftValidityChange}
-              onChange={(depth) => edit('depth', { depth })}
-            />
-          </Field>
-        </div>
-        <p className="text-[11px] text-neutral-600 dark:text-neutral-300">
-          {tr('Обязательный диапазон габаритов')}: {dimensionGuide('height').allowed} {tr('мм')}.
-          {(['height', 'width', 'depth'] as const).map((axis) => dimensionGuide(axis).shop
-            ? ` ${tr(axis === 'height' ? 'Высота (H)' : axis === 'width' ? 'Ширина (W)' : 'Глубина (D)')}: ${tr('Ориентир цеха')} ${dimensionGuide(axis).shop}.`
-            : '')}
-        </p>
 
         <Collapsible id="construction" title={tr('Конструкция')} defaultOpen tour="sections">
         <Field label={tr('Метод сборки')} hint={tr('обе панели сразу')}>
@@ -1785,6 +1792,11 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
           />
         </Field>
         </Collapsible>
+        {/* PBR терминдері (кедір-бұдыр, sheen, clearcoat) жиһазшыға жат — «Дополнительно» астында. */}
+        <details className="border-t border-neutral-200 pt-2 text-xs dark:border-neutral-800" data-testid="material-advanced">
+          <summary className="cursor-pointer select-none">{tr('Дополнительно (3D-вид материала)')}</summary>
+          <MaterialAppearanceEditor initialMaterialId={cabinet.carcassMaterialId} />
+        </details>
       </div>
 
       {/*
@@ -1871,11 +1883,11 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
         {!productionReady ? <p role="status">{tr('Сначала примените изменения для экспорта')}</p> : null}
       </div>
 
-      <div className={cn(tab === 'general' ? 'block' : 'hidden')}>
+      <div className={cn(tab === 'general' ? 'block' : 'hidden')} data-tour-mobile="sections">
       <div className="flex items-center justify-between pt-1">
-        <SectionTitle>{tr('Секции')} ({cabinet.sections.length})</SectionTitle>
+        <SectionTitle>{tf('Секции ({n})', { n: cabinet.sections.length })}</SectionTitle>
         <Button onClick={() => setSectionAddError(addSection())} disabled={cabinet.sections.length >= 12}>
-          + секция
+          {tr('+ секция')}
         </Button>
       </div>
       {sectionAddError ? <p role="alert" className="border border-red-300 bg-red-50 p-2 text-xs text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
@@ -1888,8 +1900,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
         ))}
       </div>
 
-      <SectionTitle>{tr('Вид')}</SectionTitle>
-      <Toggle checked={showDimensions} onChange={setShowDimensions} label={tr('Показывать габариты')} />
       </div>
       </fieldset>
     </div>

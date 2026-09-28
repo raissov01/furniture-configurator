@@ -23,17 +23,18 @@ describe('tour steps', () => {
   })
 
   it('keeps six ordered stops on a phone, starting at the visible size and sections controls', () => {
-    const steps = tourStepsFor(false, true)
+    const steps = tourStepsFor(true, true)
     expect(steps).toHaveLength(6)
     expect(steps.map((step) => step.selector).slice(0, 2)).toEqual([
-      '[data-tour="mobile-size"]', '[data-tour="mobile-sections"]',
+      '[data-tour-mobile="size"]', '[data-tour-mobile="sections"]',
     ])
     expect(steps[2]?.selector).toBe('[data-tour="scene"]')
-    expect(steps[3]?.selector).toBe('[data-tour="mobile-cutlist"]')
-    const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
-    for (const marker of ['mobile-size', 'mobile-sections', 'mobile-cutlist']) {
-      expect(source).toContain(`tour="${marker}"`)
-    }
+    expect(steps[3]?.selector).toBe('[data-tour-mobile="cutlist"]')
+    const workspace = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
+    const configurator = readFileSync(new URL('../components/Configurator.tsx', import.meta.url), 'utf8')
+    expect(configurator).toContain('data-tour-mobile="size"')
+    expect(configurator).toContain('data-tour-mobile="sections"')
+    expect(workspace).toContain('data-tour-mobile="cutlist"')
   })
 
   it('classic selectors exist in the Workspace source', () => {

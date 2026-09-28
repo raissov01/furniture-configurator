@@ -16,6 +16,7 @@ export type HotkeyAction =
   | { kind: 'preset'; preset: CameraPreset }
   | { kind: 'fit' }
   | { kind: 'viewMode' }
+  | { kind: 'xray' }
   | { kind: 'fronts' }
   | { kind: 'openness' }
   | { kind: 'projection' }
@@ -25,6 +26,7 @@ export type HotkeyAction =
   | { kind: 'redo' }
   | { kind: 'delete' }
   | { kind: 'newCabinet' }
+  | { kind: 'newProject' }
   | { kind: 'openProject' }
   | { kind: 'saveProject' }
   | { kind: 'printProject' }
@@ -42,7 +44,9 @@ export type Hotkey = {
 }
 
 export const HOTKEYS: Hotkey[] = [
-  { keys: 'Ctrl+N', match: ['n'], ctrl: true, description: 'Новый корпус', action: { kind: 'newCabinet' } },
+  // PRO100: Ctrl+N — жаңа ЖОБА, Ins — жаңа элемент (корпус).
+  { keys: 'Ctrl+N', match: ['n'], ctrl: true, description: 'Новый проект', action: { kind: 'newProject' } },
+  { keys: 'Ins', match: ['insert'], description: 'Новый корпус', action: { kind: 'newCabinet' } },
   { keys: 'Ctrl+O', match: ['o'], ctrl: true, description: 'Открыть проект', action: { kind: 'openProject' } },
   { keys: 'Ctrl+S', match: ['s'], ctrl: true, description: 'Сохранить проект', action: { kind: 'saveProject' } },
   { keys: 'Ctrl+P', match: ['p'], ctrl: true, description: 'PDF — весь проект', action: { kind: 'printProject' } },
@@ -53,19 +57,20 @@ export const HOTKEYS: Hotkey[] = [
   { keys: '5', match: ['5'], description: 'Вид: комната', action: { kind: 'preset', preset: 'room' } },
   { keys: 'F', match: ['f'], description: 'Вписать в кадр', action: { kind: 'fit' } },
   { keys: 'T', match: ['t'], description: 'Прозрачность: тело → полупрозрачно → контур', action: { kind: 'viewMode' } },
+  { keys: 'X', match: ['x'], description: 'Присадка (рентген)', action: { kind: 'xray' } },
   { keys: 'H', match: ['h'], description: 'Показать или скрыть фасады', action: { kind: 'fronts' } },
   { keys: 'E', match: ['e'], description: 'Открыть или закрыть двери и ящики', action: { kind: 'openness' } },
   { keys: 'O', match: ['o'], description: 'Проекция: перспектива ↔ ортогональная', action: { kind: 'projection' } },
   { keys: 'D', match: ['d'], description: 'Размеры на сцене', action: { kind: 'dimensions' } },
   { keys: '?', match: ['?', '/'], description: 'Эта справка', action: { kind: 'help' } },
   { keys: 'Ctrl+Z', match: ['z'], ctrl: true, description: 'Отменить', action: { kind: 'undo' } },
-  { keys: 'Ctrl+Shift+Z', match: ['z'], ctrl: true, shift: true, description: 'Вернуть', action: { kind: 'redo' } },
-  { keys: 'Ctrl+Y', match: ['y'], ctrl: true, shift: false, description: 'Вернуть', action: { kind: 'redo' } },
+  { keys: 'Ctrl+Shift+Z', match: ['z'], ctrl: true, shift: true, description: 'Повторить', action: { kind: 'redo' } },
+  { keys: 'Ctrl+Y', match: ['y'], ctrl: true, shift: false, description: 'Повторить', action: { kind: 'redo' } },
   { keys: 'Delete', match: ['delete'], description: 'Удалить выбранный объект', action: { kind: 'delete' } },
 ]
 
-export function classicFileHint(kind: 'newCabinet' | 'openProject' | 'saveProject' | 'printProject'): string {
-  const keys = HOTKEYS.find((hotkey) => hotkey.action.kind === kind && hotkey.ctrl)?.keys
+export function classicFileHint(kind: 'newCabinet' | 'newProject' | 'openProject' | 'saveProject' | 'printProject'): string {
+  const keys = HOTKEYS.find((hotkey) => hotkey.action.kind === kind)?.keys
   if (!keys) throw new Error(`Missing classic file shortcut: ${kind}`)
   return keys
 }

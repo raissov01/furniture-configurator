@@ -12,16 +12,19 @@
 
 import { t as tr } from '@/lib/i18n'
 import { MarketPriceNotice } from './MarketPrice'
+import { serviceLineText, unitLabel } from '@/lib/priceUnits'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  SERVICE_IDS, SERVICE_NAMES, formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
+  SERVICE_IDS, SERVICE_NAMES, SHEET_SERVICE_IDS, SHEET_SERVICE_NAMES, captureSalePriceScaling, financeTotals,
+  formatTenge, formatTengeExact, nestPanels, nestingOptionsOf, priceProject,
 } from '@/src/core/index'
-import type { Discount, HardwarePlacement, NestedSheet, Panel, PriceLine, PriceOverrides } from '@/src/core/index'
+import type { Discount, HardwarePlacement, ManualPriceItem, NestedSheet, Panel, PriceLine, PriceOverrides, ShopProfile, SpecialPartRow } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
 import { useModalLayer } from '@/lib/useModalLayer'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { visibleMaterials } from '@/lib/cutView'
 import { parseCoefficientInput, parsePercentInput, parseTengeInput } from '@/lib/f22ShareUi'
 import { MoneyInput } from './MoneyInput'
@@ -57,20 +60,23 @@ function isoToRu(iso: string): string {
 
 /** `panels` — БҮКІЛ ЖОБАНЫҢ детальдары. Геометрия store-да есептелмейді (§3). */
 export function QuoteView({
-  panels, hardware, projectName, moduleWidths, propertiesOpen = false,
+  panels, hardware, manualItems, projectName, moduleWidths, specialParts = [], propertiesOpen = false,
 }: {
   panels: Panel[]
   /** Панель емес фурнитура: штанга мен ұстағыштар. */
   hardware: HardwarePlacement[]
+  manualItems: ManualPriceItem[]
   projectName: string
   /** Корпустардың ені, мм — монтаж мөлшерлемесі осыдан саналады. */
   moduleWidths: number[]
+  specialParts?: readonly SpecialPartRow[]
   propertiesOpen?: boolean
 }) {
   const open = useConfigurator((s) => s.quoteOpen)
   const { zIndex, isTop } = useModalLayer(open, 'quote')
   const setOpen = useConfigurator((s) => s.setQuoteOpen)
   const shop = useConfigurator((s) => s.shop)
+  const editShop = useConfigurator((s) => s.editShop)
   const catalog = useConfigurator((s) => s.catalog)
   // Тапсырыс реквизиттері («Проект» терезесінің «Реквизиты» қойындысы) — КП-ға
   // солардан барады. «Заказчик» өрісі осы жерде әлі де қолмен түзетілуі мүмкін.
@@ -111,11 +117,11 @@ export function QuoteView({
   const [priceError, price] = useMemo((): [string | null, ReturnType<typeof priceProject> | null] => {
     if (!nesting) return [null, null]
     try {
-      return [null, priceProject(panels, nesting, shop, hardware, moduleWidths, priceOverrides)]
+      return [null, priceProject(panels, nesting, shop, hardware, moduleWidths, priceOverrides, manualItems, specialParts)]
     } catch (err) {
       return [err instanceof Error ? err.message : String(err), null]
     }
-  }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides])
+  }, [panels, nesting, shop, hardware, moduleWidths, priceOverrides, manualItems, specialParts])
 
   const run = async (kind: string, action: () => Promise<void>) => {
     setBusy(kind)
@@ -135,7 +141,9 @@ export function QuoteView({
       onClick={() => setOpen(false)}
     >
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Смета по проекту')}
-        className="min-w-0 w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-2 sm:p-4 dark:border-neutral-700 dark:bg-neutral-900"
+        className="min-w-0 max-h-[calc(100dvh-1rem)] w-full max-w-5xl overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 sm:max-h-[calc(100dvh-2rem)] sm:p-4 dark:border-neutral-700 dark:bg-neutral-900"
+
+
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -295,7 +303,18 @@ export function QuoteView({
               </p>
             ) : null}
             <PriceOverridesEditor overrides={priceOverrides} onChange={editPriceOverrides}
-              shopCoefficient={shop.coefficient} onSalePriceValidityChange={setSalePriceDraftValid} />
+              shop={shop} panels={panels} onSalePriceValidityChange={setSalePriceDraftValid} />
+            <details className="border border-neutral-200 p-2 text-xs dark:border-neutral-700">
+              <summary className="cursor-pointer">{tr('Базовые цены фурнитуры')}</summary>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {shop.hardware.map((item) => <label key={item.id} className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                  <span className="w-28"><MoneyInput value={item.pricePerUnit} label={`${item.name}: ${tr('Цена')}`}
+                    onChange={(pricePerUnit) => editShop({ hardware: shop.hardware.map((current) =>
+                      current.id === item.id ? { ...current, pricePerUnit } : current) })} /></span>
+                </label>)}
+              </div>
+            </details>
             {priceError ? (
               <div className="rounded-md border border-red-300 bg-red-50 px-2.5 py-2 text-[11px] text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
                 {priceError}
@@ -357,24 +376,30 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
           <rect key={`o${i}`} x={o.x} y={o.y} width={o.width} height={o.height}
             fill="#22c55e" fillOpacity={0.12} stroke="#22c55e" strokeOpacity={0.5} strokeWidth={3} />
         ))}
-        {sheet.parts.map((p) => (
+        {sheet.parts.map((p, index) => (
           <g key={p.panelId}>
             <rect x={p.x} y={p.y} width={p.width} height={p.height}
-              fill="#e3c76a" stroke="#7c5f14" strokeWidth={4} />
+              fill="var(--brand-amber)" stroke="var(--brand-graphite)" strokeWidth={4} />
             <text
               x={p.x + p.width / 2} y={p.y + p.height / 2}
               textAnchor="middle" dominantBaseline="middle"
               fontSize={Math.max(34, Math.min(p.width, p.height) * 0.16)}
-              fill="#3f3108"
+              fill="var(--brand-graphite)"
+
+
             >
-              {p.label} {p.width}×{p.height}
+              {index + 1}
             </text>
           </g>
         ))}
       </svg>
+      <ol className="grid gap-1 text-sm sm:grid-cols-2">
+        {sheet.parts.map((part, index) => <li key={part.panelId}>{index + 1}. {panelDisplayLabel(part.label)} · {part.width} × {part.height} мм</li>)}
+      </ol>
       <figcaption className="text-[11px] text-neutral-500">
-        Лист {sheet.index} · {sheet.sheetWidth}×{sheet.sheetHeight}
-        {sheet.offcuts.length > 0 ? ` · деловой отход: ${sheet.offcuts.length}` : ''}
+        {tr('Лист')} {sheet.index} · {sheet.sheetWidth}×{sheet.sheetHeight}
+        {sheet.veneerGroup ? ` · ${tr('Группа шпона')}: ${sheet.veneerGroup}` : ''}
+        {sheet.offcuts.length > 0 ? ` · ${tr('деловой отход')}: ${sheet.offcuts.length}` : ''}
       </figcaption>
     </figure>
   )
@@ -389,13 +414,19 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
  * коэффициенттен шыққан сомамен есептеледі.
  */
 function PriceOverridesEditor({
-  overrides, onChange, shopCoefficient, onSalePriceValidityChange,
+  overrides, onChange, shop, panels, onSalePriceValidityChange,
 }: {
   overrides: PriceOverrides
   onChange: (patch: Partial<PriceOverrides>) => void
-  shopCoefficient: number
+  shop: ShopProfile
+  panels: Panel[]
   onSalePriceValidityChange: (valid: boolean) => void
 }) {
+  const [scalingError, setScalingError] = useState('')
+  const capture = () => {
+    try { setScalingError(''); return captureSalePriceScaling(panels, shop) }
+    catch (cause) { setScalingError(cause instanceof Error ? cause.message : String(cause)); return null }
+  }
   // Экранда теңгемен көрсетеді, сақтауда тиынмен (§0.2: ақша бүтін минор бірлік).
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-md border border-neutral-200 px-2.5 py-2 text-xs dark:border-neutral-700">
@@ -403,7 +434,7 @@ function PriceOverridesEditor({
         <span className="text-neutral-500">{tr('Коэффициент (этот проект)')}</span>
         <ValidatedField label={tr('Коэффициент (этот проект)')} value={overrides.coefficient}
           display={String} parse={parseCoefficientInput} onValid={(value) => onChange({ coefficient: value })}
-          placeholder={String(shopCoefficient)} compact />
+          placeholder={String(shop.coefficient)} compact />
       </label>
       {overrides.coefficient !== undefined && <Button onClick={() => onChange({ coefficient: undefined })}>
         {tr('Вернуться к коэффициенту цеха')}
@@ -411,13 +442,36 @@ function PriceOverridesEditor({
       <label className="flex flex-col gap-1">
         <span className="text-neutral-500">{tr('Цена продажи, ₸ (вручную)')}</span>
         <MoneyInput value={overrides.salePrice} label={tr('Цена продажи, ₸ (вручную)')}
-          onChange={(salePrice) => onChange({ salePrice })} onValidityChange={onSalePriceValidityChange} />
+          onChange={(salePrice) => {
+            if (overrides.salePriceScaling) {
+              const scaling = capture()
+              if (scaling) onChange({ salePrice, salePriceScaling: scaling })
+            } else onChange({ salePrice })
+          }} onValidityChange={onSalePriceValidityChange} />
       </label>
       {overrides.salePrice !== undefined ? (
-        <Button onClick={() => onChange({ salePrice: undefined })}>
+        <Button onClick={() => onChange({ salePrice: undefined, salePriceScaling: undefined })}>
           {tr('Вернуться к коэффициенту')}
         </Button>
       ) : null}
+      <label className="flex items-center gap-1 self-end py-1">
+        <input type="checkbox" checked={overrides.withoutInstallation === true}
+          onChange={(event) => onChange({ withoutInstallation: event.target.checked })} />
+        {tr('Без монтажа')}
+      </label>
+      <label className="flex items-center gap-1 self-end py-1"
+        title={tr('После изменения размеров ручная цена меняется пропорционально площади ЛДСП')}>
+        <input type="checkbox" checked={Boolean(overrides.salePriceScaling)} disabled={overrides.salePrice === undefined}
+          onChange={(event) => {
+            if (!event.target.checked) onChange({ salePriceScaling: undefined })
+            else { const scaling = capture(); if (scaling) onChange({ salePriceScaling: scaling }) }
+          }} />
+        {tr('Менять ручную цену по площади ЛДСП')}
+      </label>
+      {scalingError && <span role="alert" className="w-full text-red-700 dark:text-red-400">{scalingError}</span>}
+      {overrides.salePriceScaling && <span className="w-full text-neutral-500">
+        {tr('База площади ЛДСП')}: {overrides.salePriceScaling.baseAreaMm2} мм²
+      </span>}
       <DiscountInput
         label={tr('Скидка на весь проект')}
         discount={overrides.overallDiscount}
@@ -522,10 +576,12 @@ function PriceTable({ price, shopName, overrides, onChange }: {
   overrides: PriceOverrides
   onChange: (patch: Partial<PriceOverrides>) => void
 }) {
+  const totals = financeTotals(price)
   const groups: { key: string; title: string; lines: PriceLine[] }[] = [
     { key: 'materials', title: tr('Материалы'), lines: price.materials },
     { key: 'edges', title: tr('Кромка'), lines: price.edges },
     { key: 'hardware', title: tr('Фурнитура'), lines: price.hardware },
+    { key: 'manualItems', title: tr('Декор и техника'), lines: price.manualItems },
     { key: 'services', title: tr('Услуги цеха'), lines: price.services },
   ]
 
@@ -550,8 +606,12 @@ function PriceTable({ price, shopName, overrides, onChange }: {
               <th className="py-1.5 text-right font-medium">{tr('Листы')}</th>
               <th className="py-1.5 text-right font-medium">{tr('Материал')}</th>
               <th className="py-1.5 text-right font-medium">{tr('Кромка')}</th>
+              <th className="py-1.5 text-right font-medium">{tr('Кромка, п.м.')}</th>
               {SERVICE_IDS.map((sid) => (
                 <th key={sid} className="py-1.5 text-right font-medium">{SERVICE_NAMES[sid]}</th>
+              ))}
+              {price.byMaterial.some((row) => row.sheetServices) && SHEET_SERVICE_IDS.map((sid) => (
+                <th key={`sheet-${sid}`} className="py-1.5 text-right font-medium">{tr(SHEET_SERVICE_NAMES[sid])}</th>
               ))}
               <th className="py-1.5 text-right font-medium">{tr('Итого')}</th>
             </tr>
@@ -564,14 +624,25 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                 <td className="py-1 text-right tabular-nums text-neutral-500">{r.sheets}</td>
                 <td className="py-1 text-right tabular-nums">{formatTenge(r.materialCost)}</td>
                 <td className="py-1 text-right tabular-nums">{formatTenge(r.edgeCost)}</td>
+                <td className="py-1 text-right tabular-nums">{r.edgeMetres}</td>
                 {SERVICE_IDS.map((sid) => (
                   <td key={sid} className="py-1 text-right tabular-nums">{formatTenge(r.services[sid])}</td>
+                ))}
+                {price.byMaterial.some((row) => row.sheetServices) && SHEET_SERVICE_IDS.map((sid) => (
+                  <td key={`sheet-${sid}`} className="py-1 text-right tabular-nums">{formatTenge(r.sheetServices?.[sid] ?? 0)}</td>
                 ))}
                 <td className="py-1 text-right tabular-nums font-medium">{formatTenge(r.total)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="flex flex-wrap gap-3 border border-neutral-200 p-2 text-xs dark:border-neutral-700">
+        <span>{tr('Площадь')}: {totals.areaSquareMetres} м²</span>
+        <span>{tr('Листы')}: {totals.sheets}</span>
+        <span>{tr('Кромка, п.м.')}: {totals.edgeMetres}</span>
+        <span>{tr('Фурнитура')}: {formatTenge(totals.hardwareCost)}</span>
+        <span>{tr('Услуги цеха')}: {formatTenge(price.servicesTotal)}</span>
       </div>
 
       <table className="w-full text-xs">
@@ -597,10 +668,11 @@ function PriceTable({ price, shopName, overrides, onChange }: {
                       {g.lines.map((l) => {
                         const key = `${g.key}:${l.id}`
                         const sources = priceSourceRows(l)
-                        return <Fragment key={key}><tr className="border-t border-neutral-100 dark:border-neutral-800">
+                        return <Fragment key={key}><tr className="border-t border-neutral-100 dark:border-neutral-800"
+                          title={g.key === 'services' ? serviceLineText(l) : undefined}>
                           <td className="py-1">{l.name}</td>
                           <td className="w-24 py-1 text-right tabular-nums text-neutral-500">
-                            {l.qty} {l.unit}
+                            {l.qty} {unitLabel(l.unit)}
                           </td>
                           <td className={cn('w-28 py-1 text-right tabular-nums', l.unitPrice <= 0 && 'text-amber-600')}>
                             {formatTenge(l.unitPrice)}
@@ -645,15 +717,15 @@ function PriceTable({ price, shopName, overrides, onChange }: {
       </table>
 
       <div className="ml-auto w-full max-w-sm space-y-1 border-t border-neutral-200 pt-2 text-xs dark:border-neutral-700">
-        <Row label={tr('Материалы, кромка, фурнитура')} value={formatTenge(price.goods)} />
+        <Row label={tr('Материалы, кромка, фурнитура и декор')} value={formatTenge(price.goods)} />
         <Row label={tr('Услуги цеха')} value={formatTenge(price.servicesTotal)} />
         {price.coefficientAmount !== 0 ? (
           <Row label={`Коэффициент ×${price.coefficient}`} value={formatTenge(price.coefficientAmount)} />
         ) : null}
-        {price.installation.cost > 0 ? (
+        {(price.installation.cost > 0 || price.installation.excluded) ? (
           <Row
-            label={`Монтаж · ${price.installation.metres} м ширины`}
-            value={formatTenge(price.installation.cost)}
+            label={`${tr('Монтаж')} · ${price.installation.metres} ${tr('п.м. ширины')}`}
+            value={price.installation.excluded ? tr('Без монтажа') : formatTenge(price.installation.cost)}
           />
         ) : null}
         <Row label={tr('Себестоимость')} value={formatTenge(price.subtotal)} />
@@ -664,14 +736,17 @@ function PriceTable({ price, shopName, overrides, onChange }: {
           паритеті). КП-да (quotePdf.ts) `salePriceOverride` бар болса
           себестоимость/наценка КӨРІНБЕЙДІ — тек түпкі баға (quoteTotalsView).
         */}
-        <Row label={tr('Алдын ала сату бағасы')} value={formatTenge(price.calculatedTotal)} />
+        <Row label={tr('Расчётная цена продажи')} value={formatTenge(price.calculatedTotal)} />
         {price.salePriceOverride !== undefined ? (
-          <Row label={tr('Сату бағасы (қолмен)')} value={formatTengeExact(price.salePriceOverride)} />
+          <Row label={tr('Цена продажи (вручную)')} value={formatTengeExact(price.salePriceOverride)} />
         ) : null}
-        <Row label="ВСЕГО" value={formatTengeExact(price.grossTotal)} />
-        <Row label="СКИДКА" value={`−${formatTengeExact(price.discountTotal)}`} />
+        {price.salePriceScaling && <p className="text-[11px] text-neutral-500">
+          {tr('Ручная цена пересчитана по площади ЛДСП')}: {price.salePriceScaling.baseAreaMm2} → {price.salePriceScaling.currentAreaMm2} мм²
+        </p>}
+        <Row label={tr('Всего')} value={formatTengeExact(price.grossTotal)} />
+        <Row label={tr('Скидка')} value={`−${formatTengeExact(price.discountTotal)}`} />
         <div className="flex items-baseline justify-between border-t border-neutral-200 pt-1.5 text-sm font-semibold dark:border-neutral-700">
-          <span>К ОПЛАТЕ</span>
+          <span>{tr('К оплате')}</span>
           <span className="tabular-nums">{formatTengeExact(price.total)}</span>
         </div>
         {shopName ? <p className="pt-1 text-[11px] text-neutral-400">{shopName}</p> : null}

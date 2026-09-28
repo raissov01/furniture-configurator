@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { t as tr } from '@/lib/i18n'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import { mapImportedTexture, pro100TextureImports } from '@/lib/ownTextureUi'
 import type { OwnTextureEntry } from '@/lib/ownTextureUi'
 import { useConfigurator } from '@/store/configurator'
@@ -85,7 +86,7 @@ export function OwnTextureMapper() {
     </div>
     {entry?.texture.imageFile && <p className="text-xs text-neutral-500">{tr('Имя файла в INI')}: {entry.texture.imageFile}</p>}
     <label className="block text-xs">{tr('Файл изображения PNG, JPEG или WebP (до 1 МБ)')}
-      <input className={inputClass} type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => {
+      <LocalizedFileChooser accept="image/png,image/jpeg,image/webp" onChange={(event) => {
         setFile(event.target.files?.[0] ?? null)
         event.currentTarget.value = ''
       }} />

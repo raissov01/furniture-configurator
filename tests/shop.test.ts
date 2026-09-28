@@ -215,7 +215,7 @@ describe('материалды клондау', () => {
   it('жаңа id бірегей, аты ажыратылады; барлық физикалық және бағалық қасиет сақталады', () => {
     const copy = cloneMaterial(original, [original.id, 'egger-h1145-copy', 'band-2'])
     expect(copy.id).toBe('egger-h1145-copy-2')
-    expect(copy.name).toBe('ЛДСП Egger H1145 (копия)')
+    expect(copy.name).toBe('ЛДСП Egger H1145 (копия 2)')
     expect({ ...copy, id: original.id, name: original.name }).toEqual(original)
     expect(original.id).toBe('egger-h1145')
     expect(copy).not.toBe(original)
@@ -307,7 +307,7 @@ describe('габарит шектері', () => {
     delete (old as { limits?: unknown }).limits
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     expect(migrated.limits).toEqual(defaultLimits())
     expect(migrated.markupPercent).toBe(25)
   })

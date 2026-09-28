@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { siteLanguageFromQuery, siteTranslate, siteTranslations } from '../lib/siteLocale'
+import { keepDashWithPreviousWord } from '../lib/typography'
 import { demoRows, demoSheet } from '../lib/demo'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -26,7 +27,7 @@ describe('landing translations', () => {
   it.each(['ru', 'kk', 'en', 'uz'] as const)('renders actual %s landing text on the server', (lang) => {
     const html = renderToStaticMarkup(createElement(LandingPage, { initialLang: lang, explicit: true }))
     expect(html).toContain(`lang="${lang}"`)
-    expect(html).toContain(siteTranslate('Корпус, раскрой и цена — из одной модели', lang))
+    expect(html).toContain(keepDashWithPreviousWord(siteTranslate('Корпус, раскрой и цена — из одной модели', lang)))
     expect(html).toContain(siteTranslate('Что получает цех', lang))
     expect(html).toContain(siteTranslate('Наименование', lang))
     expect(html).toContain(siteTranslate('Что обычно спрашивают', lang))
@@ -42,7 +43,7 @@ describe('landing translations', () => {
   })
 
   it('covers every Russian literal in the public landing components', () => {
-    for (const name of ['components/site/LandingPage.tsx', 'components/site/SiteHeader.tsx', 'components/site/SiteFooter.tsx', 'components/site/SheetFigure.tsx', 'lib/site.ts']) {
+    for (const name of ['components/site/LandingPage.tsx', 'components/site/SiteHeader.tsx', 'components/site/SiteFooter.tsx', 'components/site/SheetFigure.tsx', 'components/site/DetailTable.tsx', 'lib/site.ts']) {
       const source = readFileSync(join(process.cwd(), name), 'utf8')
       for (const line of source.split('\n')) {
         if (line.trimStart().startsWith('//') || line.trimStart().startsWith('*')) continue

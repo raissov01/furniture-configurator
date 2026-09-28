@@ -18,6 +18,7 @@ import { cn } from '@/lib/cn'
 import { t as tr } from '@/lib/i18n'
 import { Button, Field, Toggle } from '@/components/ui'
 import { DEFAULT_LAYER_ID } from '@/src/core/layers'
+import { layerUiName } from '@/lib/layerUiName'
 import type { Layer } from '@/src/core/layers'
 
 /** Панельге көрсетуге керек аз ғана өріс — толық SceneNode бермейміз. */
@@ -29,9 +30,9 @@ export type LayersPanelNode = {
 
 /** A layer rename is one committed edit/undo step, not one edit per keystroke. */
 function LayerNameInput({ layer, onRename }: { layer: Layer; onRename: (id: string, name: string) => void }) {
-  const [draft, setDraft] = React.useState(layer.name)
+  const [draft, setDraft] = React.useState(layerUiName(layer, tr))
   const cancel = React.useRef(false)
-  React.useEffect(() => setDraft(layer.name), [layer.name])
+  React.useEffect(() => setDraft(layerUiName(layer, tr)), [layer.id, layer.name])
   return <input
     aria-label={tr('Название слоя')}
     className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1 text-sm text-neutral-900 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-300"
@@ -40,15 +41,15 @@ function LayerNameInput({ layer, onRename }: { layer: Layer; onRename: (id: stri
     onBlur={(event) => {
       if (cancel.current) { cancel.current = false; return }
       const name = event.target.value.trim()
-      if (!name) { setDraft(layer.name); return }
-      if (name !== layer.name) onRename(layer.id, name)
+      if (!name) { setDraft(layerUiName(layer, tr)); return }
+      if (name !== layerUiName(layer, tr)) onRename(layer.id, name)
       // The store supplies the committed name on rerender; a rejected edit
       // must not leave a local draft masquerading as saved data.
-      setDraft(layer.name)
+      setDraft(layerUiName(layer, tr))
     }}
     onKeyDown={(event) => {
       if (event.key === 'Enter') event.currentTarget.blur()
-      if (event.key === 'Escape') { cancel.current = true; setDraft(layer.name); event.currentTarget.blur() }
+      if (event.key === 'Escape') { cancel.current = true; setDraft(layerUiName(layer, tr)); event.currentTarget.blur() }
     }}
   />
 }
@@ -98,16 +99,16 @@ export function LayersPanel({
   return (
     <div className="flex h-full flex-col gap-3 text-xs">
       <div className="flex items-end gap-2">
-        <Field label={tr('Жаңа қабат')}>
+        <Field label={tr('Новый слой')}>
           <input
             className="w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:focus:border-neutral-300"
             value={newName}
-            placeholder={tr('Мыс.: Техника')}
+            placeholder={tr('Например: Техника')}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') submitNewLayer() }}
           />
         </Field>
-        <Button onClick={submitNewLayer} disabled={!newName.trim()}>{tr('Қосу')}</Button>
+        <Button onClick={submitNewLayer} disabled={!newName.trim()}>{tr('Добавить')}</Button>
       </div>
 
       <ul className="flex flex-col gap-1.5" data-testid="layers-list">
@@ -122,7 +123,7 @@ export function LayersPanel({
               <div className="flex items-center gap-2">
                 <input
                   type="color"
-                  aria-label={tr('Қабат түсі')}
+                  aria-label={tr('Цвет слоя')}
                   className="h-6 w-6 shrink-0 cursor-pointer border border-neutral-300 bg-transparent p-0 dark:border-neutral-700"
                   value={layer.color}
                   onChange={(e) => onSetColor(layer.id, e.target.value)}
@@ -134,22 +135,22 @@ export function LayersPanel({
                 <Button
                   size="sm"
                   disabled={isDefault}
-                  title={isDefault ? tr('Әдепкі қабатты өшіруге болмайды') : tr('Қабатты өшіру')}
+                  title={isDefault ? tr('Слой по умолчанию нельзя удалить') : tr('Удалить слой')}
                   onClick={() => onDeleteLayer(layer.id)}
                 >
-                  {tr('Өшіру')}
+                  {tr('Удалить')}
                 </Button>
               </div>
               <div className="flex items-center gap-4">
                 <Toggle
                   checked={layer.visible}
                   onChange={(v) => onSetVisible(layer.id, v)}
-                  label={tr('Көрінеді')}
+                  label={tr('Виден')}
                 />
                 <Toggle
                   checked={layer.locked}
                   onChange={(v) => onSetLocked(layer.id, v)}
-                  label={tr('Құлыпты')}
+                  label={tr('Заблокирован')}
                 />
               </div>
             </li>
@@ -160,7 +161,7 @@ export function LayersPanel({
       {nodes.length > 0 && onAssignNode ? (
         <div className="flex flex-col gap-1">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-            {tr('Түйіндер')}
+            {tr('Узлы')}
           </span>
           <ul className="flex flex-col gap-1">
             {nodes.map((node) => (
@@ -177,7 +178,7 @@ export function LayersPanel({
                   onChange={(e) => onAssignNode(node.id, e.target.value)}
                 >
                   {layers.map((layer) => (
-                    <option key={layer.id} value={layer.id}>{layer.name}</option>
+                    <option key={layer.id} value={layer.id}>{layerUiName(layer, tr)}</option>
                   ))}
                 </select>
               </li>

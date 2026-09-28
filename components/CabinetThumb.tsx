@@ -15,16 +15,16 @@ import type { CabinetConfig, Catalog, Panel } from '@/src/core/index'
 
 /** Рөл бойынша түс — 3D сахнадағы палитраның жеңіл нұсқасы. */
 const FILL: Record<string, string> = {
-  side: '#c9a227',
-  top: '#d9b642',
-  bottom: '#d9b642',
-  shelf: '#e8d089',
-  divider: '#bd9520',
-  back: '#efe3c4',
-  drawerSide: '#d6c48c',
-  drawerBack: '#d6c48c',
-  drawerBottom: '#efe3c4',
-  front: '#b8862a',
+  side: 'var(--brand-amber)',
+  top: 'var(--brand-amber)',
+  bottom: 'var(--brand-amber)',
+  shelf: 'var(--brand-amber)',
+  divider: 'var(--brand-amber)',
+  back: 'var(--neutral-200)',
+  drawerSide: 'var(--brand-amber)',
+  drawerBack: 'var(--brand-amber)',
+  drawerBottom: 'var(--neutral-200)',
+  front: 'var(--brand-amber)',
 }
 
 type Rect = { x: number; y: number; w: number; h: number; role: string }
@@ -99,7 +99,7 @@ export function CabinetThumb({
           // Фасад корпустың алдында тұр: жартылай мөлдір болса, ішкі
           // толтырылым да көрініп тұрады.
           fillOpacity={r.role === 'front' ? 0.55 : r.role === 'back' ? 0.35 : 1}
-          stroke="#7c5f14"
+          stroke="var(--brand-graphite)"
           strokeOpacity={0.35}
           strokeWidth={2}
         />

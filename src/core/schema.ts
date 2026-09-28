@@ -46,17 +46,25 @@ export const MaterialSchema = z.object({
   hasGrain: z.boolean(),
   pricePerSheet: minorUnits,
   trimEdge: z.number().int().nonnegative(),
+  minBendRadiusMm: mm.optional(),
   defaultEdging: EdgePolicySchema.optional(),
   decor: DecorSchema.optional(),
   pbr: z.strictObject({
     roughness: z.number().min(0).max(1).optional(),
     metalness: z.number().min(0).max(1).optional(),
+    sheen: z.number().min(0).max(1).optional(),
+    clearcoat: z.number().min(0).max(1).optional(),
     reflection: z.number().min(0).max(2).optional(),
     opacity: z.number().min(0).max(1).optional(),
     normal: z.strictObject({
       url: z.url().refine((value) => /^https?:\/\//i.test(value), 'normal URL must use http(s)'),
       sizeMm: z.strictObject({ x: mm, y: mm }),
       strength: z.number().min(0).max(2),
+    }).optional(),
+    ambientOcclusion: z.strictObject({
+      url: z.url().refine((value) => /^https?:\/\//i.test(value), 'AO URL must use http(s)'),
+      sizeMm: z.strictObject({ x: mm, y: mm }),
+      intensity: z.number().min(0).max(1),
     }).optional(),
   }).optional(),
   /** Тақта (постформинг): раскройға кірмейді, сметаға метрмен. */
@@ -475,6 +483,11 @@ export const PriceOverridesSchema = z.object({
   salePrice: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
   lineDiscounts: z.record(z.string(), DiscountSchema).optional(),
   overallDiscount: DiscountSchema.optional(),
+  withoutInstallation: z.boolean().optional(),
+  salePriceScaling: z.object({
+    baseAreaMm2: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    materialIds: z.array(z.string().min(1)).min(1),
+  }).optional(),
 })
 
 export const ProjectFileSchema = ProjectFileV2Schema.extend({

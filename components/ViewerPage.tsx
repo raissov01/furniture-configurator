@@ -8,7 +8,8 @@
  * жиһаздың өзін көреді, ал цехтың өзіндік құны оның ісі емес.
  */
 
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
+import { countLabel } from '@/lib/countLabel'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -25,6 +26,9 @@ import { ClientComments } from '@/components/ClientComments'
 import { ApprovalPanel } from '@/components/ApprovalPanel'
 import { formatTengeExact } from '@/src/core/index'
 import { viewerHashError, viewerPressedState } from '@/components/viewerPublicError'
+import { SITE } from '@/lib/site'
+import { visibleMaterialNames } from '@/lib/f00kDisplay'
+import type { PublicShareIdentity } from '@/lib/codeEntryState'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
 // Жүктелгенше «жүктелуде» шеңбері — клиент бет қатып қалды деп ойламасын.
@@ -49,7 +53,7 @@ const SHARE_POLL_MS = 5000
 
 export function ViewerPage() {
   const [state, setState] = useState<
-    { kind: 'loading' } | { kind: 'ready'; project: ProjectFileV4 } | { kind: 'error'; message: string }
+    { kind: 'loading' } | { kind: 'ready'; project: ProjectFileV4; shop: PublicShareIdentity | null } | { kind: 'error'; message: string }
   >({ kind: 'loading' })
 
   const loadProject = useConfigurator((s) => s.loadProject)
@@ -67,7 +71,7 @@ export function ViewerPage() {
     try {
       const project = decodeProjectV4(hash)
       loadProject(project)
-      setState({ kind: 'ready', project })
+      setState({ kind: 'ready', project, shop: null })
     } catch (error) {
       setState({
         kind: 'error',
@@ -101,13 +105,13 @@ export function ViewerPage() {
         }
         return
       }
-      const data = (await res.json()) as { project: unknown; updatedAt: number }
+      const data = (await res.json()) as { project: unknown; updatedAt: number; shop?: PublicShareIdentity | null }
       if (!alive || data.updatedAt === seen) return
       seen = data.updatedAt
       try {
         const project = parseProjectV4(data.project)
         loadProject(project)
-        setState({ kind: 'ready', project })
+        setState({ kind: 'ready', project, shop: data.shop ?? null })
       } catch {
         if (first) {
           setState({
@@ -124,21 +128,24 @@ export function ViewerPage() {
 
   return state.kind === 'ready'
     ? <Viewer project={state.project} preset={cameraPreset} setPreset={setCameraPreset}
-      code={new URLSearchParams(window.location.search).get('c')} />
+      code={new URLSearchParams(window.location.search).get('c')} shop={state.shop} />
     : <Notice state={state} />
 }
 
 function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; message: string } }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-200">
+    <main data-view-page className="flex min-h-screen items-center justify-center bg-[var(--brand-graphite)] px-6 text-white">
+
+
       <div className="max-w-md space-y-3 text-center">
+        <p className="flex items-center justify-center gap-2 text-sm font-semibold"><img src="/brand/aismebel-mark.svg" width={24} height={24} alt="" aria-hidden="true" />{SITE.name}</p>
         {state.kind === 'loading' ? (
           <Spinner label={tr('Открываем проект…')} onDark />
         ) : (
           <>
             <h1 className="text-lg font-semibold">{tr('Ссылка не открылась')}</h1>
-            <p className="text-sm text-neutral-400">{state.message}</p>
-            <Link href="/" className="inline-block text-sm text-sky-400 underline">{tr('На главную')}</Link>
+            <p className="text-sm text-neutral-200">{state.message}</p>
+            <Link href="/c" className="inline-block text-sm text-[var(--brand-amber)] underline">{tr('Проверить код')}</Link>
           </>
         )}
       </div>
@@ -147,12 +154,13 @@ function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; messa
 }
 
 function Viewer({
-  project, preset, setPreset, code,
+  project, preset, setPreset, code, shop,
 }: {
   project: ProjectFileV4
   preset: CameraPreset
   setPreset: (v: CameraPreset) => void
   code: string | null
+  shop: PublicShareIdentity | null
 }) {
   const room = useConfigurator((s) => s.room)
   const root = useConfigurator((s) => s.root)
@@ -178,11 +186,17 @@ function Viewer({
   }, [catalog])
 
   return (
-    <main className="flex min-h-dvh flex-col bg-neutral-950 text-neutral-100 sm:h-dvh">
+    <main data-view-page className="viewer-page flex min-h-dvh flex-col bg-[var(--brand-graphite)] text-white sm:h-dvh">
+
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-2">
+        <img src="/brand/aismebel-mark.svg" width={24} height={24} alt={SITE.name} />
         <span className="text-sm font-semibold">{project.name}</span>
-        <span className="text-xs text-neutral-500">
-          {cabinets.length === 1 ? '1 корпус' : `${cabinets.length} корпуса`}
+        {shop ? <span className="inline-flex items-center gap-2 border-l border-neutral-500 pl-3 text-xs text-neutral-100">
+          {shop.logoDataUrl ? <img src={shop.logoDataUrl} width={24} height={24} alt="" className="h-6 w-6 object-contain" /> : null}
+          {shop.name}
+        </span> : null}
+        <span className="text-xs text-neutral-200">
+          {countLabel(cabinets.length, 'Корпус', getLang())}
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-1">
           <Button active={walk} ariaPressed={viewerPressedState(controls, 'walk')} onClick={() => setWalk(!walk)}>{tr('Прогулка')}</Button>
@@ -210,13 +224,13 @@ function Viewer({
         {walk ? (
           <>
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-3">
-              <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/90 px-4 py-2 text-xs text-white">
+              <div className="pointer-events-auto flex max-w-full items-center gap-3 border border-white bg-[var(--brand-graphite)] px-4 py-2 text-xs text-white">
                 <span>{touch
-                  ? tr('Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть')
-                  : tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
+                  ? tr('Джойстик: идти · проведите пальцем: осмотр · коснитесь дверцы: открыть')
+                  : tr('Кликните для обзора · WASD: идти · E: дверцы · Esc: курсор')}</span>
                 <button
                   type="button"
-                  className="rounded-full border border-white/40 px-2.5 py-1 hover:bg-white/15"
+                  className="min-h-11 border border-white px-2.5 py-1 hover:bg-white hover:text-[var(--brand-graphite)]"
                   onClick={() => setWalk(false)}
                 >
                   {tr('Выйти')}
@@ -228,12 +242,12 @@ function Viewer({
         ) : null}
       </div>
 
-      <section className="max-h-[20vh] overflow-auto border-t border-neutral-800 px-4 py-3 text-xs">
+      <section className="max-h-[20vh] overflow-auto border-t border-neutral-800 px-4 py-3 text-sm">
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           {cabinets.map((cabinet) => (
             <p key={cabinet.id}>
               <span className="font-medium">{cabinet.name}</span>
-              <span className="ml-2 text-neutral-400">{materialName(cabinet.carcassMaterialId)} · {materialName(cabinet.frontMaterialId)}</span>
+              <span className="ml-2 text-neutral-400">{visibleMaterialNames(materialName(cabinet.carcassMaterialId), materialName(cabinet.frontMaterialId)).join(' · ')}</span>
             </p>
           ))}
           <p className="ml-auto font-medium">{project.priceOverrides?.salePrice !== undefined

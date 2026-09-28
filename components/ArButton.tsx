@@ -11,8 +11,9 @@
  * жібереді (немесе сол сілтемемен клиентке көрсетеді).
  */
 
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
 import { Button } from '@/components/ui'
+import { ClassicIcon } from '@/components/ClassicIcon'
 import { cloudEnabled } from '@/lib/cloud'
 import { useConfigurator } from '@/store/configurator'
 
@@ -45,7 +46,7 @@ export function ArButton() {
       // ⚠ СІЛТЕМЕ ЕНДІ AR БЕТІНЕ (`/ar/{id}`), шикі GLB-ге ЕМЕС: телефон бетті
       // ашқанда model-viewer жиһазды КАМЕРАМЕН бөлмеге қояды (Android). Бұрын
       // шикі .glb ашылып, тек 3D көрінетін.
-      const pageUrl = `${window.location.origin}/ar/${data.id}`
+      const pageUrl = `${window.location.origin}/ar/${data.id}?lang=${getLang()}`
       if (isAndroid()) {
         // Android-та Scene Viewer-ді ТІКЕЛЕЙ шақырамыз (бір рет басу — AR).
         setAr({ busy: false, link: pageUrl })
@@ -67,7 +68,7 @@ export function ArButton() {
   }
 
   // Бұлт сөндірулі құрастыруда (Vercel демосы) файлды сақтайтын жер жоқ.
-  if (!cloudEnabled) return null
+  if (!cloudEnabled) return <Button disabled title={tr('AR недоступен без облачного хранения')}><ClassicIcon name="ar" /><span className="sr-only">AR</span></Button>
 
   return (
     <>
@@ -76,7 +77,7 @@ export function ArButton() {
         disabled={ar.busy}
         title={tr('Посмотреть в комнате через камеру')}
       >
-        {ar.busy ? '…' : 'AR'}
+        <ClassicIcon name="ar" /><span className="sr-only">AR</span>
       </Button>
       {ar.link ? (
         <input

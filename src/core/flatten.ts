@@ -15,6 +15,7 @@ import { validateJointDrill } from './autoJoint'
 import { generateHardware } from './hardware'
 import { ORIGIN_POSE, composePose } from './tree'
 import type { GroupNode, Pose, SolidSpec, BoardNode, SceneNode } from './tree'
+import { specialPartRows } from './specialParts'
 import type { Catalog, Panel, SettingsOverride, ConstructionSettings, EdgeBand } from './types'
 import type { HardwarePlacement } from './hardware'
 import { mergeSettings } from './constants'
@@ -60,6 +61,10 @@ function boardPanel(
   settings: ConstructionSettings,
 ): Panel {
   const spec = node.board
+  if (spec.veneerGroup !== undefined && (!spec.veneerGroup.trim() || spec.veneerGroup.trim() !== spec.veneerGroup)) {
+    throw new ConfigValidationError(`board[${node.id}].veneerGroup`,
+      'шпон тобы бос емес, шеттерінде бос орынсыз болуы керек', 'бос емес топ атауы')
+  }
   const material = catalog.materials.find((m) => m.id === spec.materialId)
   if (!material) {
     throw new ConfigValidationError(
@@ -185,6 +190,10 @@ export function flattenTree(
         })
         return
       case 'solid':
+        if (node.solid.fabrication) {
+          specialPartRows([{ nodeId: node.id, name: node.name, spec: node.solid.fabrication }],
+            new Map(catalog.materials.map((material) => [material.id, material])))
+        }
         solids.push({ nodeId: node.id, name: node.name, spec: node.solid, pose })
         return
       case 'annotation':

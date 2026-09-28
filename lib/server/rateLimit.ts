@@ -40,6 +40,12 @@ export function recordLoginMiss(ip: string, email: string, now = Date.now()): vo
   consume('login-account', subject(email.trim().toLowerCase()), HOUR, LOGIN_ACCOUNT_MISSES, now)
 }
 
+/** Қалпына келтіру хаты: IP-ге сағатына 10, аккаунтқа сағатына 3. */
+export function allowPasswordResetRequest(ip: string, email: string, now = Date.now()): boolean {
+  if (!consume('password-reset-ip', subject(ip), HOUR, ip === 'unknown' ? 5 : 10, now)) return false
+  return consume('password-reset-account', subject(email.trim().toLowerCase()), HOUR, 3, now)
+}
+
 /** SQLite бір VPS-та ортақ. BEGIN IMMEDIATE есептегіш жарысын болдырмайды. */
 function consume(bucket: string, identity: string, duration: number, maximum: number, now: number): boolean {
   const database = db()

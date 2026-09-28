@@ -7,12 +7,16 @@ import { createLibraryItem, findNode, mergeLibraryCatalog, replaceLibraryMateria
 import type { LibraryItem, SceneNode } from '@/src/core/index'
 import { exportLibraryJson, importLibraryJson, readLocalLibrary, writeLocalLibrary } from '@/lib/libraryLocal'
 import { importUploadSummary, LIBRARY_AUTH_CHANGED_EVENT, libraryUploadOutcome } from '@/lib/librarySyncUi'
+import { LATHE_PROFILES } from '@/src/core/specialParts'
+import { privateThumbnailFromFile, privateThumbnailUrl } from '@/lib/privateThumbnail'
 
-const inputStyle = 'min-w-0 border border-neutral-700 bg-neutral-950 px-1.5 py-1 text-xs text-neutral-100'
-const buttonStyle = 'border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-40'
+const inputStyle = 'min-w-0 border border-neutral-700 bg-[var(--p100-dialog-content)] px-1.5 py-1 text-xs text-neutral-100'
+const buttonStyle = 'border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-[var(--p100-tool-hover)] disabled:opacity-40'
 
 /** JSON өлшемдерінен жасалған нобай; бөгде өндірушінің суреті қолданылмайды. */
 function ItemPreview({ item }: { item: LibraryItem }) {
+  const thumbnail = privateThumbnailUrl(item.thumbnail)
+  if (thumbnail) return <img src={thumbnail} alt="" loading="lazy" decoding="async" className="h-12 w-full border border-neutral-800 object-contain" />
   const width = Math.max(1, item.meta.sizeHint.x)
   const height = Math.max(1, item.meta.sizeHint.y)
   const scale = Math.min(58 / width, 36 / height)
@@ -20,7 +24,7 @@ function ItemPreview({ item }: { item: LibraryItem }) {
   const h = Math.max(3, Math.round(height * scale))
   const x = Math.round((80 - w) / 2)
   const y = Math.round((48 - h) / 2)
-  return <svg className="h-12 w-full border border-neutral-800 bg-neutral-900" viewBox="0 0 80 48" role="img" aria-label={tr('Предпросмотр элемента')}>
+  return <svg className="h-12 w-full border border-neutral-800 bg-[var(--p100-dialog)]" viewBox="0 0 80 48" role="img" aria-label={tr('Предпросмотр элемента')}>
     <rect x={x} y={y} width={w} height={h} fill="#404040" stroke="#a3a3a3" strokeWidth="1" />
     {item.node.kind === 'cabinet' || item.node.kind === 'group' ? <>
       <line x1={x + Math.round(w / 2)} y1={y} x2={x + Math.round(w / 2)} y2={y + h} stroke="#737373" />
@@ -37,6 +41,8 @@ export function PersonalLibraryPanel() {
   const projectSettings = useConfigurator((state) => state.projectSettings)
   const shopSettings = useConfigurator((state) => state.shop.settings)
   const placeLibraryItem = useConfigurator((state) => state.placeLibraryItem)
+  const addSpecialPart = useConfigurator((state) => state.addSpecialPart)
+  const editSolid = useConfigurator((state) => state.editSolid)
   const [local, setLocal] = React.useState<LibraryItem[]>([])
   const [remote, setRemote] = React.useState<LibraryItem[]>([])
   const [nodeId, setNodeId] = React.useState(activeId)
@@ -128,6 +134,15 @@ export function PersonalLibraryPanel() {
       }
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить элемент')) }
   }
+  const attachPreview = async (item: LibraryItem, file: File) => {
+    try {
+      const thumbnail = await privateThumbnailFromFile(file)
+      const updated = { ...item, thumbnail }
+      persist([...local.filter((entry) => entry.id !== item.id), updated])
+      const outcome = await upload(updated)
+      setError(outcome.error); setMessage(tr(outcome.message))
+    } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось импортировать JSON')) }
+  }
   const place = (item: LibraryItem) => {
     try { mergeLibraryCatalog(catalog, item); placeLibraryItem(item); setError(null); setMessage(tr('Элемент добавлен в проект')) }
     catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось добавить элемент')) }
@@ -190,7 +205,26 @@ export function PersonalLibraryPanel() {
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось заменить материал')) }
   }
 
-  return <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto bg-neutral-950 p-2 text-neutral-100">
+  return <div className="flex h-full min-h-0 flex-col gap-2 overflow-auto bg-[var(--p100-dialog-content)] p-2 text-neutral-100">
+    <section className="border border-neutral-700 p-2 text-xs" data-testid="special-part-library">
+      <div className="mb-1 font-semibold">{tr('Токарная деталь')} · {tr('Гнутая деталь')}</div>
+      <div className="flex flex-wrap gap-1">
+        {LATHE_PROFILES.map((preset) => <button key={preset.id} type="button" className={buttonStyle}
+          onClick={() => {
+            try {
+              const id = addSpecialPart('lathe')
+              const node = findNode(useConfigurator.getState().root, id)
+              if (node?.kind !== 'solid' || node.solid.fabrication?.kind !== 'lathe') throw new Error(tr('Токарная деталь не создана'))
+              editSolid(id, { fabrication: { ...node.solid.fabrication, profile: structuredClone(preset.profile) } })
+              setError(null)
+            } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) }
+          }}>{tr(preset.name)}</button>)}
+        <button type="button" className={buttonStyle} onClick={() => {
+          try { addSpecialPart('bent'); setError(null) }
+          catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) }
+        }}>{tr('Гнутая деталь')}</button>
+      </div>
+    </section>
     <label className="text-xs">{tr('Элемент проекта')}
       <select className={`mt-1 w-full ${inputStyle}`} value={nodeId} onChange={(event) => setNodeId(event.target.value)}>
         {nodes.map((node) => <option key={node.id} value={node.id}>{node.name}</option>)}
@@ -232,6 +266,11 @@ export function PersonalLibraryPanel() {
         <div className="truncate text-neutral-500">{item.category} · {item.meta.sizeHint.y} (H) × {item.meta.sizeHint.x} (W) × {item.meta.sizeHint.z} (D) мм</div>
         <div className="mt-1 flex min-w-0 flex-col gap-1 xl:flex-row">
           <button type="button" className={`${buttonStyle} min-w-0`} onClick={() => place(item)}>{tr('Поставить')}</button>
+          <label className={`${buttonStyle} min-w-0 cursor-pointer`}>{tr('Загрузить превью')}
+            <input type="file" className="hidden" accept="image/png,image/webp,image/jpeg" onChange={(event) => {
+              const file = event.target.files?.[0]; if (file) void attachPreview(item, file); event.target.value = ''
+            }} />
+          </label>
           <button type="button" className={`${buttonStyle} min-w-0`} onClick={() => remove(item)}>{tr('Удалить')}</button>
         </div>
       </div>)}
@@ -252,7 +291,7 @@ export function PersonalLibraryPanel() {
       </div>
       <button type="button" className={`mt-1 ${buttonStyle}`} disabled={!oldMaterialId || !newMaterialId || oldMaterialId === newMaterialId} onClick={() => void replaceAll()}>{tr('Заменить во всей библиотеке')}</button>
     </section>}
-    {error && <p role="alert" className="border border-red-700 p-1 text-xs text-red-300">{error}</p>}
+    {error && <p role="alert" className="border border-[var(--p100-invalid)] p-1 text-xs text-[var(--p100-invalid)]">{error}</p>}
     {message && <p role="status" className="text-xs text-neutral-400">{message}</p>}
   </div>
 }

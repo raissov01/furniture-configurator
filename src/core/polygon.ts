@@ -96,6 +96,11 @@ function validatePoints(points: readonly PolygonPoint[], field: string): void {
   }
 }
 
+/** Қарапайым полигонды тексеру (бүтін мм, нөлдік/коллинеар кесіндісіз, өзін қимайтын). */
+export function validateSimplePolygon(points: readonly PolygonPoint[], field: string): void {
+  validatePoints(points, field)
+}
+
 export function validatePolygonContour(
   contour: PolygonContourInput, length: number, width: number, field = 'contour',
 ): void {

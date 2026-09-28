@@ -40,15 +40,16 @@ import { CLOUD_PROJECT_BINDING_KEY, currentCloudProjectId } from '@/lib/cloudPro
 import { cutExportAllowed, safeCutPlan } from '@/lib/safeCutPlan'
 import type { LabelPage } from '@/src/core/export/labelLayout'
 import { panelDisplayLabel } from '@/lib/panelDisplay'
+import { Dimension, Sheet } from '@/components/brand'
 
 /**
  * ⚠ Тізім ФУНКЦИЯ, тұрақты емес. Модуль деңгейіндегі `tr()` тіл сақтаудан
  * оқылғанға ДЕЙІН орындалады да, экранда әрқашан орысша қалып қояды.
  */
 const optimizationOptions = (): { value: OptimizationLevel; label: string }[] => [
-  { value: 'fast', label: tr('Быстрая — одна раскладка') },
-  { value: 'standard', label: tr('Обычная — четыре раскладки') },
-  { value: 'deep', label: tr('Глубокая — все шестнадцать') },
+  { value: 'fast', label: tr('Быстрая: одна раскладка') },
+  { value: 'standard', label: tr('Обычная: четыре раскладки') },
+  { value: 'deep', label: tr('Глубокая: все шестнадцать') },
 ]
 
 /** Подрезка «материалдан» дегенді бөлек мән етіп көрсетеміз. */
@@ -126,7 +127,7 @@ export function CutPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const labelOptions = useMemo(() => {
     try {
-      if (!cloudId) return { value: null, error: tr('Для QR сначала сохраните проект в облаке') }
+      if (!cloudId) return { value: null, error: null }
       return { value: labelExportOptions(
         { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
         cloudId ?? '', 1,
@@ -206,8 +207,8 @@ export function CutPage() {
   }
 
   return (
-    <main data-cut-panel-count={panels.length} className="min-h-screen min-w-0 bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
-      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
+    <main data-cut-panel-count={panels.length} className="p100-cut-page min-h-screen min-w-0 bg-[var(--p100-chrome)] text-[var(--p100-text)]">
+      <header className="sticky top-0 z-10 border-b border-[var(--p100-divider)] bg-[var(--p100-chrome)]">
         <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-wrap items-center gap-2 px-4 py-2.5">
           <Link
             href="/configurator"
@@ -391,6 +392,9 @@ export function CutPage() {
               onChange={setLabelHeight} />
           </Field>
           {labelOptions.error ? <p role="alert" className="text-xs text-red-700 sm:col-span-3">{labelOptions.error}</p> : null}
+          {!cloudId ? <p className="text-sm text-neutral-700 sm:col-span-3">{tr('Для QR сначала сохраните проект в облаке')}</p> : null}
+
+
         </section>
         <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
           {tr('DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».')}
@@ -517,11 +521,11 @@ function Totals({ stats, sheetCount }: { stats: CutStats; sheetCount: number }) 
       {cells.map((c) => (
         <div
           key={c.label}
-          className="rounded-lg border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900"
+          className="border border-[var(--p100-fieldset-border)] bg-[var(--p100-dialog-content)] px-3 py-2"
         >
-          <div className="text-[10px] uppercase tracking-wider text-neutral-500">{c.label}</div>
+          <div className="text-xs text-[var(--p100-muted)]">{c.label}</div>
           <div className="text-lg font-semibold tabular-nums">{c.value}</div>
-          {c.hint ? <div className="text-[10px] text-neutral-400">{c.hint}</div> : null}
+          {c.hint ? <div className="text-xs text-[var(--p100-muted)]">{c.hint}</div> : null}
         </div>
       ))}
     </div>
@@ -551,11 +555,11 @@ function SheetCard({
     if (display.step >= display.total) setPlaying(false)
   }, [display.step, display.total])
   return (
-    <figure className="w-full max-w-[520px] min-w-0 space-y-1">
+    <Sheet classic className="w-full max-w-[520px] min-w-0 space-y-1 p-2">
       <div className="max-w-full overflow-x-auto" aria-label={tr('Карта раскроя')}>
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
-        className="block h-auto w-full min-w-[520px] border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950 sm:min-w-0"
+        className="block h-auto max-w-full w-full border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
         role="img"
         aria-label={`Лист ${sheet.index}`}
       >
@@ -568,17 +572,19 @@ function SheetCard({
           <rect key={`o${i}`} x={o.x} y={o.y} width={o.width} height={o.height}
             fill="#22c55e" fillOpacity={0.12} stroke="#22c55e" strokeOpacity={0.5} strokeWidth={3} />
         ))}
-        {sheet.parts.map((p) => (
+        {sheet.parts.map((p, index) => (
           <g key={p.panelId}>
             <rect x={p.x} y={p.y} width={p.width} height={p.height}
-              fill="#e3c76a" stroke="#7c5f14" strokeWidth={4} />
+              fill="var(--brand-amber)" stroke="var(--brand-graphite)" strokeWidth={4} />
             <text
               x={p.x + p.width / 2} y={p.y + p.height / 2}
               textAnchor="middle" dominantBaseline="middle"
               fontSize={Math.max(34, Math.min(p.width, p.height) * 0.16)}
-              fill="#3f3108"
+              fill="var(--brand-graphite)"
+
+
             >
-              {panelDisplayLabel(p.label)} {p.width}×{p.height}
+              {index + 1}
             </text>
           </g>
         ))}
@@ -608,6 +614,12 @@ function SheetCard({
         })}
       </svg>
       </div>
+      <section className="text-sm" aria-label={tr('Детали на листе')}>
+        <p className="mb-1 font-medium">{tr('Детали на листе')}</p>
+        <ol className="grid gap-1 sm:grid-cols-2">
+          {sheet.parts.map((part, index) => <li key={part.panelId}>{index + 1}. {panelDisplayLabel(part.label)} · {part.width} × {part.height} {tr('мм')}</li>)}
+        </ol>
+      </section>
       <div className="flex flex-wrap items-center gap-1 text-xs">
         <Button size="sm" active={playback} disabled={!showCuts} ariaPressed={playback}
           onClick={() => { setPlayback(!playback); setPlaying(false); setStep(0) }}>
@@ -636,13 +648,15 @@ function SheetCard({
         <span className="font-medium text-neutral-700 dark:text-neutral-300">
           {tr('Лист')} {sheet.index}
         </span>{' '}
-        · {sheet.sheetWidth}×{sheet.sheetHeight} · {tr('КИМ')}{' '}
+        · {tr('КИМ')}{' '}
         <span className="tabular-nums">{plan.stats.kim.toFixed(1)}%</span> · {tr('резов')}{' '}
         <span className="tabular-nums">{plan.stats.cutCount}</span> ({metres(plan.stats.cutLength)} {tr('м')})
+        {sheet.veneerGroup ? ` · ${tr('Группа шпона')}: ${sheet.veneerGroup}` : ''}
         · {tr('поворотов')} <span className="tabular-nums">{plan.stats.turns}</span>
         {sheet.offcuts.length > 0 ? ` · ${tr('деловой отход')}: ${sheet.offcuts.length}` : ''}
       </figcaption>
-    </figure>
+      <Dimension label={tr('Лист')} value={`${sheet.sheetHeight} (H) × ${sheet.sheetWidth} (W)`} className="py-1 text-neutral-600" />
+    </Sheet>
   )
 }
 
@@ -660,7 +674,7 @@ function UnplacedBlock({ advice }: { advice: ReturnType<typeof unplacedAdvice> }
       {advice.map((a) => (
         <div key={a.panelId} className="space-y-1">
           <div className="font-medium">
-            {panelDisplayLabel(a.label)} — {a.cutLength}×{a.cutWidth} {tr('мм')}, {tr('лист')} {a.materialName}{' '}
+            {panelDisplayLabel(a.label)}: {a.cutLength}×{a.cutWidth} {tr('мм')}, {tr('лист')} {a.materialName}{' '}
             ({tr('полезно')} {a.usable.width}×{a.usable.height}, {tr('обрезка')} {a.trimEdge} {tr('мм')})
           </div>
           <ul className="list-disc space-y-0.5 pl-5">

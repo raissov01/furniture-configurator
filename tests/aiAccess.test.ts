@@ -36,7 +36,7 @@ describe('OpenAI маршруттарының рұқсаты', () => {
     const stream = new ReadableStream<Uint8Array>({
       pull(controller) {
         pulls += 1
-        if (pulls === 1) controller.enqueue(new Uint8Array(12 * 1024 * 1024 + 1))
+        if (pulls === 1) controller.enqueue(new Uint8Array(23 * 1024 * 1024))
         else if (pulls === 2) controller.enqueue(new Uint8Array([1]))
         else controller.close()
       },

@@ -227,7 +227,7 @@ describe('3-нұсқадан көшу', () => {
     delete (old as Record<string, unknown>)['coefficient']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     // Аудан → распил, тесік → присадка, метр → кромка.
     expect(migrated.services.cutting).toEqual({ basis: 'squareMetre', rate: 150000 })
     expect(migrated.services.drilling).toEqual({ basis: 'hole', rate: 3000 })
@@ -251,7 +251,7 @@ describe('4-нұсқадан көшу — раскрой баптаулары', 
     delete (old as Record<string, unknown>)['cutting']
 
     const migrated = parseShopProfile(old)
-    expect(migrated.schemaVersion).toBe(9)
+    expect(migrated.schemaVersion).toBe(10)
     expect(migrated.cutting).toEqual({ kerf: 4, trimEdge: null, optimization: 'standard' })
     expect(migrated.services).toEqual(base.services)
     expect(migrated.materials).toEqual(base.materials)

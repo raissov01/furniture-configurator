@@ -20,11 +20,15 @@ import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
 import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
+import { visibleErrors } from '@/lib/validationVisibility'
+
+
 import { useModalLayer } from '@/lib/useModalLayer'
 import { bindCloudProject } from '@/lib/cloudProjectBinding'
 import { installationCreateAction } from '@/lib/installationHandoff'
 import Link from 'next/link'
 import { can } from '@/lib/permissions'
+import { resetEmailError } from '@/lib/passwordResetUi'
 
 // `userId` серверден бұрыннан келеді — командадағы «мен қайсымын» деген
 // сұраққа жауап беру үшін керек (өз жолыңда «Шығу» тұрады).
@@ -65,7 +69,13 @@ export function AccountPanel() {
   const canEditProjects = account ? can(account.role, 'editProject') : false
   const [profileReady, setProfileReady] = useState(false)
   const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [resetOpen, setResetOpen] = useState(false)
+  const [resetTouched, setResetTouched] = useState(false)
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
+  const [formTouched, setFormTouched] = useState<Record<string, boolean>>({})
+
+
+  const [formSubmitted, setFormSubmitted] = useState(false)
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [installations, setInstallations] = useState<InstallationRow[]>([])
   const [org, setOrg] = useState<CloudOrg>(() => parseCloudOrg(null))
@@ -107,8 +117,42 @@ export function AccountPanel() {
   const [cloudRetry, setCloudRetry] = useState(false)
   const [busy, setBusy] = useState(false)
   const formErrors = accountFormErrors(mode, form, Boolean(invite))
+  const visibleFormErrors = visibleErrors(formErrors, formTouched, formSubmitted)
+
+
   const formReady = canSubmitAccount(mode, form, Boolean(invite)) && (!invite || mode === 'login' || inviteShopName !== null)
   const inviteShop = inviteShopDisplay(invite, inviteShopName)
+
+  const requestReset = async () => {
+    setResetTouched(true)
+    if (resetEmailError(form.email) || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/auth/password/request', { method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: form.email }) })
+      const result = (await response.json()) as { error?: string; delivery?: 'smtp' | 'server-log' }
+      if (!response.ok) setError(result.error ?? tr('Не получилось'))
+      else setNotice(tr(result.delivery === 'server-log' ? 'Ссылка записана на сервере. Обратитесь к администратору.'
+        : 'Если адрес зарегистрирован, письмо отправлено.'))
+    } catch { setError(tr('Нет связи с сервером')) }
+    finally { setBusy(false) }
+  }
+
+  const resetMember = async (userId: string) => {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/team/member/password', { method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) })
+      const result = (await response.json()) as { error?: string; delivery?: 'smtp' | 'server-log' }
+      if (!response.ok) setError(result.error ?? tr('Не получилось'))
+      else setNotice(tr(result.delivery === 'server-log' ? 'Ссылка записана на сервере. Обратитесь к администратору.'
+        : 'Ссылка для смены пароля отправлена участнику.'))
+    } catch { setError(tr('Нет связи с сервером')) }
+    finally { setBusy(false) }
+  }
 
   useEffect(() => {
     if (!open) return
@@ -310,6 +354,7 @@ export function AccountPanel() {
   }, [account, shop, profileReady])
 
   const submit = async () => {
+    setFormSubmitted(true)
     if (busy || !formReady) return
     setBusy(true)
     setError(null)
@@ -329,6 +374,11 @@ export function AccountPanel() {
       setAccount(data.account)
       window.dispatchEvent(new Event(LIBRARY_AUTH_CHANGED_EVENT))
       setForm({ email: '', password: '', shopName: '' })
+      setFormTouched({})
+
+
+      setFormSubmitted(false)
+      setResetTouched(false)
       /*
        * Үшеуі ҚАТАР жүреді. Бұрын кезекпен күтетін, ал әрқайсысы бөлек
        * баруы серверге дейінгі кідірісті ҮШ ЕСЕЛЕЙТІН: жақын тұрған дев
@@ -431,10 +481,10 @@ export function AccountPanel() {
     setCloudRetry(false)
     const localCopyError = useConfigurator.getState().saveProjectLocally()
     try {
-      const project = exportProject()
       const selection = useConflictRevision && cloudConflict && activeCloud
         ? { id: cloudConflict.id, revision: cloudConflict.revision }
         : activeCloud
+      const project = exportProject()
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -449,8 +499,8 @@ export function AccountPanel() {
         setError(outcome.message)
       } else {
         rememberCloud(outcome.selection)
-        setCloudConflict(null)
         await bindCloudProject(outcome.selection.id, project)
+        setCloudConflict(null)
         await refreshProjects()
       }
     } catch {
@@ -473,8 +523,8 @@ export function AccountPanel() {
       const parsed = parseProjectV4(data.project)
       loadProject(parsed)
       rememberCloud({ id, revision: data.revision! })
-      setCloudConflict(null)
       await bindCloudProject(id, parsed)
+      setCloudConflict(null)
       setError(null)
       setOpen(false)
     } catch (e) {
@@ -506,7 +556,9 @@ export function AccountPanel() {
       if (!source.ok) throw new Error(tr('Проект не загрузился'))
       const data = await source.json() as { project?: unknown }
       const copy = await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cloudSavePayload(cloudCopyProject(parseProjectV4(data.project)), null, true)) })
+        body: JSON.stringify(cloudSavePayload(cloudCopyProject(parseProjectV4(data.project), projects.map((row) => row.name)), null, true)) })
+
+
       if (!copy.ok) {
         const failure = await copy.json() as { error?: string }
         throw new Error(failure.error ?? tr('Проект не сохранился'))
@@ -530,7 +582,7 @@ export function AccountPanel() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-sm font-semibold">{account ? account.shopName : 'Вход в аккаунт'}</h2>
+          <h2 className="text-sm font-semibold">{account ? tr(account.shopName) : tr('Вход в аккаунт')}</h2>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)} disabled={busy}>{tr('Закрыть')}</Button>
           </div>
@@ -625,9 +677,9 @@ export function AccountPanel() {
                     const canRemove = !owner && (iAmOwner || self)
                     return (
                       <li key={m.userId} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
-                        <span className="min-w-0 truncate">
+                        <span className="min-w-0 break-all">
                           {m.email}
-                          <span className="ml-1 text-[10px] text-neutral-400">{owner ? tr('владелец') : m.role === 'shop' ? tr('Цех') : tr('Дизайнер')}</span>
+                          <span className="ml-1 whitespace-nowrap text-xs text-neutral-600">{owner ? tr('владелец') : m.role === 'shop' ? tr('Цех') : tr('Дизайнер')}</span>
                         </span>
                         <span className="flex shrink-0 items-baseline gap-2">
                           <span className="text-[10px] tabular-nums text-neutral-400">
@@ -646,6 +698,7 @@ export function AccountPanel() {
                             <option value="designer">{tr('Дизайнер')}</option>
                             <option value="shop">{tr('Цех')}</option>
                           </select> : null}
+                          {account.role === 'owner' && !owner ? <Button disabled={busy} onClick={() => void resetMember(m.userId)}>{tr('Сбросить пароль')}</Button> : null}
                           {canRemove ? (
                             <Button
                               disabled={busy}
@@ -814,23 +867,40 @@ export function AccountPanel() {
                   forgetCloud()
                 })()}
               >
-                Выйти
+                {tr('Выйти')}
               </Button>
             </div>
           </div>
         ) : (
           <div className="space-y-3">
             <div className="flex gap-1">
-              <Button active={mode === 'login'} onClick={() => setMode('login')}>{tr('Вход')}</Button>
-              <Button active={mode === 'register'} onClick={() => setMode('register')}>{tr('Регистрация')}</Button>
+              <Button active={!resetOpen && mode === 'login'} onClick={() => { setMode('login'); setResetOpen(false); setFormTouched({}); setFormSubmitted(false) }}>{tr('Вход')}</Button>
+              <Button active={!resetOpen && mode === 'register'} onClick={() => { setMode('register'); setResetOpen(false); setFormTouched({}); setFormSubmitted(false) }}>{tr('Регистрация')}</Button>
+
+
             </div>
+
+            {resetOpen ? <>
+              <Field label={tr('Почта')}>
+                <input className={`${input} ${resetTouched && resetEmailError(form.email) ? 'border-red-600' : ''}`}
+                  type="email" autoComplete="email" value={form.email}
+                  aria-invalid={Boolean(resetTouched && resetEmailError(form.email))}
+                  onChange={(event) => { setForm({ ...form, email: event.target.value }); setResetTouched(true) }} />
+                {resetTouched && resetEmailError(form.email) ? <span role="alert" className="text-xs text-red-700">{tr(resetEmailError(form.email)!)}</span> : null}
+              </Field>
+              <Button disabled={busy} onClick={() => void requestReset()}>{tr('Отправить ссылку')}</Button>
+              <p className="text-xs text-neutral-600">{tr('Ссылка действует 30 минут и только один раз.')}</p>
+            </> : <>
 
             {mode === 'register' && inviteShop.editable ? (
               <Field label={tr('Название цеха')} hint={tr('Пустое название станет «Мой цех»; до 100 символов')}>
-                <input className={`${input} ${formErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
-                  aria-invalid={Boolean(formErrors.shopName)}
-                  onChange={(e) => setForm({ ...form, shopName: e.target.value })} />
-                {formErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.shopName)}</span> : null}
+                <input className={`${input} ${visibleFormErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
+                  aria-invalid={Boolean(visibleFormErrors.shopName)}
+                  onBlur={() => setFormTouched((current) => ({ ...current, shopName: true }))}
+                  onChange={(e) => { setFormTouched((current) => ({ ...current, shopName: true })); setForm({ ...form, shopName: e.target.value }) }} />
+                {visibleFormErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.shopName)}</span> : null}
+
+
               </Field>
             ) : mode === 'register' ? (
               <Field label={tr('Название цеха')} hint={tr('Цех по приглашению — изменить нельзя')}>
@@ -839,29 +909,34 @@ export function AccountPanel() {
             ) : null}
 
             <Field label={tr('Почта')}>
-              <input className={`${input} ${formErrors.email ? 'border-red-500 dark:border-red-500' : ''}`} type="email" autoComplete="email" value={form.email}
-                aria-invalid={Boolean(formErrors.email)}
-                onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              {formErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.email)}</span> : null}
+              <input className={`${input} ${visibleFormErrors.email ? 'border-red-500 dark:border-red-500' : ''}`} type="email" autoComplete="email" value={form.email}
+                aria-invalid={Boolean(visibleFormErrors.email)}
+                onBlur={() => setFormTouched((current) => ({ ...current, email: true }))}
+                onChange={(e) => { setFormTouched((current) => ({ ...current, email: true })); setForm({ ...form, email: e.target.value }) }} />
+              {visibleFormErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.email)}</span> : null}
             </Field>
-            <Field label={tr('Пароль')} hint={mode === 'register' ? 'от 8 символов' : undefined}>
-              <input className={`${input} ${formErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
-                aria-invalid={Boolean(formErrors.password)}
+            <Field label={tr('Пароль')} hint={mode === 'register' ? tr('от 8 символов') : undefined}>
+              <input className={`${input} ${visibleFormErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
+                aria-invalid={Boolean(visibleFormErrors.password)}
+
+
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 value={form.password}
                 onKeyDown={(e) => { if (e.key === 'Enter') void submit() }}
-                onChange={(e) => setForm({ ...form, password: e.target.value })} />
-              {formErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.password)}</span> : null}
+                onBlur={() => setFormTouched((current) => ({ ...current, password: true }))}
+                onChange={(e) => { setFormTouched((current) => ({ ...current, password: true })); setForm({ ...form, password: e.target.value }) }} />
+              {visibleFormErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.password)}</span> : null}
             </Field>
 
-            <Button onClick={() => void submit()} disabled={busy || !formReady} active>
-              {mode === 'login' ? 'Войти' : 'Создать аккаунт'}
+            <Button onClick={() => void submit()} disabled={busy || Boolean(invite && mode === 'register' && inviteShopName === null)} active>
+              {mode === 'login' ? tr('Войти') : tr('Создать аккаунт')}
             </Button>
+            {mode === 'login' ? <button type="button" className="block text-sm underline" onClick={() => { setResetOpen(true); setError(null); setNotice(null) }}>{tr('Забыли пароль?')}</button> : null}
 
             <p className="text-[11px] leading-snug text-neutral-400">
-              Без аккаунта конфигуратор работает полностью — данные лежат в этом браузере.
-              Аккаунт нужен, чтобы профиль цеха и проекты были доступны с другого компьютера.
+              {tr('Без аккаунта конфигуратор работает полностью — данные лежат в этом браузере. Аккаунт нужен, чтобы профиль цеха и проекты были доступны с другого компьютера.')}
             </p>
+            </>}
           </div>
         )}
       </div>

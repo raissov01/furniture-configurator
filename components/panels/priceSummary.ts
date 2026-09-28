@@ -33,12 +33,14 @@ export function priceGroups(price: PriceBreakdown, titles: {
   materials: string
   edges: string
   hardware: string
+  manualItems?: string
   services: string
 }): PriceGroup[] {
   return [
     { title: titles.materials, lines: price.materials },
     { title: titles.edges, lines: price.edges },
     { title: titles.hardware, lines: price.hardware },
+    { title: titles.manualItems ?? 'Декор и техника', lines: price.manualItems },
     { title: titles.services, lines: price.services },
   ].filter((g) => g.lines.length > 0)
 }

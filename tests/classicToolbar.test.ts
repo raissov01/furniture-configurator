@@ -16,9 +16,11 @@ describe('classic toolbar', () => {
     expect(source).not.toContain("icon: 'layers', label: tr('Слои')")
     expect(source).not.toContain("icon: 'library', label: tr('Библиотека')")
   })
-  it('keeps only selection in the side rail because the other commands are in the toolbar', () => {
+  it('offers twelve working tools in the PRO100 side rail', () => {
     const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
-    const side = source.match(/className="p100-side-tools[^]*?\{classic \? <>([^]*?)<\/> : <>/)?.[1] ?? ''
-    expect((side.match(/<ClassicTool /g) ?? []).length).toBe(1)
+    const side = source.match(/className="p100-side-tools[^]*?>([^]*?)<\/div>/)?.[1] ?? ''
+    expect((side.match(/<ClassicTool /g) ?? []).length).toBe(12)
+    expect(side).toContain('action={addBoard}')
+    expect(side).toContain('action={addSolid}')
   })
 })

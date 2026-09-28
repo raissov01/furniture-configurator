@@ -7,6 +7,8 @@ import { allowShareMiss, isShareLimited, requestIp } from '@/lib/server/rateLimi
 import { ConfigValidationError, parseProjectV4 } from '@/src/core/index'
 import { toPublicProject } from '@/src/core/publicProject'
 import { publicProjectForShare } from '@/lib/server/publicShare'
+import { readShopProfile } from '@/lib/server/store'
+import { publicShareIdentity } from '@/lib/codeEntryState'
 import { readLimitedBody } from '@/lib/server/readLimitedBody'
 
 type Context = { params: Promise<{ code: string }> }
@@ -29,8 +31,10 @@ export async function GET(request: Request, { params }: Context): Promise<Respon
   } catch {
     return NextResponse.json({ error: 'Проект по коду повреждён' }, { status: 422 })
   }
+  const shopId = shareShopId(code)
+  const shop = shopId ? publicShareIdentity(readShopProfile(shopId)) : null
   return NextResponse.json(
-    { project, updatedAt: row.updatedAt, expiresAt: row.expiresAt },
+    { project, updatedAt: row.updatedAt, expiresAt: row.expiresAt, shop },
     { headers: { 'Cache-Control': 'no-store' } },
   )
 }

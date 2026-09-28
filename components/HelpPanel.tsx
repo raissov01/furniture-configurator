@@ -9,6 +9,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { Button } from '@/components/ui'
 import { HOTKEYS } from '@/lib/hotkeys'
 import { LESSON_DONE_KEY, startLesson, startTour } from '@/components/Tour'
@@ -16,36 +17,36 @@ import { useConfigurator } from '@/store/configurator'
 import { LESSONS, parseCompletedLessons } from '@/src/core/lessonCatalog'
 import { lessonAvailability } from '@/lib/lessonTargets'
 import { findTourTarget } from '@/lib/tourTarget'
-import { helpDialogKeyAction } from '@/lib/helpDialog'
 import { useEffect, useRef, useState } from 'react'
 
 export function HelpPanel({ classic = false }: { classic?: boolean }) {
   const open = useConfigurator((s) => s.helpOpen)
   const setOpen = useConfigurator((s) => s.setHelpOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'help', () => setOpen(false))
+
+
   const [completed, setCompleted] = useState<string[]>([])
   const dialogRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
     const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
     dialogRef.current?.focus()
-    const onKey = (event: KeyboardEvent) => {
-      if (helpDialogKeyAction(event.key, true) === 'close') {
-        event.preventDefault()
-        setOpen(false)
-      }
-    }
-    window.addEventListener('keydown', onKey)
     try { setCompleted(parseCompletedLessons(window.localStorage.getItem(LESSON_DONE_KEY))) }
     catch (cause) { console.error('Lesson progress could not be read', cause); setCompleted([]) }
-    return () => { window.removeEventListener('keydown', onKey); returnFocus?.focus() }
+    return () => { returnFocus?.focus() }
   }, [open, setOpen])
+
+
   if (!open) return null
   const mobile = typeof window !== 'undefined' && window.innerWidth < 1024
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
-      onClick={() => setOpen(false)}
+      style={{ zIndex }}
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      onClick={() => { if (isTop) setOpen(false) }}
+
+
     >
       <div
         ref={dialogRef}

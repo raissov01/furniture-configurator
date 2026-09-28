@@ -19,7 +19,7 @@ const base: ClassicMenuState = {
   canExport: true, canExportPdf: true, productionError: false,
   cameraPreset: 'front', viewMode: 'solid', showFronts: true, projection: 'perspective', showDimensions: false,
   showDrilling: false, showFittings: false, silhouetteOn: false, open: false, assembly: false,
-  theme: 'system', quality: 'high', lang: 'ru', price: null, cloud: false, classic: true,
+  theme: 'system', quality: 'high', lang: 'ru', price: null, cloud: false,
 }
 
 const items = (state: ClassicMenuState = base) => classicMenus(state).flatMap((menu) => menu.items.map((item) => ({ menu: menu.id, item })))
@@ -57,11 +57,30 @@ describe('classic menu', () => {
     const exports = file.items.flatMap((item) => item.kind === 'item' && item.command.type === 'export' ? [item.command.format] : [])
     expect(exports).toEqual(['xlsx', 'csv', 'dxf', 'pdf', 'xlsx', 'csv', 'dxf', 'pdf'])
     expect(find('file.export.xlsx').command).toEqual({ type: 'export', format: 'xlsx', scope: 'project' })
+    expect(find('file.export.panorama').command).toEqual({ type: 'panorama' })
     expect(find('file.export.cabinet.xlsx').command).toEqual({ type: 'export', format: 'xlsx', scope: 'cabinet' })
     expect(find('file.export.pdf').command).toEqual({ type: 'export', format: 'pdf', scope: 'cabinet' })
     expect(find('file.export.xlsx').disabled).toBe(false)
     expect(find('file.export.xlsx', { ...base, canExport: false }).disabled).toBe(true)
     expect(find('file.export.pdf', { ...base, canExportPdf: false }).disabled).toBe(true)
+  })
+
+  it('puts the furniture wizard and kitchen generator first in the «Файл» create group, next to templates', () => {
+    const file = classicMenus(base).find((menu) => menu.id === 'file')!
+    const ids = file.items.flatMap((entry) => entry.kind === 'item' ? [entry.id] : [])
+    // PRO100 файл командалары (Новый/Открыть/Сохранить…) бірінші тұрады; шебер мен генератор —
+    // бөлгіштен кейінгі «жасау» тобының басында, шаблондармен қатар.
+    expect(ids.slice(0, 4)).toEqual(['file.reset', 'file.open', 'file.save', 'file.saveAs'])
+    const group = file.items.findIndex((entry) => entry.kind === 'item' && entry.id === 'file.wizard')
+    expect(file.items[group - 1]?.kind).toBe('separator')
+    expect(ids.slice(ids.indexOf('file.wizard'), ids.indexOf('file.wizard') + 3)).toEqual(['file.wizard', 'file.kitchenGenerator', 'file.gallery'])
+    expect(find('file.wizard')).toMatchObject({ label: 'Мастер мебели (5 шагов)', command: { type: 'open', panel: 'wizard' } })
+    expect(find('file.kitchenGenerator')).toMatchObject({ label: 'Генератор кухни', command: { type: 'open', panel: 'kitchenGenerator' } })
+    expect(find('file.wizard').disabled).toBeFalsy()
+    for (const dictionary of [kk, en, uz] as Record<string, string>[]) {
+      expect(dictionary['Мастер мебели (5 шагов)']).toBeTruthy()
+      expect(dictionary['Генератор кухни']).toBeTruthy()
+    }
   })
 
   it('opens and saves the project file with its own commands', () => {
@@ -120,9 +139,9 @@ describe('classic menu: settings hidden in the old header (P0-5)', () => {
     expect(qualities.filter((item) => item.active).map((item) => item.id)).toEqual(['view.quality.low'])
   })
 
-  it('Сервис sits before Справка and switches language with native names', () => {
-    expect(classicMenus(base).map((entry) => entry.id).slice(-2)).toEqual(['service', 'help'])
-    const langs = itemsOf('service', { ...base, lang: 'kk' }).filter((item) => item.command.type === 'lang')
+  it('uses exactly the six PRO100 menus; language lives in Инструменты with native names', () => {
+    expect(classicMenus(base).map((entry) => entry.label)).toEqual(['Файл', 'Правка', 'Вид', 'Элемент', 'Инструменты', 'Справка'])
+    const langs = itemsOf('tools', { ...base, lang: 'kk' }).filter((item) => item.command.type === 'lang')
     expect(langs.map((item) => item.command)).toEqual([
       { type: 'lang', lang: 'ru' }, { type: 'lang', lang: 'kk' }, { type: 'lang', lang: 'uz' }, { type: 'lang', lang: 'en' },
     ])
@@ -130,24 +149,35 @@ describe('classic menu: settings hidden in the old header (P0-5)', () => {
     expect(langs.find((item) => item.active)?.label).toBe('Қазақша')
   })
 
-  it('Сервис shows the live price (opens the quote) or asks for prices (opens the shop)', () => {
-    expect(itemsOf('service').some((item) => item.id === 'service.price')).toBe(false)
-    const priced = itemsOf('service', { ...base, price: { total: '763 490 ₸' } }).find((item) => item.id === 'service.price')!
+  it('Инструменты shows the live price (opens the quote) or asks for prices (opens the shop)', () => {
+    expect(itemsOf('tools').some((item) => item.id === 'service.price')).toBe(false)
+    const priced = itemsOf('tools', { ...base, price: { total: '763 490 ₸' } }).find((item) => item.id === 'service.price')!
     expect(priced.detail).toBe('763 490 ₸')
     expect(priced.command).toEqual({ type: 'open', panel: 'quote' })
-    const missing = itemsOf('service', { ...base, price: { missing: true } }).find((item) => item.id === 'service.price')!
+    const missing = itemsOf('tools', { ...base, price: { missing: true } }).find((item) => item.id === 'service.price')!
     expect(missing.label).toBe('Цены не заданы')
     expect(missing.command).toEqual({ type: 'open', panel: 'shop' })
   })
 
-  it('Сервис has «Аккаунт» only when the cloud is on, and the workplace style switch', () => {
-    expect(itemsOf('service').some((item) => item.id === 'service.account')).toBe(false)
-    expect(itemsOf('service', { ...base, cloud: true }).find((item) => item.id === 'service.account')?.command)
+  it('Инструменты has «Аккаунт» only when the cloud is on and no desktop workplace switch', () => {
+    expect(itemsOf('tools').some((item) => item.id === 'service.account')).toBe(false)
+    expect(itemsOf('tools', { ...base, cloud: true }).find((item) => item.id === 'service.account')?.command)
       .toEqual({ type: 'open', panel: 'account' })
-    const styles = itemsOf('service').filter((item) => item.command.type === 'workspaceStyle')
-    expect(styles.map((item) => [item.command, item.active])).toEqual([
-      [{ type: 'workspaceStyle', classic: true }, true], [{ type: 'workspaceStyle', classic: false }, false],
-    ])
+    expect(itemsOf('tools').some((item) => item.id.startsWith('service.style'))).toBe(false)
+  })
+
+  it('offers the PRO100 element commands: rotate, align/distribute, group and Properties', () => {
+    expect(find('element.rotateCcw', { ...base, canRotate: true }).command).toEqual({ type: 'rotate', degrees: 90 })
+    expect(find('element.rotateCw').disabled).toBe(true)
+    expect(find('element.align.x.min', { ...base, selectionCount: 2 }).disabled).toBe(false)
+    expect(find('element.align.x.distribute', { ...base, selectionCount: 2 }).disabled).toBe(true)
+    expect(find('element.align.z.distribute', { ...base, selectionCount: 3 }).command).toEqual({ type: 'align', axis: 'z', mode: 'distribute' })
+    expect(find('edit.group', { ...base, selectionCount: 1 }).disabled).toBe(true)
+    expect(find('element.properties', { ...base, canProperties: true }).command).toEqual({ type: 'properties' })
+    expect(find('file.room').command).toEqual({ type: 'roomDialog' })
+    expect(find('tools.light').command).toEqual({ type: 'lightDialog' })
+    expect(find('view.realistic', { ...base, realistic: true }).active).toBe(true)
+    expect(find('tools.price').command).toEqual({ type: 'dockPanel', id: 'price' })
   })
 
   it('Workspace wires the new commands and shows the price in the classic status bar', () => {
@@ -155,7 +185,7 @@ describe('classic menu: settings hidden in the old header (P0-5)', () => {
     expect(source).toMatch(/case 'theme':[^\n]*chooseTheme\(command\.theme\)/)
     expect(source).toMatch(/case 'quality':[^\n]*saveQuality\(command\.quality\)/)
     expect(source).toMatch(/case 'lang':[^\n]*setLang\(command\.lang\)/)
-    expect(source).toMatch(/case 'workspaceStyle':[^\n]*changeStyle\(command\.classic\)/)
+    expect(source).not.toContain("case 'workspaceStyle'")
     expect(source).toContain('data-testid="p100-status-price"')
   })
 })

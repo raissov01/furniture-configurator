@@ -56,18 +56,20 @@ export function needsClearcoat(finish: DecorFinish | undefined): boolean {
 }
 
 /** Material.pbr тек көріністі басқарады; preset пен өндірістік материал дерегін өзгертпейді. */
-export function resolveMaterialLook(finish: DecorFinish | undefined, pbr?: MaterialPbr): MaterialLook & { opacity: number } {
+export function resolveMaterialLook(finish: DecorFinish | undefined, pbr?: MaterialPbr): MaterialLook & { opacity: number; sheen: number } {
   const preset = finishToMaterial(finish)
   return {
     ...preset,
     roughness: pbr?.roughness ?? preset.roughness,
     metalness: pbr?.metalness ?? preset.metalness,
+    sheen: pbr?.sheen ?? 0,
+    clearcoat: pbr?.clearcoat ?? preset.clearcoat,
     envMapIntensity: pbr?.reflection ?? preset.envMapIntensity,
     opacity: pbr?.opacity ?? 1,
   }
 }
 
 /** Shader define өзгерсе Three материалды қайта жинауы керек (map/normalMap toggle). */
-export function materialRenderKey(physical: boolean, map: boolean, normalMap: boolean): string {
-  return `${physical ? 'physical' : 'standard'}:${map ? 'map' : 'plain'}:${normalMap ? 'normal' : 'flat'}`
+export function materialRenderKey(physical: boolean, map: boolean, normalMap: boolean, aoMap = false): string {
+  return `${physical ? 'physical' : 'standard'}:${map ? 'map' : 'plain'}:${normalMap ? 'normal' : 'flat'}:${aoMap ? 'ao' : 'no-ao'}`
 }

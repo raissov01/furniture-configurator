@@ -7,8 +7,9 @@ import { assertTreeNodeEditable } from '@/src/core/treeEditing'
 import { ConfigValidationError } from '@/src/core/errors'
 import { Button, Field, NumberInput } from '@/components/ui'
 import type { AnnotationNode } from '@/src/core/tree'
+import { validAnnotationText } from '@/lib/annotationDraft'
 
-export function AnnotationProperties({ node }: { node: AnnotationNode }) {
+export function AnnotationProperties({ node, autoApply = false, onDraftValidityChange }: { node: AnnotationNode; autoApply?: boolean; onDraftValidityChange?: (invalid: boolean) => void }) {
   const root = useConfigurator((state) => state.root)
   const layers = useConfigurator((state) => state.layers)
   const edit = useConfigurator((state) => state.editAnnotation)
@@ -20,7 +21,9 @@ export function AnnotationProperties({ node }: { node: AnnotationNode }) {
   let editable = true
   try { assertTreeNodeEditable(root, node.id, layers) }
   catch (cause) { if (!(cause instanceof ConfigValidationError)) throw cause; editable = false }
+  const textRangeError = `${tr('Текст записи')}: ${tr('Допустимо от 1 до 500 символов')}`
   const saveText = () => {
+    if (!validAnnotationText(draft)) { setError(textRangeError); return }
     try { edit(node.id, { text: draft }); setError(null) }
     catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить текст')) }
   }
@@ -33,10 +36,19 @@ export function AnnotationProperties({ node }: { node: AnnotationNode }) {
   }
   return <fieldset disabled={!editable} className="space-y-3" data-testid="annotation-properties">
     <Field label={tr('Текст записи')}>
-      <textarea value={draft} maxLength={500} onChange={(event) => setDraft(event.target.value)}
+      <textarea value={draft} maxLength={500} aria-invalid={Boolean(error)} onChange={(event) => {
+        const value = event.target.value
+        setDraft(value)
+        const invalid = !validAnnotationText(value)
+        onDraftValidityChange?.(invalid)
+        if (!autoApply) return
+        if (invalid) { setError(textRangeError); return }
+        try { edit(node.id, { text: value }); setError(null) }
+        catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить текст')) }
+      }}
         className="min-h-20 w-full rounded border border-neutral-300 bg-white p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
     </Field>
-    <Button onClick={saveText} disabled={!draft.trim()}>{tr('Применить')}</Button>
+    {!autoApply && <Button onClick={saveText} disabled={!validAnnotationText(draft)}>{tr('Применить')}</Button>}
     <Field label={tr('Размер текста, мм')}>
       <NumberInput value={node.annotation.fontSize} min={1} max={1000} step={10}
         onChange={(fontSize) => edit(node.id, { fontSize })} />
@@ -51,6 +63,6 @@ export function AnnotationProperties({ node }: { node: AnnotationNode }) {
       </Field>)}
     </div>
     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-    <Button onClick={() => remove(node.id)}>{tr('Удалить текст')}</Button>
+    {!autoApply && <Button onClick={() => remove(node.id)}>{tr('Удалить текст')}</Button>}
   </fieldset>
 }
