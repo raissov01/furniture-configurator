@@ -24,6 +24,7 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     properties: <><path d="M2 4h14M2 9h14M2 14h14"/><circle cx="6" cy="4" r="1.5" fill="var(--p100-canvas)"/><circle cx="12" cy="9" r="1.5" fill="var(--p100-canvas)"/><circle cx="7" cy="14" r="1.5" fill="var(--p100-canvas)"/></>,
     shop: <><path d="M2 7h14v9H2zM2 7l2-5h10l2 5M5 2l-1 5m5-5v5m4-5 1 5M6 16v-5h4v5M12 11h2v2h-2z"/></>,
     view: <><path d="M1 9q8-9 16 0-8 9-16 0z"/><circle cx="9" cy="9" r="2.5" fill={blue}/></>,
+
     box: <><path d="m2 5 7-3 7 3v9l-7 3-7-3zM2 5l7 3 7-3M9 8v9"/></>,
     decor: <><path d="M3 15h12M5 12h8v3H5zM6 5l3-3 3 3-3 5zM9 10v2M13 3v3m-1.5-1.5h3"/></>,
     lathe: <><path d="M2 3h14M2 15h14M9 3v2M9 13v2M6 5h6l-2 3 2 3-2 2H8l-2-2 2-3z"/></>,
@@ -47,6 +48,8 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     quote: <><path d="M4 2h10v14H4zM6 5h6M6 8h6M6 11h3"/><path d="M11 13h2" stroke={blue}/></>,
     drill: <><path d="M3 3h12v12H3zM9 4v10M4 9h10"/><circle cx="9" cy="9" r="2.5" fill={blue}/></>,
     assembly: <><path d="M2 3h5v5H2zM11 3h5v5h-5zM6.5 12h5v5h-5z"/><path d="M7 5h4M9 8v4M4 8v4h2m8-4v4h-2" stroke={blue}/></>,
+
+
     walk: <><circle cx="9" cy="3" r="2"/><path d="m9 5 2 4-3 2-3 5m6-7 3 2m-5 0 4 5" stroke={blue}/></>,
     doors: <><path d="M2 2h14v14H2zM9 2v14M5 8h1m6 0h1"/><path d="m2 16 3-2m11 2-3-2" stroke={blue}/></>,
     ghost: <><path d="m2 5 7-3 7 3v9l-7 3-7-3zM2 5l7 3 7-3M9 8v9" opacity=".5"/><path d="M3 13h12" stroke={blue} strokeDasharray="2 2"/></>,

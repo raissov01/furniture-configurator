@@ -10,5 +10,7 @@ describe('menuPosition', () => {
   it('uses the requested alignment when there is room', () => {
     expect(menuPosition({ left: 50, right: 120, top: 20, bottom: 60 }, 1000, 800, 180, 'left'))
       .toEqual({ left: 50, top: 60, maxHeight: 480 })
+
+
   })
 })

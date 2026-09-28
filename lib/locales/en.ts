@@ -16,6 +16,7 @@ export const en: Record<string, string> = {
   'Проверяем код…': 'Checking code…',
   'Проверенный проект': 'Verified project',
   'Нужен новый код? Свяжитесь с мастером.': 'Need a new code? Contact the maker.',
+  'Детали на листе': 'Parts on this sheet',
   'Выбрать файл': 'Choose file',
   'Выбрать фото': 'Choose photo',
   'загружен': 'uploaded',
@@ -535,9 +536,9 @@ export const en: Record<string, string> = {
   'Как в материале': 'As in the material',
   'Оптимизация': 'Optimisation',
   'глубина поиска': 'search depth',
-  'Быстрая — одна раскладка': 'Fast — one layout',
-  'Обычная — четыре раскладки': 'Normal — four layouts',
-  'Глубокая — все шестнадцать': 'Deep — all sixteen',
+  'Быстрая: одна раскладка': 'Fast: one layout',
+  'Обычная: четыре раскладки': 'Normal: four layouts',
+  'Глубокая: все шестнадцать': 'Deep: all sixteen',
   'Показать резы': 'Show cuts',
   'PDF карты': 'Map PDF',
   'Загрузка проекта…': 'Loading the project…',
@@ -914,8 +915,8 @@ export const en: Record<string, string> = {
   'Собираем проект…': 'Building the project…',
   'Открыть дверцу': 'Open door',
   'Закрыть дверцу': 'Close door',
-  'Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть':
-    'Joystick — walk · drag — look around · tap a door — open',
+  'Джойстик: идти · проведите пальцем: осмотр · коснитесь дверцы: открыть':
+    'Joystick: walk · drag: look around · tap a door: open',
   'Джойстик: идти': 'Joystick: walk',
   'Код для клиента': 'Client code',
   'Создаём код…': 'Creating a code…',
@@ -933,7 +934,7 @@ export const en: Record<string, string> = {
     'This build has no cloud — send the client a link (Project → Client link).',
   'Открыть проект по коду': 'Open a project by code',
   'Введите 6 цифр, которые прислал мастер.': 'Enter the 6 digits your maker sent you.',
-  'Код — 6 цифр': 'Code — 6 digits',
+  'Код: 6 цифр': 'Code: 6 digits',
   'Уменьшить': 'Decrease',
   'Увеличить': 'Increase',
   'Итого клиенту — открыть смету': 'Client total — open the estimate',
@@ -1034,7 +1035,7 @@ export const en: Record<string, string> = {
   'Стена C, мм': 'Wall C, mm',
   'Прогулка': 'Walk',
   'Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы': 'Walk inside: WASD — move, mouse — look, E — open doors',
-  'Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор': 'Click to look · WASD — move · E — doors · Esc — cursor',
+  'Кликните для обзора · WASD: идти · E: дверцы · Esc: курсор': 'Click to look · WASD: move · E: doors · Esc: cursor',
   'Создать': 'Create',
   'С чего начать корпус': 'How to start a cabinet',
   'Техзадание (словами)': 'Brief (in words)',
@@ -1504,7 +1505,6 @@ export const en: Record<string, string> = {
   'Сервис': 'Service',
   'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Drilling, cutting layouts and machine export — right in AisMebel, no hand-off to Bazis.',
 
-
   // Нарық бағасы (marketPrices.ts),
   'Цены — рыночная медиана ({date}). Введите свои цены.': 'Prices are the market median ({date}). Enter your own prices.',
   'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.': 'Market-priced items: {n}. A price you change becomes your own and is never overwritten by market updates.',
@@ -1931,14 +1931,6 @@ export const en: Record<string, string> = {
   'Есть позиции без цены': 'Some items have no price',
 
   // Бұтақтарды біріктіруде сақталған аудармалар.
-
-
-
-
-
-
-
-
 
   // Интеграциядағы жаңа аудармалар.
   'Прямоугольный DXF/SVG-план обновит ширину (W) и глубину (D) комнаты; мебель не добавится.': 'A rectangular DXF/SVG plan updates room width (W) and depth (D); no furniture is added.',
@@ -2396,4 +2388,9 @@ export const en: Record<string, string> = {
   'Лак (clearcoat)': 'Clearcoat',
   'Карта AO (URL)': 'AO map (URL)',
   'Сила AO': 'AO intensity',
+  'Монтаж открыт': 'Installation open',
+  'Монтажных заданий пока нет': 'No installation tasks yet',
+  'Навигация': 'Menu',
+
+
 }

@@ -11,6 +11,7 @@
 
 import { create } from 'zustand'
 import { nextCopyName } from '@/src/core/copyName'
+import { solidStartPosition } from '@/lib/sceneUiPlacement'
 import { t as tr } from '@/lib/i18n'
 import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
@@ -24,6 +25,7 @@ import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { LATHE_PROFILES, specialSolidSize } from '@/src/core/specialParts'
 import type { FabricationSpec } from '@/src/core/specialParts'
 import { validateImportedModel } from '@/src/core/import/tds'
+
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
 import { materialUsedInTree } from '@/lib/materialUsedInTree'
@@ -891,7 +893,11 @@ export const useConfigurator = create<State>((set, get) => ({
   addSolid() {
     const s = get()
     const id = `solid-${crypto.randomUUID()}`
-    const root: GroupNode = { ...s.root, children: [...s.root.children, createSolidNode(id, tr('Декоративный блок'))] }
+    const solid = createSolidNode(id, tr('Декоративный блок'))
+    const active = findNode(s.root, s.activeId)
+    solid.transform.pos = solidStartPosition(s.room, active?.transform.pos ?? null,
+      active?.kind === 'cabinet' ? active.config.width : active?.kind === 'solid' ? active.solid.size.x : 100)
+    const root: GroupNode = { ...s.root, children: [...s.root.children, solid] }
     set({ ...treeEdit(s, root), activeId: id, selected: id, firstRun: false })
     return id
   },
@@ -1926,6 +1932,8 @@ export const useConfigurator = create<State>((set, get) => ({
     const newId = `cabinet-${crypto.randomUUID()}`
     set({
       ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: nextCopyName(source.name, s.cabinets.map((cabinet) => cabinet.name)) }], [
+
+
         ...s.placements,
         { cabinetId: newId, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
       ]),

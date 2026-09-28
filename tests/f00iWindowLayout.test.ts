@@ -16,7 +16,7 @@ describe('classic floating windows', () => {
   it('keeps large dialogs within the viewport height', () => {
     const css = file('app/globals.css')
     expect(css).toMatch(/\.p100-dialog \{[^}]*height: min\(600px, 80dvh\)/)
-    expect(file('components/QuoteView.tsx')).toContain('max-h-[80dvh] overflow-y-auto')
-    expect(file('components/RoomPlan.tsx')).toContain('max-h-[calc(100dvh-16px)] overflow-x-hidden overflow-y-auto')
+    expect(file('components/QuoteView.tsx')).toContain('max-h-[calc(100dvh-1rem)] w-full max-w-5xl overflow-y-auto')
+    expect(file('components/RoomPlan.tsx')).toContain('max-h-[calc(100dvh-1rem)] w-full max-w-4xl overflow-y-auto')
   })
 })

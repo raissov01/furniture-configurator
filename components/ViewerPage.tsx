@@ -134,7 +134,9 @@ export function ViewerPage() {
 
 function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; message: string } }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--brand-graphite)] px-6 text-white">
+    <main data-view-page className="flex min-h-screen items-center justify-center bg-[var(--brand-graphite)] px-6 text-white">
+
+
       <div className="max-w-md space-y-3 text-center">
         <p className="flex items-center justify-center gap-2 text-sm font-semibold"><img src="/brand/aismebel-mark.svg" width={24} height={24} alt="" aria-hidden="true" />{SITE.name}</p>
         {state.kind === 'loading' ? (
@@ -184,7 +186,8 @@ function Viewer({
   }, [catalog])
 
   return (
-    <main className="flex min-h-dvh flex-col bg-[var(--brand-graphite)] text-white sm:h-dvh">
+    <main data-view-page className="viewer-page flex min-h-dvh flex-col bg-[var(--brand-graphite)] text-white sm:h-dvh">
+
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-2">
         <img src="/brand/aismebel-mark.svg" width={24} height={24} alt={SITE.name} />
         <span className="text-sm font-semibold">{project.name}</span>
@@ -221,13 +224,13 @@ function Viewer({
         {walk ? (
           <>
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-3">
-              <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/90 px-4 py-2 text-xs text-white">
+              <div className="pointer-events-auto flex max-w-full items-center gap-3 border border-white bg-[var(--brand-graphite)] px-4 py-2 text-xs text-white">
                 <span>{touch
-                  ? tr('Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть')
-                  : tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
+                  ? tr('Джойстик: идти · проведите пальцем: осмотр · коснитесь дверцы: открыть')
+                  : tr('Кликните для обзора · WASD: идти · E: дверцы · Esc: курсор')}</span>
                 <button
                   type="button"
-                  className="rounded-full border border-white/40 px-2.5 py-1 hover:bg-white/15"
+                  className="min-h-11 border border-white px-2.5 py-1 hover:bg-white hover:text-[var(--brand-graphite)]"
                   onClick={() => setWalk(false)}
                 >
                   {tr('Выйти')}
@@ -239,7 +242,7 @@ function Viewer({
         ) : null}
       </div>
 
-      <section className="max-h-[20vh] overflow-auto border-t border-neutral-800 px-4 py-3 text-xs">
+      <section className="max-h-[20vh] overflow-auto border-t border-neutral-800 px-4 py-3 text-sm">
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           {cabinets.map((cabinet) => (
             <p key={cabinet.id}>

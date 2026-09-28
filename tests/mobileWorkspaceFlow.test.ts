@@ -11,6 +11,8 @@ describe('390 × 844 workspace flow', () => {
     expect(source).toContain('data-testid="mobile-tree-dock"')
     expect(source).not.toContain('max-h-[35dvh] overflow-y-auto')
     expect(source).not.toContain('>⧉</Button>')
+
+
   })
 
   it('puts a touch button above the canvas and opens the full-screen mobile properties panel', () => {
