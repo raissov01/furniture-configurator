@@ -512,7 +512,7 @@ export function AccountPanel() {
       if (!source.ok) throw new Error(tr('Проект не загрузился'))
       const data = await source.json() as { project?: unknown }
       const copy = await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cloudSavePayload(cloudCopyProject(parseProjectV4(data.project)), null, true)) })
+        body: JSON.stringify(cloudSavePayload(cloudCopyProject(parseProjectV4(data.project), projects.map((item) => item.name)), null, true)) })
       if (!copy.ok) {
         const failure = await copy.json() as { error?: string }
         throw new Error(failure.error ?? tr('Проект не сохранился'))

@@ -22,6 +22,7 @@ import { validSilhouetteHeight } from '@/lib/silhouetteInput'
 import { createSolidNode, editSolidTree } from '@/lib/solidAction'
 import { defaultCabinet, defaultShop, defaultTemplateId } from '@/lib/defaults'
 import { templateProjectTitles } from '@/lib/templateProjectTitles'
+import { nextCopyName } from '@/lib/copyName'
 import { materialUsedInTree } from '@/lib/materialUsedInTree'
 import { validateProjectShopInputs, validatedShopEdit } from '@/lib/validatedShopEdit'
 import {
@@ -1849,7 +1850,7 @@ export const useConfigurator = create<State>((set, get) => ({
     })
     const newId = `cabinet-${crypto.randomUUID()}`
     set({
-      ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: `${source.name} (копия)` }], [
+      ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: nextCopyName(source.name, s.cabinets.map((item) => item.name)) }], [
         ...s.placements,
         { cabinetId: newId, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
       ]),
