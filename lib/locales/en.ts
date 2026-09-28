@@ -2085,4 +2085,5 @@ export const en: Record<string, string> = {
   'Монтаж открыт': 'Installation open',
   'Монтажных заданий пока нет': 'No installation tasks yet',
   'Навигация': 'Menu',
+  'Присадка (рентген)': 'Drilling X-ray',
 }

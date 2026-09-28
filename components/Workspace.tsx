@@ -3,6 +3,7 @@
 import { getLang, setLang, t as tr, tf } from '@/lib/i18n'
 import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { selectedStatusName } from '@/lib/sceneUiPlacement'
+import { drillLegend } from '@/lib/drillLegend'
 import { contextActions } from '@/lib/contextActions'
 import { menuPosition } from '@/lib/menuPosition'
 import Link from 'next/link'
@@ -221,6 +222,8 @@ export function Workspace() {
   const setShowDrilling = useConfigurator((s) => s.setShowDrilling)
   const showFittings = useConfigurator((s) => s.showFittings)
   const setShowFittings = useConfigurator((s) => s.setShowFittings)
+  const xray = useConfigurator((s) => s.xray)
+  const setXray = useConfigurator((s) => s.setXray)
   const pushHistory = useConfigurator((s) => s.pushHistory)
   const syncShare = useConfigurator((s) => s.syncShare)
   const setShareCodeOpen = useConfigurator((s) => s.setShareCodeOpen)
@@ -520,6 +523,7 @@ export function Workspace() {
         case 'viewMode':
           setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')
           break
+        case 'xray': setXray(!xray); break
         case 'fronts': setShowFronts(!showFronts); break
         case 'openness': setOpenness(openness > 0 ? 0 : 1); break
         case 'projection': setProjection(projection === 'perspective' ? 'ortho' : 'perspective'); break
@@ -589,6 +593,7 @@ export function Workspace() {
         setShowDrilling(command.show === 'drilling')
         setShowFittings(command.show === 'fittings')
         break
+      case 'xray': setXray(!xray); break
       case 'fit': fitCamera(); break
       case 'toggleSilhouette': setSilhouette({ on: !silhouette.on }); break
       case 'toggleWalk': setWalk(!walk); break
@@ -615,7 +620,7 @@ export function Workspace() {
     canExportPdf: Boolean(pdfCabinet) && productionState.exportsAvailable,
     canExportActiveCabinet: hasActiveCabinet && productionState.exportsAvailable,
     productionError: Boolean(production.error),
-    cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings,
+    cameraPreset, viewMode, showFronts, projection, showDimensions, showDrilling, showFittings, xray,
     silhouetteOn: silhouette.on, walk, open: openness > 0, assembly: assemblyStep !== null,
     theme, quality, lang: getLang(),
     price: liveTotal === null ? null : 'total' in liveTotal ? { total: formatTengeExact(liveTotal.total) } : { missing: true },
@@ -638,6 +643,7 @@ export function Workspace() {
       { icon: 'box', label: tr('Тело'), action: () => setViewMode('solid'), active: viewMode === 'solid' },
       { icon: 'ghost', label: tr('Полупрозрачно'), action: () => setViewMode('ghost'), active: viewMode === 'ghost', id: 'ghost' },
       { icon: 'wire', label: tr('Контур'), action: () => setViewMode('wire'), active: viewMode === 'wire' },
+      { icon: 'xray', label: tr('Присадка (рентген)'), action: () => setXray(!xray), active: xray, id: 'xray' },
       { icon: 'magnet', label: tr('Привязка'), action: () => {
         if (snapOptions.grid > 0 || snapOptions.tolerance > 0) {
           previousSnapOptions.current = snapOptions
@@ -869,6 +875,7 @@ export function Workspace() {
           </MenuItem>
           <MenuItem active={showDrilling} onClick={() => setShowDrilling(true)}>{tr('Фурнитура: отверстия')}</MenuItem>
           <MenuItem active={showFittings} onClick={() => setShowFittings(true)}>{tr('Фурнитура: крепёж')}</MenuItem>
+          <MenuItem active={xray} onClick={() => setXray(!xray)}>{tr('Присадка (рентген)')} · X</MenuItem>
           <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
           <MenuItem active={silhouette.on} onClick={() => setSilhouette({ on: !silhouette.on })}>
             {tr('Человек для масштаба')}
@@ -1262,6 +1269,13 @@ export function Workspace() {
           </div>
         </aside>
       </div>
+      {xray && <div className="flex shrink-0 items-center gap-3 overflow-x-auto border-t border-neutral-300 bg-white px-2 py-1 text-[11px] dark:border-neutral-700 dark:bg-neutral-950"
+        role="status" data-testid="xray-legend" aria-label={tr('Присадка (рентген)')}>
+        {drillLegend.map((entry) => <span key={entry.purpose} className="flex shrink-0 items-center gap-1 whitespace-nowrap">
+          <span className="h-2.5 w-2.5 border border-neutral-500" style={{ backgroundColor: entry.color }} />
+          {tr(entry.label)}
+        </span>)}
+      </div>}
       <footer className="p100-status hidden lg:flex" role="status" data-testid="p100-status">
         <span>{classicToolStatus(hoveredToolLabel, selected, selectedStatusName(selected, projectPanels, activeNode?.name), tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
         {selected && activeNode && <span className="ml-auto tabular-nums">
