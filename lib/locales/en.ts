@@ -10,6 +10,10 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Выбрать файл': 'Choose file',
+  'Выбрать фото': 'Choose photo',
+  'загружен': 'uploaded',
+  'не выбран': 'not selected',
   'готовый': 'finished',
   'Исправьте ошибки проекта': 'Fix the project errors',
   'Нужны два корпуса': 'Two cabinets are required',

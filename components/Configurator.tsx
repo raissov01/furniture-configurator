@@ -22,6 +22,7 @@ import { t as tr, tf } from '@/lib/i18n'
 import { CABINET_DIMENSION_MAX, CABINET_DIMENSION_MIN, dimensionRangeHint } from '@/lib/dimensionHint'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
@@ -778,14 +779,9 @@ function FrontFittings({
       {milling?.patternId === 'custom' ? (
         <Field label={tr('Файл SVG')}>
           <div className="flex items-center gap-2">
-            <input
-              type="file"
-              accept=".svg,image/svg+xml"
-              onChange={(e) => readSvg(e.target.files?.[0])}
-              className="w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-neutral-200 file:px-2 file:py-1 file:text-xs dark:file:bg-neutral-800 dark:file:text-neutral-200"
-            />
+            <LocalizedFileChooser accept=".svg,image/svg+xml" onChange={(e) => readSvg(e.target.files?.[0])} />
             <span className="whitespace-nowrap text-[11px] text-neutral-500">
-              {milling.svg ? 'загружен' : 'не выбран'}
+              {milling.svg ? tr('загружен') : tr('не выбран')}
             </span>
           </div>
         </Field>

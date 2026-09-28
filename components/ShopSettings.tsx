@@ -42,6 +42,7 @@ import { PriceImportPanel } from './PriceImportPanel'
 import { MarketPriceNotice, MarketPriceTag } from './MarketPrice'
 import { OwnTextureMapper } from './OwnTextureMapper'
 import { validateBin, validateShopLogo } from '@/lib/shopBranding'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import { shopEditAccess } from '@/lib/shopAccessUi'
 import type { Role } from '@/lib/permissions'
 
@@ -81,14 +82,15 @@ function ShopBinField({ value, onChange }: { value: string; onChange: (value: st
 
 function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => void }) {
   const [error, setError] = useState<string | null>(null)
+  const [filename, setFilename] = useState<string | null>(null)
   return <Field label={tr('Логотип')}>
-    <input type="file" accept="image/png,image/jpeg" className={`${text} ${error ? 'border-red-600' : ''}`}
-      aria-invalid={Boolean(error)} onChange={(event) => {
+    <LocalizedFileChooser accept="image/png,image/jpeg" selectedName={filename} onChange={(event) => {
         const file = event.target.files?.[0]
         if (!file) return
         const problem = validateShopLogo(file)
         setError(problem)
         if (problem) return
+        setFilename(file.name)
         const reader = new FileReader()
         reader.onload = () => {
           if (typeof reader.result === 'string') onChange(reader.result)
@@ -98,7 +100,7 @@ function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => 
         reader.readAsDataURL(file)
       }} />
     {error ? <span className="text-xs text-red-700" role="alert">{tr(error)}</span> : null}
-    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null) }}>{tr('Удалить логотип')}</button>
+    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null); setFilename(null) }}>{tr('Удалить логотип')}</button>
   </Field>
 }
 
