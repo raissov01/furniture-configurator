@@ -23,7 +23,7 @@ import { measurementCaption, visibleNetworkMessage } from '@/lib/f00kDisplay'
 
 const ROLE_CACHE = 'tapsyrys:role' // UI navigation only; projects, measurements and photos are in IndexedDB.
 const roles: Role[] = ['owner', 'designer', 'shop', 'client']
-const button = 'block min-h-12 w-full border border-[#8c8c8c] bg-white px-4 py-3 text-left text-base text-black disabled:bg-[#ededed] disabled:text-[#666]'
+const button = 'block min-h-12 w-full border border-[var(--rule)] bg-[var(--paper)] px-4 py-3 text-left text-base text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-50'
 
 function cachedRole(): { role: Role | null; unavailable: boolean } {
   try {
@@ -267,21 +267,21 @@ export default function MobileTodayPage() {
   const connection = connectionState(online, network)
   const networkLabel = connection === 'offline' ? t('Нет сети') : connection === 'unreachable' ? t('Сервер недоступен') :
     sending ? t('Отправляется') : t('В сети')
-  const networkColor = connection !== 'online' ? 'border-[#8c8c8c] bg-[#ededed]' : 'border-[#28723b] bg-[#e7f4e9]'
+  const networkColor = connection !== 'online' ? 'border-[var(--rule)] bg-[var(--paper)] text-[var(--ink)]' : 'border-[#28723b] bg-[#e7f4e9] text-[#144c25]'
   const visibleMessage = visibleNetworkMessage(networkLabel, message, t('Сервер недоступен'), t('Нет сети'))
 
   if (active && store) return <MeasurementWizard initial={active} store={store} onBack={() => { setActive(null); void refresh(store) }} onSave={saveSurvey} onKitchen={createKitchen} pending={pending} networkLabel={networkLabel} networkColor={networkColor} />
 
-  return <main className="mx-auto min-h-dvh w-full max-w-xl overflow-x-hidden bg-[#f5f5f5] p-4 text-black">
+  return <main className="site mx-auto min-h-dvh w-full max-w-xl overflow-x-hidden bg-[var(--panel)] p-4 text-[var(--ink)]">
     <div role="status" className={`mb-4 border p-3 text-sm ${networkColor}`}>
       {networkLabel} · {t('Ожидает отправки')}: {pending}
     </div>
-    <p role="status" className="mb-4 border bg-white p-3 text-sm">
+    <p role="status" className="mb-4 border border-[var(--rule)] bg-[var(--paper)] p-3 text-sm">
       {durableStorage === 'granted' ? t('Постоянное хранение разрешено.') :
         durableStorage === 'denied' ? t('Постоянное хранение не разрешено браузером.') :
           durableStorage === 'unavailable' ? t('Постоянное хранение недоступно.') : t('Проверяем постоянное хранение…')}
     </p>
-    {durableStorage !== 'granted' && (pending > 0 || surveys.length > 0) && <p role="status" className="mb-4 border border-[#a46a00] bg-[#fff3d5] p-3 text-sm">
+    {durableStorage !== 'granted' && (pending > 0 || surveys.length > 0) && <p role="status" className="mb-4 border border-[#a46a00] bg-[#fff3d5] p-3 text-sm text-[#5a3900]">
       {t('Данные замеров и фото пока только на этом телефоне. Сохраните копию после подключения к интернету.')}
       {' '}{durableStorage === 'denied' ? t('Постоянное хранение не разрешено браузером.') :
         durableStorage === 'unavailable' ? t('Постоянное хранение недоступно.') : t('Проверяем постоянное хранение…')}
@@ -293,13 +293,13 @@ export default function MobileTodayPage() {
         <img src="/brand/aismebel-mark.svg" width={18} height={18} alt="" aria-hidden="true" />
         {BRAND.name}
       </p>
-      <h1 className="mt-1 text-2xl font-semibold">{role === 'shop' ? t('Цех') : role === 'client' ? t('Клиент') : t('Сегодня')}</h1>
+      <h1 className="mt-1 text-3xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>{role === 'shop' ? t('Цех') : role === 'client' ? t('Клиент') : t('Сегодня')}</h1>
     </header>
-    {!role && <div className="border border-[#8c8c8c] bg-white p-4 text-sm">
+    {!role && <div className="sheet p-4 text-sm">
       <p>{t('Для первого входа и проверки роли нужен интернет.')}</p>
       {online ? <Link className={`${button} mt-3`} href="/configurator">{t('Войти')}</Link> :
         <button className={`${button} mt-3`} type="button" disabled>{t('Войти')}</button>}
-      <p className="mt-1 text-xs text-[#525252]">{t('Работает через интернет')}</p>
+      <p className="mt-1 text-xs text-[var(--ink-soft)]">{t('Работает через интернет')}</p>
     </div>}
     {(role === 'owner' || role === 'designer') && <section className="space-y-3">
       <h2 className="text-base font-semibold">{t('Следующее действие')}</h2>
@@ -308,20 +308,20 @@ export default function MobileTodayPage() {
       <Link className={button} href="/configurator">{t('Новое КП')}</Link>
       {role === 'owner' && <Link className={button} href="/mobile/installation">{t('Монтаж')}</Link>}
       <h2 className="pt-2 text-base font-semibold">{t('Замеры на этом устройстве')}</h2>
-      {surveys.length === 0 && <p className="border border-[#b8b8b8] bg-white p-3 text-sm">{t('Пока нет сохранённых замеров')}</p>}
+      {surveys.length === 0 && <p className="sheet p-3 text-sm">{t('Пока нет сохранённых замеров')}</p>}
       {surveys.map((survey) => <button key={survey.id} className={button} type="button" onClick={() => setActive(survey)}>
         {measurementCaption(t('Замер'), survey.height.capturedAt)}
       </button>)}
     </section>}
     {role === 'shop' && <section className="space-y-3">
-      <p className="border border-[#b8b8b8] bg-white p-3 text-sm">{t('Работа цеха: сканирование деталей и монтаж.')}</p>
+      <p className="sheet p-3 text-sm">{t('Работа цеха: сканирование деталей и монтаж.')}</p>
       <Link className={button} href="/mobile/scan">{t('Сканировать деталь')}</Link>
       <Link className={button} href="/mobile/installation">{t('Монтаж')}</Link>
     </section>}
-    {role === 'client' && <section className="border border-[#b8b8b8] bg-white p-3 text-sm">
+    {role === 'client' && <section className="sheet p-3 text-sm">
       {t('Откройте ссылку на своё предложение от мастерской.')}
     </section>}
-    {conflicts.map((record) => <section key={record.action.id} className="mt-4 border border-[#9b1c1c] bg-white p-3 text-sm">
+    {conflicts.map((record) => <section key={record.action.id} className="mt-4 border border-[#9b1c1c] bg-[var(--paper)] p-3 text-sm">
       <h2 className="font-semibold">{t('Конфликт замера')} · {record.action.entityId.slice(0, 8)}</h2>
       <p className="mt-1">{t('На сервере есть другая версия. Выберите явно, какую оставить.')}</p>
       <details className="mt-2"><summary>{t('Сравнить версии')}</summary>
@@ -332,12 +332,12 @@ export default function MobileTodayPage() {
         <button className={button} type="button" onClick={() => void resolveConflict(record, false)}>{t('Оставить серверную')}</button>
       </div>
     </section>)}
-    {rejected.map((record) => <section key={record.action.id} className="mt-4 border border-[#9b1c1c] bg-white p-3 text-sm">
+    {rejected.map((record) => <section key={record.action.id} className="mt-4 border border-[#9b1c1c] bg-[var(--paper)] p-3 text-sm">
       <h2 className="font-semibold">{t('Отправка замера отклонена')} · {record.action.entityId.slice(0, 8)}</h2>
       <p className="mt-1">{record.error ?? t('Проверьте вход и попробуйте снова')}</p>
       <button className={`${button} mt-2`} type="button" disabled={!online} onClick={() => void retryRejected(record)}>{t('Повторить отправку')}</button>
-      <p className="mt-1 text-xs text-[#525252]">{t('Работает через интернет')}</p>
+      <p className="mt-1 text-xs text-[var(--ink-soft)]">{t('Работает через интернет')}</p>
     </section>)}
-    {visibleMessage && <p role="alert" className="mt-4 border border-[#9b1c1c] bg-white p-3 text-sm text-[#9b1c1c]">{visibleMessage}</p>}
+    {visibleMessage && <p role="alert" className="mt-4 border border-[#9b1c1c] bg-[var(--paper)] p-3 text-sm text-red-700 dark:text-red-300">{visibleMessage}</p>}
   </main>
 }

@@ -10,6 +10,7 @@
  */
 
 import { SiteLanguageProvider, useSiteText } from '@/components/site/SiteLanguage'
+import dynamic from 'next/dynamic'
 import type { Lang } from '@/lib/i18n'
 import { formatTenge } from '@/src/core/index'
 import { demoNesting, demoPrice, demoRows, demoSheet } from '@/lib/demo'
@@ -21,6 +22,11 @@ import { H2, Section, Titled } from '@/components/site/parts'
 import { Cta, Dimension, Sheet } from '@/components/brand'
 import { RevealList } from '@/components/site/motion'
 import { DetailTable } from '@/components/site/DetailTable'
+
+const ReferenceCabinetFigure = dynamic(() => import('@/components/site/ReferenceCabinetFigure'), {
+  ssr: false,
+  loading: () => <div className="sheet min-h-[340px]" aria-hidden="true" />,
+})
 
 const steps = () => [
   {
@@ -119,6 +125,16 @@ function LandingContent() {
 
         <Section><Dimension label={tr('Лист')} value={`${demoSheet.sheet.sheetHeight} (H) × ${demoSheet.sheet.sheetWidth} (W) ${tr('мм')}`} /></Section>
 
+        <Section className="grid items-center gap-6 py-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <div>
+            <H2>{tr('Шкаф из той же модели')}</H2>
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-[var(--ink-soft)]">
+              {tr('Эталонный шкаф: 11 физических панелей. На большом экране модель можно повернуть; размеры и детали берутся из генератора.')}
+            </p>
+          </div>
+          <ReferenceCabinetFigure />
+        </Section>
+
         {/* ── Артефакты ────────────────────────────────────────────────────── */}
         <Section id="artifacts" className="py-8 sm:py-14">
           <H2>{tr('Три документа, которые цех правда отдаёт')}</H2>
@@ -162,10 +178,10 @@ function LandingContent() {
 
               <Sheet className="p-4" caption={tr('Файлы на станок')}>
                 <ul className="space-y-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
-                  <li><b style={{ color: 'var(--ink)' }}>{tr('PDF карты раскроя')}</b> {tr('— по листу на страницу, с подписями деталей.')}</li>
-                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по листу')}</b> {tr('— лист, область реза, детали и отход на разных слоях.')}</li>
-                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по детали')}</b> {tr('— присадка отдельным слоем на каждый диаметр.')}</li>
-                  <li><b style={{ color: 'var(--ink)' }}>{tr('XLSX и CSV')}</b> {tr('— деталировка в вашей таблице.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('PDF карты раскроя')}</b>: {tr('по листу на страницу, с подписями деталей.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по листу')}</b>: {tr('лист, область реза, детали и отход на разных слоях.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по детали')}</b>: {tr('присадка отдельным слоем на каждый диаметр.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('XLSX и CSV')}</b>: {tr('деталировка в вашей таблице.')}</li>
                 </ul>
               </Sheet>
             </div>
@@ -232,7 +248,7 @@ function LandingContent() {
                 <ul className="mt-4 flex-1 space-y-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
                   {t.features.map((f) => (
                     <li key={f} className="flex gap-2">
-                      <span style={{ color: 'var(--oak-deep)' }}>—</span>
+                      <span aria-hidden="true" style={{ color: 'var(--oak-deep)' }}>·</span>
                       <span>{tr(f)}</span>
                     </li>
                   ))}

@@ -1128,8 +1128,8 @@ export function Workspace() {
               {/* Жалпақ: тұтас түс, blur жоқ (пайдаланушының дизайн ережесі). */}
               <div className="pointer-events-auto flex items-center gap-3 border border-neutral-700 bg-neutral-900 px-4 py-2 text-xs text-white">
                 <span>{touch
-                  ? tr('Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть')
-                  : tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
+                  ? tr('Джойстик: идти · проведите пальцем: осмотр · коснитесь дверцы: открыть')
+                  : tr('Кликните для обзора · WASD: идти · E: дверцы · Esc: курсор')}</span>
                 <button
                   type="button"
                   className="border border-neutral-500 bg-neutral-800 px-2.5 py-1 hover:bg-neutral-700"
