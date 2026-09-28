@@ -10,6 +10,7 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'готовый': 'finished',
   'Исправьте ошибки проекта': 'Fix the project errors',
   'Нужны два корпуса': 'Two cabinets are required',
   'Выбранный корпус заблокирован': 'The selected cabinet is locked',

@@ -11,6 +11,7 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'готовый': 'tayyor',
   'Исправьте ошибки проекта': 'Loyiha xatolarini tuzating',
   'Нужны два корпуса': 'Ikkita korpus kerak',
   'Выбранный корпус заблокирован': 'Tanlangan korpus qulflangan',
