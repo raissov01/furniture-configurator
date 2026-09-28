@@ -24,6 +24,7 @@ import { DrillMarkers } from '@/components/DrillMarkers'
 import { FittingMeshes } from '@/components/FittingMeshes'
 import { fittingsForPanel } from '@/lib/fittingGeometry'
 import { xrayViewState } from '@/lib/xrayView'
+import { boxFitting } from '@/lib/fittingRenderGeometry'
 import type { RenderedDrillMarker } from '@/components/DrillMarkers'
 
 /**
@@ -450,17 +451,8 @@ export function PanelMesh({
       return { ...m, point, direction }
     })
   }, [canonicalDrillMarkers, panel.orientation, panel.finishedLength, panel.finishedWidth, thickness])
-  const boxFittings = useMemo(() => fittings.map((item) => {
-    const point = { x: 0, y: 0, z: 0 }
-    point[panel.orientation.length] = item.point.x - panel.finishedLength / 2
-    point[panel.orientation.width] = item.point.y - panel.finishedWidth / 2
-    point[panel.orientation.thickness] = item.point.z - thickness / 2
-    const normal = { x: 0, y: 0, z: 0 }
-    normal[panel.orientation.length] = item.normal.x
-    normal[panel.orientation.width] = item.normal.y
-    normal[panel.orientation.thickness] = item.normal.z
-    return { ...item, point, normal }
-  }), [fittings, panel.orientation, panel.finishedLength, panel.finishedWidth, thickness])
+  const boxFittings = useMemo(() => fittings.map((item) => boxFitting(item, panel, thickness)),
+    [fittings, panel, thickness])
 
   const position = useMemo(() => {
     const base = {

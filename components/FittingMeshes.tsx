@@ -7,6 +7,7 @@ import { useThree } from '@react-three/fiber'
 import { Object3D, Quaternion, Vector3 } from 'three'
 import type { InstancedMesh } from 'three'
 import { fittingShape, type FittingVisual } from '@/lib/fittingGeometry'
+import { fittingRenderParts } from '@/lib/fittingRenderGeometry'
 import { t as tr } from '@/lib/i18n'
 
 const Y = new Vector3(0, 1, 0)
@@ -26,28 +27,29 @@ function BatchedPurpose({ fittings }: { fittings: FittingVisual[] }) {
   const transforms = useMemo(() => fittings.map((item) => {
     const normal = new Vector3(item.normal.x, item.normal.y, item.normal.z)
     const q = new Quaternion().setFromUnitVectors(Y, normal)
-    const p = new Vector3(item.point.x, item.point.y, item.point.z)
     const dimensions = fittingShape(item)
-    return { p, q, normal, dimensions }
+    return { q, dimensions, parts: fittingRenderParts(item) }
   }), [fittings])
 
   useEffect(() => {
     const dummy = new Object3D()
-    transforms.forEach(({ p, q, normal, dimensions }, i) => {
+    transforms.forEach(({ q, dimensions, parts }, i) => {
       dummy.quaternion.copy(q)
-      // Басы сыртқа шығып тұрған қара өзекке айналмауы үшін бетпен бір деңгейде.
-      dummy.position.copy(p).addScaledVector(normal, -Math.min(dimensions.head[1] / 2, dimensions.shaft[1] / 2))
+      const headPart = parts.find((part) => part.kind === 'head')!
+      const shaftPart = parts.find((part) => part.kind === 'shaft')!
+      dummy.position.set(headPart.center.x, headPart.center.y, headPart.center.z)
       dummy.scale.set(...dimensions.head)
       dummy.updateMatrix()
       head.current?.setMatrixAt(i, dummy.matrix)
-      dummy.position.copy(p).addScaledVector(normal, -dimensions.shaft[1] / 2)
+      dummy.position.set(shaftPart.center.x, shaftPart.center.y, shaftPart.center.z)
       dummy.scale.set(...dimensions.shaft)
       dummy.updateMatrix()
       shaft.current?.setMatrixAt(i, dummy.matrix)
       if (dimensions.arm) {
         // Көзге танылатын иін/рельс; тек көрініс. Дәл монтаж тесігі әрдайым
         // Drill-дағы нүкте, ал рельстің толық ұзындығы бұл деректе жоқ.
-        dummy.position.copy(p).addScaledVector(normal, dimensions.arm[1] / 2)
+        const armPart = parts.find((part) => part.kind === 'arm')!
+        dummy.position.set(armPart.center.x, armPart.center.y, armPart.center.z)
         dummy.scale.set(...dimensions.arm)
         dummy.updateMatrix()
         detail.current?.setMatrixAt(i, dummy.matrix)
@@ -57,7 +59,8 @@ function BatchedPurpose({ fittings }: { fittings: FittingVisual[] }) {
         detail.current.setMatrixAt(i, dummy.matrix)
       }
       if (dimensions.plate) {
-        dummy.position.copy(p).addScaledVector(normal, dimensions.arm![1] + dimensions.plate[1] / 2)
+        const platePart = parts.find((part) => part.kind === 'plate')!
+        dummy.position.set(platePart.center.x, platePart.center.y, platePart.center.z)
         dummy.scale.set(...dimensions.plate)
         dummy.updateMatrix()
         plate.current?.setMatrixAt(i, dummy.matrix)
@@ -68,10 +71,10 @@ function BatchedPurpose({ fittings }: { fittings: FittingVisual[] }) {
       }
     })
     rails.forEach((item, index) => {
-      const rail = item.rail!
+      const rail = fittingRenderParts(item).find((part) => part.kind === 'rail')!
       dummy.quaternion.identity()
       dummy.position.set(rail.center.x, rail.center.y, rail.center.z)
-      dummy.scale.set(rail.sideClearance, rail.length, item.diameter)
+      dummy.scale.set(rail.size.x, rail.size.y, rail.size.z)
       dummy.updateMatrix()
       railMesh.current?.setMatrixAt(index, dummy.matrix)
     })
