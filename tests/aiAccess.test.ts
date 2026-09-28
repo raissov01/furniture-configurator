@@ -29,6 +29,26 @@ const request = (kind: string) => new Request(`http://localhost/api/${kind}`, { 
   body: JSON.stringify(kind.includes('render') ? { image: 'data:image/png;base64,aGVsbG8=' } : { prompt: 'Шкаф' }) })
 
 describe('OpenAI маршруттарының рұқсаты', () => {
+  it('рендер body-і шектен асқанда ағынды ерте тоқтатады', async () => {
+    actor.value = { userId: 'u3', shopId: 'render-body-limit', role: 'designer' }
+    let cancelled = false
+    let pulls = 0
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1
+        if (pulls === 1) controller.enqueue(new Uint8Array(12 * 1024 * 1024 + 1))
+        else if (pulls === 2) controller.enqueue(new Uint8Array([1]))
+        else controller.close()
+      },
+      cancel() { cancelled = true },
+    })
+    const response = await routes.render!.POST(new Request('http://localhost/api/render', {
+      method: 'POST', body: stream, duplex: 'half',
+    } as RequestInit))
+    expect(response.status).toBe(413)
+    expect(cancelled).toBe(true)
+  })
+
   it.each(['render', 'generate', 'variants', 'v1-render', 'v1-generate', 'v1-variants'])('%s 401/403 қайтарады', async (kind) => {
     actor.value = null
     const denied = await routes[kind]!.POST(request(kind))
