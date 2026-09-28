@@ -19,7 +19,8 @@
  * Ол файл қазір бірнеше агенттің қолында (тапсырмадағы ескерту).
  */
 import * as React from 'react'
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
+import { countLabel } from '@/lib/countLabel'
 import { cn } from '@/lib/cn'
 import { useConfigurator } from '@/store/configurator'
 import { findTemplate, templateToCabinet } from '@/src/core/index'
@@ -260,7 +261,7 @@ export function LibraryPanel() {
             setSearch(e.target.value)
             setPage(0)
           }}
-          placeholder={`${tr('Поиск')}…`}
+          placeholder={tr('Поиск…')}
           className="w-full border border-neutral-800 bg-[var(--p100-dialog)] px-1.5 py-1 text-[11px] text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-500"
         />
       </div>
@@ -369,7 +370,7 @@ export function LibraryPanel() {
             disabled={clampedPage >= totalPages - 1}
             className="border border-neutral-800 px-1.5 py-0.5 disabled:opacity-30"
           >
-            {tr('Следующая')} →
+            {tr('Далее')} →
           </button>
         </div>
       ) : null}
@@ -394,9 +395,9 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
         : tr('Тип корпуса не определён из названия') : null
   const dims: string[] = []
   if (item.parsed.widthMm !== undefined) dims.push(`W${item.parsed.widthMm}`)
-  if (item.parsed.doorCount !== undefined) dims.push(`${item.parsed.doorCount}дв`)
-  if (item.parsed.drawerCount !== undefined) dims.push(`${item.parsed.drawerCount}ящ`)
-  if (item.parsed.hasSink) dims.push('мойка')
+  if (item.parsed.doorCount !== undefined) dims.push(countLabel(item.parsed.doorCount, 'Дверь', getLang()))
+  if (item.parsed.drawerCount !== undefined) dims.push(countLabel(item.parsed.drawerCount, 'Ящик', getLang()))
+  if (item.parsed.hasSink) dims.push(tr('Раковина'))
 
   return (
     <button
@@ -429,11 +430,11 @@ function MaterialTile({ material, selected, onSelect }: { material: Material; se
       {/* Түс/декор дерегі БАЗИСТЕ импортталмаған (basisCatalog.ts §комментарий) —
           сондықтан ойдан түс салмай, бейтарап тор + қалыңдық белгісі. */}
       <div className="flex h-16 w-full items-center justify-center border border-[var(--p100-fieldset-border)] bg-[var(--p100-dialog-content)]">
-        <span className="text-[10px] text-[var(--p100-muted)]">{material.thickness} мм</span>
+        <span className="text-[10px] text-[var(--p100-muted)]">{material.thickness} {tr('мм')}</span>
       </div>
       <div className="w-full truncate text-[10px] text-[var(--p100-text)]">{material.name}</div>
       <div className="w-full truncate text-[9px] tabular-nums text-[var(--p100-muted)]">
-        {material.pricePerSheet > 0 ? `${(material.pricePerSheet / 100).toLocaleString('ru-RU')} ₸/лист` : tr('Цена задаётся в прайсе цеха')}
+        {material.pricePerSheet > 0 ? `${(material.pricePerSheet / 100).toLocaleString('ru-RU')} ₸/${tr('Лист').toLowerCase()}` : tr('Цена задаётся в прайсе цеха')}
       </div>
       <button type="button" disabled={selected} onClick={onSelect}
         className="w-full border border-[var(--p100-fieldset-border)] px-1 py-0.5 text-[10px] disabled:opacity-50">

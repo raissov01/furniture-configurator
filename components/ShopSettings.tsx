@@ -7,7 +7,7 @@
  * экраннан келеді. Жаңа цех тіркелгенде істейтіні: бағаларын енгізу.
  */
 
-import { t as tr } from '@/lib/i18n'
+import { t as tr, tf } from '@/lib/i18n'
 import { ReferencePriceList } from './ReferencePriceList'
 import { nextCopyName } from '@/src/core/copyName'
 import { useEffect, useMemo, useState } from 'react'
@@ -49,6 +49,7 @@ import { OwnCatalogImportPanel } from './OwnCatalogImportPanel'
 import { FittingArticlePicker } from './FittingArticlePicker'
 import { FittingsCatalogPanel } from './FittingsCatalogPanel'
 import { validateBin, validateShopLogo } from '@/lib/shopBranding'
+import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import { shopEditAccess } from '@/lib/shopAccessUi'
 import type { Role } from '@/lib/permissions'
 
@@ -57,14 +58,14 @@ type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSetting
 type Tab = 'profile' | 'materials' | 'catalog' | 'bands' | 'hardware' | 'hinges' | 'rules' | 'drilling'
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'profile', label: tr('Цех') },
-  { value: 'materials', label: tr('Материалы') },
-  { value: 'catalog', label: tr('Каталог цеха') },
-  { value: 'bands', label: tr('Кромки') },
-  { value: 'hardware', label: tr('Фурнитура') },
-  { value: 'hinges', label: tr('Петли') },
-  { value: 'rules', label: tr('Правила цеха') },
-  { value: 'drilling', label: tr('Присадка') },
+  { value: 'profile', label: 'Цех' },
+  { value: 'materials', label: 'Материалы' },
+  { value: 'catalog', label: 'Каталог цеха' },
+  { value: 'bands', label: 'Кромки' },
+  { value: 'hardware', label: 'Фурнитура' },
+  { value: 'hinges', label: 'Петли' },
+  { value: 'rules', label: 'Правила цеха' },
+  { value: 'drilling', label: 'Присадка' },
 ]
 
 const text =
@@ -89,14 +90,15 @@ function ShopBinField({ value, onChange }: { value: string; onChange: (value: st
 
 function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => void }) {
   const [error, setError] = useState<string | null>(null)
+  const [filename, setFilename] = useState<string | null>(null)
   return <Field label={tr('Логотип')}>
-    <input type="file" accept="image/png,image/jpeg" className={`${text} ${error ? 'border-red-600' : ''}`}
-      aria-invalid={Boolean(error)} onChange={(event) => {
+    <LocalizedFileChooser accept="image/png,image/jpeg" selectedName={filename} onChange={(event) => {
         const file = event.target.files?.[0]
         if (!file) return
         const problem = validateShopLogo(file)
         setError(problem)
         if (problem) return
+        setFilename(file.name)
         const reader = new FileReader()
         reader.onload = () => {
           if (typeof reader.result === 'string') onChange(reader.result)
@@ -106,7 +108,7 @@ function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => 
         reader.readAsDataURL(file)
       }} />
     {error ? <span className="text-xs text-red-700" role="alert">{tr(error)}</span> : null}
-    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null) }}>{tr('Удалить логотип')}</button>
+    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null); setFilename(null) }}>{tr('Удалить логотип')}</button>
   </Field>
 }
 
@@ -254,7 +256,7 @@ export function ShopSettings() {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="mr-2 text-sm font-semibold">{tr('Настройки цеха')}</h2>
           {TABS.map((t) => (
-            <Button key={t.value} active={tab === t.value} onClick={() => setTab(t.value)}>{t.label}</Button>
+            <Button key={t.value} active={tab === t.value} onClick={() => setTab(t.value)}>{tr(t.label)}</Button>
           ))}
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
@@ -300,7 +302,7 @@ export function ShopSettings() {
               <ShopLogoField onChange={(logoDataUrl) => editShop({ logoDataUrl })} />
             </div>
             <p className="text-[11px] text-neutral-400">
-              Профиль хранится в этом браузере. Когда появятся аккаунты, он переедет на сервер как есть.
+              {tr('Профиль хранится в этом браузере. Когда появятся аккаунты, он переедет на сервер как есть.')}
             </p>
             <PriceListManager shop={shop} />
             <PriceImportPanel shop={shop} />
@@ -431,9 +433,7 @@ export function ShopSettings() {
               </div>
             ) : null}
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              K — расстояние от центра чашки до края фасада. Оно зависит от бренда и от
-              накладки, поэтому <strong>{tr('сверьте его со своим шаблоном')}</strong>: 22 мм здесь —
-              самое частое значение, а не гарантия. Присадка считается по этому числу.
+              {tr('K — расстояние от центра чашки до края фасада. Оно зависит от бренда и накладки; сверьте его со своим шаблоном. 22 мм — частое значение, не гарантия. Присадка считается по этому числу.')}
             </p>
             <PriceTable
               head={['Система', 'K, мм', 'От края фасада, мм', tr('Артикул производителя')]}
@@ -488,9 +488,7 @@ export function ShopSettings() {
 
             <SectionTitle>{tr('Услуги цеха')}</SectionTitle>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Каждую услугу считайте так, как считаете её у себя: один цех берёт за лист,
-              другой за метр кромки, третий за отверстие. Услуга с нулевой ставкой в смету
-              не попадает и не считается незаполненной.
+              {tr('Считайте услуги по правилам своего цеха: за лист, метр кромки или отверстие. Услуга с нулевой ставкой не попадает в смету и не считается незаполненной.')}
             </p>
             <div className="max-h-[40vh] overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
               <table className="w-full text-xs">
@@ -584,13 +582,11 @@ export function ShopSettings() {
                 />
               </Field>
               <Button onClick={() => editShop({ maxShelfSpan: null })} disabled={shop.maxShelfSpan === null}>
-                Выключить
+                {tr('Выключить')}
               </Button>
             </div>
             <p className="max-w-2xl text-[11px] leading-snug text-neutral-400">
-              Значения по умолчанию здесь нет намеренно. Предел зависит от материала, толщины и того,
-              что кладут на полку — один цех ставит 800 мм, другой 900. Пока поле пустое, предупреждение
-              не показывается вовсе.
+              {tr('Предел полки зависит от материала, толщины и нагрузки. Пока поле пустое, предупреждение не показывается.')}
             </p>
 
             <SectionTitle>{tr('Пределы габарита')}</SectionTitle>
@@ -615,9 +611,7 @@ export function ShopSettings() {
               ))}
             </div>
             <p className="max-w-2xl text-[11px] leading-snug text-neutral-400">
-              0 — предела нет. Это предупреждение, а не запрет: габарит всё равно можно ввести,
-              цех вправе сделать корпус крупнее и собрать его из двух. Умолчаний здесь тоже нет —
-              предел задаёт станок, лист и машина, которой везут заказ.
+              {tr('0 — предела нет. Это предупреждение, а не запрет: предел задают станок, лист и машина для доставки.')}
             </p>
           </div>
         ) : null}
@@ -642,8 +636,7 @@ function PriceListManager({ shop }: { shop: ShopProfile }) {
     <div className="space-y-2">
       <SectionTitle>{tr('Прайс-листы')}</SectionTitle>
       <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
-        Материалы, размеры и правила цеха общие для всех прайсов. В новом прайсе цены равны нулю;
-        материал, добавленный позже, в старом прайсе тоже получает нулевую цену.
+        {tr('Материалы, размеры и правила цеха общие для всех прайсов. В новом прайсе цены равны нулю; материал, добавленный позже, в старом прайсе тоже получает нулевую цену.')}
       </p>
       <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
         <Select
@@ -707,8 +700,7 @@ function HandleCatalogue({
     <div className="space-y-2">
       <SectionTitle>{tr('Ручки')} ({handles.length})</SectionTitle>
       <p className="max-w-2xl text-[11px] leading-snug text-neutral-400">
-        Артикулы и цены у каждого цеха свои, поэтому в программе лежат только виды.
-        Добавьте свои позиции — они попадут и в выбор фасада, и в смету.
+        {tr('Артикулы и цены у каждого цеха свои. Добавьте свои позиции — они попадут в выбор фасада и смету.')}
       </p>
       <ul className="space-y-1">
         {handles.map((h) => (
@@ -790,8 +782,7 @@ function AddMaterial() {
     return (
       <div className="flex items-center justify-between">
         <p className="text-[11px] text-neutral-500">
-          Каталог ваш: добавьте декоры, с которыми реально работаете —
-          в библиотеке {DECOR_LIBRARY.length} позиций.
+          {tf('Каталог ваш: добавьте свои декоры. В библиотеке {n} позиций.', { n: DECOR_LIBRARY.length })}
         </p>
         <Button onClick={() => setOpen(true)}>{tr('+ материал')}</Button>
       </div>
@@ -916,7 +907,7 @@ function AddMaterial() {
         </div>
       </div>
       <p className="text-[11px] text-neutral-400">
-        Цена всегда начинается с нуля — её задаёте вы.
+        {tr('Цена всегда начинается с нуля — её задаёте вы.')}
       </p>
     </div>
   )
@@ -934,7 +925,7 @@ function MaterialActions({ id }: { id: string }) {
       <Button
         onClick={() => removeMaterial(id)}
         disabled={used}
-        title={used ? 'Используется в проекте' : 'Удалить из каталога'}
+        title={used ? tr('Используется в проекте') : tr('Удалить из каталога')}
       >
         ✕
       </Button>

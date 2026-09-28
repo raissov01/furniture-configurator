@@ -5,7 +5,7 @@ const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.u
 
 describe('390 × 844 workspace flow', () => {
   it('reserves 40 percent of the screen for the scene and docks properties at the bottom', () => {
-    expect(source).toMatch(/grid[^"\n]*grid-rows-\[minmax\(0,1fr\)_30dvh\][^"\n]*overflow-hidden/)
+    expect(source).toMatch(/grid[^"\n]*grid-rows-\[max-content_max-content\][^"\n]*overflow-y-auto/)
     expect(source).toMatch(/<main className="[^"\n]*isolate[^"\n]*min-h-\[40dvh\][^"\n]*overflow-hidden/)
     expect(source).toMatch(/<aside className="[^"\n]*h-\[30dvh\][^"\n]*lg:hidden/)
     expect(source).toContain('data-testid="mobile-tree-dock"')

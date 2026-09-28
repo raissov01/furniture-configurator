@@ -4,6 +4,7 @@ type Translations = { kk: string; en: string; uz: string }
 
 /** Public-site copy lives together so every visible statement has four versions. */
 export const siteTranslations: Record<string, Translations> = {
+  'Меню': { kk: 'Мәзір', en: 'Menu', uz: 'Menyu' },
   'Для мебельных цехов · ЛДСП': { kk: 'Жиһаз цехтарына · ЛДСП', en: 'For furniture workshops · particleboard', uz: 'Mebel sexlari uchun · LDSP' },
   'Корпус, раскрой и цена — из одной модели': { kk: 'Корпус, раскрой және баға — бір модельден', en: 'Cabinet, cut plan and price from one model', uz: 'Korpus, bichish va narx — bitta modeldan' },
   'Задаёте габарит — получаете деталировку с колонками «готовый» и «рез», карту раскроя на печать и коммерческое предложение. На ваших материалах, по вашим ценам и вашим правилам сборки.': { kk: 'Өлшемдерді енгізіңіз — дайын және кесу өлшемдері бар деталировка, басып шығарылатын раскрой картасы және коммерциялық ұсыныс аласыз. Өз материалдарыңыз, бағаларыңыз және құрастыру ережелеріңіз бойынша.', en: 'Enter the dimensions to get a cut list with finished and saw sizes, a printable cut plan and a quote. Based on your materials, prices and assembly rules.', uz: 'O‘lchamlarni kiriting — tayyor va kesish o‘lchamlari bilan detallar ro‘yxati, chop etiladigan bichish rejasi va tijorat taklifini oling. O‘z materiallaringiz, narxlaringiz va yig‘ish qoidalaringiz asosida.' },
@@ -123,6 +124,15 @@ export const siteTranslations: Record<string, Translations> = {
   'Полка': { kk: 'Сөре', en: 'Shelf', uz: 'Tokcha' },
   'Задняя стенка': { kk: 'Артқы қабырға', en: 'Back panel', uz: 'Orqa panel' },
   'Фасад': { kk: 'Фасад', en: 'Front', uz: 'Fasad' },
+  // Дизайн өтуі 0928: мобайл мәзір, смета үстемесі, раскрой парағының сандары.
+  'мм': { kk: 'мм', en: 'mm', uz: 'mm' },
+  'Разделы сайта': { kk: 'Сайт бөлімдері', en: 'Site sections', uz: 'Sayt bo‘limlari' },
+  'Закрыть': { kk: 'Жабу', en: 'Close', uz: 'Yopish' },
+  'Наценка {percent}%': { kk: 'Үстеме {percent}%', en: 'Markup {percent}%', uz: 'Ustama {percent}%' },
+  'Коэффициент': { kk: 'Коэффициент', en: 'Coefficient', uz: 'Koeffitsient' },
+  'Монтаж': { kk: 'Монтаж', en: 'Installation', uz: 'O‘rnatish' },
+  'резов': { kk: 'рез', en: 'cuts', uz: 'kesim' },
+  'КИМ': { kk: 'КИМ', en: 'yield', uz: 'foydali chiqim' },
 }
 
 export function siteTranslate(text: string, lang: Lang): string {

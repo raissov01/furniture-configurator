@@ -5,7 +5,8 @@
  * ағынының бірінші қадамы.
  */
 
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
+import { countLabel } from '@/lib/countLabel'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEED_SETS, SEED_TEMPLATES, STANDARD_NOMENCLATURE_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'
 import { filterTemplateCatalog } from '@/src/core/templateCatalog'
@@ -200,7 +201,7 @@ export function TemplateGallery() {
               >
                 <div className="text-xs font-medium">{tr(c.label)}</div>
                 <div className="tabular-nums text-[11px] text-neutral-500">
-                  {counts.get(c.value) ?? 0} {tr('шаблонов')}
+                  {countLabel(counts.get(c.value) ?? 0, 'Шаблон', getLang())}
                 </div>
               </button>
             ))}
@@ -349,11 +350,11 @@ export function TemplateGallery() {
                       />
                     ))}
                   </div>
-                  <div className="text-xs font-medium">{preset.name}</div>
+                  <div className="text-xs font-medium">{tr(preset.name)}</div>
                   <div className="tabular-nums text-[11px] text-neutral-500">
-                    корпусов: {cabinets.length} · комната от {preset.room.width}×{preset.room.depth}
+                    {countLabel(cabinets.length, 'Корпус', getLang())} · {tr('Комната от')} {preset.room.width} (W) × {preset.room.depth} (D)
                   </div>
-                  <div className="text-[11px] leading-snug text-neutral-400">{preset.description}</div>
+                  <div className="text-[11px] leading-snug text-neutral-400">{tr(preset.description)}</div>
                 </button>
               )
             })}

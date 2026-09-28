@@ -36,7 +36,7 @@ import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
 import { assertUniqueToolbarRows, compactToolbarRows } from '@/lib/classicToolbar'
-import { classicToolStatus } from '@/lib/classicStatus'
+import { classicToolStatus, selectedStatusName } from '@/lib/classicStatus'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
 import { AppearanceSwitch } from '@/components/AppearanceSwitch'
@@ -453,6 +453,7 @@ export function Workspace() {
   // id-лер корпустың атауымен префиксталады: бір жобадағы екі шкафта да
   // `side-left` бар, ал экспортта олар бөлек файл болуы керек.
   const projectPanels = production.panels
+  const selectedPart = projectPanels.find((panel) => panel.id === selected)
   const pdfNode = production.scene.nodes.find((node) => node.nodeId === activeId && findNode(root, node.nodeId)?.kind === 'cabinet')
     ?? production.scene.nodes.find((node) => findNode(root, node.nodeId)?.kind === 'cabinet')
   const pdfCabinet = pdfNode ? cabinets.find((entry) => entry.id === pdfNode.nodeId) : undefined
@@ -1114,15 +1115,11 @@ export function Workspace() {
         жақта таңдалған модульдің қасиеттері мен әрекеттері. Бұрын: сол жақта
         ұзын форма, оң жақта 460 px деталировка — 3D тарылып, тақта екі қатар.
       */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_30dvh] overflow-hidden lg:grid-cols-[28px_minmax(0,1fr)_340px] lg:grid-rows-none">
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[max-content_max-content] overflow-y-auto overscroll-contain lg:grid-cols-[28px_minmax(0,1fr)_340px] lg:grid-rows-none lg:overflow-hidden">
         {/*
           СОЛ ЖАҚТАҒЫ ТАР ТІК ҚҰРАЛДАР ЖОЛАҒЫ (docs/pro100/ui-design.md, §3).
-          Бізде PRO100-дегідей БӨЛЕК режим жүйесі (таңдау/жылжыту курсоры)
-          ЖОҚ — таңдау сахнада басу арқылы, ал орынды ауыстыру сахнадағы
-          сүйреумен өзі істелінеді (`Scene.tsx`-тегі қабырғаға сүйреу).
-          Сондықтан бұл жолақ жаңа режим ОЙЛАП ТАППАЙДЫ, тек бар екеуін
-          көрсетеді: «Выбор» — нақты әрекет (Escape эквиваленті), «Сместить»
-          — үнсіз ескерту (сахнада тартып апарыңыз), батырма емес.
+          Бұл жолақ бар әрекеттерге жылдам жол ашады; таңдау сахнада басу,
+          жылжыту сахнада сүйреу арқылы орындалады.
           Телефонда жасырын: PRO100 макеті десктопқа арналған.
         */}
         <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800" data-testid="classic-side-tools">
@@ -1151,16 +1148,16 @@ export function Workspace() {
           {/* 3D-де таңдалған деталь жайлы ақпарат сахна өлшемін өзгертпейді. */}
           {selected ? (() => {
             // Іздеу ЖОБА тізімінен: бір жобадағы екі шкафтың детальі де осында.
-            const part = projectPanels.find((p) => p.id === selected)
+            const part = selectedPart
             if (!part) return null
             return (
               <div data-testid="selected-info-overlay" className="p100-selection-bar pointer-events-auto absolute inset-x-2 bottom-2 z-20 flex max-h-[45%] flex-wrap items-center gap-2 overflow-y-auto px-3 py-1.5 text-xs">
                 <b>{panelDisplayLabel(part.label)}</b>
                 <span className="p100-muted tabular-nums">
-                  {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
+                  {tr('Готовый · клиент')}: {part.finishedLength} (L) × {part.finishedWidth} (W)
                 </span>
                 <span className="p100-cut tabular-nums">
-                  {tr('Рез · цех')}: {part.cutLength}×{part.cutWidth}
+                  {tr('Рез · цех')}: {part.cutLength} (L) × {part.cutWidth} (W)
                 </span>
                 <span className="p100-muted tabular-nums">
                   {part.drilling.length} {tr('отв.')}
@@ -1338,8 +1335,12 @@ export function Workspace() {
         </aside>
       </div>
       <footer className="p100-status hidden lg:flex" role="status" data-testid="p100-status">
-        <span>{classicToolStatus(hoveredToolLabel, selected, activeNode?.name, tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
-        {selected && activeNode && <span className="ml-auto tabular-nums">
+        <span>{classicToolStatus(hoveredToolLabel, selected,
+          selectedStatusName(selected, activeNode, selectedPart, tr), tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
+        {selected && selectedPart ? <span className="ml-auto tabular-nums">
+          {tr('Готовый · клиент')}: {selectedPart.finishedLength}×{selectedPart.finishedWidth} мм
+          {' · '}{tr('Рез · цех')}: {selectedPart.cutLength}×{selectedPart.cutWidth} мм
+        </span> : selected && activeNode && <span className="ml-auto tabular-nums">
           {tr('Положение')}: X {activeNode.transform.pos.x} · Y {activeNode.transform.pos.y} · Z {activeNode.transform.pos.z} мм
           {' · '}{tr('Поворот')}: Y {activeNode.transform.rot.y}°
           {' · '}{tr('Размеры')}: {activeNode.kind === 'cabinet'

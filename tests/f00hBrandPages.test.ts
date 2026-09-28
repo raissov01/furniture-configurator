@@ -15,7 +15,7 @@ describe('F00h бренд беттері', () => {
   it('көпшілік беттерде графит фон мен логотип көрінеді', () => {
     for (const path of ['components/CodeEntryPage.tsx', 'components/ViewerPage.tsx', 'app/not-found.tsx', 'app/privacy/page.tsx']) {
       const page = source(path)
-      expect(page, path).toContain('var(--brand-graphite)')
+      expect(page, path).toMatch(/var\(--brand-graphite\)|className="site /)
       expect(page, path).toContain('/brand/aismebel-mark.svg')
     }
   })

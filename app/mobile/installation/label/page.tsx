@@ -11,12 +11,13 @@ export default function RepairLabelPage() {
   const [task, setTask] = useState<InstallationTask | null>(null)
   const [repairId, setRepairId] = useState('')
   const [error, setError] = useState('')
+  const [missingParams, setMissingParams] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const taskId = params.get('task') ?? ''
     const selectedRepair = params.get('repair') ?? ''
-    if (!taskId || !selectedRepair) { setError(t('Укажите монтаж и ремонт для бирки')); return }
+    if (!taskId || !selectedRepair) { setMissingParams(true); return }
     setRepairId(selectedRepair)
     void fetch(`/api/installation/${encodeURIComponent(taskId)}`, { credentials: 'same-origin', cache: 'no-store' })
       .then(async (response) => {
@@ -45,6 +46,7 @@ export default function RepairLabelPage() {
   return <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-white p-4 text-black">
     <style>{'@media print { .no-print { display: none !important; } main { max-width: none !important; padding: 0 !important; } }'}</style>
     <Link className="no-print block min-h-11 border p-2" href="/mobile/installation">{t('Назад')}</Link>
+    {missingParams && <p className="border p-3 text-sm">{t('Укажите монтаж и ремонт для бирки')}</p>}
     {error && <p role="alert" className="border border-red-700 p-3">{error}</p>}
     {repair && qr && <section className="mx-auto w-fit max-w-full space-y-3 border p-4 text-center">
       <h1 className="text-lg font-semibold">{t('Новая бирка после ремонта')}</h1>

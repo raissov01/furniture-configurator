@@ -20,6 +20,7 @@ import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
 import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
+import { visibleErrors } from '@/lib/validationVisibility'
 import { useModalLayer } from '@/lib/useModalLayer'
 import { bindCloudProject } from '@/lib/cloudProjectBinding'
 import { installationCreateAction } from '@/lib/installationHandoff'
@@ -69,6 +70,8 @@ export function AccountPanel() {
   const [resetOpen, setResetOpen] = useState(false)
   const [resetTouched, setResetTouched] = useState(false)
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
+  const [formTouched, setFormTouched] = useState<Record<string, boolean>>({})
+  const [formSubmitted, setFormSubmitted] = useState(false)
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [installations, setInstallations] = useState<InstallationRow[]>([])
   const [org, setOrg] = useState<CloudOrg>(() => parseCloudOrg(null))
@@ -110,6 +113,7 @@ export function AccountPanel() {
   const [cloudRetry, setCloudRetry] = useState(false)
   const [busy, setBusy] = useState(false)
   const formErrors = accountFormErrors(mode, form, Boolean(invite))
+  const visibleFormErrors = visibleErrors(formErrors, formTouched, formSubmitted)
   const formReady = canSubmitAccount(mode, form, Boolean(invite)) && (!invite || mode === 'login' || inviteShopName !== null)
   const inviteShop = inviteShopDisplay(invite, inviteShopName)
 
@@ -344,6 +348,7 @@ export function AccountPanel() {
   }, [account, shop, profileReady])
 
   const submit = async () => {
+    setFormSubmitted(true)
     if (busy || !formReady) return
     setBusy(true)
     setError(null)
@@ -363,6 +368,8 @@ export function AccountPanel() {
       setAccount(data.account)
       window.dispatchEvent(new Event(LIBRARY_AUTH_CHANGED_EVENT))
       setForm({ email: '', password: '', shopName: '' })
+      setFormTouched({})
+      setFormSubmitted(false)
       /*
        * Үшеуі ҚАТАР жүреді. Бұрын кезекпен күтетін, ал әрқайсысы бөлек
        * баруы серверге дейінгі кідірісті ҮШ ЕСЕЛЕЙТІН: жақын тұрған дев
@@ -564,7 +571,7 @@ export function AccountPanel() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
-          <h2 className="text-sm font-semibold">{account ? account.shopName : 'Вход в аккаунт'}</h2>
+          <h2 className="text-sm font-semibold">{account ? tr(account.shopName) : tr('Вход в аккаунт')}</h2>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)} disabled={busy}>{tr('Закрыть')}</Button>
           </div>
@@ -849,15 +856,15 @@ export function AccountPanel() {
                   forgetCloud()
                 })()}
               >
-                Выйти
+                {tr('Выйти')}
               </Button>
             </div>
           </div>
         ) : (
           <div className="space-y-3">
             <div className="flex gap-1">
-              <Button active={!resetOpen && mode === 'login'} onClick={() => { setMode('login'); setResetOpen(false) }}>{tr('Вход')}</Button>
-              <Button active={!resetOpen && mode === 'register'} onClick={() => { setMode('register'); setResetOpen(false) }}>{tr('Регистрация')}</Button>
+              <Button active={!resetOpen && mode === 'login'} onClick={() => { setMode('login'); setResetOpen(false); setFormTouched({}); setFormSubmitted(false) }}>{tr('Вход')}</Button>
+              <Button active={!resetOpen && mode === 'register'} onClick={() => { setMode('register'); setResetOpen(false); setFormTouched({}); setFormSubmitted(false) }}>{tr('Регистрация')}</Button>
             </div>
 
             {resetOpen ? <>
@@ -874,10 +881,11 @@ export function AccountPanel() {
 
             {mode === 'register' && inviteShop.editable ? (
               <Field label={tr('Название цеха')} hint={tr('Пустое название станет «Мой цех»; до 100 символов')}>
-                <input className={`${input} ${formErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
-                  aria-invalid={Boolean(formErrors.shopName)}
-                  onChange={(e) => setForm({ ...form, shopName: e.target.value })} />
-                {formErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.shopName)}</span> : null}
+                <input className={`${input} ${visibleFormErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
+                  aria-invalid={Boolean(visibleFormErrors.shopName)}
+                  onBlur={() => setFormTouched((current) => ({ ...current, shopName: true }))}
+                  onChange={(e) => { setFormTouched((current) => ({ ...current, shopName: true })); setForm({ ...form, shopName: e.target.value }) }} />
+                {visibleFormErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.shopName)}</span> : null}
               </Field>
             ) : mode === 'register' ? (
               <Field label={tr('Название цеха')} hint={tr('Цех по приглашению — изменить нельзя')}>
@@ -886,19 +894,21 @@ export function AccountPanel() {
             ) : null}
 
             <Field label={tr('Почта')}>
-              <input className={`${input} ${formErrors.email ? 'border-red-500 dark:border-red-500' : ''}`} type="email" autoComplete="email" value={form.email}
-                aria-invalid={Boolean(formErrors.email)}
-                onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              {formErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.email)}</span> : null}
+              <input className={`${input} ${visibleFormErrors.email ? 'border-red-500 dark:border-red-500' : ''}`} type="email" autoComplete="email" value={form.email}
+                aria-invalid={Boolean(visibleFormErrors.email)}
+                onBlur={() => setFormTouched((current) => ({ ...current, email: true }))}
+                onChange={(e) => { setFormTouched((current) => ({ ...current, email: true })); setForm({ ...form, email: e.target.value }) }} />
+              {visibleFormErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.email)}</span> : null}
             </Field>
-            <Field label={tr('Пароль')} hint={mode === 'register' ? 'от 8 символов' : undefined}>
-              <input className={`${input} ${formErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
-                aria-invalid={Boolean(formErrors.password)}
+            <Field label={tr('Пароль')} hint={mode === 'register' ? tr('от 8 символов') : undefined}>
+              <input className={`${input} ${visibleFormErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
+                aria-invalid={Boolean(visibleFormErrors.password)}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 value={form.password}
                 onKeyDown={(e) => { if (e.key === 'Enter') void submit() }}
-                onChange={(e) => setForm({ ...form, password: e.target.value })} />
-              {formErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.password)}</span> : null}
+                onBlur={() => setFormTouched((current) => ({ ...current, password: true }))}
+                onChange={(e) => { setFormTouched((current) => ({ ...current, password: true })); setForm({ ...form, password: e.target.value }) }} />
+              {visibleFormErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.password)}</span> : null}
             </Field>
 
             <Button onClick={() => void submit()} disabled={busy || !formReady} active>
@@ -907,8 +917,7 @@ export function AccountPanel() {
             {mode === 'login' ? <button type="button" className="block text-sm underline" onClick={() => { setResetOpen(true); setError(null); setNotice(null) }}>{tr('Забыли пароль?')}</button> : null}
 
             <p className="text-[11px] leading-snug text-neutral-400">
-              Без аккаунта конфигуратор работает полностью — данные лежат в этом браузере.
-              Аккаунт нужен, чтобы профиль цеха и проекты были доступны с другого компьютера.
+              {tr('Без аккаунта конфигуратор работает полностью — данные лежат в этом браузере. Аккаунт нужен, чтобы профиль цеха и проекты были доступны с другого компьютера.')}
             </p>
             </>}
           </div>

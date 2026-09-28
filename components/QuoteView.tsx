@@ -140,7 +140,7 @@ export function QuoteView({
       onClick={() => setOpen(false)}
     >
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Смета по проекту')}
-        className="min-w-0 w-full max-w-5xl rounded-xl border border-neutral-200 bg-white p-2 sm:p-4 dark:border-neutral-700 dark:bg-neutral-900"
+        className="min-w-0 w-full max-w-5xl max-h-[80dvh] overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 sm:p-4 dark:border-neutral-700 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -728,9 +728,9 @@ function PriceTable({ price, shopName, overrides, onChange }: {
           паритеті). КП-да (quotePdf.ts) `salePriceOverride` бар болса
           себестоимость/наценка КӨРІНБЕЙДІ — тек түпкі баға (quoteTotalsView).
         */}
-        <Row label={tr('Алдын ала сату бағасы')} value={formatTenge(price.calculatedTotal)} />
+        <Row label={tr('Расчётная цена продажи')} value={formatTenge(price.calculatedTotal)} />
         {price.salePriceOverride !== undefined ? (
-          <Row label={tr('Сату бағасы (қолмен)')} value={formatTengeExact(price.salePriceOverride)} />
+          <Row label={tr('Цена продажи (вручную)')} value={formatTengeExact(price.salePriceOverride)} />
         ) : null}
         {price.salePriceScaling && <p className="text-[11px] text-neutral-500">
           {tr('Ручная цена пересчитана по площади ЛДСП')}: {price.salePriceScaling.baseAreaMm2} → {price.salePriceScaling.currentAreaMm2} мм²
