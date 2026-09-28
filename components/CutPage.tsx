@@ -40,6 +40,7 @@ import { CLOUD_PROJECT_BINDING_KEY, currentCloudProjectId } from '@/lib/cloudPro
 import { cutExportAllowed, safeCutPlan } from '@/lib/safeCutPlan'
 import type { LabelPage } from '@/src/core/export/labelLayout'
 import { panelDisplayLabel } from '@/lib/panelDisplay'
+import { Dimension, Sheet } from '@/components/brand'
 
 /**
  * ⚠ Тізім ФУНКЦИЯ, тұрақты емес. Модуль деңгейіндегі `tr()` тіл сақтаудан
@@ -552,7 +553,7 @@ function SheetCard({
     if (display.step >= display.total) setPlaying(false)
   }, [display.step, display.total])
   return (
-    <figure className="w-full max-w-[520px] min-w-0 space-y-1">
+    <Sheet classic className="w-full max-w-[520px] min-w-0 space-y-1 p-2">
       <div className="max-w-full overflow-x-auto" aria-label={tr('Карта раскроя')}>
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
@@ -637,13 +638,14 @@ function SheetCard({
         <span className="font-medium text-neutral-700 dark:text-neutral-300">
           {tr('Лист')} {sheet.index}
         </span>{' '}
-        · {sheet.sheetWidth}×{sheet.sheetHeight} · {tr('КИМ')}{' '}
+        · {tr('КИМ')}{' '}
         <span className="tabular-nums">{plan.stats.kim.toFixed(1)}%</span> · {tr('резов')}{' '}
         <span className="tabular-nums">{plan.stats.cutCount}</span> ({metres(plan.stats.cutLength)} {tr('м')})
         · {tr('поворотов')} <span className="tabular-nums">{plan.stats.turns}</span>
         {sheet.offcuts.length > 0 ? ` · ${tr('деловой отход')}: ${sheet.offcuts.length}` : ''}
       </figcaption>
-    </figure>
+      <Dimension label={tr('Лист')} value={`${sheet.sheetHeight} (H) × ${sheet.sheetWidth} (W)`} className="py-1 text-neutral-600" />
+    </Sheet>
   )
 }
 

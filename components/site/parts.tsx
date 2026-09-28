@@ -6,18 +6,8 @@
  * (парақтың ені, пропил, кромка) — оқыған адам цехтың тілін бірден таниды.
  */
 
-import Link from 'next/link'
 import type { ReactNode } from 'react'
-
-export function Dimension({ value, label }: { value: string; label?: string }) {
-  return (
-    <div className="dimline py-6 text-xs tracking-[0.06em]" style={{ fontFamily: 'var(--font-mono)' }}>
-      <span>{label ?? ''}</span>
-      <span className="dimline-track" />
-      <span>{value}</span>
-    </div>
-  )
-}
+export { Cta, Dimension } from '@/components/brand'
 
 export function H2({ children }: { children: ReactNode }) {
   return (
@@ -38,20 +28,6 @@ export function Section({
     <section id={id} className={`mx-auto w-full max-w-6xl scroll-mt-20 px-5 sm:px-8 ${className}`}>
       {children}
     </section>
-  )
-}
-
-export function Cta({
-  href, children, tone = 'solid',
-}: { href: string; children: ReactNode; tone?: 'solid' | 'ghost' }) {
-  // Күйлер (hover / pressed / focus) — `globals.css`-тегі .site-cta / .site-ghost.
-  return (
-    <Link
-      href={href}
-      className={`${tone === 'solid' ? 'site-cta' : 'site-ghost'} inline-flex min-h-11 items-center gap-2 border px-5 py-3 text-sm`}
-    >
-      {children}
-    </Link>
   )
 }
 

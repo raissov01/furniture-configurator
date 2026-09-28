@@ -17,6 +17,7 @@ import { sheetCutPlan, KERF } from '@/src/core/index'
 import type { CutLine, NestedPart, NestedSheet } from '@/src/core/index'
 import { useSiteText } from '@/components/site/SiteLanguage'
 import { motionAllowed, observeOnce } from '@/components/site/motion'
+import { Sheet } from '@/components/brand'
 
 /** Деталь қай рездің соңында толық босайды: оның шекарасына тиетін ең соңғы рез. */
 export function freedAfter(part: NestedPart, cuts: readonly CutLine[], kerf = KERF): number {
@@ -120,7 +121,7 @@ export function SheetFigure({
 
   const kim = plan.stats.kim.toFixed(1)
   return (
-    <figure ref={figureRef} className="sheet p-3">
+    <Sheet ref={figureRef} className="p-3">
       <svg
         viewBox={`-30 -30 ${sheet.sheetWidth + 60} ${sheet.sheetHeight + 60}`}
         className="w-full"
@@ -194,6 +195,6 @@ export function SheetFigure({
           {' '}· {t('КИМ')} {kim}%
         </span>
       </figcaption>
-    </figure>
+    </Sheet>
   )
 }

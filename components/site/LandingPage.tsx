@@ -17,7 +17,8 @@ import { TARIFFS } from '@/lib/site'
 import { SiteHeader } from '@/components/site/SiteHeader'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { SheetFigure } from '@/components/site/SheetFigure'
-import { Cta, Dimension, H2, Section, Titled } from '@/components/site/parts'
+import { H2, Section, Titled } from '@/components/site/parts'
+import { Cta, Dimension, Sheet } from '@/components/brand'
 import { RevealList } from '@/components/site/motion'
 import { DetailTable } from '@/components/site/DetailTable'
 
@@ -129,8 +130,7 @@ function LandingContent() {
             <DetailTable rows={demoRows} />
 
             <div className="grid gap-6">
-              <figure className="sheet p-4">
-                <figcaption className="mb-3 text-xs" style={{ color: 'var(--ink-soft)' }}>{tr('Смета')}</figcaption>
+              <Sheet className="p-4" caption={tr('Смета')}>
                 <dl className="space-y-1.5 text-sm">
                   {/* Жолдар итогқа ДӘЛ қосылуы керек: беттің тезисі — «сандарды ойдан шығармаймыз». */}
                   {([
@@ -158,17 +158,16 @@ function LandingContent() {
                 <p className="mt-3 text-xs" style={{ color: 'var(--ink-soft)' }}>
                   {tr('Цены здесь — пример. Материал считается по числу листов, а не по площади: цех покупает целый лист, а остаток оплачивает сам.')}
                 </p>
-              </figure>
+              </Sheet>
 
-              <figure className="sheet p-4">
-                <figcaption className="mb-3 text-xs" style={{ color: 'var(--ink-soft)' }}>{tr('Файлы на станок')}</figcaption>
+              <Sheet className="p-4" caption={tr('Файлы на станок')}>
                 <ul className="space-y-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
                   <li><b style={{ color: 'var(--ink)' }}>{tr('PDF карты раскроя')}</b> {tr('— по листу на страницу, с подписями деталей.')}</li>
                   <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по листу')}</b> {tr('— лист, область реза, детали и отход на разных слоях.')}</li>
                   <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по детали')}</b> {tr('— присадка отдельным слоем на каждый диаметр.')}</li>
                   <li><b style={{ color: 'var(--ink)' }}>{tr('XLSX и CSV')}</b> {tr('— деталировка в вашей таблице.')}</li>
                 </ul>
-              </figure>
+              </Sheet>
             </div>
           </div>
         </Section>
