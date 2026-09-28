@@ -690,6 +690,7 @@ export const uz: Record<string, string> = {
   'Возврат заменяет текущий проект целиком. Ctrl+Z вернёт обратно.':
     'Qaytarish joriy loyihani butunlay almashtiradi. Ctrl+Z orqaga qaytaradi.',
   'Горячие клавиши': 'Tezkor tugmalar',
+  'Дополнительные инструменты': 'Qo‘shimcha asboblar',
   'Вид: фас': 'Ko\'rinish: old',
   'Вид: 3/4': 'Ko\'rinish: 3/4',
   'Вид: внутри': 'Ko\'rinish: ichkaridan',

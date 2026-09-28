@@ -37,6 +37,7 @@ import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
 import { assertUniqueToolbarRows, compactToolbarRows } from '@/lib/classicToolbar'
+import { mobileViewLabel } from '@/lib/mobileViewTabs'
 import { classicToolStatus, selectedStatusName } from '@/lib/classicStatus'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
@@ -843,7 +844,7 @@ export function Workspace() {
             <MenuItem onClick={requestReset}>{tr('Сброс')}</MenuItem>
           </Menu>
           <div data-testid="mobile-more-tools" className="sm:hidden">
-            <Menu label="⋯" title={tr('Дополнительные инструменты')} align="right">
+            <Menu label="⋯" title={tr('Дополнительные инструменты')} ariaLabel={tr('Дополнительные инструменты')} align="right">
               <MenuItem onClick={() => setHelpOpen(true)}>{tr('Горячие клавиши')}</MenuItem>
               <MenuItem onClick={undo} disabled={!canUndo}>{tr('Отменить')}</MenuItem>
               <MenuItem onClick={redo} disabled={!canRedo}>{tr('Повторить')}</MenuItem>
@@ -948,9 +949,9 @@ export function Workspace() {
 
       {/* 390 px экранда canvas-тан бөлек тұратын тұрақты қасиет батырмасы. */}
       {(activeBoard || activeSolid || cabinet) && <div data-testid="mobile-properties-trigger"
-        className="relative z-30 flex shrink-0 items-center justify-between gap-1 border-b border-neutral-200 bg-white px-2 py-1 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
-        <span className="min-w-0 truncate text-xs font-medium" title={activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}>{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
-        {cabinet && <div className="flex shrink-0 gap-1">
+        className="relative z-30 flex shrink-0 flex-col gap-1 border-b border-neutral-200 bg-white px-2 py-1 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
+        <span data-testid="mobile-module-name" className="text-xs font-medium" title={activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}>{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
+        {cabinet && <div className="flex gap-1 overflow-x-auto whitespace-nowrap">
           <Button tour="mobile-size" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Габариты')}</Button>
           <Button tour="mobile-sections" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Секции модуля')}</Button>
           <Button tour="mobile-cutlist" size="sm" onClick={() => {
@@ -1179,13 +1180,16 @@ export function Workspace() {
               <Button
                 key={v.key}
                 size="sm"
+                className="min-h-11 shrink-0 whitespace-nowrap sm:min-h-0"
+                ariaLabel={tr(v.ruLabel)}
                 active={isActive}
                 onClick={() => {
                   setCameraPreset(v.preset)
                   if (v.projection) setProjection(v.projection)
                 }}
               >
-                {tr(v.ruLabel)}
+                <span className="shrink-0 whitespace-nowrap sm:hidden">{mobileViewLabel(v.key, getLang(), tr(v.ruLabel))}</span>
+                <span className="hidden sm:inline">{tr(v.ruLabel)}</span>
               </Button>
             )
           })}

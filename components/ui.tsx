@@ -141,10 +141,11 @@ const MenuCtx = React.createContext<() => void>(() => {})
  * жабылады, элемент таңдалғанда да жабылады.
  */
 export function Menu({
-  label, title, active, children, align = 'left', size,
+  label, title, ariaLabel, active, children, align = 'left', size,
 }: {
   label: React.ReactNode
   title?: string
+  ariaLabel?: string
   active?: boolean
   children: React.ReactNode
   align?: 'left' | 'right'
@@ -237,6 +238,7 @@ export function Menu({
         type="button"
         role="menuitem"
         aria-haspopup="menu"
+        aria-label={ariaLabel}
         aria-expanded={open}
         data-menu-trigger
         title={title ?? (typeof label === 'string' ? label : undefined)}
@@ -318,13 +320,14 @@ export function Slider({
 }
 
 export function Button({
-  children, onClick, disabled, active, ariaPressed, title, tour, size = 'md', testId,
+  children, onClick, disabled, active, ariaPressed, ariaLabel, title, tour, size = 'md', testId, className,
 }: {
   children: React.ReactNode
   onClick?: () => void
   disabled?: boolean
   active?: boolean
   ariaPressed?: boolean
+  ariaLabel?: string
   title?: string
   /** Оқыту көмекшісінің белгісі (`components/Tour.tsx`). */
   tour?: string
@@ -335,10 +338,12 @@ export function Button({
    */
   size?: 'sm' | 'md'
   testId?: string
+  className?: string
 }) {
   return (
     <button
       type="button"
+      aria-label={ariaLabel}
       title={title}
       data-tour={tour}
       data-testid={testId}
@@ -352,6 +357,7 @@ export function Button({
         active
           ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
           : 'border-neutral-300 bg-white text-neutral-700 hover:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-500',
+        className,
       )}
     >
       {children}
