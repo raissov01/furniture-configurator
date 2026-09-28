@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { SITE } from '@/lib/site'
 import { LANGS } from '@/lib/i18n'
 import { useSiteText } from '@/components/site/SiteLanguage'
+import { useState } from 'react'
 
 /** Белгі — AisMebel логотипі (`public/brand/`, өзгертпейміз). */
 function Mark() {
@@ -19,6 +20,7 @@ const LINKS = [
 
 export function SiteHeader() {
   const { tr: t, lang, chooseLang } = useSiteText()
+  const [menuOpen, setMenuOpen] = useState(false)
   return (
     <header
       className="sticky top-0 z-40 border-b"
@@ -43,6 +45,10 @@ export function SiteHeader() {
           ))}
         </nav>
 
+        <button type="button" aria-expanded={menuOpen} aria-controls="site-mobile-nav"
+          className="min-h-11 border px-3 text-sm lg:hidden" style={{ borderColor: 'var(--rule)' }}
+          onClick={() => setMenuOpen((value) => !value)}>{t('Навигация')}</button>
+
         <label className="ml-auto text-xs sm:ml-auto">
           <span className="sr-only">{t('Язык')}</span>
           <select aria-label={t('Язык')} value={lang} onChange={(event) => chooseLang(event.target.value as typeof LANGS[number]['value'])}
@@ -60,6 +66,12 @@ export function SiteHeader() {
           {t('Открыть конфигуратор')}
         </Link>
       </div>
+      {menuOpen && <nav id="site-mobile-nav" className="grid gap-1 border-t p-3 text-sm lg:hidden" style={{ borderColor: 'var(--rule)' }}>
+        {LINKS.map((link) => <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
+          className="flex min-h-11 items-center border px-3" style={{ borderColor: 'var(--rule)' }}>{t(link.label)}</Link>)}
+        <Link href="/configurator" onClick={() => setMenuOpen(false)} className="flex min-h-11 items-center border px-3"
+          style={{ borderColor: 'var(--rule)' }}>{t('Открыть конфигуратор')}</Link>
+      </nav>}
     </header>
   )
 }

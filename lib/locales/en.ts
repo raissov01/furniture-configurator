@@ -2082,4 +2082,7 @@ export const en: Record<string, string> = {
 
   'Мебель': 'Furniture',
   'Разное': 'Other',
+  'Монтаж открыт': 'Installation open',
+  'Монтажных заданий пока нет': 'No installation tasks yet',
+  'Навигация': 'Menu',
 }

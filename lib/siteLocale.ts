@@ -8,6 +8,8 @@ export const siteTranslations: Record<string, Translations> = {
   'Корпус, раскрой и цена — из одной модели': { kk: 'Корпус, раскрой және баға — бір модельден', en: 'Cabinet, cut plan and price from one model', uz: 'Korpus, bichish va narx — bitta modeldan' },
   'Задаёте габарит — получаете деталировку с колонками «готовый» и «рез», карту раскроя на печать и коммерческое предложение. На ваших материалах, по вашим ценам и вашим правилам сборки.': { kk: 'Өлшемдерді енгізіңіз — дайын және кесу өлшемдері бар деталировка, басып шығарылатын раскрой картасы және коммерциялық ұсыныс аласыз. Өз материалдарыңыз, бағаларыңыз және құрастыру ережелеріңіз бойынша.', en: 'Enter the dimensions to get a cut list with finished and saw sizes, a printable cut plan and a quote. Based on your materials, prices and assembly rules.', uz: 'O‘lchamlarni kiriting — tayyor va kesish o‘lchamlari bilan detallar ro‘yxati, chop etiladigan bichish rejasi va tijorat taklifini oling. O‘z materiallaringiz, narxlaringiz va yig‘ish qoidalaringiz asosida.' },
   'Открыть конфигуратор': { kk: 'Конфигураторды ашу', en: 'Open configurator', uz: 'Konfiguratorni ochish' },
+  'Навигация': { kk: 'Мәзір', en: 'Menu', uz: 'Menyu' },
+  'мм': { kk: 'мм', en: 'mm', uz: 'mm' },
   'Телефон · Сегодня': { kk: 'Телефон · Бүгін', en: 'Phone · Today', uz: 'Telefon · Bugun' },
   'Посмотреть, что забирает цех': { kk: 'Цех алатын құжаттарды көру', en: 'See workshop outputs', uz: 'Sex oladigan hujjatlarni ko‘rish' },
   'Без установки. Считает в браузере.': { kk: 'Орнатусыз. Браузерде есептейді.', en: 'No installation. Calculates in your browser.', uz: 'O‘rnatish shart emas. Brauzerda hisoblaydi.' },

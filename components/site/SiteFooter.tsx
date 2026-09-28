@@ -7,7 +7,7 @@ import { useSiteText } from '@/components/site/SiteLanguage'
 export function SiteFooter() {
   const { tr: t } = useSiteText()
   return (
-    <footer className="border-t" style={{ borderColor: 'var(--rule)' }}>
+    <footer className="site-footer border-t" style={{ borderColor: 'var(--rule)' }}>
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-5 py-10 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-8">
         <div>
           <p className="text-lg tracking-[0.04em]" style={{ fontFamily: 'var(--font-display)', fontWeight: 700 }}>

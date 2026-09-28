@@ -2086,4 +2086,7 @@ export const uz: Record<string, string> = {
 
   'Мебель': 'Mebel',
   'Разное': 'Boshqa',
+  'Монтаж открыт': 'O‘rnatish ochiq',
+  'Монтажных заданий пока нет': 'O‘rnatish topshiriqlari hozircha yo‘q',
+  'Навигация': 'Menyu',
 }
