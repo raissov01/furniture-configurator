@@ -17,7 +17,7 @@ import type { ShopExportFormat } from '@/lib/shopExport'
 import type { ShopExportScope } from '@/lib/shopExportScope'
 import { classicFileHint } from '@/lib/hotkeys'
 
-export type ClassicPanel = 'gallery' | 'ai' | 'sketch' | 'parts' | 'history' | 'shop' | 'project' | 'quote' | 'drill' | 'room' | 'help' | 'shareCode' | 'account'
+export type ClassicPanel = 'wizard' | 'kitchenGenerator' | 'gallery' | 'ai' | 'sketch' | 'parts' | 'history' | 'shop' | 'project' | 'quote' | 'drill' | 'room' | 'help' | 'shareCode' | 'account'
 
 export type ClassicCommand =
   | { type: 'open'; panel: ClassicPanel }
@@ -130,8 +130,11 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
   return [
     {
       id: 'file', label: 'Файл', items: [
-        item('file.importSolid', 'Импорт → 3DS/OBJ', { type: 'importSolid' }),
+        // Генератор мен шебер — басты кіру жолы, сондықтан «Файл»-дың ең басында.
+        item('file.wizard', 'Мастер мебели (5 шагов)', { type: 'open', panel: 'wizard' }),
+        item('file.kitchenGenerator', 'Генератор кухни', { type: 'open', panel: 'kitchenGenerator' }),
         item('file.gallery', 'Готовые шаблоны', { type: 'open', panel: 'gallery' }),
+        item('file.importSolid', 'Импорт → 3DS/OBJ', { type: 'importSolid' }),
         item('file.ai', 'Техзадание (словами)', { type: 'open', panel: 'ai' }),
         item('file.sketch', 'Нарисовать мышью', { type: 'open', panel: 'sketch' }, { disabled: !s.activeEditable }),
         item('file.parts', 'Своя деталь', { type: 'open', panel: 'parts' }, { disabled: !s.activeEditable }),

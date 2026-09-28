@@ -17,7 +17,6 @@ import { CabinetThumb } from '@/components/CabinetThumb'
 import { Button, Field } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import { cn } from '@/lib/cn'
-import { KitchenWizard } from '@/components/KitchenWizard'
 import { matchTemplateId } from '@/lib/templateMatch'
 import { parseKitchenWalls } from '@/lib/kitchenWallInput'
 import { shouldCloseGalleryOnKey } from '@/lib/galleryKeyboard'
@@ -49,10 +48,16 @@ export function TemplateGallery() {
   const setOpenRaw = useConfigurator((s) => s.setGalleryOpen)
   const firstRun = useConfigurator((s) => s.firstRun)
   const setFirstRun = useConfigurator((s) => s.setFirstRun)
+  // Шебер мен жылдам генератордың күйі store-да: мәзір/құрал жолағы/«Создать»
+  // да ашады, галерея тек бір кіру нүктесі.
+  const wizardOpen = useConfigurator((s) => s.wizardOpen)
+  const setWizardOpen = useConfigurator((s) => s.setWizardOpen)
+  const generatorOpen = useConfigurator((s) => s.kitchenGeneratorOpen)
+  const setGeneratorOpen = useConfigurator((s) => s.setKitchenGeneratorOpen)
   // Галерея бір рет жабылса, бастау режимі де бітеді: пайдаланушы таңдауын
   // жасады (не «кейін» деді), енді оны әр ашқанда қайталамаймыз.
   const setOpen = (v: boolean) => {
-    if (!v) setFirstRun(false)
+    if (!v) { setFirstRun(false); setGeneratorOpen(false) }
     setOpenRaw(v)
   }
   const loadTemplate = useConfigurator((s) => s.loadTemplate)
@@ -80,7 +85,6 @@ export function TemplateGallery() {
     frontId: carcassMaterials[0]?.id ?? '',
     worktopId: worktopMaterials[0]?.id ?? '',
   }))
-  const [wizardOpen, setWizardOpen] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
   const walls = parseKitchenWalls(kit.lengthA, kit.lengthB, kit.corner)
 
@@ -98,13 +102,14 @@ export function TemplateGallery() {
       event.preventDefault()
       event.stopImmediatePropagation()
       setFirstRun(false)
+      setGeneratorOpen(false)
       setOpenRaw(false)
     }
     document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('keydown', onKey)
     }
-  }, [open, isTop, wizardOpen, setFirstRun, setOpenRaw])
+  }, [open, isTop, wizardOpen, setFirstRun, setGeneratorOpen, setOpenRaw])
 
   const counts = useMemo(() => {
     const map = new Map<TemplateCategory, number>()
@@ -154,76 +159,39 @@ export function TemplateGallery() {
           <Button active={filter === 'standard'} onClick={() => { setFilter('standard'); setSubcategory(undefined); setSearch('') }}>
             {tr('Стандартная номенклатура')}
           </Button>
-          <Button active={filter === 'sets'} onClick={() => { setFilter('sets'); setSubcategory(undefined) }}>{tr('Наборы')}</Button>
+          <Button active={filter === 'sets'} onClick={() => { setFilter('sets'); setSubcategory(undefined); setGeneratorOpen(true) }}>{tr('Наборы')}</Button>
           <div className="ml-auto">
             <Button onClick={() => setOpen(false)}>{tr('Закрыть')}</Button>
           </div>
         </div>
 
-        {filter !== 'sets' ? (
-          <div className="mb-3 space-y-2">
-            <label className="block text-xs text-neutral-600 dark:text-neutral-300">
-              {tr('Поиск модуля')}
-              <input
-                aria-label={tr('Поиск модуля')}
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={tr('Название или тип')}
-                className="mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-700 dark:border-neutral-600 dark:bg-neutral-900"
-              />
-            </label>
-            {subcategories.length > 1 ? (
-              <div aria-label={tr('Подкатегории')} className="flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1 [&>button]:shrink-0">
-                <Button active={!subcategory} onClick={() => setSubcategory(undefined)}>{tr('Все')}</Button>
-                {subcategories.map((value) => (
-                  <Button key={value} active={subcategory === value} onClick={() => setSubcategory(value)}>{tr(value)}</Button>
-                ))}
-              </div>
-            ) : null}
+        {/*
+          АС ҮЙ ГЕНЕРАТОРЫ + ШЕБЕР — галереяның ЕҢ ЖОҒАРЫСЫНДА, кез келген
+          қойындыда. Бұрын тек «Наборы» ішінде тұрып, 3 басумен ғана табылатын.
+          Шебер (5 қадам) — толық жол; жылдам форма қабырға ұзындығынан бірден
+          гарнитур құрады (авто модуль бөлу + столешница + үстіңгі қатар).
+        */}
+        <section
+          data-testid="gallery-generator"
+          aria-label={tr('Генератор кухни')}
+          className="mb-3 border border-neutral-300 bg-neutral-50 p-3 dark:border-neutral-600 dark:bg-neutral-800"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="mr-auto min-w-0">
+              <div className="text-xs font-semibold">{tr('Генератор кухни')}</div>
+              <div className="text-[11px] text-neutral-500">{tr('по длине стены')}</div>
+            </div>
+            <Button active testId="gallery-open-wizard" onClick={() => setWizardOpen(true)}>{tr('Мастер мебели (5 шагов)')}</Button>
+            <Button
+              ariaPressed={generatorOpen}
+              testId="gallery-toggle-generator"
+              onClick={() => setGeneratorOpen(!generatorOpen)}
+            >
+              {generatorOpen ? tr('Свернуть') : tr('Развернуть')}
+            </Button>
           </div>
-        ) : null}
-
-        {wizardOpen ? <KitchenWizard open onClose={() => setWizardOpen(false)} /> : null}
-
-        {firstRun ? (
-          <div data-testid="first-run-categories" className="mb-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-            {TEMPLATE_CATEGORIES.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => { setFilter(c.value); setSubcategory(undefined) }}
-                className={cn(
-                  'min-w-0 border px-3 py-2 text-left transition hover:border-neutral-500',
-                  filter === c.value
-                    ? 'border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800'
-                    : 'border-neutral-200 dark:border-neutral-700',
-                )}
-              >
-                <div className="text-xs font-medium">{tr(c.label)}</div>
-                <div className="tabular-nums text-[11px] text-neutral-500">
-                  {templateCountLabel(counts.get(c.value) ?? 0, getLang())}
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        {filter === 'sets' ? (
-          <div className="space-y-4">
-            {/*
-              АС ҮЙ ГЕНЕРАТОРЫ: қабырға ұзындығынан толық гарнитур (авто
-              модуль бөлу + столешница + үстіңгі қатар). Бекітілген «Наборы»-дан
-              айырмасы — ұзындық ерікті, модульдерді өзі бөледі.
-            */}
-            <div className="border border-neutral-300 bg-neutral-50 p-3 dark:border-neutral-600 dark:bg-neutral-800">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-xs font-semibold">{tr('Генератор кухни')}</span>
-                <span className="text-[11px] text-neutral-500">{tr('по длине стены')}</span>
-                <div className="ml-auto">
-                  <Button active onClick={() => setWizardOpen(true)}>{tr('Мастер мебели (5 шагов)')}</Button>
-                </div>
-              </div>
+          {generatorOpen ? (
+            <div data-testid="gallery-generator-form" className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-700">
               <div className="flex flex-wrap items-end gap-3 max-[420px]:flex-col max-[420px]:items-stretch">
                 <label className="text-[11px] text-neutral-500">
                   {tr('Стена A, мм')}
@@ -330,7 +298,58 @@ export function TemplateGallery() {
                 {tr('Стена делится на стандартные модули автоматически. Столешница, цоколь и мойка добавляются сами. Ctrl+Z возвращает.')}
               </p>
             </div>
+          ) : null}
+        </section>
 
+        {filter !== 'sets' ? (
+          <div className="mb-3 space-y-2">
+            <label className="block text-xs text-neutral-600 dark:text-neutral-300">
+              {tr('Поиск модуля')}
+              <input
+                aria-label={tr('Поиск модуля')}
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={tr('Название или тип')}
+                className="mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-700 dark:border-neutral-600 dark:bg-neutral-900"
+              />
+            </label>
+            {subcategories.length > 1 ? (
+              <div aria-label={tr('Подкатегории')} className="flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1 [&>button]:shrink-0">
+                <Button active={!subcategory} onClick={() => setSubcategory(undefined)}>{tr('Все')}</Button>
+                {subcategories.map((value) => (
+                  <Button key={value} active={subcategory === value} onClick={() => setSubcategory(value)}>{tr(value)}</Button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {firstRun ? (
+          <div data-testid="first-run-categories" className="mb-3 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+            {TEMPLATE_CATEGORIES.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => { setFilter(c.value); setSubcategory(undefined) }}
+                className={cn(
+                  'min-w-0 border px-3 py-2 text-left transition hover:border-neutral-500',
+                  filter === c.value
+                    ? 'border-neutral-900 bg-neutral-50 dark:border-neutral-100 dark:bg-neutral-800'
+                    : 'border-neutral-200 dark:border-neutral-700',
+                )}
+              >
+                <div className="text-xs font-medium">{tr(c.label)}</div>
+                <div className="tabular-nums text-[11px] text-neutral-500">
+                  {templateCountLabel(counts.get(c.value) ?? 0, getLang())}
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {filter === 'sets' ? (
+          <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
             {SEED_SETS.map((preset) => {
               const { cabinets } = setToProject(preset, catalog)
