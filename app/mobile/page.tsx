@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { t } from '@/lib/i18n'
@@ -20,6 +20,7 @@ import type { RoomTolerance } from '@/src/core/measure'
 import { nextNetworkMessage } from '@/components/mobile/measurementUiLogic'
 import { connectionError, connectionState, mobileErrorMessage } from '@/components/mobile/connectionState'
 import { measurementCaption, visibleNetworkMessage } from '@/lib/f00kDisplay'
+import { authRetryCandidates } from '@/components/mobile/offlineHandoff'
 
 const ROLE_CACHE = 'tapsyrys:role' // UI navigation only; projects, measurements and photos are in IndexedDB.
 const roles: Role[] = ['owner', 'designer', 'shop', 'client']
@@ -37,6 +38,8 @@ function cachedRole(): { role: Role | null; unavailable: boolean } {
 export default function MobileTodayPage() {
   const router = useRouter()
   const [role, setRole] = useState<Role | null>(null)
+  /** Сервер /api/me арқылы расталған рөл (кэштегі рөл сессияның тірі екенін білдірмейді). */
+  const [verifiedRole, setVerifiedRole] = useState<Role | null>(null)
   const [store, setStore] = useState<IndexedDbMobileStore | null>(null)
   const [queue, setQueue] = useState<SyncQueue | null>(null)
   const [online, setOnline] = useState(true)
@@ -149,7 +152,7 @@ export default function MobileTodayPage() {
         }
         if (account && typeof account === 'object' && 'role' in account && roles.includes(account.role as Role)) {
           const found = account.role as Role
-          if (mounted) setRole(found)
+          if (mounted) { setRole(found); setVerifiedRole(found) }
           try { localStorage.setItem(ROLE_CACHE, found) } catch {
             if (mounted) setMessage(t('Роль не сохранилась на устройстве; проверьте её через интернет'))
           }
@@ -211,6 +214,30 @@ export default function MobileTodayPage() {
       window.removeEventListener('offline', change)
     }
   }, [pending, queue, reconcile, store])
+
+  // Гибрид қосымша: офлайн өлшемдер кірмей тұрып жіберілсе 401 алады. Кіргені
+  // расталған соң (рөл owner/designer) оларды бір рет автоматты қайта жібереміз.
+  const authRetried = useRef(false)
+  useEffect(() => {
+    if (!store || !queue || !online || authRetried.current) return
+    if (verifiedRole !== 'owner' && verifiedRole !== 'designer') return
+    authRetried.current = true
+    void (async () => {
+      try {
+        const candidates = authRetryCandidates(await store.list(), verifiedRole)
+        if (!candidates.length) return
+        setSending(true)
+        for (const record of candidates) {
+          const survey = MeasurementSurveySchema.parse(await store.getSurvey(record.action.entityId))
+          await retryRejectedMeasurement(survey, record, store, queue, Date.now(), crypto.randomUUID())
+        }
+        setNetwork(queue.network)
+        await refresh(store)
+      } catch (error) {
+        setMessage(t(mobileErrorMessage(error, 'Не удалось повторить отправку', navigator.onLine)))
+      } finally { setSending(false) }
+    })()
+  }, [online, queue, refresh, store, verifiedRole])
 
   const saveSurvey = async (survey: MeasurementSurvey) => {
     if (!store || !queue) throw new Error(t('Локальное хранилище недоступно'))

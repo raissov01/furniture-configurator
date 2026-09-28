@@ -2401,4 +2401,11 @@ export const uz: Record<string, string> = {
 
   'Присадка (рентген)': 'Teshiklar (rentgen)',
 
+  // Гибрид қосымшаның офлайн беті
+  'Отправлено': 'Yuborildi',
+  'Когда появится интернет, войдите в аккаунт — замеры отправятся автоматически.': 'Internet paydo boʻlganda hisobingizga kiring — oʻlchovlar avtomatik yuboriladi.',
+  'Полная версия': 'Toʻliq versiya',
+  'Заказы, КП, код клиента, монтаж и сканирование QR': 'Buyurtmalar, takliflar, mijoz kodi, montaj va QR skanerlash',
+  'Открыть полную версию': 'Toʻliq versiyani ochish',
+
 }

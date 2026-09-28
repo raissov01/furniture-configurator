@@ -2396,4 +2396,11 @@ export const en: Record<string, string> = {
 
   'Присадка (рентген)': 'Drilling X-ray',
 
+  // Гибрид қосымшаның офлайн беті
+  'Отправлено': 'Sent',
+  'Когда появится интернет, войдите в аккаунт — замеры отправятся автоматически.': 'When the internet is back, sign in to your account and the measurements will be sent automatically.',
+  'Полная версия': 'Full version',
+  'Заказы, КП, код клиента, монтаж и сканирование QR': 'Orders, quotes, client code, installation and QR scanning',
+  'Открыть полную версию': 'Open full version',
+
 }

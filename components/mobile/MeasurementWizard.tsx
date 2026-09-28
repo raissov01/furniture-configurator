@@ -8,6 +8,7 @@ import { LocalizedFileChooser } from '@/components/LocalizedFileChooser'
 import type { WallId } from '@/src/core/types'
 import type { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
+import { useNativeBack } from '@/lib/mobile/nativeBack'
 import type { JsonValue } from '@/src/core/sync/types'
 import type { ProjectFileV4 } from '@/src/core/projectV4'
 import { measurementImpactView } from '@/lib/mobile/measurementImpactView'
@@ -157,6 +158,8 @@ export function MeasurementWizard({ initial, store, onBack, onSave, onKitchen, p
     try { await saveChain.current; onBack() }
     catch (error) { setMessage(error instanceof Error ? error.message : t('Не удалось сохранить черновик')) }
   }
+  // Android «Артқа»: шеберден тізімге (қосымшадан шығып кетпейді).
+  useNativeBack(() => { void leave() })
 
   const selectPhoto = async (kind: ObstacleKind, file: File | undefined) => {
     if (!file) return
