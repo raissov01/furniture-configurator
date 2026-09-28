@@ -8,4 +8,3 @@ export function panelOpacity(input: {
   return (input.viewMode === 'solid' || input.hovered || input.selected ? 1
     : input.viewMode === 'ghost' ? 0.28 : 0.06) * input.lookOpacity
 }
-

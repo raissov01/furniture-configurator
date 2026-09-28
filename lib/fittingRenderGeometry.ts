@@ -67,4 +67,3 @@ export function fittingRenderParts(item: FittingVisual): VisualPart[] {
   }
   return parts
 }
-
