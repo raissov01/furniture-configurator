@@ -164,6 +164,13 @@ function ClassicTool({ icon, label, action, disabled, disabledReason, active, id
   </span>
 }
 
+/** Бос бөлмелі жаңа жоба: әдепкі баптаулар сақталады, ағашта корпус жоқ. */
+function loadEmptyProject(reset: () => void, loadProject: (file: unknown) => void) {
+  reset()
+  const blank = useConfigurator.getState().exportProject()
+  loadProject({ ...blank, name: tr('Новый проект'), root: { ...blank.root, name: tr('Новый проект'), children: [] } })
+}
+
 export function Workspace() {
   const cabinet = useConfigurator((s) => s.cabinets.find((entry) => entry.id === s.activeId))
   const undo = useConfigurator((s) => s.undo)
@@ -375,9 +382,7 @@ export function Workspace() {
   /** PRO100 «Новый проект» (Ctrl+N): бос бөлме, корпуссыз; бұрынғы күй тарихта қалады. */
   const newProject = () => {
     if (resetDecision(window.confirm(tr('Начать новый проект с пустой комнаты?'))) !== 'reset') return
-    reset()
-    const blank = useConfigurator.getState().exportProject()
-    loadProject({ ...blank, name: tr('Новый проект'), root: { ...blank.root, name: tr('Новый проект'), children: [] } })
+    loadEmptyProject(reset, loadProject)
     setSelected(null)
     useClassicView.getState().setStartGuideOpen(true)
   }
@@ -472,6 +477,9 @@ export function Workspace() {
     // (Свойства помещения → Библиотека → модуль қою); телефонда — шаблон галереясы.
     if (useConfigurator.getState().firstRun) {
       if (window.matchMedia('(min-width: 1024px)').matches) {
+        // PRO100 бос бөлмемен ашылады: шақырылмаған әдепкі корпус қойылмайды.
+        const state = useConfigurator.getState()
+        loadEmptyProject(state.reset, state.loadProject)
         useClassicView.getState().setLibraryOpen(true)
         useClassicView.getState().setStartGuideOpen(true)
         useConfigurator.getState().setFirstRun(false)
