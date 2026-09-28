@@ -4,6 +4,7 @@ type Translations = { kk: string; en: string; uz: string }
 
 /** Public-site copy lives together so every visible statement has four versions. */
 export const siteTranslations: Record<string, Translations> = {
+  'Меню': { kk: 'Мәзір', en: 'Menu', uz: 'Menyu' },
   'Для мебельных цехов · ЛДСП': { kk: 'Жиһаз цехтарына · ЛДСП', en: 'For furniture workshops · particleboard', uz: 'Mebel sexlari uchun · LDSP' },
   'Корпус, раскрой и цена — из одной модели': { kk: 'Корпус, раскрой және баға — бір модельден', en: 'Cabinet, cut plan and price from one model', uz: 'Korpus, bichish va narx — bitta modeldan' },
   'Задаёте габарит — получаете деталировку с колонками «готовый» и «рез», карту раскроя на печать и коммерческое предложение. На ваших материалах, по вашим ценам и вашим правилам сборки.': { kk: 'Өлшемдерді енгізіңіз — дайын және кесу өлшемдері бар деталировка, басып шығарылатын раскрой картасы және коммерциялық ұсыныс аласыз. Өз материалдарыңыз, бағаларыңыз және құрастыру ережелеріңіз бойынша.', en: 'Enter the dimensions to get a cut list with finished and saw sizes, a printable cut plan and a quote. Based on your materials, prices and assembly rules.', uz: 'O‘lchamlarni kiriting — tayyor va kesish o‘lchamlari bilan detallar ro‘yxati, chop etiladigan bichish rejasi va tijorat taklifini oling. O‘z materiallaringiz, narxlaringiz va yig‘ish qoidalaringiz asosida.' },

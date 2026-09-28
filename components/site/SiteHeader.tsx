@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { SITE } from '@/lib/site'
 import { LANGS } from '@/lib/i18n'
 import { useSiteText } from '@/components/site/SiteLanguage'
+import { useState } from 'react'
 
 /** Белгі — AisMebel логотипі (`public/brand/`, өзгертпейміз). */
 function Mark() {
@@ -19,6 +20,7 @@ const LINKS = [
 
 export function SiteHeader() {
   const { tr: t, lang, chooseLang } = useSiteText()
+  const [menuOpen, setMenuOpen] = useState(false)
   return (
     <header
       className="sticky top-0 z-40 border-b"
@@ -43,14 +45,16 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <label className="ml-auto text-xs sm:ml-auto">
+        <button type="button" className="ml-auto min-h-11 border px-3 text-sm lg:hidden" style={{ borderColor: 'var(--rule)' }}
+          aria-controls="site-mobile-nav" aria-expanded={menuOpen} onClick={() => setMenuOpen((value) => !value)}>{t('Меню')}</button>
+        <label className="text-xs lg:ml-auto">
           <span className="sr-only">{t('Язык')}</span>
           <select aria-label={t('Язык')} value={lang} onChange={(event) => chooseLang(event.target.value as typeof LANGS[number]['value'])}
             className="min-h-11 border bg-transparent px-2 text-sm" style={{ borderColor: 'var(--rule)' }}>
             {LANGS.map((lang) => <option key={lang.value} value={lang.value}>{lang.label}</option>)}
           </select>
         </label>
-        <Link href="/mobile" className="inline-flex min-h-11 items-center border px-2 text-sm sm:px-4"
+        <Link href="/mobile" className="hidden min-h-11 items-center border px-2 text-sm sm:inline-flex sm:px-4"
           style={{ borderColor: 'var(--rule)' }}>{t('Телефон · Сегодня')}</Link>
         <Link
           href="/configurator"
@@ -60,6 +64,11 @@ export function SiteHeader() {
           {t('Открыть конфигуратор')}
         </Link>
       </div>
+      {menuOpen ? <nav id="site-mobile-nav" aria-label={t('Меню')} className="grid gap-1 border-t px-5 py-2 text-sm lg:hidden" style={{ borderColor: 'var(--rule)' }}>
+        {LINKS.map((link) => <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} className="flex min-h-11 items-center border-b" style={{ borderColor: 'var(--rule)' }}>{t(link.label)}</Link>)}
+        <Link href="/mobile" onClick={() => setMenuOpen(false)} className="flex min-h-11 items-center">{t('Телефон · Сегодня')}</Link>
+        <Link href="/configurator" onClick={() => setMenuOpen(false)} className="flex min-h-11 items-center">{t('Открыть конфигуратор')}</Link>
+      </nav> : null}
     </header>
   )
 }
