@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { NoColorSpace, Texture } from 'three'
 import { MaterialSchema, parseProjectV4 } from '../src/core/index'
 import { materialRenderKey, resolveMaterialLook } from '../lib/materialLook'
-import { configureNormalTexture } from '../lib/decorTexture'
+import { configureAmbientOcclusionTexture, configureNormalTexture } from '../lib/decorTexture'
 import { referenceProject } from './fixtures'
 import { useConfigurator } from '../store/configurator'
 
@@ -11,7 +11,8 @@ describe('жобаның PBR материалы', () => {
     const legacy = parseProjectV4(referenceProject)
     expect(legacy.materials[0]?.pbr).toBeUndefined()
     const material = { ...legacy.materials[0]!, pbr: {
-      roughness: 0.22, metalness: 0.4, reflection: 1.1, opacity: 0.65,
+      roughness: 0.22, metalness: 0.4, reflection: 1.1, opacity: 0.65, sheen: 0.3, clearcoat: 0.7,
+      ambientOcclusion: { url: 'https://example.com/decor-ao.png', sizeMm: { x: 900, y: 600 }, intensity: 0.8 },
       normal: { url: 'https://example.com/decor-normal.png', sizeMm: { x: 900, y: 600 }, strength: 0.8 },
     } }
     const revised = parseProjectV4({ ...legacy, materials: [material, ...legacy.materials.slice(1)] })
@@ -22,6 +23,11 @@ describe('жобаның PBR материалы', () => {
     const base = parseProjectV4(referenceProject).materials[0]!
     expect(() => MaterialSchema.parse({ ...base, pbr: { roughness: 1.1 } })).toThrow()
     expect(() => MaterialSchema.parse({ ...base, pbr: { opacity: -0.1 } })).toThrow()
+    expect(() => MaterialSchema.parse({ ...base, pbr: { sheen: 1.1 } })).toThrow()
+    expect(() => MaterialSchema.parse({ ...base, pbr: { clearcoat: -0.1 } })).toThrow()
+    expect(() => MaterialSchema.parse({ ...base, pbr: { ambientOcclusion: {
+      url: 'file:///bad.png', sizeMm: { x: 900, y: 600 }, intensity: 1,
+    } } })).toThrow()
     expect(() => MaterialSchema.parse({ ...base, pbr: { normal: {
       url: 'not-a-url', sizeMm: { x: 900, y: 600 }, strength: 1,
     } } })).toThrow()
@@ -36,8 +42,8 @@ describe('жобаның PBR материалы', () => {
   })
 
   it('finish preset үстінен PBR мәндері беріледі, бастапқы preset өзгермейді', () => {
-    const look = resolveMaterialLook('gloss', { roughness: 0.31, metalness: 0.2, reflection: 0.7, opacity: 0.5 })
-    expect(look).toMatchObject({ roughness: 0.31, metalness: 0.2, envMapIntensity: 0.7, opacity: 0.5 })
+    const look = resolveMaterialLook('gloss', { roughness: 0.31, metalness: 0.2, reflection: 0.7, opacity: 0.5, sheen: 0.4, clearcoat: 0.9 })
+    expect(look).toMatchObject({ roughness: 0.31, metalness: 0.2, envMapIntensity: 0.7, opacity: 0.5, sheen: 0.4, clearcoat: 0.9 })
     expect(resolveMaterialLook('gloss').roughness).toBe(0.1)
   })
 
@@ -48,10 +54,19 @@ describe('жобаның PBR материалы', () => {
     expect(texture.repeat.y).toBe(2)
   })
 
+  it('AO картасы UV0-ді және физикалық мм масштабын қолданады', () => {
+    const texture = configureAmbientOcclusionTexture(new Texture(), 1800, 1200, { x: 900, y: 600 })
+    expect(texture.colorSpace).toBe(NoColorSpace)
+    expect(texture.channel).toBe(0)
+    expect(texture.repeat.x).toBe(2)
+    expect(texture.repeat.y).toBe(2)
+  })
+
   it('normal/map қосу-өшіру материал key-ін өзгертеді, shader қайта құрылады', () => {
     expect(materialRenderKey(false, false, false)).not.toBe(materialRenderKey(false, false, true))
     expect(materialRenderKey(false, false, false)).not.toBe(materialRenderKey(false, true, false))
     expect(materialRenderKey(false, true, true)).not.toBe(materialRenderKey(true, true, true))
+    expect(materialRenderKey(false, true, true, false)).not.toBe(materialRenderKey(false, true, true, true))
   })
 
   it('PBR түзетуі жоба файлына сақталып, undo арқылы қайтады', () => {

@@ -73,13 +73,13 @@ import type { BoardNode, SolidNode } from '@/src/core/tree'
 import type { PanoramaContext } from '@/lib/panorama'
 import type {
   AnnotationSpec, BoardSpec, CabinetConfig, Catalog, EdgeBand, GroupNode, Layer, LibraryItem, Material, MaterialPbr,
-  PropertyClipboard, ScalePercent, SceneNode, SolidSpec,
+  PropertyClipboard, ScalePercent, SceneNode, SolidSpec, Transform,
   Placement, PriceOverrides, ProjectFileV4, ProjectInfo, Room, SceneLight, Section,
   SettingsOverride, ShopProfile, Vec3, WallId,
 } from '@/src/core/index'
 import { createDefaultLayer, deleteLayer as deleteTreeLayer, createLayer as createTreeLayer,
   renameLayer as renameTreeLayer, setLayerVisible, setLayerLocked, setLayerColor,
-  setNodeLayer, treeFromProject } from '@/src/core/index'
+  setNodeLayer, treeFromProject, updateNodeTransform } from '@/src/core/index'
 import { LEGACY_MATERIAL_ALIASES } from '@/src/core/data/catalog/materials'
 import { appendNodeArray, assertTreeNodeEditable, groupNodes, renameTreeNode, reparentNode, setTreeNodeFlag, translateTreeNodes, ungroupNode } from '@/src/core/treeEditing'
 import type { ArrayOptions } from '@/src/core/array'
@@ -333,6 +333,8 @@ type State = Snapshot & {
   addImportedSolid(node: SolidNode): void
   editSolid(id: string, patch: Partial<SolidSpec>): void
   setSolidPosition(id: string, position: Vec3): void
+  /** Бір атомдық Properties өзгерісі: топ, еркін тақта немесе декоративті дене. */
+  setNodeTransform(id: string, transform: Transform): void
   mirrorFreeNode(id: string): string
   addAnnotation(): string
   editAnnotation(id: string, patch: Partial<AnnotationSpec>): void
@@ -960,6 +962,22 @@ export const useConfigurator = create<State>((set, get) => ({
     const s = get()
     const root = editSolidTree(s.root, id, s.layers, { position }, s.catalog.materials)
     if (root !== s.root) set(treeEdit(s, root))
+  },
+
+  setNodeTransform(id, transform) {
+    const s = get()
+    const node = findNode(s.root, id)
+    if (!node || !['group', 'board', 'solid'].includes(node.kind) || id === s.root.id) {
+      throw new ConfigValidationError('nodeId', `орнын өзгертуге болмайтын түйін: ${id}`, 'топ, тақта немесе декоративті дене')
+    }
+    for (const axis of ['x', 'y', 'z'] as const) {
+      if (!Number.isSafeInteger(transform.pos[axis])) throw new ConfigValidationError(`transform.pos.${axis}`, 'орын бүтін мм болуы керек', 'бүтін мм')
+    }
+    if (transform.rot.x !== 0 || transform.rot.z !== 0 || !Number.isFinite(transform.rot.y)) {
+      throw new ConfigValidationError('transform.rot', 'осы редакторда тек Y өсі бойынша бұрылыс бар', 'rot.x = 0, rot.z = 0, rot.y = нақты градус')
+    }
+    if (JSON.stringify(node.transform) === JSON.stringify(transform)) return
+    set(treeEdit(s, updateNodeTransform(s.root, id, transform, s.layers)))
   },
 
   mirrorFreeNode(id) {

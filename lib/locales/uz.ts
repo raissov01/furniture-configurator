@@ -802,7 +802,6 @@ export const uz: Record<string, string> = {
   'Вверх (подъёмный)': 'Tepaga (ko\'tariladigan)',
   'Присадка подъёмника не ставится: её сверлят по бумажному шаблону механизма. Механизм попадает в смету, в деталировке фасада есть пометка.':
     'Ko\'targich prisadkasi qo\'yilmaydi: uni mexanizmning qog\'oz shabloni bo\'yicha teshadi. Mexanizm smetaga tushadi, fasad detalirovkasida izoh bor.',
-  'Поворот': 'Burilish',
   'Пределы габарита': 'Gabarit chegaralari',
   'Тариф': 'Tarif',
   'Тема': 'Mavzu',
@@ -2183,4 +2182,16 @@ export const uz: Record<string, string> = {
   'Логотип: PNG или JPEG': 'Logotip: PNG yoki JPEG ishlating',
   'Логотип: не больше 750 КБ': 'Logotip: 750 KB dan oshmasin',
   'Логотип: файл не прочитан': 'Logotip: fayl o‘qilmadi',
+
+  'Положение и поворот': 'Joylashuv va burilish',
+  'Применить положение': 'Joylashuvni qo‘llash',
+  'Поворот': 'Burilish',
+  'Элементов в группе': 'Guruhdagi elementlar',
+  'X/Y/Z — целые миллиметры; поворот Y — число градусов.': 'X/Y/Z butun millimetr bo‘lishi kerak; Y burilishi gradus soni.',
+  'Не удалось изменить положение': 'Joylashuvni o‘zgartirib bo‘lmadi',
+  'Не удалось изменить название': 'Nomni o‘zgartirib bo‘lmadi',
+  'Блеск (sheen)': 'Yaltirash (sheen)',
+  'Лак (clearcoat)': 'Lak qatlami (clearcoat)',
+  'Карта AO (URL)': 'AO xaritasi (URL)',
+  'Сила AO': 'AO kuchi',
 }

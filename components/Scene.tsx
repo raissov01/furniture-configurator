@@ -38,12 +38,12 @@ import type { CameraPreset } from '@/store/configurator'
 import {
   DEFAULT_WALL_COLOR, ROD_DIAMETER, assemblyStepIndex, clampInsideRoom, mergeProjectPanels, mergeSettings, panelExtents, visibleAnnotations,
   placementSpan, projectPanelId, roomWalls, silhouetteDataUri, silhouetteSize, skirtingSpans, snapOffset,
-  snapPosition, selectionBoxes, visibleOpenings, wallById, wallPieces,
+  snapPosition, snapRotatedEdges, selectionBoxes, selectionFootprints, visibleOpenings, wallById, wallPieces,
   sunDirection,
 } from '@/src/core/index'
 import type {
   CabinetConfig, Catalog, FlatNode, FlatScene, FloorKind, HardwarePlacement, Panel, PanelOpening, Placement, Room, RoomOpening,
-  SceneLight, SettingsOverride, Vec3, Wall, WallId,
+  SceneLight, SettingsOverride, SnapFootprint, Vec3, Wall, WallId,
 } from '@/src/core/index'
 import { bentDevelopment } from '@/src/core/specialParts'
 import type { BentSpec, LatheSpec } from '@/src/core/specialParts'
@@ -1174,7 +1174,8 @@ function FreeBoardGroup({ node, scene, catalog, room, settings, stepOf, assembly
     selected === node.nodeId || node.panels.some((panel) => selected === projectPanelId(node.nodeId, panel.id, panelNodeCount))
   )
   const drag = useRef<{ pointerId: number; plane: Plane; startHit: Vector3; startMin: Vec3; size: Vec3;
-    others: { id: string; pos: Vec3; size: Vec3 }[]; applied: Vec3; moved: boolean } | null>(null)
+    others: { id: string; pos: Vec3; size: Vec3 }[]; footprint: SnapFootprint | undefined;
+    otherFootprints: SnapFootprint[]; applied: Vec3; moved: boolean } | null>(null)
   const endDrag = () => {
     if (!drag.current) return
     drag.current = null
@@ -1185,13 +1186,13 @@ function FreeBoardGroup({ node, scene, catalog, room, settings, stepOf, assembly
   return <group position={[node.pose.position.x, node.pose.position.y, node.pose.position.z]}
     rotation={[0, node.pose.rotationY * Math.PI / 180, 0]}
     onPointerDown={(event) => {
-      if (!canDrag || event.button !== 0 || node.pose.rotationY % 90 !== 0) return
+      if (!canDrag || event.button !== 0) return
       const state = useConfigurator.getState()
       const eligible = [...scene.nodes.map((entry) => ({ id: entry.nodeId, pose: entry.pose })),
         ...scene.solids.map((entry) => ({ id: entry.nodeId, pose: entry.pose }))]
-        .filter((entry) => entry.pose.rotationY % 90 === 0 &&
-          Object.values(entry.pose.position).every(Number.isSafeInteger))
+        .filter((entry) => entry.id !== state.root.id)
       const boxes = selectionBoxes(state.root, eligible.map((entry) => entry.id), catalog, state.layers, settings)
+      const footprints = selectionFootprints(state.root, eligible.map((entry) => entry.id), catalog, state.layers, settings)
       const moving = boxes.find((entry) => entry.id === node.nodeId)
       if (!moving) return
       event.stopPropagation()
@@ -1208,7 +1209,9 @@ function FreeBoardGroup({ node, scene, catalog, room, settings, stepOf, assembly
           id: entry.id, pos: entry.bounds.min,
           size: { x: entry.bounds.max.x - entry.bounds.min.x,
             y: entry.bounds.max.y - entry.bounds.min.y, z: entry.bounds.max.z - entry.bounds.min.z },
-        })), applied: { x: 0, y: 0, z: 0 }, moved: false }
+        })), footprint: footprints.find((entry) => entry.id === node.nodeId),
+        otherFootprints: footprints.filter((entry) => entry.id !== node.nodeId),
+        applied: { x: 0, y: 0, z: 0 }, moved: false }
       if (controls) controls.enabled = false
       gl.domElement.style.cursor = 'grabbing'
       ;(event.target as unknown as Element).setPointerCapture(event.pointerId)
@@ -1222,8 +1225,16 @@ function FreeBoardGroup({ node, scene, catalog, room, settings, stepOf, assembly
       const raw = { x: current.startMin.x + Math.round((hit.x - current.startHit.x) / MM),
         y: current.startMin.y + Math.round((hit.y - current.startHit.y) / MM),
         z: current.startMin.z + Math.round((hit.z - current.startHit.z) / MM) }
-      const snapped = snapPosition({ pos: raw, size: current.size }, current.others, room,
-        useConfigurator.getState().snapOptions).pos
+      const options = useConfigurator.getState().snapOptions
+      const snapped = snapPosition({ pos: raw, size: current.size }, current.others, room, options).pos
+      if (current.footprint && options.tolerance > 0) {
+        const dx = raw.x - current.startMin.x; const dy = raw.y - current.startMin.y; const dz = raw.z - current.startMin.z
+        const moving = { ...current.footprint,
+          corners: current.footprint.corners.map((point) => ({ x: point.x + dx, z: point.z + dz })),
+          minY: current.footprint.minY + dy, maxY: current.footprint.maxY + dy }
+        const edge = snapRotatedEdges(moving, current.otherFootprints, options.tolerance)
+        if (edge) { snapped.x = raw.x + edge.delta.x; snapped.z = raw.z + edge.delta.z }
+      }
       const absolute = { x: snapped.x - current.startMin.x, y: snapped.y - current.startMin.y,
         z: snapped.z - current.startMin.z }
       const delta = { x: absolute.x - current.applied.x, y: absolute.y - current.applied.y,

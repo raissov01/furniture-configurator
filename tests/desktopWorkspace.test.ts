@@ -41,6 +41,8 @@ describe('classic desktop workspace', () => {
     expect(html).not.toContain('data-testid="classic-structure-window"')
     expect(html).toContain('lg:hidden"><section data-testid="tree-dock"')
     expect(html).toContain('data-tour="viewtabs"')
+    expect(html).toContain('p100-view-tabs')
+    expect(html).toContain('data-testid="classic-side-tools"')
     expect(html).not.toContain('p100-camera-pane')
     expect(html).toContain('data-testid="p100-status"')
     expect(html).toContain('(H) ×')

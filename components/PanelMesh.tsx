@@ -11,8 +11,9 @@ import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { Edges, Html } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { grainTexture } from '@/lib/grainTexture'
-import { boxGrainUAxis, decorTexture, grainRotation, normalTexture, type GrainUVAxis } from '@/lib/decorTexture'
+import { ambientOcclusionTexture, boxGrainUAxis, decorTexture, grainRotation, normalTexture, type GrainUVAxis } from '@/lib/decorTexture'
 import { materialRenderKey, resolveMaterialLook } from '@/lib/materialLook'
+import { selectionHandlePositions } from '@/lib/selectionHandles'
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, Path, Shape } from 'three'
 import { cutOrigin, cutoutBounds, isWidthBevel, mergeSettings, panelExtents, rotationFor } from '@/src/core/index'
 import { polygonShape } from '@/lib/f32PolygonShape'
@@ -48,6 +49,15 @@ const NEUTRAL = '#b8b4ac'
  * бұл — камераны айналдыру не модульді жылжыту, детальді таңдау емес.
  */
 const CLICK_SLOP = 6
+
+function SelectionHandles({ size, cornerOrigin = false }: { size: { x: number; y: number; z: number }; cornerOrigin?: boolean }) {
+  return <group data-testid="selection-handles">
+    {selectionHandlePositions(size, cornerOrigin).map((point, index) => <mesh key={index} position={point} renderOrder={20}>
+      <boxGeometry args={[10, 10, 10]} />
+      <meshBasicMaterial color="#0878c9" depthTest={false} />
+    </mesh>)}
+  </group>
+}
 
 function shade(hex: string, factor: number): string {
   const value = hex.replace('#', '')
@@ -386,7 +396,7 @@ export function PanelMesh({
   )
   // Тек екеуі ғана лак қабатын алады (§docs/visual/material.md §3) —
   // қалғаны арзанырақ `meshStandardMaterial`-де қалады.
-  const usesPhysical = quality !== 'low' && (decor?.finish === 'gloss' || decor?.finish === 'stone')
+  const usesPhysical = quality !== 'low' && (decor?.finish === 'gloss' || decor?.finish === 'stone' || look.clearcoat > 0 || look.sheen > 0)
   const invalidate = useThree((s) => s.invalidate)
 
   const extents = useMemo(() => panelExtents(panel, thickness), [panel, thickness])
@@ -611,15 +621,27 @@ export function PanelMesh({
     return tex
   }, [pbr?.normal, panel.finishedLength, panel.finishedWidth, panel.grainAlongLength, panel.orientation, shape, tilted, invalidate])
   useEffect(() => () => { normalMap?.dispose() }, [normalMap])
-  const shaderKey = materialRenderKey(usesPhysical, Boolean(texture), Boolean(normalMap))
+  const aoMap = useMemo(() => {
+    if (!pbr?.ambientOcclusion) return null
+    const ao = pbr.ambientOcclusion
+    const tex = ambientOcclusionTexture(ao.url, panel.finishedLength, panel.finishedWidth, ao.sizeMm, () => invalidate())
+    if (tex) {
+      const uAxis: GrainUVAxis = shape || tilted ? 'length' : boxGrainUAxis(panel.orientation)
+      tex.center.set(0.5, 0.5)
+      tex.rotation = grainRotation(uAxis, panel.grainAlongLength)
+    }
+    return tex
+  }, [pbr?.ambientOcclusion, panel.finishedLength, panel.finishedWidth, panel.grainAlongLength, panel.orientation, shape, tilted, invalidate])
+  useEffect(() => () => { aoMap?.dispose() }, [aoMap])
+  const shaderKey = materialRenderKey(usesPhysical, Boolean(texture), Boolean(normalMap), Boolean(aoMap))
 
-  const color = isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
+  const color = isSelected ? '#b9ddf5' : isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
   /*
    * Таңдалғанын ТҮСПЕН көрсетуге болмайды: декордың өзі сары (дуб, бук) —
    * бөлектеу онда жоғалады. Сондықтан таңдалған детальдің ҚЫРЫ сызылады, ол
    * кез келген декордың үстінен көрінеді.
    */
-  const outline = isSelected ? <Edges color="#f2c14e" lineWidth={2.5} /> : null
+  const outline = isSelected ? <Edges color="#0878c9" lineWidth={2.5} /> : null
   // Шыны фасад: мөлдір әйнек + әрқашан көрінетін ЖИЕК (рама). Тұтас панельдей
   // емес, ішін көрсетеді — qdesign-дегі шыны есіктер сияқты.
   const isGlass = panel.glass === true
@@ -680,7 +702,8 @@ export function PanelMesh({
           )}
           {usesPhysical ? (
             <meshPhysicalMaterial
-              key={shaderKey} color={color} map={texture} normalMap={normalMap}
+              key={shaderKey} color={color} map={texture} normalMap={normalMap} aoMap={aoMap}
+              aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1} sheen={look.sheen}
               normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
               roughness={look.roughness} metalness={look.metalness}
               clearcoat={look.clearcoat} clearcoatRoughness={look.clearcoatRoughness}
@@ -689,7 +712,8 @@ export function PanelMesh({
             />
           ) : (
             <meshStandardMaterial
-              key={shaderKey} color={color} map={texture} normalMap={normalMap}
+              key={shaderKey} color={color} map={texture} normalMap={normalMap} aoMap={aoMap}
+              aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1}
               normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
               roughness={look.roughness} metalness={look.metalness}
               envMapIntensity={look.envMapIntensity}
@@ -697,6 +721,7 @@ export function PanelMesh({
             />
           )}
           {outline}
+          {isSelected && <SelectionHandles size={{ x: panel.finishedLength, y: panel.finishedWidth, z: thickness }} cornerOrigin={Boolean(shape)} />}
         </mesh>
         {/* Канондық кеңістік (ұзындық/ен/қалыңдық, бұрылусыз) — дәл осы
             топтың ӨЗ жергілікті кеңістігі, сондықтан ешбір ауыстырусыз. */}
@@ -750,7 +775,8 @@ export function PanelMesh({
         <meshPhysicalMaterial
           key={shaderKey} color={color}
           map={texture}
-          normalMap={normalMap}
+          normalMap={normalMap} aoMap={aoMap}
+          aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1} sheen={look.sheen}
           normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
           roughness={look.roughness}
           metalness={look.metalness}
@@ -766,7 +792,8 @@ export function PanelMesh({
         <meshStandardMaterial
           key={shaderKey} color={color}
           map={texture}
-          normalMap={normalMap}
+          normalMap={normalMap} aoMap={aoMap}
+          aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1}
           normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
           roughness={look.roughness}
           metalness={look.metalness}
@@ -780,6 +807,7 @@ export function PanelMesh({
       {/* Шыны есіктің рамасы әрқашан көрінеді. */}
       {isGlass ? <Edges color="#5b5147" lineWidth={2} /> : null}
       {outline}
+      {isSelected && <SelectionHandles size={extents} />}
       {quality !== 'low' && !isGlass && !isSelected
         ? <PanelEdges x={extents.x} y={extents.y} z={extents.z} />
         : null}

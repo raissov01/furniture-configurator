@@ -5,17 +5,22 @@ import { t as tr } from '@/lib/i18n'
 import { useConfigurator } from '@/store/configurator'
 import type { MaterialPbr, SceneLight, Vec3 } from '@/src/core/index'
 import { parseNormalUrl, parseVisualNumber } from '@/lib/visualSettingsInput'
-import type { PbrDraft } from '@/lib/f28VisualUi'
 
 const inputStyle = 'w-full border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-950'
 const buttonStyle = 'border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700'
 
+type PbrDraft = { roughness: string; metalness: string; sheen: string; clearcoat: string; reflection: string; opacity: string;
+  normalUrl: string; normalX: string; normalY: string; normalStrength: string;
+  aoUrl: string; aoX: string; aoY: string; aoIntensity: string }
 function draftFromPbr(pbr?: MaterialPbr): PbrDraft {
   const show = (value?: number) => value === undefined ? '' : String(value)
   return { roughness: show(pbr?.roughness), metalness: show(pbr?.metalness),
+    sheen: show(pbr?.sheen), clearcoat: show(pbr?.clearcoat),
     reflection: show(pbr?.reflection), opacity: show(pbr?.opacity),
     normalUrl: pbr?.normal?.url ?? '', normalX: show(pbr?.normal?.sizeMm.x),
-    normalY: show(pbr?.normal?.sizeMm.y), normalStrength: show(pbr?.normal?.strength) }
+    normalY: show(pbr?.normal?.sizeMm.y), normalStrength: show(pbr?.normal?.strength),
+    aoUrl: pbr?.ambientOcclusion?.url ?? '', aoX: show(pbr?.ambientOcclusion?.sizeMm.x),
+    aoY: show(pbr?.ambientOcclusion?.sizeMm.y), aoIntensity: show(pbr?.ambientOcclusion?.intensity) }
 }
 
 function OptionalNumber({ label, value, setValue, max, error }: {
@@ -31,18 +36,20 @@ function OptionalNumber({ label, value, setValue, max, error }: {
   </label>
 }
 
-export function MaterialAppearanceEditor() {
+export function MaterialAppearanceEditor({ initialMaterialId }: { initialMaterialId?: string } = {}) {
   const normalUrlErrorId = useId()
   const normalXErrorId = useId()
   const normalYErrorId = useId()
+  const aoUrlErrorId = useId()
   const materials = useConfigurator((state) => state.catalog.materials)
   const setMaterialPbr = useConfigurator((state) => state.setMaterialPbr)
-  const [materialId, setMaterialId] = useState(materials[0]?.id ?? '')
+  const [materialId, setMaterialId] = useState(initialMaterialId ?? materials[0]?.id ?? '')
   const material = materials.find((entry) => entry.id === materialId)
   const [draft, setDraft] = useState<PbrDraft>(() => draftFromPbr(material?.pbr))
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof PbrDraft, string>>>({})
   const [message, setMessage] = useState<string | null>(null)
+  useEffect(() => { if (initialMaterialId) setMaterialId(initialMaterialId) }, [initialMaterialId])
   useEffect(() => { setDraft(draftFromPbr(material?.pbr)) }, [materialId, material?.pbr])
   const field = (key: keyof PbrDraft, value: string) => {
     setDraft((current) => ({ ...current, [key]: value }))
@@ -62,6 +69,8 @@ export function MaterialAppearanceEditor() {
     }
     const roughness = optional('roughness', tr('Шероховатость'), 1)
     const metalness = optional('metalness', tr('Металличность'), 1)
+    const sheen = optional('sheen', tr('Блеск (sheen)'), 1)
+    const clearcoat = optional('clearcoat', tr('Лак (clearcoat)'), 1)
     const reflection = optional('reflection', tr('Отражение'), 2)
     const opacity = optional('opacity', tr('Прозрачность'), 1)
     const normalStrength = draft.normalUrl.trim()
@@ -78,15 +87,29 @@ export function MaterialAppearanceEditor() {
         normal = { url: url.value, sizeMm: { x: x.value!, y: y.value! }, strength: normalStrength ?? 1 }
       }
     }
+    let ambientOcclusion: MaterialPbr['ambientOcclusion']
+    if (draft.aoUrl.trim()) {
+      const url = parseNormalUrl(draft.aoUrl)
+      const x = parseVisualNumber(draft.aoX, tr('Размер карты X, мм'), 1, 100000, true)
+      const y = parseVisualNumber(draft.aoY, tr('Размер карты Y, мм'), 1, 100000, true)
+      const intensity = parseVisualNumber(draft.aoIntensity, tr('Сила AO'), 0, 1, false)
+      if (url.error) errors.aoUrl = url.error
+      if (x.error) errors.aoX = x.error
+      if (y.error) errors.aoY = y.error
+      if (intensity.error) errors.aoIntensity = intensity.error
+      if (url.value && x.value !== null && y.value !== null && intensity.value !== null) {
+        ambientOcclusion = { url: url.value, sizeMm: { x: x.value!, y: y.value! }, intensity: intensity.value! }
+      }
+    }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) { setError(null); return }
     try {
       const pbr: MaterialPbr = {
-        roughness, metalness, reflection, opacity, normal,
+        roughness, metalness, sheen, clearcoat, reflection, opacity, normal, ambientOcclusion,
       }
       setMaterialPbr(material.id, Object.values(pbr).every((value) => value === undefined) ? undefined : pbr)
       setError(null); setMessage(tr('Вид материала сохранён'))
-    } catch { setError(tr('Не удалось сохранить вид материала')) }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить вид материала')) }
   }
   return <div className="space-y-3 text-neutral-900 dark:text-neutral-100">
     <p className="text-xs text-neutral-500">{tr('PBR меняет только вид, без изменения раскроя и цены.')}</p>
@@ -97,6 +120,8 @@ export function MaterialAppearanceEditor() {
     <div className="grid grid-cols-2 gap-2">
       <OptionalNumber label={tr('Шероховатость')} value={draft.roughness} setValue={(value) => field('roughness', value)} max={1} error={fieldErrors.roughness} />
       <OptionalNumber label={tr('Металличность')} value={draft.metalness} setValue={(value) => field('metalness', value)} max={1} error={fieldErrors.metalness} />
+      <OptionalNumber label={tr('Блеск (sheen)')} value={draft.sheen} setValue={(value) => field('sheen', value)} max={1} error={fieldErrors.sheen} />
+      <OptionalNumber label={tr('Лак (clearcoat)')} value={draft.clearcoat} setValue={(value) => field('clearcoat', value)} max={1} error={fieldErrors.clearcoat} />
       <OptionalNumber label={tr('Отражение')} value={draft.reflection} setValue={(value) => field('reflection', value)} max={2} error={fieldErrors.reflection} />
       <OptionalNumber label={tr('Прозрачность')} value={draft.opacity} setValue={(value) => field('opacity', value)} max={1} error={fieldErrors.opacity} />
     </div>
@@ -119,6 +144,17 @@ export function MaterialAppearanceEditor() {
         {fieldErrors.normalY && <span id={normalYErrorId} className="block text-red-600">{fieldErrors.normalY}</span>}</label>
       <OptionalNumber label={tr('Сила рельефа')} value={draft.normalStrength}
         setValue={(value) => field('normalStrength', value)} max={2} error={fieldErrors.normalStrength} />
+    </div>}
+    <label className="block text-xs">{tr('Карта AO (URL)')}
+      <input className={`${inputStyle} mt-1`} type="url" value={draft.aoUrl} aria-invalid={!!fieldErrors.aoUrl}
+        aria-describedby={fieldErrors.aoUrl ? aoUrlErrorId : undefined}
+        onChange={(event) => field('aoUrl', event.target.value)} placeholder="https://…" />
+      {fieldErrors.aoUrl && <span id={aoUrlErrorId} className="block text-red-600">{fieldErrors.aoUrl}</span>}
+    </label>
+    {draft.aoUrl.trim() && <div className="grid grid-cols-3 gap-2">
+      <OptionalNumber label={tr('Размер карты X, мм')} value={draft.aoX} setValue={(value) => field('aoX', value)} max={100000} error={fieldErrors.aoX} />
+      <OptionalNumber label={tr('Размер карты Y, мм')} value={draft.aoY} setValue={(value) => field('aoY', value)} max={100000} error={fieldErrors.aoY} />
+      <OptionalNumber label={tr('Сила AO')} value={draft.aoIntensity} setValue={(value) => field('aoIntensity', value)} max={1} error={fieldErrors.aoIntensity} />
     </div>}
     <button type="button" className={buttonStyle} onClick={save}>{tr('Сохранить вид материала')}</button>
     {error && <p role="alert" className="text-xs text-red-600">{error}</p>}

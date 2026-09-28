@@ -66,6 +66,21 @@ export function normalTexture(url: string, spanXMm: number, spanYMm: number,
   return configureNormalTexture(tex, spanXMm, spanYMm, sizeMm)
 }
 
+/** AO uses the panel's existing UV0; three.js defaults AO maps to UV1. */
+export function configureAmbientOcclusionTexture(tex: Texture, spanXMm: number, spanYMm: number,
+  sizeMm: { x: number; y: number }): Texture {
+  configureNormalTexture(tex, spanXMm, spanYMm, sizeMm)
+  tex.channel = 0
+  return tex
+}
+
+export function ambientOcclusionTexture(url: string, spanXMm: number, spanYMm: number,
+  sizeMm: { x: number; y: number }, onLoad?: () => void): Texture | null {
+  if (typeof document === 'undefined') return null
+  const texture = new TextureLoader().load(url, () => onLoad?.())
+  return configureAmbientOcclusionTexture(texture, spanXMm, spanYMm, sizeMm)
+}
+
 /**
  * `grainAlongLength` 3D-де — CLAUDE.md §3, docs/visual/texture.md §1.5.
  *

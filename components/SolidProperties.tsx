@@ -7,6 +7,7 @@ import type { SolidNode } from '@/src/core/tree'
 import { useConfigurator } from '@/store/configurator'
 import { MoneyInput } from './MoneyInput'
 import { SpecialPartProperties } from './SpecialPartProperties'
+import { ExactTransformFields } from '@/components/ExactTransformFields'
 
 /** Decorative solids have scene properties only; they do not produce cut panels. */
 export function SolidProperties({ node }: { node: SolidNode }) {
@@ -23,7 +24,6 @@ export function SolidProperties({ node }: { node: SolidNode }) {
   }, [node.id, node.solid.modelSource])
   const renameNode = useConfigurator((state) => state.renameNode)
   const editSolid = useConfigurator((state) => state.editSolid)
-  const setSolidPosition = useConfigurator((state) => state.setSolidPosition)
   const run = (edit: () => void) => {
     try { edit(); setError(null) }
     catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)) }
@@ -42,12 +42,7 @@ export function SolidProperties({ node }: { node: SolidNode }) {
         <Field key={axis} label={`${label}, мм`}><NumberInput value={node.solid.size[axis]} min={1}
           onChange={(value) => run(() => editSolid(node.id, { size: { ...node.solid.size, [axis]: value } }))} /></Field>)}
     </div>}
-    <div className="grid grid-cols-3 gap-2" data-testid="solid-position">
-      {(['x', 'y', 'z'] as const).map((axis) => <Field key={axis} label={`${axis.toUpperCase()}, мм`}>
-        <NumberInput value={node.transform.pos[axis]}
-          onChange={(value) => run(() => setSolidPosition(node.id, { ...node.transform.pos, [axis]: value }))} />
-      </Field>)}
-    </div>
+    <div data-testid="solid-position"><ExactTransformFields nodeId={node.id} transform={node.transform} disabled={Boolean(node.locked)} /></div>
     <Field label={tr('Цвет')}><input type="color" aria-label={tr('Цвет')}
       className="h-8 w-full border border-neutral-300 bg-white p-0.5 dark:border-neutral-700 dark:bg-neutral-900"
       value={/^#[0-9a-fA-F]{6}$/.test(node.solid.color ?? '') ? node.solid.color : '#a3a3a3'}

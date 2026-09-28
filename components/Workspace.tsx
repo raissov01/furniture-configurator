@@ -10,6 +10,7 @@ import { Button, Dense, Menu, MenuItem, Slider } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { modalBlocksHotkeys } from '@/lib/modalStack'
 import { getModalStack } from '@/lib/useModalLayer'
+import { downloadPanorama } from '@/lib/panorama'
 import { hasDraftErrors, updateDraftErrors } from '@/lib/numberDraft'
 import { freeMirrorAvailability } from '@/lib/freeMirrorAction'
 import { Configurator } from '@/components/Configurator'
@@ -604,6 +605,16 @@ export function Workspace() {
         })
           .catch((cause: unknown) => setExportError(cause instanceof Error ? cause.message : String(cause)))
         break
+      case 'panorama':
+        setExportError(null)
+        requestAnimationFrame(() => {
+          try {
+            const context = useConfigurator.getState().liveRenderContext
+            if (!context) throw new Error(tr('Сцена ещё не готова'))
+            downloadPanorama(context)
+          } catch (cause) { setExportError(cause instanceof Error ? cause.message : tr('Не удалось создать панораму')) }
+        })
+        break
       case 'clientLink': void copyClientLink(); break
       case 'reset': requestReset(); break
       case 'undo': undo(); break
@@ -786,7 +797,12 @@ export function Workspace() {
 
       <div className="p100-toolbar hidden lg:block" data-testid="classic-toolbar">
         {classicToolRows.map((row, index) => <div className="p100-toolbar-row" key={index}>
-          {row.map((tool) => <ClassicTool key={`${tool.icon}-${tool.label}`} {...tool} onHover={setHoveredToolLabel} />)}
+          <span className="p100-toolbar-gripper" aria-hidden="true" />
+          {row.map((tool, toolIndex) => <span key={`${tool.icon}-${tool.label}`} className="p100-toolbar-cell">
+            <ClassicTool {...tool} onHover={setHoveredToolLabel} />
+            {(index === 0 ? [2, 6, 8] : index === 1 ? [3, 6] : [2, 6]).includes(toolIndex)
+              && <span className="p100-toolbar-separator" aria-hidden="true" />}
+          </span>)}
           {index === 2 && assemblyStep !== null && <label className="ml-2 flex items-center gap-1 border border-neutral-400 px-1 text-xs" data-testid="classic-assembly-step">
             <span>{tr('Сборка')}</span>
             <input type="range" aria-label={tr('Показать сборку по шагам')} min={1}
@@ -1109,8 +1125,19 @@ export function Workspace() {
           — үнсіз ескерту (сахнада тартып апарыңыз), батырма емес.
           Телефонда жасырын: PRO100 макеті десктопқа арналған.
         */}
-        <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
-          <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
+        <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800" data-testid="classic-side-tools">
+            <ClassicTool icon="select" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="properties" label={tr('Свойства')} action={() => setPropertiesNodeId(activeId)} disabled={!propertiesNodeSupported(activeNode?.kind)} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="structure" label={tr('Структура')} action={() => openDockTab('structure')} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="layers" label={tr('Слои')} action={() => openDockTab('layers')} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="library" label={tr('Библиотека')} action={() => openDockTab('library')} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="board" label={tr('Добавить свободную доску')} action={addBoard} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="decor" label={tr('Добавить декоративный блок')} action={addSolid} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="text" label={tr('Добавить текст')} action={addAnnotation} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="room" label={tr('Стены и комната')} action={() => setRoomOpen(true)} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="render" label={tr('Рендер')} action={() => setRenderOpen(true)} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="quote" label={tr('Деталировка')} action={toggleCut} active={cutOpen} onHover={setHoveredToolLabel} />
+            <ClassicTool icon="fit" label={tr('Вписать в кадр')} action={fitCamera} onHover={setHoveredToolLabel} />
         </div>
         <div className="flex min-h-0 flex-col overflow-y-auto lg:overflow-hidden">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
@@ -1193,28 +1220,29 @@ export function Workspace() {
           қояды — активтілік те содан есептеледі.
         */}
         <div
-          className="flex items-center gap-0.5 overflow-x-auto border-t border-neutral-200 bg-neutral-50 px-1 py-1 dark:border-neutral-800 dark:bg-neutral-900"
+          className="p100-view-tabs flex items-center gap-0.5 overflow-x-auto border-t border-neutral-200 bg-neutral-50 px-1 py-1 dark:border-neutral-800 dark:bg-neutral-900"
           data-tour="viewtabs"
         >
-          {VIEW_TABS.map((v) => {
+          {VIEW_TABS.map((v, index) => {
             const isActive = cameraPreset === v.preset && (v.projection === undefined || projection === v.projection)
             return (
-              <Button
+              <span key={v.key} className="p100-view-tab-cell">
+              {index > 0 && <span className="p100-view-tab-divider" aria-hidden="true">|</span>}
+              <button type="button" className="p100-view-tab" aria-current={isActive ? 'page' : undefined}
                 key={v.key}
-                size="sm"
-                active={isActive}
                 onClick={() => {
                   setCameraPreset(v.preset)
                   if (v.projection) setProjection(v.projection)
                 }}
               >
                 {tr(v.ruLabel)}
-              </Button>
+              </button>
+              </span>
             )
           })}
         </div>
         <section
-          className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72')}
+          className={cn('border-t border-neutral-200 dark:border-neutral-800', cutOpen && 'h-72', classic && !cutOpen && 'lg:hidden')}
           data-tour="cutlist"
           data-tour-mobile="cutlist"
         >
@@ -1252,7 +1280,7 @@ export function Workspace() {
               </div>
             </> : activeAnnotation ? <div className="truncate text-sm font-semibold" title={activeAnnotation.name}>{activeAnnotation.name}</div>
               : <div className="text-sm text-neutral-500">{tr('Выберите корпус в структуре проекта')}</div>}
-            {(activeBoard || activeSolid || activeAnnotation || cabinet) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
+            {propertiesNodeSupported(activeNode?.kind) && <Button size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3 lg:hidden">
             <Dense>
@@ -1313,6 +1341,7 @@ export function Workspace() {
         <span>{classicToolStatus(hoveredToolLabel, selected, activeNode?.name, tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
         {selected && activeNode && <span className="ml-auto tabular-nums">
           {tr('Положение')}: X {activeNode.transform.pos.x} · Y {activeNode.transform.pos.y} · Z {activeNode.transform.pos.z} мм
+          {' · '}{tr('Поворот')}: Y {activeNode.transform.rot.y}°
           {' · '}{tr('Размеры')}: {activeNode.kind === 'cabinet'
             ? `${activeNode.config.height} (H) × ${activeNode.config.width} (W) × ${activeNode.config.depth} (D)`
             : activeNode.kind === 'board' && catalog.materials.find((material) => material.id === activeNode.board.materialId)

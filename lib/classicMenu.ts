@@ -24,6 +24,7 @@ export type ClassicCommand =
   | { type: 'saveProject' }
   | { type: 'openProject' }
   | { type: 'export'; format: ShopExportFormat; scope: ShopExportScope }
+  | { type: 'panorama' }
   | { type: 'clientLink' }
   | { type: 'reset' }
   | { type: 'undo' }
@@ -141,6 +142,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('file.export.csv', 'CSV — весь проект', { type: 'export', format: 'csv', scope: 'project' }, { disabled: !(s.canExportPanels ?? s.canExport) }),
         item('file.export.dxf', 'DXF — весь проект', { type: 'export', format: 'dxf', scope: 'project' }, { disabled: !(s.canExportDxf ?? s.canExport) }),
         item('file.export.project.pdf', 'PDF — весь проект', { type: 'export', format: 'pdf', scope: 'project' }, { disabled: !s.canExportPdf, hint: classicFileHint('printProject') }),
+        item('file.export.panorama', 'Панорама 360°', { type: 'panorama' }),
         { kind: 'heading', id: 'file.export.cabinet', label: 'Активный корпус' },
         item('file.export.cabinet.xlsx', 'XLSX — активный корпус', { type: 'export', format: 'xlsx', scope: 'cabinet' }, { disabled: !(s.canExportActiveCabinet ?? s.canExportPdf) }),
         item('file.export.cabinet.csv', 'CSV — активный корпус', { type: 'export', format: 'csv', scope: 'cabinet' }, { disabled: !(s.canExportActiveCabinet ?? s.canExportPdf) }),

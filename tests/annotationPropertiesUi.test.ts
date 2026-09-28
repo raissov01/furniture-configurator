@@ -8,9 +8,9 @@ import { PropertiesDialog } from '../components/PropertiesDialog'
 import { useConfigurator } from '../store/configurator'
 
 describe('annotation Properties editor', () => {
-  it('accepts annotation nodes and rejects groups', () => {
+  it('accepts annotation and group nodes', () => {
     expect(propertiesNodeSupported('annotation')).toBe(true)
-    expect(propertiesNodeSupported('group')).toBe(false)
+    expect(propertiesNodeSupported('group')).toBe(true)
   })
 
   it('keeps empty and overlong drafts out of the saved node', () => {

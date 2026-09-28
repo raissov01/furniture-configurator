@@ -22,6 +22,7 @@ import { t as tr, tf } from '@/lib/i18n'
 import { CABINET_DIMENSION_MAX, CABINET_DIMENSION_MIN, dimensionRangeHint } from '@/lib/dimensionHint'
 import { Button, Collapsible, Field, NumberInput, SectionTitle, Select, Toggle } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
+import { MaterialAppearanceEditor } from '@/components/VisualSettingsPanel'
 import { ExportMenu } from '@/components/ExportMenu'
 import { cn } from '@/lib/cn'
 import { enableCornerCabinet } from '@/lib/cornerTransition'
@@ -1792,6 +1793,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
           />
         </Field>
         </Collapsible>
+        <MaterialAppearanceEditor initialMaterialId={cabinet.carcassMaterialId} />
       </div>
 
       {/*

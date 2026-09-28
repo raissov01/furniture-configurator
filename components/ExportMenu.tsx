@@ -14,6 +14,7 @@ import { Menu, MenuItem } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
 import { runShopExport, type ShopExportFormat } from '@/lib/shopExport'
 import { selectShopExportPanels, type ShopExportScope } from '@/lib/shopExportScope'
+import { downloadPanorama } from '@/lib/panorama'
 import type { CabinetConfig, Panel, SpecialPartRow } from '@/src/core/index'
 
 export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPanels, specialParts = [], projectName, exportId, exportName }: {
@@ -25,6 +26,7 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
   const projectInfo = useConfigurator((s) => s.projectInfo)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const [busy, setBusy] = useState<string | null>(null)
+  const [panoramaError, setPanoramaError] = useState<string | null>(null)
 
   // Логика `lib/shopExport.ts`-те: классикалық «Файл» мәзірі де соны тікелей шақырады.
   const run = async (format: ShopExportFormat, scope: ShopExportScope) => {
@@ -71,7 +73,18 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
         {cabinet && <MenuItem disabled={busy !== null} title={tr('Проекции, сборка и деталировка')} onClick={() => void run('pdf', 'cabinet')}>
           PDF — {tr('сборочный чертёж')}
         </MenuItem>}
+        <MenuItem disabled={busy !== null} onClick={() => {
+          setPanoramaError(null)
+          requestAnimationFrame(() => {
+            try {
+              const context = useConfigurator.getState().liveRenderContext
+              if (!context) throw new Error(tr('Сцена ещё не готова'))
+              downloadPanorama(context)
+            } catch (cause) { setPanoramaError(cause instanceof Error ? cause.message : tr('Не удалось создать панораму')) }
+          })
+        }}>{tr('Панорама 360°')}</MenuItem>
       </Menu>
+      {panoramaError && <p role="alert" className="text-xs text-red-700">{panoramaError}</p>}
     </div>
   )
 }

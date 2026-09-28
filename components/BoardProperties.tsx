@@ -12,6 +12,7 @@ import { PolygonEditor } from '@/components/PolygonEditor'
 import { ORIENT_FACING, ORIENT_HORIZONTAL, ORIENT_SIDE, ORIENT_UPRIGHT, panelFitWarnings } from '@/src/core/index'
 import type { BoardNode, BoardSpec, Catalog, Orientation, Panel, PanelEdges } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
+import { MaterialAppearanceEditor } from '@/components/VisualSettingsPanel'
 
 type Tab = 'general' | 'material' | 'reports' | 'production'
 const orientations: { value: string; label: string; orientation: Orientation }[] = [
@@ -136,6 +137,7 @@ export function BoardProperties({ node, panel, catalog, locked = false, producti
           onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur() }}
           className="w-full border border-neutral-300 bg-white px-2 py-1 aria-invalid:border-red-500 dark:border-neutral-700 dark:bg-neutral-900" />
       </Field>
+      <MaterialAppearanceEditor initialMaterialId={material.id} />
     </fieldset>
     <div className={tab === 'reports' ? 'space-y-2' : 'hidden'}>
       <p>{tr('Готовый')}: {panel ? `${panel.finishedLength} × ${panel.finishedWidth} мм` : '—'}</p>
