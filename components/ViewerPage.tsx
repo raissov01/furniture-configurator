@@ -28,7 +28,7 @@ import { formatTengeExact } from '@/src/core/index'
 import { viewerHashError, viewerPressedState } from '@/components/viewerPublicError'
 import { SITE } from '@/lib/site'
 import { visibleMaterialNames } from '@/lib/f00kDisplay'
-import { cabinetCountLabel } from '@/lib/viewerCount'
+import type { PublicShareIdentity } from '@/lib/codeEntryState'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
 // Жүктелгенше «жүктелуде» шеңбері — клиент бет қатып қалды деп ойламасын.
@@ -53,7 +53,7 @@ const SHARE_POLL_MS = 5000
 
 export function ViewerPage() {
   const [state, setState] = useState<
-    { kind: 'loading' } | { kind: 'ready'; project: ProjectFileV4 } | { kind: 'error'; message: string }
+    { kind: 'loading' } | { kind: 'ready'; project: ProjectFileV4; shop: PublicShareIdentity | null } | { kind: 'error'; message: string }
   >({ kind: 'loading' })
 
   const loadProject = useConfigurator((s) => s.loadProject)
@@ -71,7 +71,7 @@ export function ViewerPage() {
     try {
       const project = decodeProjectV4(hash)
       loadProject(project)
-      setState({ kind: 'ready', project })
+      setState({ kind: 'ready', project, shop: null })
     } catch (error) {
       setState({
         kind: 'error',
@@ -105,13 +105,13 @@ export function ViewerPage() {
         }
         return
       }
-      const data = (await res.json()) as { project: unknown; updatedAt: number }
+      const data = (await res.json()) as { project: unknown; updatedAt: number; shop?: PublicShareIdentity | null }
       if (!alive || data.updatedAt === seen) return
       seen = data.updatedAt
       try {
         const project = parseProjectV4(data.project)
         loadProject(project)
-        setState({ kind: 'ready', project })
+        setState({ kind: 'ready', project, shop: data.shop ?? null })
       } catch {
         if (first) {
           setState({
@@ -128,7 +128,7 @@ export function ViewerPage() {
 
   return state.kind === 'ready'
     ? <Viewer project={state.project} preset={cameraPreset} setPreset={setCameraPreset}
-      code={new URLSearchParams(window.location.search).get('c')} />
+      code={new URLSearchParams(window.location.search).get('c')} shop={state.shop} />
     : <Notice state={state} />
 }
 
@@ -143,7 +143,7 @@ function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; messa
           <>
             <h1 className="text-lg font-semibold">{tr('Ссылка не открылась')}</h1>
             <p className="text-sm text-neutral-200">{state.message}</p>
-            <Link href="/" className="inline-block text-sm text-[var(--brand-amber)] underline">{tr('На главную')}</Link>
+            <Link href="/c" className="inline-block text-sm text-[var(--brand-amber)] underline">{tr('Проверить код')}</Link>
           </>
         )}
       </div>
@@ -152,12 +152,13 @@ function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; messa
 }
 
 function Viewer({
-  project, preset, setPreset, code,
+  project, preset, setPreset, code, shop,
 }: {
   project: ProjectFileV4
   preset: CameraPreset
   setPreset: (v: CameraPreset) => void
   code: string | null
+  shop: PublicShareIdentity | null
 }) {
   const room = useConfigurator((s) => s.room)
   const root = useConfigurator((s) => s.root)
@@ -187,6 +188,10 @@ function Viewer({
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-2">
         <img src="/brand/aismebel-mark.svg" width={24} height={24} alt={SITE.name} />
         <span className="text-sm font-semibold">{project.name}</span>
+        {shop ? <span className="inline-flex items-center gap-2 border-l border-neutral-500 pl-3 text-xs text-neutral-100">
+          {shop.logoDataUrl ? <img src={shop.logoDataUrl} width={24} height={24} alt="" className="h-6 w-6 object-contain" /> : null}
+          {shop.name}
+        </span> : null}
         <span className="text-xs text-neutral-200">
           {countLabel(cabinets.length, 'Корпус', getLang())}
         </span>

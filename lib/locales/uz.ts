@@ -11,6 +11,12 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Код': 'Kod',
+  'Код: ровно 6 цифр': 'Kod: aynan 6 ta raqam kiriting',
+  'Проверить код': 'Kodni tekshirish',
+  'Проверяем код…': 'Kod tekshirilmoqda…',
+  'Проверенный проект': 'Tekshirilgan loyiha',
+  'Нужен новый код? Свяжитесь с мастером.': 'Yangi kod kerakmi? Ustaga murojaat qiling.',
   'Выбрать файл': 'Fayl tanlash',
   'Выбрать фото': 'Foto tanlash',
   'загружен': 'yuklangan',

@@ -10,6 +10,12 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Код': 'Code',
+  'Код: ровно 6 цифр': 'Code: enter exactly 6 digits',
+  'Проверить код': 'Check code',
+  'Проверяем код…': 'Checking code…',
+  'Проверенный проект': 'Verified project',
+  'Нужен новый код? Свяжитесь с мастером.': 'Need a new code? Contact the maker.',
   'Выбрать файл': 'Choose file',
   'Выбрать фото': 'Choose photo',
   'загружен': 'uploaded',
