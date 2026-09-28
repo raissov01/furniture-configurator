@@ -365,6 +365,8 @@ export function AccountPanel() {
       setAccount(data.account)
       window.dispatchEvent(new Event(LIBRARY_AUTH_CHANGED_EVENT))
       setForm({ email: '', password: '', shopName: '' })
+      setFormTouched({})
+      setResetTouched(false)
       /*
        * Үшеуі ҚАТАР жүреді. Бұрын кезекпен күтетін, ал әрқайсысы бөлек
        * баруы серверге дейінгі кідірісті ҮШ ЕСЕЛЕЙТІН: жақын тұрған дев
