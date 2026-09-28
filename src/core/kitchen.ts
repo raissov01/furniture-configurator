@@ -931,7 +931,7 @@ export function generateKitchen(options: KitchenOptions, catalog: Catalog): Kitc
 /**
  * ЦОКОЛЬ — көрші модульдердің плинтусын БІР жолаққа біріктіру (G2,
  * docs/visual/generator-gaps.md §G2; диагноз docs/audit/qdesign-drilling-
- * reference.md §7: qdesign «Цоколь (объединенный)», 2633×95×16, модуль
+ * reference.md §7: qdesign «Цоколь (объединенный)», 2633 мм ұзын, 95 мм биік, 16 мм қалың, модуль
  * тізімінде «01.05 Ірге (біріктірілген)»). `dressBase` бүкіл гарнитурға
  * (база + пенал) бір биіктік/материал бергендіктен (2026-09-20,
  * commit c92afad) көрші корпустардың цоколі енді нақты бірігуге дайын.
