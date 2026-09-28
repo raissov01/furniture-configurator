@@ -182,7 +182,7 @@ function Viewer({
   }, [catalog])
 
   return (
-    <main className="flex min-h-dvh flex-col bg-[var(--brand-graphite)] text-white sm:h-dvh">
+    <main className="viewer-page flex min-h-dvh flex-col bg-[var(--brand-graphite)] text-white sm:h-dvh">
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-2">
         <img src="/brand/aismebel-mark.svg" width={24} height={24} alt={SITE.name} />
         <span className="text-sm font-semibold">{project.name}</span>
@@ -233,7 +233,7 @@ function Viewer({
         ) : null}
       </div>
 
-      <section className="max-h-[20vh] overflow-auto border-t border-neutral-800 px-4 py-3 text-xs">
+      <section className="max-h-[20vh] overflow-auto border-t border-neutral-800 px-4 py-3 text-sm">
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           {cabinets.map((cabinet) => (
             <p key={cabinet.id}>

@@ -608,6 +608,14 @@ function SheetCard({
         })}
       </svg>
       </div>
+      <details className="border border-neutral-300 bg-white p-2 text-sm sm:hidden">
+        <summary className="min-h-11 cursor-pointer py-2">{tr('Детали на листе')}</summary>
+        <ul className="space-y-1">
+          {sheet.parts.map((part) => <li key={part.panelId} className="border-t border-neutral-200 py-1">
+            {panelDisplayLabel(part.label)} · {part.width} × {part.height} {tr('мм')}
+          </li>)}
+        </ul>
+      </details>
       <div className="flex flex-wrap items-center gap-1 text-xs">
         <Button size="sm" active={playback} disabled={!showCuts} ariaPressed={playback}
           onClick={() => { setPlayback(!playback); setPlaying(false); setStep(0) }}>

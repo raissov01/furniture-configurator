@@ -11,6 +11,7 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Детали на листе': 'Varaqdagi detallar',
   'Выбрать файл': 'Fayl tanlash',
   'Выбрать фото': 'Foto tanlash',
   'загружен': 'yuklangan',

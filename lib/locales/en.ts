@@ -10,6 +10,7 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Детали на листе': 'Parts on this sheet',
   'Выбрать файл': 'Choose file',
   'Выбрать фото': 'Choose photo',
   'загружен': 'uploaded',
