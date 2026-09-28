@@ -24,6 +24,7 @@ import { drillToLocalMarker } from '@/lib/drillGeometry'
 import { DrillMarkers } from '@/components/DrillMarkers'
 import { FittingMeshes } from '@/components/FittingMeshes'
 import { fittingsForPanel } from '@/lib/fittingGeometry'
+import { xrayViewState } from '@/lib/xrayView'
 import type { RenderedDrillMarker } from '@/components/DrillMarkers'
 
 /**
@@ -351,7 +352,7 @@ export function PanelMesh({
   const exploded = useConfigurator((s) => s.exploded)
   const hovered = useConfigurator((s) => s.hovered)
   const setHovered = useConfigurator((s) => s.setHovered)
-  const viewMode = useConfigurator((s) => s.viewMode)
+  const storedViewMode = useConfigurator((s) => s.viewMode)
   const selected = useConfigurator((s) => s.selected)
   const setSelected = useConfigurator((s) => s.setSelected)
   const setActive = useConfigurator((s) => s.setActive)
@@ -384,8 +385,12 @@ export function PanelMesh({
   const quality = useConfigurator((s) => s.quality)
   // Присадка белгісі — әдепкіде ӨШІРУЛІ (store/configurator.ts), клиентке
   // көрсеткенде керек емес.
-  const showDrilling = useConfigurator((s) => s.showDrilling)
-  const showFittings = useConfigurator((s) => s.showFittings)
+  const storedShowDrilling = useConfigurator((s) => s.showDrilling)
+  const storedShowFittings = useConfigurator((s) => s.showFittings)
+  const xray = useConfigurator((s) => s.xray)
+  const { viewMode, showDrilling, showFittings } = xrayViewState({
+    viewMode: storedViewMode, showDrilling: storedShowDrilling, showFittings: storedShowFittings,
+  }, xray)
   const key = pid ?? panel.id
   const material = useMemo(
     () => catalog.materials.find((m) => m.id === panel.materialId),
@@ -727,11 +732,12 @@ export function PanelMesh({
             />
           )}
           {outline}
+          {xray && !isSelected ? <Edges color="#586574" lineWidth={1} /> : null}
           {isSelected && <SelectionHandles size={{ x: panel.finishedLength, y: panel.finishedWidth, z: thickness }} cornerOrigin={Boolean(shape)} />}
         </mesh>
         {/* Канондық кеңістік (ұзындық/ен/қалыңдық, бұрылусыз) — дәл осы
             топтың ӨЗ жергілікті кеңістігі, сондықтан ешбір ауыстырусыз. */}
-        <DrillMarkers markers={canonicalDrillMarkers} />
+        <DrillMarkers markers={canonicalDrillMarkers} dimmed={Boolean(xray && selected && !isSelected)} />
         <FittingMeshes fittings={fittings} />
       </group>
     )
@@ -809,7 +815,7 @@ export function PanelMesh({
       {isGlass ? <Edges color="#5b5147" lineWidth={2} /> : null}
       {outline}
       {isSelected && <SelectionHandles size={extents} />}
-      {quality !== 'low' && !isGlass && !isSelected
+      {(xray || quality !== 'low') && !isGlass && !isSelected
         ? <PanelEdges x={extents.x} y={extents.y} z={extents.z} />
         : null}
       {panel.role === 'front' && panel.milling.length > 0 ? (
@@ -820,7 +826,7 @@ export function PanelMesh({
       {/* Канондық нүкте боксттың ОРТАСЫНАН саналған ығысуға ауыстырылды
           (`boxDrillMarkers`, жоғарыда) — бұл мештің өз жергілікті кеңістігі
           дәл сол орталықтан саналады. */}
-      <DrillMarkers markers={boxDrillMarkers} />
+      <DrillMarkers markers={boxDrillMarkers} dimmed={Boolean(xray && selected && !isSelected)} />
       <FittingMeshes fittings={boxFittings} />
       {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>

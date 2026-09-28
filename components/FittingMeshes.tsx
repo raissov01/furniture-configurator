@@ -3,54 +3,31 @@
 /** Өндіруші CAD активі емес: дайын Drill бойынша шағын процедуралық модель. */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Html } from '@react-three/drei'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useThree } from '@react-three/fiber'
 import { Object3D, Quaternion, Vector3 } from 'three'
-import type { Group, InstancedMesh } from 'three'
-import type { FittingVisual } from '@/lib/fittingGeometry'
+import type { InstancedMesh } from 'three'
+import { fittingShape, type FittingVisual } from '@/lib/fittingGeometry'
 import { t as tr } from '@/lib/i18n'
 
 const Y = new Vector3(0, 1, 0)
 const SILVER = '#a9adb2'
 const MOUNT = '#68717b'
 
-/** Физикалық операцияның символы: өлшемдері Drill/ShopProfile-ден алынған. */
-function sizeFor(item: FittingVisual): { head: [number, number, number]; shaft: [number, number, number] } {
-  const diameter = item.diameter
-  if (item.purpose === 'hinge' && diameter >= 30) return {
-    head: [diameter, 2, diameter], shaft: [diameter, item.depth, diameter],
-  }
-  if (item.purpose === 'minifix' && diameter >= 12) return {
-    head: [diameter, 3, diameter], shaft: [diameter, item.depth, diameter],
-  }
-  if (item.purpose === 'runner') return {
-    // Ұзын рельстің нақты ұзындығы бұл Drill-де жоқ; screw орнының
-    // нышаны ғана. Нақты рельсті cabinet hardware/config дерегінен салу керек.
-    head: [diameter + 3, 3, diameter + 3], shaft: [diameter, item.depth, diameter],
-  }
-  if (item.purpose === 'shelfPin') return {
-    head: [diameter + 4, 3, diameter + 4], shaft: [diameter, item.depth, diameter],
-  }
-  return {
-    head: [diameter + (item.purpose === 'confirmat' ? 3 : 1), 3,
-      diameter + (item.purpose === 'confirmat' ? 3 : 1)],
-    shaft: [diameter, item.purpose === 'confirmat' ? item.length : item.depth, diameter],
-  }
-}
-
 function BatchedPurpose({ fittings }: { fittings: FittingVisual[] }) {
   const head = useRef<InstancedMesh>(null)
   const shaft = useRef<InstancedMesh>(null)
   const detail = useRef<InstancedMesh>(null)
-  const group = useRef<Group>(null)
+  const plate = useRef<InstancedMesh>(null)
+  const railMesh = useRef<InstancedMesh>(null)
   const [hover, setHover] = useState<number | null>(null)
-  const { camera, invalidate } = useThree()
-  const world = useMemo(() => new Vector3(), [])
+  const invalidate = useThree((state) => state.invalidate)
   const purpose = fittings[0]?.purpose
+  const rails = useMemo(() => fittings.filter((item) => item.rail), [fittings])
   const transforms = useMemo(() => fittings.map((item) => {
     const normal = new Vector3(item.normal.x, item.normal.y, item.normal.z)
     const q = new Quaternion().setFromUnitVectors(Y, normal)
     const p = new Vector3(item.point.x, item.point.y, item.point.z)
-    const dimensions = sizeFor(item)
+    const dimensions = fittingShape(item)
     return { p, q, normal, dimensions }
   }), [fittings])
 
@@ -58,7 +35,8 @@ function BatchedPurpose({ fittings }: { fittings: FittingVisual[] }) {
     const dummy = new Object3D()
     transforms.forEach(({ p, q, normal, dimensions }, i) => {
       dummy.quaternion.copy(q)
-      dummy.position.copy(p).addScaledVector(normal, 1)
+      // Басы сыртқа шығып тұрған қара өзекке айналмауы үшін бетпен бір деңгейде.
+      dummy.position.copy(p).addScaledVector(normal, -Math.min(dimensions.head[1] / 2, dimensions.shaft[1] / 2))
       dummy.scale.set(...dimensions.head)
       dummy.updateMatrix()
       head.current?.setMatrixAt(i, dummy.matrix)
@@ -66,39 +44,48 @@ function BatchedPurpose({ fittings }: { fittings: FittingVisual[] }) {
       dummy.scale.set(...dimensions.shaft)
       dummy.updateMatrix()
       shaft.current?.setMatrixAt(i, dummy.matrix)
-      if (purpose === 'hinge' || purpose === 'runner') {
+      if (dimensions.arm) {
         // Көзге танылатын иін/рельс; тек көрініс. Дәл монтаж тесігі әрдайым
         // Drill-дағы нүкте, ал рельстің толық ұзындығы бұл деректе жоқ.
-        dummy.position.copy(p).addScaledVector(normal, 4)
-        dummy.scale.set(
-          purpose === 'hinge' ? dimensions.head[0] * 1.6 : dimensions.head[0] * 6,
-          3,
-          purpose === 'hinge' ? dimensions.head[0] * 0.35 : dimensions.head[0] * 0.4,
-        )
+        dummy.position.copy(p).addScaledVector(normal, dimensions.arm[1] / 2)
+        dummy.scale.set(...dimensions.arm)
         dummy.updateMatrix()
         detail.current?.setMatrixAt(i, dummy.matrix)
+      } else if (detail.current) {
+        dummy.scale.set(0, 0, 0)
+        dummy.updateMatrix()
+        detail.current.setMatrixAt(i, dummy.matrix)
+      }
+      if (dimensions.plate) {
+        dummy.position.copy(p).addScaledVector(normal, dimensions.arm![1] + dimensions.plate[1] / 2)
+        dummy.scale.set(...dimensions.plate)
+        dummy.updateMatrix()
+        plate.current?.setMatrixAt(i, dummy.matrix)
+      } else if (plate.current) {
+        dummy.scale.set(0, 0, 0)
+        dummy.updateMatrix()
+        plate.current.setMatrixAt(i, dummy.matrix)
       }
     })
-    if (head.current) head.current.instanceMatrix.needsUpdate = true
-    if (shaft.current) shaft.current.instanceMatrix.needsUpdate = true
-    if (detail.current) detail.current.instanceMatrix.needsUpdate = true
+    rails.forEach((item, index) => {
+      const rail = item.rail!
+      dummy.quaternion.identity()
+      dummy.position.set(rail.center.x, rail.center.y, rail.center.z)
+      dummy.scale.set(rail.sideClearance, rail.length, item.diameter)
+      dummy.updateMatrix()
+      railMesh.current?.setMatrixAt(index, dummy.matrix)
+    })
+    for (const mesh of [head.current, shaft.current, detail.current, plate.current, railMesh.current]) {
+      if (!mesh) continue
+      mesh.instanceMatrix.needsUpdate = true
+      mesh.computeBoundingSphere()
+    }
     invalidate()
-  }, [transforms, purpose, invalidate])
-
-  // Алыста ұсақ бекіткіштерді салудың пайдасы жоқ. Demand кадрда камера
-  // қозғалғанда useFrame шақырылады; жақындағанда қайта көрінеді.
-  useFrame(() => {
-    if (!group.current) return
-    group.current.getWorldPosition(world)
-    const visible = world.distanceTo(camera.position) < 5
-    if (head.current) head.current.visible = visible
-    if (shaft.current) shaft.current.visible = visible
-    if (detail.current) detail.current.visible = visible
-  })
+  }, [transforms, purpose, rails, invalidate])
 
   if (fittings.length === 0) return null
   const current = hover === null ? null : fittings[hover]
-  return <group ref={group}>
+  return <group>
     <instancedMesh ref={shaft} args={[undefined, undefined, fittings.length]} raycast={() => null}>
       <cylinderGeometry args={[0.5, 0.5, 1, 10]} />
       <meshStandardMaterial color={purpose === 'dowel' ? '#b99772' : MOUNT}
@@ -111,10 +98,20 @@ function BatchedPurpose({ fittings }: { fittings: FittingVisual[] }) {
       <meshStandardMaterial color={purpose === 'dowel' ? '#b99772' : SILVER}
         metalness={purpose === 'dowel' ? 0 : 0.55} roughness={0.34} />
     </instancedMesh>
-    {(purpose === 'hinge' || purpose === 'runner') &&
+    {purpose === 'hinge' &&
       <instancedMesh ref={detail} args={[undefined, undefined, fittings.length]} raycast={() => null}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color={MOUNT} metalness={0.55} roughness={0.35} />
+      </instancedMesh>}
+    {purpose === 'hinge' &&
+      <instancedMesh ref={plate} args={[undefined, undefined, fittings.length]} raycast={() => null}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color={SILVER} metalness={0.55} roughness={0.35} />
+      </instancedMesh>}
+    {purpose === 'runner' && rails.length > 0 &&
+      <instancedMesh ref={railMesh} args={[undefined, undefined, rails.length]} raycast={() => null}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color={MOUNT} metalness={0.7} roughness={0.3} />
       </instancedMesh>}
     {current && <Html position={[current.point.x, current.point.y, current.point.z]} center>
       <span className="pointer-events-none whitespace-nowrap border border-neutral-600 bg-neutral-950 px-2 py-1 text-xs text-white">

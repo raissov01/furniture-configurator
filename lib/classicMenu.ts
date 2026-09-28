@@ -35,6 +35,7 @@ export type ClassicCommand =
   | { type: 'toggleProjection' }
   | { type: 'toggleDimensions' }
   | { type: 'fittings'; show: 'none' | 'drilling' | 'fittings' }
+  | { type: 'xray' }
   | { type: 'fit' }
   | { type: 'toggleSilhouette' }
   | { type: 'toggleWalk' }
@@ -87,6 +88,7 @@ export type ClassicMenuState = {
   showDimensions: boolean
   showDrilling: boolean
   showFittings: boolean
+  xray?: boolean
   silhouetteOn: boolean
   walk?: boolean
   open: boolean
@@ -173,6 +175,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('view.fittings.none', 'Фурнитура: скрыть', { type: 'fittings', show: 'none' }, { active: !s.showDrilling && !s.showFittings }),
         item('view.fittings.drilling', 'Фурнитура: отверстия', { type: 'fittings', show: 'drilling' }, { active: s.showDrilling }),
         item('view.fittings.fittings', 'Фурнитура: крепёж', { type: 'fittings', show: 'fittings' }, { active: s.showFittings }),
+        item('view.xray', 'Присадка (рентген)', { type: 'xray' }, { active: Boolean(s.xray), hint: 'X' }),
         item('view.fit', 'Вписать в кадр', { type: 'fit' }),
         item('view.silhouette', 'Человек для масштаба', { type: 'toggleSilhouette' }, { active: s.silhouetteOn }),
         ...(s.silhouetteOn ? [{ kind: 'silhouetteHeight' as const, id: 'view.silhouetteHeight', label: 'Рост человека, мм' }] : []),

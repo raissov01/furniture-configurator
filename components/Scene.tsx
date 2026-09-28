@@ -27,6 +27,7 @@ import { FillingMesh } from '@/components/FillingMesh'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { shouldRenderDimensions } from '@/lib/sceneDimensionVisibility'
 import { PanelMesh } from '@/components/PanelMesh'
+import { rodBracketCentres } from '@/lib/fittingGeometry'
 import { useConfigurator } from '@/store/configurator'
 import { canvasSettings } from '@/lib/appearance'
 import { floorTexture } from '@/lib/floorTexture'
@@ -772,6 +773,19 @@ function CabinetGroup({
         ) : mesh
       })}
       {item.hardware.map((h, i) => {
+        if (h.kind === 'rodBracket') {
+          const rod = item.hardware.find((candidate) => candidate.kind === 'rod'
+            && candidate.position.x === h.position.x
+            && candidate.position.y === h.position.y && candidate.position.z === h.position.z)
+          if (!rod) return null
+          return <group key={`rod-bracket-${i}`}>
+            {rodBracketCentres(rod.position, rod.length).map((centre, end) =>
+              <mesh key={end} position={[centre.x, centre.y, centre.z]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[ROD_DIAMETER / 2, ROD_DIAMETER / 2, ROD_DIAMETER, 16]} />
+                <meshStandardMaterial color="#68717b" metalness={0.55} roughness={0.35} />
+              </mesh>)}
+          </group>
+        }
         if (h.kind === 'rod') {
           // Штанга секцияның ені бойымен жатады, сондықтан цилиндр Z осінен
           // X осіне бұрылады.
