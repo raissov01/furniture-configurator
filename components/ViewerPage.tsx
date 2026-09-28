@@ -8,7 +8,7 @@
  * жиһаздың өзін көреді, ал цехтың өзіндік құны оның ісі емес.
  */
 
-import { t as tr } from '@/lib/i18n'
+import { getLang, t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -27,6 +27,7 @@ import { formatTengeExact } from '@/src/core/index'
 import { viewerHashError, viewerPressedState } from '@/components/viewerPublicError'
 import { SITE } from '@/lib/site'
 import { visibleMaterialNames } from '@/lib/f00kDisplay'
+import { cabinetCountLabel } from '@/lib/viewerCount'
 
 // R3F тек браузерде жүреді: серверде рендерлеуге әрекет етсек, бет құлайды.
 // Жүктелгенше «жүктелуде» шеңбері — клиент бет қатып қалды деп ойламасын.
@@ -186,7 +187,7 @@ function Viewer({
         <img src="/brand/aismebel-mark.svg" width={24} height={24} alt={SITE.name} />
         <span className="text-sm font-semibold">{project.name}</span>
         <span className="text-xs text-neutral-200">
-          {cabinets.length === 1 ? '1 корпус' : `${cabinets.length} корпуса`}
+          {cabinetCountLabel(cabinets.length, getLang())}
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-1">
           <Button active={walk} ariaPressed={viewerPressedState(controls, 'walk')} onClick={() => setWalk(!walk)}>{tr('Прогулка')}</Button>
