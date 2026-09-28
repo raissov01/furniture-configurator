@@ -16,10 +16,11 @@ import { runShopExport, type ShopExportFormat } from '@/lib/shopExport'
 import { selectShopExportPanels, type ShopExportScope } from '@/lib/shopExportScope'
 import type { CabinetConfig, Panel } from '@/src/core/index'
 
-export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPanels, projectName, exportId, exportName }: {
+export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPanels, projectName, exportId, exportName, inline = false }: {
   cabinet?: CabinetConfig | undefined; pdfCabinet?: CabinetConfig | undefined
   pdfAssembly?: { nodeId: string; panels: Panel[]; nodeCount: number } | undefined
   panels: Panel[]; projectPanels?: Panel[]; projectName?: string; exportId?: string; exportName?: string
+  inline?: boolean
 }) {
   const catalog = useConfigurator((s) => s.catalog)
   const projectInfo = useConfigurator((s) => s.projectInfo)
@@ -43,9 +44,7 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
     }
   }
 
-  return (
-    <div data-tour="export">
-      <Menu label={busy ? '…' : tr('Экспорт')} title={tr('Скачать файлы для цеха')} align="right">
+  const items = <>
         {projectPanels ? <div className="border-b border-neutral-200 px-2 py-1 text-xs">{tr('Весь проект')}</div> : null}
         <MenuItem disabled={busy !== null} onClick={() => void run('xlsx', projectPanels ? 'project' : 'cabinet')}>
           XLSX — {tr('деталировка')}
@@ -70,7 +69,10 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
         {cabinet && <MenuItem disabled={busy !== null} title={tr('Проекции, сборка и деталировка')} onClick={() => void run('pdf', 'cabinet')}>
           PDF — {tr('сборочный чертёж')}
         </MenuItem>}
-      </Menu>
-    </div>
-  )
+  </>
+
+  if (inline) return items
+  return <div data-tour="export">
+    <Menu label={busy ? '…' : tr('Экспорт')} title={tr('Скачать файлы для цеха')} align="right">{items}</Menu>
+  </div>
 }

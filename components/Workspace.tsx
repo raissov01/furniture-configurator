@@ -851,10 +851,10 @@ export function Workspace() {
               <MenuItem onClick={() => setShowDimensions(!showDimensions)} active={showDimensions}>{tr('Размеры на сцене')}</MenuItem>
               <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
               <MenuItem onClick={() => setShowFronts(!showFronts)} active={!showFronts}>{showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}</MenuItem>
-              {projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu cabinet={cabinet ?? undefined} pdfCabinet={pdfCabinet} pdfAssembly={pdfAssembly} panels={activePanels} projectPanels={projectPanels} projectName={projectName} /> : null}
+              {projectPanels.length > 0 && productionState.exportsAvailable ? <ExportMenu inline cabinet={cabinet ?? undefined} pdfCabinet={pdfCabinet} pdfAssembly={pdfAssembly} panels={activePanels} projectPanels={projectPanels} projectName={projectName} /> : null}
               {cloudEnabled && <MenuItem onClick={() => setAccountOpen(true)}>{tr('Аккаунт')}</MenuItem>}
               <AppearanceSwitch menu />
-              <LangSwitch />
+              <LangSwitch inline />
             </Menu>
           </div>
           <div className="hidden items-center gap-1 sm:flex">
