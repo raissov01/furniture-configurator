@@ -373,6 +373,16 @@ export function PanelMesh({
     const classicWorkspace = document.querySelector('[data-workspace-style="classic"]')
       && window.matchMedia('(min-width: 1024px)').matches
     if (!classicWorkspace) { if (panel.opening) togglePanelOpen(key); return }
+    /*
+     * PRO100: бірінші шерту детальды таңдайды; ТАҢДАЛҒАН детальге қос шерту —
+     * детальдың өз қасиеттері. Таңдалмаған детальге бірден қос шерту — корпус
+     * (қос шертудің екі шертуі таңдауды қосып-өшіреді, сондықтан осы сәтте
+     * `selected === key` тек деталь бұрыннан таңдалған болса ғана шын).
+     */
+    if (cabinetId && useConfigurator.getState().selected === key) {
+      window.dispatchEvent(new CustomEvent('furniture:open-part-properties', { detail: { panelId: key, nodeId: cabinetId } }))
+      return
+    }
     openProperties()
   }
   const openProperties = () => {
@@ -840,7 +850,7 @@ export function PanelMesh({
           дәл сол орталықтан саналады. */}
       <DrillMarkers markers={boxDrillMarkers} dimmed={Boolean(xray && selected && !isSelected)} />
       <FittingMeshes fittings={boxFittings} />
-      {isHovered || (isSelected && !classicScene.classic) ? (
+      {!classicScene.classic && (isHovered || isSelected) ? (
         <Html center zIndexRange={[10, 0]}>
           <div className="p100-panel-tooltip pointer-events-none whitespace-nowrap px-2 py-1 text-[11px]">
             <b>{panelDisplayLabel(panel.label)}</b>

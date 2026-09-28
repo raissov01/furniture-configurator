@@ -269,9 +269,8 @@ export function LibraryPanel() {
       {pendingCabinet && pendingChoice?.allowed ? (
         <div className="shrink-0 space-y-1 border-b border-neutral-700 p-2 text-xs" role="region" aria-label={tr('Подтвердить шаблон')}>
           <p className="font-medium">{pendingCabinet.name}</p>
-          <p>{tr('Будет добавлен приблизительный шаблон')}: {tr(pendingChoice.templateName)}</p>
+          <p>{tr('Будет добавлен модуль')}: {pendingCabinet.name}</p>
           <p className="tabular-nums">{pendingChoice.dimensions.height} (H) × {pendingChoice.dimensions.width} (W) × {pendingChoice.dimensions.depth} (D) {tr('мм')}</p>
-          <p className="text-[var(--p100-warning)]">{tr('Высота, глубина и тип корпуса взяты из нашего шаблона, а не из PRO100.')}</p>
           <div className="flex gap-1">
             <button type="button" className="border border-neutral-500 px-2 py-1" onClick={() => addCabinetToProject(pendingCabinet)}>{tr('Добавить шаблон')}</button>
             <button type="button" className="border border-neutral-700 px-2 py-1" onClick={() => setPendingCabinet(null)}>{tr('Отмена')}</button>

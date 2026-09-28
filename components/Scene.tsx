@@ -494,8 +494,8 @@ function CameraRig({
   layoutKey: string
   /** Тек `wall-*` пресетінде: `cameraOffset`-тің қай қабырғаны есептеу керегі. */
   wallCtx?: { room: Room; wallId: WallId } | undefined
-  /** PRO100 перспективасы: бүкіл бөлме, алдынан сәл оңнан және жоғарыдан. */
-  classicRoom?: boolean | undefined
+  /** PRO100 перспективасы: `outside` — бүкіл бөлме сырттан, `inside` — бөлменің ішінен, көз биіктігінде. */
+  classicRoom?: 'outside' | 'inside' | false | undefined
 }) {
   const preset = useConfigurator((s) => s.cameraPreset)
   const fitNonce = useConfigurator((s) => s.fitNonce)
@@ -521,7 +521,15 @@ function CameraRig({
 
   const fit = useCallback(() => {
     const span = Math.max(W, H, D)
-    const [lx0, oy0, lz0] = classicRoom ? [span * 0.28, span * 0.3, -span * 1.3] as const : cameraOffset(preset, W, H, D, wallCtx)
+    // Бөлменің ішінде: қарсы қабырғаның алдында, көз биіктігінде (1600 мм).
+    const facingDepth = Math.round(facingY / 90) % 2 === 0 ? D : W
+    const [lx0, oy0, lz0] = classicRoom === 'inside' ? [span * 0.08, 1600 - H / 2, -(facingDepth / 2 - 250)] as const
+      : classicRoom === 'outside' ? [span * 0.28, span * 0.3, -span * 1.3] as const : cameraOffset(preset, W, H, D, wallCtx)
+    if ('fov' in camera) {
+      const perspective = camera as unknown as { fov: number; updateProjectionMatrix: () => void }
+      const fov = classicRoom === 'inside' ? 62 : 40
+      if (perspective.fov !== fov) { perspective.fov = fov; perspective.updateProjectionMatrix() }
+    }
 
     /*
      * Қашықтықты КАДРҒА қарап түзетеміз.
@@ -533,7 +541,7 @@ function CameraRig({
      * қайта саналады. «Ішінен» пресеті ӘДЕЙІ ішінде қалады.
      */
     const scale = (() => {
-      if (preset === 'inside') return 1
+      if (preset === 'inside' || classicRoom === 'inside') return 1
       const aspect = size.height > 0 ? size.width / size.height : 1.6
       // Сахнада перспективалық камера ғана бар (Canvas оны `fov`-пен құрады);
       // ортографиялық болып қалса, кадрлаудың мағынасы жоқ, пресет қалады.
@@ -544,7 +552,8 @@ function CameraRig({
       const needV = (H / 2) / Math.tan(fovV / 2)
       const needH = (Math.max(W, D) / 2) / Math.tan(fovH / 2)
       // 1.15 — шеттегі тыныс: өлшем жазуы мен көлеңке қиылмауы үшін.
-      const need = Math.max(needV, needH) * 1.15
+      // PRO100 перспективасында бөлменің айналасында кең ақ өріс қалады.
+      const need = Math.max(needV, needH) * (classicRoom ? 1.55 : 1.15)
       const preset0 = Math.hypot(lx0, oy0, lz0)
       return preset0 > 0 ? Math.max(1, need / preset0) : 1
     })()
@@ -1336,7 +1345,8 @@ export default function Scene({
    */
   const realisticView = useClassicView((s) => s.realisticView)
   const lighting = useClassicView((s) => s.lighting)
-  const classicLook = classic ? classicSceneLook(true, Boolean(room.finish), realisticView) : null
+  // План — PRO100-дегідей сызба: тор, көлеңкесіз (материалы бар бөлмеде де).
+  const classicLook = classic ? (preset === 'plan' ? 'schematic' : classicSceneLook(true, Boolean(room.finish), realisticView)) : null
   const schematic = classicLook === 'schematic'
   const lightLevels = classic ? sceneLightIntensities(lighting) : null
   const classicScene = useMemo<ClassicScene>(() => ({
@@ -1354,7 +1364,10 @@ export default function Scene({
   const [frameObjects, setFrameObjects] = useState(false)
   useEffect(() => { setFrameObjects(false) }, [preset])
   useEffect(() => { if (fitNonce > 0) setFrameObjects(true) }, [fitNonce])
-  const classicRoomView = classic && !frameObjects && preset === 'three-quarter' && !walk
+  // Перспектива мен План бүкіл бөлмені кадрлайды; шынайы бөлмеде камера бөлменің ІШІНДЕ (видео эталон).
+  const classicRoomView = classic && !frameObjects && (preset === 'three-quarter' || preset === 'plan') && !walk
+  const classicRoomCamera: 'outside' | 'inside' | false = classicRoomView && preset === 'three-quarter'
+    ? (classicLook === 'realistic' ? 'inside' : 'outside') : false
   const baseCanvas = canvasSettings(quality)
   const canvas = antialiasOn ? baseCanvas : { dpr: [1, 1] as [number, number], antialias: false }
   const xrStore = useMemo(() => getXrStore(), [])
@@ -1597,6 +1610,8 @@ export default function Scene({
        * қосқаннан гөрі сенімді (09-04-те дәл сол жерде уақыт жоғалды).
        */
       onCreated={(state) => setLiveScene(state.scene)}
+      // PRO100: бос жерге (бөлме, тор) қос шерту — «Свойства помещения».
+      onPointerMissed={(event) => { if (classic && event.type === 'dblclick') useClassicView.getState().setRoomDialogOpen(true) }}
     >
       <SceneRenderBridge />
       <ClassicSceneContext.Provider value={classicScene}>
@@ -1785,7 +1800,7 @@ export default function Scene({
             box={view.box}
             facingY={view.facingY}
             wallCtx={view.wallCtx}
-            classicRoom={classicRoomView}
+            classicRoom={classicRoomCamera}
             // Орын (offset, «От пола») ӘДЕЙІ жоқ — CameraRig-тің эффектісін қара.
             layoutKey={treeSceneLayoutKey(room, active?.cabinet.id ?? '',
               { items, boards: freeBoards, solids: flatScene?.solids ?? [] }, catalog, annotations)}

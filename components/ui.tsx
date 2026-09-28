@@ -141,7 +141,7 @@ const MenuCtx = React.createContext<() => void>(() => {})
  * жабылады, элемент таңдалғанда да жабылады.
  */
 export function Menu({
-  label, title, ariaLabel, active, children, align = 'left', size,
+  label, title, ariaLabel, active, children, align = 'left', size, heightCap,
 }: {
   label: React.ReactNode
   title?: string
@@ -151,6 +151,8 @@ export function Menu({
   align?: 'left' | 'right'
   /** Тек батырманың сыртқы түрі (`Button`-дегі `size`); мәзірдің өзі емес. */
   size?: 'sm' | 'md'
+  /** Мәзірдің ең үлкен биіктігі, px (әдепкі 480). */
+  heightCap?: number
 }) {
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
@@ -165,8 +167,8 @@ export function Menu({
     const anchor = triggerRef.current?.getBoundingClientRect()
     if (!anchor) return
     setPosition(menuPosition(anchor, window.innerWidth, window.innerHeight,
-      menuRef.current?.offsetWidth ?? 240, align))
-  }, [align])
+      menuRef.current?.offsetWidth ?? 240, align, heightCap))
+  }, [align, heightCap])
   const openMenu = () => {
     document.dispatchEvent(new CustomEvent('ui-menu-open', { detail: ref.current }))
     place()

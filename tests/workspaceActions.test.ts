@@ -17,7 +17,9 @@ describe('workspace keys and guarded actions', () => {
     expect(deleteAction('board', true, 1, false)).toBe('board')
     expect(deleteAction('board', true, 1, true)).toBeNull()
     expect(deleteAction('cabinet', true, 2, false)).toBe('cabinet')
-    expect(deleteAction('cabinet', true, 1, false)).toBeNull()
+    // PRO100: соңғы корпус та өшеді — бос бөлме қалады.
+    expect(deleteAction('cabinet', true, 1, false)).toBe('cabinet')
+    expect(deleteAction('cabinet', true, 0, false)).toBeNull()
     expect(deleteAction('annotation', true, 1, false)).toBe('annotation')
     expect(deleteAction('solid', true, 2, false)).toBeNull()
     expect(deleteAction('board', false, 2, false)).toBeNull()

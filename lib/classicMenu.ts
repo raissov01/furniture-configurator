@@ -22,6 +22,7 @@ export type ClassicPanel = 'gallery' | 'ai' | 'sketch' | 'parts' | 'history' | '
 export type ClassicCommand =
   | { type: 'open'; panel: ClassicPanel }
   | { type: 'saveProject' }
+  | { type: 'saveProjectAs' }
   | { type: 'openProject' }
   | { type: 'export'; format: ShopExportFormat; scope: ShopExportScope }
   | { type: 'panorama' }
@@ -170,9 +171,10 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
   return [
     {
       id: 'file', label: 'Файл', items: [
-        item('file.reset', 'Новый проект', { type: 'reset' }),
+        item('file.reset', 'Новый проект', { type: 'reset' }, { hint: classicFileHint('newProject') }),
         item('file.open', 'Открыть проект', { type: 'openProject' }, { hint: classicFileHint('openProject') }),
         item('file.save', 'Сохранить проект', { type: 'saveProject' }, { hint: classicFileHint('saveProject') }),
+        item('file.saveAs', 'Сохранить как…', { type: 'saveProjectAs' }),
         SEP,
         item('file.room', 'Свойства помещения…', { type: 'roomDialog' }),
         item('file.project', 'Материалы и сборка', { type: 'open', panel: 'project' }),

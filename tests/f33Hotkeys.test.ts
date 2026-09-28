@@ -7,7 +7,7 @@ function event(key: string): KeyboardEvent {
 
 describe('classic file shortcuts', () => {
   it.each([
-    ['n', 'newCabinet', 'Ctrl+N'],
+    ['n', 'newProject', 'Ctrl+N'],
     ['o', 'openProject', 'Ctrl+O'],
     ['s', 'saveProject', 'Ctrl+S'],
     ['p', 'printProject', 'Ctrl+P'],
@@ -15,6 +15,11 @@ describe('classic file shortcuts', () => {
     expect(matchHotkey(event(key))?.action.kind).toBe(kind)
     expect(classicFileHint(kind as Parameters<typeof classicFileHint>[0])).toBe(hint)
     expect(HOTKEYS.some((entry) => entry.keys === hint)).toBe(true)
+  })
+
+  it('inserts a new cabinet with Ins, as PRO100 «Элемент → Новый»', () => {
+    expect(matchHotkey({ ...event('Insert'), ctrlKey: false } as KeyboardEvent)?.action.kind).toBe('newCabinet')
+    expect(classicFileHint('newCabinet')).toBe('Ins')
   })
 
   it('keeps bare O for the projection command', () => {

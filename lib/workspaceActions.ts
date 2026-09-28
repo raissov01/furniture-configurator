@@ -7,7 +7,7 @@ export function deleteAction(
 ): 'board' | 'cabinet' | 'annotation' | null {
   if (!editable) return null
   if (kind === 'board' && !boardHasJoint) return 'board'
-  if (kind === 'cabinet' && cabinetCount > 1) return 'cabinet'
+  if (kind === 'cabinet' && cabinetCount > 0) return 'cabinet'
   if (kind === 'annotation') return 'annotation'
   return null
 }

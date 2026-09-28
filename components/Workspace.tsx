@@ -89,14 +89,14 @@ import {
 } from '@/src/core/index'
 import { PROJECT_META_KEY, useConfigurator } from '@/store/configurator'
 import { classicSceneLook, useClassicView } from '@/store/classicView'
-import { ClassicLibraryDock, type LibraryAction } from '@/components/ClassicLibraryDock'
+import { ClassicLibraryDock, dropDraggedLibraryTile, hasDraggedLibraryTile, type LibraryAction } from '@/components/ClassicLibraryDock'
 import { ClassicRoomDialog } from '@/components/ClassicRoomDialog'
 import { ClassicLightDialog } from '@/components/ClassicLightDialog'
 import { ClassicReportsDialog } from '@/components/ClassicReportsDialog'
 import { ClassicStartGuide } from '@/components/ClassicStartGuide'
+import { ClassicPartDialog } from '@/components/ClassicPartDialog'
 import { OPEN_DOCK_PANEL_EVENT } from '@/components/dock/DockHost'
-import { templateToCabinet } from '@/src/core/index'
-import type { CabinetTemplate, Material } from '@/src/core/index'
+import type { CabinetConfig, Material } from '@/src/core/index'
 import type { CameraPreset } from '@/store/configurator'
 
 // R3F тек браузерде жүреді — сервер жағында рендерленбейді.
@@ -372,6 +372,21 @@ export function Workspace() {
   const requestReset = () => {
     if (resetDecision(window.confirm(tr('Сбросить текущий проект?'))) === 'reset') reset()
   }
+  /** PRO100 «Новый проект» (Ctrl+N): бос бөлме, корпуссыз; бұрынғы күй тарихта қалады. */
+  const newProject = () => {
+    if (resetDecision(window.confirm(tr('Начать новый проект с пустой комнаты?'))) !== 'reset') return
+    reset()
+    const blank = useConfigurator.getState().exportProject()
+    loadProject({ ...blank, name: tr('Новый проект'), root: { ...blank.root, name: tr('Новый проект'), children: [] } })
+    setSelected(null)
+    useClassicView.getState().setStartGuideOpen(true)
+  }
+  /** «Сохранить как…»: файл атауын сұрап жүктеу (жоба күйі өзгермейді). */
+  const saveProjectAs = () => {
+    const file = exportProject()
+    const name = window.prompt(tr('Имя файла проекта'), file.name)?.trim()
+    if (name) downloadProjectFile({ ...file, name })
+  }
 
   // Генерация уақыты серверде де, браузерде де әртүрлі шығады — гидратация
   // сәйкессіздігін болдырмау үшін оны тек браузерде көрсетеміз.
@@ -388,6 +403,18 @@ export function Workspace() {
     if (window.matchMedia('(min-width: 1024px)').matches) setStructureOpen(true)
   }
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
+  const [partDialogId, setPartDialogId] = useState<string | null>(null)
+  useEffect(() => {
+    const open = (event: Event) => {
+      const detail = (event as CustomEvent<{ panelId: string; nodeId: string }>).detail
+      const node = findNode(useConfigurator.getState().root, detail.nodeId)
+      // Еркін доска — өз терезесі (Длина/Ширина, материал, кромка өңделеді).
+      if (node && node.kind !== 'cabinet') setPropertiesNodeId(detail.nodeId)
+      else setPartDialogId(detail.panelId)
+    }
+    window.addEventListener('furniture:open-part-properties', open)
+    return () => window.removeEventListener('furniture:open-part-properties', open)
+  }, [])
   const [sceneContext, setSceneContext] = useState<{ panelId: string; nodeId: string | null; x: number; y: number } | null>(null)
   const sceneContextRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -612,6 +639,7 @@ export function Workspace() {
         case 'redo': redo(); break
         case 'delete': deleteSelected(); break
         case 'newCabinet': addCabinet(); break
+        case 'newProject': newProject(); break
         case 'openProject': openProjectPicker(); break
         case 'saveProject': downloadProjectFile(exportProject()); break
         case 'printProject':
@@ -679,16 +707,20 @@ export function Workspace() {
     } else setNodeTransform(activeId, { ...node.transform, rot: { x: 0, y: turn(node.transform.rot.y), z: 0 } })
   })
   const canDeleteSelected = Boolean(activeNode && ['cabinet', 'board', 'annotation'].includes(activeNode.kind)
-    && (activeNode.kind !== 'cabinet' || (cabinets.length >= 2 && activeEditable)))
+    && (activeNode.kind !== 'cabinet' || activeEditable))
   /** Камераны тінтуір дөңгелегімен бірдей жақындату/алыстату (OrbitControls өзі өңдейді). */
   const zoomScene = (direction: 1 | -1) => {
     const canvas = document.querySelector('#scene-3d canvas') // Scene.tsx SCENE_CANVAS_ID; Scene бұл жерде статикалық импортталмайды
     canvas?.dispatchEvent(new WheelEvent('wheel', { deltaY: direction * -240, bubbles: true, cancelable: true }))
   }
-  const insertTemplate = (template: CabinetTemplate) => guarded(() => {
-    appendCabinet({ ...templateToCabinet(template, catalog), id: `cabinet-${crypto.randomUUID()}` })
-    setSelected(null)
-  })
+  /** Библиотекадан корпус қою: таңдалған қабырғаның келесі бос орнына (PRO100 «вставить»). */
+  const insertCabinet = (config: CabinetConfig): string | null => {
+    try {
+      appendCabinet({ ...config, id: `cabinet-${crypto.randomUUID()}` })
+      setSelected(null)
+      return null
+    } catch (cause) { return cause instanceof Error ? cause.message : String(cause) }
+  }
   const loadTemplateSet = (id: string) => {
     if (window.confirm(tr('Набор заменит текущий проект. Продолжить?'))) guarded(() => loadSet(id))
   }
@@ -773,7 +805,8 @@ export function Workspace() {
         })
         break
       case 'clientLink': void copyClientLink(); break
-      case 'reset': requestReset(); break
+      case 'reset': newProject(); break
+      case 'saveProjectAs': saveProjectAs(); break
       case 'undo': undo(); break
       case 'redo': redo(); break
       case 'preset': setCameraPreset(command.preset); break
@@ -824,7 +857,7 @@ export function Workspace() {
   }
   const menus = classicMenus({
     canUndo, canRedo, activeEditable, canMirrorSelected, editableBoard: editableBoard && !activeBoardJoint,
-    canRemoveCabinet: cabinets.length >= 2 && activeEditable,
+    canRemoveCabinet: cabinets.length >= 1 && activeEditable,
     canExport: (projectPanels.length > 0 || production.specialParts.length > 0) && productionState.exportsAvailable,
     canExportPanels: projectPanels.length > 0 && productionState.exportsAvailable,
     canExportDxf: (projectPanels.length > 0 || production.specialParts.some((part) => part.section === 'Иілген деталь')) && productionState.exportsAvailable,
@@ -861,14 +894,14 @@ export function Workspace() {
   ]
   const classicToolRows: ClassicToolSpec[][] = assertUniqueToolbarRows<ClassicToolSpec>([
     [
-      { icon: 'new', label: tr('Новый проект'), action: requestReset, id: 'new-project', hint: tr('Очистить сцену и начать заново') },
+      { icon: 'new', label: tr('Новый проект'), action: newProject, id: 'new-project', hint: tr('Пустая комната, как в PRO100 (Ctrl+N)') },
       { icon: 'open', label: tr('Открыть проект'), action: openProjectPicker, hint: tr('Открыть сохранённый файл проекта') },
       { icon: 'save', label: tr('Сохранить проект'), action: () => downloadProjectFile(exportProject()), id: 'save', hint: tr('Скачать проект одним файлом'), separator: true },
       { icon: 'room', label: tr('Свойства помещения…'), action: () => setRoomDialogOpen(true), id: 'room-props', hint: tr('Длина, ширина и высота комнаты, пол'), separator: true },
       { icon: 'print', label: tr('PDF — весь проект'), action: () => runClassicCommand({ type: 'export', format: 'pdf', scope: 'project' }), disabled: !(pdfCabinet && productionState.exportsAvailable), disabledReason: tr('Нет корпуса для чертежа'), id: 'print', hint: tr('Чертёж и деталировка для печати') },
       { icon: 'projectInfo', label: tr('Отчёты…'), action: () => setReportsOpen(true), disabled: Boolean(production.error), disabledReason: tr('Исправьте ошибки проекта'), id: 'reports', hint: tr('Список деталей, корпусов и расход материалов'), separator: true },
       { icon: 'duplicate', label: tr('Дублировать корпус'), action: () => duplicateCabinet(activeId), disabled: !activeEditable, disabledReason: tr('Выберите редактируемый корпус'), hint: tr('Копия выбранного корпуса рядом с ним') },
-      { icon: 'delete', label: tr('Удалить'), action: deleteSelected, disabled: !canDeleteSelected, disabledReason: tr(cabinets.length < 2 && activeNode?.kind === 'cabinet' ? 'Нужны два корпуса' : 'Выберите элемент'), id: 'delete', hint: tr('Удалить выбранный элемент (Del)'), separator: true },
+      { icon: 'delete', label: tr('Удалить'), action: deleteSelected, disabled: !canDeleteSelected, disabledReason: tr(activeNode?.kind === 'cabinet' ? 'Выбранный корпус заблокирован' : 'Выберите элемент'), id: 'delete', hint: tr('Удалить выбранный элемент (Del)'), separator: true },
       { icon: 'undo', label: tr('Отменить'), action: undo, disabled: !canUndo, disabledReason: tr('Нет действий для отмены'), id: 'undo', hint: 'Ctrl+Z' },
       { icon: 'redo', label: tr('Повторить'), action: redo, disabled: !canRedo, disabledReason: tr('Нет действий для повтора'), id: 'redo', hint: 'Ctrl+Shift+Z', separator: true },
       { icon: 'shop', label: tr('Цех: материалы и цены'), action: () => setShopOpen(true), hint: tr('Материалы, кромка, фурнитура и цены цеха') },
@@ -945,6 +978,11 @@ export function Workspace() {
       <ProjectPanel panels={projectPanels} catalog={catalog} />
       <HelpPanel classic={classic} />
       <ClassicRoomDialog />
+      {partDialogId && projectPanels.some((panel) => panel.id === partDialogId) ? <ClassicPartDialog
+        panel={projectPanels.find((panel) => panel.id === partDialogId)!} catalog={catalog}
+        onClose={() => setPartDialogId(null)}
+        onCabinetProperties={() => { setPartDialogId(null); setPropertiesNodeId(activeId) }}
+        onDrilling={activeEditable ? () => { setPartDialogId(null); setDrillOpen(true) } : null} /> : null}
       <ClassicLightDialog />
       <ClassicReportsDialog
         groups={production.scene.nodes.map((node) => ({ name: findNode(root, node.nodeId)?.name ?? node.nodeId, panels: node.panels }))}
@@ -1006,7 +1044,7 @@ export function Workspace() {
         <Link href="/" title={`${SITE.name} — ${tr('На главную')}`} className="mr-1 hidden items-center lg:inline-flex" data-testid="classic-brand">
           <img src="/brand/aismebel-mark.svg" width={16} height={16} alt={SITE.name} />
         </Link>
-        {menus.map((menu) => <Menu key={menu.id} label={tr(menu.label)} size="sm" {...(menu.align ? { align: menu.align } : {})}>
+        {menus.map((menu) => <Menu key={menu.id} label={tr(menu.label)} size="sm" heightCap={1000} {...(menu.align ? { align: menu.align } : {})}>
           {menu.items.map((entry, index) => {
             if (entry.kind === 'separator') return <div key={`sep-${index}`} className="my-1 border-t border-neutral-200 dark:border-neutral-800" />
             if (entry.kind === 'heading') return <div key={entry.id} className="px-2.5 pt-1 text-[10px] uppercase tracking-wide text-neutral-500">{tr(entry.label)}</div>
@@ -1337,7 +1375,7 @@ export function Workspace() {
         const part = projectPanels.find((p) => p.id === selected)
         if (!part) return null
         return (
-          <div className="flex items-center gap-3 border-b border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="flex items-center gap-3 border-b border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs dark:border-neutral-800 dark:bg-neutral-900 lg:hidden">
             <b>{panelDisplayLabel(part.label)}</b>
             <span className="tabular-nums text-neutral-500">
               {tr('Готовый · клиент')}: {part.finishedLength}×{part.finishedWidth}
@@ -1416,7 +1454,10 @@ export function Workspace() {
         <div className="flex min-h-0 flex-col overflow-y-auto lg:overflow-hidden">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
         {!walk && <div data-testid="mobile-tree-dock" className="relative z-20 shrink-0 px-2 pt-1 lg:hidden"><TreeDock request={dockRequest} /></div>}
-        <main className="relative isolate h-[50dvh] min-h-[370px] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+        <main className="relative isolate h-[50dvh] min-h-[370px] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene"
+          // PRO100: модульді Библиотекадан сахнаға сүйреп тастау.
+          onDragOver={(event) => { if (hasDraggedLibraryTile()) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy' } }}
+          onDrop={(event) => { if (hasDraggedLibraryTile()) { event.preventDefault(); dropDraggedLibraryTile() } }}>
 
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
@@ -1613,7 +1654,7 @@ export function Workspace() {
             <Button onClick={mirrorSelected} disabled={!canMirrorSelected} title={freeMirrorCheck?.reason ?? tr('Зеркальная копия')}>{tr('Зеркало')}</Button>
             <Button
               onClick={() => { removeCabinet(activeId); setSelected(null) }}
-              disabled={cabinets.length < 2 || !activeEditable}
+              disabled={cabinets.length < 1 || !activeEditable}
               title={tr('Удалить корпус')}
             >
               {tr('Удалить')}
@@ -1622,7 +1663,7 @@ export function Workspace() {
           {specialError && <p role="alert" className="border-t border-red-200 px-2 py-1 text-xs text-red-700 dark:border-red-900 dark:text-red-300">{specialError}</p>}
         </aside>
         {libraryOpen ? <div className="p100-library-slot hidden lg:flex">
-          <ClassicLibraryDock catalog={catalog} onClose={() => setLibraryOpen(false)} onInsertTemplate={insertTemplate}
+          <ClassicLibraryDock catalog={catalog} onClose={() => setLibraryOpen(false)} onInsertCabinet={insertCabinet}
             onLoadSet={loadTemplateSet} onApplyMaterial={applyMaterial} elements={libraryElements} other={libraryOther} />
         </div> : null}
       </div>
