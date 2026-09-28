@@ -14,6 +14,7 @@ import { filterTemplateCatalog } from '@/src/core/templateCatalog'
 import type { Material, TemplateCategory } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
+import { TemplatePhoto } from '@/components/TemplatePhoto'
 import { Button, Field } from '@/components/ui'
 import { DecorPicker } from '@/components/DecorPicker'
 import { cn } from '@/lib/cn'
@@ -360,16 +361,23 @@ export function TemplateGallery() {
                   onClick={() => { setFirstRun(false); runBusy(tr('Загрузка…'), () => loadSet(preset.id)) }}
                   className="flex flex-col items-start gap-2 border border-neutral-200 p-3 text-left transition hover:border-neutral-500 dark:border-neutral-700"
                 >
-                  <div className="flex flex-wrap items-end gap-2">
-                    {cabinets.map((cabinet) => (
-                      <CabinetThumb
-                        key={cabinet.id}
-                        cabinet={cabinet}
-                        catalog={catalog}
-                        pxPerMm={thumbScale(cabinet.height) * 0.8}
-                      />
-                    ))}
-                  </div>
+                  <TemplatePhoto
+                    id={preset.id}
+                    alt={tr(preset.name)}
+                    className="max-w-[320px]"
+                    fallback={(
+                      <div className="flex flex-wrap items-end gap-2">
+                        {cabinets.map((cabinet) => (
+                          <CabinetThumb
+                            key={cabinet.id}
+                            cabinet={cabinet}
+                            catalog={catalog}
+                            pxPerMm={thumbScale(cabinet.height) * 0.8}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  />
                   <div className="text-xs font-medium">{tr(preset.name)}</div>
                   <div className="tabular-nums text-[11px] text-neutral-500">
                     {countLabel(cabinets.length, 'Корпус', getLang())} · {tr('Комната от')} {preset.room.width} (W) × {preset.room.depth} (D)
@@ -396,12 +404,11 @@ export function TemplateGallery() {
                   : 'border-neutral-200 dark:border-neutral-700',
               )}
             >
-              <div
-                className="flex w-full items-end justify-center overflow-hidden"
-                style={{ height: THUMB_MAX_PX }}
-              >
-                <CabinetThumb cabinet={templateToCabinet(t, catalog)} catalog={catalog} pxPerMm={thumbScale(t.height)} />
-              </div>
+              <TemplatePhoto
+                id={t.id}
+                alt={tr(t.name)}
+                fallback={<CabinetThumb cabinet={templateToCabinet(t, catalog)} catalog={catalog} pxPerMm={thumbScale(t.height)} />}
+              />
               <div className="text-xs font-medium">{tr(t.name)}</div>
               <div className="tabular-nums text-[11px] text-neutral-500">
                 {t.height} (H) × {t.width} (W) × {t.depth} (D)
