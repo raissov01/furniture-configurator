@@ -134,7 +134,8 @@ export function ViewerPage() {
 
 function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; message: string } }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[var(--brand-graphite)] px-6 text-white">
+    <main data-view-page className="flex min-h-screen items-center justify-center bg-[var(--brand-graphite)] px-6 text-white">
+
       <div className="max-w-md space-y-3 text-center">
         <p className="flex items-center justify-center gap-2 text-sm font-semibold"><img src="/brand/aismebel-mark.svg" width={24} height={24} alt="" aria-hidden="true" />{SITE.name}</p>
         {state.kind === 'loading' ? (
@@ -184,7 +185,8 @@ function Viewer({
   }, [catalog])
 
   return (
-    <main className="flex min-h-dvh flex-col bg-[var(--brand-graphite)] text-white sm:h-dvh">
+    <main data-view-page className="flex min-h-dvh flex-col bg-[var(--brand-graphite)] text-white sm:h-dvh">
+
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-2">
         <img src="/brand/aismebel-mark.svg" width={24} height={24} alt={SITE.name} />
         <span className="text-sm font-semibold">{project.name}</span>

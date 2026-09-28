@@ -1509,7 +1509,6 @@ export const uz: Record<string, string> = {
 
   'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Parmalash, bichish va stanokka eksport — to‘g‘ridan-to‘g‘ri AisMebel’da, Bazisga o‘tkazmasdan.',
 
-
   // Нарық бағасы (marketPrices.ts),
   'Цены — рыночная медиана ({date}). Введите свои цены.': 'Narxlar — bozor medianasi ({date}). O‘z narxlaringizni kiriting.',
   'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.': 'Bozor narxidagi pozitsiyalar: {n}. O‘zgartirgan narxingiz o‘zingizniki bo‘ladi va bozor ma’lumotlari yangilanganda qayta yozilmaydi.',
@@ -1936,14 +1935,6 @@ export const uz: Record<string, string> = {
   'Есть позиции без цены': 'Ba’zi mahsulotlarning narxi yo‘q',
 
   // Бұтақтарды біріктіруде сақталған аудармалар.
-
-
-
-
-
-
-
-
 
   // Интеграциядағы жаңа аудармалар.
   'Прямоугольный DXF/SVG-план обновит ширину (W) и глубину (D) комнаты; мебель не добавится.': 'To‘rtburchak DXF/SVG reja xona eni (W) va chuqurligini (D) yangilaydi; mebel qo‘shilmaydi.',
@@ -2401,4 +2392,8 @@ export const uz: Record<string, string> = {
   'Лак (clearcoat)': 'Lak qatlami (clearcoat)',
   'Карта AO (URL)': 'AO xaritasi (URL)',
   'Сила AO': 'AO kuchi',
+  'Монтаж открыт': 'O‘rnatish ochiq',
+  'Монтажных заданий пока нет': 'O‘rnatish topshiriqlari hozircha yo‘q',
+  'Навигация': 'Menyu',
+
 }

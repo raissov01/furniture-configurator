@@ -33,7 +33,8 @@ function buttonStyleForTab(selected: boolean): string {
 export function RenderPanel({ panels, cabinets }: { panels: Panel[]; cabinets: CabinetConfig[] }) {
   const open = useConfigurator((s) => s.renderOpen)
   const setOpen = useConfigurator((s) => s.setRenderOpen)
-  const { zIndex } = useModalLayer(open, 'render')
+  const { zIndex, isTop } = useModalLayer(open, 'render', () => setOpen(false))
+
   const [busy, setBusy] = useState(false)
   const [hint, setHint] = useState('')
   const [style, setStyle] = useState('scandinavian')
@@ -130,9 +131,10 @@ export function RenderPanel({ panels, cabinets }: { panels: Panel[]; cabinets: C
 
   return (
     <div
-      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
       style={{ zIndex }}
-      onClick={() => setOpen(false)}
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      onClick={() => { if (isTop) setOpen(false) }}
+
     >
       <div
         className="w-full max-w-xl rounded-xl border border-neutral-200 bg-white p-4 shadow-xl dark:border-neutral-700 dark:bg-neutral-900"

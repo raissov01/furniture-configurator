@@ -24,3 +24,5 @@ export function tourZIndex(stack: readonly string[]): number {
   if (!top) return 60
   return modalZIndex(stack, top) - (top === 'help' ? 5 : -5)
 }
+export const hasModal = (stack: readonly string[]): boolean => stack.length > 0
+export const isTopModal = (stack: readonly string[], id: string): boolean => stack.at(-1) === id

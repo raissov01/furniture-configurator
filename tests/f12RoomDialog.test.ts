@@ -11,7 +11,7 @@ describe('F12 room modal', () => {
     const source = readFileSync(new URL('../components/RoomPlan.tsx', import.meta.url), 'utf8')
     expect(source).toContain('role="dialog"')
     expect(source).toContain('aria-modal="true"')
-    expect(source).toContain('shouldCloseRoomDialog(event.key)')
+    expect(source).toContain("useModalLayer(open, 'room', () => setOpen(false))")
     expect(source).toContain('trigger?.focus()')
   })
 })

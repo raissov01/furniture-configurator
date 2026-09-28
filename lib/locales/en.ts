@@ -1504,7 +1504,6 @@ export const en: Record<string, string> = {
   'Сервис': 'Service',
   'Присадка, раскрой и экспорт для станка — прямо в AisMebel, без передачи в Базис.': 'Drilling, cutting layouts and machine export — right in AisMebel, no hand-off to Bazis.',
 
-
   // Нарық бағасы (marketPrices.ts),
   'Цены — рыночная медиана ({date}). Введите свои цены.': 'Prices are the market median ({date}). Enter your own prices.',
   'Рыночных позиций: {n}. Изменённая цена становится вашей и при обновлении рыночных данных не перезаписывается.': 'Market-priced items: {n}. A price you change becomes your own and is never overwritten by market updates.',
@@ -1931,14 +1930,6 @@ export const en: Record<string, string> = {
   'Есть позиции без цены': 'Some items have no price',
 
   // Бұтақтарды біріктіруде сақталған аудармалар.
-
-
-
-
-
-
-
-
 
   // Интеграциядағы жаңа аудармалар.
   'Прямоугольный DXF/SVG-план обновит ширину (W) и глубину (D) комнаты; мебель не добавится.': 'A rectangular DXF/SVG plan updates room width (W) and depth (D); no furniture is added.',
@@ -2396,4 +2387,8 @@ export const en: Record<string, string> = {
   'Лак (clearcoat)': 'Clearcoat',
   'Карта AO (URL)': 'AO map (URL)',
   'Сила AO': 'AO intensity',
+  'Монтаж открыт': 'Installation open',
+  'Монтажных заданий пока нет': 'No installation tasks yet',
+  'Навигация': 'Menu',
+
 }

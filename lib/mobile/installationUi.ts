@@ -1,6 +1,12 @@
 import { INSTALLATION_CHECKLIST, type InstallationTask } from '@/src/core/installation'
 import type { SyncStatus } from '@/src/core/sync/types'
 
+export function installationTaskLabel(task: Pick<InstallationTask, 'projectId' | 'status'>,
+  projects: readonly { id: string; name: string }[], translate: (key: string) => string): string {
+  const name = projects.find((item) => item.id === task.projectId)?.name || translate('Проект')
+  return `${name} · ${translate(task.status === 'open' ? 'Монтаж открыт' : 'Монтаж закрыт')}`
+}
+
 export function canEditInstallation(task: InstallationTask): boolean {
   return task.status !== 'closed'
 }

@@ -2,6 +2,8 @@
 
 import { getLang, setLang, t as tr, tf } from '@/lib/i18n'
 import { panelDisplayLabel } from '@/lib/panelDisplay'
+import { contextActions } from '@/lib/contextActions'
+import { menuPosition } from '@/lib/menuPosition'
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
@@ -225,6 +227,7 @@ export function Workspace() {
   const addAnnotation = useConfigurator((s) => s.addAnnotation)
   const removeBoard = useConfigurator((s) => s.removeBoard)
   const removeAnnotation = useConfigurator((s) => s.removeAnnotation)
+  const ungroup = useConfigurator((s) => s.ungroup)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const priceOverrides = useConfigurator((s) => s.priceOverrides)
@@ -368,6 +371,24 @@ export function Workspace() {
     if (window.matchMedia('(min-width: 1024px)').matches) setStructureOpen(true)
   }
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
+  const [sceneContext, setSceneContext] = useState<{ panelId: string; nodeId: string | null; x: number; y: number } | null>(null)
+  const sceneContextRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const open = (event: Event) => setSceneContext((event as CustomEvent<{ panelId: string; nodeId: string | null; x: number; y: number }>).detail)
+    window.addEventListener('furniture:scene-context', open)
+    return () => window.removeEventListener('furniture:scene-context', open)
+  }, [])
+  useEffect(() => {
+    if (!sceneContext) return
+    const dismiss = (event: PointerEvent) => { if (!sceneContextRef.current?.contains(event.target as Node)) setSceneContext(null) }
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault(); event.stopImmediatePropagation(); setSceneContext(null)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', key) }
+  }, [sceneContext])
   const [draftState, setDraftState] = useState<{ id: string; errors: Record<string, boolean> }>({ id: activeId, errors: {} })
   const draftInvalid = draftState.id === activeId && hasDraftErrors(draftState.errors)
   const productionState = productionAvailability(production.error, draftInvalid)
@@ -734,6 +755,32 @@ export function Workspace() {
       <HistoryPanel />
       {shareCodeOpen && <ShareCodeDialog />}
       {cloudEnabled && <AccountPanel />}
+      {sceneContext && (() => {
+        const nodeId = sceneContext.nodeId ?? activeId
+        const node = findNode(root, nodeId)
+        const part = projectPanels.find((item) => item.id === sceneContext.panelId)
+        const allowed = contextActions(node?.kind ?? 'part', 1, cabinets.length, Boolean(node?.locked))
+        const position = menuPosition({ left: sceneContext.x, right: sceneContext.x, top: sceneContext.y, bottom: sceneContext.y },
+          window.innerWidth, window.innerHeight, 210, 'left')
+        const item = (label: string, enabled: boolean, action: () => void) => <button type="button" role="menuitem" key={label}
+          disabled={!enabled} className="block min-h-9 w-full border border-transparent px-3 text-left text-sm hover:bg-neutral-100 disabled:opacity-40"
+          onClick={() => { setSceneContext(null); action() }}>{tr(label)}</button>
+        return <div ref={sceneContextRef} role="menu" aria-label={tr('Элемент')}
+          className="fixed z-[1000] w-[210px] overflow-y-auto border border-neutral-400 bg-white p-1 text-neutral-900"
+          style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}>
+          {item('Свойства', Boolean(node && propertiesNodeSupported(node.kind)), () => setPropertiesNodeId(nodeId))}
+          {item('Копировать', allowed.copy, () => duplicateCabinet(nodeId))}
+          {item('Удалить', allowed.delete, () => {
+            if (node?.kind === 'cabinet') removeCabinet(nodeId)
+            else if (node?.kind === 'board') removeBoard(nodeId)
+            else if (node?.kind === 'annotation') removeAnnotation(nodeId)
+            setSelected(null)
+          })}
+          {item('Группа', false, () => openDockTab('structure'))}
+          {item('Разгруппировать', allowed.ungroup, () => ungroup(nodeId))}
+          {item('Открыть дверцу', Boolean(part?.opening), () => togglePanelOpen(sceneContext.panelId))}
+        </div>
+      })()}
       {!production.error ? <QuoteView
         propertiesOpen={propertiesNodeId !== null}
         panels={projectPanels}
@@ -853,6 +900,9 @@ export function Workspace() {
             <MenuItem onClick={() => setQuoteOpen(true)} disabled={Boolean(production.error)}>{tr('Смета и раскрой')}</MenuItem>
             <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable && !editableBoard}>{tr('Присадка')}</MenuItem>
             <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
+            <MenuItem onClick={() => setShopOpen(true)}>{tr('Цех')}</MenuItem>
+            <MenuItem onClick={() => openDockTab('library')}>{tr('Библиотека')}</MenuItem>
+            <MenuItem onClick={() => { window.location.href = '/cut' }}>{tr('Раскрой')}</MenuItem>
             <MenuItem onClick={() => setHistoryOpen(true)}>{tr('История')}</MenuItem>
             <MenuItem onClick={() => void copyClientLink()}>{tr('Ссылка клиенту')}</MenuItem>
             {/* qdesign «3D-көріністе ашу» сияқты: 6 таңбалы код, 24 сағат, автожаңарту. */}

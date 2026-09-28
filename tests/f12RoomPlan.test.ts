@@ -22,7 +22,7 @@ describe('F12 room dialog wiring', () => {
     expect(roomPlan).toContain('lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]')
     expect(roomPlan).toContain('grid grid-cols-1 gap-2 min-[460px]:grid-cols-3')
     expect(roomPlan).toContain('role="dialog"')
-    expect(roomPlan).toContain('shouldCloseRoomDialog(event.key)')
+    expect(roomPlan).toContain("useModalLayer(open, 'room', () => setOpen(false))")
     expect(roomPlan).toContain('trigger?.focus()')
   })
 })

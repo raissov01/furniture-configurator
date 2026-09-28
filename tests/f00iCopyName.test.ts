@@ -11,5 +11,6 @@ describe('nextCopyName', () => {
   it('finds the next unused sibling name independently of UI language', () => {
     expect(nextCopyName('Wardrobe', ['Wardrobe', 'Wardrobe (копия 1)', 'Wardrobe (копия 4)']))
       .toBe('Wardrobe (копия 5)')
+
   })
 })

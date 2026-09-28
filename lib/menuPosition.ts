@@ -12,4 +12,5 @@ export function menuPosition(anchor: Anchor, viewportWidth: number, viewportHeig
     ? anchor.bottom
     : Math.max(margin, anchor.top - maxHeight - margin)
   return { left, top, maxHeight }
+
 }

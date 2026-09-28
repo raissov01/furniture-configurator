@@ -7,7 +7,7 @@ import { t } from '@/lib/i18n'
 import { IndexedDbMobileStore } from '@/lib/mobile/indexedDb'
 import { createMobileSyncTransport } from '@/lib/mobile/syncTransport'
 import { prepareMeasurementPhoto } from '@/lib/mobile/photo'
-import { canEditInstallation, closeBlockReason, installationQueueNotice, signatureHasStroke } from '@/lib/mobile/installationUi'
+import { canEditInstallation, closeBlockReason, installationQueueNotice, installationTaskLabel, signatureHasStroke } from '@/lib/mobile/installationUi'
 import { installationCreateAction } from '@/lib/installationHandoff'
 import { printableRepairs } from '@/lib/mobile/repairLabel'
 import { INSTALLATION_CHECKLIST, parseInstallationAction, type ChecklistKey, type InstallationActionKind, type InstallationTask } from '@/src/core/installation'
@@ -171,7 +171,7 @@ export default function MobileInstallationPage() {
     finally { setBusy(false) }
   }
 
-  return <main className="mx-auto min-h-dvh max-w-xl space-y-4 bg-[#f5f5f5] p-4 text-black">
+  return <main data-installation-page className="mx-auto min-h-dvh max-w-xl space-y-4 bg-[#f5f5f5] p-4 text-black">
     <Link href="/mobile" className="block border bg-white p-3">{t('Назад')}</Link>
     <h1 className="text-xl font-semibold">{t('Монтаж')}</h1>
     {!online && <p className="border bg-white p-3 text-sm">{t('Нет сети')}: {t('Данные и фото остаются на этом телефоне')}</p>}
@@ -190,10 +190,11 @@ export default function MobileInstallationPage() {
           </button>
         </div>)}
     </section>}
+    {tasks.length === 0 && <p className="border bg-white p-3 text-sm">{t('Монтажных заданий пока нет')}</p>}
     <div className="space-y-2">{tasks.map((item) => <button key={item.id} className="block min-h-12 w-full border bg-white p-3 text-left"
-      onClick={() => setSelected(item.id)}>{item.id} · {item.status}</button>)}</div>
+      onClick={() => setSelected(item.id)}>{installationTaskLabel(item, projects, t)}</button>)}</div>
     {task && <section className="space-y-3 border bg-white p-3 text-sm">
-      <h2 className="font-semibold">{task.id} · {task.projectId}</h2>
+      <h2 className="font-semibold">{installationTaskLabel(task, projects, t)}</h2>
       {INSTALLATION_CHECKLIST.map((key) => <div key={key} className="border p-2">
         <p>{t(labels[key])}: {task.checklist[key].checked ? '✓' : '—'}</p>
         <label className="block"><LocalizedFileChooser accept="image/*" capture="environment" disabled={!canEditInstallation(task)}

@@ -127,7 +127,7 @@ export function CutPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const labelOptions = useMemo(() => {
     try {
-      if (!cloudId) return { value: null, error: tr('Для QR сначала сохраните проект в облаке') }
+      if (!cloudId) return { value: null, error: null }
       return { value: labelExportOptions(
         { page: labelPage, widthMm: labelWidth, heightMm: labelHeight },
         cloudId ?? '', 1,
@@ -391,8 +391,9 @@ export function CutPage() {
               field="labelHeight" onDraftValidityChange={(field, invalid) => setLabelDraftInvalid((state) => ({ ...state, [field]: invalid }))}
               onChange={setLabelHeight} />
           </Field>
-          {labelOptions.error && cloudId !== null ? <p role="alert" className="text-xs text-red-700 sm:col-span-3">{labelOptions.error}</p> : null}
-          {!cloudId ? <p className="text-xs text-neutral-600 sm:col-span-3">{tr('Для QR сначала сохраните проект в облаке')}</p> : null}
+          {labelOptions.error ? <p role="alert" className="text-xs text-red-700 sm:col-span-3">{labelOptions.error}</p> : null}
+          {!cloudId ? <p className="text-sm text-neutral-700 sm:col-span-3">{tr('Для QR сначала сохраните проект в облаке')}</p> : null}
+
         </section>
         <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
           {tr('DXF листов — карта раскроя. Пакет для цеха содержит EDGE-DRILLING.csv для торцов; полный CSV присадки — «ЧПУ по деталям».')}
@@ -570,7 +571,7 @@ function SheetCard({
           <rect key={`o${i}`} x={o.x} y={o.y} width={o.width} height={o.height}
             fill="#22c55e" fillOpacity={0.12} stroke="#22c55e" strokeOpacity={0.5} strokeWidth={3} />
         ))}
-        {sheet.parts.map((p) => (
+        {sheet.parts.map((p, index) => (
           <g key={p.panelId}>
             <rect x={p.x} y={p.y} width={p.width} height={p.height}
               fill="var(--brand-amber)" stroke="var(--brand-graphite)" strokeWidth={4} />
@@ -579,8 +580,9 @@ function SheetCard({
               textAnchor="middle" dominantBaseline="middle"
               fontSize={Math.max(34, Math.min(p.width, p.height) * 0.16)}
               fill="var(--brand-graphite)"
+
             >
-              {panelDisplayLabel(p.label)} {p.width}×{p.height}
+              {index + 1}
             </text>
           </g>
         ))}
@@ -610,6 +612,9 @@ function SheetCard({
         })}
       </svg>
       </div>
+      <ol className="grid gap-1 text-sm sm:grid-cols-2">
+        {sheet.parts.map((part, index) => <li key={part.panelId}>{index + 1}. {panelDisplayLabel(part.label)} · {part.width} × {part.height} {tr('мм')}</li>)}
+      </ol>
       <div className="flex flex-wrap items-center gap-1 text-xs">
         <Button size="sm" active={playback} disabled={!showCuts} ariaPressed={playback}
           onClick={() => { setPlayback(!playback); setPlaying(false); setStep(0) }}>
