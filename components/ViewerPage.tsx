@@ -221,13 +221,13 @@ function Viewer({
         {walk ? (
           <>
             <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-3">
-              <div className="pointer-events-auto flex items-center gap-3 rounded-full bg-neutral-900/90 px-4 py-2 text-xs text-white">
+              <div className="pointer-events-auto flex max-w-full items-center gap-3 border border-white bg-[var(--brand-graphite)] px-4 py-2 text-xs text-white">
                 <span>{touch
-                  ? tr('Джойстик — идти · проведите пальцем — осмотр · коснитесь дверцы — открыть')
-                  : tr('Кликните для обзора · WASD — идти · E — дверцы · Esc — курсор')}</span>
+                  ? tr('Джойстик: идти · проведите пальцем: осмотр · коснитесь дверцы: открыть')
+                  : tr('Кликните для обзора · WASD: идти · E: дверцы · Esc: курсор')}</span>
                 <button
                   type="button"
-                  className="rounded-full border border-white/40 px-2.5 py-1 hover:bg-white/15"
+                  className="min-h-11 border border-white px-2.5 py-1 hover:bg-white hover:text-[var(--brand-graphite)]"
                   onClick={() => setWalk(false)}
                 >
                   {tr('Выйти')}

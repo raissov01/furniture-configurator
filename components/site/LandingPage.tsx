@@ -178,10 +178,10 @@ function LandingContent() {
 
               <Sheet className="p-4" caption={tr('Файлы на станок')}>
                 <ul className="space-y-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
-                  <li><b style={{ color: 'var(--ink)' }}>{tr('PDF карты раскроя')}</b> {tr('— по листу на страницу, с подписями деталей.')}</li>
-                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по листу')}</b> {tr('— лист, область реза, детали и отход на разных слоях.')}</li>
-                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по детали')}</b> {tr('— присадка отдельным слоем на каждый диаметр.')}</li>
-                  <li><b style={{ color: 'var(--ink)' }}>{tr('XLSX и CSV')}</b> {tr('— деталировка в вашей таблице.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('PDF карты раскроя')}</b>: {tr('по листу на страницу, с подписями деталей.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по листу')}</b>: {tr('лист, область реза, детали и отход на разных слоях.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('DXF по детали')}</b>: {tr('присадка отдельным слоем на каждый диаметр.')}</li>
+                  <li><b style={{ color: 'var(--ink)' }}>{tr('XLSX и CSV')}</b>: {tr('деталировка в вашей таблице.')}</li>
                 </ul>
               </Sheet>
             </div>
@@ -248,7 +248,7 @@ function LandingContent() {
                 <ul className="mt-4 flex-1 space-y-2 text-sm" style={{ color: 'var(--ink-soft)' }}>
                   {t.features.map((f) => (
                     <li key={f} className="flex gap-2">
-                      <span style={{ color: 'var(--oak-deep)' }}>—</span>
+                      <span aria-hidden="true" style={{ color: 'var(--oak-deep)' }}>·</span>
                       <span>{tr(f)}</span>
                     </li>
                   ))}

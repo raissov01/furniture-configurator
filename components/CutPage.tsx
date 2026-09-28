@@ -47,9 +47,9 @@ import { Dimension, Sheet } from '@/components/brand'
  * оқылғанға ДЕЙІН орындалады да, экранда әрқашан орысша қалып қояды.
  */
 const optimizationOptions = (): { value: OptimizationLevel; label: string }[] => [
-  { value: 'fast', label: tr('Быстрая — одна раскладка') },
-  { value: 'standard', label: tr('Обычная — четыре раскладки') },
-  { value: 'deep', label: tr('Глубокая — все шестнадцать') },
+  { value: 'fast', label: tr('Быстрая: одна раскладка') },
+  { value: 'standard', label: tr('Обычная: четыре раскладки') },
+  { value: 'deep', label: tr('Глубокая: все шестнадцать') },
 ]
 
 /** Подрезка «материалдан» дегенді бөлек мән етіп көрсетеміз. */
@@ -663,7 +663,7 @@ function UnplacedBlock({ advice }: { advice: ReturnType<typeof unplacedAdvice> }
       {advice.map((a) => (
         <div key={a.panelId} className="space-y-1">
           <div className="font-medium">
-            {panelDisplayLabel(a.label)} — {a.cutLength}×{a.cutWidth} {tr('мм')}, {tr('лист')} {a.materialName}{' '}
+            {panelDisplayLabel(a.label)}: {a.cutLength}×{a.cutWidth} {tr('мм')}, {tr('лист')} {a.materialName}{' '}
             ({tr('полезно')} {a.usable.width}×{a.usable.height}, {tr('обрезка')} {a.trimEdge} {tr('мм')})
           </div>
           <ul className="list-disc space-y-0.5 pl-5">
