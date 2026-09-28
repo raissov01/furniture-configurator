@@ -25,7 +25,7 @@ function layerNodes(root: SceneNode): LayersPanelNode[] {
 }
 
 /** Existing Structure and Layers panels share one dock; Workspace mounts this once. */
-export function TreeDock({ request }: { request?: DockRequest | undefined }) {
+export function TreeDock({ request, onTabChange }: { request?: DockRequest | undefined; onTabChange?: (tab: TreeDockTab) => void }) {
   const [tab, setTab] = useState<TreeDockTab>('structure')
   const [collapsed, setCollapsed] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,6 +51,7 @@ export function TreeDock({ request }: { request?: DockRequest | undefined }) {
   useEffect(() => {
     if (!request || request.revision === 0) return
     setTab(request.tab)
+    onTabChange?.(request.tab)
     setCollapsed(false)
   }, [request?.revision])
   const run = (fn: () => void) => {
@@ -66,7 +67,7 @@ export function TreeDock({ request }: { request?: DockRequest | undefined }) {
     <div className={cn(collapsed ? 'hidden' : 'block', 'min-h-0 overflow-auto')}>
     <div role="tablist" aria-label={tr('Дерево, слои и библиотека')} className="flex flex-wrap border-b border-neutral-300 dark:border-neutral-700">
       {treeDockTabs.map((value) => <button key={value} type="button" role="tab" aria-selected={tab === value}
-        onClick={() => setTab(value)} className={cn('border-b px-1.5 py-1.5 text-[10px]', tab === value ? 'border-blue-600 text-blue-700 dark:text-blue-300' : 'border-transparent text-neutral-500')}
+        onClick={() => { setTab(value); onTabChange?.(value) }} className={cn('border-b px-1.5 py-1.5 text-[10px]', tab === value ? 'border-blue-600 text-blue-700 dark:text-blue-300' : 'border-transparent text-neutral-500')}
       >{tr(treeDockTabLabels[value])}</button>)}
     </div>
     {error && <p role="alert" className="m-2 border border-red-600 p-1 text-xs text-red-700">{error}</p>}
