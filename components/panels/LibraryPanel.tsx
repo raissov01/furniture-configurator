@@ -42,6 +42,10 @@ import {
 } from './libraryCatalogLogic'
 import type { LibraryTabId } from './libraryCatalogLogic'
 import { CatalogThumb } from './CatalogThumb'
+import { BASIS_MODULES } from '@/src/core/data/basisModules'
+import type { BasisModule } from '@/src/core/data/basisModules'
+import basisPreviews from '@/public/library/basis/catalog.json'
+import { basisModulePreview, pro100BasisPreview } from '@/lib/basisPreview'
 import { PersonalLibraryPanel } from './PersonalLibraryPanel'
 import { parsePropCoordinate } from '@/lib/propCoordinateUi'
 import { makePropLibraryItem, placedProps, PROP_CATALOG, removePropNode } from '@/src/core/propCatalog'
@@ -52,6 +56,7 @@ const PAGE_SIZE = 60 // гоча №4: 5094 жолды бірден рендер
 export function LibraryPanel() {
   const [tab, setTab] = React.useState<LibraryTabId | 'mine'>('mebel')
   const [search, setSearch] = React.useState('')
+  const [furnitureSource, setFurnitureSource] = React.useState<'pro100' | 'basis'>('pro100')
   const [categoryPath, setCategoryPath] = React.useState<string | null>(null)
   const [categorySearch, setCategorySearch] = React.useState('')
   const [page, setPage] = React.useState(0)
@@ -136,6 +141,9 @@ export function LibraryPanel() {
     () => filterItems(PRO100_CABINET_ITEMS, { search, categoryPath }),
     [search, categoryPath],
   )
+  const basisItems = React.useMemo(() => BASIS_MODULES.filter((item) =>
+    (!categoryPath || item.system === categoryPath) && item.raw.toLocaleLowerCase().includes(search.toLocaleLowerCase())),
+  [search, categoryPath])
   const accessoryItems = React.useMemo(
     () => filterItems(PRO100_ACCESSORY_ITEMS, { search, categoryPath }),
     [search, categoryPath],
@@ -145,13 +153,14 @@ export function LibraryPanel() {
     [search],
   )
 
-  const activeItems: (Pro100LibraryItem | Material)[] =
-    tab === 'mebel' ? cabinetItems : tab === 'elementy' ? accessoryItems : tab === 'materialy' ? materialItems : []
+  const activeItems: (Pro100LibraryItem | Material | BasisModule)[] =
+    tab === 'mebel' ? (furnitureSource === 'basis' ? basisItems : cabinetItems) : tab === 'elementy' ? accessoryItems : tab === 'materialy' ? materialItems : []
 
   const categoryChoices = React.useMemo(() => {
+    if (tab === 'mebel' && furnitureSource === 'basis') return ['standard', 'gola']
     const source = tab === 'mebel' ? PRO100_CABINET_ITEMS : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS : []
     return categoryOptions(source)
-  }, [tab])
+  }, [tab, furnitureSource])
   const visibleCategories = React.useMemo(() => visibleCategoryOptions(categoryChoices, categorySearch, categoryPath),
     [categoryChoices, categorySearch, categoryPath])
 
@@ -196,6 +205,12 @@ export function LibraryPanel() {
 
       {tab === 'mine' ? <PersonalLibraryPanel /> : <>
 
+      {tab === 'mebel' ? <div className="flex shrink-0 border-b border-neutral-800 text-[10px]">
+        <button type="button" aria-pressed={furnitureSource === 'pro100'} onClick={() => { setFurnitureSource('pro100'); setCategoryPath(null); setPage(0) }}
+          className={cn('flex-1 border-r border-neutral-800 px-2 py-1', furnitureSource === 'pro100' ? 'bg-[var(--p100-dialog)] text-neutral-100' : 'text-neutral-400')}>PRO100</button>
+        <button type="button" aria-pressed={furnitureSource === 'basis'} onClick={() => { setFurnitureSource('basis'); setCategoryPath(null); setPage(0) }}
+          className={cn('flex-1 px-2 py-1', furnitureSource === 'basis' ? 'bg-[var(--p100-dialog)] text-neutral-100' : 'text-neutral-400')}>Базис</button>
+      </div> : null}
       {/* Жол жолағы — эталондағы «Mobilier BUCATARIE\Corpuri...» ашылмалысы. */}
       {tab === 'mebel' || tab === 'elementy' || tab === 'raznoe' ? (
         <div className="shrink-0 border-b border-neutral-800 px-1.5 py-1">
@@ -212,7 +227,7 @@ export function LibraryPanel() {
             }}
             className="w-full border border-neutral-800 bg-[var(--p100-dialog)] px-1.5 py-1 text-[10px] text-neutral-300 outline-none"
           >
-            <option value="">{tr('Все категории')} ({tab === 'mebel' ? PRO100_CABINET_ITEMS.length : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS.length : PROP_CATALOG.length})</option>
+            <option value="">{tr('Все категории')} ({tab === 'mebel' ? (furnitureSource === 'basis' ? BASIS_MODULES.length : PRO100_CABINET_ITEMS.length) : tab === 'elementy' ? PRO100_ACCESSORY_ITEMS.length : PROP_CATALOG.length})</option>
             {(tab === 'raznoe' ? [...new Set(PROP_CATALOG.map((prop) => prop.category))] : visibleCategories).map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -287,6 +302,12 @@ export function LibraryPanel() {
           </div>
         ) : pageItems.length === 0 ? (
           <p className="p-2 text-[11px] text-neutral-500">{tr('Ничего не найдено')}</p>
+        ) : tab === 'mebel' && furnitureSource === 'basis' ? (
+          <div className="grid grid-cols-2 gap-1.5">
+            {(pageItems as BasisModule[]).map((item, index) => (
+              <BasisTile key={`${item.system}/${item.raw}/${index}`} item={item} />
+            ))}
+          </div>
         ) : tab === 'materialy' ? (
           <div className="grid grid-cols-2 gap-1.5">
             {(pageItems as Material[]).map((m) => (
@@ -365,7 +386,7 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
       title={reason ?? (item.path.length > 1 ? categoryLabel(item.path) : undefined)}
     >
       <div className="h-16 w-full">
-        <CatalogThumb parsed={item.parsed} />
+        <LibraryImage src={pro100BasisPreview(item, BASIS_MODULES, basisPreviews)} parsed={item.parsed} />
       </div>
       <div className="w-full truncate text-[10px] text-neutral-300">{item.name}</div>
       {dims.length > 0 ? (
@@ -374,6 +395,25 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
       {onSelect && reason ? <span className="w-full text-[9px] text-[var(--p100-warning)]">{reason}</span> : null}
     </button>
   )
+}
+
+function LibraryImage({ src, parsed }: { src: string | null; parsed: Pro100LibraryItem['parsed'] }) {
+  const [failed, setFailed] = React.useState(false)
+  React.useEffect(() => setFailed(false), [src])
+  return src && !failed ? <img src={src} alt="" loading="lazy" decoding="async"
+    onError={() => setFailed(true)} className="h-full w-full object-contain" /> : <CatalogThumb parsed={parsed} />
+}
+
+function BasisTile({ item }: { item: BasisModule }) {
+  const src = basisModulePreview(item, basisPreviews)
+  return <div className="flex flex-col items-center gap-1 border border-neutral-800 bg-[var(--p100-dialog)] p-1.5 text-left">
+    <div className="h-16 w-full"><LibraryImage src={src} parsed={{
+      position: item.kind === 'wall' ? 'upper' : item.kind === 'base' ? 'lower' : 'combined',
+      doorCount: item.doors ?? undefined, drawerCount: item.drawers ?? undefined,
+    }} /></div>
+    <div className="w-full truncate text-[10px] text-neutral-300" title={item.raw}>{item.raw}</div>
+    <div className="w-full truncate text-[9px] text-neutral-500">{item.system === 'gola' ? 'Gola' : 'Базис'}</div>
+  </div>
 }
 
 // ── Бір материал ұяшығы («Материалы» табы) ──────────────────────────────────
