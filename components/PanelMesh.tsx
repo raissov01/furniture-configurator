@@ -25,6 +25,7 @@ import { FittingMeshes } from '@/components/FittingMeshes'
 import { fittingsForPanel } from '@/lib/fittingGeometry'
 import { xrayViewState } from '@/lib/xrayView'
 import { boxFitting } from '@/lib/fittingRenderGeometry'
+import { panelOpacity } from '@/lib/panelOpacity'
 import type { RenderedDrillMarker } from '@/components/DrillMarkers'
 
 /**
@@ -477,8 +478,8 @@ export function PanelMesh({
    * әрең көрінетін сұлба. Тінтуір астындағы панель ӘРҚАШАН тұтас қалады:
    * әйтпесе мөлдір режимде нені меңзеп тұрғаның білінбейді.
    */
-  const opacity = ((showFittings && exploded > 0 && panel.role === 'front') ? 0.3
-    : viewMode === 'solid' || isHovered || isSelected ? 1 : viewMode === 'ghost' ? 0.28 : 0.06) * look.opacity
+  const opacity = panelOpacity({ xray, viewMode, hovered: isHovered, selected: isSelected,
+    lookOpacity: look.opacity, explodedFront: showFittings && exploded > 0 && panel.role === 'front' })
 
   /**
    * Қиғаш деталь мен көлбеу крышка — жалғыз екі жағдай, онда панель әлем
