@@ -131,7 +131,7 @@ export function ViewerPage() {
 
 function Notice({ state }: { state: { kind: 'loading' } | { kind: 'error'; message: string } }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-200">
+    <main data-view-page className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-200">
       <div className="max-w-md space-y-3 text-center">
         {state.kind === 'loading' ? (
           <Spinner label={tr('Открываем проект…')} onDark />
@@ -179,7 +179,7 @@ function Viewer({
   }, [catalog])
 
   return (
-    <main className="flex min-h-dvh flex-col bg-neutral-950 text-neutral-100 sm:h-dvh">
+    <main data-view-page className="flex min-h-dvh flex-col bg-neutral-950 text-neutral-100 sm:h-dvh">
       <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 px-4 py-2">
         <span className="text-sm font-semibold">{project.name}</span>
         <span className="text-xs text-neutral-500">
