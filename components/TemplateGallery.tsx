@@ -6,6 +6,7 @@
  */
 
 import { getLang, t as tr } from '@/lib/i18n'
+import { countLabel } from '@/lib/countLabel'
 import { templateCountLabel } from '@/lib/templateCount'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SEED_SETS, SEED_TEMPLATES, STANDARD_NOMENCLATURE_TEMPLATES, TEMPLATE_CATEGORIES, setToProject, templateToCabinet } from '@/src/core/index'

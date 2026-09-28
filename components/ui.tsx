@@ -256,8 +256,12 @@ export function Menu({
           ref={menuRef}
           role="menu"
           aria-label={typeof label === 'string' ? label : undefined}
+          onKeyDown={(event) => { event.stopPropagation(); onKeyDown(event) }}
           style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}
-          className="ui-menu-portal fixed z-[1000] min-w-44 max-w-[calc(100vw-24px)] overflow-y-auto border border-neutral-300 bg-white p-1 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          className={cn(
+            'ui-menu-portal fixed z-[1000] min-w-44 max-w-[calc(100vw-24px)] overflow-y-auto border border-neutral-300 bg-white p-1 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100',
+            ref.current?.closest('.p100-workspace') && 'p100-portal-menu',
+          )}
         >
           <MenuCtx.Provider value={() => setOpen(false)}>{children}</MenuCtx.Provider>
         </div>, document.body) : null}
@@ -286,7 +290,7 @@ export function MenuItem({
       title={title}
       onClick={() => { onClick?.(); close() }}
       className={cn(
-        'flex w-full items-center gap-2 border border-transparent px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40',
+        'flex w-full items-center gap-2 border border-transparent px-2.5 py-1.5 text-left text-xs transition disabled:opacity-40 max-lg:min-h-11 max-lg:text-sm',
         active
           ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
           : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800',

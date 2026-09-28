@@ -345,6 +345,17 @@ export function PanelMesh({
   const setSelected = useConfigurator((s) => s.setSelected)
   const setActive = useConfigurator((s) => s.setActive)
   const togglePanelOpen = useConfigurator((s) => s.togglePanelOpen)
+  const openContextMenu = (event: { nativeEvent: MouseEvent; stopPropagation: () => void }) => {
+    if (vr) return
+    event.stopPropagation()
+    event.nativeEvent.preventDefault()
+    if (!document.querySelector('[data-workspace-style]')) { if (panel.opening) togglePanelOpen(key); return }
+    if (cabinetId) setActive(cabinetId)
+    setSelected(key)
+    window.dispatchEvent(new CustomEvent('furniture:scene-context', {
+      detail: { panelId: key, nodeId: cabinetId ?? null, x: event.nativeEvent.clientX, y: event.nativeEvent.clientY },
+    }))
+  }
   const onPanelDoubleClick = () => {
     const classicWorkspace = document.querySelector('[data-workspace-style="classic"]')
       && window.matchMedia('(min-width: 1024px)').matches
@@ -652,12 +663,7 @@ export function PanelMesh({
             e.stopPropagation()
             onPanelDoubleClick()
           }}
-          onContextMenu={(e) => {
-            if (vr || !panel.opening) return
-            e.stopPropagation()
-            e.nativeEvent.preventDefault()
-            togglePanelOpen(key)
-          }}
+          onContextMenu={openContextMenu}
           onClick={(e) => {
             // VR-да оқиға корпустың тобына көтеріледі — ол есікті ашады.
             if (vr) return
@@ -721,12 +727,7 @@ export function PanelMesh({
         e.stopPropagation()
         onPanelDoubleClick()
       }}
-      onContextMenu={(e) => {
-        if (vr || !panel.opening) return
-        e.stopPropagation()
-        e.nativeEvent.preventDefault()
-        togglePanelOpen(key)
-      }}
+      onContextMenu={openContextMenu}
       onClick={(e) => {
         if (vr) return
         if (e.delta > CLICK_SLOP) return

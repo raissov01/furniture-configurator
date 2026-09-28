@@ -13,7 +13,7 @@ describe('help dialog keyboard', () => {
     const source = readFileSync(new URL('../components/HelpPanel.tsx', import.meta.url), 'utf8')
     expect(source).toContain('aria-modal="true"')
     expect(source).toContain('aria-labelledby="help-dialog-title"')
-    expect(source).toContain("helpDialogKeyAction(event.key, true)")
+    expect(source).toContain("useModalLayer(open, 'help', () => setOpen(false))")
     expect(source).toContain('returnFocus?.focus()')
   })
 })

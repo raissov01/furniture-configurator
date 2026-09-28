@@ -23,6 +23,7 @@ import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { childExportAllowed } from '@/lib/propertiesDialogState'
 import { useModalLayer } from '@/lib/useModalLayer'
+import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { visibleMaterials } from '@/lib/cutView'
 import { parseCoefficientInput, parsePercentInput, parseTengeInput } from '@/lib/f22ShareUi'
 import { MoneyInput } from './MoneyInput'
@@ -358,21 +359,24 @@ function SheetPlan({ sheet }: { sheet: NestedSheet }) {
           <rect key={`o${i}`} x={o.x} y={o.y} width={o.width} height={o.height}
             fill="#22c55e" fillOpacity={0.12} stroke="#22c55e" strokeOpacity={0.5} strokeWidth={3} />
         ))}
-        {sheet.parts.map((p) => (
+        {sheet.parts.map((p, index) => (
           <g key={p.panelId}>
             <rect x={p.x} y={p.y} width={p.width} height={p.height}
               fill="var(--brand-amber)" stroke="var(--brand-graphite)" strokeWidth={4} />
             <text
               x={p.x + p.width / 2} y={p.y + p.height / 2}
               textAnchor="middle" dominantBaseline="middle"
-              fontSize={Math.max(34, Math.min(p.width, p.height) * 0.16)}
+              fontSize={Math.min(110, Math.max(42, Math.min(p.width, p.height) * 0.6))}
               fill="var(--brand-graphite)"
             >
-              {p.label} {p.width}×{p.height}
+              {index + 1}
             </text>
           </g>
         ))}
       </svg>
+      <ol className="grid gap-1 text-sm sm:grid-cols-2">
+        {sheet.parts.map((part, index) => <li key={part.panelId}>{index + 1}. {panelDisplayLabel(part.label)} · {part.width} × {part.height} мм</li>)}
+      </ol>
       <figcaption className="text-[11px] text-neutral-500">
         Лист {sheet.index} · {sheet.sheetWidth}×{sheet.sheetHeight}
         {sheet.offcuts.length > 0 ? ` · деловой отход: ${sheet.offcuts.length}` : ''}

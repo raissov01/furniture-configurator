@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { DragEvent, KeyboardEvent, MouseEvent } from 'react'
 import { t as tr } from '@/lib/i18n'
 import { cn } from '@/lib/cn'
 import { selectionPropertiesNotice } from '@/lib/propertiesDialogState'
-import { ConfigValidationError, copyNodeProperties, findNode, flattenTree } from '@/src/core/index'
+import { contextActions } from '@/lib/contextActions'
+import { menuPosition } from '@/lib/menuPosition'
+import { ConfigValidationError, copyNodeProperties, findNode, flattenTree, projectPanelId } from '@/src/core/index'
 import type { AutoJointKind, AutoJointRecord, Axis, FlatScene, GroupNode, PropertyClipboard, PropertyGroup, ScalePercent } from '@/src/core/index'
 import { useConfigurator } from '@/store/configurator'
 import { buildCanonicalRows, canDropInto, externalSelectionNodeIds, selectTreeRows } from './canonicalTreeRows'
@@ -18,6 +21,10 @@ type Props = {
   selected: string | null
   onSelectNode: (id: string) => void
   onSelectPart: (nodeId: string, selectId: string) => void
+  onCopy?: (id: string) => void
+  onDelete?: (id: string, kind: string) => void
+  onOpenDoor?: (id: string) => void
+  canOpenDoor?: (id: string) => boolean
   onRename: (id: string, name: string) => void
   onHidden: (id: string, hidden: boolean) => void
   onLocked: (id: string, locked: boolean) => void
@@ -33,7 +40,7 @@ type Props = {
 
 /** One canonical project tree. The persisted node tree, not a second UI tree, drives its rows. */
 export function StructureTreeView({ root, rows, activeId, selected, onSelectNode, onSelectPart,
-  onRename, onHidden, onLocked, onGroup, onUngroup, onReparent, onArray, onArrange, onAutoJoint, onRemoveJoint,
+  onCopy, onDelete, onOpenDoor, canOpenDoor, onRename, onHidden, onLocked, onGroup, onUngroup, onReparent, onArray, onArrange, onAutoJoint, onRemoveJoint,
   autoJoints = [] }: Props) {
   const [tab, setTab] = useState<'project' | 'selection'>('project')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
@@ -43,6 +50,19 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [context, setContext] = useState<{ row: CanonicalTreeRow; x: number; y: number; selection: string[] } | null>(null)
+  const contextRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!context) return
+    const dismiss = (event: PointerEvent) => { if (!contextRef.current?.contains(event.target as Node)) setContext(null) }
+    const key = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault(); event.stopImmediatePropagation(); setContext(null)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', key) }
+  }, [context])
   const [arrayOpen, setArrayOpen] = useState(false)
   const [arrayAxis, setArrayAxis] = useState<Axis>('x')
   const [arrayCount, setArrayCount] = useState(2)
@@ -312,6 +332,17 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
           : selectedNodes.includes(row.id) || (selectedNodes.length === 0 && row.id === activeId)
         const chosen = row.kind === 'part' ? row.selectId === selected : selectedNodes.includes(row.id) || (row.id === activeId && selectedNodes.length === 0)
         return <div key={row.id} role="treeitem" aria-level={row.depth + 1} aria-selected={chosen}
+          onContextMenu={(event) => {
+            event.preventDefault()
+            if (row.id === root.id) return
+            const selection = selectedNodes.includes(row.id) ? selectedNodes : [row.kind === 'part' ? row.nodeId : row.id]
+            if (!selectedNodes.includes(row.id)) {
+              setSelectedNodes(selection)
+              if (row.kind === 'part' && row.selectId) onSelectPart(row.nodeId, row.selectId)
+              else onSelectNode(row.id)
+            }
+            setContext({ row, x: event.clientX, y: event.clientY, selection })
+          }}
           aria-expanded={row.hasChildren ? !closed : undefined}
           className={cn(shown ? 'flex' : 'hidden', 'items-center gap-1 border-l-2 py-0.5 pr-1', chosen ? 'border-blue-600 bg-blue-50 dark:bg-neutral-800' : 'border-transparent')}
           style={{ paddingLeft: row.depth * 12 + 2 }}
@@ -342,6 +373,26 @@ export function StructureTreeView({ root, rows, activeId, selected, onSelectNode
         </div>
       })}
     </div>
+    {context && typeof document !== 'undefined' ? createPortal((() => {
+      const allowed = contextActions(context.row.kind, context.selection.length,
+        rows.filter((row) => row.kind === 'cabinet').length, context.row.locked)
+      const position = menuPosition({ left: context.x, right: context.x, top: context.y, bottom: context.y },
+        window.innerWidth, window.innerHeight, 210, 'left')
+      const item = (label: string, enabled: boolean, action: () => void) => <button type="button" role="menuitem"
+        key={label} disabled={!enabled} className="block min-h-9 w-full border border-transparent px-3 text-left text-sm text-neutral-900 hover:bg-neutral-100 disabled:opacity-40"
+        onClick={() => { setContext(null); action() }}>{tr(label)}</button>
+      return <div ref={contextRef} role="menu" aria-label={tr('Структура')}
+        className="fixed z-[1000] w-[210px] overflow-y-auto border border-neutral-400 bg-white p-1"
+        style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}>
+        {item('Свойства', allowed.properties, () => window.dispatchEvent(new CustomEvent('furniture:open-properties', { detail: context.row.nodeId })))}
+        {item('Копировать', allowed.copy && Boolean(onCopy), () => onCopy?.(context.row.id))}
+        {item('Удалить', allowed.delete && Boolean(onDelete), () => run(() => onDelete?.(context.row.id, context.row.kind)))}
+        {item('Группа', allowed.group, group)}
+        {item('Разгруппировать', allowed.ungroup, ungroup)}
+        {item('Открыть дверцу', allowed.door && Boolean(context.row.selectId && canOpenDoor?.(context.row.selectId)),
+          () => { if (context.row.selectId) onOpenDoor?.(context.row.selectId) })}
+      </div>
+    })(), document.body) : null}
   </div>
 }
 
@@ -356,6 +407,11 @@ export function StructurePanel() {
   const selected = useConfigurator((s) => s.selected)
   const setActive = useConfigurator((s) => s.setActive)
   const setSelected = useConfigurator((s) => s.setSelected)
+  const duplicateCabinet = useConfigurator((s) => s.duplicateCabinet)
+  const removeCabinet = useConfigurator((s) => s.removeCabinet)
+  const removeBoard = useConfigurator((s) => s.removeBoard)
+  const removeAnnotation = useConfigurator((s) => s.removeAnnotation)
+  const togglePanelOpen = useConfigurator((s) => s.togglePanelOpen)
   const renameNode = useConfigurator((s) => s.renameNode)
   const setNodeHidden = useConfigurator((s) => s.setNodeHidden)
   const setNodeLocked = useConfigurator((s) => s.setNodeLocked)
@@ -379,6 +435,16 @@ export function StructurePanel() {
     <StructureTreeView root={root} rows={rows} activeId={activeId} selected={selected} autoJoints={autoJoints}
       onSelectNode={(id) => { setActive(id); setSelected(rows.find((row) => row.id === id)?.selectId ?? null) }}
       onSelectPart={(nodeId, selectId) => { setActive(nodeId); setSelected(selectId) }}
+      onCopy={duplicateCabinet}
+      onDelete={(id, kind) => {
+        if (kind === 'cabinet') removeCabinet(id)
+        else if (kind === 'board') removeBoard(id)
+        else if (kind === 'annotation') removeAnnotation(id)
+        setSelected(null)
+      }}
+      onOpenDoor={togglePanelOpen}
+      canOpenDoor={(id) => scene.nodes.some((node) => node.panels.some((panel) =>
+        projectPanelId(node.nodeId, panel.id, scene.nodes.length) === id && Boolean(panel.opening)))}
       onRename={renameNode}
       onHidden={(id, hidden) => { setNodeHidden(id, hidden); setSelected(null) }}
       onLocked={setNodeLocked}

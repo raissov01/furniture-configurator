@@ -2,6 +2,8 @@
 
 import { getLang, setLang, t as tr, tf } from '@/lib/i18n'
 import { panelDisplayLabel } from '@/lib/panelDisplay'
+import { contextActions } from '@/lib/contextActions'
+import { menuPosition } from '@/lib/menuPosition'
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
@@ -182,6 +184,7 @@ export function Workspace() {
   const addAnnotation = useConfigurator((s) => s.addAnnotation)
   const removeBoard = useConfigurator((s) => s.removeBoard)
   const removeAnnotation = useConfigurator((s) => s.removeAnnotation)
+  const ungroup = useConfigurator((s) => s.ungroup)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const priceOverrides = useConfigurator((s) => s.priceOverrides)
@@ -325,6 +328,24 @@ export function Workspace() {
     if (window.matchMedia('(min-width: 1024px)').matches) setStructureOpen(true)
   }
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
+  const [sceneContext, setSceneContext] = useState<{ panelId: string; nodeId: string | null; x: number; y: number } | null>(null)
+  const sceneContextRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const open = (event: Event) => setSceneContext((event as CustomEvent<{ panelId: string; nodeId: string | null; x: number; y: number }>).detail)
+    window.addEventListener('furniture:scene-context', open)
+    return () => window.removeEventListener('furniture:scene-context', open)
+  }, [])
+  useEffect(() => {
+    if (!sceneContext) return
+    const dismiss = (event: PointerEvent) => { if (!sceneContextRef.current?.contains(event.target as Node)) setSceneContext(null) }
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault(); event.stopImmediatePropagation(); setSceneContext(null)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', key) }
+  }, [sceneContext])
   const [draftState, setDraftState] = useState<{ id: string; errors: Record<string, boolean> }>({ id: activeId, errors: {} })
   const draftInvalid = draftState.id === activeId && hasDraftErrors(draftState.errors)
   const productionState = productionAvailability(production.error, draftInvalid)
@@ -488,7 +509,9 @@ export function Workspace() {
    */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const dialogState = useConfigurator.getState()
       if (propertiesNodeId || modalBlocksHotkeys(getModalStack())) return
+      if (dialogState.galleryOpen || dialogState.shopOpen || dialogState.quoteOpen || dialogState.drillOpen || dialogState.roomOpen) return
       if (isTyping(e.target)) return
       // Escape — 3D-дегі таңдауды алу. Хоткейлер тізіміне кірмейді: бұл
       // «әрекет» емес, кез келген жерден шығудың әдеттегі жолы.
@@ -674,6 +697,32 @@ export function Workspace() {
       <HistoryPanel />
       {shareCodeOpen && <ShareCodeDialog />}
       {cloudEnabled && <AccountPanel />}
+      {sceneContext && (() => {
+        const nodeId = sceneContext.nodeId ?? activeId
+        const node = findNode(root, nodeId)
+        const part = projectPanels.find((item) => item.id === sceneContext.panelId)
+        const allowed = contextActions(node?.kind ?? 'part', 1, cabinets.length, Boolean(node?.locked))
+        const position = menuPosition({ left: sceneContext.x, right: sceneContext.x, top: sceneContext.y, bottom: sceneContext.y },
+          window.innerWidth, window.innerHeight, 210, 'left')
+        const item = (label: string, enabled: boolean, action: () => void) => <button type="button" role="menuitem" key={label}
+          disabled={!enabled} className="block min-h-9 w-full border border-transparent px-3 text-left text-sm hover:bg-neutral-100 disabled:opacity-40"
+          onClick={() => { setSceneContext(null); action() }}>{tr(label)}</button>
+        return <div ref={sceneContextRef} role="menu" aria-label={tr('Элемент')}
+          className="fixed z-[1000] w-[210px] overflow-y-auto border border-neutral-400 bg-white p-1 text-neutral-900"
+          style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}>
+          {item('Свойства', Boolean(node && propertiesNodeSupported(node.kind)), () => setPropertiesNodeId(nodeId))}
+          {item('Копировать', allowed.copy, () => duplicateCabinet(nodeId))}
+          {item('Удалить', allowed.delete, () => {
+            if (node?.kind === 'cabinet') removeCabinet(nodeId)
+            else if (node?.kind === 'board') removeBoard(nodeId)
+            else if (node?.kind === 'annotation') removeAnnotation(nodeId)
+            setSelected(null)
+          })}
+          {item('Группа', false, () => openDockTab('structure'))}
+          {item('Разгруппировать', allowed.ungroup, () => ungroup(nodeId))}
+          {item('Открыть дверцу', Boolean(part?.opening), () => togglePanelOpen(sceneContext.panelId))}
+        </div>
+      })()}
       {!production.error ? <QuoteView
         propertiesOpen={propertiesNodeId !== null}
         panels={projectPanels}
@@ -885,7 +934,15 @@ export function Workspace() {
       {(activeBoard || activeSolid || cabinet) && <div data-testid="mobile-properties-trigger"
         className="relative z-30 flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
         <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
-        <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>
+        {cabinet && <div className="flex shrink-0 gap-1">
+          <Button tour="mobile-size" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Габариты')}</Button>
+          <Button tour="mobile-sections" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Секции модуля')}</Button>
+          <Button tour="mobile-cutlist" size="sm" onClick={() => {
+            if (!cutOpen) toggleCut()
+            document.querySelector('[data-tour="cutlist"]')?.scrollIntoView({ block: 'nearest' })
+          }}>{tr('Деталировка')}</Button>
+        </div>}
+        {!cabinet && <Button onClick={() => setPropertiesNodeId(activeId)}>{tr('Свойства')}</Button>}
       </div>}
 
       {projectLoadError && (
@@ -1019,7 +1076,7 @@ export function Workspace() {
         <div className="flex min-h-0 flex-col overflow-y-auto lg:overflow-hidden">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
         {!walk && <div data-testid="mobile-tree-dock" className="relative z-20 shrink-0 px-2 pt-1 lg:hidden"><TreeDock request={dockRequest} /></div>}
-        <main className="relative isolate h-[40dvh] min-h-[40dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+        <main className="relative isolate h-[40dvh] min-h-[337px] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
@@ -1128,7 +1185,7 @@ export function Workspace() {
             </div>}
         </section>
         </div>
-        <aside className="relative z-10 flex h-[30dvh] min-h-0 flex-col overflow-hidden border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
+        <aside className="relative z-10 flex h-[45dvh] min-h-[320px] max-h-[45dvh] flex-col overflow-hidden border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
           <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-800 lg:hidden">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">

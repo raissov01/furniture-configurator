@@ -16,6 +16,7 @@ describe('F25 толық каталог dock', () => {
     expect(workspace).toContain('data-testid="mobile-tree-dock"')
     expect(workspace.indexOf('data-testid="mobile-tree-dock"')).toBeLessThan(workspace.indexOf('data-tour="scene"'))
     expect(workspace).toContain("action: () => openDockTab('library')")
-    expect(workspace).toContain("<Button onClick={() => openDockTab('library')}>{tr('Библиотека')}</Button>")
+    // f425ad7: «Библиотека» жоғарғы «Проект» мәзіріне көшті; әрекеті сол openDockTab('library').
+    expect(workspace).toContain("<MenuItem onClick={() => openDockTab('library')}>{tr('Библиотека')}</MenuItem>")
   })
 })

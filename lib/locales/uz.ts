@@ -2135,4 +2135,7 @@ export const uz: Record<string, string> = {
   'Логотип: PNG или JPEG': 'Logotip: PNG yoki JPEG ishlating',
   'Логотип: не больше 750 КБ': 'Logotip: 750 KB dan oshmasin',
   'Логотип: файл не прочитан': 'Logotip: fayl o‘qilmadi',
+  'Монтаж открыт': 'O‘rnatish ochiq',
+  'Монтажных заданий пока нет': 'O‘rnatish topshiriqlari hozircha yo‘q',
+  'Навигация': 'Menyu',
 }

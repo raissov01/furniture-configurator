@@ -25,12 +25,14 @@ import { findTourTarget } from '@/lib/tourTarget'
 import { tourCardPosition } from '@/lib/f32TourPosition'
 import { tourZIndex } from '@/lib/modalStack'
 import { useModalStack } from '@/lib/useModalLayer'
+import { useTourBlockedByModal } from '@/lib/useModalLayer'
 
 const DONE_KEY = 'furniture-configurator:tour-done'
 export const LESSON_DONE_KEY = 'furniture-configurator:lessons-done'
 
 export function Tour({ paused = false, classic = false }: { paused?: boolean; classic?: boolean }) {
   const modalStack = useModalStack()
+  const blockedByModal = useTourBlockedByModal()
   const [step, setStep] = useState<number | null>(null)
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [rect, setRect] = useState<DOMRect | null>(null)
@@ -138,7 +140,7 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
     return () => observer.disconnect()
   }, [step])
 
-  if (step === null || !rect || !activeSteps[step]) return null
+  if (paused || blockedByModal || step === null || !rect || !activeSteps[step]) return null
   const current = activeSteps[step]!
   const last = step === activeSteps.length - 1
 

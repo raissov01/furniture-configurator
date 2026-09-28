@@ -913,7 +913,7 @@ export function AccountPanel() {
               {visibleFormErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(visibleFormErrors.password)}</span> : null}
             </Field>
 
-            <Button onClick={() => void submit()} disabled={busy || !formReady} active>
+            <Button onClick={() => void submit()} disabled={busy || Boolean(invite && mode === 'register' && inviteShopName === null)} active>
               {mode === 'login' ? tr('Войти') : tr('Создать аккаунт')}
             </Button>
             {mode === 'login' ? <button type="button" className="block text-sm underline" onClick={() => { setResetOpen(true); setError(null); setNotice(null) }}>{tr('Забыли пароль?')}</button> : null}

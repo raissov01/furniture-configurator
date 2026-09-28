@@ -33,7 +33,6 @@ import { Button, Field, NumberInput, SectionTitle, Select } from '@/components/u
 import { cn } from '@/lib/cn'
 import { isCeilingIssue } from '@/lib/roomElevationUi'
 import { planDragOffset } from '@/lib/roomPlanDrag'
-import { shouldCloseRoomDialog } from '@/lib/roomDialog'
 import { nextOpening, updateOpening } from '@/lib/roomOpeningsUi'
 
 /** Қабырға сызығының қалыңдығы, мм (шартты — тек көрініс үшін). */
@@ -48,7 +47,7 @@ function mirrorReason(cabinet: CabinetConfig): string {
 export function RoomPlan() {
   const open = useConfigurator((s) => s.roomOpen)
   const setOpen = useConfigurator((s) => s.setRoomOpen)
-  const { zIndex, isTop } = useModalLayer(open, 'room')
+  const { zIndex, isTop } = useModalLayer(open, 'room', () => setOpen(false))
   const room = useConfigurator((s) => s.room)
   const cabinets = useConfigurator((s) => s.cabinets)
   const root = useConfigurator((s) => s.root)
@@ -100,15 +99,8 @@ export function RoomPlan() {
     if (!open) return
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
     dialogRef.current?.focus()
-    const onKey = (event: KeyboardEvent) => {
-      if (!isTop || !shouldCloseRoomDialog(event.key)) return
-      event.preventDefault()
-      event.stopImmediatePropagation()
-      setOpen(false)
-    }
-    document.addEventListener('keydown', onKey, true)
-    return () => { document.removeEventListener('keydown', onKey, true); trigger?.focus() }
-  }, [open, isTop, setOpen])
+    return () => { trigger?.focus() }
+  }, [open, setOpen])
 
   const activePlacement: Placement =
     entries.find((e) => e.cabinet.id === activeId)?.placement ??
@@ -118,9 +110,9 @@ export function RoomPlan() {
 
   return (
     <div
-      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
       style={{ zIndex }}
-      onClick={() => setOpen(false)}
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
+      onClick={() => { if (isTop) setOpen(false) }}
     >
       <div
         ref={dialogRef}
@@ -128,7 +120,7 @@ export function RoomPlan() {
         aria-modal="true"
         aria-labelledby="room-plan-title"
         tabIndex={-1}
-        className="min-w-0 w-full max-w-4xl max-h-[calc(100dvh-16px)] overflow-x-hidden overflow-y-auto border border-neutral-200 bg-white p-3 outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
+        className="min-w-0 w-full max-w-4xl max-h-[80dvh] overflow-y-auto overflow-x-hidden border border-neutral-200 bg-white p-3 outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">

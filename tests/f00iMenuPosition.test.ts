@@ -11,4 +11,9 @@ describe('menuPosition', () => {
     expect(menuPosition({ left: 50, right: 120, top: 20, bottom: 60 }, 1000, 800, 180, 'left'))
       .toEqual({ left: 50, top: 60, maxHeight: 480 })
   })
+
+  it('keeps a right-aligned menu inside a narrow viewport', () => {
+    expect(menuPosition({ left: 335, right: 385, top: 120, bottom: 150 }, 390, 844, 260, 'right'))
+      .toEqual({ left: 118, top: 150, maxHeight: 480 })
+  })
 })

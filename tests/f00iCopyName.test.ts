@@ -12,4 +12,9 @@ describe('nextCopyName', () => {
     expect(nextCopyName('Wardrobe', ['Wardrobe', 'Wardrobe (копия 1)', 'Wardrobe (копия 4)']))
       .toBe('Wardrobe (копия 5)')
   })
+
+  it('collapses stacked suffixes and skips existing sibling numbers', () => {
+    expect(nextCopyName('Шкаф (копия) (копия)', ['Шкаф', 'Шкаф (копия 1)', 'Шкаф (копия 2)']))
+      .toBe('Шкаф (копия 3)')
+  })
 })

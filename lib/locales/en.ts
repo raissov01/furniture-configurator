@@ -2131,4 +2131,7 @@ export const en: Record<string, string> = {
   'Логотип: PNG или JPEG': 'Logo: use PNG or JPEG',
   'Логотип: не больше 750 КБ': 'Logo: maximum 750 KB',
   'Логотип: файл не прочитан': 'Logo: file could not be read',
+  'Монтаж открыт': 'Installation open',
+  'Монтажных заданий пока нет': 'No installation tasks yet',
+  'Навигация': 'Menu',
 }

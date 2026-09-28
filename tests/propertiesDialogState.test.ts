@@ -106,7 +106,7 @@ describe('properties dialog state', () => {
 describe('properties dialog rendering', () => {
   it('keeps a stable desktop height across tabs while the body scrolls', () => {
     const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
-    expect(css).toMatch(/\.p100-dialog \{[^}]*; height: min\(760px, calc\(100dvh - 24px\)\)/)
+    expect(css).toMatch(/\.p100-dialog \{[^}]*; height: min\(600px, 80dvh\)/)
     expect(css).toMatch(/\.p100-dialog-body \{[^}]*overflow: auto/)
   })
   it('updates reactive baseline after Apply so the button can become disabled again', () => {
