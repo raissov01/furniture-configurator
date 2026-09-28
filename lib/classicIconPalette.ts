@@ -1,5 +1,8 @@
 /** A single colour meaning for classic tool icons, independent of rendering. */
 export type ClassicIconName = 'select' | 'new' | 'open' | 'save' | 'print' | 'cut' | 'copy' | 'delete' | 'undo' | 'redo' | 'settings' | 'properties' | 'shop' | 'view' | 'box' | 'decor' | 'lathe' | 'bent' | 'board' | 'text' | 'wire' | 'eye' | 'magnet' | 'light' | 'fit' | 'structure' | 'library' | 'layers' | 'measure' | 'render' | 'room' | 'help' | 'duplicate' | 'mirror' | 'quote' | 'drill' | 'xray' | 'assembly' | 'walk' | 'doors' | 'ghost' | 'door' | 'find' | 'replace' | 'ar' | 'vr'
+  | 'insert' | 'catalog' | 'sun' | 'texture' | 'fronts' | 'person' | 'zoomIn' | 'zoomOut' | 'import' | 'sketch' | 'parts' | 'cutlist'
+  | 'alignLeft' | 'alignCenterX' | 'alignRight' | 'alignBottom' | 'alignMiddleY' | 'alignTop' | 'alignFront' | 'alignCenterZ' | 'alignBack'
+  | 'distributeX' | 'distributeY' | 'distributeZ' | 'group' | 'ungroup' | 'rotateCcw' | 'rotateCw' | 'hide' | 'lock' | 'projectInfo'
 
 
 

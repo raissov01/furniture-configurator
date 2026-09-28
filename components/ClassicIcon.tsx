@@ -1,6 +1,9 @@
 'use client'
 
-/** Original 18 px line drawings for the classic desktop controls. */
+/**
+ * Original line drawings for the classic desktop controls. Drawn on an 18-unit
+ * grid and shown at 16 px — the PRO100 toolbar icon size (эталон `base-inserted.png`).
+ */
 import { classicIconTone, type ClassicIconName } from '@/lib/classicIconPalette'
 export type { ClassicIconName } from '@/lib/classicIconPalette'
 
@@ -45,7 +48,7 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     help: <><circle cx="9" cy="9" r="7"/><path d="M6.5 6.5a2.5 2.5 0 1 1 3 2.5c-1 .5-1 1-1 2M9 13.5v.5"/></>,
     duplicate: <><path d="M2 5h10v11H2zM5 2h10v11"/><path d="M7 8v5m-2.5-2.5h5" stroke={blue}/></>,
     mirror: <><path d="M9 1v16M2 5l5-2v11l-5-2zM16 5l-5-2v11l5-2z"/><path d="M3 9h3m6 0h3" stroke={blue}/></>,
-    quote: <><path d="M4 2h10v14H4zM6 5h6M6 8h6M6 11h3"/><path d="M11 13h2" stroke={blue}/></>,
+    quote: <><path d="M4 2.5h10v13.5H4zM7 1.5h4v2H7z"/><path d="M11.5 6.5h-5l3 3-3 3h5" stroke={blue} strokeWidth="1.4"/></>,
     drill: <><path d="M3 3h12v12H3zM9 4v10M4 9h10"/><circle cx="9" cy="9" r="2.5" fill={blue}/></>,
     xray: <><path d="m2 5 7-3 7 3v9l-7 3-7-3zM2 5l7 3 7-3M9 8v9"/><circle cx="9" cy="9" r="2" fill={blue}/><path d="M4 5.5 14 14" strokeDasharray="2 2"/></>,
     assembly: <><path d="M2 3h5v5H2zM11 3h5v5h-5zM6.5 12h5v5h-5z"/><path d="M7 5h4M9 8v4M4 8v4h2m8-4v4h-2" stroke={blue}/></>,
@@ -58,6 +61,38 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     replace: <><path d="M3 6a6 6 0 0 1 10-2m0-2v3h-3M15 12a6 6 0 0 1-10 2m0 2v-3h3"/><path d="M7 8h4m-2-2v4" stroke={blue}/></>,
     ar: <><path d="M3 5h3l1.5-2h3L12 5h3v10H3z"/><circle cx="9" cy="10" r="2.5"/><path d="M1 8V5a2 2 0 0 1 2-2m14 5V5a2 2 0 0 0-2-2"/></>,
     vr: <><path d="M2 6h14v7H2zM2 9H1m15 0h1M5 13l2-2h4l2 2"/><path d="M5 9h2m4 0h2"/></>,
+
+    insert: <><rect x="2" y="9" width="14" height="4" fill={blue}/><path d="M12 1.5v6M9 4.5h6" stroke="var(--p100-icon-green)" strokeWidth="1.6"/></>,
+    catalog: <><path d="M3 2.5h10a1 1 0 0 1 1 1V16H4a1 1 0 0 1-1-1z"/><path d="M3 13.5h11M6 5h5M6 7.5h5" stroke={blue}/></>,
+    sun: <><circle cx="9" cy="9" r="3.2" fill="var(--p100-icon-yellow)"/><path d="M9 1.5v2m0 11v2M1.5 9h2m11 0h2M3.7 3.7l1.4 1.4m7.8 7.8 1.4 1.4m0-10.6-1.4 1.4m-7.8 7.8-1.4 1.4"/></>,
+    texture: <><rect x="2" y="3" width="14" height="12" fill={blue} opacity=".35"/><path d="M2 3h14v12H2zM2 7c3-1 6 1 9 0s4-1 5-1M2 11c3-1 6 1 9 0s4-1 5-1"/></>,
+    fronts: <><path d="M2 2h14v14H2z"/><path d="M4 4h4.5v10H4zM9.5 4H14v10H9.5z" fill={blue} opacity=".45"/></>,
+    person: <><circle cx="9" cy="3" r="1.8"/><path d="M9 5v6m-3.5-4h7M9 11l-2.5 5M9 11l2.5 5"/></>,
+    zoomIn: <><circle cx="7.5" cy="7.5" r="5"/><path d="m11 11 5 5M5 7.5h5M7.5 5v5"/></>,
+    zoomOut: <><circle cx="7.5" cy="7.5" r="5"/><path d="m11 11 5 5M5 7.5h5"/></>,
+    import: <><path d="M3 11v5h12v-5"/><path d="M9 2v9m-3.5-3.5L9 11l3.5-3.5" stroke={blue}/></>,
+    sketch: <><path d="M3 15 13.5 4.5l2 2L5 17H3z"/><path d="M2 5c2-3 4 1 6-2" stroke={blue}/></>,
+    parts: <><path d="M2 12h9v4H2zM5 2h4v9H5z"/><path d="M13 3v6m-3-3h6" stroke={blue}/></>,
+    cutlist: <><path d="M2 2.5h14v13H2zM2 6.5h14M2 10.5h14M7 2.5v13"/></>,
+    alignLeft: <><path d="M2.5 1.5v15"/><rect x="4" y="3.5" width="10" height="4" fill={blue}/><rect x="4" y="10.5" width="6" height="4" fill={blue}/></>,
+    alignCenterX: <><path d="M9 1.5v15"/><rect x="3.5" y="3.5" width="11" height="4" fill={blue}/><rect x="5.5" y="10.5" width="7" height="4" fill={blue}/></>,
+    alignRight: <><path d="M15.5 1.5v15"/><rect x="4" y="3.5" width="10" height="4" fill={blue}/><rect x="8" y="10.5" width="6" height="4" fill={blue}/></>,
+    alignBottom: <><path d="M1.5 15.5h15"/><rect x="3.5" y="4" width="4" height="10" fill={blue}/><rect x="10.5" y="8" width="4" height="6" fill={blue}/></>,
+    alignMiddleY: <><path d="M1.5 9h15"/><rect x="3.5" y="3.5" width="4" height="11" fill={blue}/><rect x="10.5" y="5.5" width="4" height="7" fill={blue}/></>,
+    alignTop: <><path d="M1.5 2.5h15"/><rect x="3.5" y="4" width="4" height="10" fill={blue}/><rect x="10.5" y="4" width="4" height="6" fill={blue}/></>,
+    alignFront: <><path d="M2 14.5 8 11h9"/><path d="m3 11 3-2h6l-3 2zM6 7l3-2h6l-3 2z" fill={blue}/></>,
+    alignCenterZ: <><path d="M2 11 8 7h9" strokeDasharray="2 1.5"/><path d="m2 14 3-2h6l-3 2zM7 6l3-2h6l-3 2z" fill={blue}/></>,
+    alignBack: <><path d="M1 7.5 7 4h10"/><path d="m3 13 3-2h6l-3 2zM6 9l3-2h6l-3 2z" fill={blue}/></>,
+    distributeX: <><path d="M1.5 2v14M16.5 2v14"/><rect x="3.5" y="5" width="3" height="8" fill={blue}/><rect x="7.5" y="5" width="3" height="8" fill={blue}/><rect x="11.5" y="5" width="3" height="8" fill={blue}/></>,
+    distributeY: <><path d="M2 1.5h14M2 16.5h14"/><rect x="5" y="3.5" width="8" height="3" fill={blue}/><rect x="5" y="7.5" width="8" height="3" fill={blue}/><rect x="5" y="11.5" width="8" height="3" fill={blue}/></>,
+    distributeZ: <><path d="M1 16 7 12M11 6l6-4"/><path d="m2 13 3-2h5l-3 2zM5 10l3-2h5l-3 2zM8 7l3-2h5l-3 2z" fill={blue}/></>,
+    group: <><path d="M1.5 1.5h15v15h-15z" strokeDasharray="2 1.5"/><rect x="4" y="4" width="5" height="5" fill={blue}/><rect x="9" y="9" width="5" height="5" fill={blue}/></>,
+    ungroup: <><rect x="2" y="2" width="6" height="6" fill={blue}/><rect x="10" y="10" width="6" height="6" fill={blue}/><path d="M11 2h5v5M2 11v5h5" strokeDasharray="2 1.5"/></>,
+    rotateCcw: <><path d="M4 7.5a6 6 0 1 1 1 6" stroke={blue}/><path d="M2 3.5 4 7.5l4-1.5" stroke={blue}/></>,
+    rotateCw: <><path d="M14 7.5a6 6 0 1 0-1 6" stroke={blue}/><path d="m16 3.5-2 4-4-1.5" stroke={blue}/></>,
+    hide: <><path d="M1 9q8-8 16 0-8 8-16 0z"/><circle cx="9" cy="9" r="2.5"/><path d="M2 16 16 2" stroke="var(--p100-icon-red)"/></>,
+    lock: <><rect x="3" y="8" width="12" height="8" fill="var(--p100-icon-yellow)"/><path d="M5.5 8V5.5a3.5 3.5 0 0 1 7 0V8"/></>,
+    projectInfo: <><path d="M3 1.5h9l3 3v12H3z"/><path d="M6 7h6M6 10h6M6 13h4" stroke={blue}/></>,
   }
-  return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round">{shape[name]}</svg>
+  return <svg aria-hidden="true" width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round">{shape[name]}</svg>
 }

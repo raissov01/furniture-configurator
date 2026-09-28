@@ -27,6 +27,10 @@ import { FillingMesh } from '@/components/FillingMesh'
 import { DimensionLabels } from '@/components/DimensionLabels'
 import { shouldRenderDimensions } from '@/lib/sceneDimensionVisibility'
 import { PanelMesh } from '@/components/PanelMesh'
+import { CameraHeadlight, ClassicCeiling, CulledFace, SchematicRoom, SelectionHandles2D } from '@/components/ClassicRoom'
+import { classicSceneLook, useClassicView } from '@/store/classicView'
+import { lightingFactor, sceneLightIntensities } from '@/lib/classicLighting'
+import { ClassicSceneContext, P100_SELECTION_COLOR, type ClassicScene } from '@/lib/classicSceneContext'
 import { rodBracketCentres } from '@/lib/fittingGeometry'
 import { useConfigurator } from '@/store/configurator'
 import { canvasSettings } from '@/lib/appearance'
@@ -475,7 +479,7 @@ function VrRig({ room }: { room: Room }) {
 }
 
 function CameraRig({
-  target, box, facingY, layoutKey, wallCtx,
+  target, box, facingY, layoutKey, wallCtx, classicRoom = false,
 }: {
   target: Vec3
   box: { W: number; H: number; D: number }
@@ -490,6 +494,8 @@ function CameraRig({
   layoutKey: string
   /** Тек `wall-*` пресетінде: `cameraOffset`-тің қай қабырғаны есептеу керегі. */
   wallCtx?: { room: Room; wallId: WallId } | undefined
+  /** PRO100 перспективасы: бүкіл бөлме, алдынан сәл оңнан және жоғарыдан. */
+  classicRoom?: boolean | undefined
 }) {
   const preset = useConfigurator((s) => s.cameraPreset)
   const fitNonce = useConfigurator((s) => s.fitNonce)
@@ -514,7 +520,8 @@ function CameraRig({
   const { x: tx, y: ty, z: tz } = target
 
   const fit = useCallback(() => {
-    const [lx0, oy0, lz0] = cameraOffset(preset, W, H, D, wallCtx)
+    const span = Math.max(W, H, D)
+    const [lx0, oy0, lz0] = classicRoom ? [span * 0.28, span * 0.3, -span * 1.3] as const : cameraOffset(preset, W, H, D, wallCtx)
 
     /*
      * Қашықтықты КАДРҒА қарап түзетеміз.
@@ -566,7 +573,7 @@ function CameraRig({
     controls?.target.set(tx * MM, ty * MM, tz * MM)
     controls?.update()
     invalidate()
-  }, [preset, camera, controls, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, wallCtx])
+  }, [preset, camera, controls, size.width, size.height, invalidate, W, H, D, tx, ty, tz, facingY, wallCtx, classicRoom])
 
   /*
    * ҚАЙТА КАДРЛАУ ТЕК КӨРІНІС ӨЗГЕРГЕНДЕ, нысана жылжығанда ЕМЕС.
@@ -583,7 +590,7 @@ function CameraRig({
    */
   const fitRef = useRef(fit)
   useEffect(() => { fitRef.current = fit }, [fit])
-  useEffect(() => { fitRef.current() }, [preset, camera, controls, size.width, size.height, layoutKey, fitNonce])
+  useEffect(() => { fitRef.current() }, [preset, camera, controls, size.width, size.height, layoutKey, fitNonce, classicRoom])
 
   return <OrbitControls ref={setControls} makeDefault enableDamping dampingFactor={0.12} />
 }
@@ -951,9 +958,12 @@ const FLOOR_LOOK: Record<FloorKind, { color: string; pattern: FloorPattern | nul
  * ⚠ Қабырға ешқашан көлеңке ТАСТАМАЙДЫ: негізгі жарық бөлменің сыртында,
  * тұтас қабырға көлеңке тастаса, бүкіл ішті қарауытып жіберер еді.
  */
-function RoomShell({ room, walk, entries }: {
+function RoomShell({ room, walk, entries, classicLook = null, gridColor = '#eed2c4' }: {
   room: Room
   walk: boolean
+  /** Классикалық жұмыс орны: бос бөлме — тор, отделкасы бар — тұтас қабырға мен төбе. */
+  classicLook?: 'schematic' | 'realistic' | null
+  gridColor?: string
   /** Корпустар — артында қалған терезе/есік салынбайды. */
   entries: { cabinet: CabinetConfig; placement: Placement }[]
 }) {
@@ -968,6 +978,8 @@ function RoomShell({ room, walk, entries }: {
     [look.pattern, floorKind, room.width, room.depth],
   )
 
+  if (classicLook === 'schematic' && !walk) return <SchematicRoom room={room} color={gridColor} />
+  const classicRealistic = classicLook === 'realistic' && !walk
   return (
     <group>
       {/* Еден торлы Grid-тен сәл жоғары: әйтпесе екеуі бір жазықтықта жыпылықтайды. */}
@@ -975,7 +987,12 @@ function RoomShell({ room, walk, entries }: {
         <planeGeometry args={[room.width, room.depth]} />
         <meshStandardMaterial color={look.color} map={floorMap} roughness={0.75} />
       </mesh>
-      {roomWalls(room).map((w) => (
+      {roomWalls(room).map((w) => classicRealistic ? (
+        // PRO100: камера мен бөлменің арасындағы қабырға салынбайды, қалғаны тұтас.
+        <CulledFace key={w.id} face={w}>
+          <WallMesh wall={w} height={room.height} openings={[]} color={wallColor} solid />
+        </CulledFace>
+      ) : (
         <WallMesh
           key={w.id}
           wall={w}
@@ -985,7 +1002,7 @@ function RoomShell({ room, walk, entries }: {
           solid={walk}
         />
       ))}
-      {walk ? <Ceiling room={room} /> : null}
+      {walk ? <Ceiling room={room} /> : classicRealistic ? <ClassicCeiling room={room} /> : null}
     </group>
   )
 }
@@ -1311,7 +1328,35 @@ export default function Scene({
   const p100Color = (token: string, fallback: string) => classic && typeof document !== 'undefined'
     ? getComputedStyle(document.documentElement).getPropertyValue(token).trim() || fallback
     : fallback
-  const canvas = canvasSettings(quality)
+  /*
+   * PRO100 КӨРІНІСІ (тек классикалық десктоп). Бос бөлме — ақ фон мен жіңішке
+   * тор, көлеңкесіз; бөлмеге отделка берілсе не «Вид → Реалистичный вид»
+   * қосылса — текстуралы еден, тұтас сұр қабырға, жұмсақ көлеңке.
+   * «Свет» терезесінің жүгірткілері жарықты осы жерде өзгертеді.
+   */
+  const realisticView = useClassicView((s) => s.realisticView)
+  const lighting = useClassicView((s) => s.lighting)
+  const classicLook = classic ? classicSceneLook(true, Boolean(room.finish), realisticView) : null
+  const schematic = classicLook === 'schematic'
+  const lightLevels = classic ? sceneLightIntensities(lighting) : null
+  const classicScene = useMemo<ClassicScene>(() => ({
+    classic, look: classicLook ?? 'realistic',
+    relief: classic ? lightingFactor(lighting, 'relief') : 1,
+    reflection: classic ? lightingFactor(lighting, 'reflection') : 1,
+  }), [classic, classicLook, lighting])
+  const antialiasOn = !classic || lighting.antialias.on
+  const selectionOverlay = useRef<HTMLDivElement>(null)
+  /*
+   * PRO100-де перспектива бөлмені ТҰТАС көрсетеді (камера алыста). «Вписать в
+   * кадр» басылғанда ғана нысандарға жақындаймыз; қойынды ауысса — қайта бөлме.
+   */
+  const fitNonce = useConfigurator((s) => s.fitNonce)
+  const [frameObjects, setFrameObjects] = useState(false)
+  useEffect(() => { setFrameObjects(false) }, [preset])
+  useEffect(() => { if (fitNonce > 0) setFrameObjects(true) }, [fitNonce])
+  const classicRoomView = classic && !frameObjects && preset === 'three-quarter' && !walk
+  const baseCanvas = canvasSettings(quality)
+  const canvas = antialiasOn ? baseCanvas : { dpr: [1, 1] as [number, number], antialias: false }
   const xrStore = useMemo(() => getXrStore(), [])
   // Сессия басталды/бітті → стордағы `vr`: бөлме тұтас болады, камера
   // басқаруы гарнитураға беріледі.
@@ -1355,6 +1400,14 @@ export default function Scene({
     facingY: number
     wallCtx?: { room: Room; wallId: WallId } | undefined
   }>(() => {
+    if (classicRoomView) {
+      return {
+        target: { x: room.width / 2, y: room.height / 2, z: room.depth / 2 },
+        box: { W: room.width, H: room.height, D: room.depth },
+        // Бірінші корпус тұрған қабырғаға қарап (генератор оны негізгі қабырғаға қояды).
+        facingY: items[0]?.pose.rotationY ?? 0,
+      }
+    }
     const wallId = WALL_VIEW_TARGET[preset]
     if (wallId) {
       // Элевация: бүкіл бөлме, көзқарас — сол қабырғаның СЫРТЫНАН (нысана
@@ -1400,7 +1453,7 @@ export default function Scene({
       box: { W: active.cabinet.width, H: active.cabinet.height, D: active.cabinet.depth },
       facingY: active.pose.rotationY,
     }
-  }, [active, room, preset, items, geometryBounds, freeBoards.length, flatScene?.solids.length, annotations.length])
+  }, [active, room, preset, items, geometryBounds, freeBoards.length, flatScene?.solids.length, annotations.length, classicRoomView])
 
   /*
    * Силуэт қайда тұрады.
@@ -1493,9 +1546,10 @@ export default function Scene({
   }, [room.width, room.depth, room.height])
 
   return (
+    <>
     <Canvas
       id={SCENE_CANVAS_ID}
-      shadows
+      shadows={!schematic}
       /*
        * КАДР ТЕК КЕРЕК КЕЗДЕ (`demand`). Бұрын әдепкі `always` еді: сахна
        * ештеңе өзгермесе де секундына 60 рет қайта салынатын. Қасиеттер
@@ -1545,6 +1599,7 @@ export default function Scene({
       onCreated={(state) => setLiveScene(state.scene)}
     >
       <SceneRenderBridge />
+      <ClassicSceneContext.Provider value={classicScene}>
       <XR store={xrStore}>
         {/*
           * Ортографиялық проекция: параллель сызықтар қиылыспайды, сондықтан
@@ -1564,7 +1619,7 @@ export default function Scene({
           жүктелмейді (PWA офлайн жұмыс істейді). Онсыз болат, шыны, плита мен
           лак ештеңені шағылыстырмай, сұр пластик болып көрінетін.
         */}
-        <Environment resolution={256} environmentIntensity={0.55}>
+        <Environment resolution={256} environmentIntensity={lightLevels?.environment ?? 0.55}>
           <Lightformer form="rect" intensity={2} position={[0, 6, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[12, 12, 1]} />
           <Lightformer form="rect" intensity={1} position={[-7, 2, 3]} rotation={[0, Math.PI / 2, 0]} scale={[12, 3, 1]} />
           <Lightformer form="rect" intensity={1} position={[7, 2, -3]} rotation={[0, -Math.PI / 2, 0]} scale={[12, 3, 1]} />
@@ -1578,16 +1633,17 @@ export default function Scene({
           жарықтылық сол қалпында, бірақ контраст (демек AO мен көлеңкенің
           көрінуі) қалпына келеді.
         */}
-        <ambientLight intensity={0.08} />
-        <hemisphereLight intensity={0.22} color="#ffffff" groundColor="#b5b0a8" />
+        <ambientLight intensity={lightLevels?.ambient ?? 0.08} />
+        <hemisphereLight intensity={lightLevels?.hemisphere ?? 0.22} color="#ffffff" groundColor="#b5b0a8" />
+        {lightLevels ? <CameraHeadlight intensity={lightLevels.camera} /> : null}
         {/* Түсі БЕЙТАРАП: Neutral tone mapping жылы жарықты басып тастамайды —
             ақ қабырға мен ақ ЛДСП кремге ауып кететін. */}
         <directionalLight
           position={mainLightPosition}
           target={mainLightTarget}
-          intensity={1.5}
+          intensity={lightLevels?.sun ?? 1.5}
           color="#fffaf3"
-          castShadow
+          castShadow={!schematic}
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
           shadow-bias={-0.0005}
@@ -1617,7 +1673,8 @@ export default function Scene({
         <directionalLight position={rimLightPosition} target={mainLightTarget} intensity={0.45} color="#eef2ff" castShadow={false} />
         <ProjectLights lights={projectLights} centre={roomCenterM} />
         <group scale={MM}>
-          <RoomShell room={room} walk={walk || vr} entries={wallBoundItems(items)} />
+          <RoomShell room={room} walk={walk || vr} entries={wallBoundItems(items)} classicLook={classicLook}
+            gridColor={p100Color('--p100-room-grid', '#eed2c4')} />
         </group>
         {/*
           ⚠ ЖИҺАЗ БӨЛЕК, АТАУЛЫ топта (`ar-furniture`), әрі өз масштабымен (MM).
@@ -1656,16 +1713,17 @@ export default function Scene({
                 ? <ImportedSolidMesh spec={solid.spec.importedModel} />
                 : solid.spec.fabrication?.kind === 'lathe'
                 ? <LatheSolidMesh spec={solid.spec.fabrication} size={solid.spec.size.x}
-                  color={solid.spec.color ?? '#a3a3a3'} selected={selected === solid.nodeId} />
+                  color={classic && selected === solid.nodeId ? P100_SELECTION_COLOR : solid.spec.color ?? '#a3a3a3'} selected={!classic && selected === solid.nodeId} />
                 : solid.spec.fabrication?.kind === 'bent'
                   ? <BentSolidMesh spec={solid.spec.fabrication}
                     minRadius={catalog.materials.find((material) => material.id === solid.spec.fabrication?.materialId)?.minBendRadiusMm}
-                    color={solid.spec.color ?? '#a3a3a3'} selected={selected === solid.nodeId} />
-                  : <mesh position={[solid.spec.size.x / 2, solid.spec.size.y / 2, solid.spec.size.z / 2]} castShadow>
+                    color={classic && selected === solid.nodeId ? P100_SELECTION_COLOR : solid.spec.color ?? '#a3a3a3'} selected={!classic && selected === solid.nodeId} />
+                  : <mesh position={[solid.spec.size.x / 2, solid.spec.size.y / 2, solid.spec.size.z / 2]} castShadow
+                    userData={{ p100Selected: classic && selected === solid.nodeId }}>
                 <boxGeometry args={[solid.spec.size.x, solid.spec.size.y, solid.spec.size.z]} />
-                <meshStandardMaterial color={solid.spec.color ?? '#a3a3a3'}
-                  emissive={selected === solid.nodeId ? '#22d3ee' : '#000000'}
-                  emissiveIntensity={selected === solid.nodeId ? 0.35 : 0} />
+                <meshStandardMaterial color={classic && selected === solid.nodeId ? P100_SELECTION_COLOR : solid.spec.color ?? '#a3a3a3'}
+                  emissive={!classic && selected === solid.nodeId ? '#22d3ee' : '#000000'}
+                  emissiveIntensity={!classic && selected === solid.nodeId ? 0.35 : 0} />
               </mesh>}
             </group>
           ))}
@@ -1702,11 +1760,11 @@ export default function Scene({
           />
         ) : null}
         {/* Көлеңке ұстағыш: тек көлеңке көрінеді, әйтпесе мөлдір (еденді боямайды). */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} receiveShadow>
+        {classic ? null : <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} receiveShadow>
           <planeGeometry args={[40, 40]} />
           <shadowMaterial transparent opacity={0.28} />
-        </mesh>
-        <Grid
+        </mesh>}
+        {classic ? null : <Grid
           args={[10, 10]}
           position={[0, -0.005, 0]}
           cellSize={0.1}
@@ -1715,7 +1773,8 @@ export default function Scene({
           sectionColor={p100Color('--p100-room-grid', '#bcb7ad')}
           infiniteGrid
           fadeDistance={14}
-        />
+        />}
+        {classic ? <SelectionHandles2D overlay={selectionOverlay} /> : null}
         <VrRig room={room} />
         {/* VR-да камераны гарнитура басқарады: екінші басқарушы оған қарсы шығар еді. */}
         {vr ? null : walk ? (
@@ -1726,6 +1785,7 @@ export default function Scene({
             box={view.box}
             facingY={view.facingY}
             wallCtx={view.wallCtx}
+            classicRoom={classicRoomView}
             // Орын (offset, «От пола») ӘДЕЙІ жоқ — CameraRig-тің эффектісін қара.
             layoutKey={treeSceneLayoutKey(room, active?.cabinet.id ?? '',
               { items, boards: freeBoards, solids: flatScene?.solids ?? [] }, catalog, annotations)}
@@ -1738,12 +1798,17 @@ export default function Scene({
           панельдің артындағыны лайлайды. VR-да ӨШЕДІ — постпроцессинг WebXR
           сессиясында кадр бермейді.
         */}
-        {quality === 'high' && viewMode === 'solid' && !vr ? (
-          <EffectComposer multisampling={4}>
-            <N8AO aoRadius={0.35} distanceFalloff={1} intensity={2.2} quality="medium" halfRes />
+        {quality === 'high' && viewMode === 'solid' && !vr && !schematic && (lightLevels?.ao ?? 1) > 0 ? (
+          <EffectComposer multisampling={antialiasOn ? 4 : 0}>
+            <N8AO aoRadius={0.35} distanceFalloff={1} intensity={lightLevels?.ao ?? 2.2} quality="medium" halfRes />
           </EffectComposer>
         ) : null}
       </XR>
+      </ClassicSceneContext.Provider>
     </Canvas>
+    {classic ? <div ref={selectionOverlay} className="p100-selection-rect" data-testid="p100-selection-rect" aria-hidden="true">
+      {['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((handle) => <i key={handle} data-handle={handle} />)}
+    </div> : null}
+    </>
   )
 }

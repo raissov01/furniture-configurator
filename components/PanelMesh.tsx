@@ -5,7 +5,8 @@
  * детальді көрсетеді), рез өлшемі емес — CLAUDE.md §4.3.
  */
 
-import { useEffect, useMemo } from 'react'
+import { useContext, useEffect, useMemo } from 'react'
+import { ClassicSceneContext, P100_SELECTION_COLOR } from '@/lib/classicSceneContext'
 import { t as tr } from '@/lib/i18n'
 import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { Edges, Html } from '@react-three/drei'
@@ -649,15 +650,26 @@ export function PanelMesh({
     return tex
   }, [pbr?.ambientOcclusion, panel.finishedLength, panel.finishedWidth, panel.grainAlongLength, panel.orientation, shape, tilted, invalidate])
   useEffect(() => () => { aoMap?.dispose() }, [aoMap])
-  const shaderKey = materialRenderKey(usesPhysical, Boolean(texture), Boolean(normalMap), Boolean(aoMap))
+  /*
+   * PRO100: таңдалған элемент ТҰТАС КӨК боялады (эталон `#0f11ff`), текстурасыз;
+   * корпустың өзі таңдалса (`selected === cabinetId`), оның барлық детальдары.
+   */
+  const classicScene = useContext(ClassicSceneContext)
+  const painted = classicScene.classic && (isSelected || (cabinetId !== undefined && selected === cabinetId))
+  const shownMap = painted ? null : texture
+  const shownNormal = painted || classicScene.relief === 0 ? null : normalMap
+  const shownAo = painted ? null : aoMap
+  const reliefScale = (pbr?.normal?.strength ?? 1) * (classicScene.classic ? classicScene.relief : 1)
+  const envScale = look.envMapIntensity * (classicScene.classic ? classicScene.reflection : 1)
+  const shaderKey = materialRenderKey(usesPhysical, Boolean(shownMap), Boolean(shownNormal), Boolean(shownAo))
 
-  const color = isSelected ? '#b9ddf5' : isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
+  const color = painted ? P100_SELECTION_COLOR : isSelected ? '#b9ddf5' : isHovered ? '#ffffff' : shade(decorColor ?? NEUTRAL, ROLE_SHADE[panel.role] ?? 1)
   /*
    * Таңдалғанын ТҮСПЕН көрсетуге болмайды: декордың өзі сары (дуб, бук) —
    * бөлектеу онда жоғалады. Сондықтан таңдалған детальдің ҚЫРЫ сызылады, ол
    * кез келген декордың үстінен көрінеді.
    */
-  const outline = isSelected ? <Edges color="#0878c9" lineWidth={2.5} /> : null
+  const outline = isSelected && !classicScene.classic ? <Edges color="#0878c9" lineWidth={2.5} /> : null
   // Шыны фасад: мөлдір әйнек + әрқашан көрінетін ЖИЕК (рама). Тұтас панельдей
   // емес, ішін көрсетеді — qdesign-дегі шыны есіктер сияқты.
   const isGlass = panel.glass === true
@@ -684,7 +696,7 @@ export function PanelMesh({
           }}
           onPointerOut={() => setHovered(null)}
           // Прогулканың сәулесі осы кілтпен ЖЕКЕ есікті табады.
-          userData={panel.opening ? { doorPid: key } : {}}
+          userData={{ ...(panel.opening ? { doorPid: key } : {}), p100Selected: painted }}
           // Классикалық десктопта Properties; өзге көріністе есік/ящик ашылады.
           onDoubleClick={(e) => {
             if (vr) return
@@ -713,27 +725,27 @@ export function PanelMesh({
           )}
           {usesPhysical ? (
             <meshPhysicalMaterial
-              key={shaderKey} color={color} map={texture} normalMap={normalMap} aoMap={aoMap}
+              key={shaderKey} color={color} map={shownMap} normalMap={shownNormal} aoMap={shownAo}
               aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1} sheen={look.sheen}
-              normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
+              normalScale={[reliefScale, reliefScale]}
               roughness={look.roughness} metalness={look.metalness}
               clearcoat={look.clearcoat} clearcoatRoughness={look.clearcoatRoughness}
-              envMapIntensity={look.envMapIntensity}
+              envMapIntensity={envScale}
               transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
             />
           ) : (
             <meshStandardMaterial
-              key={shaderKey} color={color} map={texture} normalMap={normalMap} aoMap={aoMap}
+              key={shaderKey} color={color} map={shownMap} normalMap={shownNormal} aoMap={shownAo}
               aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1}
-              normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
+              normalScale={[reliefScale, reliefScale]}
               roughness={look.roughness} metalness={look.metalness}
-              envMapIntensity={look.envMapIntensity}
+              envMapIntensity={envScale}
               transparent={opacity < 1} opacity={opacity} depthWrite={opacity === 1}
             />
           )}
           {outline}
           {xray && !isSelected ? <Edges color="#586574" lineWidth={1} /> : null}
-          {isSelected && <SelectionHandles size={{ x: panel.finishedLength, y: panel.finishedWidth, z: thickness }} cornerOrigin={Boolean(shape)} />}
+          {isSelected && !classicScene.classic && <SelectionHandles size={{ x: panel.finishedLength, y: panel.finishedWidth, z: thickness }} cornerOrigin={Boolean(shape)} />}
         </mesh>
         {/* Канондық кеңістік (ұзындық/ен/қалыңдық, бұрылусыз) — дәл осы
             топтың ӨЗ жергілікті кеңістігі, сондықтан ешбір ауыстырусыз. */}
@@ -753,7 +765,7 @@ export function PanelMesh({
         setHovered(key)
       }}
       onPointerOut={() => setHovered(null)}
-      userData={panel.opening ? { doorPid: key } : {}}
+      userData={{ ...(panel.opening ? { doorPid: key } : {}), p100Selected: painted }}
       onDoubleClick={(e) => {
         if (vr) return
         e.stopPropagation()
@@ -781,15 +793,15 @@ export function PanelMesh({
       ) : usesPhysical ? (
         <meshPhysicalMaterial
           key={shaderKey} color={color}
-          map={texture}
-          normalMap={normalMap} aoMap={aoMap}
+          map={shownMap}
+          normalMap={shownNormal} aoMap={shownAo}
           aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1} sheen={look.sheen}
-          normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
+          normalScale={[reliefScale, reliefScale]}
           roughness={look.roughness}
           metalness={look.metalness}
           clearcoat={look.clearcoat}
           clearcoatRoughness={look.clearcoatRoughness}
-          envMapIntensity={look.envMapIntensity}
+          envMapIntensity={envScale}
           transparent={opacity < 1}
           opacity={opacity}
           // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.
@@ -798,13 +810,13 @@ export function PanelMesh({
       ) : (
         <meshStandardMaterial
           key={shaderKey} color={color}
-          map={texture}
-          normalMap={normalMap} aoMap={aoMap}
+          map={shownMap}
+          normalMap={shownNormal} aoMap={shownAo}
           aoMapIntensity={pbr?.ambientOcclusion?.intensity ?? 1}
-          normalScale={[pbr?.normal?.strength ?? 1, pbr?.normal?.strength ?? 1]}
+          normalScale={[reliefScale, reliefScale]}
           roughness={look.roughness}
           metalness={look.metalness}
-          envMapIntensity={look.envMapIntensity}
+          envMapIntensity={envScale}
           transparent={opacity < 1}
           opacity={opacity}
           // Мөлдір панель артындағыны жауып қалмауы үшін тереңдікке жазбайды.
@@ -814,7 +826,7 @@ export function PanelMesh({
       {/* Шыны есіктің рамасы әрқашан көрінеді. */}
       {isGlass ? <Edges color="#5b5147" lineWidth={2} /> : null}
       {outline}
-      {isSelected && <SelectionHandles size={extents} />}
+      {isSelected && !classicScene.classic && <SelectionHandles size={extents} />}
       {(xray || quality !== 'low') && !isGlass && !isSelected
         ? <PanelEdges x={extents.x} y={extents.y} z={extents.z} />
         : null}
@@ -828,7 +840,7 @@ export function PanelMesh({
           дәл сол орталықтан саналады. */}
       <DrillMarkers markers={boxDrillMarkers} dimmed={Boolean(xray && selected && !isSelected)} />
       <FittingMeshes fittings={boxFittings} />
-      {isHovered || isSelected ? (
+      {isHovered || (isSelected && !classicScene.classic) ? (
         <Html center zIndexRange={[10, 0]}>
           <div className="p100-panel-tooltip pointer-events-none whitespace-nowrap px-2 py-1 text-[11px]">
             <b>{panelDisplayLabel(panel.label)}</b>

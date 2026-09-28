@@ -47,6 +47,9 @@ const SIDE_LABEL: Record<DockSide, string> = {
   bottom: 'Нижний край',
 }
 
+/** `window.dispatchEvent(new CustomEvent(OPEN_DOCK_PANEL_EVENT, { detail: 'price' }))` — панельді ашу. */
+export const OPEN_DOCK_PANEL_EVENT = 'furniture:open-dock-panel'
+
 export function DockHost({ panels, children, initiallyClosed = [], storageKey }: {
   panels: DockPanelSpec[]
   children?: React.ReactNode
@@ -109,6 +112,16 @@ export function DockHost({ panels, children, initiallyClosed = [], storageKey }:
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+
+  // Классикалық мәзір («Инструменты → Прайс-лист…») жабық панельді аша алады.
+  React.useEffect(() => {
+    const open = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail
+      if (panels.some((panel) => panel.id === id)) setState((s) => openPanel(s, id as PanelId))
+    }
+    window.addEventListener(OPEN_DOCK_PANEL_EVENT, open)
+    return () => window.removeEventListener(OPEN_DOCK_PANEL_EVENT, open)
+  }, [panels])
 
   const attemptDock = React.useCallback((id: PanelId, point: { x: number; y: number }) => {
     const side = edgeAtPoint(point, bounds)

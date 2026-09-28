@@ -46,7 +46,10 @@ describe('classic toolbar assignments', () => {
   })
 
   it('uses icons that explain the five formerly ambiguous actions', () => {
-    expect(Object.fromEntries(toolbarBindings().map(({ action, icon }) => [action, icon]))).toMatchObject({
+    // Вставка құралдары PRO100-дегідей сол жақ тік жолаққа көшті.
+    const rail = [...source.matchAll(/<ClassicTool icon="(\w+)" label=\{tr\('(.*?)'\)\}/g)]
+      .map((match) => [match[2] ?? '', match[1] ?? ''] as const)
+    expect(Object.fromEntries([...toolbarBindings().map(({ action, icon }) => [action, icon] as const), ...rail])).toMatchObject({
       'Свойства': 'properties',
       'Цех: материалы и цены': 'shop',
       'Добавить свободную доску': 'board',
@@ -56,14 +59,25 @@ describe('classic toolbar assignments', () => {
       'Дублировать корпус': 'duplicate',
       'Размеры на сцене': 'measure',
       'Рендер': 'render',
+      'Новый корпус': 'insert',
+      'Выбор': 'select',
     })
   })
 
-  it('draws the four new icons as 18 px currentColor SVGs', () => {
+  it('places every PRO100 align, distribute, rotate and group command on the toolbar', () => {
+    for (const id of ['align-x-min', 'align-x-center', 'align-x-max', 'align-y-min', 'align-y-center', 'align-y-max',
+      'align-z-min', 'align-z-center', 'align-z-max', 'distribute-x', 'distribute-y', 'distribute-z',
+      'group', 'ungroup', 'rotate-ccw', 'rotate-cw', 'room-props', 'light', 'reports', 'library']) {
+      expect(toolbar, id).toContain(`id: '${id}'`)
+    }
+    expect((toolbar.match(/^    \[$/gm) ?? []).length).toBe(4)
+  })
+
+  it('draws the four new icons as 16 px currentColor SVGs', () => {
     const drawings = ['properties', 'shop', 'text', 'decor'] as const
     const svgs = drawings.map((name) => renderToStaticMarkup(createElement(ClassicIcon, { name })))
     for (const svg of svgs) {
-      expect(svg).toContain('width="18" height="18"')
+      expect(svg).toContain('width="16" height="16"')
       expect(svg).toContain('stroke="currentColor"')
       expect(svg).toContain('<path')
     }
