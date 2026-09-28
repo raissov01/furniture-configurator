@@ -12,6 +12,7 @@
  */
 
 import { t as tr } from '@/lib/i18n'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
@@ -33,6 +34,7 @@ function read(): Entry[] {
 export function HistoryPanel() {
   const open = useConfigurator((s) => s.historyOpen)
   const setOpen = useConfigurator((s) => s.setHistoryOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'history', () => setOpen(false))
   const restore = useConfigurator((s) => s.restoreHistory)
   const [entries, setEntries] = useState<Entry[]>([])
   const [preview, setPreview] = useState<number | null>(null)
@@ -42,19 +44,15 @@ export function HistoryPanel() {
   useEffect(() => {
     if (open) setEntries(read())
   }, [open])
-  useEffect(() => {
-    if (!open) return
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, setOpen])
+
 
   if (!open) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
-      onClick={() => setOpen(false)}
+      style={{ zIndex }}
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      onClick={() => { if (isTop) setOpen(false) }}
     >
       <div
         className="w-full max-w-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900"

@@ -14,7 +14,7 @@ import { SolidProperties } from '@/components/SolidProperties'
 import { AnnotationProperties } from '@/components/AnnotationProperties'
 import { propertiesNodeSupported } from '@/lib/propertiesNodeUi'
 import { Button } from '@/components/ui'
-import { useModalLayer } from '@/lib/useModalLayer'
+import { isTopOpenModal, useModalLayer } from '@/lib/useModalLayer'
 
 export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, onClose }: {
   nodeId: string
@@ -87,6 +87,7 @@ export function PropertiesDialog({ nodeId, catalog, panels, boardPanel, error, o
   }
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
+      if (!isTopOpenModal('properties')) return
       const state = useConfigurator.getState()
       if (propertiesChildModalActive(state.quoteOpen, state.drillOpen, state.galleryOpen, state.shopOpen)) return
       const target = event.target instanceof Element ? event.target.tagName.toLowerCase() : ''

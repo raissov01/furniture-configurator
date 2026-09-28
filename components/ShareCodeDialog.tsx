@@ -21,6 +21,7 @@ import { approvalWhatsAppUrl } from '@/lib/mobile/approvalShare'
 import { formatTengeExact } from '@/src/core/pricing'
 import { useProjectProduction } from '@/lib/useProjectProduction'
 import { approvalPrice } from '@/lib/f22ShareUi'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 function approvalPreview(): string {
   const scene = document.querySelector<HTMLCanvasElement>('[data-tour="scene"] canvas')
@@ -39,6 +40,7 @@ function approvalPreview(): string {
 export function ShareCodeDialog() {
   const open = useConfigurator((s) => s.shareCodeOpen)
   const setOpen = useConfigurator((s) => s.setShareCodeOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'shareCode', () => setOpen(false))
   const startShare = useConfigurator((s) => s.startShare)
   const syncShare = useConfigurator((s) => s.syncShare)
   const session = useConfigurator((s) => s.shareSession)
@@ -142,11 +144,11 @@ export function ShareCodeDialog() {
   }
 
   return (
-    <div className="p100-dialog-backdrop overflow-auto p-3" onClick={() => setOpen(false)}>
+    <div className="p100-dialog-backdrop overflow-auto p-3" style={{ zIndex }} onClick={() => { if (isTop) setOpen(false) }}>
       <div
         role="dialog"
         aria-label={tr('Код для клиента')}
-        className="p100-dialog overflow-y-auto p-5"
+        className="p100-dialog p100-share-dialog overflow-y-auto p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
