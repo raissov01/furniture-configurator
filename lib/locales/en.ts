@@ -2542,4 +2542,12 @@ export const en: Record<string, string> = {
   'Ширина вне допустимого диапазона шаблона': 'Width is outside the template range',
   'Ширина не указана в названии модуля': 'The module name has no width',
   'Дополнительно (3D-вид материала)': 'Advanced (3D look of the material)',
+
+  // Гибрид қосымшаның офлайн беті
+  'Отправлено': 'Sent',
+  'Когда появится интернет, войдите в аккаунт — замеры отправятся автоматически.': 'When the internet is back, sign in to your account and the measurements will be sent automatically.',
+  'Полная версия': 'Full version',
+  'Заказы, КП, код клиента, монтаж и сканирование QR': 'Orders, quotes, client code, installation and QR scanning',
+  'Открыть полную версию': 'Open full version',
+
 }
