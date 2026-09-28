@@ -99,3 +99,13 @@ describe('классикалық жұмыс орны: түсініктілік',
     expect(readFileSync(new URL('../lib/classicMenu.ts', import.meta.url), 'utf8')).not.toContain("label: 'Сервис'")
   })
 })
+
+describe('Библиотека PRO100', () => {
+  it('Н1/В1 — бір есік, Н2 — екі есік; өзге код есікті өзгертпейді', async () => {
+    const { variantDoors } = await import('../components/ClassicLibraryDock')
+    expect(variantDoors('Н1')).toBe(1)
+    expect(variantDoors('В2')).toBe(2)
+    expect(variantDoors('НВ2')).toBeUndefined()
+    expect(variantDoors(undefined)).toBeUndefined()
+  })
+})

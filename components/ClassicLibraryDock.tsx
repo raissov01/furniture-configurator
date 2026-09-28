@@ -80,6 +80,16 @@ function pro100Root(): Pro100Folder {
   return root
 }
 
+/**
+ * PRO100 стандарт кухня кітапханасында «Н1/В1» — бір есікті, «Н2/В2» — екі
+ * есікті модуль (UX тестіндегі PRO100 пайдаланушысының түсіндірмесі). Атауда
+ * есік саны жазылмаса, осы цифр ғана алынады; басқа кодтар өзгермейді.
+ */
+export function variantDoors(variant: string | undefined): number | undefined {
+  const match = variant?.match(/^[НВHB]([12])$/u)
+  return match ? Number(match[1]) : undefined
+}
+
 /** PRO100 модулі → біздің корпус (жуық шаблон, ені мен есік саны атауынан). */
 export function pro100Cabinet(item: Pro100LibraryItem, catalog: Catalog): { cabinet: CabinetConfig } | { reason: string } {
   if (item.group !== 'cabinet') return { reason: 'Аксессуар из PRO100 пока нельзя вставить' }
@@ -92,7 +102,7 @@ export function pro100Cabinet(item: Pro100LibraryItem, catalog: Catalog): { cabi
   const template = findTemplate(choice.templateId)
   if (!template) return { reason: 'Тип модуля не распознан' }
   const cabinet = { ...templateToCabinet(template, catalog, choice.size), name: item.name }
-  const doors = item.parsed.drawerCount === undefined ? item.parsed.doorCount : undefined
+  const doors = item.parsed.drawerCount === undefined ? item.parsed.doorCount ?? variantDoors(item.parsed.variant) : undefined
   return { cabinet: doors ? { ...cabinet, sections: cabinet.sections.map((section) => ({ ...section, fronts: { count: doors, mount: 'overlay' as const } })) } : cabinet }
 }
 

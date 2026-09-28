@@ -574,3 +574,4 @@ body { margin: 0; -webkit-font-smoothing: antialiased; }
 .p100-group-box { margin: 0 0 10px; padding: 8px 10px 10px; border: 1px solid var(--p100-fieldset-border); }
 .p100-group-box legend { padding: 0 4px; }
 .p100-part-page .p100-form-row input[readonly] { background: var(--p100-dialog-content); }
+.p100-part-page .p100-form-row { grid-template-columns: 150px minmax(0, 1fr); }
