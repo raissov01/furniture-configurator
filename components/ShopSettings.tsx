@@ -9,6 +9,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { ReferencePriceList } from './ReferencePriceList'
+import { nextCopyName } from '@/src/core/copyName'
 import { useEffect, useMemo, useState } from 'react'
 import { useModalLayer } from '@/lib/useModalLayer'
 import {
@@ -47,6 +48,9 @@ import { OwnMaterialChooser } from './OwnMaterialChooser'
 import { OwnCatalogImportPanel } from './OwnCatalogImportPanel'
 import { FittingArticlePicker } from './FittingArticlePicker'
 import { FittingsCatalogPanel } from './FittingsCatalogPanel'
+import { validateBin, validateShopLogo } from '@/lib/shopBranding'
+import { shopEditAccess } from '@/lib/shopAccessUi'
+import type { Role } from '@/lib/permissions'
 
 type NumberSettingKey = { [K in keyof ConstructionSettings]: ConstructionSettings[K] extends number | null ? K : never }[keyof ConstructionSettings]
 
@@ -66,6 +70,45 @@ const TABS: { value: Tab; label: string }[] = [
 const text =
   'w-full rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm outline-none ' +
   'focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-300'
+
+function ShopBinField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [draft, setDraft] = useState(value)
+  const error = validateBin(draft)
+  useEffect(() => setDraft(value), [value])
+  return <Field label="БИН">
+    <input className={`${text} ${error ? 'border-red-600' : ''}`} value={draft} inputMode="numeric"
+      aria-invalid={Boolean(error)} aria-describedby={error ? 'shop-bin-error' : undefined}
+      onChange={(event) => {
+        const next = event.target.value
+        setDraft(next)
+        if (!validateBin(next)) onChange(next)
+      }} />
+    {error ? <span id="shop-bin-error" className="text-xs text-red-700" role="alert">{tr(error)}</span> : null}
+  </Field>
+}
+
+function ShopLogoField({ onChange }: { onChange: (value: string | undefined) => void }) {
+  const [error, setError] = useState<string | null>(null)
+  return <Field label={tr('Логотип')}>
+    <input type="file" accept="image/png,image/jpeg" className={`${text} ${error ? 'border-red-600' : ''}`}
+      aria-invalid={Boolean(error)} onChange={(event) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+        const problem = validateShopLogo(file)
+        setError(problem)
+        if (problem) return
+        const reader = new FileReader()
+        reader.onload = () => {
+          if (typeof reader.result === 'string') onChange(reader.result)
+          else setError('Логотип: файл не прочитан')
+        }
+        reader.onerror = () => setError('Логотип: файл не прочитан')
+        reader.readAsDataURL(file)
+      }} />
+    {error ? <span className="text-xs text-red-700" role="alert">{tr(error)}</span> : null}
+    <button type="button" className="text-xs underline" onClick={() => { onChange(undefined); setError(null) }}>{tr('Удалить логотип')}</button>
+  </Field>
+}
 
 /**
  * Габарит шектерінің өрістері. Реті — жобаның H × W × D ережесімен бірдей,
@@ -87,9 +130,24 @@ export function ShopSettings() {
   const shop = useConfigurator((s) => s.shop)
   const editShop = useConfigurator((s) => s.editShop)
   const [tab, setTab] = useState<Tab>('profile')
+  const [role, setRole] = useState<Role | null | 'loading'>('loading')
   const verifiedHinges = availableVerifiedHinges(shop.hingeSystems)
 
   const readiness = useMemo(() => shopReadiness(shop), [shop])
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setRole('loading')
+    void fetch('/api/me').then(async (response) => {
+      if (response.status === 503) { if (!cancelled) setRole(null); return }
+      if (!response.ok) throw new Error('account unavailable')
+      const result = (await response.json()) as { account?: { role?: Role } | null }
+      if (!cancelled) setRole(result.account?.role ?? null)
+    }).catch(() => { if (!cancelled) setRole('client') })
+    return () => { cancelled = true }
+  }, [open])
+  const access = role === 'loading' ? { canRead: false, canEdit: false } : shopEditAccess(role)
 
   useEffect(() => {
     if (!open || !isTop) return
@@ -203,16 +261,16 @@ export function ShopSettings() {
           </div>
         </div>
 
-        {!readiness.pricingReady ? (
+        {tab === 'profile' && !readiness.pricingReady ? (
           <p className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-[11px] text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-            Пока не заданы цены, коммерческое предложение не выпускается: выдуманная цена уходит клиенту.
-            Достаточно заполнить те материалы, с которыми вы реально работаете.
+            {tr('Пока цены не заданы, коммерческое предложение не выпускается: клиент не увидит выдуманную цену.')}
+            {' '}{tr('Достаточно заполнить материалы, с которыми вы работаете.')}
           </p>
         ) : null}
 
-        <div className="mb-3">
-          <MarketPriceNotice shop={shop} editShop={editShop} />
-        </div>
+        {tab === 'profile' ? <div className="mb-3"><MarketPriceNotice shop={shop} editShop={access.canEdit ? editShop : undefined} /></div> : null}
+        {!access.canRead ? <p role="status" className="border border-neutral-300 p-3 text-sm">{tr('Настройки цеха недоступны для этой роли.')}</p> : <fieldset disabled={!access.canEdit} className="min-w-0">
+        {!access.canEdit ? <legend className="mb-2 text-sm text-neutral-700">{tr('Только просмотр: изменения доступны владельцу цеха.')}</legend> : null}
 
         {tab === 'profile' ? (
           <div className="space-y-3">
@@ -230,6 +288,16 @@ export function ShopSettings() {
                 <input className={text} value={shop.phone} placeholder="+7 ___ ___ __ __"
                   onChange={(e) => editShop({ phone: e.target.value })} />
               </Field>
+              <ShopBinField value={shop.bin ?? ''} onChange={(bin) => editShop({ bin })} />
+              <Field label={tr('Адрес')}>
+                <input className={text} value={shop.address ?? ''} maxLength={240}
+                  onChange={(e) => editShop({ address: e.target.value })} />
+              </Field>
+              <Field label={tr('Цвет бренда')}>
+                <input type="color" className="h-9 w-full border border-neutral-300 bg-white p-1"
+                  value={shop.brandColor ?? '#1F2A37'} onChange={(e) => editShop({ brandColor: e.target.value })} />
+              </Field>
+              <ShopLogoField onChange={(logoDataUrl) => editShop({ logoDataUrl })} />
             </div>
             <p className="text-[11px] text-neutral-400">
               Профиль хранится в этом браузере. Когда появятся аккаунты, он переедет на сервер как есть.
@@ -553,6 +621,7 @@ export function ShopSettings() {
             </p>
           </div>
         ) : null}
+        </fieldset>}
       </div>
     </div>
   )
@@ -602,7 +671,7 @@ function PriceListManager({ shop }: { shop: ShopProfile }) {
         <Button onClick={() => createPriceList(`Прайс ${shop.priceLists.length + 1}`, 'blank')}>
           {tr('+ Новый прайс')}
         </Button>
-        <Button onClick={() => createPriceList(`${active.name} (копия)`, 'copy')}>
+        <Button onClick={() => createPriceList(nextCopyName(active.name, shop.priceLists.map((list) => list.name)), 'copy')}>
           {tr('Копировать текущий')}
         </Button>
       </div>

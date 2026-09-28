@@ -10,6 +10,7 @@
 
 import { t as tr } from '@/lib/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useModalLayer } from '@/lib/useModalLayer'
 import {
   DEFAULT_WALL_COLOR,
   FLOOR_KINDS,
@@ -47,6 +48,7 @@ function mirrorReason(cabinet: CabinetConfig): string {
 export function RoomPlan() {
   const open = useConfigurator((s) => s.roomOpen)
   const setOpen = useConfigurator((s) => s.setRoomOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'room')
   const room = useConfigurator((s) => s.room)
   const cabinets = useConfigurator((s) => s.cabinets)
   const root = useConfigurator((s) => s.root)
@@ -99,14 +101,14 @@ export function RoomPlan() {
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
     dialogRef.current?.focus()
     const onKey = (event: KeyboardEvent) => {
-      if (!shouldCloseRoomDialog(event.key)) return
+      if (!isTop || !shouldCloseRoomDialog(event.key)) return
       event.preventDefault()
       event.stopImmediatePropagation()
       setOpen(false)
     }
     document.addEventListener('keydown', onKey, true)
     return () => { document.removeEventListener('keydown', onKey, true); trigger?.focus() }
-  }, [open, setOpen])
+  }, [open, isTop, setOpen])
 
   const activePlacement: Placement =
     entries.find((e) => e.cabinet.id === activeId)?.placement ??
@@ -116,7 +118,8 @@ export function RoomPlan() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-2 sm:p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div
@@ -125,7 +128,7 @@ export function RoomPlan() {
         aria-modal="true"
         aria-labelledby="room-plan-title"
         tabIndex={-1}
-        className="min-w-0 w-full max-w-4xl rounded-xl border border-neutral-200 bg-white p-3 outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
+        className="min-w-0 w-full max-w-4xl max-h-[calc(100dvh-16px)] overflow-x-hidden overflow-y-auto border border-neutral-200 bg-white p-3 outline-none dark:border-neutral-700 dark:bg-neutral-900 sm:p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -138,7 +141,7 @@ export function RoomPlan() {
           </div>
         </div>
 
-        <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <PlanSvg
             room={room}
             entries={entries}

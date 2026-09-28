@@ -26,8 +26,8 @@ const CLASSIC_TEXTS: Readonly<Record<string, string>> = {
 }
 
 const MOBILE_TARGETS: Readonly<Record<string, string>> = {
-  size: '[data-tour="mobile-size"]',
-  sections: '[data-tour="mobile-sections"]',
+  size: '[data-tour-mobile="size"]',
+  sections: '[data-tour-mobile="sections"]',
 }
 
 export function lessonStepFor(lesson: Lesson, classic: boolean, mobile: boolean): LessonStep | null {

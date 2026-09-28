@@ -19,6 +19,7 @@ import type { CabinetConfig, Panel } from '@/src/core/types'
 import { RENDER_ASPECTS } from '@/src/core/render/prompt'
 import type { RenderAspect } from '@/src/core/render/prompt'
 import { buildRenderRequest, cropRenderDataUrl } from '@/lib/renderPanelUi'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 type HistoryRecord = { id: string; imageUrl: string; createdAt: number; aspect: RenderAspect;
   crop: { x: number; y: number; width: number; height: number }; cost: { tiyn: number } | null }
@@ -32,6 +33,7 @@ function buttonStyleForTab(selected: boolean): string {
 export function RenderPanel({ panels, cabinets }: { panels: Panel[]; cabinets: CabinetConfig[] }) {
   const open = useConfigurator((s) => s.renderOpen)
   const setOpen = useConfigurator((s) => s.setRenderOpen)
+  const { zIndex } = useModalLayer(open, 'render')
   const [busy, setBusy] = useState(false)
   const [hint, setHint] = useState('')
   const [style, setStyle] = useState('scandinavian')
@@ -128,7 +130,8 @@ export function RenderPanel({ panels, cabinets }: { panels: Panel[]; cabinets: C
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div
@@ -152,7 +155,7 @@ export function RenderPanel({ panels, cabinets }: { panels: Panel[]; cabinets: C
         {tab === 'lights' ? <ProjectLightsEditor /> : null}
         {tab === 'render' ? <>
 
-        <p className="mb-3 text-[11px] leading-snug text-amber-700 dark:text-amber-400">
+        <p className="mb-3 text-[11px] leading-snug text-amber-900 dark:text-amber-400">
           {tr('Рендер — картинка, а не размер: модель может слегка изменить пропорции и цвет. Перед отправкой клиенту сверьте с деталировкой.')}
         </p>
 

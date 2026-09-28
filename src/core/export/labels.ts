@@ -26,6 +26,7 @@ import { labelLayout } from './labelLayout'
 import type { LabelSize } from './labelLayout'
 import { encodePartQr } from '../partQr'
 import { BRAND, stampPdfBrand } from '../brand'
+import { fitLabelLines, labelMaterialText } from './labelText'
 export { encodePartQr, decodePartQr } from '../partQr'
 export type { PartQr } from '../partQr'
 
@@ -267,7 +268,10 @@ function drawLabel(ctx: Ctx, x: number, y: number, w: number, h: number, label: 
   draw(ctx, left, top, label.name, 8.5, { bold: true, maxWidth: w - padding * 2 })
 
   top -= 14
-  draw(ctx, left, top, `${label.cutLength} × ${label.cutWidth}`, 13, { bold: true, maxWidth: w - padding * 2 - 66 })
+  const cutSize = `${label.cutLength} × ${label.cutWidth}`
+  const cutMaxWidth = w - padding * 2 - 72
+  const cutFontSize = ctx.bold.widthOfTextAtSize(cutSize, 13) <= cutMaxWidth ? 13 : 10
+  draw(ctx, left, top, cutSize, cutFontSize, { bold: true, maxWidth: cutMaxWidth })
   draw(ctx, left, top - 8, 'рез, мм', 5.5, { color: MUTED })
 
   const finished = `готовый ${label.finishedLength} × ${label.finishedWidth}`
@@ -275,14 +279,17 @@ function drawLabel(ctx: Ctx, x: number, y: number, w: number, h: number, label: 
 
   // Сұлба материал жолынан ЖОҒАРЫ тұруы керек: астындағы кромка белгісі
   // (L1) мәтінмен беттесіп, «16 мм 2.0» болып оқылмай қалатын.
-  edgeDiagram(ctx, right - 66, y + padding + (qrPayload ? 46 : 24), label)
+  edgeDiagram(ctx, right - 66, y + padding + (qrPayload ? 46 : 18), label)
   if (qrPayload) drawPartQr(ctx, right - 38, y + 5, qrPayload)
 
-  const bottomTextWidth = w - padding * 2 - (qrPayload ? 44 : 4)
-  draw(ctx, left, y + padding + 8, `${label.materialName}, ${label.thickness} мм`, 6, {
-    color: MUTED, maxWidth: bottomTextWidth,
+  const bottomTextWidth = w - padding * 2 - (qrPayload ? 44 : 68)
+  const material = labelMaterialText(label.materialName, label.thickness)
+  const materialSize = ctx.regular.widthOfTextAtSize(material, 6) <= bottomTextWidth ? 6 : 5.5
+  const materialLines = fitLabelLines(material, bottomTextWidth, (s) => ctx.regular.widthOfTextAtSize(s, materialSize))
+  materialLines.slice(0, 2).forEach((line, index) => {
+    draw(ctx, left, y + padding + 10 - index * 6, line, materialSize, { color: MUTED, maxWidth: bottomTextWidth })
   })
-  draw(ctx, left, y + padding, labelFooter(label, projectName), 5.5, { color: MUTED, maxWidth: bottomTextWidth })
+  draw(ctx, left, y + 2, labelFooter(label, projectName), 5, { color: MUTED, maxWidth: bottomTextWidth })
 }
 
 export type LabelsPdfInput = {

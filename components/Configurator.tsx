@@ -938,8 +938,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
   const addSection = useConfigurator((s) => s.addSection)
   const [sectionAddError, setSectionAddError] = useState<string | null>(null)
   useEffect(() => setSectionAddError(null), [cabinet])
-  const showDimensions = useConfigurator((s) => s.showDimensions)
-  const setShowDimensions = useConfigurator((s) => s.setShowDimensions)
   const setGalleryOpen = useConfigurator((s) => s.setGalleryOpen)
   // Материалдар тізімі цехтың профилінен келеді, кодтан емес.
   const materials = useConfigurator((s) => s.shop.materials)
@@ -1132,7 +1130,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
       {/* ═══ РАЗМЕРЫ: H×W×D, конструкция, скос, угловой, фронт. панель, основание ═══ */}
       <div className={cn('flex-col gap-3', tab === 'general' ? 'flex' : 'hidden')}>
         <SectionTitle>{tr('Габарит — H × W × D, мм')}</SectionTitle>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-tour="size">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-tour="size" data-tour-mobile="size">
           <Field label={tr('Высота (H)')} hint={hint('height')}>
             <NumberInput
               value={cabinet.height} min={CABINET_DIMENSION_MIN} max={CABINET_DIMENSION_MAX} step={10} invalid={invalid('cabinet.height')} field="cabinet.height" onDraftValidityChange={onDraftValidityChange}
@@ -1880,7 +1878,7 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
         {!productionReady ? <p role="status">{tr('Сначала примените изменения для экспорта')}</p> : null}
       </div>
 
-      <div className={cn(tab === 'general' ? 'block' : 'hidden')}>
+      <div className={cn(tab === 'general' ? 'block' : 'hidden')} data-tour-mobile="sections">
       <div className="flex items-center justify-between pt-1">
         <SectionTitle>{tr('Секции')} ({cabinet.sections.length})</SectionTitle>
         <Button onClick={() => setSectionAddError(addSection())} disabled={cabinet.sections.length >= 12}>
@@ -1897,8 +1895,6 @@ export function Configurator({ invalidField, panels, onDraftValidityChange, lock
         ))}
       </div>
 
-      <SectionTitle>{tr('Вид')}</SectionTitle>
-      <Toggle checked={showDimensions} onChange={setShowDimensions} label={tr('Показывать габариты')} />
       </div>
       </fieldset>
     </div>

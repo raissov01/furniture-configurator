@@ -18,7 +18,7 @@ describe('classic toolbar', () => {
   })
   it('keeps only selection in the side rail because the other commands are in the toolbar', () => {
     const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
-    const side = source.match(/className="p100-side-tools[^]*?\{classic \? <>([^]*?)<\/> : <>/)?.[1] ?? ''
+    const side = source.match(/className="p100-side-tools[^]*?>([^]*?)<\/div>/)?.[1] ?? ''
     expect((side.match(/<ClassicTool /g) ?? []).length).toBe(1)
   })
 })

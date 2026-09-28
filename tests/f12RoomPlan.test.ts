@@ -19,7 +19,7 @@ describe('F12 room dialog wiring', () => {
 
   it('fits the plan and dimensions into a narrow screen and supports Escape', () => {
     expect(roomPlan).toContain('max-w-[420px] min-w-0')
-    expect(roomPlan).toContain('md:grid-cols-[minmax(0,420px)_minmax(0,1fr)]')
+    expect(roomPlan).toContain('lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]')
     expect(roomPlan).toContain('grid grid-cols-1 gap-2 min-[460px]:grid-cols-3')
     expect(roomPlan).toContain('role="dialog"')
     expect(roomPlan).toContain('shouldCloseRoomDialog(event.key)')

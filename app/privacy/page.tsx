@@ -2,9 +2,12 @@
 
 import Link from 'next/link'
 import { t } from '@/lib/i18n'
+import { SITE } from '@/lib/site'
 
 export default function PrivacyPage() {
-  return <main className="mx-auto min-h-dvh max-w-3xl space-y-5 bg-white p-5 text-neutral-900">
+  return <main className="min-h-dvh w-full bg-[var(--neutral-100)] p-5 text-[var(--brand-graphite)]">
+    <div className="mx-auto max-w-3xl space-y-5">
+    <p className="flex items-center gap-2 border-b pb-3 text-sm font-semibold"><img src="/brand/aismebel-mark.svg" width={24} height={24} alt="" aria-hidden="true" />{SITE.name}</p>
     <Link className="underline" href="/">{t('На главную')}</Link>
     <h1 className="text-2xl font-semibold">{t('Политика конфиденциальности AisMebel')}</h1>
     <p>{t('AisMebel хранит проекты мебели, замеры помещения и выбранные пользователем фотографии препятствий, чтобы подготовить деталировку, раскрой и предложение.')}</p>
@@ -17,5 +20,6 @@ export default function PrivacyPage() {
     <p>{t('Kaspi Pay открывается только по ссылке, которую ввёл продавец. Оплата и чек обрабатываются в Kaspi Pay; AisMebel не получает реквизиты банковской карты и не подтверждает оплату автоматически. Запрос на повторное изготовление детали отправляет сам пользователь через меню телефона.')}</p>
     <h2 className="text-lg font-semibold">{t('Удаление и связь')}</h2>
     <p>{t('Локальные данные можно удалить через настройки устройства. По синхронизированным данным обратитесь к администратору своей мастерской. Контакт оператора и срок хранения серверных данных должны быть опубликованы до выхода в магазин приложений.')}</p>
+    </div>
   </main>
 }

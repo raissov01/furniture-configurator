@@ -6,7 +6,9 @@
  */
 
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/cn'
+import { menuPosition } from '@/lib/menuPosition'
 import { t as tr } from '@/lib/i18n'
 import { parseNumberDraft, stepAvailable, steppedValue } from '@/lib/numberDraft'
 
@@ -152,12 +154,28 @@ export function Menu({
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
-  const items = () => [...(ref.current?.querySelectorAll<HTMLButtonElement>('[role="menu"] [role="menuitem"]') ?? [])]
+  const menuRef = React.useRef<HTMLDivElement>(null)
+  const [position, setPosition] = React.useState<ReturnType<typeof menuPosition> | null>(null)
+  const items = () => [...(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])]
     .filter((item) => !item.disabled)
+  const place = React.useCallback(() => {
+    const anchor = triggerRef.current?.getBoundingClientRect()
+    if (!anchor) return
+    setPosition(menuPosition(anchor, window.innerWidth, window.innerHeight,
+      menuRef.current?.offsetWidth ?? 240, align))
+  }, [align])
   const openMenu = () => {
     document.dispatchEvent(new CustomEvent('ui-menu-open', { detail: ref.current }))
+    place()
     setOpen(true)
   }
+  React.useLayoutEffect(() => {
+    if (!open) return
+    place()
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', place, true)
+    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true) }
+  }, [open, place])
   React.useEffect(() => {
     const onOtherMenu = (event: Event) => {
       if ((event as CustomEvent<Element | null>).detail !== ref.current) setOpen(false)
@@ -167,7 +185,9 @@ export function Menu({
   }, [])
   React.useEffect(() => {
     if (!open) return
-    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    const onDoc = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node) && !menuRef.current?.contains(e.target as Node)) setOpen(false)
+    }
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
   }, [open])
@@ -231,18 +251,16 @@ export function Menu({
       >
         {label} <span data-menu-chevron className="text-[9px] opacity-60">▾</span>
       </button>
-      {open ? (
+      {open && position ? createPortal(
         <div
+          ref={menuRef}
           role="menu"
           aria-label={typeof label === 'string' ? label : undefined}
-          className={cn(
-            'absolute z-40 mt-1 min-w-44 border border-neutral-300 bg-white p-1 dark:border-neutral-700 dark:bg-neutral-900',
-            align === 'right' ? 'right-0' : 'left-0',
-          )}
+          style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}
+          className="ui-menu-portal fixed z-[1000] min-w-44 max-w-[calc(100vw-24px)] overflow-y-auto border border-neutral-300 bg-white p-1 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
         >
           <MenuCtx.Provider value={() => setOpen(false)}>{children}</MenuCtx.Provider>
-        </div>
-      ) : null}
+        </div>, document.body) : null}
     </div>
   )
 }

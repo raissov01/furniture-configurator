@@ -62,7 +62,7 @@ export function Cta({
       className="inline-flex items-center gap-2 border px-5 py-3 text-sm transition"
       style={
         solid
-          ? { background: 'var(--ink)', color: 'var(--paper)', borderColor: 'var(--ink)' }
+          ? { background: 'var(--cta-bg)', color: 'var(--cta-ink)', borderColor: 'var(--cta-bg)' }
           : { background: 'transparent', color: 'var(--ink)', borderColor: 'var(--ink)' }
       }
     >

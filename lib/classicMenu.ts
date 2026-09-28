@@ -48,15 +48,16 @@ export type ClassicCommand =
   | { type: 'removeCabinet' }
   | { type: 'toggleOpen' }
   | { type: 'toggleAssembly' }
+  | { type: 'toggleSelectedDoor' }
   | { type: 'navigate'; href: string }
   | { type: 'theme'; theme: Theme }
   | { type: 'quality'; quality: Quality }
   | { type: 'lang'; lang: Lang }
-  | { type: 'workspaceStyle'; classic: boolean }
 
 export type ClassicMenuEntry =
   | { kind: 'item'; id: string; label: string; command: ClassicCommand; disabled?: boolean; active?: boolean; hint?: string; detail?: string; raw?: boolean }
   | { kind: 'slider'; id: string; label: string }
+  | { kind: 'silhouetteHeight'; id: string; label: string }
   | { kind: 'heading'; id: string; label: string }
   | { kind: 'separator' }
 
@@ -95,7 +96,8 @@ export type ClassicMenuState = {
   /** Тақтадағы баға: `null` — әзірге есептелмеген. */
   price: { total: string } | { missing: true } | null
   cloud: boolean
-  classic: boolean
+  selectedDoor?: boolean
+  selectedDoorOpen?: boolean
 }
 
 const SEP = { kind: 'separator' } as const
@@ -154,7 +156,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
       id: 'edit', label: 'Правка', items: [
         item('edit.undo', 'Отменить', { type: 'undo' }, { disabled: !s.canUndo, hint: 'Ctrl+Z' }),
         item('edit.redo', 'Повторить', { type: 'redo' }, { disabled: !s.canRedo, hint: 'Ctrl+⇧Z' }),
-        item('edit.history', 'История изменений', { type: 'open', panel: 'history' }),
+        item('edit.history', 'История сохранений', { type: 'open', panel: 'history' }),
       ],
     },
     {
@@ -171,6 +173,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('view.fittings.fittings', 'Фурнитура: крепёж', { type: 'fittings', show: 'fittings' }, { active: s.showFittings }),
         item('view.fit', 'Вписать в кадр', { type: 'fit' }),
         item('view.silhouette', 'Человек для масштаба', { type: 'toggleSilhouette' }, { active: s.silhouetteOn }),
+        ...(s.silhouetteOn ? [{ kind: 'silhouetteHeight' as const, id: 'view.silhouetteHeight', label: 'Рост человека, мм' }] : []),
         item('view.walk', 'Прогулка', { type: 'toggleWalk' }, { active: Boolean(s.walk) }),
         // Классикалық режимде ескі header жасырын — тема мен 3D сапасы осында (P0-5).
         SEP,
@@ -193,6 +196,7 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         item('element.remove', 'Удалить корпус', { type: 'removeCabinet' }, { disabled: !s.canRemoveCabinet }),
         SEP,
         item('element.open', s.open ? 'Закрыть створки' : 'Распахнуть', { type: 'toggleOpen' }, { active: s.open }),
+        item('element.selectedDoor', s.selectedDoorOpen ? 'Закрыть дверцу' : 'Открыть дверцу', { type: 'toggleSelectedDoor' }, { disabled: !s.selectedDoor }),
         item('element.assembly', 'Сборка', { type: 'toggleAssembly' }, { active: s.assembly }),
       ],
     },
@@ -215,10 +219,8 @@ export function classicMenus(s: ClassicMenuState): ClassicMenu[] {
         ...(s.price === null ? [] : ['total' in s.price
           ? item('service.price', 'Итого клиенту', { type: 'open', panel: 'quote' }, { detail: s.price.total })
           : item('service.price', 'Цены не заданы', { type: 'open', panel: 'shop' })]),
+        item('service.mobile', 'Телефон · Сегодня', { type: 'navigate', href: '/mobile' }),
         ...(s.cloud ? [item('service.account', 'Аккаунт', { type: 'open', panel: 'account' })] : []),
-        { kind: 'heading', id: 'service.style', label: 'Рабочее место' },
-        item('service.style.classic', 'Классический', { type: 'workspaceStyle', classic: true }, { active: s.classic }),
-        item('service.style.ours', 'Наш', { type: 'workspaceStyle', classic: false }, { active: !s.classic }),
       ],
     },
     {

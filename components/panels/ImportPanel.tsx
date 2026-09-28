@@ -13,8 +13,7 @@
  * қауіпті. Нақты бөлмені жаңарту `onImport`-ты шақырушының ісі (немесе
  * кейін қосылатын стор экшені). Есепте бұл егжей-тегжейлі жазылған.
  *
- * Дизайн: градиент/blur/эмоджі ЖОҚ — тұтас түс + 1px жиек, қара тақырып
- * (docking жүйесінің өзі осылай: `border-neutral-800 bg-neutral-950`).
+ * Дизайн: градиент/blur/эмоджі жоқ — PRO100 ашық токендері мен 1px жиек.
  */
 import * as React from 'react'
 import { t as tr } from '@/lib/i18n'
@@ -32,7 +31,7 @@ const ALL_LAYERS = '__all__'
 function WallsPreview({ result }: { result: DxfImportResult }) {
   if (!result.bounds || result.walls.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center border border-neutral-800 text-[11px] text-neutral-600">
+      <div className="flex h-40 items-center justify-center border border-[var(--p100-fieldset-border)] text-[11px] text-neutral-600">
         {tr('Нет стен для предпросмотра')}
       </div>
     )
@@ -48,7 +47,7 @@ function WallsPreview({ result }: { result: DxfImportResult }) {
   const toSvg = (x: number, z: number) => [pad + (x - minX) * scale, pad + (z - minZ) * scale] as const
 
   return (
-    <svg viewBox="0 0 320 240" className="h-40 w-full border border-neutral-800 bg-neutral-950">
+    <svg viewBox="0 0 320 240" className="h-40 w-full border border-[var(--p100-fieldset-border)] bg-[var(--p100-dialog-content)]">
       {result.walls.map((wall, i) => {
         const [x1, y1] = toSvg(wall.start.x, wall.start.z)
         const [x2, y2] = toSvg(wall.end.x, wall.end.z)
@@ -59,7 +58,7 @@ function WallsPreview({ result }: { result: DxfImportResult }) {
             y1={y1}
             x2={x2}
             y2={y2}
-            stroke="#e5e5e5"
+            stroke="var(--p100-text)"
             strokeWidth={2}
             strokeLinecap="square"
           />
@@ -149,7 +148,7 @@ function RoomImportPanel({ onImport }: { onImport?: ((result: DxfImportResult) =
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 p-2 text-neutral-100">
+    <div className="flex h-full flex-col gap-3 p-2 text-[var(--p100-text)]">
       <p className="text-[10px] leading-relaxed text-neutral-500">
         {tr('Прямоугольный DXF/SVG-план обновит ширину (W) и глубину (D) комнаты; мебель не добавится.')}
       </p>
@@ -169,14 +168,14 @@ function RoomImportPanel({ onImport }: { onImport?: ((result: DxfImportResult) =
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="w-full border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-left text-[11px] text-neutral-300 hover:border-neutral-600 hover:text-neutral-100"
+          className="w-full border border-[var(--p100-fieldset-border)] bg-[var(--p100-dialog)] px-2 py-1.5 text-left text-[11px] text-[var(--p100-muted)] hover:border-neutral-600 hover:text-[var(--p100-text)]"
         >
           {fileName ?? tr('Выбрать DXF/SVG-файл…')}
         </button>
       </div>
 
       {error ? (
-        <div className="border border-red-900 bg-red-950/40 p-2 text-[11px] text-red-300">{error}</div>
+        <div className="border border-[var(--p100-invalid)] bg-[var(--p100-dialog-content)] p-2 text-[11px] text-[var(--p100-invalid)]">{error}</div>
       ) : null}
 
       {preview ? (
@@ -186,7 +185,7 @@ function RoomImportPanel({ onImport }: { onImport?: ((result: DxfImportResult) =
             <select
               value={selectedLayer}
               onChange={(e) => onLayerChange(e.target.value)}
-              className="w-full border border-neutral-800 bg-neutral-900 px-2 py-1 text-[11px] text-neutral-200 outline-none focus:border-neutral-500"
+              className="w-full border border-[var(--p100-fieldset-border)] bg-[var(--p100-dialog)] px-2 py-1 text-[11px] text-[var(--p100-text)] outline-none focus:border-neutral-500"
             >
               <option value={ALL_LAYERS}>{tr('Все слои')} ({preview.result.layers.length})</option>
               {preview.result.layers.map((l) => (
@@ -194,49 +193,49 @@ function RoomImportPanel({ onImport }: { onImport?: ((result: DxfImportResult) =
               ))}
             </select>
           </label> : <>
-            <label className="block text-[11px] text-neutral-400">
+            <label className="block text-[11px] text-[var(--p100-muted)]">
               {tr('Контур SVG')}
               <select value={selectedShape} onChange={(event) => onShapeChange(event.target.value)}
-                className="mt-1 w-full border border-neutral-800 bg-neutral-900 px-2 py-1 text-neutral-200">
+                className="mt-1 w-full border border-[var(--p100-fieldset-border)] bg-[var(--p100-field)] px-2 py-1 text-[var(--p100-text)]">
                 <option value="">{tr('Самый большой контур')}</option>
                 {preview.shapes.filter((shape) => shape.label.startsWith('#') && !shape.label.includes('/')).map((shape) => (
                   <option key={shape.label} value={shape.label.slice(1)}>{shape.label}</option>
                 ))}
               </select>
             </label>
-            <label className="block text-[11px] text-neutral-400">
+            <label className="block text-[11px] text-[var(--p100-muted)]">
               {tr('Масштаб, мм/ед.')}
               <input type="number" min="0.001" step="any" value={mmPerUnit}
                 onChange={(event) => onScaleChange(event.target.value)}
                 placeholder={tr('Из размеров SVG')}
-                className="mt-1 w-full border border-neutral-800 bg-neutral-900 px-2 py-1 text-neutral-200" />
+                className="mt-1 w-full border border-[var(--p100-fieldset-border)] bg-[var(--p100-field)] px-2 py-1 text-[var(--p100-text)]" />
             </label>
           </>}
 
           <WallsPreview result={preview.result} />
 
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-neutral-400">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-[var(--p100-muted)]">
             <span>{tr('Стен')}</span>
-            <span className="tabular-nums text-neutral-200">{preview.result.walls.length}</span>
+            <span className="tabular-nums text-[var(--p100-text)]">{preview.result.walls.length}</span>
             <span>{tr('Габарит')}</span>
-            <span className="tabular-nums text-neutral-200">
+            <span className="tabular-nums text-[var(--p100-text)]">
               {preview.result.bounds ? `${preview.result.bounds.width} (W) × ${preview.result.bounds.depth} (D) мм` : '—'}
             </span>
             <span>{tr('Единицы источника')}</span>
-            <span className="tabular-nums text-neutral-200">
+            <span className="tabular-nums text-[var(--p100-text)]">
               {preview.result.sourceUnits}{preview.result.unitsConverted ? ` → ${tr('мм (пересчитано)')}` : ' (мм)'}
             </span>
           </div>
 
           {preview.result.skipped.length > 0 ? (
-            <div className="border border-amber-900 bg-amber-950/30 p-2 text-[11px] text-amber-300">
+            <div className="border border-[var(--p100-warning)] bg-[var(--p100-dialog-content)] p-2 text-[11px] text-[var(--p100-warning)]">
               {tr('Не поддерживается, пропущено')}:{' '}
               {preview.result.skipped.map((s) => `${s.type} ×${s.count}`).join(', ')}
             </div>
           ) : null}
 
           {!canApplyRoomImport(preview.result) && <div role="status"
-            className="border border-amber-800 p-2 text-[11px] text-amber-300">
+            className="border border-[var(--p100-warning)] p-2 text-[11px] text-[var(--p100-warning)]">
             {tr('Контур можно просмотреть, но текущая модель комнаты принимает только прямоугольный пол.')}
           </div>}
 
@@ -245,7 +244,7 @@ function RoomImportPanel({ onImport }: { onImport?: ((result: DxfImportResult) =
             onClick={doImport}
             disabled={!canApplyRoomImport(preview.result) || !canConfirmDxfImport(preview.result.walls.length, Boolean(onImport), imported)}
             title={!onImport ? tr('Только предпросмотр: откройте импорт в проекте') : undefined}
-            className="mt-auto w-full border border-neutral-700 bg-neutral-100 px-2 py-1.5 text-[11px] font-medium text-neutral-900 hover:bg-white disabled:cursor-not-allowed disabled:border-neutral-800 disabled:bg-neutral-900 disabled:text-neutral-600"
+            className="mt-auto w-full border border-neutral-700 bg-neutral-100 px-2 py-1.5 text-[11px] font-medium text-neutral-900 hover:bg-white disabled:cursor-not-allowed disabled:border-[var(--p100-fieldset-border)] disabled:bg-[var(--p100-dialog)] disabled:text-neutral-600"
           >
             {imported ? tr('Импортировано') : tr('Импортировать')}
           </button>
@@ -261,14 +260,14 @@ export function ImportPanel({ onImport, onImportAsset, materials = [] }: {
   materials?: Material[]
 } = {}) {
   const [mode, setMode] = React.useState<'room' | 'asset'>('room')
-  return <div className="flex h-full flex-col text-neutral-100">
-    <div className="flex border-b border-neutral-800 text-[11px]">
+  return <div className="flex h-full flex-col text-[var(--p100-text)]">
+    <div className="flex border-b border-[var(--p100-fieldset-border)] text-[11px]">
       <button type="button" onClick={() => setMode('room')}
-        className={`flex-1 border-r border-neutral-800 p-2 ${mode === 'room' ? 'bg-neutral-800' : 'bg-neutral-950'}`}>
+        className={`flex-1 border-r border-[var(--p100-fieldset-border)] p-2 ${mode === 'room' ? 'bg-[var(--p100-tool-selected)]' : 'bg-[var(--p100-dialog-content)]'}`}>
         {tr('План комнаты')}
       </button>
       <button type="button" onClick={() => setMode('asset')}
-        className={`flex-1 p-2 ${mode === 'asset' ? 'bg-neutral-800' : 'bg-neutral-950'}`}>
+        className={`flex-1 p-2 ${mode === 'asset' ? 'bg-[var(--p100-tool-selected)]' : 'bg-[var(--p100-dialog-content)]'}`}>
         {tr('Деталь / модель')}
       </button>
     </div>

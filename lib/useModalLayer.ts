@@ -9,6 +9,10 @@ const subscribe = (listener: () => void) => { listeners.add(listener); return ()
 const getSnapshot = () => stack
 const notify = () => { for (const listener of listeners) listener() }
 
+export const getModalStack = (): readonly string[] => stack
+
+export const useModalStack = (): readonly string[] => useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+
 /** Терезенің ашылған ретіне сәйкес қабат; бір уақытта екі терезе болса, соңғысы үстінде. */
 export function useModalLayer(open: boolean, id: string): { zIndex: number; isTop: boolean } {
   const current = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)

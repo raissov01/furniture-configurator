@@ -150,7 +150,7 @@ export function TemplateGallery() {
             </Button>
           ))}
           <Button active={filter === 'standard'} onClick={() => { setFilter('standard'); setSubcategory(undefined); setSearch('') }}>
-            {tr('Стандарт номенклатура')}
+            {tr('Стандартная номенклатура')}
           </Button>
           <Button active={filter === 'sets'} onClick={() => { setFilter('sets'); setSubcategory(undefined) }}>{tr('Наборы')}</Button>
           <div className="ml-auto">

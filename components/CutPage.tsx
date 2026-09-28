@@ -206,8 +206,8 @@ export function CutPage() {
   }
 
   return (
-    <main data-cut-panel-count={panels.length} className="min-h-screen min-w-0 bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
-      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
+    <main data-cut-panel-count={panels.length} className="p100-cut-page min-h-screen min-w-0 bg-[var(--p100-chrome)] text-[var(--p100-text)]">
+      <header className="sticky top-0 z-10 border-b border-[var(--p100-divider)] bg-[var(--p100-chrome)]">
         <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-wrap items-center gap-2 px-4 py-2.5">
           <Link
             href="/configurator"
@@ -517,11 +517,11 @@ function Totals({ stats, sheetCount }: { stats: CutStats; sheetCount: number }) 
       {cells.map((c) => (
         <div
           key={c.label}
-          className="rounded-lg border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900"
+          className="border border-[var(--p100-fieldset-border)] bg-[var(--p100-dialog-content)] px-3 py-2"
         >
-          <div className="text-[10px] uppercase tracking-wider text-neutral-500">{c.label}</div>
+          <div className="text-xs text-[var(--p100-muted)]">{c.label}</div>
           <div className="text-lg font-semibold tabular-nums">{c.value}</div>
-          {c.hint ? <div className="text-[10px] text-neutral-400">{c.hint}</div> : null}
+          {c.hint ? <div className="text-xs text-[var(--p100-muted)]">{c.hint}</div> : null}
         </div>
       ))}
     </div>
@@ -555,7 +555,7 @@ function SheetCard({
       <div className="max-w-full overflow-x-auto" aria-label={tr('Карта раскроя')}>
       <svg
         viewBox={`0 0 ${sheet.sheetWidth} ${sheet.sheetHeight}`}
-        className="block h-auto w-full min-w-[520px] border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950 sm:min-w-0"
+        className="block h-auto max-w-full w-full border border-neutral-200 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-950"
         role="img"
         aria-label={`Лист ${sheet.index}`}
       >
@@ -571,12 +571,12 @@ function SheetCard({
         {sheet.parts.map((p) => (
           <g key={p.panelId}>
             <rect x={p.x} y={p.y} width={p.width} height={p.height}
-              fill="#e3c76a" stroke="#7c5f14" strokeWidth={4} />
+              fill="var(--brand-amber)" stroke="var(--brand-graphite)" strokeWidth={4} />
             <text
               x={p.x + p.width / 2} y={p.y + p.height / 2}
               textAnchor="middle" dominantBaseline="middle"
               fontSize={Math.max(34, Math.min(p.width, p.height) * 0.16)}
-              fill="#3f3108"
+              fill="var(--brand-graphite)"
             >
               {panelDisplayLabel(p.label)} {p.width}×{p.height}
             </text>

@@ -10,6 +10,7 @@
  */
 
 import { create } from 'zustand'
+import { nextCopyName } from '@/src/core/copyName'
 import { t as tr } from '@/lib/i18n'
 import { changesCabinet } from '@/lib/cabinetEdit'
 import { planSectionAddition } from '@/lib/sectionUi'
@@ -1504,7 +1505,7 @@ export const useConfigurator = create<State>((set, get) => ({
       ...shop.materials.map((material) => material.id),
       ...shop.edgeBands.map((band) => band.id),
     ]
-    const copy = cloneCatalogMaterial(source, existingIds)
+    const copy = cloneCatalogMaterial(source, existingIds, shop.materials.map((material) => material.name))
     get().setShop({ ...shop, materials: [...shop.materials, copy] })
   },
 
@@ -1906,7 +1907,7 @@ export const useConfigurator = create<State>((set, get) => ({
     })
     const newId = `cabinet-${crypto.randomUUID()}`
     set({
-      ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: `${source.name} (копия)` }], [
+      ...legacyEdit(s, [...s.cabinets, { ...source, id: newId, name: nextCopyName(source.name, s.cabinets.map((cabinet) => cabinet.name)) }], [
         ...s.placements,
         { cabinetId: newId, wall: s.selectedWall, offset: nextFreeOffset(s.room, s.selectedWall, entries) },
       ]),

@@ -17,8 +17,8 @@ describe('lesson targets', () => {
   })
 
   it('uses two distinct visible mobile controls for dimensions and sections', () => {
-    expect(lessonStepFor(LESSONS[0]!, false, true)?.selector).toBe('[data-tour="mobile-size"]')
-    expect(lessonStepFor(LESSONS[1]!, false, true)?.selector).toBe('[data-tour="mobile-sections"]')
+    expect(lessonStepFor(LESSONS[0]!, true, true)?.selector).toBe('[data-tour-mobile="size"]')
+    expect(lessonStepFor(LESSONS[1]!, true, true)?.selector).toBe('[data-tour-mobile="sections"]')
   })
 
   it('makes unavailable lessons explicit', () => {
@@ -31,7 +31,6 @@ describe('lesson targets', () => {
     const quote = LESSONS.find((lesson) => lesson.id === 'quote')!
     expect(lessonStepFor(quote, true, false)?.selector).toBe('[data-testid="classic-tool-quote"]')
   })
-
   it('targets the first quote tool because duplicate labels are removed', () => {
     const source = readFileSync(new URL('../components/Workspace.tsx', import.meta.url), 'utf8')
     expect(classicShopTools.quote).toEqual({ icon: 'quote', label: 'Смета и раскрой' })

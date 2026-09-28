@@ -17,7 +17,9 @@
  */
 
 import { t as tr } from '@/lib/i18n'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { shouldCloseModalKey } from '@/lib/modalStack'
+import { useModalLayer } from '@/lib/useModalLayer'
 import { useConfigurator } from '@/store/configurator'
 import { CabinetThumb } from '@/components/CabinetThumb'
 import { Button, Field } from '@/components/ui'
@@ -60,6 +62,18 @@ const THUMB_PX = 120
 export function AiPanel() {
   const open = useConfigurator((s) => s.aiOpen)
   const setOpen = useConfigurator((s) => s.setAiOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'ai')
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (!shouldCloseModalKey(event.key, isTop)) return
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      setOpen(false)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [open, isTop, setOpen])
   const loadCabinet = useConfigurator((s) => s.loadCabinet)
   const catalog = useConfigurator((s) => s.catalog)
 
@@ -169,7 +183,8 @@ export function AiPanel() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4 "
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div

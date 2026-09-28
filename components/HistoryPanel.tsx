@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui'
 import { useConfigurator } from '@/store/configurator'
 import { historySummary } from '@/lib/f24UiLogic'
+import { useModalLayer } from '@/lib/useModalLayer'
 
 type Entry = { at: number; name: string; json: string }
 
@@ -33,6 +34,7 @@ function read(): Entry[] {
 export function HistoryPanel() {
   const open = useConfigurator((s) => s.historyOpen)
   const setOpen = useConfigurator((s) => s.setHistoryOpen)
+  const { zIndex, isTop } = useModalLayer(open, 'history')
   const restore = useConfigurator((s) => s.restoreHistory)
   const [entries, setEntries] = useState<Entry[]>([])
   const [preview, setPreview] = useState<number | null>(null)
@@ -44,16 +46,17 @@ export function HistoryPanel() {
   }, [open])
   useEffect(() => {
     if (!open) return
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && isTop) setOpen(false) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, setOpen])
+  }, [open, isTop, setOpen])
 
   if (!open) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      className="fixed inset-0 flex items-start justify-center overflow-auto bg-black/40 p-4"
+      style={{ zIndex }}
       onClick={() => setOpen(false)}
     >
       <div

@@ -35,13 +35,13 @@ export function SheetFigure({
         />
         {sheet.offcuts.map((o, i) => (
           <rect key={`o${i}`} x={o.x} y={o.y} width={o.width} height={o.height}
-            fill="var(--blueprint)" fillOpacity={0.06} stroke="var(--blueprint)"
+            fill="var(--neutral-offcut)" fillOpacity={0.06} stroke="var(--neutral-offcut)"
             strokeOpacity={0.35} strokeWidth={3} />
         ))}
         {sheet.parts.map((p) => (
           <g key={p.panelId}>
             <rect x={p.x} y={p.y} width={p.width} height={p.height}
-              fill="var(--oak)" fillOpacity={0.85} stroke="var(--oak-deep)" strokeWidth={5} />
+              fill="var(--brand-amber)" fillOpacity={0.85} stroke="var(--oak-deep)" strokeWidth={5} />
             {compact ? null : (
               <>
                 <text
