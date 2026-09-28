@@ -10,6 +10,7 @@
  * its own paperwork.
  */
 export const en: Record<string, string> = {
+  'Загрузить превью': 'Upload preview',
   'Код': 'Code',
   'Код: ровно 6 цифр': 'Code: enter exactly 6 digits',
   'Проверить код': 'Check code',

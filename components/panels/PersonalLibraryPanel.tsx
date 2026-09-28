@@ -7,12 +7,15 @@ import { createLibraryItem, findNode, mergeLibraryCatalog, replaceLibraryMateria
 import type { LibraryItem, SceneNode } from '@/src/core/index'
 import { exportLibraryJson, importLibraryJson, readLocalLibrary, writeLocalLibrary } from '@/lib/libraryLocal'
 import { importUploadSummary, LIBRARY_AUTH_CHANGED_EVENT, libraryUploadOutcome } from '@/lib/librarySyncUi'
+import { privateThumbnailFromFile, privateThumbnailUrl } from '@/lib/privateThumbnail'
 
 const inputStyle = 'min-w-0 border border-neutral-700 bg-[var(--p100-dialog-content)] px-1.5 py-1 text-xs text-neutral-100'
 const buttonStyle = 'border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-[var(--p100-tool-hover)] disabled:opacity-40'
 
 /** JSON өлшемдерінен жасалған нобай; бөгде өндірушінің суреті қолданылмайды. */
 function ItemPreview({ item }: { item: LibraryItem }) {
+  const thumbnail = privateThumbnailUrl(item.thumbnail)
+  if (thumbnail) return <img src={thumbnail} alt="" loading="lazy" decoding="async" className="h-12 w-full border border-neutral-800 object-contain" />
   const width = Math.max(1, item.meta.sizeHint.x)
   const height = Math.max(1, item.meta.sizeHint.y)
   const scale = Math.min(58 / width, 36 / height)
@@ -128,6 +131,15 @@ export function PersonalLibraryPanel() {
       }
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось сохранить элемент')) }
   }
+  const attachPreview = async (item: LibraryItem, file: File) => {
+    try {
+      const thumbnail = await privateThumbnailFromFile(file)
+      const updated = { ...item, thumbnail }
+      persist([...local.filter((entry) => entry.id !== item.id), updated])
+      const outcome = await upload(updated)
+      setError(outcome.error); setMessage(tr(outcome.message))
+    } catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось импортировать JSON')) }
+  }
   const place = (item: LibraryItem) => {
     try { mergeLibraryCatalog(catalog, item); placeLibraryItem(item); setError(null); setMessage(tr('Элемент добавлен в проект')) }
     catch (cause) { setError(cause instanceof Error ? cause.message : tr('Не удалось добавить элемент')) }
@@ -232,6 +244,11 @@ export function PersonalLibraryPanel() {
         <div className="truncate text-neutral-500">{item.category} · {item.meta.sizeHint.y} (H) × {item.meta.sizeHint.x} (W) × {item.meta.sizeHint.z} (D) мм</div>
         <div className="mt-1 flex min-w-0 flex-col gap-1 xl:flex-row">
           <button type="button" className={`${buttonStyle} min-w-0`} onClick={() => place(item)}>{tr('Поставить')}</button>
+          <label className={`${buttonStyle} min-w-0 cursor-pointer`}>{tr('Загрузить превью')}
+            <input type="file" className="hidden" accept="image/png,image/webp,image/jpeg" onChange={(event) => {
+              const file = event.target.files?.[0]; if (file) void attachPreview(item, file); event.target.value = ''
+            }} />
+          </label>
           <button type="button" className={`${buttonStyle} min-w-0`} onClick={() => remove(item)}>{tr('Удалить')}</button>
         </div>
       </div>)}
