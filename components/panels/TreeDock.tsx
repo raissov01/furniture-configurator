@@ -27,7 +27,7 @@ function layerNodes(root: SceneNode): LayersPanelNode[] {
 /** Existing Structure and Layers panels share one dock; Workspace mounts this once. */
 export function TreeDock({ request, onTabChange }: { request?: DockRequest | undefined; onTabChange?: (tab: TreeDockTab) => void }) {
   const [tab, setTab] = useState<TreeDockTab>('structure')
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const root = useConfigurator((s) => s.root)
   const layers = useConfigurator((s) => s.layers)

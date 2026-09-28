@@ -38,6 +38,7 @@ import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
 import { assertUniqueToolbarRows, compactToolbarRows } from '@/lib/classicToolbar'
+import { mobileViewLabel } from '@/lib/mobileViewTabs'
 import { classicToolStatus, selectedStatusName } from '@/lib/classicStatus'
 import { AccountPanel } from '@/components/AccountPanel'
 import { LangSwitch } from '@/components/LangSwitch'
@@ -887,7 +888,7 @@ export function Workspace() {
           жасау мен жоба құралдары ашылмалы мәзірге жиналды — тек жиі керегі
           көзде. Клиентке сілтеме де осында.
         */}
-        <div className="flex w-full flex-wrap items-center gap-1">
+        <div data-testid="mobile-tool-row" className="flex w-full flex-nowrap items-center gap-1">
           <Menu label={tr('Создать')} title={tr('С чего начать корпус')}>
             <MenuItem onClick={() => setGalleryOpen(true)}>{tr('Готовые шаблоны')}</MenuItem>
             <MenuItem onClick={() => setAiOpen(true)}>{tr('Техзадание (словами)')}</MenuItem>
@@ -910,13 +911,29 @@ export function Workspace() {
             <MenuItem onClick={() => { window.location.assign('/cut') }}>{tr('Раскрой')}</MenuItem>
             <MenuItem onClick={requestReset}>{tr('Сброс')}</MenuItem>
           </Menu>
-          <Button onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
-          <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
-          <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
+          <div data-testid="mobile-more-tools" className="sm:hidden">
+            <Menu label="⋯" title={tr('Дополнительные инструменты')} ariaLabel={tr('Дополнительные инструменты')} align="right">
+              <MenuItem onClick={() => setHelpOpen(true)}>{tr('Горячие клавиши')}</MenuItem>
+              <MenuItem onClick={undo} disabled={!canUndo}>{tr('Отменить')}</MenuItem>
+              <MenuItem onClick={redo} disabled={!canRedo}>{tr('Повторить')}</MenuItem>
+              <MenuItem onClick={() => setShowDimensions(!showDimensions)} active={showDimensions}>{tr('Размеры на сцене')}</MenuItem>
+              <MenuItem onClick={fitCamera}>{tr('Вписать в кадр')}</MenuItem>
+              <MenuItem onClick={() => setShowFronts(!showFronts)} active={!showFronts}>{showFronts ? tr('Скрыть фасады') : tr('Показать фасады')}</MenuItem>
+              {(projectPanels.length > 0 || production.specialParts.length > 0) && productionState.exportsAvailable ? <ExportMenu inline cabinet={cabinet ?? undefined} pdfCabinet={pdfCabinet} pdfAssembly={pdfAssembly} panels={activePanels} projectPanels={projectPanels} specialParts={production.specialParts} projectName={projectName} onError={setExportError} /> : null}
+              {cloudEnabled && <MenuItem onClick={() => setAccountOpen(true)}>{tr('Аккаунт')}</MenuItem>}
+              <AppearanceSwitch menu />
+              <LangSwitch inline />
+            </Menu>
+          </div>
+          <div className="hidden items-center gap-1 sm:flex">
+            <Button onClick={() => setHelpOpen(true)} title={tr('Горячие клавиши')}>?</Button>
+            <Button onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
+            <Button onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
+          </div>
         </div>
 
         <div className="hidden"><ProjectMenu /></div>
-        <div data-testid="workspace-view-menu"><Menu label={tr('Вид')} size="sm" title={tr('Прозрачность, фасады, проекция, масштаб')}>
+        <div data-testid="workspace-view-menu" className="hidden sm:block"><Menu label={tr('Вид')} size="sm" title={tr('Прозрачность, фасады, проекция, масштаб')}>
           <label className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-300">
             {tr('Разнести')}
             <Slider value={exploded} onChange={setExploded} />
@@ -961,7 +978,7 @@ export function Workspace() {
             <VrButton />
           </div>
         </Menu></div>
-        {silhouette.on ? <div className="flex flex-col gap-0.5">
+        {silhouette.on ? <div className="hidden flex-col gap-0.5 sm:flex">
           <input type="text" inputMode="numeric" aria-label={tr('Рост человека, мм')}
             aria-invalid={Boolean(silhouetteError)} aria-describedby={silhouetteError ? 'silhouette-height-error' : undefined}
             className={cn('w-20 border bg-white px-1.5 py-1 text-xs tabular-nums dark:bg-neutral-900',
@@ -978,7 +995,7 @@ export function Workspace() {
           </span> : null}
         </div> : null}
         {/* Сирек керегі оң жақта; көрініс құралдары 3D-нің өз үстіне көшті. */}
-        <div className="flex min-w-0 w-full flex-wrap items-center gap-1 sm:ml-auto sm:w-auto">
+        <div className="hidden min-w-0 flex-wrap items-center gap-1 sm:ml-auto sm:flex">
           {/* БАҒА (qdesign сияқты): басу — смета; баға қойылмаса — цех профилі. */}
           {liveTotal ? (
             'total' in liveTotal ? (
@@ -1012,9 +1029,9 @@ export function Workspace() {
 
       {/* 390 px экранда canvas-тан бөлек тұратын тұрақты қасиет батырмасы. */}
       {(activeBoard || activeSolid || cabinet) && <div data-testid="mobile-properties-trigger"
-        className="relative z-30 flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3 py-2 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
-        <span className="min-w-0 truncate text-xs font-medium">{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
-        {cabinet && <div className="flex shrink-0 gap-1">
+        className="relative z-30 flex shrink-0 flex-col gap-1 border-b border-neutral-200 bg-white px-2 py-1 dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
+        <span data-testid="mobile-module-name" className="text-xs font-medium" title={activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}>{activeNode?.name ?? cabinet?.name ?? activeBoard?.name ?? activeSolid?.name}</span>
+        {cabinet && <div className="flex gap-1 overflow-x-auto whitespace-nowrap">
           <Button tour="mobile-size" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Габариты')}</Button>
           <Button tour="mobile-sections" size="sm" onClick={() => setPropertiesNodeId(activeId)}>{tr('Секции модуля')}</Button>
           <Button tour="mobile-cutlist" size="sm" onClick={() => {
@@ -1197,7 +1214,7 @@ export function Workspace() {
         <div className="flex min-h-0 flex-col overflow-y-auto lg:overflow-hidden">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
         {!walk && <div data-testid="mobile-tree-dock" className="relative z-20 shrink-0 px-2 pt-1 lg:hidden"><TreeDock request={dockRequest} /></div>}
-        <main className="relative isolate h-[40dvh] min-h-[40dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+        <main className="relative isolate h-[50dvh] min-h-[370px] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
 
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
@@ -1284,14 +1301,16 @@ export function Workspace() {
             return (
               <span key={v.key} className="p100-view-tab-cell">
               {index > 0 && <span className="p100-view-tab-divider" aria-hidden="true">|</span>}
-              <button type="button" className="p100-view-tab" aria-current={isActive ? 'page' : undefined}
+              <button type="button" className="p100-view-tab min-h-11 sm:min-h-0" aria-current={isActive ? 'page' : undefined}
                 key={v.key}
+                aria-label={tr(v.ruLabel)}
                 onClick={() => {
                   setCameraPreset(v.preset)
                   if (v.projection) setProjection(v.projection)
                 }}
               >
-                {tr(v.ruLabel)}
+                <span className="shrink-0 whitespace-nowrap sm:hidden">{mobileViewLabel(v.key, getLang(), tr(v.ruLabel))}</span>
+                <span className="hidden sm:inline">{tr(v.ruLabel)}</span>
               </button>
               </span>
             )

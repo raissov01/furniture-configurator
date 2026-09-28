@@ -19,16 +19,17 @@ const SHORT: Record<(typeof LANGS)[number]['value'], string> = {
   en: 'ENG',
 }
 
-export function LangSwitch() {
+export function LangSwitch({ inline = false }: { inline?: boolean }) {
   const current = getLang()
-  return (
-    <Menu label={SHORT[current]} title={tr('Язык')} align="right">
+  const items = <>
+      <div className="border-t border-neutral-200 px-2 py-1 text-xs dark:border-neutral-700">{tr('Язык')}</div>
       {LANGS.map((l) => (
         <MenuItem key={l.value} active={current === l.value} onClick={() => setLang(l.value)}>
           <span className="w-8 tabular-nums">{SHORT[l.value]}</span>
           {l.label}
         </MenuItem>
       ))}
-    </Menu>
-  )
+    </>
+  if (inline) return items
+  return <Menu label={SHORT[current]} title={tr('Язык')} align="right">{items}</Menu>
 }
