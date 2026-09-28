@@ -2,7 +2,7 @@
 import { drillToLocalMarker } from './drillGeometry'
 import { SHELF_PIN_PITCH } from '../src/core/constants'
 import { DRAWER_SYSTEMS } from '../src/core/drawerSystems'
-import type { ConstructionSettings, DrillPurpose, EdgeBand, Panel, Vec3 } from '../src/core/types'
+import type { Axis, ConstructionSettings, DrillPurpose, EdgeBand, Panel, Vec3 } from '../src/core/types'
 
 export type FittingVisual = {
   purpose: DrillPurpose
@@ -18,7 +18,7 @@ export type FittingVisual = {
   name: string
   article: string
   /** Жәшіктің нақты бүйір тереңдігінен алынған рельс, тек бірінші бекіту тесігінде. */
-  rail?: { center: Vec3; length: number; sideClearance: number; system: 'roller' | 'ball' | 'tandem' } | undefined
+  rail?: { center: Vec3; length: number; sideClearance: number; system: 'roller' | 'ball' | 'tandem'; axis?: Axis } | undefined
 }
 
 export type FittingShape = {

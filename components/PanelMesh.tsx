@@ -25,6 +25,8 @@ import { DrillMarkers } from '@/components/DrillMarkers'
 import { FittingMeshes } from '@/components/FittingMeshes'
 import { fittingsForPanel } from '@/lib/fittingGeometry'
 import { xrayViewState } from '@/lib/xrayView'
+import { boxFitting } from '@/lib/fittingRenderGeometry'
+import { panelOpacity } from '@/lib/panelOpacity'
 import type { RenderedDrillMarker } from '@/components/DrillMarkers'
 
 /**
@@ -461,17 +463,8 @@ export function PanelMesh({
       return { ...m, point, direction }
     })
   }, [canonicalDrillMarkers, panel.orientation, panel.finishedLength, panel.finishedWidth, thickness])
-  const boxFittings = useMemo(() => fittings.map((item) => {
-    const point = { x: 0, y: 0, z: 0 }
-    point[panel.orientation.length] = item.point.x - panel.finishedLength / 2
-    point[panel.orientation.width] = item.point.y - panel.finishedWidth / 2
-    point[panel.orientation.thickness] = item.point.z - thickness / 2
-    const normal = { x: 0, y: 0, z: 0 }
-    normal[panel.orientation.length] = item.normal.x
-    normal[panel.orientation.width] = item.normal.y
-    normal[panel.orientation.thickness] = item.normal.z
-    return { ...item, point, normal }
-  }), [fittings, panel.orientation, panel.finishedLength, panel.finishedWidth, thickness])
+  const boxFittings = useMemo(() => fittings.map((item) => boxFitting(item, panel, thickness)),
+    [fittings, panel, thickness])
 
   const position = useMemo(() => {
     const base = {
@@ -496,8 +489,8 @@ export function PanelMesh({
    * әрең көрінетін сұлба. Тінтуір астындағы панель ӘРҚАШАН тұтас қалады:
    * әйтпесе мөлдір режимде нені меңзеп тұрғаның білінбейді.
    */
-  const opacity = ((showFittings && exploded > 0 && panel.role === 'front') ? 0.3
-    : viewMode === 'solid' || isHovered || isSelected ? 1 : viewMode === 'ghost' ? 0.28 : 0.06) * look.opacity
+  const opacity = panelOpacity({ xray, viewMode, hovered: isHovered, selected: isSelected,
+    lookOpacity: look.opacity, explodedFront: showFittings && exploded > 0 && panel.role === 'front' })
 
   /**
    * Қиғаш деталь мен көлбеу крышка — жалғыз екі жағдай, онда панель әлем
@@ -737,7 +730,7 @@ export function PanelMesh({
         </mesh>
         {/* Канондық кеңістік (ұзындық/ен/қалыңдық, бұрылусыз) — дәл осы
             топтың ӨЗ жергілікті кеңістігі, сондықтан ешбір ауыстырусыз. */}
-        <DrillMarkers markers={canonicalDrillMarkers} dimmed={Boolean(xray && selected && !isSelected)} />
+        <DrillMarkers markers={canonicalDrillMarkers} xray={xray} dimmed={Boolean(xray && selected && !isSelected)} />
         <FittingMeshes fittings={fittings} />
       </group>
     )
@@ -826,7 +819,7 @@ export function PanelMesh({
       {/* Канондық нүкте боксттың ОРТАСЫНАН саналған ығысуға ауыстырылды
           (`boxDrillMarkers`, жоғарыда) — бұл мештің өз жергілікті кеңістігі
           дәл сол орталықтан саналады. */}
-      <DrillMarkers markers={boxDrillMarkers} dimmed={Boolean(xray && selected && !isSelected)} />
+      <DrillMarkers markers={boxDrillMarkers} xray={xray} dimmed={Boolean(xray && selected && !isSelected)} />
       <FittingMeshes fittings={boxFittings} />
       {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>
