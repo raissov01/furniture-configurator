@@ -6,6 +6,7 @@ import { parseInstallationAction } from '../src/core/installation'
 import { cutListToXlsx, flattenTree, parseProjectV4 } from '../src/core/index'
 import { allowAiRequest } from '../lib/server/rateLimit'
 import { MAX_RENDER_BYTES, renderScene } from '../lib/server/renderScene'
+import { db } from '../lib/server/db'
 
 type RenderPayload = { key: string; hint?: string; style?: string }
 type XlsxPayload = { projectId: string }
@@ -41,6 +42,8 @@ export async function processJob(job: JobRow): Promise<unknown> {
 }
 
 async function main(): Promise<void> {
+  // A fresh PostgreSQL volume needs schema migrations before the first job query.
+  db().prepare('SELECT 1 AS ok').get()
   let running = true
   process.on('SIGTERM', () => { running = false })
   process.on('SIGINT', () => { running = false })

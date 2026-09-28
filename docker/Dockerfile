@@ -6,7 +6,7 @@ RUN npm ci
 FROM deps AS builder
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS=--max-old-space-size=2048
-RUN npm run build
+RUN npm run build -- --webpack
 
 FROM node:22-alpine
 WORKDIR /app
