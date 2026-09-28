@@ -1103,14 +1103,33 @@ async function run() {
   await test('Базис кітапханасы: Кухня және Gola санаттары көрінеді', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
-    const opened = await h.evaluate(`(() => {
-      const tab = [...document.querySelectorAll('[data-testid="tree-dock"] [role="tab"]')]
-        .find((node) => node.textContent.trim() === 'Библиотека')
-      tab?.click()
-      return Boolean(tab)
+    check(await h.until(`Boolean(document.querySelector('select[aria-label="Стиль рабочего места"]'))`, 20000),
+      'редактор толық жүктелді')
+    await h.evaluate(`(() => {
+      const select = document.querySelector('select[aria-label="Стиль рабочего места"]')
+      if (select?.value !== 'ours') {
+        select.value = 'ours'
+        select.dispatchEvent(new Event('change', { bubbles: true }))
+      }
     })()`)
-    check(opened, 'кітапхана ашылды')
-    await h.wait(250)
+    check(await h.until(`Boolean([...document.querySelectorAll('button')]
+      .find((button) => button.textContent.trim() === 'Библиотека'))`, 10000), 'кітапхана құралы көрінді')
+    await h.clickText('Пропустить', 150)
+    check(await h.clickText('Библиотека', 350), 'кітапхана ашылды')
+    check(await h.until(`Boolean(document.querySelector('[data-testid="tree-dock"] input[placeholder="Найти категорию"]'))`, 10000),
+      'категория іздеуі ашылды')
+    const categorySearch = await h.evaluate(`(() => {
+      const field = document.querySelector('[data-testid="tree-dock"] input[placeholder="Найти категорию"]')
+      if (!field) return false
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+      setter.call(field, 'Базис:')
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    })()`)
+    check(categorySearch, 'Базис санаттары сүзілді')
+    check(await h.until(`Boolean([...document.querySelectorAll('[data-testid="tree-dock"] select')]
+      .find((select) => [...select.options].some((option) => option.value === 'Базис: Кухня')))`, 10000),
+      'Базис санаттары жүктелді')
     const categories = await h.evaluate(`(() => {
       const selects = [...document.querySelectorAll('[data-testid="tree-dock"] select')]
       const category = selects.find((select) => [...select.options].some((option) => option.value === 'Базис: Кухня'))
@@ -1217,6 +1236,7 @@ async function run() {
   await test('Импорт докы: қате DXF және өндірістік тақта', async () => {
     await h.closeModals()
     await h.goto('/configurator', 9000)
+    await h.clickText('Пропустить', 150)
     check(await h.clickText('Открыть Импорт', 500), 'импорт докы ашылды')
     check(await h.clickText('Деталь / модель', 300), 'деталь импорты ашылды')
     const attach = async (name, data) => h.evaluate(`(() => {
@@ -1241,13 +1261,13 @@ async function run() {
       return Boolean(button)
     })()`)
     check(submit, 'тақта жобаға қосылды')
-    await h.wait(800)
-    const added = await h.evaluate(`(() => {
+    check(await h.clickText('Сохранить', 300), 'импортталған жоба сақталды')
+    const added = await h.until(`(() => {
       const raw = localStorage.getItem('furniture-configurator:project')
       if (!raw) return false
       const root = JSON.parse(raw).root
       return root?.children?.some((node) => node.kind === 'board' && node.name === 'shelf' && node.board.length === 600)
-    })()`)
+    })()`, 8000)
     check(added, 'импортталған тақта v4 ағашта сақталды')
   })
 
