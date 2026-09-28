@@ -703,7 +703,7 @@ export function PanelMesh({
         </mesh>
         {/* Канондық кеңістік (ұзындық/ен/қалыңдық, бұрылусыз) — дәл осы
             топтың ӨЗ жергілікті кеңістігі, сондықтан ешбір ауыстырусыз. */}
-        <DrillMarkers markers={canonicalDrillMarkers} dimmed={Boolean(xray && selected && !isSelected)} />
+        <DrillMarkers markers={canonicalDrillMarkers} xray={xray} dimmed={Boolean(xray && selected && !isSelected)} />
         <FittingMeshes fittings={fittings} />
       </group>
     )
@@ -789,7 +789,7 @@ export function PanelMesh({
       {/* Канондық нүкте боксттың ОРТАСЫНАН саналған ығысуға ауыстырылды
           (`boxDrillMarkers`, жоғарыда) — бұл мештің өз жергілікті кеңістігі
           дәл сол орталықтан саналады. */}
-      <DrillMarkers markers={boxDrillMarkers} dimmed={Boolean(xray && selected && !isSelected)} />
+      <DrillMarkers markers={boxDrillMarkers} xray={xray} dimmed={Boolean(xray && selected && !isSelected)} />
       <FittingMeshes fittings={boxFittings} />
       {isHovered || isSelected ? (
         <Html center zIndexRange={[10, 0]}>
