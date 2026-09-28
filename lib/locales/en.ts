@@ -16,6 +16,7 @@ export const en: Record<string, string> = {
   'Проверяем код…': 'Checking code…',
   'Проверенный проект': 'Verified project',
   'Нужен новый код? Свяжитесь с мастером.': 'Need a new code? Contact the maker.',
+  'Детали на листе': 'Parts on this sheet',
   'Выбрать файл': 'Choose file',
   'Выбрать фото': 'Choose photo',
   'загружен': 'uploaded',

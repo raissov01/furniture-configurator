@@ -17,6 +17,7 @@ export const uz: Record<string, string> = {
   'Проверяем код…': 'Kod tekshirilmoqda…',
   'Проверенный проект': 'Tekshirilgan loyiha',
   'Нужен новый код? Свяжитесь с мастером.': 'Yangi kod kerakmi? Ustaga murojaat qiling.',
+  'Детали на листе': 'Varaqdagi detallar',
   'Выбрать файл': 'Fayl tanlash',
   'Выбрать фото': 'Foto tanlash',
   'загружен': 'yuklangan',
