@@ -26,4 +26,11 @@ describe('F00h бренд беттері', () => {
     expect(mobile).toContain('var(--brand-graphite)')
     expect(mobile).toContain('var(--brand-amber)')
   })
+
+  it('телефон беті ортақ қағаз палитрасын және 48px әрекеттерді қолданады', () => {
+    const page = source('app/mobile/page.tsx')
+    expect(page).toContain('className="site mx-auto')
+    expect(page).toContain('min-h-12 w-full border border-[var(--rule)]')
+    expect(page).toContain('bg-[var(--panel)]')
+  })
 })
