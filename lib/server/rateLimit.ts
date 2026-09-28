@@ -75,6 +75,19 @@ export function allowShareMiss(ip: string, code: string, now = Date.now()): bool
   return consume('share-code', subject(ip, code), HOUR, 5, now)
 }
 
+/** Аноним код жасау DB-де 24 сағат сақталады; бір IP-ден 10/сағ, белгісіз IP-ден 3/сағ. */
+export function allowAnonymousShareCreate(ip: string, now = Date.now()): boolean {
+  return consume('share-create', subject(ip), HOUR, ip === 'unknown' ? 3 : 10, now)
+}
+
+/** Үлкен body-ді оқымай тұрып аноним share лимитін арзан тексеру. */
+export function isAnonymousShareCreateLimited(ip: string, now = Date.now()): boolean {
+  const start = Math.floor(now / HOUR) * HOUR
+  const row = db().prepare('SELECT attempts FROM request_limits WHERE bucket = ? AND subject = ? AND window_start = ?')
+    .get('share-create', subject(ip), start) as { attempts: number } | undefined
+  return (row?.attempts ?? 0) >= (ip === 'unknown' ? 3 : 10)
+}
+
 export function isShareLimited(ip: string, code: string, now = Date.now()): boolean {
   const database = db()
   const start = Math.floor(now / HOUR) * HOUR

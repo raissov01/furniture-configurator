@@ -24,12 +24,13 @@
  * projectId болса сақталған жазба).
  */
 
-import OpenAI from 'openai'
 import { aiAccess } from '@/lib/server/aiAccess'
+import OpenAI from 'openai'
 import { cloudOff } from '@/lib/server/cloud'
 import { addRenderRecord } from '@/lib/server/renderHistory'
 import type { RenderHistoryRecord } from '@/lib/server/renderHistory'
 import { currentAccount } from '@/lib/server/session'
+import { readLimitedBody } from '@/lib/server/readLimitedBody'
 import { ConfigValidationError } from '@/src/core/errors'
 import { estimateRenderCost, readRenderCostRates } from '@/src/core/render/cost'
 import type { RenderUsage } from '@/src/core/render/cost'
@@ -38,11 +39,13 @@ import { RENDER_HINT_MAX, RenderRequestSchema, buildRenderPrompt } from '@/src/c
 const MODEL = process.env['OPENAI_IMAGE_MODEL'] ?? 'gpt-image-1'
 /** Кірістің шегі: 3D скриншоты мен бөлме фотосы әдетте 1–3 МБ. */
 const MAX_BYTES = 8 * 1024 * 1024
+const MAX_BODY_BYTES = Math.ceil(MAX_BYTES / 3) * 8 + 4096
 
 function decode(dataUrl: string): { bytes: Buffer; mime: string } {
   const comma = dataUrl.indexOf(',')
   return { bytes: Buffer.from(dataUrl.slice(comma + 1), 'base64'), mime: dataUrl.slice(5, dataUrl.indexOf(';')) }
 }
+
 
 export async function POST(request: Request): Promise<Response> {
   const denied = await aiAccess('render')
@@ -52,7 +55,10 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'ИИ-рендер не настроен: нет ключа OpenAI' }, { status: 503 })
   }
 
-  const raw = (await request.json().catch(() => null)) as unknown
+  const requestBytes = await readLimitedBody(request, MAX_BODY_BYTES)
+  if (!requestBytes) return Response.json({ error: 'Снимок слишком большой' }, { status: 413 })
+  let raw: unknown = null
+  try { raw = JSON.parse(new TextDecoder().decode(requestBytes)) as unknown } catch { /* validation below reports the field */ }
   const parsed = RenderRequestSchema.safeParse(raw)
   if (!parsed.success) {
     const issue = parsed.error.issues[0]
@@ -76,6 +82,7 @@ export async function POST(request: Request): Promise<Response> {
     // Баптау қатесі — сервердің қатесі, клиенттің емес; бірақ рендерді тоқтатпаймыз.
     console.error('render cost rates:', cause)
     rates = null
+
   }
 
   const prompt = buildRenderPrompt({
@@ -111,6 +118,7 @@ export async function POST(request: Request): Promise<Response> {
         outputTokens: result.usage.output_tokens,
       }
     }
+
   } catch (error) {
     // Қате мәтіні пайдаланушыға шығады, сондықтан ол ТҮСІНІКТІ болуы керек.
     const message = error instanceof Error ? error.message : 'неизвестная ошибка'

@@ -7,3 +7,5 @@ tests
 *.log
 .env*
 .vercel
+docker/secrets
+.worktrees
