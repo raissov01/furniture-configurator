@@ -2,6 +2,9 @@
 
 import { getLang, setLang, t as tr, tf } from '@/lib/i18n'
 import { panelDisplayLabel } from '@/lib/panelDisplay'
+import { selectedStatusName } from '@/lib/sceneUiPlacement'
+import { contextActions } from '@/lib/contextActions'
+import { menuPosition } from '@/lib/menuPosition'
 import Link from 'next/link'
 import { SITE } from '@/lib/site'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
@@ -28,6 +31,7 @@ import { ProjectPanel } from '@/components/ProjectPanel'
 import { HelpPanel } from '@/components/HelpPanel'
 import { HistoryPanel } from '@/components/HistoryPanel'
 import { ShareCodeDialog } from '@/components/ShareCodeDialog'
+import { hasOpenModal } from '@/lib/useModalLayer'
 import { ApprovalBanner } from '@/components/ApprovalBanner'
 import { isTyping, matchHotkey } from '@/lib/hotkeys'
 import { deleteAction, resetDecision } from '@/lib/workspaceActions'
@@ -173,6 +177,7 @@ export function Workspace() {
   const addAnnotation = useConfigurator((s) => s.addAnnotation)
   const removeBoard = useConfigurator((s) => s.removeBoard)
   const removeAnnotation = useConfigurator((s) => s.removeAnnotation)
+  const ungroup = useConfigurator((s) => s.ungroup)
   const catalog = useConfigurator((s) => s.catalog)
   const shop = useConfigurator((s) => s.shop)
   const priceOverrides = useConfigurator((s) => s.priceOverrides)
@@ -316,6 +321,24 @@ export function Workspace() {
     if (window.matchMedia('(min-width: 1024px)').matches) setStructureOpen(true)
   }
   const [propertiesNodeId, setPropertiesNodeId] = useState<string | null>(null)
+  const [sceneContext, setSceneContext] = useState<{ panelId: string; nodeId: string | null; x: number; y: number } | null>(null)
+  const sceneContextRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const open = (event: Event) => setSceneContext((event as CustomEvent<{ panelId: string; nodeId: string | null; x: number; y: number }>).detail)
+    window.addEventListener('furniture:scene-context', open)
+    return () => window.removeEventListener('furniture:scene-context', open)
+  }, [])
+  useEffect(() => {
+    if (!sceneContext) return
+    const dismiss = (event: PointerEvent) => { if (!sceneContextRef.current?.contains(event.target as Node)) setSceneContext(null) }
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault(); event.stopImmediatePropagation(); setSceneContext(null)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    document.addEventListener('keydown', key)
+    return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', key) }
+  }, [sceneContext])
   const [draftState, setDraftState] = useState<{ id: string; errors: Record<string, boolean> }>({ id: activeId, errors: {} })
   const draftInvalid = draftState.id === activeId && hasDraftErrors(draftState.errors)
   const productionState = productionAvailability(production.error, draftInvalid)
@@ -479,7 +502,7 @@ export function Workspace() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const dialogState = useConfigurator.getState()
-      if (propertiesNodeId || dialogState.galleryOpen || dialogState.shopOpen || dialogState.quoteOpen || dialogState.drillOpen || dialogState.roomOpen) return
+      if (hasOpenModal() || propertiesNodeId || dialogState.galleryOpen || dialogState.shopOpen || dialogState.quoteOpen || dialogState.drillOpen || dialogState.roomOpen) return
       if (isTyping(e.target)) return
       // Escape — 3D-дегі таңдауды алу. Хоткейлер тізіміне кірмейді: бұл
       // «әрекет» емес, кез келген жерден шығудың әдеттегі жолы.
@@ -665,6 +688,32 @@ export function Workspace() {
       <HistoryPanel />
       {shareCodeOpen && <ShareCodeDialog />}
       {cloudEnabled && <AccountPanel />}
+      {sceneContext && (() => {
+        const nodeId = sceneContext.nodeId ?? activeId
+        const node = findNode(root, nodeId)
+        const part = projectPanels.find((item) => item.id === sceneContext.panelId)
+        const allowed = contextActions(node?.kind ?? 'part', 1, cabinets.length, Boolean(node?.locked))
+        const position = menuPosition({ left: sceneContext.x, right: sceneContext.x, top: sceneContext.y, bottom: sceneContext.y },
+          window.innerWidth, window.innerHeight, 210, 240, 'left')
+        const item = (label: string, enabled: boolean, action: () => void) => <button type="button" role="menuitem" key={label}
+          disabled={!enabled} className="block min-h-9 w-full border border-transparent px-3 text-left text-sm hover:bg-neutral-100 disabled:opacity-40"
+          onClick={() => { setSceneContext(null); action() }}>{tr(label)}</button>
+        return <div ref={sceneContextRef} role="menu" aria-label={tr('Элемент')}
+          className="fixed z-[1000] w-[210px] overflow-y-auto border border-neutral-400 bg-white p-1 text-neutral-900"
+          style={{ left: position.left, top: position.top, maxHeight: position.maxHeight }}>
+          {item('Свойства', Boolean(node && propertiesNodeSupported(node.kind)), () => setPropertiesNodeId(nodeId))}
+          {item('Копировать', allowed.copy, () => duplicateCabinet(nodeId))}
+          {item('Удалить', allowed.delete, () => {
+            if (node?.kind === 'cabinet') removeCabinet(nodeId)
+            else if (node?.kind === 'board') removeBoard(nodeId)
+            else if (node?.kind === 'annotation') removeAnnotation(nodeId)
+            setSelected(null)
+          })}
+          {item('Группа', false, () => openDockTab('structure'))}
+          {item('Разгруппировать', allowed.ungroup, () => ungroup(nodeId))}
+          {item('Открыть дверцу', Boolean(part?.opening), () => togglePanelOpen(sceneContext.panelId))}
+        </div>
+      })()}
       {!production.error ? <QuoteView
         propertiesOpen={propertiesNodeId !== null}
         panels={projectPanels}
@@ -743,7 +792,7 @@ export function Workspace() {
           </div>}
         </div>)}
       </div>
-      <header className="compact-tools flex max-h-[35dvh] flex-wrap items-center gap-3 overflow-y-auto border-b border-neutral-200 px-3 py-2 lg:max-h-none lg:overflow-visible dark:border-neutral-800">
+      <header className="compact-tools flex shrink-0 flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
         <Link
           href="/"
           title={tr('На главную')}
@@ -756,14 +805,13 @@ export function Workspace() {
 
         {/* Тақырыпта ЖОБА; таңдалған модуль мен оның габариті — оң панельде. */}
         <h1 className="max-w-72 truncate text-sm font-semibold" title={projectName}>{projectName}</h1>
-        <Link href="/mobile" className="inline-flex min-h-11 items-center border border-neutral-300 px-2 text-xs lg:min-h-0 dark:border-neutral-700">{tr('Телефон · Сегодня')}</Link>
 
         {/*
           ТОПТАЛҒАН ТАҚТА: бұрын 30+ батырма қатар тұрып «каша» болатын. Енді
           жасау мен жоба құралдары ашылмалы мәзірге жиналды — тек жиі керегі
           көзде. Клиентке сілтеме де осында.
         */}
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <Menu label={tr('Создать')} title={tr('С чего начать корпус')}>
             <MenuItem onClick={() => setGalleryOpen(true)}>{tr('Готовые шаблоны')}</MenuItem>
             <MenuItem onClick={() => setAiOpen(true)}>{tr('Техзадание (словами)')}</MenuItem>
@@ -775,19 +823,22 @@ export function Workspace() {
             <MenuItem onClick={() => setQuoteOpen(true)} disabled={Boolean(production.error)}>{tr('Смета и раскрой')}</MenuItem>
             <MenuItem onClick={() => setDrillOpen(true)} disabled={!activeEditable && !editableBoard}>{tr('Присадка')}</MenuItem>
             <MenuItem onClick={() => setRoomOpen(true)}>{tr('Стены и комната')}</MenuItem>
+            <MenuItem onClick={() => setShopOpen(true)}>{tr('Цех')}</MenuItem>
+            <MenuItem onClick={() => openDockTab('library')}>{tr('Библиотека')}</MenuItem>
+            <MenuItem onClick={() => { window.location.href = '/cut' }}>{tr('Раскрой')}</MenuItem>
             <MenuItem onClick={() => setHistoryOpen(true)}>{tr('История')}</MenuItem>
             <MenuItem onClick={() => void copyClientLink()}>{tr('Ссылка клиенту')}</MenuItem>
             {/* qdesign «3D-көріністе ашу» сияқты: 6 таңбалы код, 24 сағат, автожаңарту. */}
             <MenuItem onClick={() => setShareCodeOpen(true)}>{tr('Код для клиента')}</MenuItem>
             <MenuItem onClick={requestReset}>{tr('Сброс')}</MenuItem>
           </Menu>
-          <Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button>
-          <Button onClick={() => openDockTab('library')}>{tr('Библиотека')}</Button>
+          <span className="hidden sm:inline-flex"><Button onClick={() => setShopOpen(true)} tour="shop" title={tr('Материалы, цены и правила цеха')}>{tr('Цех')}</Button></span>
+          <span className="hidden sm:inline-flex"><Button onClick={() => openDockTab('library')}>{tr('Библиотека')}</Button></span>
           {/* Раскрой — БӨЛЕК бет (цех станогы қасында ашады), сондықтан тікелей. */}
           <Link
             href="/cut"
             title={tr('Отдельный экран раскроя: КИМ, резы, бирки')}
-            className="rounded-md border border-neutral-300 px-2 py-1 text-xs transition hover:border-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-300"
+            className="hidden rounded-md border border-neutral-300 px-2 py-1 text-xs transition hover:border-neutral-900 sm:inline-flex dark:border-neutral-700 dark:hover:border-neutral-300"
           >
             {tr('Раскрой')}
           </Link>
@@ -931,76 +982,6 @@ export function Workspace() {
         (жаңа/дубль/айна/өшіру) — аяста да қалды (астыңғы «Модуль» тобы),
         мұнда тек ЖЫЛДАМ белгіше нұсқасы.
       */}
-      <div className="compact-tools flex flex-wrap items-center gap-1 border-b border-neutral-200 px-2 py-1 dark:border-neutral-800">
-        <Button size="sm" onClick={addCabinet} title={tr('Новый корпус')}>+</Button>
-        <Button size="sm" onClick={() => duplicateCabinet(activeId)} disabled={!activeEditable} title={tr('Дублировать корпус')}>⧉</Button>
-        <Button size="sm" onClick={mirrorSelected} disabled={!canMirrorSelected} title={freeMirrorCheck?.reason ?? tr('Зеркальная копия')}>⇋</Button>
-        <Button
-          size="sm"
-          onClick={() => { removeCabinet(activeId); setSelected(null) }}
-          disabled={cabinets.length < 2 || !activeEditable}
-          title={tr('Удалить корпус')}
-        >
-          ✕
-        </Button>
-        <span className="mx-1 h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
-        <Button size="sm" onClick={undo} disabled={!canUndo} title="Ctrl+Z">↶</Button>
-        <Button size="sm" onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">↷</Button>
-        <Button
-          size="sm"
-          active={viewMode !== 'solid'}
-          onClick={() => setViewMode(viewMode === 'solid' ? 'ghost' : viewMode === 'ghost' ? 'wire' : 'solid')}
-          title={`${tr('Прозрачность')} (T)`}
-        >
-          {viewMode === 'solid' ? tr('Тело') : viewMode === 'ghost' ? tr('Полупрозрачно') : tr('Контур')}
-        </Button>
-        <span className="mx-1 h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
-        <Button size="sm" onClick={() => setRenderOpen(true)} title={tr('Фотореалистичная картинка для клиента')}>
-          {tr('Рендер')}
-        </Button>
-        <Button
-          size="sm"
-          active={walk}
-          title={tr('Пройтись внутри: WASD — идти, мышь — осмотр, E — открыть дверцы')}
-          onClick={() => setWalk(!walk)}
-        >
-          {tr('Прогулка')}
-        </Button>
-        {hasActiveCabinet && !sceneError && !projectLoadError ? <ArButton /> : null}
-        <VrButton />
-        <Button
-          size="sm"
-          active={openness > 0}
-          title={`${tr('Открыть или закрыть двери и ящики')} (E)`}
-          onClick={() => setOpenness(openness > 0 ? 0 : 1)}
-        >
-          {openness > 0 ? tr('Закрыть створки') : tr('Распахнуть')}
-        </Button>
-        <Button
-          size="sm"
-          active={assemblyStep !== null}
-          title={tr('Показать сборку по шагам')}
-          onClick={() => setAssemblyStep(assemblyStep === null ? 1 : null)}
-        >
-          {tr('Сборка')}
-        </Button>
-        {assemblyStep !== null ? (
-          <span className="flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2 py-0.5 dark:border-neutral-700 dark:bg-neutral-900">
-            <input
-              type="range"
-              aria-label={tr('Показать сборку по шагам')}
-              className="w-20 accent-neutral-900 dark:accent-neutral-100"
-              min={1}
-              max={Math.max(1, projectPanels.length)}
-              value={Math.min(assemblyStep, projectPanels.length)}
-              onChange={(e) => setAssemblyStep(Number(e.target.value))}
-            />
-            <span className="text-[10px] tabular-nums text-neutral-500">
-              {Math.min(assemblyStep, projectPanels.length)} / {projectPanels.length}
-            </span>
-          </span>
-        ) : null}
-      </div>
 
       {production.error ? (
         <div role="alert" className="border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
@@ -1095,12 +1076,12 @@ export function Workspace() {
           Телефонда жасырын: PRO100 макеті десктопқа арналған.
         */}
         <div className="p100-side-tools hidden border-r border-neutral-200 lg:flex lg:flex-col lg:items-center lg:gap-1 lg:py-1.5 dark:border-neutral-800">
-          <ClassicTool icon="view" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
+          <ClassicTool icon="select" label={tr('Выбор')} action={() => setSelected(null)} active={!selected} onHover={setHoveredToolLabel} />
         </div>
         <div className="flex min-h-0 flex-col">
         {/* Телефонда 3D көрінеді, ал секция редакторына бөлек scroll биіктігі қалады. */}
         {!walk && <div data-testid="mobile-tree-dock" className="relative z-20 shrink-0 px-2 pt-1 lg:hidden"><TreeDock request={dockRequest} /></div>}
-        <main className="relative isolate h-[28dvh] min-h-[240px] max-h-[28dvh] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
+        <main className="relative isolate h-[40dvh] min-h-[337px] flex-none overflow-hidden lg:h-auto lg:min-h-64 lg:max-h-none lg:flex-1" data-tour="scene">
           <WorkspaceDock>
           {/* absolute inset-0 — канвас өлшемі бірінші кадрда-ақ анық болуы үшін */}
           <div className="absolute inset-0">
@@ -1209,7 +1190,7 @@ export function Workspace() {
             </div>}
         </section>
         </div>
-        <aside className="relative z-10 flex h-[60dvh] min-h-[360px] max-h-[60dvh] flex-col overflow-hidden border-l border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
+        <aside className="relative z-10 flex h-[45dvh] min-h-[320px] max-h-[45dvh] flex-col overflow-hidden border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:hidden">
           {/* Қай модуль өңделіп жатыр — панельдің басында, қатесіз оқылатындай. */}
           <div className="border-b border-neutral-200 px-3 py-2 dark:border-neutral-800 lg:hidden">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
@@ -1282,7 +1263,7 @@ export function Workspace() {
         </aside>
       </div>
       <footer className="p100-status hidden lg:flex" role="status" data-testid="p100-status">
-        <span>{classicToolStatus(hoveredToolLabel, selected, activeNode?.name, tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
+        <span>{classicToolStatus(hoveredToolLabel, selected, selectedStatusName(selected, projectPanels, activeNode?.name), tr('Выбран элемент'), tr('Элемент не выбран'))}</span>
         {selected && activeNode && <span className="ml-auto tabular-nums">
           {tr('Положение')}: X {activeNode.transform.pos.x} · Y {activeNode.transform.pos.y} · Z {activeNode.transform.pos.z} мм
           {' · '}{tr('Размеры')}: {activeNode.kind === 'cabinet'
