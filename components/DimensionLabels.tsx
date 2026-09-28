@@ -4,6 +4,7 @@
 
 import { Html } from '@react-three/drei'
 import type { CabinetConfig } from '@/src/core/index'
+import { dimensionLabelPositions } from '@/lib/dimensionLabelPlacement'
 
 function Label({ position, text }: { position: [number, number, number]; text: string }) {
   return (
@@ -17,11 +18,12 @@ function Label({ position, text }: { position: [number, number, number]; text: s
 
 export function DimensionLabels({ cabinet }: { cabinet: CabinetConfig }) {
   const { height: H, width: W, depth: D } = cabinet
+  const positions = dimensionLabelPositions(H, W, D)
   return (
     <>
-      <Label position={[-90, H / 2, 0]} text={`${H} (H)`} />
-      <Label position={[W / 2, H + 80, 0]} text={`${W} (W)`} />
-      <Label position={[W + 70, H / 3, D / 2]} text={`${D} (D)`} />
+      <Label position={positions.height} text={`${H} (H)`} />
+      <Label position={positions.width} text={`${W} (W)`} />
+      <Label position={positions.depth} text={`${D} (D)`} />
     </>
   )
 }
