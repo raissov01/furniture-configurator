@@ -698,6 +698,7 @@ export const en: Record<string, string> = {
   'Возврат заменяет текущий проект целиком. Ctrl+Z вернёт обратно.':
     'Restoring replaces the whole current project. Ctrl+Z undoes it.',
   'Горячие клавиши': 'Keyboard shortcuts',
+  'Дополнительные инструменты': 'More tools',
   'Вид: фас': 'View: front',
   'Вид: 3/4': 'View: 3/4',
   'Вид: внутри': 'View: inside',

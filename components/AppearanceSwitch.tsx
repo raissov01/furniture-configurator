@@ -10,12 +10,11 @@
 
 import { useEffect, useState } from 'react'
 import { t as tr } from '@/lib/i18n'
-import { Button } from '@/components/ui'
+import { Button, MenuItem } from '@/components/ui'
 import { THEME_EVENT, applyTheme, chooseTheme, readQuality, readTheme, saveQuality } from '@/lib/appearance'
 import type { Quality, Theme } from '@/lib/appearance'
 import { useConfigurator } from '@/store/configurator'
 
-const THEME_ICON: Record<Theme, string> = { system: '◐', light: '☀', dark: '☾' }
 const THEME_NAME: Record<Theme, string> = {
   system: 'Как в системе',
   light: 'Светлая',
@@ -27,7 +26,7 @@ const QUALITY_NAME: Record<Quality, string> = {
   high: 'Максимум',
 }
 
-export function AppearanceSwitch() {
+export function AppearanceSwitch({ menu = false }: { menu?: boolean }) {
   const [theme, setTheme] = useState<Theme>('system')
   const quality = useConfigurator((s) => s.quality)
   const setQuality = useConfigurator((s) => s.setQuality)
@@ -58,17 +57,22 @@ export function AppearanceSwitch() {
     saveQuality(next)
   }
 
+  if (menu) return <>
+    <MenuItem onClick={cycleTheme}>{tr('Тема')}: {tr(THEME_NAME[theme])}</MenuItem>
+    <MenuItem onClick={cycleQuality}>{tr('Качество 3D')}: {tr(QUALITY_NAME[quality])}</MenuItem>
+  </>
+
   return (
     <div className="flex items-center gap-1">
       <Button onClick={cycleTheme} title={`${tr('Тема')}: ${tr(THEME_NAME[theme])}`}>
-        {THEME_ICON[theme]}
+        {tr('Тема')}: {tr(THEME_NAME[theme])}
       </Button>
       <Button
         onClick={cycleQuality}
         active={quality !== 'high'}
         title={`${tr('Качество 3D')}: ${tr(QUALITY_NAME[quality])}`}
       >
-        {quality === 'high' ? '3D↑' : quality === 'medium' ? '3D=' : '3D↓'}
+        {tr('Качество 3D')}: {tr(QUALITY_NAME[quality])}
       </Button>
     </div>
   )

@@ -22,6 +22,7 @@ import { H2, Section, Titled } from '@/components/site/parts'
 import { Cta, Dimension, Sheet } from '@/components/brand'
 import { RevealList } from '@/components/site/motion'
 import { DetailTable } from '@/components/site/DetailTable'
+import { keepDashWithPreviousWord } from '@/lib/typography'
 
 const ReferenceCabinetFigure = dynamic(() => import('@/components/site/ReferenceCabinetFigure'), {
   ssr: false,
@@ -96,7 +97,7 @@ function LandingContent() {
                 className="text-[2.6rem] leading-[0.98] sm:text-6xl lg:text-[4.2rem]"
                 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.015em' }}
               >
-                {tr('Корпус, раскрой и цена — из одной модели')}
+                {keepDashWithPreviousWord(tr('Корпус, раскрой и цена — из одной модели'))}
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
                 {tr('Задаёте габарит — получаете деталировку с колонками «готовый» и «рез», карту раскроя на печать и коммерческое предложение. На ваших материалах, по вашим ценам и вашим правилам сборки.')}
