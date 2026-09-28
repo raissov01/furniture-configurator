@@ -2399,4 +2399,6 @@ export const uz: Record<string, string> = {
   'Навигация': 'Menyu',
 
 
+  'Присадка (рентген)': 'Teshiklar (rentgen)',
+
 }

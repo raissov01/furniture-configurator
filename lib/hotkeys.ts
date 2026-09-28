@@ -16,6 +16,7 @@ export type HotkeyAction =
   | { kind: 'preset'; preset: CameraPreset }
   | { kind: 'fit' }
   | { kind: 'viewMode' }
+  | { kind: 'xray' }
   | { kind: 'fronts' }
   | { kind: 'openness' }
   | { kind: 'projection' }
@@ -53,6 +54,7 @@ export const HOTKEYS: Hotkey[] = [
   { keys: '5', match: ['5'], description: 'Вид: комната', action: { kind: 'preset', preset: 'room' } },
   { keys: 'F', match: ['f'], description: 'Вписать в кадр', action: { kind: 'fit' } },
   { keys: 'T', match: ['t'], description: 'Прозрачность: тело → полупрозрачно → контур', action: { kind: 'viewMode' } },
+  { keys: 'X', match: ['x'], description: 'Присадка (рентген)', action: { kind: 'xray' } },
   { keys: 'H', match: ['h'], description: 'Показать или скрыть фасады', action: { kind: 'fronts' } },
   { keys: 'E', match: ['e'], description: 'Открыть или закрыть двери и ящики', action: { kind: 'openness' } },
   { keys: 'O', match: ['o'], description: 'Проекция: перспектива ↔ ортогональная', action: { kind: 'projection' } },

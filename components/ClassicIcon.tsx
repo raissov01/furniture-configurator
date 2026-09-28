@@ -47,8 +47,8 @@ export function ClassicIcon({ name }: { name: ClassicIconName }) {
     mirror: <><path d="M9 1v16M2 5l5-2v11l-5-2zM16 5l-5-2v11l5-2z"/><path d="M3 9h3m6 0h3" stroke={blue}/></>,
     quote: <><path d="M4 2h10v14H4zM6 5h6M6 8h6M6 11h3"/><path d="M11 13h2" stroke={blue}/></>,
     drill: <><path d="M3 3h12v12H3zM9 4v10M4 9h10"/><circle cx="9" cy="9" r="2.5" fill={blue}/></>,
+    xray: <><path d="m2 5 7-3 7 3v9l-7 3-7-3zM2 5l7 3 7-3M9 8v9"/><circle cx="9" cy="9" r="2" fill={blue}/><path d="M4 5.5 14 14" strokeDasharray="2 2"/></>,
     assembly: <><path d="M2 3h5v5H2zM11 3h5v5h-5zM6.5 12h5v5h-5z"/><path d="M7 5h4M9 8v4M4 8v4h2m8-4v4h-2" stroke={blue}/></>,
-
 
     walk: <><circle cx="9" cy="3" r="2"/><path d="m9 5 2 4-3 2-3 5m6-7 3 2m-5 0 4 5" stroke={blue}/></>,
     doors: <><path d="M2 2h14v14H2zM9 2v14M5 8h1m6 0h1"/><path d="m2 16 3-2m11 2-3-2" stroke={blue}/></>,

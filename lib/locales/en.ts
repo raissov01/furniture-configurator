@@ -2394,4 +2394,6 @@ export const en: Record<string, string> = {
   'Навигация': 'Menu',
 
 
+  'Присадка (рентген)': 'Drilling X-ray',
+
 }
