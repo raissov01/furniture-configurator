@@ -588,7 +588,7 @@ function CameraRig({
   return <OrbitControls ref={setControls} makeDefault enableDamping dampingFactor={0.12} />
 }
 
-function CabinetGroup({
+export function CabinetGroup({
   item, catalog, active, cabinetCount, stepOf, allowDimensionLabels, settings,
 }: {
   item: SceneItem
