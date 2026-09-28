@@ -47,6 +47,9 @@ import {
 } from './libraryCatalogLogic'
 import type { BasisFittingItem, BasisModuleItem, LibraryTabId } from './libraryCatalogLogic'
 import { CatalogThumb } from './CatalogThumb'
+import { BASIS_MODULES } from '@/src/core/data/basisModules'
+import basisPreviews from '@/public/library/basis/catalog.json'
+import { basisModulePreview, pro100BasisPreview } from '@/lib/basisPreview'
 import { PersonalLibraryPanel } from './PersonalLibraryPanel'
 import { parsePropCoordinate } from '@/lib/propCoordinateUi'
 import { makePropLibraryItem, placedProps, PROP_CATALOG, removePropNode } from '@/src/core/propCatalog'
@@ -411,7 +414,7 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
       title={reason ?? (item.path.length > 1 ? categoryLabel(item.path) : undefined)}
     >
       <div className="h-16 w-full">
-        <CatalogThumb parsed={item.parsed} />
+        <LibraryImage src={pro100BasisPreview(item, BASIS_MODULES, basisPreviews)} parsed={item.parsed} />
       </div>
       <div className="w-full truncate text-[10px] text-neutral-300">{item.name}</div>
       {dims.length > 0 ? (
@@ -420,6 +423,13 @@ function CabinetTile({ item, onSelect }: { item: Pro100LibraryItem; onSelect?: (
       {onSelect && reason ? <span className="w-full text-[9px] text-[var(--p100-warning)]">{reason}</span> : null}
     </button>
   )
+}
+
+function LibraryImage({ src, parsed }: { src: string | null; parsed: Pro100LibraryItem['parsed'] }) {
+  const [failed, setFailed] = React.useState(false)
+  React.useEffect(() => setFailed(false), [src])
+  return src && !failed ? <img src={src} alt="" loading="lazy" decoding="async"
+    onError={() => setFailed(true)} className="h-full w-full object-contain" /> : <CatalogThumb parsed={parsed} />
 }
 
 // ── Бір материал ұяшығы («Материалы» табы) ──────────────────────────────────
@@ -466,6 +476,11 @@ function BasisModuleTile({ item, onSelect }: { item: BasisModuleItem; onSelect: 
         : tr('Конструкция или фурнитура модуля не поддерживается')
   return <button type="button" disabled={!choice.allowed} onClick={onSelect} title={reason ?? undefined}
     className={cn('flex flex-col gap-1 border border-[var(--p100-fieldset-border)] bg-[var(--p100-dialog-content)] p-1.5 text-left text-[10px]', choice.allowed ? 'hover:border-[var(--p100-focus)]' : 'cursor-default opacity-70')}>
+    {/* F00p: Базис архивіндегі нақты нобай; жоқ болса параметрлік сызба. */}
+    <div className="h-16 w-full"><LibraryImage src={basisModulePreview(item.module, basisPreviews)} parsed={{
+      position: item.module.kind === 'wall' ? 'upper' : item.module.kind === 'base' ? 'lower' : 'combined',
+      doorCount: item.module.doors ?? undefined, drawerCount: item.module.drawers ?? undefined,
+    }} /></div>
     <div className="truncate text-[var(--p100-text)]" title={item.name}>{item.name}</div>
     {item.module.height !== null && item.module.width !== null && item.module.depth !== null ?
       <div className="tabular-nums text-[var(--p100-muted)]">{item.module.height} (H) × {item.module.width} (W) × {item.module.depth} (D) {tr('мм')}</div> : null}

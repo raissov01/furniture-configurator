@@ -11,6 +11,7 @@
  * tanimay qoladi. Interfeysning o'z tili esa to'liq o'zbekcha.
  */
 export const uz: Record<string, string> = {
+  'Загрузить превью': 'Tasvirni yuklash',
   'Код': 'Kod',
   'Код: ровно 6 цифр': 'Kod: aynan 6 ta raqam kiriting',
   'Проверить код': 'Kodni tekshirish',
