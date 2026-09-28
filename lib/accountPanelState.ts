@@ -19,6 +19,12 @@ export function accountFormErrors(mode: AccountMode, form: AccountForm, invited:
   return errors
 }
 
+export function visibleAccountErrors(mode: AccountMode, form: AccountForm, invited: boolean,
+  touched: Record<keyof AccountForm, boolean>, submitted: boolean) {
+  const errors = accountFormErrors(mode, form, invited)
+  return Object.fromEntries(Object.entries(errors).filter(([field]) => submitted || touched[field as keyof AccountForm])) as typeof errors
+}
+
 export function canSubmitAccount(mode: AccountMode, form: AccountForm, invited: boolean): boolean {
   return Object.keys(accountFormErrors(mode, form, invited)).length === 0
 }

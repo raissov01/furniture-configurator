@@ -20,7 +20,7 @@ import type { CloudSelection } from '@/lib/f24UiLogic'
 import { useConfigurator } from '@/store/configurator'
 import { Button, Field } from '@/components/ui'
 import { CommentsInbox } from '@/components/CommentsInbox'
-import { accountFormErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
+import { visibleAccountErrors, canSubmitAccount, inviteShopDisplay, memberRemovalWarning, revokeError, shouldCloseAccountOnKey } from '@/lib/accountPanelState'
 import { useModalLayer } from '@/lib/useModalLayer'
 import { bindCloudProject } from '@/lib/cloudProjectBinding'
 import { installationCreateAction } from '@/lib/installationHandoff'
@@ -67,6 +67,8 @@ export function AccountPanel() {
   const [profileReady, setProfileReady] = useState(false)
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState({ email: '', password: '', shopName: '' })
+  const [formTouched, setFormTouched] = useState({ email: false, password: false, shopName: false })
+  const [formSubmitted, setFormSubmitted] = useState(false)
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [installations, setInstallations] = useState<InstallationRow[]>([])
   const [org, setOrg] = useState<CloudOrg>(() => parseCloudOrg(null))
@@ -107,7 +109,7 @@ export function AccountPanel() {
   const [notice, setNotice] = useState<string | null>(null)
   const [cloudRetry, setCloudRetry] = useState(false)
   const [busy, setBusy] = useState(false)
-  const formErrors = accountFormErrors(mode, form, Boolean(invite))
+  const formErrors = visibleAccountErrors(mode, form, Boolean(invite), formTouched, formSubmitted)
   const formReady = canSubmitAccount(mode, form, Boolean(invite)) && (!invite || mode === 'login' || inviteShopName !== null)
   const inviteShop = inviteShopDisplay(invite, inviteShopName)
 
@@ -311,6 +313,7 @@ export function AccountPanel() {
   }, [account, shop, profileReady])
 
   const submit = async () => {
+    setFormSubmitted(true)
     if (busy || !formReady) return
     setBusy(true)
     setError(null)
@@ -330,6 +333,8 @@ export function AccountPanel() {
       setAccount(data.account)
       window.dispatchEvent(new Event(LIBRARY_AUTH_CHANGED_EVENT))
       setForm({ email: '', password: '', shopName: '' })
+      setFormTouched({ email: false, password: false, shopName: false })
+      setFormSubmitted(false)
       /*
        * Үшеуі ҚАТАР жүреді. Бұрын кезекпен күтетін, ал әрқайсысы бөлек
        * баруы серверге дейінгі кідірісті ҮШ ЕСЕЛЕЙТІН: жақын тұрған дев
@@ -822,14 +827,15 @@ export function AccountPanel() {
         ) : (
           <div className="space-y-3">
             <div className="flex gap-1">
-              <Button active={mode === 'login'} onClick={() => setMode('login')}>{tr('Вход')}</Button>
-              <Button active={mode === 'register'} onClick={() => setMode('register')}>{tr('Регистрация')}</Button>
+              <Button active={mode === 'login'} onClick={() => { setMode('login'); setFormSubmitted(false) }}>{tr('Вход')}</Button>
+              <Button active={mode === 'register'} onClick={() => { setMode('register'); setFormSubmitted(false) }}>{tr('Регистрация')}</Button>
             </div>
 
             {mode === 'register' && inviteShop.editable ? (
               <Field label={tr('Название цеха')} hint={tr('Пустое название станет «Мой цех»; до 100 символов')}>
                 <input className={`${input} ${formErrors.shopName ? 'border-red-500 dark:border-red-500' : ''}`} value={form.shopName} placeholder={tr('Цех «Алаш»')}
                   aria-invalid={Boolean(formErrors.shopName)}
+                  onBlur={() => setFormTouched((value) => ({ ...value, shopName: true }))}
                   onChange={(e) => setForm({ ...form, shopName: e.target.value })} />
                 {formErrors.shopName ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.shopName)}</span> : null}
               </Field>
@@ -842,12 +848,14 @@ export function AccountPanel() {
             <Field label={tr('Почта')}>
               <input className={`${input} ${formErrors.email ? 'border-red-500 dark:border-red-500' : ''}`} type="email" autoComplete="email" value={form.email}
                 aria-invalid={Boolean(formErrors.email)}
+                onBlur={() => setFormTouched((value) => ({ ...value, email: true }))}
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
               {formErrors.email ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.email)}</span> : null}
             </Field>
             <Field label={tr('Пароль')} hint={mode === 'register' ? tr('от 8 символов') : undefined}>
               <input className={`${input} ${formErrors.password ? 'border-red-500 dark:border-red-500' : ''}`} type="password"
                 aria-invalid={Boolean(formErrors.password)}
+                onBlur={() => setFormTouched((value) => ({ ...value, password: true }))}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                 value={form.password}
                 onKeyDown={(e) => { if (e.key === 'Enter') void submit() }}
@@ -855,7 +863,7 @@ export function AccountPanel() {
               {formErrors.password ? <span role="alert" className="block text-xs text-red-700 dark:text-red-400">{tr(formErrors.password)}</span> : null}
             </Field>
 
-            <Button onClick={() => void submit()} disabled={busy || !formReady} active>
+            <Button onClick={() => void submit()} disabled={busy || Boolean(invite && mode === 'register' && inviteShopName === null)} active>
               {mode === 'login' ? tr('Войти') : tr('Создать аккаунт')}
             </Button>
 
