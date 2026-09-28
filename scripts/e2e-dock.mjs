@@ -66,7 +66,7 @@ async function run() {
   const project = await h.evaluate("JSON.parse(localStorage.getItem('furniture-configurator:project'))")
   project.room = { ...project.room, width: 5000, depth: 4500 }
 
-  for (const style of ['classic', 'ours']) {
+  for (const style of ['classic']) {
     // Inject on the next document: the outgoing Workspace saves on pagehide.
     const injection = await session.send('Page.addScriptToEvaluateOnNewDocument', { source:
       `localStorage.setItem('furniture-configurator:workspace-style', ${JSON.stringify(style)}); localStorage.setItem('furniture-configurator:project', ${JSON.stringify(JSON.stringify(project))}); localStorage.removeItem('furniture-configurator:workspace-dock')`,

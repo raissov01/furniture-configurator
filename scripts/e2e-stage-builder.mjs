@@ -54,7 +54,7 @@ try {
   session = await connect()
   const h = makeHelpers(session, base)
   await session.send('Page.addScriptToEvaluateOnNewDocument', {
-    source: "try { localStorage.setItem('furniture-configurator:workspace-style', 'ours') } catch {}",
+    source: "try { localStorage.setItem('furniture-configurator:workspace-style', 'classic') } catch {}",
   })
   const cases = [
     ['kitchen', 1280], ['wardrobe', 1280], ['tv', 1280],

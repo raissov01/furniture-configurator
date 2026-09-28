@@ -88,7 +88,7 @@ try {
       root: { kind: 'group', id: 'root', name: 'Special', transform: { pos: { x: 0, y: 0, z: 0 }, rot: { x: 0, y: 0, z: 0 } }, children: [node] },
     }
     const injection = await session.send('Page.addScriptToEvaluateOnNewDocument', {
-      source: `localStorage.setItem('furniture-configurator:project', ${JSON.stringify(JSON.stringify(project))}); localStorage.setItem('furniture-configurator:workspace-style', 'ours')`,
+      source: `localStorage.setItem('furniture-configurator:project', ${JSON.stringify(JSON.stringify(project))}); localStorage.setItem('furniture-configurator:workspace-style', 'classic')`,
     })
     await h.goto('/configurator', 7000)
     await session.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: injection.identifier })

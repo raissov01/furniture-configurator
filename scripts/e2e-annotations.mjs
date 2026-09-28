@@ -117,17 +117,14 @@ try {
   assert(await h.until("Boolean(document.querySelector('[data-testid=annotation-properties]'))", 5000), 'reloaded annotation selection missing')
   assert(await h.evaluate("document.querySelector('[data-testid=annotation-properties]')?.querySelector('textarea')?.value==='Розетка орны'"), 'reloaded annotation editor missing')
   await h.evaluate("document.querySelector('[data-testid=classic-structure-window] button[aria-label=\"Закрыть\"]')?.click()")
-  // Our mode uses the same store and renderer; create a second text through its own control.
-  assert(await h.evaluate(`(() => { const select=document.querySelector('select[aria-label="Стиль рабочего места"]'); if (!select) return false;
-    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'ours'); select.dispatchEvent(new Event('change',{bubbles:true})); return true })()`), 'mode switch missing')
-  assert(await h.until("Boolean(document.querySelector('[data-workspace-style=ours]'))", 5000), 'our mode missing')
-  assert(await h.evaluate("(() => { const b=document.querySelector('[data-testid=add-annotation]'); if (!b) return false; b.click(); return true })()"), 'our mode add text missing')
-  assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children.filter(n=>n.kind==='annotation').length===2", 10000), 'our mode annotation did not persist')
-  assert(JSON.stringify(await h.cutListRows()) === JSON.stringify(before), 'our mode text entered manufacturing cut list')
+  // The classic toolbar adds a second annotation after the saved one is reloaded.
+  assert(await h.evaluate("(() => { const b=document.querySelector('[data-testid=classic-tool-annotation]'); if (!b) return false; b.click(); return true })()"), 'classic add text missing')
+  assert(await h.until("JSON.parse(localStorage.getItem('furniture-configurator:project')).root.children.filter(n=>n.kind==='annotation').length===2", 10000), 'classic annotation did not persist')
+  assert(JSON.stringify(await h.cutListRows()) === JSON.stringify(before), 'classic text entered manufacturing cut list')
   await wait(1200)
-  assert(await h.evaluate("document.querySelector('canvas')?.toDataURL().length > 100000"), 'our mode 3D canvas blank')
+  assert(await h.evaluate("document.querySelector('canvas')?.toDataURL().length > 100000"), 'classic 3D canvas blank')
   const shotOurs = await session.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
-  writeFileSync(join(screenshots, 'annotation-ours.png'), Buffer.from(shotOurs.data, 'base64'))
+  writeFileSync(join(screenshots, 'annotation-classic.png'), Buffer.from(shotOurs.data, 'base64'))
   console.log(`annotation e2e: PASS; screenshots: ${screenshots}`)
 } catch (error) {
   console.error('annotation e2e: FAIL', error)

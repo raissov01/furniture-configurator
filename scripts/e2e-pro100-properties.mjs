@@ -73,7 +73,7 @@ try {
   assert(await h.evaluate("Boolean(document.querySelector('[data-testid=classic-structure-window] .p100-floating-title button')?.click() ?? document.querySelector('[data-testid=classic-structure-window]'))"), 'Structure close missing')
   assert(await h.until("!document.querySelector('[data-testid=classic-structure-window]')", 5000), 'Structure window did not close')
   assert(await h.until("Boolean(document.querySelector('#scene-3d canvas') && document.querySelector('[data-testid=p100-status]'))", 20000), 'Classic scene missing')
-  await writeFile('docs/pro100/layout-compare/ours-03d3-workspace.png', Buffer.from((await session.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })).data, 'base64'))
+  await writeFile('docs/pro100/layout-compare/classic-03d3-workspace.png', Buffer.from((await session.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })).data, 'base64'))
   const { x, y } = await h.sceneCenter()
   for (let clickCount = 1; clickCount <= 2; clickCount += 1) {
     await session.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount })
@@ -81,7 +81,7 @@ try {
     await wait(100)
   }
   assert(await h.until("Boolean(document.querySelector('[data-testid=properties-dialog]'))", 8000), 'Double-click did not open Properties')
-  await writeFile('docs/pro100/layout-compare/ours-03d3-properties.png', Buffer.from((await session.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })).data, 'base64'))
+  await writeFile('docs/pro100/layout-compare/classic-03d3-properties.png', Buffer.from((await session.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })).data, 'base64'))
   const before = Number(await h.numberValue('Ширина (W)'))
   assert(Number.isInteger(before), 'Width input missing')
   const target = before + 100
@@ -93,10 +93,7 @@ try {
   const cutOpened = await h.evaluate("(() => { const root=document.querySelector('[data-tour=cutlist]'); const button=root?.querySelector('button'); if (!button) return false; button.click(); return true })()")
   assert(cutOpened, 'Cut list cannot open')
   assert(await h.until(`document.querySelector('[data-tour=cutlist]')?.textContent.includes('${target - 32}')`, 8000), 'Cut list did not reflect the new cabinet width')
-  await h.evaluate("(() => { const input = document.querySelector('.p100-toolbar select[aria-label]'); if (!input) return false; input.value = 'ours'; input.dispatchEvent(new Event('change', { bubbles: true })); return true })()")
-  assert(await h.until("document.querySelector('[data-workspace-style]')?.getAttribute('data-workspace-style') === 'ours'", 5000), 'Our layout did not restore')
-  assert(await h.evaluate("Boolean(document.querySelector('.legacy-tools') && getComputedStyle(document.querySelector('.legacy-tools')).display !== 'none')"), 'Our controls stayed hidden')
-  assert(await h.evaluate("!document.querySelector('[data-testid=classic-toolbar]')"), 'Classic controls stayed mounted in our layout')
+  assert(await h.evaluate("document.querySelector('[data-workspace-style]')?.getAttribute('data-workspace-style') === 'classic'"), 'Classic workspace changed after editing')
   console.log('PRO100 Properties e2e: PASS')
 } catch (error) {
   console.error('PRO100 Properties e2e: FAIL', error)

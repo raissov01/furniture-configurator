@@ -155,9 +155,8 @@ async function run() {
   // мен цех профилі жаңа жүгірісте эталон шкафты ауыстырып жіберер еді.
   await h.goto('/configurator', 6000)
   await h.evaluate('localStorage.clear()')
-  // Бұл ескі сценарийлер оң жақтағы тұрақты редакторды тексереді.
-  // Жаңа әдепкі классикалық жұмыс орны бөлек e2e сценарийінде тексеріледі.
-  await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'ours')")
+  // Барлық сценарий классикалық жұмыс орнын пайдаланады.
+  await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'classic')")
   // Сессия cookie-і де тазаланады: алдыңғы жүгіріс кірген күйде қалдырса,
   // тіркелу тесті «шыққан» экранды таппай қалады.
   await session.send('Network.clearBrowserCookies')
@@ -206,7 +205,7 @@ async function run() {
     }))()`)
     check(workspace.mark && workspace.title.includes('AisMebel'), 'классикалық жұмыс орнында бренд белгісі бар')
     check(Boolean(await snapshot('brand-workspace')), 'классикалық жұмыс орнының скриншоты сақталды')
-    await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'ours')")
+    await h.evaluate("localStorage.setItem('furniture-configurator:workspace-style', 'classic')")
 
     await session.send('Emulation.setDeviceMetricsOverride', {
       width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
@@ -1103,15 +1102,8 @@ async function run() {
   await test('Базис кітапханасы: Кухня және Gola санаттары көрінеді', async () => {
     await h.closeModals()
     await h.goto('/configurator', 11000)
-    check(await h.until(`Boolean(document.querySelector('select[aria-label="Стиль рабочего места"]'))`, 20000),
-      'редактор толық жүктелді')
-    await h.evaluate(`(() => {
-      const select = document.querySelector('select[aria-label="Стиль рабочего места"]')
-      if (select?.value !== 'ours') {
-        select.value = 'ours'
-        select.dispatchEvent(new Event('change', { bubbles: true }))
-      }
-    })()`)
+    check(await h.until("document.querySelector('[data-workspace-style=classic]') !== null", 10000),
+      'классикалық редактор толық жүктелді')
     check(await h.until(`Boolean([...document.querySelectorAll('button')]
       .find((button) => button.textContent.trim() === 'Библиотека'))`, 10000), 'кітапхана құралы көрінді')
     await h.clickText('Пропустить', 150)
