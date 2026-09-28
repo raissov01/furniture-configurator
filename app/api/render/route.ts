@@ -30,6 +30,7 @@ import { cloudOff } from '@/lib/server/cloud'
 import { addRenderRecord } from '@/lib/server/renderHistory'
 import type { RenderHistoryRecord } from '@/lib/server/renderHistory'
 import { currentAccount } from '@/lib/server/session'
+import { readLimitedBody } from '@/lib/server/readLimitedBody'
 import { ConfigValidationError } from '@/src/core/errors'
 import { estimateRenderCost, readRenderCostRates } from '@/src/core/render/cost'
 import type { RenderUsage } from '@/src/core/render/cost'
@@ -38,6 +39,8 @@ import { RENDER_HINT_MAX, RenderRequestSchema, buildRenderPrompt } from '@/src/c
 const MODEL = process.env['OPENAI_IMAGE_MODEL'] ?? 'gpt-image-1'
 /** Кірістің шегі: 3D скриншоты мен бөлме фотосы әдетте 1–3 МБ. */
 const MAX_BYTES = 8 * 1024 * 1024
+/** Екі 8 МиБ сурет base64 JSON-ға айналғандағы ең көп body, метадерекпен. */
+const MAX_RENDER_BODY_BYTES = 2 * Math.ceil(MAX_BYTES / 3) * 4 + 64 * 1024
 
 function decode(dataUrl: string): { bytes: Buffer; mime: string } {
   const comma = dataUrl.indexOf(',')
@@ -52,7 +55,14 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'ИИ-рендер не настроен: нет ключа OpenAI' }, { status: 503 })
   }
 
-  const raw = (await request.json().catch(() => null)) as unknown
+  const requestBytes = await readLimitedBody(request, MAX_RENDER_BODY_BYTES)
+  if (!requestBytes) return Response.json({ error: 'Снимок слишком большой', field: 'body' }, { status: 413 })
+  let raw: unknown = null
+  try {
+    raw = JSON.parse(new TextDecoder().decode(requestBytes)) as unknown
+  } catch {
+    // RenderRequestSchema below returns a named 400 validation error.
+  }
   const parsed = RenderRequestSchema.safeParse(raw)
   if (!parsed.success) {
     const issue = parsed.error.issues[0]

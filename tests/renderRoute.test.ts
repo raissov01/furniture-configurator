@@ -97,6 +97,25 @@ describe('/api/render', () => {
     expect(state.calls).toHaveLength(0)
   })
 
+  it('екі суретті body шегінен асса ағынды парсингке дейін тоқтатады', async () => {
+    let cancelled = false
+    let pulls = 0
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (pulls++ === 0) controller.enqueue(new Uint8Array(23 * 1024 * 1024))
+        else controller.close()
+      },
+      cancel() { cancelled = true },
+    }, { highWaterMark: 0 })
+    const response = await render.POST(new Request('http://localhost/api/render', {
+      method: 'POST', body: stream, duplex: 'half',
+    } as RequestInit))
+    expect(response.status).toBe(413)
+    expect(await response.json()).toMatchObject({ field: 'body' })
+    expect(cancelled).toBe(true)
+    expect(state.calls).toHaveLength(0)
+  })
+
   it('баға баптаудан, тиынмен', async () => {
     process.env['RENDER_COST_TIYN_PER_IMAGE'] = '12000'
     expect((await (await post({ image })).json() as { cost: unknown }).cost).toEqual({ tiyn: 12000, basis: 'flat' })

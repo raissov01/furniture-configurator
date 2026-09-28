@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { currentAccount } from '@/lib/server/session'
 import { enqueueJob } from '@/lib/server/jobs'
 import { parseInstallationAction } from '@/src/core/installation'
+import { can } from '@/lib/permissions'
 
 const Render = z.object({ kind: z.literal('render'), key: z.string().regex(/^photo\/[0-9a-f-]{36}$/),
   hint: z.string().max(300).optional(), style: z.enum(['scandinavian', 'modern', 'loft', 'classic']).optional() })
@@ -21,7 +22,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!parsed.success) return Response.json({ error: parsed.error.issues }, { status: 400 })
   const input = parsed.data
   if (input.kind === 'installation_sync' && account.role !== 'shop' && account.role !== 'owner') return Response.json({ error: 'Рұқсат жоқ' }, { status: 403 })
-  if (input.kind !== 'installation_sync' && account.role === 'shop') return Response.json({ error: 'Рұқсат жоқ' }, { status: 403 })
+  if (input.kind !== 'installation_sync' && !can(account.role, 'editProject')) return Response.json({ error: 'Рұқсат жоқ' }, { status: 403 })
   let payload: unknown = input
   if (input.kind === 'installation_sync') {
     try { payload = parseInstallationAction(input.action) } catch { return Response.json({ error: 'Монтаж әрекеті жарамсыз' }, { status: 400 }) }

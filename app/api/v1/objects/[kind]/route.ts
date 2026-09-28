@@ -1,5 +1,6 @@
 import { currentAccount } from '@/lib/server/session'
 import { objectStorage, type ObjectKind } from '@/lib/server/objectStorage'
+import { can } from '@/lib/permissions'
 
 type Context = { params: Promise<{ kind: string }> }
 const KINDS = new Set<ObjectKind>(['photo', 'render', 'library', 'shop-library', 'export'])
@@ -7,8 +8,10 @@ const KINDS = new Set<ObjectKind>(['photo', 'render', 'library', 'shop-library',
 export async function POST(request: Request, context: Context): Promise<Response> {
   const account = await currentAccount()
   if (!account) return Response.json({ error: 'Кіру қажет' }, { status: 401 })
-  if (account.role === 'shop' && (await context.params).kind !== 'photo') return Response.json({ error: 'Рұқсат жоқ' }, { status: 403 })
   const { kind } = await context.params
+  if (!can(account.role, 'editProject') && !(account.role === 'shop' && kind === 'photo')) {
+    return Response.json({ error: 'Рұқсат жоқ' }, { status: 403 })
+  }
   if (!KINDS.has(kind as ObjectKind)) return Response.json({ error: 'Файл түрі жарамсыз' }, { status: 400 })
   const length = Number(request.headers.get('content-length'))
   if (Number.isFinite(length) && length > 25_000_000) return Response.json({ error: 'Файл тым үлкен' }, { status: 413 })
