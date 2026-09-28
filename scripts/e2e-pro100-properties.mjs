@@ -58,19 +58,31 @@ try {
   assert(await h.until("document.querySelector('[data-workspace-style]')?.getAttribute('data-workspace-style') === 'classic'", 15000), 'Classic must be default')
   await h.evaluate("[...document.querySelectorAll('[data-testid=template-gallery-dialog] button')].find((button) => button.textContent?.trim() === 'Закрыть')?.click()")
   assert(await h.until("!document.querySelector('[data-testid=template-gallery-dialog]')", 5000), 'Starter gallery stayed open')
+  assert(await h.until("Boolean(document.querySelector('#scene-3d canvas'))", 20000), 'Classic scene did not hydrate')
   if (await h.until("[...document.querySelectorAll('button')].some((button) => button.textContent?.trim() === 'Пропустить')", 5000)) {
     await h.evaluate("[...document.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Пропустить')?.click()")
     assert(await h.until("![...document.querySelectorAll('button')].some((button) => button.textContent?.trim() === 'Пропустить')", 5000), 'Tour stayed open')
   }
-  assert(await h.evaluate("Boolean(document.querySelector('[data-testid=classic-tool-new]')?.click() ?? document.querySelector('[data-testid=classic-tool-new]'))"), 'Cannot add cabinet by classic icon')
+  // Keep the reference cabinet alone: adding another cabinet can constrain a width edit.
+  assert(await h.evaluate("Boolean(document.querySelector('[data-testid=classic-tool-new]'))"), 'Classic new cabinet icon missing')
+  await h.evaluate("(() => { const walk = document.querySelector('[data-testid=classic-tool-walk]'); if (walk?.getAttribute('aria-pressed') === 'true') walk.click() })()")
+  assert(await h.until("document.querySelector('[data-testid=classic-tool-walk]')?.getAttribute('aria-pressed') !== 'true'", 5000), 'Walk mode stayed active')
   assert(await h.evaluate("Boolean(document.querySelector('[data-testid=classic-tool-structure]')?.click() ?? document.querySelector('[data-testid=classic-tool-structure]'))"), 'Structure icon missing')
-  assert(await h.until("Boolean(document.querySelector('[data-testid=classic-structure-window]'))", 5000), 'Structure window did not open')
+  const structureOpened = await h.until("Boolean(document.querySelector('[data-testid=classic-structure-window]'))", 5000)
+  const structureState = structureOpened ? null : await h.evaluate(`(() => ({
+    width: innerWidth, desktop: matchMedia('(min-width: 1024px)').matches,
+    button: document.querySelector('[data-testid=classic-tool-structure]')?.outerHTML,
+    dock: Boolean(document.querySelector('[data-testid=tree-dock]')),
+    walk: document.querySelector('[data-testid=classic-tool-walk]')?.getAttribute('aria-pressed'),
+    modal: [...document.querySelectorAll('[role=dialog]')].map((node) => node.getAttribute('aria-label')),
+  }))()`)
+  assert(structureOpened, `Structure window did not open: ${JSON.stringify(structureState)}`)
   const floatTitle = await h.evaluate("(() => { const rect = document.querySelector('[data-testid=classic-structure-window] .p100-floating-title').getBoundingClientRect(); return { x: rect.x + 80, y: rect.y + 12, left: rect.x } })()")
   await session.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: floatTitle.x, y: floatTitle.y, button: 'left', clickCount: 1 })
   await session.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: floatTitle.x + 100, y: floatTitle.y + 30, button: 'left', buttons: 1 })
   await session.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: floatTitle.x + 100, y: floatTitle.y + 30, button: 'left', clickCount: 1 })
   assert(await h.evaluate(`document.querySelector('[data-testid=classic-structure-window]').getBoundingClientRect().left > ${floatTitle.left + 50}`), 'Structure window did not move')
-  assert(await h.evaluate("Boolean(document.querySelector('[data-testid=classic-structure-window] .p100-floating-title button')?.click() ?? document.querySelector('[data-testid=classic-structure-window]'))"), 'Structure close missing')
+  assert(await h.evaluate("Boolean(document.querySelector('[data-testid=classic-structure-window] .p100-floating-title button:last-of-type')?.click() ?? document.querySelector('[data-testid=classic-structure-window]'))"), 'Structure close missing')
   assert(await h.until("!document.querySelector('[data-testid=classic-structure-window]')", 5000), 'Structure window did not close')
   assert(await h.until("Boolean(document.querySelector('#scene-3d canvas') && document.querySelector('[data-testid=p100-status]'))", 20000), 'Classic scene missing')
   await writeFile('docs/pro100/layout-compare/classic-03d3-workspace.png', Buffer.from((await session.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })).data, 'base64'))
@@ -86,13 +98,27 @@ try {
   assert(Number.isInteger(before), 'Width input missing')
   const target = before + 100
   assert(await h.setNumberByLabel('Ширина (W)', target), 'Cannot edit width')
-  assert(await h.clickText('OK'), 'Cannot confirm Properties')
+  const okState = await h.evaluate(`(() => {
+    const dialog = document.querySelector('[data-testid=properties-dialog]')
+    const button = dialog?.querySelector('[data-testid=properties-ok]')
+    const width = [...(dialog?.querySelectorAll('label') ?? [])].find((label) => label.textContent.includes('Ширина (W)'))?.querySelector('input')
+    if (button && !button.disabled) button.click()
+    return { clicked: Boolean(button && !button.disabled), width: width?.value,
+      invalid: dialog?.querySelector('[data-testid=properties-invalid]')?.textContent ?? null,
+      alerts: [...(dialog?.querySelectorAll('[role=alert]') ?? [])].map((node) => node.textContent) }
+  })()`)
+  assert(okState.clicked, `Cannot confirm Properties: ${JSON.stringify(okState)}`)
   assert(await h.until("!document.querySelector('[data-testid=properties-dialog]')", 5000), 'Properties stayed open')
   assert(await h.waitForSavedCabinetWidth(target), 'Changed width was not saved')
   assert(await h.evaluate(`document.querySelector('[data-testid=p100-status]')?.textContent.includes('${target} (W)')`), 'Status did not update')
   const cutOpened = await h.evaluate("(() => { const root=document.querySelector('[data-tour=cutlist]'); const button=root?.querySelector('button'); if (!button) return false; button.click(); return true })()")
   assert(cutOpened, 'Cut list cannot open')
   assert(await h.until(`document.querySelector('[data-tour=cutlist]')?.textContent.includes('${target - 32}')`, 8000), 'Cut list did not reflect the new cabinet width')
+  assert(await h.evaluate("Boolean(document.querySelector('[data-testid=classic-tool-xray]')?.click() ?? document.querySelector('[data-testid=classic-tool-xray]'))"), 'X-ray tool missing')
+  assert(await h.until("Boolean(document.querySelector('[data-testid=xray-legend]'))", 5000), 'X-ray legend did not appear')
+  assert(await h.evaluate("document.querySelector('[data-testid=classic-tool-xray]')?.getAttribute('aria-pressed') === 'true'"), 'X-ray tool did not activate')
+  await h.evaluate("document.querySelector('[data-testid=classic-tool-xray]')?.click()")
+  assert(await h.until("!document.querySelector('[data-testid=xray-legend]')", 5000), 'X-ray legend stayed after toggling off')
   assert(await h.evaluate("document.querySelector('[data-workspace-style]')?.getAttribute('data-workspace-style') === 'classic'"), 'Classic workspace changed after editing')
   console.log('PRO100 Properties e2e: PASS')
 } catch (error) {

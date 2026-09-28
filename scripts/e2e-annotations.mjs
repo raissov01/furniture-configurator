@@ -84,7 +84,7 @@ try {
   assert(await h.until("Boolean(document.querySelector('[data-workspace-style=classic]') && document.querySelector('canvas'))", 20000), 'classic 3D missing')
   const before = await h.cutListRows()
   assert(before.length > 0, 'fixture cut list missing')
-  assert(await h.evaluate("(() => { const b=document.querySelector('[data-testid=classic-tool-annotation-side]'); if (!b) return false; b.click(); return true })()"), 'classic add text missing')
+  assert(await h.evaluate("(() => { const b=document.querySelector('[data-testid=classic-tool-annotation]'); if (!b) return false; b.click(); return true })()"), 'classic add text missing')
   assert(await h.until("Boolean(document.querySelector('[data-testid=annotation-properties]'))", 10000), 'annotation editor missing')
   assert(await h.evaluate(`(() => {
     const area=document.querySelector('[data-testid=annotation-properties] textarea')

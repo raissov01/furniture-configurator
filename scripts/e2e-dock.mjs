@@ -77,16 +77,27 @@ async function run() {
     assert(await h.until(`document.querySelector('[data-workspace-style="${style}"]') !== null`, 10000), `${style}: режим ашылмады`)
     assert(await h.until("(() => { const r=JSON.parse(localStorage.getItem('furniture-configurator:project')).room; return r.width===5000 && r.depth===4500 })()", 10000), `${style}: импорт алдындағы өлшем қате`)
 
+    assert(await h.evaluate("Boolean(document.querySelector('[data-testid=classic-tool-find]')?.click() ?? document.querySelector('[data-testid=classic-tool-find]'))"), `${style}: Найти құралы жоқ`)
+    assert(await h.until("Boolean(document.querySelector('[data-testid=classic-structure-window] [data-panel=find]'))", 5000), `${style}: Найти ашылмады`)
     for (const [id, title] of [
-      ['find', 'Найти'], ['price', 'Прайс-лист'], ['dimensions', 'Размеры'],
+      ['price', 'Прайс-лист'], ['dimensions', 'Размеры'],
       ['info', 'Информация'], ['import', 'Импорт'],
     ]) {
-      assert(await h.clickText(`Открыть ${title}`, 150), `${style}: ${title} ашу батырмасы жоқ`)
+      const opened = await h.evaluate(`(() => {
+        const menu = document.querySelector('[data-testid=workspace-dock-host] details.p100-dock-closed-tab')
+        if (!menu) return false
+        menu.open = true
+        const button = [...menu.querySelectorAll('[role=menuitem]')].find((node) => node.textContent?.trim() === ${JSON.stringify(title)})
+        if (!button) return false
+        button.click()
+        return true
+      })()`)
+      assert(opened, `${style}: ${title} ашу батырмасы жоқ`)
       assert(await h.until(`document.querySelector('[data-dock-panel="${id}"]')?.dataset.dockHidden === 'false'`, 5000), `${style}: ${title} ашылмады`)
     }
 
     const searchReady = await h.evaluate(`(() => {
-      const input = document.querySelector('[data-dock-panel="find"] input[type="text"]')
+      const input = document.querySelector('[data-testid="classic-structure-window"] [data-panel="find"] input[type="text"]')
       if (!input) return false
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
       setter.call(input, 'Боковина')

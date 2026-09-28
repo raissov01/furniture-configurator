@@ -235,11 +235,10 @@ async function run() {
 
   await test('Эталон шкаф: 6 позиция / 11 деталь', async () => {
     await h.goto('/configurator', 11000)
-    const body = await h.text()
-    check(body.includes('Позиций: 6'), 'позиция саны 6')
-    check(body.includes('Деталей: 11'), 'деталь саны 11')
     const rows = await h.cutListRows()
-    check(rows.length === 6, `кестеде 6 жол (${rows.length})`)
+    check(rows.length === 6, `позиция саны 6 (${rows.length})`)
+    const quantity = rows.reduce((sum, row) => sum + Number(row[1] ?? 0), 0)
+    check(quantity === 11, `деталь саны 11 (${quantity})`)
     check(rows.some((r) => r[0] === 'Боковина'), 'боковина бар')
   })
 
@@ -297,7 +296,11 @@ async function run() {
       return true
     })()`)
     check(await chooseJoint('minifix'), 'минификс таңдалды')
-    check(await h.until(`document.body.innerText.includes('Источник: этот корпус')`, 3000), 'шкаф override-ы көрінеді')
+    check(await h.until(`(() => {
+      const root = JSON.parse(localStorage.getItem('furniture-configurator:project') ?? '{}').root
+      const find = (node) => node?.kind === 'cabinet' ? node : node?.children?.map(find).find(Boolean)
+      return find(root)?.config?.carcassJoint === 'minifix'
+    })()`, 5000), 'шкаф override-ы сақталды')
     check(await h.clickText('Открыть присадку', 400), 'жаңа присадка ашылды')
     check((await h.text()).includes('Минификс'), 'жаңа типтің тесіктері көрсетіледі')
     await h.closeModals()
@@ -330,9 +333,12 @@ async function run() {
     check(await h.clickText('Наборы', 1200), 'наборы табы ашылды')
     check(await h.clickContains('Угловой шкаф', 3500), 'жиынтық таңдалды')
     await h.closeModals()
-    // Тақырыптағы белгі: «N панелей · корпусов: M».
-    const body = await h.text()
-    check(/корпусов: [2-9]/.test(body), `бірнеше корпус жүктелді (${body.match(/корпусов: \d+/)?.[0] ?? '—'})`)
+    const cabinetCount = await h.evaluate(`(() => {
+      const root = JSON.parse(localStorage.getItem('furniture-configurator:project') ?? '{}').root
+      const count = (node) => node?.kind === 'cabinet' ? 1 : (node?.children ?? []).reduce((sum, child) => sum + count(child), 0)
+      return count(root)
+    })()`)
+    check(cabinetCount >= 2, `бірнеше корпус жүктелді (${cabinetCount})`)
   })
 
   await test('Нарисовать: перегородка, ящики, штанга', async () => {
@@ -356,11 +362,22 @@ async function run() {
       await session.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 })
       await h.wait(700)
     }
-    const sections = () => h.evaluate(`(document.body.innerText.match(/Секции \\((\\d+)\\)/i) || [])[1]`)
+    const sections = () => h.evaluate(`(() => {
+      const root = JSON.parse(localStorage.getItem('furniture-configurator:project') ?? '{}').root
+      const count = (node) => node?.kind === 'cabinet' ? node.config.sections.length :
+        (node?.children ?? []).reduce((sum, child) => sum + count(child), 0)
+      return count(root)
+    })()`)
 
     const before = await sections()
     await h.clickText('Перегородка', 500)
     await at(0.5, 0.5)
+    await h.until(`(() => {
+      const root = JSON.parse(localStorage.getItem('furniture-configurator:project') ?? '{}').root
+      const count = (node) => node?.kind === 'cabinet' ? node.config.sections.length :
+        (node?.children ?? []).reduce((sum, child) => sum + count(child), 0)
+      return count(root) === ${Number(before) + 1}
+    })()`, 10000)
     const after = await sections()
     check(Number(after) === Number(before) + 1, `перегородка қосылды: ${before} → ${after}`)
 

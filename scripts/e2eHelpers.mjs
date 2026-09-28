@@ -163,7 +163,7 @@ export function makeHelpers({ send }, base) {
 
   const numberExpression = (label) => `(() => {
     const l = [...document.querySelectorAll('label')].find((x) => x.textContent.includes(${JSON.stringify(label)}))
-    return l?.querySelector('input[type=number]')?.value ?? null
+    return l?.querySelector('input[type=number], input[type=text]')?.value ?? null
   })()`
   const numberValue = (label) => evaluate(numberExpression(label))
 
