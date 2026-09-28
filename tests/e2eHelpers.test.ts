@@ -1,7 +1,7 @@
 /** CDP boundary fixtures run the real browser expressions, including exceptions. */
 import { createContext, runInContext } from 'node:vm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { captureFailureSnapshot, makeHelpers, serializeCapture } from '../scripts/e2eHelpers.mjs'
+import { acceptJavaScriptDialog, captureFailureSnapshot, makeHelpers, serializeCapture } from '../scripts/e2eHelpers.mjs'
 
 function browser() {
   const state = {
@@ -240,5 +240,35 @@ describe('e2e browser readiness and evidence', () => {
     state.disabled = false
     expect(await h[method]('Сохранить текущий', 0)).toBe(true)
     expect(state.clicked).toBe(true)
+  })
+})
+
+/*
+ * 09-24 аудиттегі «бұрыштық корпуста браузер қатады» ақауының түбірі:
+ * «Проект → Сброс» 09-27-ден бері `window.confirm` ашады. Нативтік диалог
+ * ашық тұрғанда renderer JS-ті тоқтатады да, CDP `Runtime.evaluate` және
+ * `Page.captureScreenshot` жауап бермейді — runner 60 с таймаутқа түсетін.
+ * Runner диалогты өзі жабуы керек.
+ */
+describe('e2e JS dialogs', () => {
+  it('confirm ашылса, runner оны растап жабады және мәтінін сақтайды', async () => {
+    const send = vi.fn(async () => ({}))
+    const dialogs: string[] = []
+    const handled = acceptJavaScriptDialog({
+      method: 'Page.javascriptDialogOpening',
+      params: { type: 'confirm', message: 'Сбросить текущий проект?' },
+    }, send, dialogs)
+    expect(handled).toBe(true)
+    expect(send).toHaveBeenCalledWith('Page.handleJavaScriptDialog', { accept: true })
+    expect(dialogs).toEqual(['confirm: Сбросить текущий проект?'])
+  })
+
+  it('басқа CDP оқиғаларына тимейді', () => {
+    const send = vi.fn(async () => ({}))
+    const dialogs: string[] = []
+    expect(acceptJavaScriptDialog({ method: 'Runtime.consoleAPICalled', params: {} }, send, dialogs)).toBe(false)
+    expect(acceptJavaScriptDialog({ id: 7, result: {} }, send, dialogs)).toBe(false)
+    expect(send).not.toHaveBeenCalled()
+    expect(dialogs).toEqual([])
   })
 })
