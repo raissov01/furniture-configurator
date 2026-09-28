@@ -10,6 +10,7 @@
  */
 
 import { SiteLanguageProvider, useSiteText } from '@/components/site/SiteLanguage'
+import dynamic from 'next/dynamic'
 import type { Lang } from '@/lib/i18n'
 import { formatTenge } from '@/src/core/index'
 import { demoNesting, demoPrice, demoRows, demoSheet } from '@/lib/demo'
@@ -21,6 +22,11 @@ import { H2, Section, Titled } from '@/components/site/parts'
 import { Cta, Dimension, Sheet } from '@/components/brand'
 import { RevealList } from '@/components/site/motion'
 import { DetailTable } from '@/components/site/DetailTable'
+
+const ReferenceCabinetFigure = dynamic(() => import('@/components/site/ReferenceCabinetFigure'), {
+  ssr: false,
+  loading: () => <div className="sheet min-h-[340px]" aria-hidden="true" />,
+})
 
 const steps = () => [
   {
@@ -118,6 +124,16 @@ function LandingContent() {
         </Section>
 
         <Section><Dimension label={tr('Лист')} value={`${demoSheet.sheet.sheetHeight} (H) × ${demoSheet.sheet.sheetWidth} (W) ${tr('мм')}`} /></Section>
+
+        <Section className="grid items-center gap-6 py-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <div>
+            <H2>{tr('Шкаф из той же модели')}</H2>
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-[var(--ink-soft)]">
+              {tr('Эталонный шкаф: 11 физических панелей. На большом экране модель можно повернуть; размеры и детали берутся из генератора.')}
+            </p>
+          </div>
+          <ReferenceCabinetFigure />
+        </Section>
 
         {/* ── Артефакты ────────────────────────────────────────────────────── */}
         <Section id="artifacts" className="py-8 sm:py-14">
