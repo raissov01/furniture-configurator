@@ -48,9 +48,35 @@ def parse_number(text: str) -> float | None:
         return None
 
 
+# Кітапхана элементіндегі ANSI (cp1251) атауларды PRO100 Latin-1 деп оқып, есепке
+# UTF-8 түрінде бұзылған күйде жазады: «боковина» → «áîêîâèíà» (2026-10-03,
+# нақты аудит, «01 Кухни Модерн\02 Gola ручка»). Ұяшықты кері қайтарамыз.
+# × (D7) мен ÷ (F7) — өлшем жазуындағы шын таңбалар, оларды белгі деп санамаймыз.
+_MOJIBAKE_CHAR = re.compile(r"[¨¸À-ÖØ-öø-ÿ]")
+_CYRILLIC = re.compile(r"[Ѐ-ӿ]")
+
+
+def fix_mojibake(cell: str) -> str:
+    """Ұяшық cp1251→Latin-1 бұзылған болса — кириллицаға қайтарады, әйтпесе өзгертпейді.
+
+    Шарт: кириллица жоқ, À-ÿ/¨/¸ таңбасы кемінде 2, қайта декодтағанда сол
+    таңбалардың бәрі кириллицаға айналады (шын латын диакритикасына тимейміз)."""
+    if _CYRILLIC.search(cell) or len(_MOJIBAKE_CHAR.findall(cell)) < 2:
+        return cell
+    for enc in ("latin-1", "cp1252"):
+        try:
+            fixed = cell.encode(enc).decode("cp1251")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            continue
+        if not _MOJIBAKE_CHAR.search(fixed):
+            return fixed
+    return cell
+
+
 def _lines(text: str) -> list[str]:
     text = text.lstrip("﻿")
-    return [ln for ln in text.replace("\r\n", "\n").replace("\r", "\n").split("\n") if ln.strip()]
+    return ["\t".join(fix_mojibake(c) for c in ln.split("\t"))
+            for ln in text.replace("\r\n", "\n").replace("\r", "\n").split("\n") if ln.strip()]
 
 
 # Тақырып жолын тану (көшіріп-алу не басқа нұсқа тақырыппен жазса).

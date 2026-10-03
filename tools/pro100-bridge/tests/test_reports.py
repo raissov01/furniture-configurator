@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pro100_bridge.reports import (
     decode_report,
+    fix_mojibake,
     parse_calculation,
     parse_elements,
     parse_materials,
@@ -108,6 +109,26 @@ def test_unparsed_lines_are_kept_not_dropped():
 def test_six_column_parts_without_edge_columns():
     rows, unparsed = parse_parts("полка\t566\t541\t16\t1\tЛдсп")
     assert unparsed == [] and rows[0].width == 541 and rows[0].material == "Лдсп"
+
+
+def test_mojibake_part_names_from_real_audit_are_restored():
+    # 2026-10-03 нақты аудит, s1-base-600 - parts.txt (UTF-8+BOM ішінде cp1251→Latin-1 атаулар)
+    text = ("﻿áîêîâèíà\t159\t   \t543\t   \t16\t2\t01 Основное для КУХНИ\\Лдсп\r\n"
+            "çàäíÿÿ  ñòåíêà\t171\t   \t596\t   \t3\t1\t01 Основное для КУХНИ\\Двп 4мм\r\n"
+            "кромка 2х16\t2\t   \t18\t   \t132\t4\t01 Основное для КУХНИ\\Фасад без просчета\r\n")
+    rows, unparsed = parse_parts(text)
+    assert not unparsed
+    assert [r.name for r in rows] == ["боковина", "задняя  стенка", "кромка 2х16"]
+    assert rows[0].material == "01 Основное для КУХНИ\\Лдсп"
+
+
+def test_fix_mojibake_leaves_real_text_alone():
+    assert fix_mojibake("Боковина") == "Боковина"
+    assert fix_mojibake("Blum TANDEM") == "Blum TANDEM"
+    assert fix_mojibake("600×720×560") == "600×720×560"
+    assert fix_mojibake("Café") == "Café"            # бір ғана диакритика — тимейміз
+    assert fix_mojibake("¸ëêà") == "ёлка"
+    assert fix_mojibake("öîêîëü") == "цоколь"
 
 
 def test_report_kind_from_title_both_languages():
