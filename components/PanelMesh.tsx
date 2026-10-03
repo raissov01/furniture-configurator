@@ -7,6 +7,7 @@
 
 import { useContext, useEffect, useMemo } from 'react'
 import { ClassicSceneContext, P100_SELECTION_COLOR } from '@/lib/classicSceneContext'
+import { classicClickSelection, classicDoubleClickTarget } from '@/lib/classicPick'
 import { t as tr } from '@/lib/i18n'
 import { panelDisplayLabel } from '@/lib/panelDisplay'
 import { Edges, Html } from '@react-three/drei'
@@ -330,6 +331,12 @@ function cutoutHoles(panel: Panel): Path[] {
   })
 }
 
+/**
+ * Қос шертудің бірінші басуынан БҰРЫНҒЫ таңдау: бірінші басу модульді не
+ * детальді таңдап үлгереді, ал қай терезені ашу осыған қарай шешіледі.
+ */
+let classicGesture: { key: string; selected: string | null } | null = null
+
 export function PanelMesh({
   panel, thickness, centre, decorColor, catalog, settings, pid, cabinetId, assemblyPanels,
 }: {
@@ -381,11 +388,30 @@ export function PanelMesh({
      * (қос шертудің екі шертуі таңдауды қосып-өшіреді, сондықтан осы сәтте
      * `selected === key` тек деталь бұрыннан таңдалған болса ғана шын).
      */
-    if (cabinetId && useConfigurator.getState().selected === key) {
+    const before = classicGesture?.key === key ? classicGesture.selected : useConfigurator.getState().selected
+    if (cabinetId && classicDoubleClickTarget(before, key) === 'part') {
+      setSelected(key)
       window.dispatchEvent(new CustomEvent('furniture:open-part-properties', { detail: { panelId: key, nodeId: cabinetId } }))
       return
     }
     openProperties()
+  }
+  /** PRO100: бір басу — бүкіл модуль; таңдалған модульді қайта басу — деталь. */
+  const onPanelClick = (detail: number) => {
+    const current = useConfigurator.getState().selected
+    // Қос шертудің екінші басуы таңдауды өзгертпейді — оны onDoubleClick шешеді.
+    if (detail > 1) return
+    classicGesture = { key, selected: current }
+    if (!classicScene.classic || !cabinetId) {
+      if (cabinetId) setActive(cabinetId)
+      setSelected(isSelected ? null : key)
+      return
+    }
+    const prefix = key.endsWith(panel.id) ? key.slice(0, key.length - panel.id.length) : ''
+    const siblings = (assemblyPanels ?? []).map((p) => prefix + p.id)
+    // ⚠ Алдымен корпус: басқа корпусқа ауысу таңдауды тазалайды.
+    setActive(cabinetId)
+    setSelected(classicClickSelection(current, key, cabinetId, siblings))
   }
   const openProperties = () => {
     if (!cabinetId || typeof window === 'undefined') return
@@ -714,11 +740,7 @@ export function PanelMesh({
             // әйтпесе жібергенде таңдау ауысып не алынып кететін.
             if (e.delta > CLICK_SLOP) return
             e.stopPropagation()
-            // ⚠ Алдымен корпус: басқа корпусқа ауысу таңдауды тазалайды, сондықтан
-            // setActive setSelected-тен КЕЙІН тұрса, таңдау бірден өшіп қалатын.
-            if (cabinetId) setActive(cabinetId)
-            // Екінші рет басу таңдауды АЛАДЫ: бөлектеу қалып қоймауы керек.
-            setSelected(isSelected ? null : key)
+            onPanelClick(e.nativeEvent.detail)
           }}
         >
           {shape ? (
@@ -779,8 +801,7 @@ export function PanelMesh({
         if (vr) return
         if (e.delta > CLICK_SLOP) return
         e.stopPropagation()
-        if (cabinetId) setActive(cabinetId)
-        setSelected(isSelected ? null : key)
+        onPanelClick(e.nativeEvent.detail)
       }}
     >
       <boxGeometry args={[extents.x, extents.y, extents.z]} />

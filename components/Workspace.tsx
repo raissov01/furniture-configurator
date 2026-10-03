@@ -387,7 +387,6 @@ export function Workspace() {
     if (resetDecision(window.confirm(tr('Начать новый проект с пустой комнаты?'))) !== 'reset') return
     loadEmptyProject(reset, loadProject)
     setSelected(null)
-    useClassicView.getState().setStartGuideOpen(true)
   }
   /** «Сохранить как…»: файл атауын сұрап жүктеу (жоба күйі өзгермейді). */
   const saveProjectAs = () => {
@@ -484,7 +483,6 @@ export function Workspace() {
         const state = useConfigurator.getState()
         loadEmptyProject(state.reset, state.loadProject)
         useClassicView.getState().setLibraryOpen(true)
-        useClassicView.getState().setStartGuideOpen(true)
         useConfigurator.getState().setFirstRun(false)
       } else setGalleryOpen(true)
     }
@@ -727,8 +725,10 @@ export function Workspace() {
   /** Библиотекадан корпус қою: таңдалған қабырғаның келесі бос орнына (PRO100 «вставить»). */
   const insertCabinet = (config: CabinetConfig): string | null => {
     try {
-      appendCabinet({ ...config, id: `cabinet-${crypto.randomUUID()}` })
-      setSelected(null)
+      const id = `cabinet-${crypto.randomUUID()}`
+      appendCabinet({ ...config, id })
+      // PRO100: қойылған модуль бірден таңдалып тұрады («Выбран элемент: "H1 300"»).
+      setSelected(id)
       return null
     } catch (cause) { return cause instanceof Error ? cause.message : String(cause) }
   }
@@ -1381,7 +1381,7 @@ export function Workspace() {
         </div>
       ) : null}
 
-      <Tour paused={galleryOpen} classic={classic} />
+      <Tour paused={galleryOpen} classic={classic} autoStart={!classic} />
       <BusyOverlay />
       <RenderPanel panels={projectPanels} cabinets={items.map((item) => item.cabinet)} />
       {/*

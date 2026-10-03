@@ -525,7 +525,7 @@ function CameraRig({
     // Бөлменің ішінде: қарсы қабырғаның алдында, көз биіктігінде (1600 мм).
     const facingDepth = Math.round(facingY / 90) % 2 === 0 ? D : W
     const [lx0, oy0, lz0] = classicRoom === 'inside' ? [span * 0.08, 1600 - H / 2, -(facingDepth / 2 - 250)] as const
-      : classicRoom === 'outside' ? [span * 0.28, span * 0.3, -span * 1.3] as const : cameraOffset(preset, W, H, D, wallCtx)
+      : classicRoom === 'outside' ? [span * 0.55, span * 0.62, -span * 1.3] as const : cameraOffset(preset, W, H, D, wallCtx)
     if ('fov' in camera) {
       const perspective = camera as unknown as { fov: number; updateProjectionMatrix: () => void }
       const fov = classicRoom === 'inside' ? 62 : 40
@@ -553,8 +553,9 @@ function CameraRig({
       const needV = (H / 2) / Math.tan(fovV / 2)
       const needH = (Math.max(W, D) / 2) / Math.tan(fovH / 2)
       // 1.15 — шеттегі тыныс: өлшем жазуы мен көлеңке қиылмауы үшін.
-      // PRO100 перспективасында бөлменің айналасында кең ақ өріс қалады.
-      const need = Math.max(needV, needH) * (classicRoom ? 1.55 : 1.15)
+      // PRO100 перспективасында бөлменің айналасында кең ақ өріс қалады: бөлме
+      // жоғарыдан-қиғаштан, экран енінің шамамен үштен бірін алады (2026-10-03).
+      const need = Math.max(needV, needH) * (classicRoom ? 2.6 : 1.15)
       const preset0 = Math.hypot(lx0, oy0, lz0)
       return preset0 > 0 ? Math.max(1, need / preset0) : 1
     })()
@@ -1612,7 +1613,12 @@ export default function Scene({
        */
       onCreated={(state) => setLiveScene(state.scene)}
       // PRO100: бос жерге (бөлме, тор) қос шерту — «Свойства помещения».
-      onPointerMissed={(event) => { if (classic && event.type === 'dblclick') useClassicView.getState().setRoomDialogOpen(true) }}
+      onPointerMissed={(event) => {
+        if (!classic) return
+        if (event.type === 'dblclick') useClassicView.getState().setRoomDialogOpen(true)
+        // PRO100: бос жерді басу таңдауды алады (R3F мұны тек сүйреусіз басуда шақырады).
+        else if (event.type === 'click') useConfigurator.getState().setSelected(null)
+      }}
     >
       <SceneRenderBridge />
       <ClassicSceneContext.Provider value={classicScene}>

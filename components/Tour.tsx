@@ -30,7 +30,11 @@ import { useModalStack } from '@/lib/useModalLayer'
 const DONE_KEY = 'furniture-configurator:tour-done'
 export const LESSON_DONE_KEY = 'furniture-configurator:lessons-done'
 
-export function Tour({ paused = false, classic = false }: { paused?: boolean; classic?: boolean }) {
+/**
+ * `autoStart` — бірінші кіргенде өзі басталу. PRO100 жұмыс орнында өшірулі:
+ * PRO100-да бастаушы тур жоқ; «?» → «Начало работы» арқылы қолмен ашылады.
+ */
+export function Tour({ paused = false, classic = false, autoStart = true }: { paused?: boolean; classic?: boolean; autoStart?: boolean }) {
   const modalStack = useModalStack()
   const blockedByModal = modalStack.some((id) => id !== 'properties')
 
@@ -75,7 +79,7 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
     else setStep(0)
   }, [classic, close])
   useEffect(() => {
-    if (paused || autoStarted.current) return undefined
+    if (!autoStart || paused || autoStarted.current) return undefined
     let done = true
     try {
       done = window.localStorage.getItem(DONE_KEY) === '1'
@@ -87,7 +91,7 @@ export function Tour({ paused = false, classic = false }: { paused?: boolean; cl
       start()
     }, 1200)
     return () => clearTimeout(timer)
-  }, [paused, start])
+  }, [autoStart, paused, start])
 
   // Басқа жерден қайта қосу: «?» терезесіндегі батырма осы оқиғаны жібереді.
   useEffect(() => {
