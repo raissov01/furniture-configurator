@@ -138,6 +138,10 @@ LIB_TAB_FURNITURE = 0
 # тимеу үшін тек «Ignore All» басамыз (элемент өз материал атауымен қалады).
 TEXTURE_SUBST_CLASS = "TTextureSubstituteForm"
 IGNORE_ALL_TEXTS = ("Ignore All", "Игнорировать все", "Пропустить все")
+# «Ignore All»-дан кейін PRO100 #32770 «PRO100» хабарын шығаруы мүмкін:
+# «File is corrupted: …\В 2дв 800.meb» (2026-10-03, нақты кітапхана).
+LIB_ERROR_WORDS = ("file is corrupted", "поврежд", "file not found", "файл не найден", "cannot", "не удается",
+                   "не удаётся", "error", "ошибка")
 
 # Catalog (dialog-catalog.png, catalog-560-selected.png, base-600-insert.png)
 CATALOG_TITLES = ("Catalog", "Каталог")
@@ -160,6 +164,10 @@ LIBRARY_SUBDIRS = (("Библиотека", "Мебель"), ("библиоте�
 WM_COMMAND = 0x0111
 BASE_WAIT = 0.4       # әр әрекеттен кейінгі үзіліс, сек (--slow көбейтеді)
 DIALOG_TIMEOUT = 15   # диалог күту, сек
+
+
+class BadLibraryFile(UiError):
+    """PRO100 кітапхана файлын ашпады (мысалы, «File is corrupted»)."""
 
 
 def _strip_amp(text: str) -> str:
@@ -222,6 +230,7 @@ class Pro100UI:
         self.pid: int | None = None
         self._notes: list[str] = []
         self._library: list[str] | None = None
+        self._bad_library: set[str] = set()   # PRO100 «File is corrupted» деген файлдар
         self._opened_tool_windows: list[MenuRef] = []
         self._our_project = False  # ағымдағы жобаны көпір өзі құрды ма
 
@@ -436,6 +445,17 @@ class Pro100UI:
         self._menu(MENU_FILE_NEW)
         deadline = time.monotonic() + DIALOG_TIMEOUT * self.slow
         while time.monotonic() < deadline:
+            # 2026-10-03: жаңа жоба кезінде PRO100 кейде «Cannot create file: » (бос жол)
+            # хабарын шығарады; ол модаль — жаппасақ Room properties-тің OK-ы әсер етпейді.
+            boxes = self._error_boxes()
+            for box, text in boxes:
+                self._note(f"PRO100 при File > New: {text}")
+                btn = self._button(box, OK_TEXTS)
+                if btn is not None:
+                    btn.click()
+                self._sleep()
+            if boxes:
+                continue
             info = self._find_window(PROJECT_INFO_TITLES, PROJECT_INFO_CLASS)
             if info is not None:
                 self._click(info, OK_TEXTS)   # «Project properties» — бос қалдырамыз, артынан Room properties
@@ -445,6 +465,9 @@ class Pro100UI:
             room = self._find_window(ROOM_TITLES, ROOM_CLASS) or self._find_window(ROOM_TITLES)
             if room is not None:
                 self._click(room, OK_TEXTS)   # өлшемін өзгертпейміз
+                self._sleep(2)
+                if self._alive(room):         # модаль хабар бұғаттаған — хабарды жауып, қайталаймыз
+                    continue
                 self._our_project = True
                 return
             for w in self._windows():
@@ -479,17 +502,29 @@ class Pro100UI:
         if self._library is None:
             self._library = scan_library(self._library_root())
             self._note(f"в библиотеке {len(self._library)} файлов .meb")
-        m = find_library_item(self._library, query)
+        m = find_library_item([p for p in self._library if p not in self._bad_library], query)
         if m is None:
-            raise UiError(f"в библиотеке не найден ни один из: {', '.join(query.search)}")
+            raise UiError(f"в библиотеке не найден ни один из: {', '.join(query.search)}"
+                          + (f" (исключены повреждённые: {', '.join(sorted(self._bad_library))})" if self._bad_library else ""))
         return m
 
     def _selected_name(self) -> str | None:
         return self.read_status_bar().get("selected")  # type: ignore[return-value]
 
     def insert_library_item(self, query: LibraryQuery) -> InsertResult:
+        """PRO100 файлды «File is corrupted» деп қабылдамаса — оны шеттетіп,
+        іздеу тізіміндегі келесі сәйкес файлды байқаймыз (ең көбі 3 рет)."""
+        for _attempt in range(3):
+            match = self._find_in_library(query)
+            try:
+                return self._insert_match(match)
+            except BadLibraryFile as err:
+                self._bad_library.add(match.path)
+                self._note(f"PRO100 не открыл «{match.path}»: {err} — пробую следующий вариант")
+        raise UiError("элемент не вставлен: повреждены " + ", ".join(sorted(self._bad_library)))
+
+    def _insert_match(self, match: LibraryMatch) -> InsertResult:
         self.guard()
-        match = self._find_in_library(query)
         full = os.path.join(self._library_root(), match.path)
         try:
             self._menu(MENU_EDIT_UNSELECT_ALL)
@@ -499,7 +534,7 @@ class Pro100UI:
         for strategy in (self._insert_via_lib_open_form, self._insert_via_file_dialog, self._insert_via_catalog):
             try:
                 if strategy(match, full):
-                    self._dismiss_texture_substitute()
+                    self._settle_after_insert()
                     self.guard()
                     # Статус жолы owner-draw — оқылмаса, таңдауды Properties-тің өзі тексереді.
                     try:
@@ -507,7 +542,7 @@ class Pro100UI:
                     except UiError:
                         selected = None
                     return InsertResult(strategy.__name__.replace("_insert_via_", ""), match.path, selected)
-            except StopRun:
+            except (StopRun, BadLibraryFile):
                 raise
             except Exception as err:  # noqa: BLE001 — келесі тәсілді байқаймыз
                 errors.append(f"{strategy.__name__}: {err}")
@@ -548,27 +583,39 @@ class Pro100UI:
                 lv.set_focus()
                 pw.keyboard.send_keys(seq, pause=0.02)
 
-            keys("{BACKSPACE}" * (match.path.count("\\") + 8))   # түбірге (артығы зиянсыз)
-            self._sleep(2)
-            folder = self._library_root()
             segments = [s for s in match.folder.split("\\") if s and s != "."]
-            for seg in segments:
-                idx = catalog_position(folder, seg, is_dir=True)
-                keys("{HOME}" + "{RIGHT}" * idx + "{ENTER}")
-                self._sleep(3)
-                folder = os.path.join(folder, seg)
-            idx = catalog_position(folder, match.stem, is_dir=False)
-            keys("{HOME}" + "{RIGHT}" * idx)
-            self._sleep()
-            shown = edit.window_text()
-            if normalize_library_name(shown) != normalize_library_name(match.stem):
+            shown = ""
+            # Үлкен қалта баяу жүктеледі: таңдау сәйкес келмесе, екі есе баяу қайталаймыз.
+            for pace in (1.0, 2.5):
+                keys("{BACKSPACE}" * (match.path.count("\\") + 10))   # түбірге (артығы зиянсыз)
+                self._sleep(2 * pace)
+                folder = self._library_root()
+                for seg in segments:
+                    idx = catalog_position(folder, seg, is_dir=True)
+                    keys("{HOME}" + "{RIGHT}" * idx)
+                    self._sleep(pace)
+                    keys("{ENTER}")
+                    self._sleep(3 * pace)
+                    folder = os.path.join(folder, seg)
+                idx = catalog_position(folder, match.stem, is_dir=False)
+                keys("{HOME}" + "{RIGHT}" * idx)
+                self._sleep(pace)
+                shown = edit.window_text()
+                if normalize_library_name(shown) == normalize_library_name(match.stem):
+                    break
+                self._note(f"Insert from Catalog: выбран «{shown}», ожидался «{match.stem}» — повтор медленнее")
+            else:
                 raise UiError(f"в Insert from Catalog выбран «{shown}», ожидался «{match.stem}»")
             keys("{ENTER}")
-            self._wait(lambda: not self._alive(form) or self._texture_substitute() is not None,
-                       timeout=15, what="закрытие Insert from Catalog")
+            self._wait(lambda: not self._alive(form) or self._texture_substitute() is not None
+                       or self._error_boxes(), timeout=15, what="закрытие Insert from Catalog")
+            self._settle_after_insert()
             return True
         finally:
-            self._dismiss_texture_substitute()
+            try:
+                self._settle_after_insert(quiet=0.5)
+            except BadLibraryFile:
+                pass
             if self._alive(form):
                 btn = self._button(form, CANCEL_TEXTS)
                 if btn is not None:
@@ -578,15 +625,53 @@ class Pro100UI:
     def _texture_substitute(self) -> Any:
         return next((w for w in self._windows() if w.class_name() == TEXTURE_SUBST_CLASS), None)
 
-    def _dismiss_texture_substitute(self) -> None:
-        """«Material not found» — тек «Ignore All» (кітапханаға тимейміз)."""
-        for _ in range(5):
-            win = self._texture_substitute()
-            if win is None:
-                return
-            self._note(f"PRO100: «{win.window_text()}» — нажато Ignore All")
-            self._click(win, IGNORE_ALL_TEXTS)
-            self._sleep(2)
+    def _error_boxes(self) -> list[tuple[Any, str]]:
+        """PRO100-дің #32770 қате хабарлары («File is corrupted: …», «File not found: …»)."""
+        out = []
+        for w in self._windows():
+            if w.class_name() != FILE_DIALOG_CLASS or self._filename_edit(w) is not None:
+                continue
+            text = " ".join(c.window_text() for c in w.children() if c.class_name() == "Static" and c.window_text())
+            if any(k in text.lower() for k in LIB_ERROR_WORDS):
+                out.append((w, text))
+        return out
+
+    def _settle_after_insert(self, quiet: float = 2.0, timeout: float = 20.0) -> None:
+        """Элемент қойылғаннан кейін PRO100 кешігіп «Material not found» не қате
+        хабарын шығаруы мүмкін (2026-10-03 нақты жүгірісте Properties осыдан
+        бұғатталды). Диалогсыз `quiet` секунд өткенше бақылаймыз:
+        қате хабары → OK және BadLibraryFile; текстура → тек «Ignore All»."""
+        error: str | None = None
+        end = time.monotonic() + timeout * self.slow
+        calm_since = time.monotonic()
+        while time.monotonic() < end:
+            acted = False
+            for box, text in self._error_boxes():
+                self._note(f"PRO100: {text}")
+                error = error or text
+                btn = self._button(box, OK_TEXTS)
+                if btn is not None:
+                    btn.click()
+                acted = True
+            if not acted:
+                win = self._texture_substitute()
+                btn = self._button(win, IGNORE_ALL_TEXTS) if win is not None else None
+                if btn is not None:   # жабылып жатқан терезеде батырма болмауы мүмкін — келесі айналым
+                    self._note(f"PRO100: «{win.window_text()}» — нажато Ignore All")
+                    btn.click()
+                    acted = True
+                elif win is not None:
+                    time.sleep(0.3)
+                    continue
+            if acted:
+                calm_since = time.monotonic()
+                self._sleep()
+            elif time.monotonic() - calm_since >= quiet * self.slow:
+                break
+            else:
+                time.sleep(0.2)
+        if error:
+            raise BadLibraryFile(error)
 
     def _insert_via_file_dialog(self, match: LibraryMatch, full: str) -> bool:
         """БОЛЖАМ: Edit > Insert from Catalog... (menu-edit.png) файл таңдау
