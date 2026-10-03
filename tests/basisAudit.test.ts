@@ -73,7 +73,7 @@ describe('таза audit', () => {
       json.expected.panels = [null] as unknown as BasisScriptData['panels']
       const file = join(dir, 'invalid.json')
       writeFileSync(file, JSON.stringify(json))
-      const result = spawnSync('node_modules/.bin/tsx', ['src/cli/bazisAudit.ts', file], { cwd: process.cwd(), encoding: 'utf8' })
+      const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli/bazisAudit.ts', file], { cwd: process.cwd(), encoding: 'utf8' })
       expect(result.status).toBe(1)
       expect(result.stderr).toContain('expected.panels.0')
       expect(result.stderr).not.toContain('TypeError')
@@ -93,7 +93,7 @@ describe('таза audit', () => {
       const file = join(dir, 'no-holes.json')
       const out = join(dir, 'report.md')
       writeFileSync(file, JSON.stringify(json))
-      const result = spawnSync('node_modules/.bin/tsx', ['src/cli/bazisAudit.ts', file, '--out', out], {
+      const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli/bazisAudit.ts', file, '--out', out], {
         cwd: process.cwd(), encoding: 'utf8',
       })
       expect(result.status).toBe(3)
@@ -118,7 +118,7 @@ describe('таза audit', () => {
       expect(basisAuditMarkdown(report)).toContain('Тесік орны тексерілмеді')
       const file = join(dir, 'no-position.json')
       writeFileSync(file, JSON.stringify(json))
-      const result = spawnSync('node_modules/.bin/tsx', ['src/cli/bazisAudit.ts', file, '--out', join(dir, 'report.md')], {
+      const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli/bazisAudit.ts', file, '--out', join(dir, 'report.md')], {
         cwd: process.cwd(), encoding: 'utf8',
       })
       expect(result.status).toBe(3)

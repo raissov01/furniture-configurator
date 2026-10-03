@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { existsSync } from 'node:fs'
+import { readdirSync } from 'node:fs'
 import path from 'node:path'
 import manifest from '../public/library/basis/manifest.json'
 import catalogPreviews from '../public/library/basis/catalog.json'
@@ -23,17 +23,21 @@ describe('каталогқа Базис нобайын байлау', () => {
     expect(pro100BasisPreview(item, [module], previews)).toBe('/library/basis/test.webp')
   })
   it('нақты манифест барлық Базис жазбасын қамтиды және файлдар бар', () => {
+    // One listing of the flat /library/basis folder instead of ~14k existsSync
+    // calls (each ~0.6 ms on Windows NTFS, which alone exceeded the 5 s timeout).
+    const published = new Set(readdirSync(path.join(process.cwd(), 'public', 'library', 'basis')))
+    const exists = (asset: string) => published.has(asset.slice('/library/basis/'.length))
     expect(Object.keys(manifest.modules)).toHaveLength(6948)
     expect(Object.keys(manifest.paths)).toHaveLength(6956)
     expect(catalogPreviews).toEqual(manifest.modules)
     for (const asset of Object.values(manifest.paths)) {
       expect(asset).toMatch(/^\/library\/basis\/[a-f0-9]{20}\.webp$/)
-      expect(existsSync(path.join(process.cwd(), 'public', asset))).toBe(true)
+      expect(exists(asset)).toBe(true)
     }
     for (const module of BASIS_MODULES) {
       const asset = basisModulePreview(module, manifest.modules)
       expect(asset).toMatch(/^\/library\/basis\/[a-f0-9]{20}\.webp$/)
-      expect(existsSync(path.join(process.cwd(), 'public', asset!))).toBe(true)
+      expect(exists(asset!)).toBe(true)
     }
   })
   it('PRO100 байланысының санын бақылайды', () => {

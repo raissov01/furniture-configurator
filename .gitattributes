@@ -1,0 +1,19 @@
+# The project is developed, tested and deployed on Linux. Keep text files LF in
+# every working tree (also on Windows with core.autocrlf=true): tests read repo
+# files and match '\n', and shell scripts / workflows copied into Linux images
+# must not carry CR.
+* text=auto eol=lf
+
+# Windows batch files must stay CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Captured PRO100 exports are byte-exact CRLF fixtures; never convert their
+# line endings in either direction.
+tests/fixtures/pro100/** -text
+tools/pro100-bridge/tests/fixtures/** -text
+
+# PRO100 data files are binary (encrypted v7.08 or plain PSTO) — no NUL-byte
+# heuristics, never convert.
+*.sto binary
+*.meb binary

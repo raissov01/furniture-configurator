@@ -2,8 +2,8 @@
 """AisMebel database and local-file backup. Run with --help for operator options."""
 
 import argparse
+from contextlib import closing
 import datetime as dt
-import fcntl
 import hashlib
 import io
 import json
@@ -18,6 +18,17 @@ from urllib.parse import parse_qsl, unquote, urlparse
 import tempfile
 
 PREFIX = 'aismebel-'
+
+
+def lock_exclusive(handle):
+    """Non-blocking exclusive lock; fails if another backup holds it."""
+    try:
+        import fcntl
+    except ImportError:  # Windows has no fcntl; msvcrt gives the same non-blocking lock.
+        import msvcrt
+        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+    else:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
 
 def digest(path):
@@ -88,12 +99,12 @@ def s3_location(uri):
 
 def create_archive(stage, archive, mode):
     paths = sorted(p for p in stage.rglob('*') if p.is_file())
-    manifest = {'version': 1, 'mode': mode, 'files': {str(p.relative_to(stage)): digest(p) for p in paths}}
+    manifest = {'version': 1, 'mode': mode, 'files': {p.relative_to(stage).as_posix(): digest(p) for p in paths}}
     (stage / 'manifest.json').write_text(json.dumps(manifest, sort_keys=True), encoding='utf8')
     with tarfile.open(archive, 'w:gz') as output:
         for path in sorted(stage.rglob('*')):
             if path.is_file():
-                output.add(path, arcname=str(path.relative_to(stage)), recursive=False)
+                output.add(path, arcname=path.relative_to(stage).as_posix(), recursive=False)
 
 
 def sync_remote(backup_dir, rsync_target, s3_target):
@@ -128,15 +139,17 @@ def backup(args):
     backup_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(backup_dir, 0o700)
     with (backup_dir / '.launch-backup.lock').open('w') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock_exclusive(lock)
         with tempfile.TemporaryDirectory(prefix='.launch-stage-', dir=backup_dir) as temp:
             stage = Path(temp)
             if args.mode == 'sqlite':
                 source = data_dir / 'furniture.db'
                 if not source.is_file():
                     raise ValueError(f'SQLite файлы табылмады: {source}')
-                with sqlite3.connect(source.as_uri() + '?mode=ro', uri=True) as original:
-                    with sqlite3.connect(stage / 'database.sqlite') as snapshot:
+                # `with connection` only commits; close explicitly so the snapshot
+                # file is released before the stage directory is archived/removed.
+                with closing(sqlite3.connect(source.as_uri() + '?mode=ro', uri=True)) as original:
+                    with closing(sqlite3.connect(stage / 'database.sqlite')) as snapshot:
                         original.backup(snapshot)
             else:
                 run(['pg_dump', '--format=custom', '--file', str(stage / 'database.dump')],
@@ -184,7 +197,7 @@ def read_archive(archive, stage):
     manifest = json.loads((stage / 'manifest.json').read_text(encoding='utf8'))
     if manifest.get('version') != 1 or manifest.get('mode') not in ('sqlite', 'postgres'):
         raise ValueError('Архив нұсқасы немесе DB түрі жарамсыз')
-    actual = {str(p.relative_to(stage)): digest(p) for p in stage.rglob('*') if p.is_file() and p.name != 'manifest.json'}
+    actual = {p.relative_to(stage).as_posix(): digest(p) for p in stage.rglob('*') if p.is_file() and p.name != 'manifest.json'}
     if actual != manifest.get('files'):
         raise ValueError('Архив файлының SHA-256 сомасы сәйкес келмейді')
     expected_db = 'database.sqlite' if manifest['mode'] == 'sqlite' else 'database.dump'
@@ -215,7 +228,7 @@ def restore(args):
             run(['pg_restore', '--no-owner', '--no-acl', '--single-transaction', '--exit-on-error', str(stage / 'database.dump')],
                 database_url=url)
         else:
-            with sqlite3.connect(stage / 'database.sqlite') as database:
+            with closing(sqlite3.connect(stage / 'database.sqlite')) as database:
                 if database.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
                     raise ValueError('SQLite integrity_check өтпеді')
         if args.restore_object_s3_uri:
