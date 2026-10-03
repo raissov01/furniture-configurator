@@ -29,5 +29,18 @@ def test_properties_field_order_is_h_w_d_complete():
     assert set(ui.SPIN_FIELDS_TOP_TO_BOTTOM) == {"width", "height", "depth", "left", "bottom", "back"}
 
 
+def test_catalog_position_dirs_first_then_meb_in_logical_order(tmp_path):
+    for d in ("Нижние", "10 Б", "2 А"):
+        (tmp_path / d).mkdir()
+    for f in ("Н2 600.meb", "Н1 300.meb", "readme.txt", "Н10 900.meb"):
+        (tmp_path / f).write_bytes(b"")
+    assert ui.catalog_position(str(tmp_path), "2 А", is_dir=True) == 0
+    assert ui.catalog_position(str(tmp_path), "10 Б", is_dir=True) == 1
+    assert ui.catalog_position(str(tmp_path), "Нижние", is_dir=True) == 2
+    assert ui.catalog_position(str(tmp_path), "Н1 300", is_dir=False) == 3
+    assert ui.catalog_position(str(tmp_path), "Н2 600", is_dir=False) == 4
+    assert ui.catalog_position(str(tmp_path), "Н10 900", is_dir=False) == 5
+
+
 def test_escape_keys():
     assert ui.escape_keys("S1 (600+2)") == "S1 {(}600{+}2{)}"

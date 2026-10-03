@@ -92,6 +92,13 @@ SELECT_TEXTS = ("Select", "Выбрать")                    # ru №103
 
 # Жаңа жоба → «Room properties» (scenario1-new-project.png), тек OK басылады.
 ROOM_TITLES = ("Room properties", "Свойства комнаты")   # ru — БОЛЖАМ, жолы табылмады
+# РАСТАЛҒАН (2026-10-03, нақты PRO100 v7.08 x64, print_control_identifiers):
+# File > New алдымен `TProjectInfoForm` «Project properties» (Order #, Customer,
+# Designer, Comments, OK) ашады, оның OK-ынан кейін ғана `TRoomPropertiesForm`
+# «Room properties» шығады. Екеуінде де тек OK басылады.
+PROJECT_INFO_TITLES = ("Project properties", "Свойства проекта")  # ru — БОЛЖАМ
+PROJECT_INFO_CLASS = "TProjectInfoForm"
+ROOM_CLASS = "TRoomPropertiesForm"
 
 # «PRO100» хабар терезесі Yes/No/Cancel (new-project-dialog.png)
 YES_TEXTS = ("Yes", "&Yes", "Да", "&Да")
@@ -110,6 +117,28 @@ SAVE_AS_TITLES = ("Save as", "Сохранить как")
 FILE_SAVE_TEXTS = ("Save", "Сохранить")                 # дамп: "&Save"
 FILE_OPEN_TEXTS = ("Open", "Открыть")
 
+# Edit > Insert from Catalog — РАСТАЛҒАН (2026-10-03): стандарт #32770 ЕМЕС, Delphi
+# `TLibOpenForm` «Insert from Catalog»: TTabControl (Furniture · Elements · Varia),
+# TDirectoryComboBox, `TEasyListView` (owner-draw, LVM_* хабарына жауап бермейді,
+# элемент мәтіні оқылмайды), `TEdit` (Name) + TButton Open/Cancel.
+# Name өрісі толық жолды қабылдамайды: тек файл атын алып, АҒЫМДАҒЫ қалтадан
+# іздейді («File not found: Н2 600.meb»). Тізімнің жылдам іздеуі VK кодпен
+# жұмыс істейді — кириллица (VK_PACKET) өтпейді. Сондықтан қалталар мен файл
+# ОРНЫМЕН таңдалады: {HOME} + {RIGHT}×n + {ENTER}; рет — алдымен қалталар,
+# содан .meb файлдар, әрқайсысы StrCmpLogicalW (Explorer) ретімен.
+# Файл таңдалғанда Name өрісіне оның аты (кеңейтусіз) жазылады — тексеру үшін.
+LIB_OPEN_CLASS = "TLibOpenForm"
+LIB_OPEN_TITLES = ("Insert from Catalog", "Вставить из каталога")  # ru — БОЛЖАМ
+LIB_LIST_CLASS = "TEasyListView"
+LIB_TAB_CLASS = "TTabControl"
+LIB_NAME_EDIT_CLASS = "TEdit"
+LIB_TAB_FURNITURE = 0
+# Кітапхана элементі жоқ текстураға сілтесе — `TTextureSubstituteForm`
+# «Material not found» (Replace · Replace All · Ignore · Ignore All). Кітапханаға
+# тимеу үшін тек «Ignore All» басамыз (элемент өз материал атауымен қалады).
+TEXTURE_SUBST_CLASS = "TTextureSubstituteForm"
+IGNORE_ALL_TEXTS = ("Ignore All", "Игнорировать все", "Пропустить все")
+
 # Catalog (dialog-catalog.png, catalog-560-selected.png, base-600-insert.png)
 CATALOG_TITLES = ("Catalog", "Каталог")
 CATALOG_TAB_FURNITURE = 0                                # Furniture · Elements · Materials · Varia
@@ -121,7 +150,8 @@ COMBO_CLASS_HINTS = ("Combo",)
 STRUCTURE_TITLES = ("Structure", "Структура")
 TREE_CLASS_HINTS = ("TreeView", "SysTreeView32", "TTreeView")
 
-# Статус жолы (s1-final-dimensions-applied.png)
+# Статус жолы (s1-final-dimensions-applied.png). 2026-10-03: панельдері owner-draw,
+# SB_GETTEXT те, UIA да бос мәтін береді — статус жолы тек қосымша дерек.
 STATUS_BAR_CLASSES = ("TStatusBar", "msctls_statusbar32")
 
 # Кітапхана қалтасы PRO100.exe-нің қасында (pro100_list.txt: PRO100v7.08x64/Библиотека/Мебель)
@@ -147,6 +177,31 @@ _SEND_KEYS_SPECIAL = set("+^%~(){}[]")
 def escape_keys(text: str) -> str:
     """pywinauto send_keys үшін арнайы таңбаларды қорғау."""
     return "".join("{" + c + "}" if c in _SEND_KEYS_SPECIAL else c for c in text)
+
+
+def _logical_sort(names: list[str]) -> list[str]:
+    """Explorer реті (StrCmpLogicalW); Windows-тан тыс — сандарды ескеретін жуық рет."""
+    try:
+        import ctypes  # noqa: PLC0415
+        import functools  # noqa: PLC0415
+        cmp = ctypes.windll.shlwapi.StrCmpLogicalW  # type: ignore[attr-defined]
+        cmp.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p]
+        return sorted(names, key=functools.cmp_to_key(cmp))
+    except (AttributeError, OSError):
+        import re  # noqa: PLC0415
+        return sorted(names, key=lambda s: [(0, int(t), "") if t.isdigit() else (1, 0, t.lower())
+                                            for t in re.split(r"(\d+)", s) if t])
+
+
+def catalog_position(folder: str, name: str, is_dir: bool) -> int:
+    """`TEasyListView`-тегі элемент орны: алдымен қалталар, содан .meb файлдар
+    (тек АТАУЛАР оқылады, файл ішіне кірмейміз)."""
+    entries = os.listdir(folder)
+    dirs = _logical_sort([e for e in entries if os.path.isdir(os.path.join(folder, e))])
+    if is_dir:
+        return dirs.index(name)
+    files = _logical_sort([os.path.splitext(e)[0] for e in entries if e.lower().endswith(".meb")])
+    return len(dirs) + files.index(name)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -381,7 +436,13 @@ class Pro100UI:
         self._menu(MENU_FILE_NEW)
         deadline = time.monotonic() + DIALOG_TIMEOUT * self.slow
         while time.monotonic() < deadline:
-            room = self._find_window(ROOM_TITLES)
+            info = self._find_window(PROJECT_INFO_TITLES, PROJECT_INFO_CLASS)
+            if info is not None:
+                self._click(info, OK_TEXTS)   # «Project properties» — бос қалдырамыз, артынан Room properties
+                self._wait(lambda: not self._alive(info), timeout=5, what="закрытие Project properties")
+                deadline = time.monotonic() + DIALOG_TIMEOUT * self.slow
+                continue
+            room = self._find_window(ROOM_TITLES, ROOM_CLASS) or self._find_window(ROOM_TITLES)
             if room is not None:
                 self._click(room, OK_TEXTS)   # өлшемін өзгертпейміз
                 self._our_project = True
@@ -435,16 +496,97 @@ class Pro100UI:
         except UiError:
             pass
         errors: list[str] = []
-        for strategy in (self._insert_via_file_dialog, self._insert_via_catalog):
+        for strategy in (self._insert_via_lib_open_form, self._insert_via_file_dialog, self._insert_via_catalog):
             try:
                 if strategy(match, full):
-                    selected = self._wait(self._selected_name, timeout=10, what="выделение вставленного элемента")
+                    self._dismiss_texture_substitute()
+                    self.guard()
+                    # Статус жолы owner-draw — оқылмаса, таңдауды Properties-тің өзі тексереді.
+                    try:
+                        selected = self._wait(self._selected_name, timeout=3, what="выделение вставленного элемента")
+                    except UiError:
+                        selected = None
                     return InsertResult(strategy.__name__.replace("_insert_via_", ""), match.path, selected)
             except StopRun:
                 raise
             except Exception as err:  # noqa: BLE001 — келесі тәсілді байқаймыз
                 errors.append(f"{strategy.__name__}: {err}")
         raise UiError("элемент не вставлен: " + " | ".join(errors))
+
+    def _lib_open_forms(self) -> list[Any]:
+        return [w for w in self._windows() if w.class_name() == LIB_OPEN_CLASS]
+
+    def _insert_via_lib_open_form(self, match: LibraryMatch, full: str) -> bool:
+        """РАСТАЛҒАН (2026-10-03): Edit > Insert from Catalog → `TLibOpenForm`.
+        Furniture қосымшасы → BACKSPACE-пен түбірге → әр қалтаны ОРНЫМЕН
+        ({HOME}{RIGHT}×n{ENTER}) ашу → файлды орнымен таңдап, Name өрісінен
+        тексеру → {ENTER}. Ашылмаса — False (келесі тәсіл)."""
+        pw = self._pw()
+        before = {w.handle for w in self._lib_open_forms()}
+        self._menu(MENU_EDIT_INSERT_FROM_CATALOG)
+        try:
+            form = self._wait(lambda: next((w for w in self._lib_open_forms() if w.handle not in before), None),
+                              timeout=4, what="окно Insert from Catalog")
+        except UiError:
+            return False
+        try:
+            desc = form.descendants()
+            tab = next((c for c in desc if c.class_name() == LIB_TAB_CLASS), None)
+            lv = next((c for c in desc if c.class_name() == LIB_LIST_CLASS), None)
+            edit = next((c for c in desc if c.class_name() == LIB_NAME_EDIT_CLASS), None)
+            if lv is None or edit is None:
+                raise UiError("в Insert from Catalog нет списка/поля Name (классы: "
+                              + ", ".join(sorted({c.class_name() for c in desc})) + ")")
+            if tab is not None:
+                tw = pw.controls.common_controls.TabControlWrapper(tab.handle)
+                if tw.get_selected_tab() != LIB_TAB_FURNITURE:
+                    tw.select(LIB_TAB_FURNITURE)
+                    self._sleep(2)
+
+            def keys(seq: str) -> None:
+                self._ensure_foreground()
+                lv.set_focus()
+                pw.keyboard.send_keys(seq, pause=0.02)
+
+            keys("{BACKSPACE}" * (match.path.count("\\") + 8))   # түбірге (артығы зиянсыз)
+            self._sleep(2)
+            folder = self._library_root()
+            segments = [s for s in match.folder.split("\\") if s and s != "."]
+            for seg in segments:
+                idx = catalog_position(folder, seg, is_dir=True)
+                keys("{HOME}" + "{RIGHT}" * idx + "{ENTER}")
+                self._sleep(3)
+                folder = os.path.join(folder, seg)
+            idx = catalog_position(folder, match.stem, is_dir=False)
+            keys("{HOME}" + "{RIGHT}" * idx)
+            self._sleep()
+            shown = edit.window_text()
+            if normalize_library_name(shown) != normalize_library_name(match.stem):
+                raise UiError(f"в Insert from Catalog выбран «{shown}», ожидался «{match.stem}»")
+            keys("{ENTER}")
+            self._wait(lambda: not self._alive(form) or self._texture_substitute() is not None,
+                       timeout=15, what="закрытие Insert from Catalog")
+            return True
+        finally:
+            self._dismiss_texture_substitute()
+            if self._alive(form):
+                btn = self._button(form, CANCEL_TEXTS)
+                if btn is not None:
+                    btn.click()
+                    self._sleep()
+
+    def _texture_substitute(self) -> Any:
+        return next((w for w in self._windows() if w.class_name() == TEXTURE_SUBST_CLASS), None)
+
+    def _dismiss_texture_substitute(self) -> None:
+        """«Material not found» — тек «Ignore All» (кітапханаға тимейміз)."""
+        for _ in range(5):
+            win = self._texture_substitute()
+            if win is None:
+                return
+            self._note(f"PRO100: «{win.window_text()}» — нажато Ignore All")
+            self._click(win, IGNORE_ALL_TEXTS)
+            self._sleep(2)
 
     def _insert_via_file_dialog(self, match: LibraryMatch, full: str) -> bool:
         """БОЛЖАМ: Edit > Insert from Catalog... (menu-edit.png) файл таңдау
@@ -455,6 +597,11 @@ class Pro100UI:
             dlg = self._wait(lambda: next((w for w in self._file_dialogs() if w.handle not in before), None),
                              timeout=4, what="диалог Insert from Catalog")
         except UiError:
+            for form in self._lib_open_forms():   # бұл нұсқада мәзір TLibOpenForm ашады — жабамыз
+                btn = self._button(form, CANCEL_TEXTS)
+                if btn is not None:
+                    btn.click()
+                    self._sleep()
             return False
         self._filename_edit(dlg).set_edit_text(full)
         self._sleep()
@@ -523,8 +670,11 @@ class Pro100UI:
 
     @staticmethod
     def _name_edit(dlg: Any) -> Any:
-        for c in dlg.descendants():
-            if c.class_name() == NAME_COMBO_CLASS:
+        # 2026-10-03: басқа қосымшаларда да жасырын TComboBox бар (descendants-те
+        # бірінші тұрады) — General-дағы КӨРІНЕТІН, ең жоғарғы комбо ғана Name.
+        combos = sorted((c for c in dlg.descendants() if c.class_name() == NAME_COMBO_CLASS and c.is_visible()),
+                        key=lambda c: c.rectangle().top)
+        for c in combos[:1]:
                 for e in c.children():
                     if e.class_name() == "Edit":
                         return e
@@ -665,7 +815,18 @@ class Pro100UI:
             except UiError as err:
                 self._note(f"Save all: {err}")
             for kind, path in files.items():
-                texts[kind] = decode_report(Path(path).read_bytes())
+                # 2026-10-03: диалог жабылғанда PRO100 файлды әлі жазып үлгермеуі мүмкін
+                # (FileNotFoundError) — пайда болып, өлшемі тұрақтанғанша күтеміз.
+                p = Path(path)
+                try:
+                    self._wait(lambda: p.exists(), timeout=10, what=f"файл отчёта {p.name}")
+                    last = -1
+                    while p.stat().st_size != last:
+                        last = p.stat().st_size
+                        self._sleep()
+                    texts[kind] = decode_report(p.read_bytes())
+                except UiError as err:
+                    self._note(str(err))
             missing = [k for k in REPORT_TAB_INDEX if k not in texts]
             if missing:
                 source = "save-all+clipboard" if files else "clipboard"
