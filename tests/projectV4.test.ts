@@ -212,19 +212,21 @@ describe('v3 → v4 root миграциясы', () => {
     expect(round.root.children.map((node) => node.id)).toEqual(['root'])
   })
 
-  it('бұрғы диаметрі/тереңдігі бүтін; тек ілгек cup 12.5 мм рұқсат', () => {
+  it('hardware drill diameter/depth preserve 0.1 mm; panel offsets remain integers', () => {
     const migrated = migrateV3ToV4(legacy)
     const board = plainBoardNode()
     const withDrill = (diameter: number, depth: number, purpose: string) => ({ ...migrated,
       root: { ...migrated.root, children: [{ ...board, board: { ...board.board,
         drilling: [{ face: 'inner', x: 22, y: 20, diameter, depth, purpose }] } }] } })
-    expect(() => parseProjectV4(withDrill(5.5, 8, 'shelfPin'))).toThrow()
-    expect(() => parseProjectV4(withDrill(2.8, 8, 'hinge'))).toThrow()
+    expect(() => parseProjectV4(withDrill(5.5, 8, 'shelfPin'))).not.toThrow()
+    expect(() => parseProjectV4(withDrill(2.8, 11.5, 'hinge'))).not.toThrow()
     const fractional = withDrill(5, 8, 'shelfPin')
     fractional.root.children[0]!.board.drilling[0]!.x = 22.5
     expect(() => parseProjectV4(fractional)).toThrow()
-    expect(() => parseProjectV4(withDrill(5, 8.5, 'shelfPin'))).toThrow()
-    expect(() => parseProjectV4(withDrill(5, 12.5, 'shelfPin'))).toThrow()
+    expect(() => parseProjectV4(withDrill(5, 8.5, 'shelfPin'))).not.toThrow()
+    expect(() => parseProjectV4(withDrill(5, 12.5, 'shelfPin'))).not.toThrow()
+    expect(() => parseProjectV4(withDrill(2.85, 11.5, 'hinge'))).toThrow()
+    expect(() => parseProjectV4(withDrill(2.8, 11.55, 'hinge'))).toThrow()
     expect(() => parseProjectV4(withDrill(35, 12.5, 'hinge'))).not.toThrow()
   })
 })

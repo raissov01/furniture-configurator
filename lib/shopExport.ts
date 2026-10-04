@@ -1,3 +1,4 @@
+import { requireManufacturingReadyPanels } from '@/src/core/manufacturingGuard'
 /**
  * Цехқа экспорт (XLSX/CSV/DXF/PDF) — БІР функция.
  *
@@ -52,6 +53,7 @@ export const downloadFile: SaveFile = (filename, data, mime) => {
 }
 
 export async function runShopExport(format: ShopExportFormat, input: ShopExportInput, save: SaveFile = downloadFile): Promise<void> {
+  requireManufacturingReadyPanels(input.panels)
   const { cabinet, panels, catalog } = input
   const base = input.exportId ?? cabinet?.id ?? 'part'
   const name = shopExportFileName(base, format)

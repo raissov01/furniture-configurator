@@ -1,3 +1,4 @@
+import { requireManufacturingReadyPanels } from '../manufacturingGuard'
 /**
  * Бирка (этикетка) — детальге жабыстырылатын қағаз.
  *
@@ -81,6 +82,7 @@ export function partLabels(
   catalog: Catalog,
   nesting?: NestingResult,
 ): PartLabel[] {
+  requireManufacturingReadyPanels(panels)
   const materials = new Map(catalog.materials.map((m) => [m.id, m]))
   const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
   const positions = partNumbers(panels, catalog)

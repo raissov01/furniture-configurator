@@ -14,7 +14,7 @@
  * Қолдау жоқ бөлік тасталмайды үнсіз — `warnings`-ке жазылады.
  */
 import { ConfigValidationError } from '../errors'
-import { DEFAULT_SETTINGS, HINGE_CUP_DEPTH } from '../constants'
+import { DEFAULT_SETTINGS } from '../constants'
 import { validateSimplePolygon } from '../polygon'
 import type { PolygonPoint } from '../polygon'
 import type { BoardNode, GroupNode, SceneNode, SolidNode } from '../tree'
@@ -48,8 +48,8 @@ export type BasisImportOptions = {
 
 export type BasisWarningCode =
   | 'no-frame' | 'panel-rotated' | 'panel-bent' | 'panel-not-sheet' | 'panel-size-rounded'
-  | 'contour-cutout' | 'contour-simplified' | 'groove-unsupported'
-  | 'hole-purpose-unknown' | 'hole-no-panel' | 'hole-out-of-bounds' | 'hole-rounded'
+  | 'contour-cutout' | 'contour-simplified' | 'contour-approximated' | 'groove-unsupported'
+  | 'hole-purpose-unknown' | 'hole-no-panel' | 'hole-out-of-bounds' | 'hole-rounded' | 'hole-position-rounded'
   | 'object-unsupported' | 'furniture-missing'
 
 export type BasisWarning = { code: BasisWarningCode; message: string; count: number }
@@ -439,6 +439,9 @@ export function importBasisB3d(bytes: Uint8Array, options: BasisImportOptions = 
 
     const elements = safeContour(contourBytes)
     if (elements.length === 0) return null
+    if (elements.some((element) => element.kind !== 'line')) {
+      warn('contour-approximated', 'доға/шеңбер түзу кесінділермен жуықталды — дәл өндірістік контур сақталмады')
+    }
     const loops = chainLoops(elements)
     if (loops.length === 0) { warn('panel-not-sheet', `«${name}»: контур тұйықталмады`); return null }
     const localToOur = (p: P2, z: number): V3 => toFrame(toOur(apply(t, { x: p.x, y: p.y, z })))
@@ -542,7 +545,8 @@ export function importBasisB3d(bytes: Uint8Array, options: BasisImportOptions = 
           if (!cache.has(e)) cache.set(e, bandFor(e))
           return cache.get(e)!
         }
-        if (pts.length === 4) {
+        if (pts.length === 4 && pts.every((p) =>
+          (p.x === 0 || p.x === length) && (p.y === 0 || p.y === width))) {
           // Бір қабырғасы бірнеше кесіндіге бөлінген тікбұрыш — қарапайым тақта.
           pts.forEach((a, i) => {
             const b = pts[(i + 1) % 4]!
@@ -721,7 +725,8 @@ export function importBasisB3d(bytes: Uint8Array, options: BasisImportOptions = 
       const isFace = face === 'inner' || face === 'outer'
       const onW = face === 'edgeW1' || face === 'edgeW2'
       const cut = (v: number, band: number): number => v - (band >= minBandSubtract ? band : 0)
-      const x = rnd(isFace ? cut(along(o.length), pb.bandW1) : onW ? cut(along(o.width), pb.bandL1) : cut(along(o.length), pb.bandW1))
+      const xRaw = isFace ? cut(along(o.length), pb.bandW1) : onW ? cut(along(o.width), pb.bandL1) : cut(along(o.length), pb.bandW1)
+      const x = rnd(xRaw)
       const yRaw = isFace ? cut(along(o.width), pb.bandL1) : along(o.thickness)
       const y = !isFace && Math.abs(yRaw - thickness / 2) < EPS ? thickness / 2 : rnd(yRaw)
       if (!isFace && y !== thickness / 2) {
@@ -729,15 +734,19 @@ export function importBasisB3d(bytes: Uint8Array, options: BasisImportOptions = 
         warn('hole-out-of-bounds', 'торц тесігі қалыңдық ортасында емес — өткізілді')
         break
       }
+      if (Math.abs(xRaw - x) > 1e-6 || Math.abs(yRaw - y) > 1e-6) {
+        warn('hole-position-rounded', 'тесік координаты бүтін мм-ге дөңгелектелді')
+      }
       const b = pb.node.board
       const limit = isFace ? thickness : onW ? b.length : b.width
-      // projectV4 схемасы: Ø мен тереңдік бүтін мм, жалғыз ерекшелік — cup 12.5 (§0.2).
+      // Hardware drawing sizes retain 0.1 mm precision (CLAUDE.md §0.2).
       const rawDepth = Math.min(h.depth, limit)
-      const depthMm = purpose === 'hinge' && Math.abs(rawDepth - HINGE_CUP_DEPTH) < 0.05 ? HINGE_CUP_DEPTH : rnd(rawDepth)
-      if (Math.abs(h.diameter - rnd(h.diameter)) > 0.05 || Math.abs(rawDepth - depthMm) > 0.05) {
-        warn('hole-rounded', 'тесік Ø/тереңдігі бүтін мм-ге дөңгелектелді')
+      const depthMm = Math.round(rawDepth * 10) / 10
+      const diameterMm = Math.round(h.diameter * 10) / 10
+      if (Math.abs(h.diameter - diameterMm) > 1e-6 || Math.abs(rawDepth - depthMm) > 1e-6) {
+        warn('hole-rounded', 'тесік Ø/тереңдігі 0.1 мм-ге дөңгелектелді')
       }
-      const drill: Drill = { face, x, y, diameter: rnd(h.diameter), depth: depthMm, purpose }
+      const drill: Drill = { face, x, y, diameter: diameterMm, depth: depthMm, purpose }
       const r = drill.diameter / 2
       const alongMax = isFace ? b.length : onW ? b.width : b.length
       const acrossMax = isFace ? b.width : thickness
@@ -765,6 +774,15 @@ export function importBasisB3d(bytes: Uint8Array, options: BasisImportOptions = 
     g.children = g.children.filter((c) => c.kind !== 'group' || (prune(c), c.children.length > 0))
   }
   prune(root)
+
+  // Warnings stay with the imported model, not just the transient import dialog.
+  // There is no acknowledged-loss override: rebuild unsupported geometry from
+  // its source before this model is eligible for manufacturing.
+  const losses = [...warnings.values()].filter((warning) => warning.code !== 'no-frame')
+  if (losses.length > 0) {
+    const reason = `Базис: неполный импорт. Экспорт для производства заблокирован. ${losses.map((w) => `${w.code}: ${w.message} (${w.count})`).join('; ')}. Восстановите операции по исходному файлу.`
+    for (const { node } of placed) node.board.manufacturingBlockReason = reason
+  }
 
   const thumb = blob(header, 'Thumbnail')
   return {

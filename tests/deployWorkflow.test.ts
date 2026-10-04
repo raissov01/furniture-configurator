@@ -10,3 +10,12 @@ describe('platform image publication', () => {
     expect(imageJob).toMatch(/^    if: .*github\.event_name == 'workflow_dispatch'$/m)
   })
 })
+
+ it('verifies every pushed branch without enabling automatic publication or deployment', () => {
+    const workflow = readFileSync(resolve(process.cwd(), '.github/workflows/platform.yml'), 'utf8')
+    const push = workflow.match(/\n  push:\n([\s\S]*?)(?=\n  \w+:)/)?.[1] ?? ''
+    expect(push).toContain("branches: ['**']")
+    const deploy = workflow.match(/\n  deploy:\n([\s\S]*?)(?=\n  [a-z][a-z-]*:\n|$)/)?.[1]
+    expect(deploy).toContain("github.event_name == 'workflow_dispatch'")
+    expect(deploy).toContain("github.ref == 'refs/heads/main'")
+  })

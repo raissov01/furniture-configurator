@@ -1,3 +1,4 @@
+import { requireManufacturingReadyPanels } from '../manufacturingGuard'
 /**
  * Экспорт для «Базиса» (Базис-Мебельщик / Базис-Раскрой).
  *
@@ -134,6 +135,7 @@ type PartRow = {
 
 /** Детальдер тізімінің жолдары — CSV мен XLSX бір көзден алады. */
 function basisPartRows(panels: Panel[], catalog: Catalog, options: BasisExportOptions): PartRow[] {
+  requireManufacturingReadyPanels(panels)
   const bands = new Map(catalog.edgeBands.map((b) => [b.id, b]))
   const materials = new Map(catalog.materials.map((m) => [m.id, m]))
   const band = (e: EdgeSpec): number => {

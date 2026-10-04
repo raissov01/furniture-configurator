@@ -1,3 +1,4 @@
+import { requireManufacturingReadyPanels } from './manufacturingGuard'
 /**
  * Раскрой (§5). ГИЛЬОТИНДІ ғана.
  *
@@ -388,6 +389,7 @@ export function nestPanels(
   catalog: Catalog,
   options: NestingOptions = {},
 ): NestingResult {
+  requireManufacturingReadyPanels(panels)
   const gap = options.kerf ?? KERF
   validateKerf(gap)
   const trimOverride = options.trimEdge

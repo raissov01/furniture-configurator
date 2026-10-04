@@ -19,7 +19,7 @@ describe('CLI v4 файлын оқиды', () => {
   it('cutlist v4 жобаны басып шығарады', () => {
     const file = join(dir, 'project-v4.json')
     writeFileSync(file, JSON.stringify(parseProjectV4(referenceProject)))
-    const run = spawnSync('node_modules/.bin/tsx', ['src/cli/cutlist.ts', file], { encoding: 'utf8' })
+    const run = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli/cutlist.ts', file], { encoding: 'utf8' })
     expect(run.stderr).toBe('')
     expect(run.status).toBe(0)
     expect(run.stdout).toContain(referenceProject.cabinets[0]!.name)
