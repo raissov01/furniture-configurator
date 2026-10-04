@@ -1,3 +1,4 @@
+import { requireManufacturingReadyPanels } from '../manufacturingGuard'
 /**
  * ЧПУ присадкасы — **ӘР ДЕТАЛЬГЕ БІР ФАЙЛ**.
  *
@@ -170,6 +171,7 @@ export function cncPanelCsv(panel: Panel, catalog: Catalog, options: CncOptions)
  * есебі де содан басталады.
  */
 export function cncIndexCsv(panels: Panel[], catalog: Catalog, options: CncOptions): string {
+  requireManufacturingReadyPanels(panels)
   const header = [
     'Файл', 'Идентификатор', 'Деталь', 'Материал', 'Толщина', 'Длина реза', 'Ширина реза',
     'Отверстий', 'Переворот', 'Фрезеровка',

@@ -1,3 +1,4 @@
+import { requireManufacturingReadyPanels } from '../manufacturingGuard'
 /**
  * CSV экспорты (PHASE-2 A5) — цехтың өз раскрой бағдарламасына беру үшін.
  * Тек РЕЗ өлшемі: оптимизаторға готовый өлшемнің қажеті жоқ әрі қауіпті.
@@ -17,6 +18,7 @@ function escape(value: string | number): string {
 }
 
 export function cutListToCsv(panels: Panel[], catalog: Catalog): string {
+  requireManufacturingReadyPanels(panels)
   const rows = formatCutList(panels, catalog)
   const lines = [HEADER.join(',')]
   for (const r of rows) {

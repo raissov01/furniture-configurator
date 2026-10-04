@@ -21,17 +21,19 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
   cabinet?: CabinetConfig | undefined; pdfCabinet?: CabinetConfig | undefined
   pdfAssembly?: { nodeId: string; panels: Panel[]; nodeCount: number } | undefined
   panels: Panel[]; projectPanels?: Panel[]; specialParts?: readonly SpecialPartRow[]; projectName?: string; exportId?: string; exportName?: string
-  inline?: boolean; onError?: (message: string) => void
+  inline?: boolean; onError?: (message: string | null) => void
 }) {
   const catalog = useConfigurator((s) => s.catalog)
   const projectInfo = useConfigurator((s) => s.projectInfo)
   const settings = useConfigurator((s) => s.projectSettings ?? s.shop.settings)
   const [busy, setBusy] = useState<string | null>(null)
-  const [panoramaError, setPanoramaError] = useState<string | null>(null)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   // Логика `lib/shopExport.ts`-те: классикалық «Файл» мәзірі де соны тікелей шақырады.
   const run = async (format: ShopExportFormat, scope: ShopExportScope) => {
     setBusy(format)
+    setExportError(null)
+    onError?.(null)
     try {
       await runShopExport(format, {
         cabinet: format === 'pdf' ? (scope === 'project' ? pdfCabinet : cabinet) : scope === 'cabinet' ? cabinet : undefined,
@@ -42,12 +44,17 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
         exportId: scope === 'project' ? 'project' : exportId,
         exportName: scope === 'project' ? projectName : exportName,
       })
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : tr('Не удалось экспортировать файл. Повторите попытку.')
+      setExportError(message)
+      onError?.(message)
     } finally {
       setBusy(null)
     }
   }
 
   const items = <>
+        {inline && exportError && <p role="alert" className="px-2 py-1 text-xs text-red-700">{exportError}</p>}
         {projectPanels ? <div className="border-b border-neutral-200 px-2 py-1 text-xs">{tr('Весь проект')}</div> : null}
         <MenuItem disabled={busy !== null} onClick={() => void run('xlsx', projectPanels ? 'project' : 'cabinet')}>
           XLSX — {tr('деталировка')}
@@ -73,7 +80,8 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
           PDF — {tr('сборочный чертёж')}
         </MenuItem>}
         <MenuItem disabled={busy !== null} onClick={() => {
-          setPanoramaError(null)
+          setExportError(null)
+          onError?.(null)
           requestAnimationFrame(() => {
             try {
               const context = useConfigurator.getState().liveRenderContext
@@ -81,7 +89,7 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
               downloadPanorama(context)
             } catch (cause) {
               const message = cause instanceof Error ? cause.message : tr('Не удалось создать панораму')
-              setPanoramaError(message)
+              setExportError(message)
               onError?.(message)
             }
           })
@@ -91,6 +99,6 @@ export function ExportMenu({ cabinet, pdfCabinet, pdfAssembly, panels, projectPa
   if (inline) return items
   return <div data-tour="export">
     <Menu label={busy ? '…' : tr('Экспорт')} title={tr('Скачать файлы для цеха')} align="right">{items}</Menu>
-    {panoramaError && <p role="alert" className="text-xs text-red-700">{panoramaError}</p>}
+    {exportError && <p role="alert" className="text-xs text-red-700">{exportError}</p>}
   </div>
 }

@@ -1,3 +1,4 @@
+import { requireManufacturingReadyPanels } from '../manufacturingGuard'
 /**
  * XLSX экспорты (PHASE-2 A5). Кітапхана орнына минимал OOXML — бізге керегі
  * бірнеше парақ пен қалың тақырып жолы ғана, ал толық xlsx кітапханасы
@@ -152,6 +153,7 @@ export function simpleTableXlsx(sheetName: string, header: string[], rows: (stri
  */
 export function cutListToXlsx(panels: Panel[], catalog: Catalog, projectName: string,
   specialParts: readonly SpecialPartRow[] = []): Uint8Array {
+  requireManufacturingReadyPanels(panels)
   const rows = formatCutList(panels, catalog)
   const byMaterial = new Map<string, CutListRow[]>()
   for (const row of rows) {

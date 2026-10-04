@@ -162,7 +162,7 @@ describe('Базис модулі → түйін ағашы', () => {
     for (const leg of legs) expect(leg.solid.size.y).toBe(100)
     const scene = flattenTree(r.root, catalogOf(r))
     expect(scene.nodes.flatMap((n) => n.panels)).toHaveLength(10)
-    expect(r.warnings.map((w) => w.code).sort()).toEqual(['groove-unsupported'])
+    expect(r.warnings.map((w) => w.code).sort()).toEqual(['groove-unsupported', 'hole-position-rounded'])
   })
 
   it('скос сөрелер: 5 төбелі контур тақта, flattenTree контурды қабылдайды', () => {

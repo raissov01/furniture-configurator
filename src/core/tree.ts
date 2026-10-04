@@ -84,6 +84,8 @@ export type BoardSpec = {
   /** Бір шпон өрнегіне жататын детальдардың ортақ идентификаторы. */
   veneerGroup?: string | undefined
   role: PanelRole
+  /** Persistent fail-closed marker for incomplete imported manufacturing geometry. */
+  manufacturingBlockReason?: string | undefined
   drilling?: Drill[] | undefined
   cutouts?: Cutout[] | undefined
   corners?: PanelCorners | undefined

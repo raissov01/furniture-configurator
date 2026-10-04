@@ -5,10 +5,11 @@ import { Client, types } from 'pg'
 
 const TABLES = [
   'shops', 'users', 'sessions', 'shop_profiles', 'projects', 'invites', 'shares',
-  'comments', 'request_limits', 'library_items', 'shop_catalog_imports',
+  'comments', 'request_limits', 'library_items', 'shop_catalog_imports', 'shop_catalog_images',
   'installation_tasks', 'installation_actions', 'installation_events',
   'mobile_measurements', 'mobile_measurement_actions', 'mobile_measurement_photos',
-  'approval_revisions',
+  'approval_revisions', 'cloud_project_org', 'render_history', 'password_resets',
+  'audit_log', 'api_metrics', 'error_log', 'jobs',
 ] as const
 
 types.setTypeParser(20, Number)
@@ -30,6 +31,11 @@ export async function migrateSqliteToPostgres(sqlitePath: string, url: string): 
       await target.query('INSERT INTO schema_migrations (version, applied_at) VALUES ($1,$2)', [file, Date.now()])
     }
     const present = new Set((source.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((row) => row.name))
+    // A new feature table must be deliberately mapped before migration; a
+    // successful copy that quietly drops user data is worse than refusing it.
+    const known = new Set<string>(TABLES)
+    const unmapped = [...present].filter((table) => !table.startsWith('sqlite_') && !known.has(table))
+    if (unmapped.length) throw new Error(`Unmapped SQLite source tables: ${unmapped.join(', ')}`)
     for (const table of TABLES) {
       const existing = await target.query(`SELECT COUNT(*)::integer AS n FROM ${table}`)
       if (existing.rows[0]?.n !== 0) throw new Error(`PostgreSQL target table is not empty: ${table}`)
@@ -60,6 +66,11 @@ export async function migrateSqliteToPostgres(sqlitePath: string, url: string): 
       const checked = await target.query(`SELECT COUNT(*)::integer AS n FROM ${table}`)
       if (checked.rows[0]?.n !== rows.length) throw new Error(`Count mismatch: ${table}`)
       counts[table] = rows.length
+    }
+    // Explicit IDs do not advance PostgreSQL bigserial sequences. Without
+    // this, the first post-migration audit/metric/error insert can collide.
+    for (const table of ['audit_log', 'api_metrics', 'error_log']) {
+      await target.query(`SELECT setval(pg_get_serial_sequence('${table}', 'id'), COALESCE(MAX(id), 1), MAX(id) IS NOT NULL) FROM ${table}`)
     }
     await target.query('COMMIT')
     return counts

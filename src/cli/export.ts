@@ -8,6 +8,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ZodError } from 'zod'
+import { requireCncReadyPanels } from '../core/export/cncGuard'
 import {
   ConfigValidationError, assemblyDrawingPdf, cabinetToDxfFiles, cutListToCsv,
   cutListToXlsx, drillingToCsv, findNode, flattenTree, mergeSettings, parseProjectV4,
@@ -56,6 +57,7 @@ async function main(): Promise<number> {
   let scene
   try {
     scene = flattenTree(project.root, catalog, project.settings, project.layers, project.autoJoints)
+    requireCncReadyPanels(scene.nodes.flatMap((node) => node.panels))
   } catch (err) {
     if (err instanceof ConfigValidationError) {
       console.error(`\n✗ ${project.name}\n  ${err.message}`)

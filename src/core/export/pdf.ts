@@ -1,3 +1,4 @@
+import { requireManufacturingReadyPanels } from '../manufacturingGuard'
 /**
  * PDF сызбасы (PHASE-2 A5): фас, бүйір, жоспар — өлшемдерімен, плюс
  * ажыратылған изометрия, деталіне позиция нөмірі қойылған.
@@ -336,6 +337,7 @@ function drawSupplementaryPanel(ctx: Ctx, panel: Panel, pageIndex: number, pages
 }
 
 export async function assemblyDrawingPdf(input: AssemblyPdfInput): Promise<Uint8Array> {
+  requireManufacturingReadyPanels([...input.panels, ...(input.supplementaryPanels ?? [])])
   const doc = await PDFDocument.create()
   doc.registerFontkit(fontkit)
   const regular = await doc.embedFont(input.fonts.regular, { subset: true })

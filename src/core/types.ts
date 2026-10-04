@@ -384,6 +384,8 @@ export type Panel = {
   note: string
   /** Артикулдық схема жоқ болса, өндірістік DXF-ті жарамсыз етеді. */
   cncBlockReason?: string | undefined
+  /** Incomplete imported geometry must never become a manufacturing handoff. */
+  manufacturingBlockReason?: string | undefined
   /** Сөре тірегі; генератор қояды, смета мәтіндік note-ті талдамайды. */
   shelfKind?: ShelfKind | undefined
 

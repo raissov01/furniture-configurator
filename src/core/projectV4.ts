@@ -5,7 +5,6 @@
  * оқып, миграциялайды; UI көшкенде сол бір root-ты сақтау жолына жалғайды.
  */
 import { z } from 'zod'
-import { HINGE_CUP_DEPTH } from './constants'
 import {
   CabinetConfigSchema, ConstructionSettingsSchema, EdgeBandSchema,
   MaterialSchema, PriceOverridesSchema, ProjectInfoSchema, ProjectLayersSchema,
@@ -43,6 +42,8 @@ export type ProjectFileV4 = Omit<ProjectFile, 'schemaVersion' | 'cabinets' | 'pl
 
 const mm = z.number().int()
 const positiveMm = mm.positive()
+// Hardware drill sizes are measured to 0.1 mm; board dimensions stay integral.
+const drillMm = z.number().finite().positive().multipleOf(0.1)
 const vec3 = z.strictObject({ x: mm, y: mm, z: mm })
 const fabrication: z.ZodType<FabricationSpec> = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('lathe'),
@@ -100,16 +101,13 @@ const board: z.ZodType<BoardSpec> = z.strictObject({
     'side', 'top', 'bottom', 'shelf', 'divider', 'back', 'front',
     'drawerSide', 'drawerBack', 'drawerBottom', 'plinth', 'rail', 'custom',
   ]),
+  manufacturingBlockReason: z.string().min(1).optional(),
   drilling: z.array(z.strictObject({
     face: z.enum(['inner', 'outer', 'edgeL1', 'edgeL2', 'edgeW1', 'edgeW2']),
-    x: mm, y: mm, diameter: positiveMm,
-    // CLAUDE.md §0.2: cup тереңдігі 12.5 мм — жалғыз бөлшек drill өлшемі.
-    depth: z.union([positiveMm, z.literal(HINGE_CUP_DEPTH)]),
+    x: mm, y: mm, diameter: drillMm, depth: drillMm,
     purpose: z.enum(['confirmat', 'dowel', 'minifix', 'shelfPin', 'hinge',
       'runner', 'handle', 'leg', 'facadeScrew']),
     hardwareId: z.string().min(1).optional(),
-  }).refine((drill) => drill.depth !== HINGE_CUP_DEPTH || drill.purpose === 'hinge', {
-    message: `${HINGE_CUP_DEPTH} мм тереңдік тек ілгек cup үшін`,
   })).optional(),
   cutouts: z.array(cutout).optional(),
   corners: z.strictObject({

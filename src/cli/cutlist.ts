@@ -7,6 +7,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { ZodError } from 'zod'
+import { requireManufacturingReadyPanels } from '../core/manufacturingGuard'
 import {
   CUT_LIST_COLUMNS, ConfigValidationError,
   edgeBandTotals, findNode, flattenTree, formatCutList, parseProjectV4,
@@ -57,6 +58,7 @@ function main(): number {
   let scene
   try {
     scene = flattenTree(project.root, catalog, project.settings, project.layers, project.autoJoints)
+    requireManufacturingReadyPanels(scene.nodes.flatMap((node) => node.panels))
   } catch (err) {
     if (err instanceof ConfigValidationError) {
       console.error(`\n✗ ${project.name}\n  ${err.message}`)
